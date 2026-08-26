@@ -36,12 +36,10 @@ class HomeView extends StatelessWidget {
             end: Alignment.bottomCenter,
             colors: [
               Color(0xFF6B1C9B), // Top vibrant purple
-              Color(0xFF55209D), // Upper middle purple
-              Color(0xFF431A94), // Center deep royal purple
-              Color(0xFF36188E), // Lower middle indigo
-              Color(0xFF4D229E), // Bottom luminous purple
+              Color(0xFF58209B), // Mid royal purple
+              Color(0xFF4D249E), // Bottom rich purple
             ],
-            stops: [0.0, 0.25, 0.55, 0.80, 1.0],
+            stops: [0.0, 0.48, 1.0],
           ),
         ),
         child: SafeArea(
