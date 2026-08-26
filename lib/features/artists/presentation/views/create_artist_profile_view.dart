@@ -1,5 +1,8 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/di/injection_container.dart';
@@ -36,6 +39,58 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
   String? _selectedExperienceLevel;
   bool _agreedToTerms = false;
   bool _isSubmitting = false;
+
+  final ImagePicker _picker = ImagePicker();
+  final List<XFile> _pickedImages = [];
+
+  Future<void> _pickImagesFromGallery() async {
+    try {
+      final List<XFile> images = await _picker.pickMultiImage(imageQuality: 85);
+      if (images.isNotEmpty) {
+        setState(() {
+          _pickedImages.addAll(images);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error selecting images: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickImageFromCamera() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+      );
+      if (image != null) {
+        setState(() {
+          _pickedImages.add(image);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error capturing photo: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    }
+  }
+
+  void _removeImage(int index) {
+    setState(() {
+      _pickedImages.removeAt(index);
+    });
+  }
 
   final List<String> _categories = [
     'Visual Arts',
@@ -407,114 +462,190 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                       const SizedBox(height: 14),
 
                       // Dashed Upload Box Container
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 24,
-                          horizontal: 16,
-                        ),
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: const Color(0xFF94A3B8),
-                            width: 1,
-                            style: BorderStyle.solid,
+                      InkWell(
+                        onTap: _pickImagesFromGallery,
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 24,
+                            horizontal: 16,
                           ),
-                        ),
-                        child: Column(
-                          children: [
-                            const Icon(
-                              Icons.cloud_upload_outlined,
-                              size: 44,
-                              color: Color(0xFF64748B),
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: const Color(0xFF94A3B8),
+                              width: 1,
+                              style: BorderStyle.solid,
                             ),
-                            const SizedBox(height: 10),
-                            const Text(
-                              'Drag & drop images here or click to select',
-                              style: TextStyle(
-                                fontSize: 13.5,
+                          ),
+                          child: Column(
+                            children: [
+                              const Icon(
+                                Icons.cloud_upload_outlined,
+                                size: 44,
                                 color: Color(0xFF64748B),
                               ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // 2 Action Buttons: Choose Files & Camera
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                OutlinedButton.icon(
-                                  style: OutlinedButton.styleFrom(
-                                    side: const BorderSide(
-                                      color: Color(0xFF1E1E1E),
-                                      width: 1,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 8,
-                                    ),
-                                  ),
-                                  onPressed: () {},
-                                  icon: const Icon(
-                                    Icons.file_upload_outlined,
-                                    size: 16,
-                                    color: Color(0xFF1E1E1E),
-                                  ),
-                                  label: const Text(
-                                    'Choose Files',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF1E1E1E),
-                                    ),
-                                  ),
+                              const SizedBox(height: 10),
+                              const Text(
+                                'Drag & drop images here or click to select',
+                                style: TextStyle(
+                                  fontSize: 13.5,
+                                  color: Color(0xFF64748B),
                                 ),
-                                const SizedBox(width: 12),
-                                OutlinedButton.icon(
-                                  style: OutlinedButton.styleFrom(
-                                    side: const BorderSide(
-                                      color: Color(0xFF1E1E1E),
-                                      width: 1,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 8,
-                                    ),
-                                  ),
-                                  onPressed: () {},
-                                  icon: const Icon(
-                                    Icons.camera_alt_outlined,
-                                    size: 16,
-                                    color: Color(0xFF1E1E1E),
-                                  ),
-                                  label: const Text(
-                                    'Camera',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF1E1E1E),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            const Text(
-                              'Max 5MB per file',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                color: Color(0xFF94A3B8),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 16),
+
+                              // 2 Action Buttons: Choose Files & Camera
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  OutlinedButton.icon(
+                                    style: OutlinedButton.styleFrom(
+                                      side: const BorderSide(
+                                        color: Color(0xFF1E1E1E),
+                                        width: 1,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 8,
+                                      ),
+                                    ),
+                                    onPressed: _pickImagesFromGallery,
+                                    icon: const Icon(
+                                      Icons.file_upload_outlined,
+                                      size: 16,
+                                      color: Color(0xFF1E1E1E),
+                                    ),
+                                    label: const Text(
+                                      'Choose Files',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF1E1E1E),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  OutlinedButton.icon(
+                                    style: OutlinedButton.styleFrom(
+                                      side: const BorderSide(
+                                        color: Color(0xFF1E1E1E),
+                                        width: 1,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 8,
+                                      ),
+                                    ),
+                                    onPressed: _pickImageFromCamera,
+                                    icon: const Icon(
+                                      Icons.camera_alt_outlined,
+                                      size: 16,
+                                      color: Color(0xFF1E1E1E),
+                                    ),
+                                    label: const Text(
+                                      'Camera',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF1E1E1E),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              const Text(
+                                'Max 5MB per file',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  color: Color(0xFF94A3B8),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
+                      if (_pickedImages.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Selected Images (${_pickedImages.length}):',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1E1E1E),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          height: 90,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _pickedImages.length,
+                            itemBuilder: (context, index) {
+                              final xFile = _pickedImages[index];
+                              return Container(
+                                margin: const EdgeInsets.only(right: 10),
+                                width: 90,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                                ),
+                                child: Stack(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: kIsWeb
+                                          ? Image.network(
+                                              xFile.path,
+                                              width: 90,
+                                              height: 90,
+                                              fit: BoxFit.cover,
+                                            )
+                                          : Image.file(
+                                              File(xFile.path),
+                                              width: 90,
+                                              height: 90,
+                                              fit: BoxFit.cover,
+                                            ),
+                                    ),
+                                    Positioned(
+                                      top: 4,
+                                      right: 4,
+                                      child: GestureDetector(
+                                        onTap: () => _removeImage(index),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withValues(alpha: 0.7),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.close,
+                                            size: 14,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 24),
 
                       // Terms Agreement Checkbox Box
