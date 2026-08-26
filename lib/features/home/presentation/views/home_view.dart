@@ -14,13 +14,35 @@ class HomeView extends StatelessWidget {
   final List<MenuCardItem> _items = MenuCardItem.items;
 
   void _onCardTap(BuildContext context, MenuCardItem item) {
-    if (item.routeName == '/artist-registration') {
-      final isLoggedIn = sl<StorageService>().getBool('is_logged_in') ?? false;
-      if (!isLoggedIn) {
-        context.push(RouteNames.login);
-        return;
-      }
+    final isLoggedIn = sl<StorageService>().getBool('is_logged_in') ?? false;
+
+    // Public view allowed for all standard options and ComingSoonView screens
+    final isComingSoon =
+        item.routeName == RouteNames.galleries ||
+        item.routeName == RouteNames.eventsPhotos ||
+        item.routeName == RouteNames.galleryRegistration ||
+        item.routeName == RouteNames.eventsCompetition;
+
+    final isPublicOption =
+        isComingSoon ||
+        item.routeName == RouteNames.aboutUs ||
+        item.routeName == RouteNames.government ||
+        item.routeName == RouteNames.artists ||
+        item.routeName == RouteNames.eventsCompetition;
+
+    if (!isLoggedIn && !isPublicOption) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please sign in to access this option.'),
+          backgroundColor: Color(0xFF5E227A),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      context.push(RouteNames.login);
+      return;
     }
+
     context.push(item.routeName);
   }
 
@@ -47,7 +69,10 @@ class HomeView extends StatelessWidget {
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final horizontalPadding = (constraints.maxWidth * 0.04).clamp(12.0, 20.0);
+              final horizontalPadding = (constraints.maxWidth * 0.04).clamp(
+                12.0,
+                20.0,
+              );
               final gap = (constraints.maxHeight * 0.014).clamp(8.0, 14.0);
 
               return Column(
@@ -60,7 +85,9 @@ class HomeView extends StatelessWidget {
                   // 2. Auto-fitting 4-Row Grid (Takes exactly available height with 0 scroll)
                   Expanded(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                      ),
                       child: Column(
                         children: [
                           // Row 1: About Us, Artists

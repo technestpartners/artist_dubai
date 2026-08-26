@@ -120,9 +120,15 @@ class TermsView extends StatelessWidget {
 
               // Bullet Points
               _buildBulletPoint('modify or copy the materials'),
-              _buildBulletPoint('use the materials for any commercial purpose or for any public display'),
-              _buildBulletPoint('attempt to reverse engineer any software contained on the website'),
-              _buildBulletPoint('remove any copyright or other proprietary notations from the materials'),
+              _buildBulletPoint(
+                'use the materials for any commercial purpose or for any public display',
+              ),
+              _buildBulletPoint(
+                'attempt to reverse engineer any software contained on the website',
+              ),
+              _buildBulletPoint(
+                'remove any copyright or other proprietary notations from the materials',
+              ),
               const SizedBox(height: 32),
             ],
           ),
@@ -140,11 +146,7 @@ class TermsView extends StatelessWidget {
         children: [
           const Padding(
             padding: EdgeInsets.only(top: 7.0, right: 10.0),
-            child: Icon(
-              Icons.circle,
-              size: 5.5,
-              color: Color(0xFF757575),
-            ),
+            child: Icon(Icons.circle, size: 5.5, color: Color(0xFF757575)),
           ),
           Expanded(
             child: Text(

@@ -11,6 +11,7 @@ class RouteNames {
   static const String artistDetail = '/artist/:id';
   static const String artistRegistration = '/artist-registration';
   static const String government = '/government';
+  static const String events = '/events';
   static const String eventsCompetition = '/events-competition';
   static const String galleries = '/galleries';
   static const String eventsPhotos = '/events-photos';
@@ -20,4 +21,9 @@ class RouteNames {
   static const String privacyPolicy = '/privacy-policy';
   static const String termsConditions = '/terms-conditions';
   static const String settings = '/settings';
+  static const String bookArtist = '/book-artist';
+  static const String createArtEvent = '/create-art-event';
+  static const String categories = '/categories';
+  static const String categoryDetail = '/category-detail';
+  static const String createCategory = '/create-category';
 }

@@ -3,9 +3,18 @@ import 'package:go_router/go_router.dart';
 import '../../core/di/injection_container.dart';
 import '../../core/services/storage_service.dart';
 import '../../features/about_us/presentation/views/about_us_view.dart';
+import '../../features/artists/domain/models/artist_model.dart';
+import '../../features/artists/presentation/views/artist_detail_view.dart';
 import '../../features/artists/presentation/views/artists_view.dart';
+import '../../features/artists/presentation/views/category_detail_view.dart';
+import '../../features/artists/presentation/views/create_artist_profile_view.dart';
+import '../../features/artists/presentation/views/create_category_view.dart';
+import '../../features/artists/presentation/views/explore_categories_view.dart';
 import '../../features/auth/presentation/views/login_view.dart';
 import '../../features/auth/presentation/views/register_view.dart';
+import '../../features/bookings/presentation/views/book_artist_view.dart';
+import '../../features/bookings/presentation/views/bookings_view.dart';
+import '../../features/events/presentation/views/create_art_event_view.dart';
 import '../../features/events/presentation/views/events_view.dart';
 import '../../features/government/presentation/views/government_portal_view.dart';
 import '../../features/home/presentation/views/home_view.dart';
@@ -13,6 +22,8 @@ import '../../features/legal/presentation/views/privacy_policy_view.dart';
 import '../../features/legal/presentation/views/terms_view.dart';
 import '../../features/onboarding/presentation/views/onboarding_view.dart';
 import '../../features/placeholder/presentation/views/coming_soon_view.dart';
+import '../../features/profile/presentation/views/profile_view.dart';
+import '../../features/settings/presentation/views/settings_view.dart';
 import 'route_names.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -23,7 +34,9 @@ class AppRouter {
   static String get initialLocation {
     try {
       final storage = sl<StorageService>();
-      final hasCompleted = storage.getBool(StorageServiceImpl.keyHasCompletedOnboarding) ?? false;
+      final hasCompleted =
+          storage.getBool(StorageServiceImpl.keyHasCompletedOnboarding) ??
+          false;
       return hasCompleted ? RouteNames.home : RouteNames.onboarding;
     } catch (_) {
       return RouteNames.onboarding;
@@ -55,14 +68,26 @@ class AppRouter {
         builder: (context, state) => const ArtistsView(),
       ),
       GoRoute(
+        path: RouteNames.artistDetail,
+        name: 'artistDetail',
+        builder:
+            (context, state) =>
+                ArtistDetailView(artist: state.extra as ArtistModel?),
+      ),
+      GoRoute(
         path: RouteNames.government,
         name: 'government',
         builder: (context, state) => const GovernmentPortalView(),
       ),
       GoRoute(
+        path: RouteNames.events,
+        name: 'events',
+        builder: (context, state) => const EventsView(),
+      ),
+      GoRoute(
         path: RouteNames.eventsCompetition,
         name: 'eventsCompetition',
-        builder: (context, state) => const EventsView(),
+        builder: (context, state) => const ComingSoonView(),
       ),
       GoRoute(
         path: RouteNames.galleries,
@@ -82,17 +107,27 @@ class AppRouter {
       GoRoute(
         path: RouteNames.bookings,
         name: 'bookings',
-        builder: (context, state) => const ComingSoonView(),
+        builder: (context, state) => const BookingsView(),
+      ),
+      GoRoute(
+        path: RouteNames.bookArtist,
+        name: 'bookArtist',
+        builder: (context, state) => const BookArtistView(),
+      ),
+      GoRoute(
+        path: RouteNames.createArtEvent,
+        name: 'createArtEvent',
+        builder: (context, state) => const CreateArtEventView(),
       ),
       GoRoute(
         path: RouteNames.profile,
         name: 'profile',
-        builder: (context, state) => const ComingSoonView(),
+        builder: (context, state) => const ProfileView(),
       ),
       GoRoute(
         path: RouteNames.settings,
         name: 'settings',
-        builder: (context, state) => const ComingSoonView(),
+        builder: (context, state) => const SettingsView(),
       ),
       GoRoute(
         path: RouteNames.login,
@@ -107,7 +142,7 @@ class AppRouter {
       GoRoute(
         path: RouteNames.artistRegistration,
         name: 'artistRegistration',
-        builder: (context, state) => const RegisterView(),
+        builder: (context, state) => const CreateArtistProfileView(),
       ),
       GoRoute(
         path: RouteNames.privacyPolicy,
@@ -118,6 +153,21 @@ class AppRouter {
         path: RouteNames.termsConditions,
         name: 'termsConditions',
         builder: (context, state) => const TermsView(),
+      ),
+      GoRoute(
+        path: RouteNames.categories,
+        name: 'categories',
+        builder: (context, state) => const ExploreCategoriesView(),
+      ),
+      GoRoute(
+        path: RouteNames.categoryDetail,
+        name: 'categoryDetail',
+        builder: (context, state) => const CategoryDetailView(),
+      ),
+      GoRoute(
+        path: RouteNames.createCategory,
+        name: 'createCategory',
+        builder: (context, state) => const CreateCategoryView(),
       ),
     ],
     errorBuilder: (context, state) => const ComingSoonView(),

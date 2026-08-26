@@ -4,10 +4,7 @@ import '../../domain/models/onboarding_item.dart';
 class OnboardingSlideWidget extends StatelessWidget {
   final OnboardingItem item;
 
-  const OnboardingSlideWidget({
-    super.key,
-    required this.item,
-  });
+  const OnboardingSlideWidget({super.key, required this.item});
 
   @override
   Widget build(BuildContext context) {
@@ -23,10 +20,7 @@ class OnboardingSlideWidget extends StatelessWidget {
             child: Text(
               item.emoji,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 68,
-                height: 1.1,
-              ),
+              style: const TextStyle(fontSize: 68, height: 1.1),
             ),
           ),
           const SizedBox(height: 38),

@@ -23,13 +23,11 @@ class StorageServiceImpl implements StorageService {
   static const String keyRefreshToken = 'refresh_token';
   static const String keyHasCompletedOnboarding = 'has_completed_onboarding';
 
-  StorageServiceImpl({
-    required this.prefs,
-    required this.secureStorage,
-  });
+  StorageServiceImpl({required this.prefs, required this.secureStorage});
 
   @override
-  Future<void> setString(String key, String value) => prefs.setString(key, value);
+  Future<void> setString(String key, String value) =>
+      prefs.setString(key, value);
 
   @override
   String? getString(String key) => prefs.getString(key);
@@ -47,7 +45,8 @@ class StorageServiceImpl implements StorageService {
   Future<void> clear() => prefs.clear();
 
   @override
-  Future<void> writeSecure(String key, String value) => secureStorage.write(key: key, value: value);
+  Future<void> writeSecure(String key, String value) =>
+      secureStorage.write(key: key, value: value);
 
   @override
   Future<String?> readSecure(String key) => secureStorage.read(key: key);

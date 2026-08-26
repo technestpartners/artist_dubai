@@ -70,7 +70,10 @@ class _LoginViewState extends State<LoginView> {
             children: [
               // Top Action Row (Back Arrow and Home button)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 12.0,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -92,7 +95,10 @@ class _LoginViewState extends State<LoginView> {
                       onTap: () => context.go(RouteNames.home),
                       borderRadius: BorderRadius.circular(6),
                       child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8.0,
+                          vertical: 4.0,
+                        ),
                         child: Row(
                           children: [
                             Icon(
@@ -119,9 +125,15 @@ class _LoginViewState extends State<LoginView> {
 
               // Centered Elevated Login Card
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0,
+                    vertical: 32.0,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
@@ -176,11 +188,17 @@ class _LoginViewState extends State<LoginView> {
                       TextField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Color(0xFF0F172A),
+                          fontWeight: FontWeight.w500,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'your@email.com',
                           hintStyle: const TextStyle(
-                            color: Color(0xFF94A3B8),
+                            color: Color(0xFF64748B),
                             fontSize: 14.5,
+                            fontWeight: FontWeight.normal,
                           ),
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16,
@@ -188,15 +206,22 @@ class _LoginViewState extends State<LoginView> {
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFCBD5E1),
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFF333333)),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF333333),
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF6A2777),
+                              width: 1.5,
+                            ),
                           ),
                         ),
                       ),
@@ -215,11 +240,17 @@ class _LoginViewState extends State<LoginView> {
                       TextField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Color(0xFF0F172A),
+                          fontWeight: FontWeight.w500,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'Enter your password',
                           hintStyle: const TextStyle(
-                            color: Color(0xFF94A3B8),
+                            color: Color(0xFF64748B),
                             fontSize: 14.5,
+                            fontWeight: FontWeight.normal,
                           ),
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16,
@@ -241,15 +272,22 @@ class _LoginViewState extends State<LoginView> {
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFCBD5E1),
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFF333333)),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF333333),
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF6A2777),
+                              width: 1.5,
+                            ),
                           ),
                         ),
                       ),
@@ -287,7 +325,10 @@ class _LoginViewState extends State<LoginView> {
                             context.push(RouteNames.register);
                           },
                           child: const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 6.0, horizontal: 10.0),
+                            padding: EdgeInsets.symmetric(
+                              vertical: 6.0,
+                              horizontal: 10.0,
+                            ),
                             child: Text(
                               "Don't have an account? Sign up",
                               style: TextStyle(

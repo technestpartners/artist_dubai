@@ -61,9 +61,283 @@ class _EventsViewState extends State<EventsView> {
   void _showEventDetails(ArtEventModel event) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => EventDetailView(event: event),
-      ),
+      MaterialPageRoute(builder: (context) => EventDetailView(event: event)),
+    );
+  }
+
+  void _showBookTicketsModal(ArtEventModel event) {
+    final nameController = TextEditingController();
+    final emailController = TextEditingController();
+    final phoneController = TextEditingController();
+    final ticketsController = TextEditingController(text: '1');
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          backgroundColor: Colors.white,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 24,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title Row with Close Button
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Book tickets: ${event.title}',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1E1E1E),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.close,
+                          color: Color(0xFF64748B),
+                          size: 20,
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Please provide your details to confirm your booking.',
+                    style: TextStyle(fontSize: 13.5, color: Color(0xFF64748B)),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Name Field
+                  const Text(
+                    'Name',
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1E1E1E),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      hintText: 'Your full name',
+                      hintStyle: const TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 13.5,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF5E227A),
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Email Field
+                  const Text(
+                    'Email',
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1E1E1E),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      hintText: 'you@example.com',
+                      hintStyle: const TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 13.5,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF5E227A),
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Phone Field
+                  const Text(
+                    'Phone (optional)',
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1E1E1E),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(
+                      hintText: '+971 ...',
+                      hintStyle: const TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 13.5,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF5E227A),
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Tickets Field
+                  const Text(
+                    'Tickets',
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1E1E1E),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: ticketsController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF5E227A),
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Total Display
+                  Text(
+                    'Total: ${event.price}',
+                    style: const TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E1E1E),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Action Buttons: Cancel & Confirm Booking
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF1E1E1E),
+                          side: const BorderSide(color: Color(0xFFCBD5E1)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 12,
+                          ),
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF5E227A),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 12,
+                          ),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Booking confirmed for ${event.title}!',
+                              ),
+                              backgroundColor: const Color(0xFF5E227A),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          'Confirm Booking',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -102,11 +376,21 @@ class _EventsViewState extends State<EventsView> {
                       title: Text(
                         category,
                         style: TextStyle(
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                          color: isSelected ? const Color(0xFF6A2777) : const Color(0xFF2E2E2E),
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.w400,
+                          color:
+                              isSelected
+                                  ? const Color(0xFF6A2777)
+                                  : const Color(0xFF2E2E2E),
                         ),
                       ),
-                      trailing: isSelected ? const Icon(Icons.check, color: Color(0xFF6A2777)) : null,
+                      trailing:
+                          isSelected
+                              ? const Icon(
+                                Icons.check,
+                                color: Color(0xFF6A2777),
+                              )
+                              : null,
                       onTap: () {
                         setState(() {
                           _selectedCategory = category;
@@ -128,17 +412,20 @@ class _EventsViewState extends State<EventsView> {
   Widget build(BuildContext context) {
     final query = _searchController.text.trim().toLowerCase();
 
-    final filteredEvents = _allEvents.where((e) {
-      final matchesCategory =
-          _selectedCategory == 'All Categories' || e.category == _selectedCategory;
-      final matchesQuery = query.isEmpty ||
-          e.title.toLowerCase().contains(query) ||
-          e.description.toLowerCase().contains(query) ||
-          e.organizer.toLowerCase().contains(query) ||
-          e.location.toLowerCase().contains(query);
+    final filteredEvents =
+        _allEvents.where((e) {
+          final matchesCategory =
+              _selectedCategory == 'All Categories' ||
+              e.category == _selectedCategory;
+          final matchesQuery =
+              query.isEmpty ||
+              e.title.toLowerCase().contains(query) ||
+              e.description.toLowerCase().contains(query) ||
+              e.organizer.toLowerCase().contains(query) ||
+              e.location.toLowerCase().contains(query);
 
-      return matchesCategory && matchesQuery;
-    }).toList();
+          return matchesCategory && matchesQuery;
+        }).toList();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -154,7 +441,11 @@ class _EventsViewState extends State<EventsView> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Color(0xFF1E1E1E), size: 22),
+                    icon: const Icon(
+                      Icons.arrow_back,
+                      color: Color(0xFF1E1E1E),
+                      size: 22,
+                    ),
                     onPressed: () {
                       if (context.canPop()) {
                         context.pop();
@@ -189,28 +480,33 @@ class _EventsViewState extends State<EventsView> {
               ),
               const SizedBox(height: 16),
 
-              // Action Row (Home button & Create Event button)
+              // Action Row (All Events & Create Event button)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  InkWell(
-                    onTap: () => context.go(RouteNames.home),
-                    borderRadius: BorderRadius.circular(6),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
-                      child: Row(
-                        children: [
-                          Icon(Icons.home_outlined, size: 20, color: Color(0xFF1E1E1E)),
-                          SizedBox(width: 6),
-                          Text(
-                            'Home',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF1E1E1E),
-                            ),
-                          ),
-                        ],
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF1E1E1E),
+                      side: const BorderSide(color: Color(0xFFCBD5E1)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                    ),
+                    onPressed: () => context.go(RouteNames.home),
+                    icon: const Icon(
+                      Icons.menu_book_outlined,
+                      size: 16,
+                      color: Color(0xFF1E1E1E),
+                    ),
+                    label: const Text(
+                      'All Events',
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -221,20 +517,15 @@ class _EventsViewState extends State<EventsView> {
                         backgroundColor: const Color(0xFF6A2777),
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                       ),
                       onPressed: () {
                         _handleProtectedAction(
                           onAuthorized: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Event creation form coming soon!'),
-                                backgroundColor: Color(0xFF6A2777),
-                              ),
-                            );
+                            context.push(RouteNames.createArtEvent);
                           },
                           promptMessage: 'Please log in to create an event',
                         );
@@ -243,8 +534,8 @@ class _EventsViewState extends State<EventsView> {
                       label: const Text(
                         'Create Event',
                         style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
@@ -263,19 +554,35 @@ class _EventsViewState extends State<EventsView> {
                     color: Color(0xFF94A3B8),
                     fontSize: 14.5,
                   ),
-                  prefixIcon: const Icon(Icons.search, color: Color(0xFF5F6368), size: 22),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: Color(0xFF5F6368),
+                    size: 22,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFF2E2E3E), width: 1.0),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF2E2E3E),
+                      width: 1.0,
+                    ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: const Color(0xFF2E2E3E).withValues(alpha: 0.5), width: 1.0),
+                    borderSide: BorderSide(
+                      color: const Color(0xFF2E2E3E).withValues(alpha: 0.5),
+                      width: 1.0,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF6A2777),
+                      width: 1.5,
+                    ),
                   ),
                 ),
               ),
@@ -286,7 +593,10 @@ class _EventsViewState extends State<EventsView> {
                 onTap: _showCategoryDropdown,
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14.0,
+                    vertical: 12.0,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(8),
@@ -324,7 +634,11 @@ class _EventsViewState extends State<EventsView> {
                   alignment: Alignment.center,
                   child: Column(
                     children: [
-                      Icon(Icons.event_busy_outlined, size: 48, color: Colors.grey.shade400),
+                      Icon(
+                        Icons.event_busy_outlined,
+                        size: 48,
+                        color: Colors.grey.shade400,
+                      ),
                       const SizedBox(height: 12),
                       Text(
                         'No events found',
@@ -342,7 +656,8 @@ class _EventsViewState extends State<EventsView> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: filteredEvents.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 16),
+                  separatorBuilder:
+                      (context, index) => const SizedBox(height: 16),
                   itemBuilder: (context, index) {
                     final event = filteredEvents[index];
                     return _buildEventCard(event);
@@ -383,7 +698,10 @@ class _EventsViewState extends State<EventsView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF3E8F6),
                   borderRadius: BorderRadius.circular(6),
@@ -434,12 +752,19 @@ class _EventsViewState extends State<EventsView> {
           // Date & Time
           Row(
             children: [
-              const Icon(Icons.calendar_today_outlined, size: 16, color: Color(0xFF64748B)),
+              const Icon(
+                Icons.calendar_today_outlined,
+                size: 16,
+                color: Color(0xFF64748B),
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   event.dateTime,
-                  style: const TextStyle(fontSize: 13, color: Color(0xFF4A4A4A)),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF4A4A4A),
+                  ),
                 ),
               ),
             ],
@@ -449,12 +774,19 @@ class _EventsViewState extends State<EventsView> {
           // Location
           Row(
             children: [
-              const Icon(Icons.location_on_outlined, size: 16, color: Color(0xFF64748B)),
+              const Icon(
+                Icons.location_on_outlined,
+                size: 16,
+                color: Color(0xFF64748B),
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   event.location,
-                  style: const TextStyle(fontSize: 13, color: Color(0xFF4A4A4A)),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF4A4A4A),
+                  ),
                 ),
               ),
             ],
@@ -464,7 +796,11 @@ class _EventsViewState extends State<EventsView> {
           // Attendees
           Row(
             children: [
-              const Icon(Icons.people_outline, size: 16, color: Color(0xFF64748B)),
+              const Icon(
+                Icons.people_outline,
+                size: 16,
+                color: Color(0xFF64748B),
+              ),
               const SizedBox(width: 8),
               Text(
                 '${event.attendeesCount}/${event.maxAttendees} attendees',
@@ -495,55 +831,57 @@ class _EventsViewState extends State<EventsView> {
           // Tags
           Wrap(
             spacing: 6,
-            children: event.tags
-                .map((tag) => Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
+            children:
+                event.tags
+                    .map(
+                      (tag) => Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Text(
+                          tag,
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            color: Color(0xFF475569),
+                          ),
+                        ),
                       ),
-                      child: Text(
-                        tag,
-                        style: const TextStyle(fontSize: 11.5, color: Color(0xFF475569)),
-                      ),
-                    ))
-                .toList(),
+                    )
+                    .toList(),
           ),
           const SizedBox(height: 16),
 
-          // Action Buttons: Book Event & View Details
+          // Action Buttons: Book Now & View Details (Matches Screenshot media_1787744080054.png)
           Row(
             children: [
               Expanded(
                 child: SizedBox(
                   height: 40,
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF8FAFC),
                       foregroundColor: const Color(0xFF1E1E1E),
-                      side: const BorderSide(color: Color(0xFFCBD5E1)),
+                      elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(6),
+                        side: const BorderSide(color: Color(0xFFE2E8F0)),
                       ),
                     ),
                     onPressed: () {
-                      _handleProtectedAction(
-                        onAuthorized: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Booked ${event.title}!'),
-                              backgroundColor: const Color(0xFF6A2777),
-                            ),
-                          );
-                        },
-                        promptMessage: 'Please log in to book event',
-                      );
+                      _showBookTicketsModal(event);
                     },
                     child: const Text(
-                      'Book Event',
+                      'Book Now',
                       style: TextStyle(
                         fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1E1E1E),
                       ),
                     ),
                   ),
@@ -567,7 +905,7 @@ class _EventsViewState extends State<EventsView> {
                       'View Details',
                       style: TextStyle(
                         fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
