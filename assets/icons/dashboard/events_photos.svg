@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#F7F4FB"/>
+    </linearGradient>
+    <filter id="badgeShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#180036" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+  <!-- Background Circle Badge -->
+  <circle cx="256.0" cy="256.0" r="242.0" fill="url(#badgeGrad)" stroke="#E8DFFA" stroke-width="4" filter="url(#badgeShadow)"/>
+  <circle cx="256.0" cy="256.0" r="232.0" fill="none" stroke="#F3EEFC" stroke-width="2"/>
+  
+  <!-- Icon Graphic -->
+  <g transform="translate(0, 0)">
+    
+  <!-- Main Camera Body -->
+  <rect x="110" y="174" width="292" height="196" rx="34" fill="none" stroke="#481A88" stroke-width="20"/>
+  <!-- Top Viewfinder -->
+  <path d="M 186,174 L 202,136 L 310,136 L 326,174" fill="none" stroke="#481A88" stroke-width="18" stroke-linejoin="round"/>
+  <!-- Shutter Button -->
+  <line x1="140" y1="152" x2="168" y2="152" stroke="#68259C" stroke-width="16" stroke-linecap="round"/>
+  <!-- Lens Rings -->
+  <circle cx="256" cy="272" r="66" fill="none" stroke="#481A88" stroke-width="18"/>
+  <circle cx="256" cy="272" r="38" fill="#F4EFFB" stroke="#68259C" stroke-width="14"/>
+  <circle cx="256" cy="272" r="16" fill="#481A88"/>
+  <path d="M 238,252 A 22 22 0 0 1 268,252" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+  <!-- Flash Indicator -->
+  <circle cx="348" cy="214" r="14" fill="#68259C"/>
+
+  </g>
+</svg>

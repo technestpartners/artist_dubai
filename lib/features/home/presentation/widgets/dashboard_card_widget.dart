@@ -1,0 +1,85 @@
+import 'package:flutter/material.dart';
+import '../../domain/models/dashboard_item.dart';
+
+class DashboardCardWidget extends StatelessWidget {
+  final DashboardItem item;
+  final VoidCallback onTap;
+
+  const DashboardCardWidget({
+    super.key,
+    required this.item,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF301B92),
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 8.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Simple Solid White Circular Icon (No Outer Rings)
+              SizedBox(
+                width: 48,
+                height: 48,
+                child: Image.asset(
+                  item.iconPath,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Title Text
+              Text(
+                item.title,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: item.title.contains('|') ? 10.5 : 12.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.3,
+                  height: 1.1,
+                ),
+              ),
+
+              // Subtitle Text (if present)
+              if (item.subtitle != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  item.subtitle!,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontSize: item.title.contains('|') ? 9.5 : 10.0,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

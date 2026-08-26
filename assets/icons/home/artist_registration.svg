@@ -1,0 +1,8 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="28" cy="22" r="9"/>
+  <path d="M13 50c0-8 7-14 15-14s15 6 15 14"/>
+  <!-- Plus badge -->
+  <circle cx="48" cy="38" r="9" fill="#301B92" stroke="#FFFFFF" stroke-width="2.5"/>
+  <line x1="48" y1="33" x2="48" y2="43" stroke="#FFFFFF" stroke-width="2.8"/>
+  <line x1="43" y1="38" x2="53" y2="38" stroke="#FFFFFF" stroke-width="2.8"/>
+</svg>

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#F7F4FB"/>
+    </linearGradient>
+    <filter id="badgeShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#180036" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+  <!-- Background Circle Badge -->
+  <circle cx="256.0" cy="256.0" r="242.0" fill="url(#badgeGrad)" stroke="#E8DFFA" stroke-width="4" filter="url(#badgeShadow)"/>
+  <circle cx="256.0" cy="256.0" r="232.0" fill="none" stroke="#F3EEFC" stroke-width="2"/>
+  
+  <!-- Icon Graphic -->
+  <g transform="translate(0, 0)">
+    
+  <!-- Calendar Body -->
+  <rect x="116" y="148" width="280" height="236" rx="28" fill="none" stroke="#68259C" stroke-width="20"/>
+  <!-- Top Calendar Header Bar -->
+  <path d="M 116,198 L 396,198" stroke="#68259C" stroke-width="20" stroke-linecap="square"/>
+  <!-- Calendar Rings / Binders -->
+  <line x1="176" y1="126" x2="176" y2="164" stroke="#481A88" stroke-width="18" stroke-linecap="round"/>
+  <line x1="256" y1="126" x2="256" y2="164" stroke="#481A88" stroke-width="18" stroke-linecap="round"/>
+  <line x1="336" y1="126" x2="336" y2="164" stroke="#481A88" stroke-width="18" stroke-linecap="round"/>
+
+  <!-- Trophy Cup -->
+  <path d="M 196,220 L 316,220 L 310,270 C 304,300 280,314 256,314 C 232,314 208,300 202,270 Z" fill="#FFFFFF" stroke="#481A88" stroke-width="18" stroke-linejoin="round"/>
+  <path d="M 198,230 C 168,230 168,272 198,272" fill="none" stroke="#481A88" stroke-width="14" stroke-linecap="round"/>
+  <path d="M 314,230 C 344,230 344,272 314,272" fill="none" stroke="#481A88" stroke-width="14" stroke-linecap="round"/>
+  <line x1="256" y1="314" x2="256" y2="338" stroke="#481A88" stroke-width="18" stroke-linecap="round"/>
+  <line x1="220" y1="344" x2="292" y2="344" stroke="#481A88" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="256" cy="256" r="10" fill="#68259C"/>
+
+  </g>
+</svg>

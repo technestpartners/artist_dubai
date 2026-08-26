@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#F7F4FB"/>
+    </linearGradient>
+    <filter id="badgeShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#180036" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+  <!-- Background Circle Badge -->
+  <circle cx="256.0" cy="256.0" r="242.0" fill="url(#badgeGrad)" stroke="#E8DFFA" stroke-width="4" filter="url(#badgeShadow)"/>
+  <circle cx="256.0" cy="256.0" r="232.0" fill="none" stroke="#F3EEFC" stroke-width="2"/>
+  
+  <!-- Icon Graphic -->
+  <g transform="translate(0, 0)">
+    
+  <!-- Outer Archway -->
+  <path d="M 132,364 L 132,230 C 132,150 186,116 256,116 C 326,116 380,150 380,230 L 380,364"
+        fill="none" stroke="#481A88" stroke-width="20" stroke-linecap="round"/>
+  <!-- Inner Arch Line -->
+  <path d="M 166,364 L 166,236 C 166,176 206,148 256,148 C 306,148 346,176 346,236 L 346,364"
+        fill="none" stroke="#68259C" stroke-width="14"/>
+  <!-- Plaque with ART GALLERY -->
+  <rect x="180" y="200" width="152" height="42" rx="8" fill="#F4EFFB" stroke="#481A88" stroke-width="10"/>
+  <text x="256" y="227" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="bold" fill="#481A88" text-anchor="middle" letter-spacing="1">ART GALLERY</text>
+  <!-- Columns & Base -->
+  <line x1="166" y1="264" x2="346" y2="264" stroke="#481A88" stroke-width="14"/>
+  <line x1="210" y1="264" x2="210" y2="364" stroke="#481A88" stroke-width="14"/>
+  <line x1="256" y1="264" x2="256" y2="364" stroke="#481A88" stroke-width="16"/>
+  <line x1="302" y1="264" x2="302" y2="364" stroke="#481A88" stroke-width="14"/>
+  <line x1="110" y1="368" x2="402" y2="368" stroke="#481A88" stroke-width="20" stroke-linecap="round"/>
+
+  </g>
+</svg>

@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="woodGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EDB254"/>
+      <stop offset="45%" stop-color="#CF8726"/>
+      <stop offset="100%" stop-color="#9C5A08"/>
+    </linearGradient>
+    <filter id="paletteShadow" x="-15%" y="-15%" width="135%" height="135%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#000000" flood-opacity="0.38"/>
+    </filter>
+    <radialGradient id="paintBlue" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#56CCF2"/>
+      <stop offset="100%" stop-color="#1B6CD5"/>
+    </radialGradient>
+    <radialGradient id="paintGreen" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#70DB98"/>
+      <stop offset="100%" stop-color="#1E934F"/>
+    </radialGradient>
+    <radialGradient id="paintYellow" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFF37A"/>
+      <stop offset="100%" stop-color="#EDA813"/>
+    </radialGradient>
+    <radialGradient id="paintRed" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FF758C"/>
+      <stop offset="100%" stop-color="#E22E2E"/>
+    </radialGradient>
+    <radialGradient id="paintPurple" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#DC7BFF"/>
+      <stop offset="100%" stop-color="#8E3AD8"/>
+    </radialGradient>
+  </defs>
+
+  <g filter="url(#paletteShadow)" transform="rotate(-8 256 256)">
+    <!-- Main Palette Body -->
+    <path d="M 256,42 C 380,42 470,122 470,230 C 470,320 410,380 340,380 C 300,380 290,420 280,444 C 270,470 240,480 210,470 C 100,440 42,350 42,240 C 42,132 130,42 256,42 Z"
+          fill="url(#woodGrad)" stroke="#743E00" stroke-width="8"/>
+    <!-- Highlight Inner Lip -->
+    <path d="M 256,60 C 365,60 450,132 450,230 C 450,305 400,360 340,360"
+          fill="none" stroke="#FDE5B0" stroke-width="6" opacity="0.6" stroke-linecap="round"/>
+
+    <!-- Thumb Hole -->
+    <ellipse cx="320" cy="310" rx="30" ry="38" fill="#1C1030" stroke="#743E00" stroke-width="8"/>
+    <ellipse cx="317" cy="308" rx="27" ry="35" fill="none" stroke="#FDE5B0" stroke-width="4" opacity="0.35"/>
+
+    <!-- 5 3D Paint Blobs with glossy highlights -->
+    <!-- Blue -->
+    <circle cx="146" cy="180" r="38" fill="url(#paintBlue)" stroke="#1656A8" stroke-width="3"/>
+    <ellipse cx="136" cy="168" rx="14" ry="8" fill="#FFFFFF" opacity="0.65" transform="rotate(-30 136 168)"/>
+
+    <!-- Green -->
+    <circle cx="248" cy="126" r="38" fill="url(#paintGreen)" stroke="#176E3C" stroke-width="3"/>
+    <ellipse cx="238" cy="114" rx="14" ry="8" fill="#FFFFFF" opacity="0.65" transform="rotate(-30 238 114)"/>
+
+    <!-- Yellow -->
+    <circle cx="356" cy="148" r="38" fill="url(#paintYellow)" stroke="#B87F08" stroke-width="3"/>
+    <ellipse cx="346" cy="136" rx="14" ry="8" fill="#FFFFFF" opacity="0.7" transform="rotate(-30 346 136)"/>
+
+    <!-- Red -->
+    <circle cx="410" cy="254" r="38" fill="url(#paintRed)" stroke="#B31E1E" stroke-width="3"/>
+    <ellipse cx="400" cy="242" rx="14" ry="8" fill="#FFFFFF" opacity="0.65" transform="rotate(-30 400 242)"/>
+
+    <!-- Purple -->
+    <circle cx="160" cy="316" r="38" fill="url(#paintPurple)" stroke="#6E28AB" stroke-width="3"/>
+    <ellipse cx="150" cy="304" rx="14" ry="8" fill="#FFFFFF" opacity="0.65" transform="rotate(-30 150 304)"/>
+  </g>
+</svg>

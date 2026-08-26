@@ -1,0 +1,8 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Left person -->
+  <circle cx="24" cy="22" r="8"/>
+  <path d="M12 50c0-7 6-12 12-12s12 5 12 12"/>
+  <!-- Right person -->
+  <circle cx="42" cy="24" r="7"/>
+  <path d="M36 39c4-2 9-1 12 2 2 2 3 5 3 9"/>
+</svg>

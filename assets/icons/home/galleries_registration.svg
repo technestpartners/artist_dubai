@@ -1,0 +1,11 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Gallery Arch -->
+  <path d="M12 50V24C12 15 19 10 28 10s16 5 16 14v12"/>
+  <path d="M19 26C19 22 23 19 28 19s9 3 9 7v10H19V26z"/>
+  <line x1="19" y1="26" x2="37" y2="26"/>
+  <line x1="8" y1="50" x2="36" y2="50"/>
+  <!-- Plus badge -->
+  <circle cx="46" cy="40" r="9" fill="#301B92" stroke="#FFFFFF" stroke-width="2.5"/>
+  <line x1="46" y1="35" x2="46" y2="45" stroke="#FFFFFF" stroke-width="2.8"/>
+  <line x1="41" y1="40" x2="51" y2="40" stroke="#FFFFFF" stroke-width="2.8"/>
+</svg>

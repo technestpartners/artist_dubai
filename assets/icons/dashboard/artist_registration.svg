@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#F7F4FB"/>
+    </linearGradient>
+    <filter id="badgeShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#180036" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+  <!-- Background Circle Badge -->
+  <circle cx="256.0" cy="256.0" r="242.0" fill="url(#badgeGrad)" stroke="#E8DFFA" stroke-width="4" filter="url(#badgeShadow)"/>
+  <circle cx="256.0" cy="256.0" r="232.0" fill="none" stroke="#F3EEFC" stroke-width="2"/>
+  
+  <!-- Icon Graphic -->
+  <g transform="translate(0, 0)">
+    
+  <!-- Primary Person (Left) -->
+  <circle cx="186" cy="174" r="42" fill="none" stroke="#481A88" stroke-width="20"/>
+  <path d="M 106,346 C 106,280 140,248 186,248 C 222,248 250,268 260,298" fill="none" stroke="#481A88" stroke-width="20" stroke-linecap="round"/>
+  <path d="M 168,248 L 186,284 L 204,248" fill="none" stroke="#481A88" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="186" y1="284" x2="186" y2="346" stroke="#481A88" stroke-width="16" stroke-linecap="round"/>
+
+  <!-- Secondary Person (Right) -->
+  <circle cx="304" cy="186" r="38" fill="none" stroke="#68259C" stroke-width="18"/>
+  <path d="M 268,182 C 262,138 290,130 322,134 C 348,138 356,164 350,200" fill="none" stroke="#68259C" stroke-width="16" stroke-linecap="round"/>
+  <path d="M 272,274 C 294,256 322,256 348,272 C 362,282 372,298 376,316" fill="none" stroke="#68259C" stroke-width="18" stroke-linecap="round"/>
+
+  <!-- Registration PLUS (+) Circle Badge -->
+  <circle cx="348" cy="336" r="48" fill="#481A88" stroke="#FFFFFF" stroke-width="8"/>
+  <line x1="348" y1="312" x2="348" y2="360" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round"/>
+  <line x1="324" y1="336" x2="372" y2="336" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round"/>
+
+  </g>
+</svg>

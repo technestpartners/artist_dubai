@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#F7F4FB"/>
+    </linearGradient>
+    <filter id="badgeShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#180036" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+  <!-- Background Circle Badge -->
+  <circle cx="256.0" cy="256.0" r="242.0" fill="url(#badgeGrad)" stroke="#E8DFFA" stroke-width="4" filter="url(#badgeShadow)"/>
+  <circle cx="256.0" cy="256.0" r="232.0" fill="none" stroke="#F3EEFC" stroke-width="2"/>
+  
+  <!-- Icon Graphic -->
+  <g transform="translate(0, 0)">
+    
+  <!-- Book Cover & Spine Structure -->
+  <path d="M 256,366 C 214,346 150,344 106,358 L 106,170 C 150,156 214,158 256,178 C 298,158 362,156 406,170 L 406,358 C 362,344 298,346 256,366 Z"
+        fill="none" stroke="#481A88" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Center Book Spine -->
+  <line x1="256" y1="178" x2="256" y2="366" stroke="#481A88" stroke-width="20" stroke-linecap="round"/>
+  
+  <!-- Left Page Text Lines -->
+  <line x1="142" y1="218" x2="218" y2="208" stroke="#68259C" stroke-width="16" stroke-linecap="round"/>
+  <line x1="142" y1="262" x2="218" y2="252" stroke="#68259C" stroke-width="16" stroke-linecap="round"/>
+  <line x1="142" y1="306" x2="192" y2="298" stroke="#68259C" stroke-width="16" stroke-linecap="round"/>
+  
+  <!-- Right Page 'i' (Information) Symbol -->
+  <circle cx="334" cy="222" r="14" fill="#481A88"/>
+  <line x1="334" y1="256" x2="334" y2="318" stroke="#481A88" stroke-width="20" stroke-linecap="round"/>
+  <line x1="314" y1="256" x2="334" y2="256" stroke="#481A88" stroke-width="16" stroke-linecap="round"/>
+  <line x1="310" y1="318" x2="358" y2="318" stroke="#481A88" stroke-width="16" stroke-linecap="round"/>
+
+  </g>
+</svg>

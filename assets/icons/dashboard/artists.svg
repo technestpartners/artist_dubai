@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#F7F4FB"/>
+    </linearGradient>
+    <filter id="badgeShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#180036" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+  <!-- Background Circle Badge -->
+  <circle cx="256.0" cy="256.0" r="242.0" fill="url(#badgeGrad)" stroke="#E8DFFA" stroke-width="4" filter="url(#badgeShadow)"/>
+  <circle cx="256.0" cy="256.0" r="232.0" fill="none" stroke="#F3EEFC" stroke-width="2"/>
+  
+  <!-- Icon Graphic -->
+  <g transform="translate(0, 0)">
+    
+  <!-- Primary Person (Left) -->
+  <!-- Head -->
+  <circle cx="196" cy="180" r="44" fill="none" stroke="#481A88" stroke-width="20"/>
+  <!-- Shoulders & Torso -->
+  <path d="M 112,352 C 112,284 148,252 196,252 C 234,252 264,272 276,306" fill="none" stroke="#481A88" stroke-width="20" stroke-linecap="round"/>
+  <!-- Tie / Collar -->
+  <path d="M 178,252 L 196,290 L 214,252" fill="none" stroke="#481A88" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="196" y1="290" x2="196" y2="352" stroke="#481A88" stroke-width="16" stroke-linecap="round"/>
+
+  <!-- Secondary Person (Right) -->
+  <!-- Head -->
+  <circle cx="318" cy="192" r="40" fill="none" stroke="#68259C" stroke-width="18"/>
+  <!-- Hair Arc -->
+  <path d="M 280,188 C 274,142 305,134 338,138 C 366,142 374,168 368,206" fill="none" stroke="#68259C" stroke-width="16" stroke-linecap="round"/>
+  <!-- Shoulders -->
+  <path d="M 284,286 C 308,266 338,266 364,284 C 388,300 398,326 398,350" fill="none" stroke="#68259C" stroke-width="18" stroke-linecap="round"/>
+  <path d="M 306,286 L 318,312 L 330,286" fill="none" stroke="#68259C" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+
+  </g>
+</svg>
