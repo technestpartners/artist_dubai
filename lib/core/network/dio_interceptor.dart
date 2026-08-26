@@ -1,4 +1,4 @@
-﻿import 'package:dio/dio.dart';
+import 'package:dio/dio.dart';
 import '../services/logger_service.dart';
 import '../services/storage_service.dart';
 
@@ -6,17 +6,16 @@ class DioInterceptor extends Interceptor {
   final StorageService storageService;
   final LoggerService loggerService;
 
-  DioInterceptor({
-    required this.storageService,
-    required this.loggerService,
-  });
+  DioInterceptor({required this.storageService, required this.loggerService});
 
   @override
   Future<void> onRequest(
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    final token = await storageService.readSecure(StorageServiceImpl.keyAuthToken);
+    final token = await storageService.readSecure(
+      StorageServiceImpl.keyAuthToken,
+    );
     if (token != null && token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer ';
     }
@@ -24,18 +23,14 @@ class DioInterceptor extends Interceptor {
     options.headers['Accept'] = 'application/json';
     options.headers['Content-Type'] = 'application/json';
 
-    loggerService.debug(
-      '🌐 [HTTP REQUEST]  --> \nHeaders: \nData: ',
-    );
+    loggerService.debug('🌐 [HTTP REQUEST]  --> \nHeaders: \nData: ');
 
     return handler.next(options);
   }
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    loggerService.debug(
-      '✅ [HTTP RESPONSE] [] <-- \nData: ',
-    );
+    loggerService.debug('✅ [HTTP RESPONSE] [] <-- \nData: ');
     return handler.next(response);
   }
 

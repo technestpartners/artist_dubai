@@ -1,0 +1,8 @@
+# Redirect root requests to build/web for Laragon Apache
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_URI} !^/build/web/
+    RewriteRule ^(.*)$ build/web/$1 [L]
+</IfModule>
+
+DirectoryIndex build/web/index.html index.html index.php

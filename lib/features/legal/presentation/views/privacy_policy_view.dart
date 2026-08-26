@@ -129,7 +129,8 @@ class PrivacyPolicyView extends StatelessWidget {
               ),
               _buildBulletPoint(
                 label: 'Technical Data: ',
-                text: 'internet protocol (IP) address, browser type and version',
+                text:
+                    'internet protocol (IP) address, browser type and version',
               ),
               _buildBulletPoint(
                 label: 'Usage Data: ',
@@ -137,7 +138,8 @@ class PrivacyPolicyView extends StatelessWidget {
               ),
               _buildBulletPoint(
                 label: 'Profile Data: ',
-                text: 'your interests, preferences, feedback and survey responses',
+                text:
+                    'your interests, preferences, feedback and survey responses',
               ),
               const SizedBox(height: 32),
             ],
@@ -156,11 +158,7 @@ class PrivacyPolicyView extends StatelessWidget {
         children: [
           const Padding(
             padding: EdgeInsets.only(top: 6.0, right: 10.0),
-            child: Icon(
-              Icons.circle,
-              size: 6,
-              color: Color(0xFF757575),
-            ),
+            child: Icon(Icons.circle, size: 6, color: Color(0xFF757575)),
           ),
           Expanded(
             child: RichText(

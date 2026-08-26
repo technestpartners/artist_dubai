@@ -1,4 +1,4 @@
-﻿import 'package:dio/dio.dart';
+import 'package:dio/dio.dart';
 import '../constants/api_endpoints.dart';
 import '../errors/exceptions.dart';
 import 'dio_interceptor.dart';
@@ -53,10 +53,10 @@ class ApiClientImpl implements ApiClient {
     required this.dio,
     required this.networkInfo,
     DioInterceptor? interceptor,
-    String baseUrl = ApiEndpoints.baseUrl,
+    String? baseUrl,
   }) {
     dio.options = BaseOptions(
-      baseUrl: baseUrl,
+      baseUrl: baseUrl ?? ApiEndpoints.baseUrl,
       connectTimeout: ApiEndpoints.connectionTimeout,
       receiveTimeout: ApiEndpoints.receiveTimeout,
       responseType: ResponseType.json,
@@ -189,9 +189,15 @@ class ApiClientImpl implements ApiClient {
     switch (statusCode) {
       case 401:
       case 403:
-        throw UnauthorizedException(message: errorMessage, statusCode: statusCode);
+        throw UnauthorizedException(
+          message: errorMessage,
+          statusCode: statusCode,
+        );
       case 422:
-        throw ValidationException(message: errorMessage, statusCode: statusCode);
+        throw ValidationException(
+          message: errorMessage,
+          statusCode: statusCode,
+        );
       default:
         throw ServerException(message: errorMessage, statusCode: statusCode);
     }

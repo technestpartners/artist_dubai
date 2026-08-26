@@ -1,4 +1,4 @@
-﻿class ServerException implements Exception {
+class ServerException implements Exception {
   final String message;
   final int? statusCode;
 
@@ -20,7 +20,10 @@ class UnauthorizedException implements Exception {
   final String message;
   final int? statusCode;
 
-  const UnauthorizedException({this.message = 'Unauthorized access', this.statusCode = 401});
+  const UnauthorizedException({
+    this.message = 'Unauthorized access',
+    this.statusCode = 401,
+  });
 
   @override
   String toString() => message;

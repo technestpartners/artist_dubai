@@ -9,7 +9,7 @@ class GovernmentEntity {
   final String websiteUrl;
   final String directionsUrl;
   final String? googleMapsReviewsUrl;
-  
+
   // Operating hours in 24h format for dynamic status calculation (Dubai GST: UTC+4)
   final int? openHour;
   final int? openMinute;
@@ -37,14 +37,40 @@ class GovernmentEntity {
     this.seasonalNotice,
   });
 
+  factory GovernmentEntity.fromJson(Map<String, dynamic> json) {
+    return GovernmentEntity(
+      name: json['name'] as String,
+      defaultIsOpen: json['default_is_open'] as bool? ?? true,
+      rating: (json['rating'] as num?)?.toDouble() ?? 4.5,
+      reviewCount: (json['review_count'] as num?)?.toInt() ?? 0,
+      category: json['category'] as String,
+      location: json['location'] as String,
+      defaultTiming: json['default_timing'] as String,
+      websiteUrl: json['website_url'] as String,
+      directionsUrl: json['directions_url'] as String,
+      googleMapsReviewsUrl: json['google_maps_reviews_url'] as String?,
+      openHour: (json['open_hour'] as num?)?.toInt(),
+      openMinute: (json['open_minute'] as num?)?.toInt() ?? 0,
+      closeHour: (json['close_hour'] as num?)?.toInt(),
+      closeMinute: (json['close_minute'] as num?)?.toInt() ?? 0,
+      closedDays:
+          (json['closed_days'] as List?)
+              ?.map((e) => (e as num).toInt())
+              .toList(),
+      seasonalNotice: json['seasonal_notice'] as String?,
+    );
+  }
+
   /// Computes live Open/Closed state based on Dubai GST Time (UTC+4)
   bool get isCurrentlyOpen {
     if (seasonalNotice != null) return false;
     if (openHour == null || closeHour == null) return defaultIsOpen;
 
     final nowUtc = DateTime.now().toUtc();
-    final dubaiTime = nowUtc.add(const Duration(hours: 4)); // Gulf Standard Time (GST)
-    
+    final dubaiTime = nowUtc.add(
+      const Duration(hours: 4),
+    ); // Gulf Standard Time (GST)
+
     if (closedDays != null && closedDays!.contains(dubaiTime.weekday)) {
       return false;
     }
@@ -101,8 +127,10 @@ class GovernmentEntity {
       location: 'Al Shindagha, Dubai',
       defaultTiming: 'Open · Closes at 15:00',
       websiteUrl: 'https://www.dubaiculture.gov.ae/',
-      directionsUrl: 'https://maps.google.com/?q=Dubai+Culture+and+Arts+Authority+Al+Shindagha',
-      googleMapsReviewsUrl: 'https://maps.google.com/?q=Dubai+Culture+and+Arts+Authority+Al+Shindagha',
+      directionsUrl:
+          'https://maps.google.com/?q=Dubai+Culture+and+Arts+Authority+Al+Shindagha',
+      googleMapsReviewsUrl:
+          'https://maps.google.com/?q=Dubai+Culture+and+Arts+Authority+Al+Shindagha',
       openHour: 7,
       openMinute: 30,
       closeHour: 15,
@@ -118,8 +146,10 @@ class GovernmentEntity {
       location: 'Abu Dhabi, UAE',
       defaultTiming: 'Open · Closes at 14:30',
       websiteUrl: 'https://www.moccae.gov.ae/',
-      directionsUrl: 'https://maps.google.com/?q=Ministry+of+Climate+Change+and+Environment+Abu+Dhabi',
-      googleMapsReviewsUrl: 'https://maps.google.com/?q=Ministry+of+Climate+Change+and+Environment+Abu+Dhabi',
+      directionsUrl:
+          'https://maps.google.com/?q=Ministry+of+Climate+Change+and+Environment+Abu+Dhabi',
+      googleMapsReviewsUrl:
+          'https://maps.google.com/?q=Ministry+of+Climate+Change+and+Environment+Abu+Dhabi',
       openHour: 7,
       openMinute: 30,
       closeHour: 14,
@@ -165,7 +195,8 @@ class GovernmentEntity {
       defaultTiming: 'Open · Closes at 20:00',
       websiteUrl: 'https://alserkal.online/',
       directionsUrl: 'https://maps.google.com/?q=Alserkal+Avenue+Al+Quoz',
-      googleMapsReviewsUrl: 'https://maps.google.com/?q=Alserkal+Avenue+Al+Quoz',
+      googleMapsReviewsUrl:
+          'https://maps.google.com/?q=Alserkal+Avenue+Al+Quoz',
       openHour: 10,
       openMinute: 0,
       closeHour: 20,

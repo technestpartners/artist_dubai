@@ -1,4 +1,4 @@
-﻿import 'package:equatable/equatable.dart';
+import 'package:equatable/equatable.dart';
 
 abstract class Failure extends Equatable {
   final String message;
@@ -15,7 +15,10 @@ class ServerFailure extends Failure {
 }
 
 class NetworkFailure extends Failure {
-  const NetworkFailure({super.message = 'No internet connection detected.', super.statusCode});
+  const NetworkFailure({
+    super.message = 'No internet connection detected.',
+    super.statusCode,
+  });
 }
 
 class CacheFailure extends Failure {
@@ -23,7 +26,10 @@ class CacheFailure extends Failure {
 }
 
 class UnauthorizedFailure extends Failure {
-  const UnauthorizedFailure({super.message = 'Session expired or unauthorized.', super.statusCode = 401});
+  const UnauthorizedFailure({
+    super.message = 'Session expired or unauthorized.',
+    super.statusCode = 401,
+  });
 }
 
 class ValidationFailure extends Failure {

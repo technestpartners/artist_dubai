@@ -20,16 +20,15 @@ class GovernmentPortalView extends StatelessWidget {
         } else {
           icon = Icons.star_border;
         }
-        return Icon(
-          icon,
-          size: 15,
-          color: const Color(0xFFF59E0B),
-        );
+        return Icon(icon, size: 15, color: const Color(0xFFF59E0B));
       }),
     );
   }
 
-  Future<void> _launchExternalUrl(BuildContext context, String urlString) async {
+  Future<void> _launchExternalUrl(
+    BuildContext context,
+    String urlString,
+  ) async {
     final uri = Uri.parse(urlString);
     try {
       if (await canLaunchUrl(uri)) {
@@ -67,7 +66,10 @@ class GovernmentPortalView extends StatelessWidget {
   }
 
   void _onReviewsTap(BuildContext context, GovernmentEntity entity) {
-    _launchExternalUrl(context, entity.googleMapsReviewsUrl ?? entity.directionsUrl);
+    _launchExternalUrl(
+      context,
+      entity.googleMapsReviewsUrl ?? entity.directionsUrl,
+    );
   }
 
   @override
@@ -123,10 +125,7 @@ class GovernmentPortalView extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFE2E8F0),
-          width: 1.2,
-        ),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -155,15 +154,24 @@ class GovernmentPortalView extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 3,
+                ),
                 decoration: BoxDecoration(
-                  color: isOpen ? const Color(0xFFE8F8F0) : const Color(0xFFFEE2E2),
+                  color:
+                      isOpen
+                          ? const Color(0xFFE8F8F0)
+                          : const Color(0xFFFEE2E2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   isOpen ? 'Open' : 'Closed',
                   style: TextStyle(
-                    color: isOpen ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                    color:
+                        isOpen
+                            ? const Color(0xFF059669)
+                            : const Color(0xFFDC2626),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),

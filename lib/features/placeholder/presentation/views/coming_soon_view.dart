@@ -3,30 +3,23 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 
 class ComingSoonView extends StatelessWidget {
-  const ComingSoonView({
-    super.key,
-    this.title = 'Actively from\n06.2026',
-  });
-
-  final String title;
+  const ComingSoonView({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF662698),
+      backgroundColor: const Color(0xFF5D1F8E),
       body: SafeArea(
         child: Column(
           children: [
             const Spacer(flex: 2),
 
-            // Large Circular Brand Logo
+            // Top Circular Artist Dubai Logo
             Center(
               child: Container(
-                width: 190,
-                height: 190,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                ),
+                width: 200,
+                height: 200,
+                decoration: const BoxDecoration(shape: BoxShape.circle),
                 child: ClipOval(
                   child: Image.asset(
                     'assets/images/header_logo.png',
@@ -43,7 +36,7 @@ class ComingSoonView extends StatelessWidget {
             ),
             const Spacer(flex: 3),
 
-            // Centered "Actively from 06.2026" Text
+            // "Actively from" & "06.2026"
             const Center(
               child: Column(
                 children: [
@@ -52,12 +45,12 @@ class ComingSoonView extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 32,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.bold,
                       color: Colors.white,
-                      letterSpacing: -0.4,
+                      letterSpacing: -0.3,
                     ),
                   ),
-                  SizedBox(height: 6),
+                  SizedBox(height: 8),
                   Text(
                     '06.2026',
                     textAlign: TextAlign.center,
@@ -65,26 +58,29 @@ class ComingSoonView extends StatelessWidget {
                       fontSize: 38,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
-                      letterSpacing: -0.2,
+                      letterSpacing: 0.2,
                     ),
                   ),
                 ],
               ),
             ),
-            const Spacer(flex: 4),
+            const Spacer(flex: 3),
 
             // "back to home" Pill Button
             Center(
               child: SizedBox(
-                height: 50,
+                height: 48,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF33009A),
+                    backgroundColor: const Color(0xFF230078),
                     foregroundColor: Colors.white,
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 36,
+                      vertical: 10,
+                    ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
+                      borderRadius: BorderRadius.circular(24),
                     ),
                   ),
                   onPressed: () {
@@ -94,26 +90,25 @@ class ComingSoonView extends StatelessWidget {
                     'back to home',
                     style: TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.bold,
                       letterSpacing: 0.2,
                     ),
                   ),
                 ),
               ),
             ),
-            const Spacer(flex: 3),
+            const Spacer(flex: 4),
 
-            // Footer Hosted Note
+            // Bottom Footer
             const Padding(
-              padding: EdgeInsets.only(bottom: 18.0),
+              padding: EdgeInsets.only(bottom: 20.0),
               child: Center(
                 child: Text(
                   'Hosted by Nizar Fahem',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w400,
-                    letterSpacing: 0.2,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),

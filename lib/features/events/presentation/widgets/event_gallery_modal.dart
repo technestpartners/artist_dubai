@@ -22,15 +22,19 @@ class EventGalleryModal extends StatefulWidget {
     return showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.7),
-      builder: (context) => Dialog(
-        insetPadding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 24.0),
-        backgroundColor: Colors.transparent,
-        child: EventGalleryModal(
-          event: event,
-          gallery: gallery,
-          initialIndex: initialIndex,
-        ),
-      ),
+      builder:
+          (context) => Dialog(
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 14.0,
+              vertical: 24.0,
+            ),
+            backgroundColor: Colors.transparent,
+            child: EventGalleryModal(
+              event: event,
+              gallery: gallery,
+              initialIndex: initialIndex,
+            ),
+          ),
     );
   }
 
@@ -46,25 +50,28 @@ class _EventGalleryModalState extends State<EventGalleryModal> {
   @override
   void initState() {
     super.initState();
-    _images = widget.gallery.images.isNotEmpty
-        ? widget.gallery.images
-        : [
-            GalleryImageItem(
-              title: 'Event Image 1',
-              imageUrl: widget.gallery.imageUrl,
-              caption: 'Event highlight',
-            ),
-            const GalleryImageItem(
-              title: 'Event Image 2',
-              imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1200&auto=format&fit=crop',
-              caption: 'Event highlight',
-            ),
-            const GalleryImageItem(
-              title: 'Event Image 3',
-              imageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200&auto=format&fit=crop',
-              caption: 'Event highlight',
-            ),
-          ];
+    _images =
+        widget.gallery.images.isNotEmpty
+            ? widget.gallery.images
+            : [
+              GalleryImageItem(
+                title: 'Event Image 1',
+                imageUrl: widget.gallery.imageUrl,
+                caption: 'Event highlight',
+              ),
+              const GalleryImageItem(
+                title: 'Event Image 2',
+                imageUrl:
+                    'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1200&auto=format&fit=crop',
+                caption: 'Event highlight',
+              ),
+              const GalleryImageItem(
+                title: 'Event Image 3',
+                imageUrl:
+                    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200&auto=format&fit=crop',
+                caption: 'Event highlight',
+              ),
+            ];
 
     _currentIndex = widget.initialIndex.clamp(0, _images.length - 1);
     _pageController = PageController(initialPage: _currentIndex);
@@ -97,38 +104,44 @@ class _EventGalleryModalState extends State<EventGalleryModal> {
   void _onDelete() {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Photo'),
-        content: const Text('Are you sure you want to delete this photo from the gallery?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              setState(() {
-                if (_images.length > 1) {
-                  _images.removeAt(_currentIndex);
-                  if (_currentIndex >= _images.length) {
-                    _currentIndex = _images.length - 1;
-                  }
-                } else {
-                  Navigator.pop(context);
-                }
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Photo deleted successfully'),
-                  backgroundColor: Color(0xFFE53E3E),
+      builder:
+          (ctx) => AlertDialog(
+            title: const Text('Delete Photo'),
+            content: const Text(
+              'Are you sure you want to delete this photo from the gallery?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  setState(() {
+                    if (_images.length > 1) {
+                      _images.removeAt(_currentIndex);
+                      if (_currentIndex >= _images.length) {
+                        _currentIndex = _images.length - 1;
+                      }
+                    } else {
+                      Navigator.pop(context);
+                    }
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Photo deleted successfully'),
+                      backgroundColor: Color(0xFFE53E3E),
+                    ),
+                  );
+                },
+                child: const Text(
+                  'Delete',
+                  style: TextStyle(color: Color(0xFFE53E3E)),
                 ),
-              );
-            },
-            child: const Text('Delete', style: TextStyle(color: Color(0xFFE53E3E))),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -155,7 +168,10 @@ class _EventGalleryModalState extends State<EventGalleryModal> {
         children: [
           // Header Row
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 14.0,
+            ),
             child: Row(
               children: [
                 Expanded(
@@ -174,7 +190,9 @@ class _EventGalleryModalState extends State<EventGalleryModal> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        currentImage.title.isNotEmpty ? currentImage.title : 'Event Image ${_currentIndex + 1}',
+                        currentImage.title.isNotEmpty
+                            ? currentImage.title
+                            : 'Event Image ${_currentIndex + 1}',
                         style: const TextStyle(
                           fontSize: 13,
                           color: Color(0xFF64748B),
@@ -204,7 +222,11 @@ class _EventGalleryModalState extends State<EventGalleryModal> {
                 const SizedBox(width: 8),
                 // Close button
                 IconButton(
-                  icon: const Icon(Icons.close, color: Color(0xFF2E2E2E), size: 22),
+                  icon: const Icon(
+                    Icons.close,
+                    color: Color(0xFF2E2E2E),
+                    size: 22,
+                  ),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   onPressed: () => Navigator.pop(context),
@@ -233,12 +255,17 @@ class _EventGalleryModalState extends State<EventGalleryModal> {
                     return Image.network(
                       item.imageUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: Colors.grey.shade200,
-                        child: const Center(
-                          child: Icon(Icons.image_not_supported_outlined, size: 48, color: Colors.grey),
-                        ),
-                      ),
+                      errorBuilder:
+                          (context, error, stackTrace) => Container(
+                            color: Colors.grey.shade200,
+                            child: const Center(
+                              child: Icon(
+                                Icons.image_not_supported_outlined,
+                                size: 48,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
                     );
                   },
                 ),
@@ -307,7 +334,10 @@ class _EventGalleryModalState extends State<EventGalleryModal> {
                 Positioned(
                   bottom: 12,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.75),
                       borderRadius: BorderRadius.circular(16),
@@ -330,7 +360,10 @@ class _EventGalleryModalState extends State<EventGalleryModal> {
 
           // Caption / Subtitle Footer
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 14.0,
+            ),
             child: Text(
               currentImage.caption,
               style: const TextStyle(

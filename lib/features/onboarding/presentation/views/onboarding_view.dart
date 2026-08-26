@@ -88,7 +88,10 @@ class _OnboardingViewState extends State<OnboardingView> {
                     onPressed: _onFinish,
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
                       textStyle: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w400,
@@ -118,36 +121,38 @@ class _OnboardingViewState extends State<OnboardingView> {
               // 4 Page Indicator Dots
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  _slides.length,
-                  (index) {
-                    final isActive = _currentIndex == index;
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      margin: const EdgeInsets.symmetric(horizontal: 4.5),
-                      width: 7.5,
-                      height: 7.5,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isActive
-                            ? Colors.white
-                            : const Color(0xFF6B5377).withValues(alpha: 0.6),
-                      ),
-                    );
-                  },
-                ),
+                children: List.generate(_slides.length, (index) {
+                  final isActive = _currentIndex == index;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.symmetric(horizontal: 4.5),
+                    width: 7.5,
+                    height: 7.5,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color:
+                          isActive
+                              ? Colors.white
+                              : const Color(0xFF6B5377).withValues(alpha: 0.6),
+                    ),
+                  );
+                }),
               ),
               const SizedBox(height: 42),
 
               // Bottom Action Buttons
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24.0,
+                  vertical: 10.0,
+                ),
                 child: SizedBox(
                   height: 56,
                   child: Row(
-                    mainAxisAlignment: isFirstPage
-                        ? MainAxisAlignment.end
-                        : MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment:
+                        isFirstPage
+                            ? MainAxisAlignment.end
+                            : MainAxisAlignment.spaceBetween,
                     children: [
                       if (!isFirstPage)
                         SizedBox(
@@ -173,19 +178,19 @@ class _OnboardingViewState extends State<OnboardingView> {
                           ),
                         ),
                       SizedBox(
-                        width: isLastPage
-                            ? 168
-                            : (isFirstPage ? 116 : 116),
+                        width: isLastPage ? 168 : (isFirstPage ? 116 : 116),
                         height: 56,
                         child: ElevatedButton(
                           onPressed: _onNext,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: isLastPage
-                                ? Colors.white
-                                : const Color(0xFF5A396A),
-                            foregroundColor: isLastPage
-                                ? const Color(0xFF1E0A36)
-                                : Colors.white,
+                            backgroundColor:
+                                isLastPage
+                                    ? Colors.white
+                                    : const Color(0xFF5A396A),
+                            foregroundColor:
+                                isLastPage
+                                    ? const Color(0xFF1E0A36)
+                                    : Colors.white,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(28),
@@ -195,7 +200,10 @@ class _OnboardingViewState extends State<OnboardingView> {
                             isLastPage ? 'Get Started' : 'Next',
                             style: TextStyle(
                               fontSize: 17,
-                              fontWeight: isLastPage ? FontWeight.w600 : FontWeight.w400,
+                              fontWeight:
+                                  isLastPage
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
                             ),
                           ),
                         ),
