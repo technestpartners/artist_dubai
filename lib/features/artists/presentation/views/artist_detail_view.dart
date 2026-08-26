@@ -264,7 +264,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                   'title': title,
                                   'count': '0 photos',
                                   'image':
-                                      'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=80&w=1200&auto=format&fit=crop',
+                                      'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1200&auto=format&fit=crop',
                                 });
                               });
                             }
@@ -317,7 +317,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         'price': '\$${(id * 500) + 1500}',
         'image':
             [
-              'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=80&w=1200&auto=format&fit=crop',
+              'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1200&auto=format&fit=crop',
               'https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=1200&auto=format&fit=crop',
               'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop',
               'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=1200&auto=format&fit=crop',

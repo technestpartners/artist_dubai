@@ -41,7 +41,7 @@ class ArtistModel {
       location: json['location'] as String? ?? 'Dubai, UAE',
       bannerUrl:
           json['banner_url'] as String? ??
-          'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=80&w=1200&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1200&auto=format&fit=crop',
       avatarUrl:
           json['avatar_url'] as String? ??
           'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300&auto=format&fit=crop',
@@ -84,7 +84,7 @@ class ArtistModel {
           'Contemporary Arabic calligraphy artist blending traditional scripts with modern abstract compositions.',
       location: 'Al Fahidi Historical District, Dubai',
       bannerUrl:
-          'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=80&w=1200&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1200&auto=format&fit=crop',
       avatarUrl:
           'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300&auto=format&fit=crop',
       isFeatured: true,
@@ -201,7 +201,7 @@ class ArtistModel {
           'Street and cultural documentary photographer traveling across the Emirates.',
       location: 'Deira, Dubai',
       bannerUrl:
-          'https://images.unsplash.com/photo-1477959858617-67f30bc75b82?q=80&w=1200&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1518684079-3c830dcef090?q=80&w=1200&auto=format&fit=crop',
       avatarUrl:
           'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=300&auto=format&fit=crop',
       isFeatured: false,
