@@ -27,6 +27,7 @@ class AppTheme {
           fontWeight: FontWeight.w500,
         ),
         actionTextColor: Colors.white,
+        disabledActionTextColor: Colors.white70,
         behavior: SnackBarBehavior.floating,
       ),
       appBarTheme: const AppBarTheme(
@@ -61,6 +62,7 @@ class AppTheme {
           fontWeight: FontWeight.w500,
         ),
         actionTextColor: Colors.white,
+        disabledActionTextColor: Colors.white70,
         behavior: SnackBarBehavior.floating,
       ),
       appBarTheme: const AppBarTheme(

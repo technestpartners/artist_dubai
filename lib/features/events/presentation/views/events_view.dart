@@ -44,17 +44,30 @@ class _EventsViewState extends State<EventsView> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(promptMessage),
+          content: Text(
+            promptMessage,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           backgroundColor: const Color(0xFF6A2777),
           behavior: SnackBarBehavior.floating,
           action: SnackBarAction(
             label: 'Login',
             textColor: Colors.white,
-            onPressed: () => context.push(RouteNames.login),
+            onPressed: () {
+              if (mounted) {
+                context.push(RouteNames.login);
+              }
+            },
           ),
         ),
       );
-      context.push(RouteNames.login);
+      if (mounted) {
+        context.push(RouteNames.login);
+      }
     }
   }
 

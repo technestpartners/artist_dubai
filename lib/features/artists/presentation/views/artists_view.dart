@@ -351,13 +351,22 @@ class _ArtistsViewState extends State<ArtistsView> {
                       SnackBar(
                         content: Text(
                           'Please log in to view ${cat.name} artists',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                        backgroundColor: const Color(0xFF5E227A),
+                        backgroundColor: const Color(0xFF6A2777),
                         behavior: SnackBarBehavior.floating,
                         action: SnackBarAction(
                           label: 'Login',
                           textColor: Colors.white,
-                          onPressed: () => context.push(RouteNames.login),
+                          onPressed: () {
+                            if (mounted) {
+                              context.push(RouteNames.login);
+                            }
+                          },
                         ),
                       ),
                     );
