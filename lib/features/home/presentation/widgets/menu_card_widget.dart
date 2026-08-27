@@ -32,8 +32,15 @@ class MenuCardWidget extends StatelessWidget {
             highlightColor: Colors.white10,
             child: Ink(
               decoration: BoxDecoration(
-                color: const Color(0xFF1C0B5E),
+                color: const Color(0xFF28208C),
                 borderRadius: BorderRadius.circular(cornerRadius),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.18),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(

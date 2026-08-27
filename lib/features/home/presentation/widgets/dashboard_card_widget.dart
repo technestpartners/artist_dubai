@@ -20,7 +20,7 @@ class DashboardCardWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF1C0B5E),
+            color: const Color(0xFF28208C),
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
@@ -71,7 +71,7 @@ class DashboardCardWidget extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: const Color(0xFFD6C8F2),
                         fontSize: item.title.contains('|') ? 9.0 : 9.5,
                         fontWeight: FontWeight.w400,
                         letterSpacing: 0.2,

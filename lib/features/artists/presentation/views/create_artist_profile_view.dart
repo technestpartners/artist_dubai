@@ -883,7 +883,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     required ValueChanged<String?> onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       hint: Text(
         hintText,
         style: const TextStyle(
