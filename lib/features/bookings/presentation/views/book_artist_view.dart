@@ -549,7 +549,7 @@ class _BookArtistViewState extends State<BookArtistView> {
     required ValueChanged<String?> onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      initialValue: value,
+      value: value,
       hint: Text(
         hintText,
         style: const TextStyle(
