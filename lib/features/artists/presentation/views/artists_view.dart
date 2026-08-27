@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/api_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
@@ -18,8 +19,27 @@ class ArtistsView extends StatefulWidget {
 class _ArtistsViewState extends State<ArtistsView> {
   String? _selectedCategory;
   bool _isCategoryListExpanded = false;
-  final List<ArtistModel> _allArtists = ArtistModel.mockArtists;
-  final List<CategoryInfo> _categories = ArtistModel.categoryList;
+  List<ArtistModel> _allArtists = ArtistModel.mockArtists;
+  List<CategoryInfo> _categories = ArtistModel.categoryList;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    try {
+      final categories = await sl<ApiService>().getCategories();
+      final artists = await sl<ApiService>().getArtists();
+      if (mounted) {
+        setState(() {
+          _categories = categories;
+          _allArtists = artists;
+        });
+      }
+    } catch (_) {}
+  }
 
   bool get _isLoggedIn {
     try {

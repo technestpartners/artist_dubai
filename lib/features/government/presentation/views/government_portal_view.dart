@@ -1,11 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../domain/models/government_entity.dart';
 
-class GovernmentPortalView extends StatelessWidget {
+class GovernmentPortalView extends StatefulWidget {
   const GovernmentPortalView({super.key});
+
+  @override
+  State<GovernmentPortalView> createState() => _GovernmentPortalViewState();
+}
+
+class _GovernmentPortalViewState extends State<GovernmentPortalView> {
+  List<GovernmentEntity> _entities = GovernmentEntity.entities;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchEntities();
+  }
+
+  Future<void> _fetchEntities() async {
+    try {
+      final entities = await sl<ApiService>().getGovernmentEntities();
+      if (mounted) {
+        setState(() {
+          _entities = entities;
+        });
+      }
+    } catch (_) {}
+  }
 
   Widget _buildRatingStars(double rating) {
     return Row(
@@ -74,7 +100,7 @@ class GovernmentPortalView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<GovernmentEntity> entities = GovernmentEntity.entities;
+    final List<GovernmentEntity> entities = _entities;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F7F9),
