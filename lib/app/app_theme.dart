@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/constants/app_colors.dart';
 
@@ -19,6 +19,17 @@ class AppTheme {
         error: AppColors.error,
       ),
       textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: const Color(0xFF6A2777),
+        contentTextStyle: GoogleFonts.outfit(
+          color: Colors.white,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        actionTextColor: Colors.white,
+        disabledActionTextColor: Colors.white70,
+        behavior: SnackBarBehavior.floating,
+      ),
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.darkBackground,
         elevation: 0,
@@ -43,6 +54,17 @@ class AppTheme {
         error: AppColors.error,
       ),
       textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: const Color(0xFF6A2777),
+        contentTextStyle: GoogleFonts.outfit(
+          color: Colors.white,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        actionTextColor: Colors.white,
+        disabledActionTextColor: Colors.white70,
+        behavior: SnackBarBehavior.floating,
+      ),
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.lightBackground,
         elevation: 0,

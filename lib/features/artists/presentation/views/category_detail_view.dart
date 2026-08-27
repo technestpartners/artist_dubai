@@ -797,7 +797,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                   top: Radius.circular(12),
                 ),
                 child: Image.network(
-                  'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=80&w=1200&auto=format&fit=crop',
+                  'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1200&auto=format&fit=crop',
                   height: 380,
                   width: double.infinity,
                   fit: BoxFit.cover,

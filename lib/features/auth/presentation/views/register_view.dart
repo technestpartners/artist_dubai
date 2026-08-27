@@ -42,7 +42,10 @@ class _RegisterViewState extends State<RegisterView> {
     if (fullName.isEmpty || email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please fill in all fields'),
+          content: Text(
+            'Please fill in all fields',
+            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+          ),
           backgroundColor: Color(0xFF6A2777),
           behavior: SnackBarBehavior.floating,
         ),
@@ -53,7 +56,10 @@ class _RegisterViewState extends State<RegisterView> {
     if (password != confirmPassword) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Passwords do not match'),
+          content: Text(
+            'Passwords do not match',
+            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+          ),
           backgroundColor: Color(0xFF6A2777),
           behavior: SnackBarBehavior.floating,
         ),
@@ -66,6 +72,7 @@ class _RegisterViewState extends State<RegisterView> {
         const SnackBar(
           content: Text(
             'Please accept the Privacy Policy and Terms of Service',
+            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
           ),
           backgroundColor: Color(0xFF6A2777),
           behavior: SnackBarBehavior.floating,
@@ -84,7 +91,10 @@ class _RegisterViewState extends State<RegisterView> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Account created successfully!'),
+          content: Text(
+            'Account created successfully!',
+            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+          ),
           backgroundColor: Color(0xFF6A2777),
           behavior: SnackBarBehavior.floating,
         ),
@@ -104,6 +114,62 @@ class _RegisterViewState extends State<RegisterView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Top Action Row (Back Arrow and Home button)
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: 4.0,
+                  right: 4.0,
+                  bottom: 12.0,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: Color(0xFF1E1E1E),
+                        size: 22,
+                      ),
+                      onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go(RouteNames.home);
+                        }
+                      },
+                    ),
+                    InkWell(
+                      onTap: () => context.go(RouteNames.home),
+                      borderRadius: BorderRadius.circular(6),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8.0,
+                          vertical: 4.0,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.home_outlined,
+                              color: Color(0xFF1E1E1E),
+                              size: 20,
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              'Home',
+                              style: TextStyle(
+                                color: Color(0xFF1E1E1E),
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
               // White Elevated Card
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -171,6 +237,8 @@ class _RegisterViewState extends State<RegisterView> {
                         fontWeight: FontWeight.w500,
                       ),
                       decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
                         hintText: 'Enter your full name',
                         hintStyle: const TextStyle(
                           color: Color(0xFF64748B),
@@ -184,13 +252,13 @@ class _RegisterViewState extends State<RegisterView> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: const BorderSide(
-                            color: Color(0xFF333333),
+                            color: Color(0xFFCBD5E1),
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: const BorderSide(
-                            color: Color(0xFF333333),
+                            color: Color(0xFFCBD5E1),
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
@@ -223,6 +291,8 @@ class _RegisterViewState extends State<RegisterView> {
                         fontWeight: FontWeight.w500,
                       ),
                       decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
                         hintText: 'your@email.com',
                         hintStyle: const TextStyle(
                           color: Color(0xFF64748B),
@@ -236,13 +306,13 @@ class _RegisterViewState extends State<RegisterView> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: const BorderSide(
-                            color: Color(0xFF333333),
+                            color: Color(0xFFCBD5E1),
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: const BorderSide(
-                            color: Color(0xFF333333),
+                            color: Color(0xFFCBD5E1),
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
@@ -275,6 +345,8 @@ class _RegisterViewState extends State<RegisterView> {
                         fontWeight: FontWeight.w500,
                       ),
                       decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
                         hintText: 'Enter your password',
                         hintStyle: const TextStyle(
                           color: Color(0xFF64748B),
@@ -302,13 +374,13 @@ class _RegisterViewState extends State<RegisterView> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: const BorderSide(
-                            color: Color(0xFF333333),
+                            color: Color(0xFFCBD5E1),
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: const BorderSide(
-                            color: Color(0xFF333333),
+                            color: Color(0xFFCBD5E1),
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
@@ -341,6 +413,8 @@ class _RegisterViewState extends State<RegisterView> {
                         fontWeight: FontWeight.w500,
                       ),
                       decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
                         hintText: 'Confirm your password',
                         hintStyle: const TextStyle(
                           color: Color(0xFF64748B),
@@ -354,13 +428,13 @@ class _RegisterViewState extends State<RegisterView> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: const BorderSide(
-                            color: Color(0xFF333333),
+                            color: Color(0xFFCBD5E1),
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: const BorderSide(
-                            color: Color(0xFF333333),
+                            color: Color(0xFFCBD5E1),
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
@@ -375,31 +449,33 @@ class _RegisterViewState extends State<RegisterView> {
                     const SizedBox(height: 20),
 
                     // Terms & Privacy Checkbox Container
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12.0,
-                        vertical: 12.0,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: const Color(0xFF333333),
-                          width: 1.0,
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          _acceptTerms = !_acceptTerms;
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14.0,
+                          vertical: 12.0,
                         ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          InkWell(
-                            onTap: () {
-                              setState(() {
-                                _acceptTerms = !_acceptTerms;
-                              });
-                            },
-                            child: Container(
-                              width: 26,
-                              height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: const Color(0xFFCBD5E1),
+                            width: 1.0,
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 22,
+                              height: 22,
+                              alignment: Alignment.center,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(4),
                                 border: Border.all(
@@ -415,55 +491,55 @@ class _RegisterViewState extends State<RegisterView> {
                                   _acceptTerms
                                       ? const Icon(
                                         Icons.check,
-                                        size: 20,
+                                        size: 16,
                                         color: Colors.white,
                                       )
                                       : null,
                             ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: RichText(
-                              text: TextSpan(
-                                style: const TextStyle(
-                                  fontSize: 13.5,
-                                  color: Color(0xFF1E1E1E),
-                                  height: 1.4,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: RichText(
+                                text: TextSpan(
+                                  style: const TextStyle(
+                                    fontSize: 13.5,
+                                    color: Color(0xFF1E1E1E),
+                                    height: 1.4,
+                                  ),
+                                  children: [
+                                    const TextSpan(text: 'I accept the '),
+                                    TextSpan(
+                                      text: 'Privacy Policy',
+                                      style: const TextStyle(
+                                        color: Color(0xFF6A2777),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      recognizer:
+                                          TapGestureRecognizer()
+                                            ..onTap =
+                                                () => context.push(
+                                                  RouteNames.privacyPolicy,
+                                                ),
+                                    ),
+                                    const TextSpan(text: ' and '),
+                                    TextSpan(
+                                      text: 'Terms of Service',
+                                      style: const TextStyle(
+                                        color: Color(0xFF6A2777),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      recognizer:
+                                          TapGestureRecognizer()
+                                            ..onTap =
+                                                () => context.push(
+                                                  RouteNames.termsConditions,
+                                                ),
+                                    ),
+                                  ],
                                 ),
-                                children: [
-                                  const TextSpan(text: 'I accept the '),
-                                  TextSpan(
-                                    text: 'Privacy Policy',
-                                    style: const TextStyle(
-                                      color: Color(0xFF6A2777),
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    recognizer:
-                                        TapGestureRecognizer()
-                                          ..onTap =
-                                              () => context.push(
-                                                RouteNames.privacyPolicy,
-                                              ),
-                                  ),
-                                  const TextSpan(text: ' and\n'),
-                                  TextSpan(
-                                    text: 'Terms of Service',
-                                    style: const TextStyle(
-                                      color: Color(0xFF6A2777),
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    recognizer:
-                                        TapGestureRecognizer()
-                                          ..onTap =
-                                              () => context.push(
-                                                RouteNames.termsConditions,
-                                              ),
-                                  ),
-                                ],
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -477,7 +553,7 @@ class _RegisterViewState extends State<RegisterView> {
                           backgroundColor:
                               _acceptTerms
                                   ? const Color(0xFF6A2777)
-                                  : const Color(0xFFA58AA8),
+                                  : const Color(0xFF6A2777).withValues(alpha: 0.5),
                           foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -490,6 +566,35 @@ class _RegisterViewState extends State<RegisterView> {
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Already have an account? Sign in Link
+                    Center(
+                      child: InkWell(
+                        onTap: () {
+                          if (context.canPop()) {
+                            context.pop();
+                          } else {
+                            context.go(RouteNames.login);
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(6),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(
+                            vertical: 6.0,
+                            horizontal: 10.0,
+                          ),
+                          child: Text(
+                            'Already have an account? Sign in',
+                            style: TextStyle(
+                              color: Color(0xFF6A2777),
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),

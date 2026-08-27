@@ -1,5 +1,8 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
@@ -1234,226 +1237,332 @@ class EventDetailView extends StatelessWidget {
   void _showCreateGalleryModal(BuildContext context, String titleName) {
     final titleController = TextEditingController();
     final descController = TextEditingController();
+    final ImagePicker picker = ImagePicker();
+    final List<XFile> modalImages = [];
 
     showDialog(
       context: context,
       builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          backgroundColor: Colors.white,
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 24,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Title Header with Close Button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            Future<void> pickImages() async {
+              try {
+                final List<XFile> selected = await picker.pickMultiImage(imageQuality: 85);
+                if (selected.isNotEmpty) {
+                  setModalState(() {
+                    modalImages.addAll(selected);
+                  });
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error selecting images: $e'),
+                      backgroundColor: const Color(0xFFDC2626),
+                    ),
+                  );
+                }
+              }
+            }
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              backgroundColor: Colors.white,
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 24,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(
-                          'Create New Gallery for $titleName',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1E1E1E),
+                      // Title Header with Close Button
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Create New Gallery for $titleName',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1E1E1E),
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.close,
+                              color: Color(0xFF64748B),
+                              size: 20,
+                            ),
+                            onPressed: () => Navigator.pop(context),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Gallery Title
+                      const Text(
+                        'Gallery Title',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1E1E1E),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: titleController,
+                        decoration: InputDecoration(
+                          hintText: 'Enter gallery title...',
+                          hintStyle: const TextStyle(
+                            color: Color(0xFF64748B),
+                            fontSize: 13.5,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF5E227A),
+                              width: 1.5,
+                            ),
                           ),
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.close,
-                          color: Color(0xFF64748B),
-                          size: 20,
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
+                      const SizedBox(height: 14),
 
-                  // Gallery Title
-                  const Text(
-                    'Gallery Title',
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E1E1E),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: titleController,
-                    decoration: InputDecoration(
-                      hintText: 'Enter gallery title...',
-                      hintStyle: const TextStyle(
-                        color: Color(0xFF64748B),
-                        fontSize: 13.5,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(
-                          color: Color(0xFF5E227A),
-                          width: 1.5,
+                      // Description (optional)
+                      const Text(
+                        'Description (optional)',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1E1E1E),
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Description (optional)
-                  const Text(
-                    'Description (optional)',
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E1E1E),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: descController,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      hintText: 'Describe this gallery...',
-                      hintStyle: const TextStyle(
-                        color: Color(0xFF64748B),
-                        fontSize: 13.5,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(
-                          color: Color(0xFF5E227A),
-                          width: 1.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Images Box
-                  const Text(
-                    'Images',
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E1E1E),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFAFAFA),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: const Color(0xFFCBD5E1),
-                        style: BorderStyle.solid,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(
-                          Icons.upload_outlined,
-                          size: 32,
-                          color: Color(0xFF64748B),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Click to select images or drag and drop',
-                          style: TextStyle(
-                            fontSize: 13,
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: descController,
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          hintText: 'Describe this gallery...',
+                          hintStyle: const TextStyle(
                             color: Color(0xFF64748B),
+                            fontSize: 13.5,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF5E227A),
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Images Box
+                      const Text(
+                        'Images',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1E1E1E),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      InkWell(
+                        onTap: pickImages,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 24),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFAFAFA),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(0xFFCBD5E1),
+                              style: BorderStyle.solid,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.upload_outlined,
+                                size: 32,
+                                color: Color(0xFF64748B),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                modalImages.isEmpty
+                                    ? 'Click to select images or drag and drop'
+                                    : '${modalImages.length} image(s) selected (tap to add more)',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: modalImages.isNotEmpty
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  color: modalImages.isNotEmpty
+                                      ? const Color(0xFF5E227A)
+                                      : const Color(0xFF64748B),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (modalImages.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 70,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: modalImages.length,
+                            itemBuilder: (context, idx) {
+                              final img = modalImages[idx];
+                              return Container(
+                                margin: const EdgeInsets.only(right: 8),
+                                width: 70,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                                ),
+                                child: Stack(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: kIsWeb
+                                          ? Image.network(
+                                              img.path,
+                                              width: 70,
+                                              height: 70,
+                                              fit: BoxFit.cover,
+                                            )
+                                          : Image.file(
+                                              File(img.path),
+                                              width: 70,
+                                              height: 70,
+                                              fit: BoxFit.cover,
+                                            ),
+                                    ),
+                                    Positioned(
+                                      top: 2,
+                                      right: 2,
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          setModalState(() {
+                                            modalImages.removeAt(idx);
+                                          });
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.all(3),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withValues(alpha: 0.7),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.close,
+                                            size: 12,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
+                      const SizedBox(height: 20),
 
-                  // Action Buttons: Cancel & Create Gallery
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF1E1E1E),
-                          side: const BorderSide(color: Color(0xFFCBD5E1)),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 12,
-                          ),
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text(
-                          'Cancel',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF5E227A),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 12,
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Gallery created successfully!'),
-                              backgroundColor: Color(0xFF5E227A),
-                              behavior: SnackBarBehavior.floating,
+                      // Action Buttons: Cancel & Create Gallery
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF1E1E1E),
+                              side: const BorderSide(color: Color(0xFFCBD5E1)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 12,
+                              ),
                             ),
-                          );
-                        },
-                        child: const Text(
-                          'Create Gallery',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text(
+                              'Cancel',
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF5E227A),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 12,
+                              ),
+                            ),
+                            onPressed: () {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    modalImages.isNotEmpty
+                                        ? 'Gallery created with ${modalImages.length} photo(s)!'
+                                        : 'Gallery created successfully!',
+                                  ),
+                                  backgroundColor: const Color(0xFF5E227A),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              'Create Gallery',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );

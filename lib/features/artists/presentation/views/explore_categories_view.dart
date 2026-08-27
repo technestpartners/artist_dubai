@@ -65,17 +65,30 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
     if (!_isLoggedIn) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please log in to create a category.'),
+          content: const Text(
+            'Please log in to create a category.',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           backgroundColor: const Color(0xFF6A2777),
           behavior: SnackBarBehavior.floating,
           action: SnackBarAction(
             label: 'Login',
             textColor: Colors.white,
-            onPressed: () => context.push(RouteNames.login),
+            onPressed: () {
+              if (mounted) {
+                context.push(RouteNames.login);
+              }
+            },
           ),
         ),
       );
-      context.push(RouteNames.login);
+      if (mounted) {
+        context.push(RouteNames.login);
+      }
       return;
     }
 

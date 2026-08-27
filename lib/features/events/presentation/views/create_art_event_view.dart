@@ -282,7 +282,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                         ),
                         child: SwitchListTile(
                           value: _isFreeEvent,
-                          activeColor: const Color(0xFF5E227A),
+                          activeThumbColor: const Color(0xFF5E227A),
                           title: const Text(
                             'Free Event',
                             style: TextStyle(
@@ -519,7 +519,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     required ValueChanged<String?> onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       hint: Text(
         hintText,
         style: const TextStyle(

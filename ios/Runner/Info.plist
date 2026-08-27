@@ -66,5 +66,51 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+
+	<!-- App Permissions Strings -->
+	<key>NSCameraUsageDescription</key>
+	<string>Artist Dubai requires access to your camera to capture photos for artwork listings, profile creation, and event galleries.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Artist Dubai requires access to your photo library to select and upload photos of your artwork, profile picture, and gallery events.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Artist Dubai requires permission to save artwork images and event gallery photos to your photo library.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Artist Dubai requires access to your microphone when recording video previews for artwork and art events.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Artist Dubai requires access to your location to locate nearby art galleries, exhibitions, and cultural events in Dubai.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Artist Dubai requires continuous location access to notify you about nearby art exhibitions and events.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Artist Dubai uses tracking to deliver personalized recommendations for art exhibitions, gallery openings, and local events.</string>
+
+	<!-- App Transport Security Settings -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
+		<true/>
+	</dict>
+
+	<!-- URL Launcher Schemes -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>https</string>
+		<string>http</string>
+		<string>tel</string>
+		<string>mailto</string>
+		<string>sms</string>
+		<string>comgooglemaps</string>
+		<string>baidumap</string>
+		<string>iosamap</string>
+		<string>waze</string>
+		<string>maps</string>
+	</array>
+
+	<!-- App Store & UI Configurations -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
 </dict>
 </plist>

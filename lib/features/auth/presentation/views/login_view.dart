@@ -32,7 +32,14 @@ class _LoginViewState extends State<LoginView> {
     if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter your email and password'),
+          content: Text(
+            'Please enter your email and password',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           backgroundColor: Color(0xFF6A2777),
           behavior: SnackBarBehavior.floating,
         ),
@@ -49,7 +56,14 @@ class _LoginViewState extends State<LoginView> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Successfully signed in!'),
+          content: Text(
+            'Successfully signed in!',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           backgroundColor: Color(0xFF6A2777),
           behavior: SnackBarBehavior.floating,
         ),
@@ -194,6 +208,8 @@ class _LoginViewState extends State<LoginView> {
                           fontWeight: FontWeight.w500,
                         ),
                         decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
                           hintText: 'your@email.com',
                           hintStyle: const TextStyle(
                             color: Color(0xFF64748B),
@@ -213,7 +229,7 @@ class _LoginViewState extends State<LoginView> {
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: const BorderSide(
-                              color: Color(0xFF333333),
+                              color: Color(0xFFCBD5E1),
                             ),
                           ),
                           focusedBorder: OutlineInputBorder(
@@ -246,6 +262,8 @@ class _LoginViewState extends State<LoginView> {
                           fontWeight: FontWeight.w500,
                         ),
                         decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
                           hintText: 'Enter your password',
                           hintStyle: const TextStyle(
                             color: Color(0xFF64748B),
@@ -279,7 +297,7 @@ class _LoginViewState extends State<LoginView> {
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: const BorderSide(
-                              color: Color(0xFF333333),
+                              color: Color(0xFFCBD5E1),
                             ),
                           ),
                           focusedBorder: OutlineInputBorder(
