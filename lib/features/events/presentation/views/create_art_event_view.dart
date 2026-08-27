@@ -118,7 +118,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           behavior: SnackBarBehavior.floating,
         ),
       );
-      context.go(RouteNames.eventsCompetition);
+      context.go(RouteNames.events);
     }
   }
 
@@ -280,29 +280,32 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                             width: 1,
                           ),
                         ),
-                        child: SwitchListTile(
-                          value: _isFreeEvent,
-                          activeThumbColor: const Color(0xFF5E227A),
-                          title: const Text(
-                            'Free Event',
-                            style: TextStyle(
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E1E1E),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: SwitchListTile(
+                            value: _isFreeEvent,
+                            activeThumbColor: const Color(0xFF5E227A),
+                            title: const Text(
+                              'Free Event',
+                              style: TextStyle(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1E1E1E),
+                              ),
                             ),
-                          ),
-                          subtitle: const Text(
-                            'This event is free to attend',
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              color: Color(0xFF64748B),
+                            subtitle: const Text(
+                              'This event is free to attend',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color: Color(0xFF64748B),
+                              ),
                             ),
+                            onChanged: (val) {
+                              setState(() {
+                                _isFreeEvent = val;
+                              });
+                            },
                           ),
-                          onChanged: (val) {
-                            setState(() {
-                              _isFreeEvent = val;
-                            });
-                          },
                         ),
                       ),
                       const SizedBox(height: 28),

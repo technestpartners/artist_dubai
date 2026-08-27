@@ -15,13 +15,13 @@ class MenuCardWidget extends StatelessWidget {
         final cardWidth = constraints.maxWidth;
 
         // Auto-scale dimensions flexibly for all screen heights
-        final iconSize = (cardHeight * 0.36).clamp(32.0, 52.0);
+        final iconSize = (cardHeight * 0.46).clamp(52.0, 78.0);
         final titleFontSize =
             item.isLongTitle
-                ? (cardHeight * 0.080).clamp(8.5, 10.5)
-                : (cardHeight * 0.092).clamp(9.5, 12.0);
-        final subtitleFontSize = (cardHeight * 0.076).clamp(7.5, 10.0);
-        final cornerRadius = (cardWidth * 0.14).clamp(14.0, 24.0);
+                ? (cardHeight * 0.110).clamp(11.5, 14.5)
+                : (cardHeight * 0.125).clamp(13.5, 17.0);
+        final subtitleFontSize = (cardHeight * 0.095).clamp(10.5, 13.0);
+        final cornerRadius = (cardWidth * 0.14).clamp(16.0, 24.0);
 
         return Material(
           color: Colors.transparent,
@@ -44,8 +44,8 @@ class MenuCardWidget extends StatelessWidget {
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 6.0,
-                  vertical: 4.0,
+                  horizontal: 8.0,
+                  vertical: 6.0,
                 ),
                 child: Center(
                   child: Column(
@@ -62,16 +62,16 @@ class MenuCardWidget extends StatelessWidget {
                             item.imagePath,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
-                              return const Icon(
+                              return Icon(
                                 Icons.image,
                                 color: Colors.white,
-                                size: 28,
+                                size: (iconSize * 0.55).clamp(30.0, 44.0),
                               );
                             },
                           ),
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
 
                       // 2. Flexible Text Container
                       Flexible(
@@ -93,7 +93,7 @@ class MenuCardWidget extends StatelessWidget {
                               ),
                             ),
                             if (item.subtitle != null) ...[
-                              const SizedBox(height: 2),
+                              const SizedBox(height: 3),
                               Text(
                                 item.subtitle!,
                                 textAlign: TextAlign.center,

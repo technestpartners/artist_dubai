@@ -140,7 +140,7 @@ class BookingsView extends StatelessWidget {
                             ),
                           ),
                           onPressed: () {
-                            context.push(RouteNames.eventsCompetition);
+                            context.push(RouteNames.events);
                           },
                           child: const Text(
                             'Browse Events',

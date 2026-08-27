@@ -15,7 +15,11 @@ import '../../features/auth/presentation/views/register_view.dart';
 import '../../features/bookings/presentation/views/book_artist_view.dart';
 import '../../features/bookings/presentation/views/bookings_view.dart';
 import '../../features/events/presentation/views/create_art_event_view.dart';
+import '../../features/events/presentation/views/event_photos_view.dart';
 import '../../features/events/presentation/views/events_view.dart';
+import '../../features/events/presentation/views/my_events_view.dart';
+import '../../features/galleries/presentation/views/galleries_view.dart';
+import '../../features/galleries/presentation/views/gallery_registration_view.dart';
 import '../../features/government/presentation/views/government_portal_view.dart';
 import '../../features/home/presentation/views/home_view.dart';
 import '../../features/legal/presentation/views/privacy_policy_view.dart';
@@ -85,6 +89,11 @@ class AppRouter {
         builder: (context, state) => const EventsView(),
       ),
       GoRoute(
+        path: RouteNames.myEvents,
+        name: 'myEvents',
+        builder: (context, state) => const MyEventsView(),
+      ),
+      GoRoute(
         path: RouteNames.eventsCompetition,
         name: 'eventsCompetition',
         builder: (context, state) => const ComingSoonView(),
@@ -92,17 +101,17 @@ class AppRouter {
       GoRoute(
         path: RouteNames.galleries,
         name: 'galleries',
-        builder: (context, state) => const ComingSoonView(),
+        builder: (context, state) => const GalleriesView(),
       ),
       GoRoute(
         path: RouteNames.eventsPhotos,
         name: 'eventsPhotos',
-        builder: (context, state) => const ComingSoonView(),
+        builder: (context, state) => const EventPhotosView(),
       ),
       GoRoute(
         path: RouteNames.galleryRegistration,
         name: 'galleryRegistration',
-        builder: (context, state) => const ComingSoonView(),
+        builder: (context, state) => const GalleryRegistrationView(),
       ),
       GoRoute(
         path: RouteNames.bookings,
