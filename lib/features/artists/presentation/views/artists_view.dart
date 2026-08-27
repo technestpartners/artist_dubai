@@ -364,32 +364,10 @@ class _ArtistsViewState extends State<ArtistsView> {
               InkWell(
                 onTap: () {
                   if (!_isLoggedIn) {
-                    setState(() {
-                      _selectedCategory = isSelected ? null : cat.name;
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Please log in to view ${cat.name} artists',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        backgroundColor: const Color(0xFF6A2777),
-                        behavior: SnackBarBehavior.floating,
-                        action: SnackBarAction(
-                          label: 'Login',
-                          textColor: Colors.white,
-                          onPressed: () {
-                            if (mounted) {
-                              context.push(RouteNames.login);
-                            }
-                          },
-                        ),
-                      ),
-                    );
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    if (mounted) {
+                      context.push(RouteNames.login);
+                    }
                   } else {
                     setState(() {
                       _selectedCategory = isSelected ? null : cat.name;

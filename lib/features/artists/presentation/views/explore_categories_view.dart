@@ -63,29 +63,7 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
 
   void _showCreateCategoryModal() {
     if (!_isLoggedIn) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            'Please log in to create a category.',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          backgroundColor: const Color(0xFF6A2777),
-          behavior: SnackBarBehavior.floating,
-          action: SnackBarAction(
-            label: 'Login',
-            textColor: Colors.white,
-            onPressed: () {
-              if (mounted) {
-                context.push(RouteNames.login);
-              }
-            },
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       if (mounted) {
         context.push(RouteNames.login);
       }
@@ -256,13 +234,11 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
                               vertical: 10,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF6A2777),
+                              color: const Color(0xFF28208C),
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(
-                                    0xFF6A2777,
-                                  ).withValues(alpha: 0.2),
+                                  color: Colors.black.withValues(alpha: 0.18),
                                   blurRadius: 6,
                                   offset: const Offset(0, 3),
                                 ),
@@ -293,7 +269,7 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
                                   '$count artists',
                                   style: const TextStyle(
                                     fontSize: 11.5,
-                                    color: Colors.white70,
+                                    color: Color(0xFFD6C8F2),
                                     fontWeight: FontWeight.w400,
                                   ),
                                 ),

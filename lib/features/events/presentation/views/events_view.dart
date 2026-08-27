@@ -60,29 +60,7 @@ class _EventsViewState extends State<EventsView> {
     if (_isLoggedIn) {
       onAuthorized();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            promptMessage,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          backgroundColor: const Color(0xFF6A2777),
-          behavior: SnackBarBehavior.floating,
-          action: SnackBarAction(
-            label: 'Login',
-            textColor: Colors.white,
-            onPressed: () {
-              if (mounted) {
-                context.push(RouteNames.login);
-              }
-            },
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       if (mounted) {
         context.push(RouteNames.login);
       }
@@ -179,12 +157,23 @@ class _EventsViewState extends State<EventsView> {
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFCBD5E1),
+                          width: 1.2,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFCBD5E1),
+                          width: 1.2,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: const BorderSide(
                           color: Color(0xFF5E227A),
-                          width: 1.5,
+                          width: 1.8,
                         ),
                       ),
                     ),
@@ -216,12 +205,23 @@ class _EventsViewState extends State<EventsView> {
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFCBD5E1),
+                          width: 1.2,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFCBD5E1),
+                          width: 1.2,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: const BorderSide(
                           color: Color(0xFF5E227A),
-                          width: 1.5,
+                          width: 1.8,
                         ),
                       ),
                     ),
@@ -253,12 +253,23 @@ class _EventsViewState extends State<EventsView> {
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFCBD5E1),
+                          width: 1.2,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFCBD5E1),
+                          width: 1.2,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: const BorderSide(
                           color: Color(0xFF5E227A),
-                          width: 1.5,
+                          width: 1.8,
                         ),
                       ),
                     ),
@@ -285,12 +296,23 @@ class _EventsViewState extends State<EventsView> {
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFCBD5E1),
+                          width: 1.2,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFCBD5E1),
+                          width: 1.2,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: const BorderSide(
                           color: Color(0xFF5E227A),
-                          width: 1.5,
+                          width: 1.8,
                         ),
                       ),
                     ),
@@ -346,13 +368,15 @@ class _EventsViewState extends State<EventsView> {
                         ),
                         onPressed: () {
                           Navigator.pop(context);
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
+                            const SnackBar(
                               content: Text(
-                                'Booking confirmed for ${event.title}!',
+                                'Booking confirmed!',
                               ),
-                              backgroundColor: const Color(0xFF5E227A),
+                              backgroundColor: Color(0xFF5E227A),
                               behavior: SnackBarBehavior.floating,
+                              duration: Duration(milliseconds: 1500),
                             ),
                           );
                         },
@@ -403,31 +427,34 @@ class _EventsViewState extends State<EventsView> {
                     final category = _categories[index];
                     final isSelected = _selectedCategory == category;
 
-                    return ListTile(
-                      title: Text(
-                        category,
-                        style: TextStyle(
-                          fontWeight:
-                              isSelected ? FontWeight.w600 : FontWeight.w400,
-                          color:
-                              isSelected
-                                  ? const Color(0xFF6A2777)
-                                  : const Color(0xFF2E2E2E),
+                    return Material(
+                      color: Colors.transparent,
+                      child: ListTile(
+                        title: Text(
+                          category,
+                          style: TextStyle(
+                            fontWeight:
+                                isSelected ? FontWeight.w600 : FontWeight.w400,
+                            color:
+                                isSelected
+                                    ? const Color(0xFF6A2777)
+                                    : const Color(0xFF2E2E2E),
+                          ),
                         ),
+                        trailing:
+                            isSelected
+                                ? const Icon(
+                                  Icons.check,
+                                  color: Color(0xFF6A2777),
+                                )
+                                : null,
+                        onTap: () {
+                          setState(() {
+                            _selectedCategory = category;
+                          });
+                          Navigator.pop(context);
+                        },
                       ),
-                      trailing:
-                          isSelected
-                              ? const Icon(
-                                Icons.check,
-                                color: Color(0xFF6A2777),
-                              )
-                              : null,
-                      onTap: () {
-                        setState(() {
-                          _selectedCategory = category;
-                        });
-                        Navigator.pop(context);
-                      },
                     );
                   },
                 ),
@@ -529,12 +556,12 @@ class _EventsViewState extends State<EventsView> {
                     ),
                     onPressed: () => context.go(RouteNames.home),
                     icon: const Icon(
-                      Icons.menu_book_outlined,
+                      Icons.home_outlined,
                       size: 16,
                       color: Color(0xFF1E1E1E),
                     ),
                     label: const Text(
-                      'All Events',
+                      'Home',
                       style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w600,

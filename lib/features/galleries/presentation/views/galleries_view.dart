@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import '../../../../core/widgets/app_bottom_nav_bar.dart';
+import '../../../../core/widgets/app_top_bar.dart';
 
 class GalleriesView extends StatelessWidget {
   const GalleriesView({super.key});
@@ -8,19 +9,7 @@ class GalleriesView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF1E082B),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF2E0D3E),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-          onPressed: () => context.pop(),
-        ),
-        title: const Text(
-          'Galleries & Art Centers',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-      ),
+      appBar: const AppTopBar(backgroundColor: Colors.white),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -85,6 +74,7 @@ class GalleriesView extends StatelessWidget {
           ],
         ),
       ),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: -1),
     );
   }
 

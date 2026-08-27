@@ -44,7 +44,7 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
         context.push(RouteNames.bookings);
         break;
       case TopBarMenuItem.myEvents:
-        context.push(RouteNames.eventsCompetition);
+        context.push(RouteNames.myEvents);
         break;
       case TopBarMenuItem.privacyPolicy:
         context.push(RouteNames.privacyPolicy);
