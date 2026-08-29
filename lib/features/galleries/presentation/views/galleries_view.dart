@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import '../../../home/presentation/widgets/home_footer_widget.dart';
 
 class GalleriesView extends StatefulWidget {
   const GalleriesView({super.key});
@@ -391,7 +392,9 @@ class _GalleriesViewState extends State<GalleriesView> {
                   );
                 },
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
+              const HomeFooterWidget(),
+              const SizedBox(height: 12),
             ],
           ),
         ),
