@@ -1,6 +1,6 @@
 <?php
 /**
- * Artist Dubai - Pure MySQL Database Connection & Schema Provisioning
+ * Artist Dubai - Strictly Pure MySQL Database Connection & Schema Provisioning
  */
 
 if (!headers_sent()) {
@@ -119,9 +119,11 @@ try {
     }
 
 } catch (\PDOException $e) {
-    // If MySQL is offline, use SQLite as temporary fallback
-    $sqliteFile = __DIR__ . '/artist_dubai.sqlite';
-    $pdo = new PDO("sqlite:" . $sqliteFile);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    http_response_code(500);
+    echo json_encode([
+        'status' => 'error',
+        'success' => false,
+        'message' => 'MySQL Connection Error: ' . $e->getMessage()
+    ]);
+    exit();
 }
