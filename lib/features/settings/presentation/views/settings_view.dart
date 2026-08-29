@@ -558,7 +558,7 @@ class SettingsView extends StatelessWidget {
                                 backgroundColor: const Color(0xFFFAFAFC),
                               ),
                               onPressed: () => _showChangePasswordDialog(context),
-                              icon: const Icon(Icons.vpn_key_outlined, size: 18),
+                              icon: const Icon(Icons.vpn_key_outlined, size: 18, color: Colors.black),
                               label: const Text(
                                 'Change Password',
                                 style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
@@ -579,7 +579,7 @@ class SettingsView extends StatelessWidget {
                                 backgroundColor: const Color(0xFFFAFAFC),
                               ),
                               onPressed: () => _onSignOut(context),
-                              icon: const Icon(Icons.logout, size: 18),
+                              icon: const Icon(Icons.logout, size: 18, color: Colors.black),
                               label: const Text(
                                 'Sign Out',
                                 style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
@@ -600,7 +600,7 @@ class SettingsView extends StatelessWidget {
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               ),
                               onPressed: () => _showDeleteAccountDialog(context),
-                              icon: const Icon(Icons.delete_outline, size: 18),
+                              icon: const Icon(Icons.delete_outline, size: 18, color: Colors.black),
                               label: const Text(
                                 'Delete Account',
                                 style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
