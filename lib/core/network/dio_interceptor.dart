@@ -17,27 +17,27 @@ class DioInterceptor extends Interceptor {
       StorageServiceImpl.keyAuthToken,
     );
     if (token != null && token.isNotEmpty) {
-      options.headers['Authorization'] = 'Bearer ';
+      options.headers['Authorization'] = 'Bearer $token';
     }
 
     options.headers['Accept'] = 'application/json';
     options.headers['Content-Type'] = 'application/json';
 
-    loggerService.debug('🌐 [HTTP REQUEST]  --> \nHeaders: \nData: ');
+    loggerService.debug('🌐 [HTTP REQUEST] [${options.method}] ${options.path} --> \nHeaders: ${options.headers}\nData: ${options.data}');
 
     return handler.next(options);
   }
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    loggerService.debug('✅ [HTTP RESPONSE] [] <-- \nData: ');
+    loggerService.debug('✅ [HTTP RESPONSE] [${response.statusCode}] [${response.requestOptions.path}] <-- \nData: ${response.data}');
     return handler.next(response);
   }
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     loggerService.error(
-      '❌ [HTTP ERROR] [] <-- \nMessage: \nResponse: ',
+      '❌ [HTTP ERROR] [${err.response?.statusCode}] [${err.requestOptions.path}] <-- \nMessage: ${err.message}\nResponse: ${err.response?.data}',
       err,
       err.stackTrace,
     );

@@ -5,6 +5,8 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import '../../../../core/constants/api_endpoints.dart';
+import '../../../../core/network/api_client.dart';
 import '../../domain/models/artist_model.dart';
 import 'artist_detail_view.dart';
 
@@ -18,8 +20,31 @@ class ArtistsView extends StatefulWidget {
 class _ArtistsViewState extends State<ArtistsView> {
   String? _selectedCategory;
   bool _isCategoryListExpanded = false;
-  final List<ArtistModel> _allArtists = ArtistModel.mockArtists;
+  List<ArtistModel> _allArtists = ArtistModel.mockArtists;
   final List<CategoryInfo> _categories = ArtistModel.categoryList;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDynamicArtists();
+  }
+
+  Future<void> _fetchDynamicArtists() async {
+    try {
+      final apiClient = sl<ApiClient>();
+      final response = await apiClient.get(ApiEndpoints.artists);
+      if (response is Map<String, dynamic> && response['data'] is List) {
+        final List list = response['data'];
+        final fetched = list.map((json) => ArtistModel.fromJson(json)).toList();
+        if (fetched.isNotEmpty && mounted) {
+          setState(() {
+            _allArtists = fetched;
+          });
+        }
+      }
+    } catch (_) {}
+  }
 
   bool get _isLoggedIn {
     try {

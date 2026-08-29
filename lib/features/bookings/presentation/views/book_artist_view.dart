@@ -106,20 +106,32 @@ class _BookArtistViewState extends State<BookArtistView> {
           'requirements': _requirementsController.text.trim(),
         },
       );
-    } catch (_) {}
-
-    if (mounted) {
-      setState(() {
-        _isSubmitting = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Booking request submitted and saved to database!'),
-          backgroundColor: Color(0xFF5E227A),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      context.go(RouteNames.bookings);
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Booking request submitted and saved to database!'),
+            backgroundColor: Color(0xFF5E227A),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        context.go(RouteNames.bookings);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to submit booking: ${e.toString()}'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 

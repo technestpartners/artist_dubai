@@ -1,10 +1,12 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Content-Type: application/json; charset=UTF-8");
+if (!headers_sent()) {
+    header("Access-Control-Allow-Origin: *");
+    header("Access-Control-Allow-Headers: Content-Type, Authorization");
+    header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+    header("Content-Type: application/json; charset=UTF-8");
+}
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
@@ -86,6 +88,33 @@ try {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
 
+        CREATE TABLE IF NOT EXISTS categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            description TEXT,
+            emoji TEXT DEFAULT '🎨',
+            color TEXT DEFAULT 'Primary',
+            tags TEXT,
+            is_featured INTEGER DEFAULT 0,
+            artist_count INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS artworks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            artist_id INTEGER,
+            artist_name TEXT,
+            title TEXT NOT NULL,
+            year TEXT DEFAULT '2024',
+            medium TEXT DEFAULT 'Mixed Media',
+            dimensions TEXT DEFAULT '120 x 80 cm',
+            description TEXT,
+            price TEXT DEFAULT 'USD 1800 - 2200',
+            image_url TEXT,
+            is_featured INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+
         CREATE TABLE IF NOT EXISTS government_entities (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
@@ -120,6 +149,28 @@ try {
 
             INSERT INTO artists (name, category, location, bio, followers_count, works_count) 
             VALUES ('Alexander Mollov', 'Mixed Media', 'Dubai, UAE', 'Award-winning Music Video Director and multidisciplinary creative professional', 0, 1);
+        ");
+    }
+
+    $catCheck = $pdo->query("SELECT COUNT(*) FROM categories")->fetchColumn();
+    if ($catCheck == 0) {
+        $pdo->exec("
+            INSERT INTO categories (name, description, emoji, color, tags, is_featured, artist_count) VALUES
+            ('Calligraphy & Typography', 'Traditional and contemporary Arabic calligraphy and typographic art.', '✍️', 'Primary', 'Calligraphy,Typography,Arabic Art,Traditional', 1, 1),
+            ('Contemporary Painting', 'Modern oil, acrylic, and mixed media paintings on canvas.', '🎨', 'Pink', 'Contemporary,Abstract,Canvas', 1, 1),
+            ('Digital Art & Sculpture', 'Digital illustrations, 3D artwork, and modern sculpting.', '🗿', 'Blue', 'Digital,Sculpture,3D,Modern', 0, 1),
+            ('Photography', 'Fine art, landscape, portrait, and architectural photography.', '📷', 'Purple', 'Photography,Fine Art,Portrait', 1, 6),
+            ('Abstract Painting', 'Expressive abstract works exploring color, form, and emotion.', '🎨', 'Orange', 'Abstract,Color,Emotion', 0, 1),
+            ('Ceramics & Pottery', 'Handcrafted pottery, clay sculptures, and ceramic installations.', '🏺', 'Yellow', 'Ceramics,Pottery,Handcrafted', 0, 1);
+        ");
+    }
+
+    $artCheck = $pdo->query("SELECT COUNT(*) FROM artworks")->fetchColumn();
+    if ($artCheck == 0) {
+        $pdo->exec("
+            INSERT INTO artworks (artist_name, title, year, medium, dimensions, description, price, image_url, is_featured) VALUES
+            ('Fatima Al Qasimi', 'Sacred Verses', '2024', 'Mixed Media on Paper', '70 x 50 cm', 'Original artwork combining traditional Arabic calligraphy with classical gold leaf & ink techniques.', 'USD 1800 - 2200', 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=80&w=1200&auto=format&fit=crop', 1),
+            ('Fatima Al Qasimi', 'Arabic Calligraphy Composition #2', '2023', 'Acrylic on Canvas', '90 x 60 cm', 'A beautiful piece showcasing calligraphy & typography techniques.', '$2,000', 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=1200&auto=format&fit=crop', 1);
         ");
     }
 

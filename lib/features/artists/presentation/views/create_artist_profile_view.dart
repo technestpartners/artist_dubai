@@ -186,20 +186,32 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
           'instagram': _instagramController.text.trim(),
         },
       );
-    } catch (_) {}
-
-    if (mounted) {
-      setState(() {
-        _isSubmitting = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Artist Profile saved dynamically to database!'),
-          backgroundColor: Color(0xFF5E227A),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      context.go(RouteNames.artists);
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Artist Profile saved dynamically to database!'),
+            backgroundColor: Color(0xFF5E227A),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        context.go(RouteNames.artists);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save profile: ${e.toString()}'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 

@@ -1,4 +1,4 @@
-﻿class Validators {
+class Validators {
   Validators._();
 
   static String? validateEmail(String? value) {
@@ -24,7 +24,7 @@
 
   static String? validateRequired(String? value, [String fieldName = 'Field']) {
     if (value == null || value.trim().isEmpty) {
-      return ' is required';
+      return '$fieldName is required';
     }
     return null;
   }

@@ -16,7 +16,7 @@ if ($method === 'GET') {
         echo json_encode(['success' => true, 'data' => $artworks]);
     } catch (\Exception $e) {
         http_response_code(500);
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        echo json_encode(['success' => false, 'error' => 'An error occurred while processing artwork records.']);
     }
 } elseif ($method === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true);
@@ -58,6 +58,6 @@ if ($method === 'GET') {
         echo json_encode(['success' => true, 'message' => 'Artwork created successfully.', 'id' => $newId]);
     } catch (\Exception $e) {
         http_response_code(500);
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        echo json_encode(['success' => false, 'error' => 'An error occurred while processing artwork records.']);
     }
 }

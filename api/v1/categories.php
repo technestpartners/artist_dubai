@@ -10,7 +10,7 @@ if ($method === 'GET') {
         echo json_encode(['success' => true, 'data' => $categories]);
     } catch (\Exception $e) {
         http_response_code(500);
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        echo json_encode(['success' => false, 'error' => 'An error occurred while processing category records.']);
     }
 } elseif ($method === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true);
@@ -46,6 +46,6 @@ if ($method === 'GET') {
         echo json_encode(['success' => true, 'message' => 'Category created successfully.', 'id' => $newId]);
     } catch (\Exception $e) {
         http_response_code(500);
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        echo json_encode(['success' => false, 'error' => 'An error occurred while processing category records.']);
     }
 }

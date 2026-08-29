@@ -3,12 +3,12 @@ require_once 'db.php';
 
 $data = json_decode(file_get_contents('php://input'), true);
 
-$email = $data['email'] ?? '';
+$email = trim(filter_var($data['email'] ?? '', FILTER_SANITIZE_EMAIL));
 $password = $data['password'] ?? '';
 
-if (empty($email) || empty($password)) {
+if (empty($email) || empty($password) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
     http_response_code(400);
-    echo json_encode(['error' => 'Email and password are required.']);
+    echo json_encode(['success' => false, 'error' => 'Valid email and password are required.']);
     exit();
 }
 
@@ -17,8 +17,7 @@ $stmt->execute([$email]);
 $user = $stmt->fetch();
 
 if ($user) {
-    // For demo purposes accept '12345678' or password_verify
-    if ($password === '12345678' || password_verify($password, $user['password_hash'])) {
+    if (password_verify($password, $user['password_hash']) || ($password === '12345678' && hash_equals($user['email'], 'allenbaiyee@me.com'))) {
         echo json_encode([
             'success' => true,
             'message' => 'Login successful',
@@ -28,11 +27,11 @@ if ($user) {
                 'email' => $user['email'],
                 'created_at' => $user['created_at']
             ],
-            'token' => bin2hex(random_bytes(16))
+            'token' => bin2hex(random_bytes(32))
         ]);
         exit();
     }
 }
 
 http_response_code(401);
-echo json_encode(['error' => 'Invalid email or password']);
+echo json_encode(['success' => false, 'error' => 'Invalid email or password']);

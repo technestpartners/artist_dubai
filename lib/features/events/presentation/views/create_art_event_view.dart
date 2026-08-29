@@ -105,20 +105,32 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           'tags': _tagsController.text.trim(),
         },
       );
-    } catch (_) {}
-
-    if (mounted) {
-      setState(() {
-        _isSubmitting = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Art Event saved dynamically to database!'),
-          backgroundColor: Color(0xFF5E227A),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      context.go(RouteNames.eventsCompetition);
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Art Event saved dynamically to database!'),
+            backgroundColor: Color(0xFF5E227A),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        context.go(RouteNames.eventsCompetition);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save event: ${e.toString()}'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 

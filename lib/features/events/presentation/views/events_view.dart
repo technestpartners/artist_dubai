@@ -5,6 +5,8 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import '../../../../core/constants/api_endpoints.dart';
+import '../../../../core/network/api_client.dart';
 import '../../domain/models/art_event_model.dart';
 import 'event_detail_view.dart';
 
@@ -18,8 +20,47 @@ class EventsView extends StatefulWidget {
 class _EventsViewState extends State<EventsView> {
   final TextEditingController _searchController = TextEditingController();
   String _selectedCategory = 'All Categories';
-  final List<ArtEventModel> _allEvents = ArtEventModel.mockEvents;
+  List<ArtEventModel> _allEvents = ArtEventModel.mockEvents;
   final List<String> _categories = ArtEventModel.categories;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDynamicEvents();
+  }
+
+  Future<void> _fetchDynamicEvents() async {
+    try {
+      final apiClient = sl<ApiClient>();
+      final response = await apiClient.get(ApiEndpoints.events);
+      if (response is Map<String, dynamic> && response['data'] is List) {
+        final List list = response['data'];
+        final fetched = list.map((json) {
+          return ArtEventModel(
+            id: json['id']?.toString() ?? 'event_${DateTime.now().millisecondsSinceEpoch}',
+            title: json['title'] ?? 'Art Event',
+            category: json['category'] ?? 'Art Exhibition',
+            price: (json['is_free'] == 1 || json['is_free'] == true) ? 'Free Entrance' : 'Ticketed',
+            description: json['description'] ?? '',
+            dateTime: json['event_date'] ?? 'Upcoming Event',
+            location: json['location'] ?? 'Dubai, UAE',
+            attendeesCount: 12,
+            maxAttendees: 100,
+            organizer: json['organizer_name'] ?? 'Dubai Culture',
+            tags: (json['tags'] is String && (json['tags'] as String).isNotEmpty)
+                ? (json['tags'] as String).split(',')
+                : ['Art', 'Event'],
+          );
+        }).toList();
+
+        if (fetched.isNotEmpty && mounted) {
+          setState(() {
+            _allEvents = fetched;
+          });
+        }
+      }
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
