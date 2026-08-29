@@ -20,6 +20,8 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
   late TabController _tabController;
   List<ArtistModel> _favoritedArtists = [];
   List<ArtEventModel> _favoritedEvents = [];
+  List<Map<String, dynamic>> _favoritedArtworks = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -29,44 +31,23 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
   }
 
   Future<void> _fetchFavorites() async {
+    setState(() => _isLoading = _favoritedArtists.isEmpty && _favoritedEvents.isEmpty && _favoritedArtworks.isEmpty);
     try {
       final artists = await sl<ApiService>().getArtists(forceRefresh: true);
       final events = await sl<ApiService>().getEvents(forceRefresh: true);
+      final artworks = await sl<ApiService>().getArtworks(forceRefresh: true);
       if (mounted) {
         setState(() {
           _favoritedArtists = artists;
           _favoritedEvents = events;
+          _favoritedArtworks = artworks;
+          _isLoading = false;
         });
       }
-    } catch (_) {}
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
-
-  final List<Map<String, String>> _favoritedArtworks = [
-    {
-      'title': 'Desert Horizon',
-      'artist': 'Frankie DeChiazza',
-      'details': '2024 • Oil on Canvas',
-      'dimensions': '120 x 90 cm',
-      'price': '\$2,000',
-      'image': 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1200&auto=format&fit=crop',
-    },
-    {
-      'title': 'Urban Reflections',
-      'artist': 'Alexander Mollov',
-      'details': '2025 • Digital Art',
-      'dimensions': '100 x 70 cm',
-      'price': '\$1,500',
-      'image': 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=1200&auto=format&fit=crop',
-    },
-    {
-      'title': 'Calligraphic Symphony',
-      'artist': 'Sara Al-Mahmoud',
-      'details': '2024 • Mixed Media & Gold Leaf',
-      'dimensions': '150 x 100 cm',
-      'price': '\$3,200',
-      'image': 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop',
-    },
-  ];
 
   @override
   void dispose() {
@@ -121,7 +102,7 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
       body: SafeArea(
         child: Column(
           children: [
-            // 1. Header Title & Subtitle (Dark Purple Theme matching other pages)
+            // 1. Header Title & Subtitle (Dark Purple Theme matching design)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
@@ -178,19 +159,25 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
 
             // 2. Tab Content View
             Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  // Tab 1: Favorited Artists List
-                  _buildArtistsTab(),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                  : RefreshIndicator(
+                      color: const Color(0xFF5E227A),
+                      onRefresh: _fetchFavorites,
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          // Tab 1: Favorited Artists List
+                          _buildArtistsTab(),
 
-                  // Tab 2: Favorited Events List
-                  _buildEventsTab(),
+                          // Tab 2: Favorited Events List
+                          _buildEventsTab(),
 
-                  // Tab 3: Favorited Artworks List
-                  _buildArtworksTab(),
-                ],
-              ),
+                          // Tab 3: Favorited Artworks List
+                          _buildArtworksTab(),
+                        ],
+                      ),
+                    ),
             ),
 
             // Footer Attribution
@@ -229,104 +216,48 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
             border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            padding: const EdgeInsets.all(12),
+            child: Row(
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(
-                      radius: 28,
-                      backgroundImage: NetworkImage(artist.avatarUrl),
-                      backgroundColor: Colors.white.withValues(alpha: 0.2),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            artist.name,
-                            style: const TextStyle(
-                              fontSize: 16.5,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            artist.category,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFFFFD700),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              const Icon(Icons.location_on_outlined, size: 14, color: Colors.white70),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  artist.location,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 12, color: Colors.white70),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.favorite, color: Color(0xFFEF4444)),
-                      onPressed: () => _removeArtist(index),
-                      tooltip: 'Remove from favorites',
-                    ),
-                  ],
+                CircleAvatar(
+                  radius: 28,
+                  backgroundImage: artist.avatarUrl.isNotEmpty
+                      ? NetworkImage(artist.avatarUrl)
+                      : null,
+                  backgroundColor: const Color(0xFF8B2FC9),
+                  child: artist.avatarUrl.isEmpty
+                      ? Text(
+                          artist.name.isNotEmpty ? artist.name[0].toUpperCase() : 'A',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+                        )
+                      : null,
                 ),
-                if (artist.bio.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  Text(
-                    artist.bio,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12.5, color: Colors.white70, height: 1.3),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        artist.name,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        artist.category,
+                        style: const TextStyle(fontSize: 13, color: Color(0xFFFFD700), fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        artist.location,
+                        style: const TextStyle(fontSize: 12, color: Colors.white70),
+                      ),
+                    ],
                   ),
-                ],
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: BorderSide(color: Colors.white.withValues(alpha: 0.4)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                        ),
-                        onPressed: () => context.push('/artist/${artist.id}'),
-                        child: const Text('View Profile', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF5E227A),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                        ),
-                        onPressed: () => context.push(RouteNames.bookArtist),
-                        child: const Text('Book Artist', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.favorite, color: Color(0xFFEF4444)),
+                  onPressed: () => _removeArtist(index),
+                  tooltip: 'Remove from favorites',
                 ),
               ],
             ),
@@ -340,9 +271,9 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
     if (_favoritedEvents.isEmpty) {
       return _buildEmptyState(
         icon: Icons.event_busy_outlined,
-        message: 'No favorited events yet.',
-        subMessage: 'Browse art exhibitions and save events to your list.',
-        actionText: 'Browse Events',
+        message: 'No favorited events saved.',
+        subMessage: 'Discover upcoming art events and bookmark them for quick access.',
+        actionText: 'Explore Events',
         onAction: () => context.go(RouteNames.events),
       );
     }
@@ -362,37 +293,46 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                    child: Image.network(
-                      event.imageUrl ?? 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=1200&auto=format&fit=crop',
-                      height: 140,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
+              if (event.imageUrl != null && event.imageUrl!.isNotEmpty)
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                  child: Image.network(
+                    event.imageUrl!,
+                    height: 140,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                   ),
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: CircleAvatar(
-                      backgroundColor: Colors.white,
-                      radius: 18,
-                      child: IconButton(
-                        icon: const Icon(Icons.favorite, color: Color(0xFFEF4444), size: 18),
-                        onPressed: () => _removeEvent(index),
-                        padding: EdgeInsets.zero,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
               Padding(
                 padding: const EdgeInsets.all(14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFD700),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            event.category,
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1E1E1E)),
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.favorite, color: Color(0xFFEF4444)),
+                          onPressed: () => _removeEvent(index),
+                          tooltip: 'Remove from favorites',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
                     Text(
                       event.title,
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
@@ -448,6 +388,14 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
       itemCount: _favoritedArtworks.length,
       itemBuilder: (context, index) {
         final item = _favoritedArtworks[index];
+        final title = item['title']?.toString() ?? 'Artwork';
+        final artist = item['artist_name']?.toString() ?? item['artist']?.toString() ?? 'Artist';
+        final year = item['year']?.toString() ?? '2025';
+        final medium = item['medium']?.toString() ?? item['details']?.toString() ?? 'Mixed Media';
+        final dimensions = item['dimensions']?.toString() ?? '120 x 80 cm';
+        final price = item['price']?.toString() ?? '\$2,000';
+        final image = item['image_url']?.toString() ?? item['image']?.toString() ?? 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1200&auto=format&fit=crop';
+
         return Container(
           margin: const EdgeInsets.only(bottom: 14),
           decoration: BoxDecoration(
@@ -462,10 +410,16 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: Image.network(
-                    item['image']!,
+                    image,
                     width: 80,
                     height: 80,
                     fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 80,
+                      height: 80,
+                      color: const Color(0xFF8B2FC9),
+                      child: const Icon(Icons.brush, color: Colors.white70),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -474,22 +428,22 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        item['title']!,
+                        title,
                         style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'By ${item['artist']!}',
+                        'By $artist',
                         style: const TextStyle(fontSize: 12.5, color: Color(0xFFFFD700), fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${item['details']!} • ${item['dimensions']!}',
+                        '$year • $medium • $dimensions',
                         style: const TextStyle(fontSize: 11.5, color: Colors.white70),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        item['price']!,
+                        price,
                         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ],

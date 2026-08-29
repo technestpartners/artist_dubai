@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../app/routes/route_names.dart';
-import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/di/injection_container.dart';
-import '../../../../core/network/api_client.dart';
+import '../../../../core/services/api_service.dart';
+import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 
@@ -92,7 +92,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     });
   }
 
-  final List<String> _categories = [
+  List<String> _categories = [
     'Visual Arts',
     'Painting & Drawing',
     'Sculpture & 3D Art',
@@ -114,8 +114,16 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
   @override
   void initState() {
     super.initState();
-    _fullNameController = TextEditingController();
-    _emailController = TextEditingController();
+    String prefilledName = '';
+    String prefilledEmail = '';
+    try {
+      final storage = sl<StorageService>();
+      prefilledName = storage.getString('user_name') ?? '';
+      prefilledEmail = storage.getString('user_email') ?? '';
+    } catch (_) {}
+
+    _fullNameController = TextEditingController(text: prefilledName);
+    _emailController = TextEditingController(text: prefilledEmail);
     _phoneController = TextEditingController();
     _locationController = TextEditingController(text: 'Dubai, UAE');
     _bioController = TextEditingController();
@@ -127,6 +135,19 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     _linkedinController = TextEditingController();
     _tiktokController = TextEditingController();
     _youtubeController = TextEditingController();
+
+    _loadDynamicData();
+  }
+
+  Future<void> _loadDynamicData() async {
+    try {
+      final catInfos = await sl<ApiService>().getCategories(type: 'artist');
+      if (catInfos.isNotEmpty && mounted) {
+        setState(() {
+          _categories = catInfos.map((c) => c.name).toList();
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -148,6 +169,18 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
   }
 
   void _submitProfile() async {
+    final name = _fullNameController.text.trim();
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter your full name or stage name.'),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     if (!_agreedToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -166,38 +199,41 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     });
 
     try {
-      final apiClient = sl<ApiClient>();
-      await apiClient.post(
-        ApiEndpoints.artists,
-        data: {
-          'name':
-              _fullNameController.text.trim().isEmpty
-                  ? 'New Artist'
-                  : _fullNameController.text.trim(),
-          'email': _emailController.text.trim(),
-          'phone': _phoneController.text.trim(),
-          'location':
-              _locationController.text.trim().isEmpty
-                  ? 'Dubai, UAE'
-                  : _locationController.text.trim(),
-          'category': _selectedCategory ?? 'Mixed Media',
-          'bio': _bioController.text.trim(),
-          'website': _websiteController.text.trim(),
-          'instagram': _instagramController.text.trim(),
-        },
+      final success = await sl<ApiService>().createArtistProfile(
+        name: name,
+        category: _selectedCategory ?? (_categories.isNotEmpty ? _categories.first : 'Visual Arts'),
+        location: _locationController.text.trim().isEmpty ? 'Dubai, UAE' : _locationController.text.trim(),
+        bio: _bioController.text.trim(),
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
+        website: _websiteController.text.trim(),
+        instagram: _instagramController.text.trim(),
+        experienceLevel: _selectedExperienceLevel,
       );
+
       if (mounted) {
         setState(() {
           _isSubmitting = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Artist Profile saved dynamically to database!'),
-            backgroundColor: Color(0xFF5E227A),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        context.go(RouteNames.artists);
+
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Artist Profile created successfully in database!'),
+              backgroundColor: Color(0xFF6A2777),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          context.go(RouteNames.artists);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to save profile. Please check your inputs.'),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -896,6 +932,10 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
   }) {
     return DropdownButtonFormField<String>(
       value: value,
+      dropdownColor: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      menuMaxHeight: 320,
+      elevation: 4,
       hint: Text(
         hintText,
         style: const TextStyle(
@@ -906,8 +946,8 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
       ),
       icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF334155)),
       style: const TextStyle(
-        fontSize: 14.5,
-        color: Color(0xFF0F172A),
+        fontSize: 14,
+        color: Color(0xFF1E293B),
         fontWeight: FontWeight.w500,
       ),
       decoration: InputDecoration(
@@ -930,10 +970,19 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
           borderSide: const BorderSide(color: Color(0xFF5E227A), width: 1.5),
         ),
       ),
-      items:
-          items.map((item) {
-            return DropdownMenuItem<String>(value: item, child: Text(item));
-          }).toList(),
+      items: items.map((item) {
+        return DropdownMenuItem<String>(
+          value: item,
+          child: Text(
+            item,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF1E293B),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        );
+      }).toList(),
       onChanged: onChanged,
     );
   }

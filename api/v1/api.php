@@ -133,6 +133,7 @@ class DatabaseManager {
             CREATE TABLE IF NOT EXISTS categories (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 name VARCHAR(255) NOT NULL UNIQUE,
+                type VARCHAR(50) DEFAULT 'general',
                 description TEXT NULL,
                 emoji VARCHAR(50) DEFAULT '🎨',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -149,29 +150,6 @@ class DatabaseManager {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         ");
-
-        // Seed MySQL galleries data if table is empty
-        $checkGalleries = $this->pdo->query("SELECT COUNT(*) FROM galleries")->fetchColumn();
-        if ($checkGalleries == 0) {
-            $this->pdo->exec("
-                INSERT INTO galleries (name, category, location, timing, website, image_url) VALUES 
-                ('Alserkal Avenue', 'Art District & Galleries Hub', 'Al Quoz, Dubai', '10:00 AM - 07:00 PM (Sat - Thu)', 'https://alserkal.online', 'https://picsum.photos/id/1015/800/600'),
-                ('Jameel Arts Centre', 'Contemporary Art Museum', 'Jaddaf Waterfront, Dubai', '10:00 AM - 08:00 PM (Daily)', 'https://jameelartscentre.org', 'https://picsum.photos/id/1018/800/600'),
-                ('Tashkeel Al Fahidi', 'Art Studio & Exhibition Space', 'Al Fahidi Historical Neighborhood, Dubai', '09:00 AM - 08:00 PM (Sun - Thu)', 'https://tashkeel.org', 'https://picsum.photos/id/1025/800/600');
-            ");
-        }
-
-        // Seed MySQL events data if table is empty
-        $checkEvents = $this->pdo->query("SELECT COUNT(*) FROM events")->fetchColumn();
-        if ($checkEvents == 0) {
-            $this->pdo->exec("
-                INSERT INTO events (title, description, category, price, event_date, location, venue, is_free, attendees_count, max_attendees, organizer_name, contact_email, tags) VALUES 
-                ('Dubai Contemporary Art Night 2026', 'Annual showcase featuring contemporary fine art, sculpture installations, and live painting by top UAE artists.', 'Exhibition & Gallery Showcase', 'Free', '15 Oct 2026', 'Al Quoz, Dubai', 'Alserkal Avenue', 1, 45, 150, 'Artist Dubai', 'events@artistdubai.com', 'Contemporary,Exhibition,Painting'),
-                ('Arabic Calligraphy & Typography Masterclass', 'Hands-on intensive masterclass exploring traditional Kufic script and modern digital typography techniques.', 'Masterclass & Workshop', 'Free', '22 Oct 2026', 'Jaddaf Waterfront, Dubai', 'Jameel Arts Centre', 1, 28, 40, 'Dubai Culture', 'workshop@dubaiculture.gov.ae', 'Calligraphy,Workshop,Typography'),
-                ('Emirates Digital Art & NFT Summit', 'Explore cutting-edge CGI, 3D render art, generative AI installations, and immersive digital media.', 'Digital Art & New Media', 'Free', '05 Nov 2026', 'DIFC, Dubai', 'Museum of the Future', 1, 85, 200, 'Emirates Art Foundation', 'digital@emiratesart.ae', 'DigitalArt,CGI,NFT'),
-                ('Al Quoz Outdoor Sculpture Showcase', 'Public outdoor exhibition of monumental 3D sculptures and kinetic art installations in the heart of Al Quoz.', 'Sculpture & 3D Installation', 'Free', '18 Nov 2026', 'Al Quoz Creative Zone, Dubai', 'Alserkal Outdoor Plaza', 1, 60, 300, 'Alserkal Avenue', 'info@alserkal.online', 'Sculpture,PublicArt,Outdoor');
-            ");
-        }
     }
 }
 
@@ -211,7 +189,7 @@ class ApiResponse {
 class InputSanitizer {
     public static function cleanString(mixed $val, string $default = ''): string {
         if (!is_string($val)) return $default;
-        return trim(htmlspecialchars($val, ENT_QUOTES, 'UTF-8'));
+        return trim(strip_tags((string)$val));
     }
 
     public static function cleanEmail(mixed $val): string {
@@ -247,24 +225,29 @@ class AuthController {
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
-        if ($user) {
-            $valid = password_verify($password, $user['password_hash']) ||
-                     ($password === '12345678' && hash_equals($user['email'], 'allenbaiyee@me.com')) ||
-                     ($password === '123456' && hash_equals($user['email'], 'vivek@gmail.com'));
-
-            if ($valid) {
-                ApiResponse::success([
-                    'user' => [
-                        'id' => (int)$user['id'],
-                        'full_name' => $user['full_name'],
-                        'email' => $user['email'],
-                        'created_at' => $user['created_at']
-                    ],
-                    'token' => InputSanitizer::generateToken()
-                ], 'Login successful');
-            }
+        if (!$user) {
+            ApiResponse::error('User is not available. Please create an account first.', 404);
         }
-        ApiResponse::error('Invalid email or password.', 401);
+
+        $valid = password_verify($password, $user['password_hash']) ||
+                 ($password === $user['password_hash']) ||
+                 (md5($password) === $user['password_hash']) ||
+                 ($password === '12345678' && hash_equals($user['email'], 'allenbaiyee@me.com')) ||
+                 ($password === '123456' && hash_equals($user['email'], 'vivek@gmail.com'));
+
+        if ($valid) {
+            ApiResponse::success([
+                'user' => [
+                    'id' => (int)$user['id'],
+                    'full_name' => $user['full_name'],
+                    'email' => $user['email'],
+                    'created_at' => $user['created_at']
+                ],
+                'token' => InputSanitizer::generateToken()
+            ], 'Login successful');
+        }
+
+        ApiResponse::error('Incorrect password. Please try again.', 401);
     }
 
     public function register(array $input): void {
@@ -297,20 +280,92 @@ class AuthController {
     }
 
     public function profile(array $input): void {
-        $email = InputSanitizer::cleanEmail($input['email'] ?? $_GET['email'] ?? 'allenbaiyee@me.com');
-        $stmt = $this->db->prepare('SELECT id, full_name, email, created_at FROM users WHERE email = ?');
-        $stmt->execute([$email]);
-        $user = $stmt->fetch();
+        $email = InputSanitizer::cleanEmail($input['email'] ?? $_GET['email'] ?? '');
+        $user = null;
+        if (!empty($email)) {
+            $stmt = $this->db->prepare('SELECT id, full_name, email, created_at FROM users WHERE email = ?');
+            $stmt->execute([$email]);
+            $user = $stmt->fetch();
+        }
+
+        if (!$user) {
+            $stmt = $this->db->query('SELECT id, full_name, email, created_at FROM users ORDER BY id ASC LIMIT 1');
+            $user = $stmt->fetch();
+        }
 
         if ($user) {
+            // Check if user has an associated artist profile
+            $artistStmt = $this->db->prepare('SELECT * FROM artists WHERE user_id = ? OR name = ? LIMIT 1');
+            $artistStmt->execute([$user['id'], $user['full_name']]);
+            $artist = $artistStmt->fetch();
+
             ApiResponse::success([
                 'id' => (int)$user['id'],
                 'full_name' => $user['full_name'],
                 'email' => $user['email'],
-                'created_at' => $user['created_at']
+                'created_at' => $user['created_at'],
+                'artist_profile' => $artist ?: null
             ], 'Profile fetched');
         }
-        ApiResponse::error('Profile not found', 404);
+
+        ApiResponse::success([
+            'id' => 1,
+            'full_name' => 'Demo User',
+            'email' => 'user@artistdubai.com',
+            'created_at' => date('Y-m-d H:i:s'),
+            'artist_profile' => null
+        ], 'Default profile');
+    }
+
+    public function changePassword(array $input): void {
+        $email = InputSanitizer::cleanEmail($input['email'] ?? '');
+        $newPassword = $input['new_password'] ?? $input['password'] ?? '';
+
+        if (empty($email) || strlen($newPassword) < 6) {
+            ApiResponse::error('Valid email and minimum 6 character new password required.', 400);
+        }
+
+        $hash = password_hash($newPassword, PASSWORD_BCRYPT);
+        $stmt = $this->db->prepare('UPDATE users SET password_hash = ? WHERE email = ?');
+        $stmt->execute([$hash, $email]);
+
+        if ($stmt->rowCount() > 0) {
+            ApiResponse::success([], 'Password updated successfully in MySQL');
+        } else {
+            // User might exist with same password or not found
+            $check = $this->db->prepare('SELECT id FROM users WHERE email = ?');
+            $check->execute([$email]);
+            if ($check->fetch()) {
+                ApiResponse::success([], 'Password updated successfully');
+            } else {
+                ApiResponse::error('User account not found', 404);
+            }
+        }
+    }
+
+    public function deleteAccount(array $input): void {
+        $email = InputSanitizer::cleanEmail($input['email'] ?? '');
+        if (empty($email)) {
+            ApiResponse::error('Email is required for account deletion.', 400);
+        }
+
+        $stmt = $this->db->prepare('SELECT id, full_name FROM users WHERE email = ?');
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
+
+        if ($user) {
+            $userId = (int)$user['id'];
+            $name = $user['full_name'];
+
+            // Clean up related user records
+            $this->db->prepare('DELETE FROM artists WHERE user_id = ? OR name = ?')->execute([$userId, $name]);
+            $this->db->prepare('DELETE FROM bookings WHERE email = ?')->execute([$email]);
+            $this->db->prepare('DELETE FROM users WHERE id = ?')->execute([$userId]);
+
+            ApiResponse::success([], 'Account deleted successfully from MySQL');
+        } else {
+            ApiResponse::error('Account not found', 404);
+        }
     }
 }
 
@@ -321,8 +376,14 @@ class CategoryController {
         $this->db = DatabaseManager::getInstance()->getConnection();
     }
 
-    public function getCategories(): void {
-        $stmt = $this->db->query('SELECT * FROM categories ORDER BY id ASC');
+    public function getCategories(array $query = []): void {
+        $type = InputSanitizer::cleanString($query['type'] ?? '');
+        if (!empty($type)) {
+            $stmt = $this->db->prepare('SELECT * FROM categories WHERE type = ? OR type = "general" ORDER BY id ASC');
+            $stmt->execute([$type]);
+        } else {
+            $stmt = $this->db->query('SELECT * FROM categories ORDER BY id ASC');
+        }
         $categories = $stmt->fetchAll();
         ApiResponse::success($categories, 'Categories retrieved successfully from MySQL');
     }
@@ -391,13 +452,29 @@ class ArtistController {
         $category = InputSanitizer::cleanString($input['category'] ?? 'Contemporary Art');
         $location = InputSanitizer::cleanString($input['location'] ?? 'Dubai, UAE');
         $bio = InputSanitizer::cleanString($input['bio'] ?? '');
+        $email = InputSanitizer::cleanEmail($input['email'] ?? '');
+        $phone = InputSanitizer::cleanString($input['phone'] ?? '');
+        $website = InputSanitizer::cleanString($input['website'] ?? '');
+        $instagram = InputSanitizer::cleanString($input['instagram'] ?? '');
+        $experience_level = InputSanitizer::cleanString($input['experience_level'] ?? $input['experience'] ?? '');
+        $avatar_url = InputSanitizer::cleanString($input['avatar_url'] ?? $input['avatar'] ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80');
+        $banner_url = InputSanitizer::cleanString($input['banner_url'] ?? $input['banner'] ?? 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80');
 
         if (empty($name)) {
             ApiResponse::error('Artist name is required.');
         }
 
-        $stmt = $this->db->prepare('INSERT INTO artists (name, category, location, bio) VALUES (?, ?, ?, ?)');
-        $stmt->execute([$name, $category, $location, $bio]);
+        // Check if user exists to link user_id
+        $userId = null;
+        if (!empty($email)) {
+            $uStmt = $this->db->prepare('SELECT id FROM users WHERE email = ?');
+            $uStmt->execute([$email]);
+            $uRow = $uStmt->fetch();
+            if ($uRow) $userId = (int)$uRow['id'];
+        }
+
+        $stmt = $this->db->prepare('INSERT INTO artists (user_id, name, category, location, bio, email, phone, website, instagram, experience_level, avatar_url, banner_url, followers_count, works_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)');
+        $stmt->execute([$userId, $name, $category, $location, $bio, $email, $phone, $website, $instagram, $experience_level, $avatar_url, $banner_url]);
 
         ApiResponse::success(['artist_id' => (int)$this->db->lastInsertId()], 'Artist profile created successfully in MySQL', 201);
     }
@@ -470,16 +547,23 @@ class EventController {
         $description = InputSanitizer::cleanString($input['description'] ?? '');
         $category = InputSanitizer::cleanString($input['category'] ?? 'Exhibition & Gallery Showcase');
         $location = InputSanitizer::cleanString($input['location'] ?? 'Dubai, UAE');
-        $venue = InputSanitizer::cleanString($input['venue'] ?? 'Alserkal Avenue');
-        $eventDate = InputSanitizer::cleanString($input['event_date'] ?? $input['dateTime'] ?? '15 Oct 2026');
+        $venue = InputSanitizer::cleanString($input['venue'] ?? '');
+        $eventDate = InputSanitizer::cleanString($input['event_date'] ?? $input['dateTime'] ?? '');
+        $endDate = InputSanitizer::cleanString($input['end_date'] ?? '');
+        $isFree = isset($input['is_free']) ? (int)$input['is_free'] : 1;
+        $price = $isFree ? 'Free' : InputSanitizer::cleanString($input['price'] ?? 'AED 50');
         $organizer = InputSanitizer::cleanString($input['organizer_name'] ?? 'Artist Dubai');
+        $contactEmail = InputSanitizer::cleanEmail($input['contact_email'] ?? '');
+        $contactPhone = InputSanitizer::cleanString($input['contact_phone'] ?? '');
+        $tags = InputSanitizer::cleanString($input['tags'] ?? '');
+        $imageUrl = InputSanitizer::cleanString($input['image_url'] ?? $input['image'] ?? 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80');
 
         if (empty($title)) {
             ApiResponse::error('Event title is required.');
         }
 
-        $stmt = $this->db->prepare('INSERT INTO events (title, description, category, location, venue, event_date, organizer_name) VALUES (?, ?, ?, ?, ?, ?, ?)');
-        $stmt->execute([$title, $description, $category, $location, $venue, $eventDate, $organizer]);
+        $stmt = $this->db->prepare('INSERT INTO events (title, description, category, price, event_date, end_date, location, venue, is_free, organizer_name, contact_email, contact_phone, tags, image_url, attendees_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)');
+        $stmt->execute([$title, $description, $category, $price, $eventDate, $endDate, $location, $venue, $isFree, $organizer, $contactEmail, $contactPhone, $tags, $imageUrl]);
 
         ApiResponse::success(['event_id' => (int)$this->db->lastInsertId()], 'Event created successfully in MySQL', 201);
     }
@@ -493,25 +577,153 @@ class BookingController {
     }
 
     public function getBookings(array $query): void {
-        $stmt = $this->db->query('SELECT * FROM bookings ORDER BY id DESC');
+        $email = InputSanitizer::cleanEmail($query['email'] ?? '');
+        if (!empty($email)) {
+            $stmt = $this->db->prepare('SELECT * FROM bookings WHERE email = ? ORDER BY id DESC');
+            $stmt->execute([$email]);
+        } else {
+            $stmt = $this->db->query('SELECT * FROM bookings ORDER BY id DESC');
+        }
         $bookings = $stmt->fetchAll();
         ApiResponse::success($bookings, 'Bookings retrieved successfully from MySQL');
     }
 
     public function createBooking(array $input): void {
-        $name = InputSanitizer::cleanString($input['full_name'] ?? '');
+        $name = InputSanitizer::cleanString($input['full_name'] ?? $input['name'] ?? '');
         $email = InputSanitizer::cleanEmail($input['email'] ?? '');
         $phone = InputSanitizer::cleanString($input['phone'] ?? '');
         $artistName = InputSanitizer::cleanString($input['artist_name'] ?? '');
+        $bookingType = InputSanitizer::cleanString($input['booking_type'] ?? 'Event Booking');
+        $eventId = !empty($input['event_id']) ? (int)$input['event_id'] : null;
+        $eventTitle = InputSanitizer::cleanString($input['event_title'] ?? $input['title'] ?? '');
+        $eventDate = InputSanitizer::cleanString($input['event_date'] ?? $input['date'] ?? '15 Oct 2026');
+        $location = InputSanitizer::cleanString($input['location'] ?? 'Dubai, UAE');
+        $description = InputSanitizer::cleanString($input['description'] ?? $input['notes'] ?? '');
+        $ticketsCount = isset($input['tickets_count']) ? (int)$input['tickets_count'] : 1;
+        $totalPrice = InputSanitizer::cleanString($input['total_price'] ?? $input['price'] ?? 'Free');
+        $status = InputSanitizer::cleanString($input['status'] ?? 'Confirmed');
 
         if (empty($name) || empty($email)) {
             ApiResponse::error('Full name and valid email are required.');
         }
 
-        $stmt = $this->db->prepare('INSERT INTO bookings (full_name, email, phone, artist_name) VALUES (?, ?, ?, ?)');
-        $stmt->execute([$name, $email, $phone, $artistName]);
+        $stmt = $this->db->prepare('INSERT INTO bookings (full_name, email, phone, artist_name, booking_type, event_id, event_title, event_date, location, description, tickets_count, total_price, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$name, $email, $phone, $artistName, $bookingType, $eventId, $eventTitle, $eventDate, $location, $description, $ticketsCount, $totalPrice, $status]);
 
         ApiResponse::success(['booking_id' => (int)$this->db->lastInsertId()], 'Booking submitted successfully in MySQL', 201);
+    }
+
+    public function cancelBooking(array $input): void {
+        $id = (int)($input['id'] ?? $input['booking_id'] ?? 0);
+        if ($id <= 0) {
+            ApiResponse::error('Booking ID is required.');
+        }
+
+        $stmt = $this->db->prepare("UPDATE bookings SET status = 'Cancelled' WHERE id = ?");
+        $stmt->execute([$id]);
+
+        ApiResponse::success(['booking_id' => $id, 'status' => 'Cancelled'], 'Booking cancelled successfully in MySQL');
+    }
+
+    public function downloadTicketPdf(array $query): void {
+        $id = (int)($query['id'] ?? $query['booking_id'] ?? 0);
+        $stmt = $this->db->prepare('SELECT * FROM bookings WHERE id = ? LIMIT 1');
+        $stmt->execute([$id]);
+        $booking = $stmt->fetch();
+
+        if (!$booking) {
+            $booking = [
+                'id' => $id > 0 ? $id : 1,
+                'event_title' => 'Dubai Modern Art Showcase',
+                'full_name' => 'Valued Attendee',
+                'email' => 'attendee@artistdubai.com',
+                'event_date' => '15 Oct 2026',
+                'location' => 'Alserkal Avenue, Dubai',
+                'tickets_count' => 1,
+                'total_price' => 'Free',
+                'status' => 'Confirmed'
+            ];
+        }
+
+        $ref = 'BK-' . ($booking['id'] ?? '1');
+        $title = $booking['event_title'] ?? $booking['artist_name'] ?? 'Dubai Art Event';
+        $name = $booking['full_name'] ?? $booking['name'] ?? 'Attendee';
+        $email = $booking['email'] ?? '';
+        $date = $booking['event_date'] ?? '15 Oct 2026';
+        $location = $booking['location'] ?? 'Dubai, UAE';
+        $tickets = ($booking['tickets_count'] ?? 1) . ' Ticket(s)';
+        $price = $booking['total_price'] ?? 'Free';
+        $status = $booking['status'] ?? 'Confirmed';
+
+        $stream = "q\n";
+        $stream .= "0.415 0.153 0.467 rg\n";
+        $stream .= "50 720 495 70 re\n";
+        $stream .= "f\n";
+
+        $stream .= "BT\n/F2 18 Tf\n1 1 1 rg\n70 755 Td\n(DUBAI ART EVENT E-TICKET PASS) Tj\nET\n";
+        $stream .= "BT\n/F1 10 Tf\n1 1 1 rg\n70 735 Td\n(Official Booking Confirmation - Artist Dubai Platform) Tj\nET\n";
+
+        $stream .= "0.85 0.88 0.92 RG\n1.5 w\n50 380 495 330 re\nS\n";
+
+        $stream .= "BT\n/F2 18 Tf\n0.06 0.09 0.16 rg\n70 670 Td\n(" . addcslashes($title, "()\\") . ") Tj\nET\n";
+        $stream .= "BT\n/F2 12 Tf\n0.415 0.153 0.467 rg\n70 645 Td\n(Booking Reference: #$ref) Tj\nET\n";
+
+        $stream .= "0.95 0.90 0.98 rg\n430 640 95 24 re\nf\n";
+        $stream .= "BT\n/F2 10 Tf\n0.415 0.153 0.467 rg\n445 647 Td\n($status) Tj\nET\n";
+
+        $stream .= "0.89 0.91 0.94 RG\n1 w\n70 620 m 525 620 l\nS\n";
+
+        $fields = [
+            ['Attendee Name:', $name],
+            ['Email Address:', $email],
+            ['Event Date & Time:', $date],
+            ['Venue / Location:', $location],
+            ['Ticket Quantity:', $tickets],
+            ['Total Amount:', $price],
+        ];
+
+        $y = 585;
+        foreach ($fields as $f) {
+            $stream .= "BT\n/F1 11 Tf\n0.39 0.45 0.55 rg\n70 $y Td\n(" . addcslashes($f[0], "()\\") . ") Tj\nET\n";
+            $stream .= "BT\n/F2 11.5 Tf\n0.12 0.16 0.23 rg\n220 $y Td\n(" . addcslashes($f[1], "()\\") . ") Tj\nET\n";
+            $y -= 28;
+        }
+
+        $stream .= "BT\n/F1 9.5 Tf\n0.6 0.65 0.72 rg\n70 350 Td\n(Please present this digital pass or printed copy at the reception. Generated by Artist Dubai.) Tj\nET\n";
+        $stream .= "Q\n";
+
+        $streamLen = strlen($stream);
+
+        $objects = [];
+        $objects[1] = "<<\n/Type /Catalog\n/Pages 2 0 R\n>>";
+        $objects[2] = "<<\n/Type /Pages\n/Kids [3 0 R]\n/Count 1\n>>";
+        $objects[3] = "<<\n/Type /Page\n/Parent 2 0 R\n/MediaBox [0 0 595 842]\n/Resources <<\n/Font <<\n/F1 4 0 R\n/F2 5 0 R\n>>\n>>\n/Contents 6 0 R\n>>";
+        $objects[4] = "<<\n/Type /Font\n/Subtype /Type1\n/BaseFont /Helvetica\n>>";
+        $objects[5] = "<<\n/Type /Font\n/Subtype /Type1\n/BaseFont /Helvetica-Bold\n>>";
+        $objects[6] = "<<\n/Length $streamLen\n>>\nstream\n" . $stream . "endstream";
+
+        $pdf = "%PDF-1.4\n";
+        $offsets = [];
+        foreach ($objects as $num => $obj) {
+            $offsets[$num] = strlen($pdf);
+            $pdf .= "$num 0 obj\n$obj\nendobj\n";
+        }
+
+        $xrefOffset = strlen($pdf);
+        $pdf .= "xref\n0 " . (count($objects) + 1) . "\n0000000000 65535 f \n";
+        foreach ($objects as $num => $obj) {
+            $pdf .= sprintf("%010d 00000 n \n", $offsets[$num]);
+        }
+
+        $pdf .= "trailer\n<<\n/Size " . (count($objects) + 1) . "\n/Root 1 0 R\n>>\nstartxref\n$xrefOffset\n%%EOF";
+
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="Dubai_Art_Ticket_' . $ref . '.pdf"');
+        header('Content-Length: ' . strlen($pdf));
+        header('Cache-Control: private, max-age=0, must-revalidate');
+        header('Pragma: public');
+        echo $pdf;
+        exit;
     }
 }
 
@@ -559,9 +771,42 @@ class GovernmentController {
     }
 }
 
+class ArtworkController {
+    private PDO $db;
+
+    public function __construct() {
+        $this->db = DatabaseManager::getInstance()->getConnection();
+    }
+
+    public function getArtworks(): void {
+        $stmt = $this->db->query('SELECT * FROM artworks ORDER BY id ASC');
+        $artworks = $stmt->fetchAll();
+        ApiResponse::success($artworks, 'Artworks retrieved successfully from MySQL');
+    }
+}
+
 class FavoriteController {
-    public function getFavorites(): void {
-        ApiResponse::success(['artists' => [], 'events' => [], 'artworks' => []], 'Favorites fetched');
+    private PDO $db;
+
+    public function __construct() {
+        $this->db = DatabaseManager::getInstance()->getConnection();
+    }
+
+    public function getFavorites(array $query = []): void {
+        $stmtArtworks = $this->db->query('SELECT * FROM artworks ORDER BY id ASC');
+        $artworks = $stmtArtworks->fetchAll();
+
+        $stmtArtists = $this->db->query('SELECT * FROM artists ORDER BY id DESC');
+        $artists = $stmtArtists->fetchAll();
+
+        $stmtEvents = $this->db->query('SELECT * FROM events ORDER BY id DESC');
+        $events = $stmtEvents->fetchAll();
+
+        ApiResponse::success([
+            'artists' => $artists,
+            'events' => $events,
+            'artworks' => $artworks
+        ], 'Favorites retrieved successfully from MySQL');
     }
 }
 
@@ -585,6 +830,7 @@ class UnifiedMySqlApiRouter {
             elseif (strpos($uri, 'bookings') !== false) $resource = 'bookings';
             elseif (strpos($uri, 'galleries') !== false) $resource = 'galleries';
             elseif (strpos($uri, 'government') !== false) $resource = 'government';
+            elseif (strpos($uri, 'artworks') !== false) $resource = 'artworks';
             elseif (strpos($uri, 'favorites') !== false) $resource = 'favorites';
             else $resource = 'artists';
         }
@@ -592,16 +838,26 @@ class UnifiedMySqlApiRouter {
         switch ($resource) {
             case 'login':
             case 'auth':
+            case 'register':
+            case 'signup':
                 $auth = new AuthController();
-                if ($action === 'register') $auth->register($input);
-                elseif ($action === 'profile') $auth->profile($input);
-                else $auth->login($input);
+                if ($resource === 'register' || $resource === 'signup' || $action === 'register' || $action === 'signup') {
+                    $auth->register($input);
+                } elseif ($action === 'profile') {
+                    $auth->profile($input);
+                } elseif ($action === 'change_password' || $action === 'changepassword') {
+                    $auth->changePassword($input);
+                } elseif ($action === 'delete_account' || $action === 'deleteaccount') {
+                    $auth->deleteAccount($input);
+                } else {
+                    $auth->login($input);
+                }
                 break;
 
             case 'categories':
                 $cat = new CategoryController();
                 if ($method === 'POST') $cat->createCategory($input);
-                else $cat->getCategories();
+                else $cat->getCategories($_GET);
                 break;
 
             case 'artists':
@@ -618,8 +874,15 @@ class UnifiedMySqlApiRouter {
 
             case 'bookings':
                 $booking = new BookingController();
-                if ($method === 'POST') $booking->createBooking($input);
-                else $booking->getBookings($_GET);
+                if ($action === 'download_ticket' || $action === 'ticket_pdf' || (isset($_GET['action']) && ($_GET['action'] === 'download_ticket' || $_GET['action'] === 'ticket_pdf'))) {
+                    $booking->downloadTicketPdf($_GET);
+                } elseif ($action === 'cancel' || ($method === 'POST' && isset($input['action']) && $input['action'] === 'cancel')) {
+                    $booking->cancelBooking($input);
+                } elseif ($method === 'POST') {
+                    $booking->createBooking($input);
+                } else {
+                    $booking->getBookings($_GET);
+                }
                 break;
 
             case 'galleries':
@@ -632,8 +895,12 @@ class UnifiedMySqlApiRouter {
                 (new GovernmentController())->getEntities();
                 break;
 
+            case 'artworks':
+                (new ArtworkController())->getArtworks();
+                break;
+
             case 'favorites':
-                (new FavoriteController())->getFavorites();
+                (new FavoriteController())->getFavorites($_GET);
                 break;
 
             default:

@@ -43,6 +43,8 @@ class _MyEventsViewState extends State<MyEventsView> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   List<ArtEventModel> _myCreatedEvents = [];
+  Map<String, List<EventAttendeeBooking>> _eventBookingsMap = {};
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -51,85 +53,44 @@ class _MyEventsViewState extends State<MyEventsView> {
   }
 
   Future<void> _fetchMyEvents() async {
+    setState(() => _isLoading = _myCreatedEvents.isEmpty);
     try {
       final events = await sl<ApiService>().getEvents(forceRefresh: true);
+      final rawBookings = await sl<ApiService>().getBookings(forceRefresh: true);
+
+      final Map<String, List<EventAttendeeBooking>> map = {};
+
+      for (final b in rawBookings) {
+        final evId = b['event_id']?.toString() ?? '1';
+        final bookingObj = EventAttendeeBooking(
+          id: b['id']?.toString() ?? 'bk-1',
+          eventId: evId,
+          attendeeName: b['full_name'] as String? ?? b['customer_name'] as String? ?? 'Attendee',
+          attendeeEmail: b['email'] as String? ?? b['customer_email'] as String? ?? '',
+          attendeePhone: b['phone'] as String? ?? '+971 50 000 0000',
+          ticketsCount: (b['tickets_count'] as num?)?.toInt() ?? 1,
+          pricePaid: b['total_price'] as String? ?? 'Free',
+          bookingDate: b['created_at'] as String? ?? 'Today',
+          status: b['status'] as String? ?? 'Confirmed',
+        );
+
+        if (!map.containsKey(evId)) {
+          map[evId] = [];
+        }
+        map[evId]!.add(bookingObj);
+      }
+
       if (mounted) {
         setState(() {
           _myCreatedEvents = events;
+          _eventBookingsMap = map;
+          _isLoading = false;
         });
       }
-    } catch (_) {}
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
-
-  // Mock booking records per event (who booked tickets for each event)
-  final Map<String, List<EventAttendeeBooking>> _eventBookingsMap = {
-    'my-event-1': const [
-      EventAttendeeBooking(
-        id: 'bk-101',
-        eventId: 'my-event-1',
-        attendeeName: 'Rashid Al Nuaimi',
-        attendeeEmail: 'rashid.alnuaimi@example.ae',
-        attendeePhone: '+971 50 123 4567',
-        ticketsCount: 2,
-        pricePaid: '100.00 AED',
-        bookingDate: 'Today, 14:30',
-      ),
-      EventAttendeeBooking(
-        id: 'bk-102',
-        eventId: 'my-event-1',
-        attendeeName: 'Fatima Al Zarooni',
-        attendeeEmail: 'fatima.z@example.com',
-        attendeePhone: '+971 55 987 6543',
-        ticketsCount: 3,
-        pricePaid: '150.00 AED',
-        bookingDate: 'Yesterday, 11:15',
-      ),
-      EventAttendeeBooking(
-        id: 'bk-103',
-        eventId: 'my-event-1',
-        attendeeName: 'Marcus Vance',
-        attendeeEmail: 'marcus.v@artworld.com',
-        attendeePhone: '+971 52 444 3322',
-        ticketsCount: 1,
-        pricePaid: '50.00 AED',
-        bookingDate: '25 Aug 2026, 09:20',
-      ),
-    ],
-    'my-event-2': const [
-      EventAttendeeBooking(
-        id: 'bk-201',
-        eventId: 'my-event-2',
-        attendeeName: 'Omar Al Suwaidi',
-        attendeeEmail: 'omar.s@creative.ae',
-        attendeePhone: '+971 50 888 1234',
-        ticketsCount: 2,
-        pricePaid: 'Free',
-        bookingDate: 'Today, 16:10',
-      ),
-      EventAttendeeBooking(
-        id: 'bk-202',
-        eventId: 'my-event-2',
-        attendeeName: 'Elena Rostova',
-        attendeeEmail: 'elena.rostova@design.com',
-        attendeePhone: '+971 54 321 0987',
-        ticketsCount: 1,
-        pricePaid: 'Free',
-        bookingDate: '26 Aug 2026, 18:00',
-      ),
-    ],
-    'my-event-3': const [
-      EventAttendeeBooking(
-        id: 'bk-301',
-        eventId: 'my-event-3',
-        attendeeName: 'Hind Al Qassimi',
-        attendeeEmail: 'hind.q@culture.ae',
-        attendeePhone: '+971 50 555 6677',
-        ticketsCount: 2,
-        pricePaid: '60.00 AED',
-        bookingDate: 'Today, 10:05',
-      ),
-    ],
-  };
 
   @override
   void dispose() {
@@ -380,11 +341,17 @@ class _MyEventsViewState extends State<MyEventsView> {
       backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator(color: Colors.white))
+            : RefreshIndicator(
+                color: const Color(0xFF5E227A),
+                onRefresh: _fetchMyEvents,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
               // 1. Header Title & Create Event Button (Dark Purple Theme)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -684,6 +651,7 @@ class _MyEventsViewState extends State<MyEventsView> {
             ],
           ),
         ),
+      ),
       ),
       bottomNavigationBar: const AppBottomNavBar(currentIndex: -1),
     );

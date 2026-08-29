@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
-import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/di/injection_container.dart';
-import '../../../../core/network/api_client.dart';
+import '../../../../core/services/api_service.dart';
+import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 
@@ -33,30 +33,108 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
   bool _isFreeEvent = true;
   bool _isSubmitting = false;
 
-  final List<String> _categories = [
-    'Exhibition & Gallery Showcase',
-    'Art Competition & Contest',
-    'Workshop & Masterclass',
-    'Art Fair & Festival',
+  List<String> _categories = [
+    'Art Exhibition',
     'Gallery Opening',
-    'Live Performance & Painting',
-    'Other Art Event',
+    'Art Workshop',
+    'Artist Talk',
+    'Art Fair',
+    'Sculpture Installation',
+    'Photography Exhibition',
+    'Cultural Festival',
+    'Art Competition',
+    'Community Art Project',
   ];
 
   @override
   void initState() {
     super.initState();
+    String prefilledOrganizer = 'Artist Dubai';
+    String prefilledEmail = '';
+    try {
+      final storage = sl<StorageService>();
+      final uName = storage.getString('user_name');
+      final uEmail = storage.getString('user_email');
+      if (uName != null && uName.isNotEmpty) prefilledOrganizer = uName;
+      if (uEmail != null && uEmail.isNotEmpty) prefilledEmail = uEmail;
+    } catch (_) {}
+
     _eventTitleController = TextEditingController();
     _descriptionController = TextEditingController();
     _eventDateController = TextEditingController();
     _endDateController = TextEditingController();
     _locationController = TextEditingController(text: 'Dubai, UAE');
     _venueController = TextEditingController();
-    _organizerNameController = TextEditingController();
-    _contactEmailController = TextEditingController();
+    _organizerNameController = TextEditingController(text: prefilledOrganizer);
+    _contactEmailController = TextEditingController(text: prefilledEmail);
     _contactPhoneController = TextEditingController();
     _notesController = TextEditingController();
     _tagsController = TextEditingController();
+    _loadDynamicCategories();
+  }
+
+  Future<void> _loadDynamicCategories() async {
+    try {
+      final fetched = await sl<ApiService>().getEventCategories();
+      final filtered = fetched.where((c) => c != 'All Categories' && c != 'All').toList();
+      if (mounted && filtered.isNotEmpty) {
+        setState(() {
+          _categories = filtered;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _pickDateTime(TextEditingController controller) async {
+    final now = DateTime.now();
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: now.subtract(const Duration(days: 1)),
+      lastDate: now.add(const Duration(days: 730)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF6A2777),
+              onPrimary: Colors.white,
+              onSurface: Color(0xFF1E1E1E),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedDate == null || !mounted) return;
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 18, minute: 0),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF6A2777),
+              onPrimary: Colors.white,
+              onSurface: Color(0xFF1E1E1E),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    final hour = pickedTime?.hour ?? 18;
+    final minute = pickedTime?.minute ?? 0;
+    final dt = DateTime(pickedDate.year, pickedDate.month, pickedDate.day, hour, minute);
+
+    final formatted =
+        '${dt.day.toString().padLeft(2, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.year} ${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+
+    setState(() {
+      controller.text = formatted;
+    });
   }
 
   @override
@@ -76,49 +154,76 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
   }
 
   void _submitEvent() async {
+    final title = _eventTitleController.text.trim();
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter the event title.'),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isSubmitting = true;
     });
 
     try {
-      final apiClient = sl<ApiClient>();
-      await apiClient.post(
-        ApiEndpoints.events,
-        data: {
-          'title':
-              _eventTitleController.text.trim().isEmpty
-                  ? 'New Art Event'
-                  : _eventTitleController.text.trim(),
-          'description': _descriptionController.text.trim(),
-          'category': _selectedCategory ?? 'Exhibition & Gallery Showcase',
-          'event_date': _eventDateController.text.trim(),
-          'end_date': _endDateController.text.trim(),
-          'location':
-              _locationController.text.trim().isEmpty
-                  ? 'Dubai, UAE'
-                  : _locationController.text.trim(),
-          'venue': _venueController.text.trim(),
-          'is_free': _isFreeEvent ? 1 : 0,
-          'organizer_name': _organizerNameController.text.trim(),
-          'contact_email': _contactEmailController.text.trim(),
-          'contact_phone': _contactPhoneController.text.trim(),
-          'tags': _tagsController.text.trim(),
-        },
+      final success = await sl<ApiService>().createEvent(
+        title: title,
+        description: _descriptionController.text.trim(),
+        category: _selectedCategory ?? (_categories.isNotEmpty ? _categories.first : 'Art Exhibition'),
+        eventDate: _eventDateController.text.trim().isEmpty ? '15 Oct 2026' : _eventDateController.text.trim(),
+        endDate: _endDateController.text.trim(),
+        location: _locationController.text.trim().isEmpty ? 'Dubai, UAE' : _locationController.text.trim(),
+        venue: _venueController.text.trim(),
+        isFree: _isFreeEvent,
+        price: _isFreeEvent ? 'Free' : 'AED 50',
+        organizerName: _organizerNameController.text.trim(),
+        contactEmail: _contactEmailController.text.trim(),
+        contactPhone: _contactPhoneController.text.trim(),
+        tags: _tagsController.text.trim(),
       );
-    } catch (_) {}
 
-    if (mounted) {
-      setState(() {
-        _isSubmitting = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Art Event saved dynamically to database!'),
-          backgroundColor: Color(0xFF5E227A),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      context.go(RouteNames.events);
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Art Event saved dynamically to database!'),
+              backgroundColor: Color(0xFF6A2777),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          context.go(RouteNames.events);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to save art event. Please check inputs.'),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
@@ -231,19 +336,21 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                         },
                       ),
                       const SizedBox(height: 14),
-                      _buildLabel('Event Date & Time'),
-                      _buildTextField(
-                        controller: _eventDateController,
-                        hintText: 'dd-mm-yyyy --:--',
-                        suffixIcon: Icons.calendar_today_outlined,
-                      ),
-                      const SizedBox(height: 14),
-                      _buildLabel('End Date & Time (Optional)'),
-                      _buildTextField(
-                        controller: _endDateController,
-                        hintText: 'dd-mm-yyyy --:--',
-                        suffixIcon: Icons.calendar_today_outlined,
-                      ),
+                       _buildLabel('Event Date & Time'),
+                       _buildTextField(
+                         controller: _eventDateController,
+                         hintText: 'dd-mm-yyyy --:--',
+                         suffixIcon: Icons.calendar_today_outlined,
+                         onTap: () => _pickDateTime(_eventDateController),
+                       ),
+                       const SizedBox(height: 14),
+                       _buildLabel('End Date & Time (Optional)'),
+                       _buildTextField(
+                         controller: _endDateController,
+                         hintText: 'dd-mm-yyyy --:--',
+                         suffixIcon: Icons.calendar_today_outlined,
+                         onTap: () => _pickDateTime(_endDateController),
+                       ),
                       const SizedBox(height: 28),
 
                       // SECTION 2: Location
@@ -468,11 +575,14 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     IconData? suffixIcon,
     TextInputType? keyboardType,
     int maxLines = 1,
+    VoidCallback? onTap,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       maxLines: maxLines,
+      readOnly: onTap != null,
+      onTap: onTap,
       style: const TextStyle(
         fontSize: 14.5,
         color: Color(0xFF0F172A),
@@ -491,7 +601,10 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                 : null,
         suffixIcon:
             suffixIcon != null
-                ? Icon(suffixIcon, size: 18, color: const Color(0xFF64748B))
+                ? GestureDetector(
+                    onTap: onTap,
+                    child: Icon(suffixIcon, size: 18, color: const Color(0xFF64748B)),
+                  )
                 : null,
         filled: true,
         fillColor: Colors.white,
@@ -523,6 +636,10 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
   }) {
     return DropdownButtonFormField<String>(
       value: value,
+      dropdownColor: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      menuMaxHeight: 320,
+      elevation: 4,
       hint: Text(
         hintText,
         style: const TextStyle(
@@ -533,8 +650,8 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       ),
       icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF334155)),
       style: const TextStyle(
-        fontSize: 14.5,
-        color: Color(0xFF0F172A),
+        fontSize: 14,
+        color: Color(0xFF1E293B),
         fontWeight: FontWeight.w500,
       ),
       decoration: InputDecoration(
@@ -557,10 +674,19 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           borderSide: const BorderSide(color: Color(0xFF5E227A), width: 1.5),
         ),
       ),
-      items:
-          items.map((item) {
-            return DropdownMenuItem<String>(value: item, child: Text(item));
-          }).toList(),
+      items: items.map((item) {
+        return DropdownMenuItem<String>(
+          value: item,
+          child: Text(
+            item,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF1E293B),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        );
+      }).toList(),
       onChanged: onChanged,
     );
   }

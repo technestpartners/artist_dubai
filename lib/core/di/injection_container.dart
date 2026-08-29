@@ -9,6 +9,7 @@ import '../network/dio_interceptor.dart';
 import '../network/network_info.dart';
 import '../services/api_service.dart';
 import '../services/logger_service.dart';
+import '../services/notification_service.dart';
 import '../services/storage_service.dart';
 
 final sl = GetIt.instance;
@@ -54,6 +55,10 @@ Future<void> initDependencyInjection() async {
 
   sl.registerLazySingleton<ApiService>(
     () => ApiService(sl<ApiClient>()),
+  );
+
+  sl.registerLazySingleton<NotificationService>(
+    () => NotificationService(),
   );
 
   //! 3. Features (Auth, Home, Artists, Bookings, Profile)

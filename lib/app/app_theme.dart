@@ -19,6 +19,11 @@ class AppTheme {
         error: AppColors.error,
       ),
       textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
+      textSelectionTheme: const TextSelectionThemeData(
+        cursorColor: Color(0xFF6A2777),
+        selectionColor: Color(0xFFE9D5FF),
+        selectionHandleColor: Color(0xFF6A2777),
+      ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: const Color(0xFF6A2777),
         contentTextStyle: GoogleFonts.outfit(

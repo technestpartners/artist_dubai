@@ -19,7 +19,7 @@ class ApiEndpoints {
 
   // Auth (MySQL Backend)
   static const String login = '/api.php?resource=login';
-  static const String register = '/api.php?resource=login';
+  static const String register = '/api.php?resource=register';
   static const String userProfile = '/api.php?resource=login&action=profile';
 
   // Artists (MySQL Backend)
@@ -48,6 +48,10 @@ class ApiEndpoints {
 
   // Competitions & Open Calls (MySQL Backend)
   static const String competitions = '/api.php?resource=events';
+
+  // Artworks & Favorites (MySQL Backend)
+  static const String artworks = '/api.php?resource=artworks';
+  static const String favorites = '/api.php?resource=favorites';
 
   // About Platform (MySQL Backend)
   static const String aboutUs = '/api.php?resource=about';

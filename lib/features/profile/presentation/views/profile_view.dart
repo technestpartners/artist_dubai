@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/api_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
@@ -14,10 +15,82 @@ class ProfileView extends StatefulWidget {
 }
 
 class _ProfileViewState extends State<ProfileView> {
+  String _userName = '';
+  String _userEmail = '';
+  String _memberSince = '';
+  Map<String, dynamic>? _artistProfile;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    final storage = sl<StorageService>();
+    final email = storage.getString('user_email') ?? '';
+    final name = storage.getString('user_name') ?? '';
+    final createdAt = storage.getString('user_created_at');
+
+    setState(() {
+      _userEmail = email;
+      _userName = name.isNotEmpty ? name : 'User';
+      _memberSince = _formatMemberSince(createdAt);
+    });
+
+    if (email.isNotEmpty) {
+      try {
+        final profile = await sl<ApiService>().getUserProfile(email);
+        if (profile != null && mounted) {
+          final serverName = profile['full_name'] as String? ?? name;
+          final serverEmail = profile['email'] as String? ?? email;
+          final serverCreatedAt = profile['created_at'] as String?;
+          final artist = profile['artist_profile'] as Map<String, dynamic>?;
+
+          setState(() {
+            _userName = serverName;
+            _userEmail = serverEmail;
+            if (serverCreatedAt != null && serverCreatedAt.isNotEmpty) {
+              _memberSince = _formatMemberSince(serverCreatedAt);
+            }
+            _artistProfile = artist;
+          });
+
+          await storage.setString('user_name', _userName);
+          await storage.setString('user_email', _userEmail);
+          if (serverCreatedAt != null) {
+            await storage.setString('user_created_at', serverCreatedAt);
+          }
+        }
+      } catch (_) {}
+    }
+  }
+
+  String _formatMemberSince(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) {
+      return 'Recently Joined';
+    }
+    try {
+      final dt = DateTime.tryParse(dateStr.replaceAll(' ', 'T'));
+      if (dt != null) {
+        const months = [
+          'January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+      }
+    } catch (_) {}
+    return dateStr;
+  }
+
   void _onSignOut() async {
     try {
       final storage = sl<StorageService>();
       await storage.setBool('is_logged_in', false);
+      await storage.setString('user_email', '');
+      await storage.setString('user_name', '');
+      await storage.setString('user_created_at', '');
+      await storage.setString('auth_token', '');
     } catch (_) {}
     if (mounted) {
       context.go(RouteNames.home);
@@ -202,14 +275,48 @@ class _ProfileViewState extends State<ProfileView> {
                           ),
                           padding: const EdgeInsets.symmetric(horizontal: 18),
                         ),
-                        onPressed: () {
+                        onPressed: () async {
+                          final newPass = newPasswordController.text.trim();
+                          final confirmPass = confirmPasswordController.text.trim();
+
+                          if (newPass.length < 6) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Password must be at least 6 characters.'),
+                                backgroundColor: Color(0xFFEF4444),
+                              ),
+                            );
+                            return;
+                          }
+                          if (newPass != confirmPass) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Passwords do not match.'),
+                                backgroundColor: Color(0xFFEF4444),
+                              ),
+                            );
+                            return;
+                          }
+
                           Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Password updated successfully!'),
-                              backgroundColor: Color(0xFF6A2777),
-                            ),
+                          final success = await sl<ApiService>().changePassword(
+                            email: _userEmail,
+                            newPassword: newPass,
                           );
+
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  success
+                                      ? 'Password updated successfully in MySQL!'
+                                      : 'Failed to update password.',
+                                ),
+                                backgroundColor:
+                                    success ? const Color(0xFF6A2777) : const Color(0xFFEF4444),
+                              ),
+                            );
+                          }
                         },
                         child: const Text(
                           'Update Password',
@@ -303,15 +410,18 @@ class _ProfileViewState extends State<ProfileView> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    onPressed: () {
+                    onPressed: () async {
                       Navigator.pop(context);
+                      await sl<ApiService>().deleteAccount(_userEmail);
                       _onSignOut();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Account deletion request submitted.'),
-                          backgroundColor: Color(0xFFEF4444),
-                        ),
-                      );
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Account deleted successfully from MySQL.'),
+                            backgroundColor: Color(0xFFEF4444),
+                          ),
+                        );
+                      }
                     },
                     child: const Text(
                       'Yes, delete my account',
@@ -329,7 +439,7 @@ class _ProfileViewState extends State<ProfileView> {
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(
-                        color: Color(0xFFCBD5E1),
+                        color: Color(0xFF333333),
                         width: 1.0,
                       ),
                       shape: RoundedRectangleBorder(
@@ -358,44 +468,50 @@ class _ProfileViewState extends State<ProfileView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: const Color(0xFFFAFAFC),
       appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
         child: Column(
           children: [
-            // 1. Sub-Header Bar (Matching Screenshot media_1787735861255.png)
+            // Page Header Bar
             Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               color: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back,
-                      color: Color(0xFF1E1E1E),
-                      size: 20,
-                    ),
-                    onPressed: () {
-                      if (context.canPop()) {
-                        context.pop();
-                      } else {
-                        context.go(RouteNames.home);
-                      }
-                    },
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(
+                          Icons.arrow_back,
+                          color: Color(0xFF1E1E1E),
+                        ),
+                        onPressed: () {
+                          if (context.canPop()) {
+                            context.pop();
+                          } else {
+                            context.go(RouteNames.home);
+                          }
+                        },
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Account Settings',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1E1E1E),
+                        ),
+                      ),
+                    ],
                   ),
-                  const Text(
-                    'Account Settings',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E1E1E),
-                    ),
-                  ),
-                  const Spacer(),
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(
-                        color: Color(0xFFCBD5E1),
+                        color: Color(0xFFE2E8F0),
                         width: 1.0,
                       ),
                       shape: RoundedRectangleBorder(
@@ -433,7 +549,7 @@ class _ProfileViewState extends State<ProfileView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Card 1: Account Information
+                    // Card 1: Account Information (Dynamic from MySQL)
                     _buildSectionCard(
                       icon: Icons.person_outline,
                       title: 'Account Information',
@@ -441,84 +557,146 @@ class _ProfileViewState extends State<ProfileView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildInfoRow('Email', 'allenbaiyee@me.com'),
+                          _buildInfoRow('Email', _userEmail.isNotEmpty ? _userEmail : 'No email provided'),
                           const SizedBox(height: 14),
-                          _buildInfoRow('Member Since', '27 November 2025'),
+                          _buildInfoRow('Member Since', _memberSince.isNotEmpty ? _memberSince : 'Recently Joined'),
                           const SizedBox(height: 14),
-                          _buildInfoRow('Full Name', 'Allen'),
+                          _buildInfoRow('Full Name', _userName.isNotEmpty ? _userName : 'User'),
                         ],
                       ),
                     ),
                     const SizedBox(height: 16),
 
-                    // Card 2: Artist Profile
+                    // Card 2: Artist Profile (Dynamic from MySQL)
                     _buildSectionCard(
                       icon: Icons.palette_outlined,
                       title: 'Artist Profile',
-                      subtitle:
-                          'Create your artist profile to showcase your work',
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 10),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF3E8FF),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.palette_outlined,
-                              size: 32,
-                              color: Color(0xFF6A2777),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'No Artist Profile',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E1E1E),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          const Text(
-                            'Create your artist profile to be discoverable on the platform and receive booking requests.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF64748B),
-                              height: 1.35,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            height: 40,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF6A2777),
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                      subtitle: _artistProfile != null
+                          ? 'Your active artist profile details on Artist Dubai'
+                          : 'Create your artist profile to showcase your work',
+                      child: _artistProfile != null
+                          ? Column(
+                              children: [
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 26,
+                                      backgroundColor: const Color(0xFFF3E8FF),
+                                      backgroundImage: _artistProfile!['avatar_url'] != null && _artistProfile!['avatar_url'].toString().isNotEmpty
+                                          ? NetworkImage(_artistProfile!['avatar_url'].toString())
+                                          : null,
+                                      child: _artistProfile!['avatar_url'] == null || _artistProfile!['avatar_url'].toString().isEmpty
+                                          ? const Icon(Icons.person, color: Color(0xFF6A2777), size: 26)
+                                          : null,
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _artistProfile!['name']?.toString() ?? _userName,
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF1E1E1E),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            _artistProfile!['category']?.toString() ?? 'Contemporary Art',
+                                            style: const TextStyle(fontSize: 13, color: Color(0xFF6A2777), fontWeight: FontWeight.w600),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            _artistProfile!['location']?.toString() ?? 'Dubai, UAE',
+                                            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
+                                const SizedBox(height: 14),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 38,
+                                  child: OutlinedButton.icon(
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: const Color(0xFF6A2777),
+                                      side: const BorderSide(color: Color(0xFF6A2777), width: 1.2),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                    onPressed: () => context.push(RouteNames.artists),
+                                    icon: const Icon(Icons.visibility_outlined, size: 16),
+                                    label: const Text('View in Artists Directory', style: TextStyle(fontWeight: FontWeight.bold)),
+                                  ),
                                 ),
-                              ),
-                              onPressed: () {},
-                              child: const Text(
-                                'Create Artist Profile',
-                                style: TextStyle(
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.bold,
+                              ],
+                            )
+                          : Column(
+                              children: [
+                                const SizedBox(height: 10),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFF3E8FF),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.palette_outlined,
+                                    size: 32,
+                                    color: Color(0xFF6A2777),
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'No Artist Profile',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1E1E1E),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  'Create your artist profile to be discoverable on the platform and receive booking requests.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF64748B),
+                                    height: 1.35,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                SizedBox(
+                                  height: 40,
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF6A2777),
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                      ),
+                                    ),
+                                    onPressed: () => context.push(RouteNames.artistRegistration),
+                                    child: const Text(
+                                      'Create Artist Profile',
+                                      style: TextStyle(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                              ],
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                        ],
-                      ),
                     ),
                     const SizedBox(height: 16),
 

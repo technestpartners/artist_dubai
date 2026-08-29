@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import '../../../events/domain/models/art_event_model.dart';
+import '../../../events/presentation/views/event_detail_view.dart';
 
 class BookingsView extends StatefulWidget {
   const BookingsView({super.key});
@@ -31,12 +35,16 @@ class _BookingsViewState extends State<BookingsView> {
 
     try {
       String? userId;
+      String? userEmail;
       try {
-        userId = sl<StorageService>().getString('user_id');
+        final storage = sl<StorageService>();
+        userId = storage.getString('user_id');
+        userEmail = storage.getString('user_email');
       } catch (_) {}
 
       final data = await sl<ApiService>().getBookings(
         userId: userId,
+        email: userEmail,
         forceRefresh: forceRefresh,
       );
       if (mounted) {
@@ -149,18 +157,33 @@ class _BookingsViewState extends State<BookingsView> {
 
   Widget _buildCard(BuildContext context, Map<String, dynamic> b) {
     final status = (b['status'] as String? ?? 'confirmed');
-    final amount = (b['total_amount'] as num?)?.toDouble() ?? 0.0;
-    final amountStr = amount == 0.0 ? 'Free' : '${amount.toStringAsFixed(2)} AED';
-    final eventTitle = b['event_title'] as String? ?? b['notes'] as String? ?? 'Event Booking';
-    final eventCategory = b['event_category'] as String? ?? 'Event Booking';
-    final eventDateTime = b['event_date_time'] as String? ?? b['booking_date'] as String? ?? '';
-    final location = [b['event_location'], b['event_location_city']]
-        .where((e) => e != null && (e as String).isNotEmpty)
-        .join(', ');
-    final organizer = b['event_organizer'] as String? ?? b['artist_name'] as String?;
-    final customerEmail = b['customer_email'] as String? ?? '';
-    final customerName = b['customer_name'] as String? ?? '';
-    final ref = b['ref'] as String? ?? '#${(b['id'] as String).substring(0, 8)}';
+    final amountStr = b['total_price'] as String? ??
+        (b['total_amount'] != null ? '${b['total_amount']} AED' : 'Free');
+    final ticketsCount = b['tickets_count'] ?? 1;
+    final eventTitle = b['event_title'] as String? ??
+        b['title'] as String? ??
+        b['artist_name'] as String? ??
+        b['notes'] as String? ??
+        'Art Event Booking';
+    final eventCategory = b['booking_type'] as String? ??
+        b['event_category'] as String? ??
+        'Event Booking';
+    final eventDateTime = b['event_date'] as String? ??
+        b['event_date_time'] as String? ??
+        b['booking_date'] as String? ??
+        '';
+    final location = (b['location'] as String?)?.isNotEmpty == true
+        ? b['location'] as String
+        : [b['event_location'], b['event_location_city']]
+            .where((e) => e != null && (e as String).isNotEmpty)
+            .join(', ');
+    final organizer = b['artist_name'] as String? ??
+        b['organizer_name'] as String? ??
+        b['event_organizer'] as String?;
+    final customerEmail = b['email'] as String? ?? b['customer_email'] as String? ?? '';
+    final customerName = b['full_name'] as String? ?? b['customer_name'] as String? ?? '';
+    final idStr = b['id']?.toString() ?? '1';
+    final ref = b['ref'] as String? ?? '#BK-$idStr';
     final createdAt = b['created_at'] as String? ?? '';
 
     Color statusColor;
@@ -218,7 +241,9 @@ class _BookingsViewState extends State<BookingsView> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    status[0].toUpperCase() + status.substring(1),
+                    status.isNotEmpty
+                        ? status[0].toUpperCase() + status.substring(1)
+                        : 'Confirmed',
                     style: TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w600,
@@ -238,9 +263,9 @@ class _BookingsViewState extends State<BookingsView> {
                         color: Color(0xFF1E1E1E),
                       ),
                     ),
-                    const Text(
-                      '1 ticket',
-                      style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                    Text(
+                      '$ticketsCount ticket${ticketsCount == 1 ? '' : 's'}',
+                      style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
                     ),
                   ],
                 ),
@@ -291,7 +316,7 @@ class _BookingsViewState extends State<BookingsView> {
             _infoRow(Icons.badge_outlined, customerName),
 
           // Payment note
-          if (amount > 0)
+          if (amountStr.toLowerCase() != 'free' && amountStr != '0' && amountStr != 'AED 0')
             Container(
               margin: const EdgeInsets.fromLTRB(14, 10, 14, 0),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -326,7 +351,7 @@ class _BookingsViewState extends State<BookingsView> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => context.push(RouteNames.events),
+                    onPressed: () => _openEventDetails(context, b),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFF1E1E1E),
                       side: const BorderSide(color: Color(0xFFCBD5E1)),
@@ -342,17 +367,7 @@ class _BookingsViewState extends State<BookingsView> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Ticket downloaded!'),
-                          backgroundColor: Color(0xFF6A2777),
-                          behavior: SnackBarBehavior.floating,
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    },
+                    onPressed: () => _showTicketPassDialog(context, b),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFF1E1E1E),
                       side: const BorderSide(color: Color(0xFFCBD5E1)),
@@ -391,6 +406,256 @@ class _BookingsViewState extends State<BookingsView> {
     );
   }
 
+  Future<void> _openEventDetails(BuildContext context, Map<String, dynamic> b) async {
+    final eventTitle = b['event_title'] ?? b['artist_name'] ?? 'Dubai Modern Art Showcase';
+    final dynamic rawEventId = b['event_id'];
+
+    try {
+      final events = await sl<ApiService>().getEvents();
+      final match = events.firstWhere(
+        (e) => (rawEventId != null && e.id.toString() == rawEventId.toString()) || e.title.toLowerCase().trim() == eventTitle.toString().toLowerCase().trim(),
+        orElse: () => ArtEventModel(
+          id: rawEventId?.toString() ?? '1',
+          title: eventTitle.toString(),
+          category: 'Art Exhibition',
+          price: b['total_price']?.toString() ?? 'Free',
+          description: b['description'] != null && b['description'].toString().isNotEmpty
+              ? b['description'].toString()
+              : 'A premier art gathering bringing together contemporary painters, sculptors, and digital creators in Dubai.',
+          dateTime: b['event_date']?.toString() ?? '15 Oct 2026',
+          formattedDate: b['event_date']?.toString() ?? '15 Oct 2026',
+          location: b['location']?.toString() ?? 'Dubai, UAE',
+          attendeesCount: 0,
+          maxAttendees: 100,
+          organizer: b['artist_name']?.toString() ?? 'Renish Artistry',
+          organizerEmail: b['email']?.toString() ?? 'contact@artistdubai.com',
+          tags: const ['Art', 'Exhibition', 'Dubai'],
+          imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80',
+        ),
+      );
+
+      if (context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => EventDetailView(event: match),
+          ),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        final fallback = ArtEventModel(
+          id: rawEventId?.toString() ?? '1',
+          title: eventTitle.toString(),
+          category: 'Art Exhibition',
+          price: b['total_price']?.toString() ?? 'Free',
+          description: 'A premier art gathering bringing together contemporary painters, sculptors, and digital creators in Dubai.',
+          dateTime: b['event_date']?.toString() ?? '15 Oct 2026',
+          formattedDate: b['event_date']?.toString() ?? '15 Oct 2026',
+          location: b['location']?.toString() ?? 'Dubai, UAE',
+          attendeesCount: 0,
+          maxAttendees: 100,
+          organizer: b['artist_name']?.toString() ?? 'Renish Artistry',
+          organizerEmail: b['email']?.toString() ?? 'contact@artistdubai.com',
+          tags: const ['Art', 'Exhibition', 'Dubai'],
+          imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80',
+        );
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => EventDetailView(event: fallback),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _downloadTicketPdf(BuildContext context, dynamic bookingId) async {
+    HapticFeedback.heavyImpact();
+    final url = 'http://127.0.0.1:8000/api.php?resource=bookings&action=download_ticket&id=$bookingId';
+    try {
+      final uri = Uri.parse(url);
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {}
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Downloading official PDF Ticket #BK-$bookingId...'),
+          backgroundColor: const Color(0xFF6A2777),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  void _showTicketPassDialog(BuildContext context, Map<String, dynamic> b) {
+    HapticFeedback.lightImpact();
+    final bookingId = b['id'] ?? b['booking_id'] ?? '2';
+    final eventTitle = b['event_title'] ?? b['artist_name'] ?? 'Dubai Art Event';
+    final date = b['event_date'] ?? '15 Oct 2026';
+    final location = b['location'] ?? 'Dubai, UAE';
+    final fullName = b['full_name'] ?? b['name'] ?? 'Attendee';
+    final email = b['email'] ?? '';
+    final ticketsCount = b['tickets_count'] ?? 1;
+    final totalPrice = b['total_price'] ?? 'Free';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Ticket Header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF6A2777), Color(0xFF8B3A9B)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.confirmation_number_outlined, color: Colors.white, size: 24),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        'DUBAI ART E-TICKET PASS',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Event Title
+                    Text(
+                      eventTitle,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Booking Reference: #BK-$bookingId',
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF6A2777),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Info Container
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Column(
+                        children: [
+                          _ticketRow('Attendee', fullName),
+                          const SizedBox(height: 6),
+                          if (email.isNotEmpty) ...[
+                            _ticketRow('Email', email),
+                            const SizedBox(height: 6),
+                          ],
+                          _ticketRow('Date', date),
+                          const SizedBox(height: 6),
+                          _ticketRow('Venue', location),
+                          const SizedBox(height: 6),
+                          _ticketRow('Quantity', '$ticketsCount Ticket(s)'),
+                          const SizedBox(height: 6),
+                          _ticketRow('Total', totalPrice, isHighlight: true),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Download Action
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.download_rounded, size: 18),
+                        label: const Text(
+                          'Save / Download PDF Ticket',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6A2777),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _downloadTicketPdf(context, bookingId);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _ticketRow(String label, String value, {bool isHighlight = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 12.5,
+            fontWeight: isHighlight ? FontWeight.bold : FontWeight.w600,
+            color: isHighlight ? const Color(0xFF6A2777) : const Color(0xFF1E293B),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _infoRow(IconData icon, String text) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 0, 14, 5),
@@ -411,38 +676,135 @@ class _BookingsViewState extends State<BookingsView> {
   }
 
   void _confirmCancel(BuildContext context, Map<String, dynamic> b) {
+    final bookingId = b['id'] ?? b['booking_id'];
+    final eventTitle = b['event_title'] ?? b['artist_name'] ?? 'Event';
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        title: const Text('Cancel Booking', style: TextStyle(fontWeight: FontWeight.w700)),
-        content: const Text('Are you sure you want to cancel this booking? This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Keep Booking', style: TextStyle(color: Color(0xFF6A2777))),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Booking cancelled.'),
-                  backgroundColor: Color(0xFFDC2626),
-                  behavior: SnackBarBehavior.floating,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: Colors.white,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: Padding(
+          padding: const EdgeInsets.all(22.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Warning Icon & Header Row
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEE2E2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.warning_amber_rounded,
+                      color: Color(0xFFDC2626),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Text(
+                      'Cancel Booking',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              Text(
+                'Are you sure you want to cancel your booking for "$eventTitle"? This will update your reservation in the database.',
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  color: Color(0xFF64748B),
+                  height: 1.45,
                 ),
-              );
-              _fetchBookings(forceRefresh: true);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFDC2626),
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Text('Yes, Cancel'),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Action Buttons Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  OutlinedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF1E293B),
+                      side: const BorderSide(color: Color(0xFFCBD5E1)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                    child: const Text(
+                      'Keep Booking',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      
+                      await sl<ApiService>().cancelBooking(bookingId);
+
+                      try {
+                        sl<NotificationService>().addNotification(
+                          title: 'Booking Cancelled',
+                          body: 'Your booking for $eventTitle (#BK-$bookingId) has been cancelled.',
+                          icon: Icons.cancel_outlined,
+                          route: RouteNames.myBookings,
+                        );
+                      } catch (_) {}
+
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Booking #BK-$bookingId has been cancelled.'),
+                            backgroundColor: const Color(0xFFDC2626),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+
+                      _fetchBookings(forceRefresh: true);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFDC2626),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                    child: const Text(
+                      'Yes, Cancel Booking',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

@@ -4,6 +4,7 @@ import '../../../../app/routes/route_names.dart';
 import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 
@@ -110,6 +111,15 @@ class _BookArtistViewState extends State<BookArtistView> {
         setState(() {
           _isSubmitting = false;
         });
+        try {
+          sl<NotificationService>().addNotification(
+            title: 'Booking Request Sent!',
+            body: 'Your booking request for ${_artistNameController.text.trim()} was sent.',
+            icon: Icons.calendar_month_outlined,
+            route: RouteNames.bookings,
+          );
+        } catch (_) {}
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Booking request submitted and saved to database!'),
@@ -562,6 +572,10 @@ class _BookArtistViewState extends State<BookArtistView> {
   }) {
     return DropdownButtonFormField<String>(
       value: value,
+      dropdownColor: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      menuMaxHeight: 320,
+      elevation: 4,
       hint: Text(
         hintText,
         style: const TextStyle(
@@ -572,8 +586,8 @@ class _BookArtistViewState extends State<BookArtistView> {
       ),
       icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF334155)),
       style: const TextStyle(
-        fontSize: 14.5,
-        color: Color(0xFF0F172A),
+        fontSize: 14,
+        color: Color(0xFF1E293B),
         fontWeight: FontWeight.w500,
       ),
       decoration: InputDecoration(
@@ -596,10 +610,19 @@ class _BookArtistViewState extends State<BookArtistView> {
           borderSide: const BorderSide(color: Color(0xFF5E227A), width: 1.5),
         ),
       ),
-      items:
-          items.map((item) {
-            return DropdownMenuItem<String>(value: item, child: Text(item));
-          }).toList(),
+      items: items.map((item) {
+        return DropdownMenuItem<String>(
+          value: item,
+          child: Text(
+            item,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF1E293B),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        );
+      }).toList(),
       onChanged: onChanged,
     );
   }

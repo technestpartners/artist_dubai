@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/errors/exceptions.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
@@ -20,6 +21,15 @@ class _LoginViewState extends State<LoginView> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
+  String? _emailError;
+  String? _passwordError;
+
+  bool get _isLoginFormValid {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    return email.isNotEmpty && email.contains('@') && password.isNotEmpty;
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -31,8 +41,28 @@ class _LoginViewState extends State<LoginView> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
-      _showSnackBar('Please enter your email and password');
+    setState(() {
+      _emailError = null;
+      _passwordError = null;
+    });
+
+    bool hasError = false;
+
+    if (email.isEmpty) {
+      _emailError = 'Please enter your email address';
+      hasError = true;
+    } else if (!email.contains('@') || !email.contains('.')) {
+      _emailError = 'Please enter a valid email address';
+      hasError = true;
+    }
+
+    if (password.isEmpty) {
+      _passwordError = 'Please enter your password';
+      hasError = true;
+    }
+
+    if (hasError) {
+      setState(() {});
       return;
     }
 
@@ -47,30 +77,55 @@ class _LoginViewState extends State<LoginView> {
         await storage.setBool('is_logged_in', true);
         await storage.setString('user_email', user['email'] as String? ?? email);
         await storage.setString('user_name', user['full_name'] as String? ?? 'User');
+        if (user['created_at'] != null) {
+          await storage.setString('user_created_at', user['created_at'].toString());
+        }
         if (userData['token'] != null) {
           await storage.setString('auth_token', userData['token'].toString());
         }
 
         if (mounted) {
-          _showSnackBar('Successfully signed in via MySQL!');
-          context.go(RouteNames.home);
-        }
-      } else {
-        // Fallback local authentication for offline demo support
-        await storage.setBool('is_logged_in', true);
-        await storage.setString('user_email', email);
-        if (mounted) {
           _showSnackBar('Signed in successfully!');
           context.go(RouteNames.home);
         }
+      } else {
+        if (mounted) {
+          setState(() {
+            _emailError = 'User is not available. Please create an account first.';
+          });
+        }
       }
-    } catch (_) {
-      final storage = sl<StorageService>();
-      await storage.setBool('is_logged_in', true);
-      await storage.setString('user_email', email);
+    } on ServerException catch (e) {
       if (mounted) {
-        _showSnackBar('Signed in successfully!');
-        context.go(RouteNames.home);
+        final msg = e.message;
+        final lower = msg.toLowerCase();
+        if (lower.contains('password')) {
+          setState(() => _passwordError = msg);
+        } else if (lower.contains('user') || lower.contains('account') || lower.contains('email') || lower.contains('available')) {
+          setState(() => _emailError = msg);
+        } else {
+          _showSnackBar(msg);
+        }
+      }
+    } on UnauthorizedException catch (e) {
+      if (mounted) {
+        final msg = e.message;
+        final lower = msg.toLowerCase();
+        if (lower.contains('password')) {
+          setState(() => _passwordError = msg);
+        } else {
+          setState(() => _emailError = msg);
+        }
+      }
+    } on NetworkException catch (e) {
+      if (mounted) {
+        _showSnackBar(e.message);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _emailError = 'User is not available. Please create an account first.';
+        });
       }
     } finally {
       if (mounted) {
@@ -92,6 +147,77 @@ class _LoginViewState extends State<LoginView> {
         ),
         backgroundColor: const Color(0xFF6A2777),
         behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Widget _buildFieldError(String? error) {
+    if (error == null || error.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 6.0, left: 2.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.error_outline, size: 14, color: Color(0xFFDC2626)),
+          const SizedBox(width: 5),
+          Expanded(
+            child: Text(
+              error,
+              style: const TextStyle(
+                color: Color(0xFFDC2626),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  InputDecoration _buildInputDecoration({
+    required String hintText,
+    required IconData icon,
+    Widget? suffixIcon,
+    String? errorText,
+  }) {
+    final hasErr = errorText != null && errorText.isNotEmpty;
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: const TextStyle(
+        color: Color(0xFF9CA3AF),
+        fontSize: 14,
+      ),
+      prefixIcon: Icon(
+        icon,
+        color: hasErr ? const Color(0xFFDC2626) : Colors.black,
+        size: 20,
+      ),
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: hasErr ? const Color(0xFFFEF2F2) : const Color(0xFFF9FAFB),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 14,
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8.0),
+        borderSide: BorderSide(
+          color: hasErr ? const Color(0xFFDC2626) : const Color(0xFFE5E7EB),
+        ),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8.0),
+        borderSide: BorderSide(
+          color: hasErr ? const Color(0xFFDC2626) : const Color(0xFFE5E7EB),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8.0),
+        borderSide: BorderSide(
+          color: hasErr ? const Color(0xFFDC2626) : const Color(0xFF6A2777),
+          width: 1.5,
+        ),
       ),
     );
   }
@@ -221,100 +347,52 @@ class _LoginViewState extends State<LoginView> {
                       TextField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
+                        onChanged: (_) {
+                          setState(() {
+                            _emailError = null;
+                          });
+                        },
                         style: const TextStyle(
                           color: Colors.black,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
-                        decoration: InputDecoration(
+                        decoration: _buildInputDecoration(
                           hintText: 'name@example.com',
-                          hintStyle: const TextStyle(
-                            color: Color(0xFF9CA3AF),
-                            fontSize: 14,
-                          ),
-                          prefixIcon: const Icon(
-                            Icons.email_outlined,
-                            color: Colors.black,
-                            size: 20,
-                          ),
-                          filled: true,
-                          fillColor: const Color(0xFFF9FAFB),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                            borderSide: const BorderSide(
-                              color: Color(0xFFE5E7EB),
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                            borderSide: const BorderSide(
-                              color: Color(0xFFE5E7EB),
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                            borderSide: const BorderSide(
-                              color: Color(0xFF6A2777),
-                              width: 1.5,
-                            ),
-                          ),
+                          icon: Icons.email_outlined,
+                          errorText: _emailError,
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      _buildFieldError(_emailError),
+                      const SizedBox(height: 18),
 
                       // Password Field
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Password',
-                            style: TextStyle(
-                              color: Color(0xFF374151),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () {
-                              _showSnackBar(
-                                'Password reset link sent to your email.',
-                              );
-                            },
-                            child: const Text(
-                              'Forgot Password?',
-                              style: TextStyle(
-                                color: Color(0xFF6A2777),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
+                      const Text(
+                        'Password',
+                        style: TextStyle(
+                          color: Color(0xFF374151),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       TextField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
+                        onChanged: (_) {
+                          setState(() {
+                            _passwordError = null;
+                          });
+                        },
                         style: const TextStyle(
                           color: Colors.black,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
-                        decoration: InputDecoration(
+                        decoration: _buildInputDecoration(
                           hintText: 'Enter your password',
-                          hintStyle: const TextStyle(
-                            color: Color(0xFF9CA3AF),
-                            fontSize: 14,
-                          ),
-                          prefixIcon: const Icon(
-                            Icons.lock_outline,
-                            color: Colors.black,
-                            size: 20,
-                          ),
+                          icon: Icons.lock_outline,
+                          errorText: _passwordError,
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword
@@ -329,34 +407,10 @@ class _LoginViewState extends State<LoginView> {
                               });
                             },
                           ),
-                          filled: true,
-                          fillColor: const Color(0xFFF9FAFB),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                            borderSide: const BorderSide(
-                              color: Color(0xFFE5E7EB),
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                            borderSide: const BorderSide(
-                              color: Color(0xFFE5E7EB),
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                            borderSide: const BorderSide(
-                              color: Color(0xFF6A2777),
-                              width: 1.5,
-                            ),
-                          ),
                         ),
                       ),
-                      const SizedBox(height: 28),
+                      _buildFieldError(_passwordError),
+                      const SizedBox(height: 24),
 
                       // Sign In Button
                       SizedBox(
@@ -364,9 +418,11 @@ class _LoginViewState extends State<LoginView> {
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : _onSignIn,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF6A2777),
+                            backgroundColor: _isLoginFormValid
+                                ? const Color(0xFF6A2777)
+                                : const Color(0xFFA581AB),
                             foregroundColor: Colors.white,
-                            elevation: 0,
+                            elevation: _isLoginFormValid ? 2 : 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8.0),
                             ),

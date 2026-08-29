@@ -21,7 +21,9 @@ class DioInterceptor extends Interceptor {
     }
 
     options.headers['Accept'] = 'application/json';
-    options.headers['Content-Type'] = 'application/json';
+    if (options.data != null || options.method == 'POST' || options.method == 'PUT' || options.method == 'PATCH') {
+      options.headers['Content-Type'] = 'application/json';
+    }
 
     loggerService.debug('🌐 [HTTP REQUEST] [${options.method}] ${options.path} --> \nHeaders: ${options.headers}\nData: ${options.data}');
 

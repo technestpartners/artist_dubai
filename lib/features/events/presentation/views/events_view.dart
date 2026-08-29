@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
@@ -19,25 +20,44 @@ class EventsView extends StatefulWidget {
 class _EventsViewState extends State<EventsView> {
   final TextEditingController _searchController = TextEditingController();
   String _selectedCategory = 'All Categories';
-  List<ArtEventModel> _allEvents = ArtEventModel.mockEvents;
-  final List<String> _categories = ArtEventModel.categories;
+  List<ArtEventModel> _allEvents = [];
+  List<String> _categories = ['All Categories'];
+  final GlobalKey _categorySelectorKey = GlobalKey();
+  OverlayEntry? _categoryOverlayEntry;
+  bool _isCategoryListExpanded = false;
 
   @override
   void initState() {
     super.initState();
     _fetchEvents();
+    _fetchCategories();
+  }
+
+  void _hideCategoryOverlay() {
+    _categoryOverlayEntry?.remove();
+    _categoryOverlayEntry = null;
+    if (mounted) {
+      setState(() => _isCategoryListExpanded = false);
+    }
   }
 
   Future<void> _fetchEvents() async {
     try {
-      final events = await sl<ApiService>().getEvents(
-        category: _selectedCategory,
-        query: _searchController.text.trim(),
-        forceRefresh: true,
-      );
+      final events = await sl<ApiService>().getEvents(forceRefresh: true);
       if (mounted) {
         setState(() {
           _allEvents = events;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _fetchCategories() async {
+    try {
+      final cats = await sl<ApiService>().getCategories(type: 'event');
+      if (mounted && cats.isNotEmpty) {
+        setState(() {
+          _categories = ['All Categories', ...cats.map((c) => c.name)];
         });
       }
     } catch (_) {}
@@ -79,8 +99,16 @@ class _EventsViewState extends State<EventsView> {
   }
 
   void _showBookTicketsModal(ArtEventModel event) {
-    final nameController = TextEditingController();
-    final emailController = TextEditingController();
+    String initialName = '';
+    String initialEmail = '';
+    try {
+      final storage = sl<StorageService>();
+      initialName = storage.getString('user_name') ?? '';
+      initialEmail = storage.getString('user_email') ?? '';
+    } catch (_) {}
+
+    final nameController = TextEditingController(text: initialName);
+    final emailController = TextEditingController(text: initialEmail);
     final phoneController = TextEditingController();
     final ticketsController = TextEditingController(text: '1');
 
@@ -149,6 +177,12 @@ class _EventsViewState extends State<EventsView> {
                   const SizedBox(height: 6),
                   TextField(
                     controller: nameController,
+                    style: const TextStyle(
+                      color: Color(0xFF1E293B),
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    cursorColor: const Color(0xFF6A2777),
                     decoration: InputDecoration(
                       hintText: 'Your full name',
                       hintStyle: const TextStyle(
@@ -197,6 +231,12 @@ class _EventsViewState extends State<EventsView> {
                   TextField(
                     controller: emailController,
                     keyboardType: TextInputType.emailAddress,
+                    style: const TextStyle(
+                      color: Color(0xFF1E293B),
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    cursorColor: const Color(0xFF6A2777),
                     decoration: InputDecoration(
                       hintText: 'you@example.com',
                       hintStyle: const TextStyle(
@@ -245,6 +285,12 @@ class _EventsViewState extends State<EventsView> {
                   TextField(
                     controller: phoneController,
                     keyboardType: TextInputType.phone,
+                    style: const TextStyle(
+                      color: Color(0xFF1E293B),
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    cursorColor: const Color(0xFF6A2777),
                     decoration: InputDecoration(
                       hintText: '+971 ...',
                       hintStyle: const TextStyle(
@@ -293,6 +339,12 @@ class _EventsViewState extends State<EventsView> {
                   TextField(
                     controller: ticketsController,
                     keyboardType: TextInputType.number,
+                    style: const TextStyle(
+                      color: Color(0xFF1E293B),
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    cursorColor: const Color(0xFF6A2777),
                     decoration: InputDecoration(
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 14,
@@ -370,19 +422,65 @@ class _EventsViewState extends State<EventsView> {
                             vertical: 12,
                           ),
                         ),
-                        onPressed: () {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Booking confirmed!',
+                        onPressed: () async {
+                          final name = nameController.text.trim();
+                          final email = emailController.text.trim();
+                          if (name.isEmpty || email.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please enter your name and email.'),
+                                backgroundColor: Colors.redAccent,
+                                behavior: SnackBarBehavior.floating,
                               ),
-                              backgroundColor: Color(0xFF5E227A),
-                              behavior: SnackBarBehavior.floating,
-                              duration: Duration(milliseconds: 1500),
-                            ),
-                          );
+                            );
+                            return;
+                          }
+
+                          Navigator.pop(context);
+
+                          final ticketNum = int.tryParse(ticketsController.text.trim()) ?? 1;
+
+                          await sl<ApiService>().createBooking({
+                            'full_name': name,
+                            'email': email,
+                            'phone': phoneController.text.trim(),
+                            'event_id': event.id,
+                            'event_title': event.title,
+                            'booking_type': 'Event Booking',
+                            'event_date': event.formattedDate,
+                            'location': event.location,
+                            'tickets_count': ticketNum,
+                            'total_price': event.price,
+                            'status': 'Confirmed',
+                          });
+
+                          try {
+                            sl<NotificationService>().addNotification(
+                              title: 'Booking Confirmed!',
+                              body: 'Your booking for ${event.title} is confirmed.',
+                              icon: Icons.confirmation_number_outlined,
+                              route: RouteNames.myBookings,
+                            );
+                          } catch (_) {}
+
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Booking confirmed for ${event.title}!',
+                                ),
+                                backgroundColor: const Color(0xFF6A2777),
+                                behavior: SnackBarBehavior.floating,
+                                action: SnackBarAction(
+                                  label: 'View Bookings',
+                                  textColor: Colors.white,
+                                  onPressed: () {
+                                    context.push(RouteNames.myBookings);
+                                  },
+                                ),
+                              ),
+                            );
+                          }
                         },
                         child: const Text(
                           'Confirm Booking',
@@ -394,77 +492,6 @@ class _EventsViewState extends State<EventsView> {
                 ],
               ),
             ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showCategoryDropdown() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16.0),
-                child: Text(
-                  'Select Event Category',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1E1E1E),
-                  ),
-                ),
-              ),
-              const Divider(height: 1),
-              Flexible(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: _categories.length,
-                  itemBuilder: (context, index) {
-                    final category = _categories[index];
-                    final isSelected = _selectedCategory == category;
-
-                    return Material(
-                      color: Colors.transparent,
-                      child: ListTile(
-                        title: Text(
-                          category,
-                          style: TextStyle(
-                            fontWeight:
-                                isSelected ? FontWeight.w600 : FontWeight.w400,
-                            color:
-                                isSelected
-                                    ? const Color(0xFF6A2777)
-                                    : const Color(0xFF2E2E2E),
-                          ),
-                        ),
-                        trailing:
-                            isSelected
-                                ? const Icon(
-                                  Icons.check,
-                                  color: Color(0xFF6A2777),
-                                )
-                                : null,
-                        onTap: () {
-                          setState(() {
-                            _selectedCategory = category;
-                          });
-                          _fetchEvents();
-                          Navigator.pop(context);
-                        },
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
           ),
         );
       },
@@ -494,34 +521,41 @@ class _EventsViewState extends State<EventsView> {
       backgroundColor: Colors.white,
       appBar: const AppTopBar(),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header Row (Back Arrow and Title)
+        child: RefreshIndicator(
+          color: const Color(0xFF6A2777),
+          onRefresh: _fetchEvents,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+              // Header Row (Back Arrow and Title matching reference)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back,
-                      color: Color(0xFF1E1E1E),
-                      size: 22,
-                    ),
-                    onPressed: () {
+                  InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () {
                       if (context.canPop()) {
                         context.pop();
                       } else {
                         context.go(RouteNames.home);
                       }
                     },
+                    child: const Padding(
+                      padding: EdgeInsets.only(right: 12.0, top: 4.0, bottom: 4.0),
+                      child: Icon(
+                        Icons.arrow_back,
+                        color: Color(0xFF1E1E1E),
+                        size: 20,
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 4),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
+                    children: const [
+                      Text(
                         'Art Events',
                         style: TextStyle(
                           fontSize: 22,
@@ -530,59 +564,62 @@ class _EventsViewState extends State<EventsView> {
                           letterSpacing: -0.3,
                         ),
                       ),
+                      SizedBox(height: 2),
                       Text(
-                        'Discover ${_allEvents.length} Art Events in Dubai',
-                        style: const TextStyle(
+                        'Discover Art Events in Dubai',
+                        style: TextStyle(
                           fontSize: 13.5,
-                          color: Color(0xFF64748B),
+                          color: Color(0xFF5B6E8C),
                         ),
                       ),
                     ],
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
-              // Action Row (All Events & Create Event button)
+              // Action Row (Home Breadcrumb & Wide Create Event Button)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF1E1E1E),
-                      side: const BorderSide(color: Color(0xFFCBD5E1)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                    ),
-                    onPressed: () => context.go(RouteNames.home),
-                    icon: const Icon(
-                      Icons.home_outlined,
-                      size: 16,
-                      color: Color(0xFF1E1E1E),
-                    ),
-                    label: const Text(
-                      'Home',
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
+                  InkWell(
+                    borderRadius: BorderRadius.circular(6),
+                    onTap: () => context.go(RouteNames.home),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(
+                            Icons.home_outlined,
+                            size: 18,
+                            color: Color(0xFF1E1E1E),
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            'Home',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1E1E1E),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                   SizedBox(
-                    height: 40,
-                    child: ElevatedButton.icon(
+                    height: 44,
+                    width: 220,
+                    child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6A2777),
+                        backgroundColor: const Color(0xFF6B267B),
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       onPressed: () {
@@ -593,19 +630,26 @@ class _EventsViewState extends State<EventsView> {
                           promptMessage: 'Please log in to create an event',
                         );
                       },
-                      icon: const Icon(Icons.add, size: 18),
-                      label: const Text(
-                        'Create Event',
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.add, size: 18, color: Colors.white),
+                          SizedBox(width: 6),
+                          Text(
+                            'Create Event',
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
               // Search Bar
               TextField(
@@ -651,43 +695,8 @@ class _EventsViewState extends State<EventsView> {
               ),
               const SizedBox(height: 12),
 
-              // Category Selector Box
-              InkWell(
-                onTap: _showCategoryDropdown,
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14.0,
-                    vertical: 12.0,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: const Color(0xFF2E2E3E).withValues(alpha: 0.5),
-                      width: 1.0,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _selectedCategory,
-                        style: const TextStyle(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF1E1E1E),
-                        ),
-                      ),
-                      const Icon(
-                        Icons.unfold_more,
-                        color: Color(0xFF5F6368),
-                        size: 20,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              // Category Selector Box (Floating Dropdown)
+              _buildCategorySelectorField(),
               const SizedBox(height: 18),
 
               // Events Cards List
@@ -731,8 +740,186 @@ class _EventsViewState extends State<EventsView> {
           ),
         ),
       ),
+      ),
       bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
     );
+  }
+
+  Widget _buildCategorySelectorField() {
+    return Container(
+      key: _categorySelectorKey,
+      child: InkWell(
+        onTap: () {
+          if (_isCategoryListExpanded) {
+            _hideCategoryOverlay();
+          } else {
+            _showCategoryOverlay();
+          }
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: _isCategoryListExpanded
+                  ? const Color(0xFF6A2777)
+                  : const Color(0xFF2E2E3E).withValues(alpha: 0.5),
+              width: _isCategoryListExpanded ? 1.5 : 1.0,
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _selectedCategory,
+                  style: const TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF1E1E1E),
+                  ),
+                ),
+              ),
+              Icon(
+                _isCategoryListExpanded
+                    ? Icons.keyboard_arrow_up
+                    : Icons.keyboard_arrow_down,
+                color: const Color(0xFF5F6368),
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showCategoryOverlay() {
+    _hideCategoryOverlay();
+
+    final renderBox = _categorySelectorKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final size = renderBox.size;
+    final offset = renderBox.localToGlobal(Offset.zero);
+    final mediaQuery = MediaQuery.of(context);
+    final screenHeight = mediaQuery.size.height;
+    final screenWidth = mediaQuery.size.width;
+
+    final double neededHeight = _categories.length * 36.0 + 8.0;
+    final double spaceBelow = screenHeight - (offset.dy + size.height) - mediaQuery.padding.bottom - 16.0;
+    final double spaceAbove = offset.dy - mediaQuery.padding.top - 16.0;
+
+    final double availableSpace = (spaceBelow >= neededHeight || spaceBelow >= spaceAbove) ? spaceBelow : spaceAbove;
+    final double popupHeight = neededHeight.clamp(80.0, availableSpace.clamp(180.0, screenHeight - 60.0));
+
+    final bool showAbove = spaceBelow < popupHeight && spaceAbove > spaceBelow;
+
+    final double topPosition = showAbove
+        ? (offset.dy - popupHeight - 4).clamp(mediaQuery.padding.top + 8.0, screenHeight - popupHeight)
+        : (offset.dy + size.height + 4).clamp(0.0, screenHeight - popupHeight - mediaQuery.padding.bottom);
+
+    _categoryOverlayEntry = OverlayEntry(
+      builder: (overlayContext) {
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: _hideCategoryOverlay,
+                child: Container(color: Colors.transparent),
+              ),
+            ),
+            Positioned(
+              left: offset.dx.clamp(16.0, (screenWidth - size.width - 16.0).clamp(16.0, screenWidth)),
+              top: topPosition,
+              width: size.width,
+              height: popupHeight,
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.black.withValues(alpha: 0.18),
+                      width: 1.0,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.12),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      shrinkWrap: true,
+                      itemCount: _categories.length,
+                      separatorBuilder: (context, index) => const Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: Color(0xFFF1F5F9),
+                      ),
+                      itemBuilder: (context, index) {
+                        final cat = _categories[index];
+                        final isSelected = _selectedCategory == cat;
+
+                        return InkWell(
+                          onTap: () {
+                            setState(() {
+                              _selectedCategory = cat;
+                            });
+                            _hideCategoryOverlay();
+                            _fetchEvents();
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14.0,
+                              vertical: 8.5,
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    cat,
+                                    style: TextStyle(
+                                      fontSize: 13.5,
+                                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                      color: isSelected ? const Color(0xFF6A2777) : const Color(0xFF1E1E1E),
+                                    ),
+                                  ),
+                                ),
+                                if (isSelected)
+                                  const Icon(
+                                    Icons.check,
+                                    size: 18,
+                                    color: Color(0xFF6A2777),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    Overlay.of(context).insert(_categoryOverlayEntry!);
+    setState(() {
+      _isCategoryListExpanded = true;
+    });
   }
 
   Widget _buildEventCard(ArtEventModel event) {

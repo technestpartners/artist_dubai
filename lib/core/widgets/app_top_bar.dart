@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/routes/route_names.dart';
 import '../di/injection_container.dart';
+import '../services/notification_service.dart';
 import '../services/storage_service.dart';
 import 'notifications_panel.dart';
 
@@ -165,44 +166,52 @@ class _AppTopBarState extends State<AppTopBar> {
       ),
       actions: [
         if (loggedIn) ...[
-          // Notification Bell with Badge 3
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              IconButton(
-                key: _bellKey,
-                icon: const Icon(
-                  Icons.notifications_none,
-                  color: Color(0xFF1E1E1E),
-                  size: 24,
-                ),
-                onPressed: () => showNotificationsPanel(context, _bellKey),
-              ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFE53935),
-                    shape: BoxShape.circle,
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 16,
-                    minHeight: 16,
-                  ),
-                  child: const Text(
-                    '3',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
+          // Dynamic Notification Bell with live unread badge
+          ListenableBuilder(
+            listenable: sl<NotificationService>(),
+            builder: (context, _) {
+              final unreadCount = sl<NotificationService>().unreadCount;
+
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    key: _bellKey,
+                    icon: const Icon(
+                      Icons.notifications_none,
+                      color: Color(0xFF1E1E1E),
+                      size: 24,
                     ),
-                    textAlign: TextAlign.center,
+                    onPressed: () => showNotificationsPanel(context, _bellKey),
                   ),
-                ),
-              ),
-            ],
+                  if (unreadCount > 0)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFE53935),
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          unreadCount > 9 ? '9+' : '$unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
           const SizedBox(width: 4),
 

@@ -24,14 +24,17 @@ class ApiService {
   bool _isSuccess(dynamic res) =>
       res is Map<String, dynamic> && (res['status'] == 'success' || res['success'] == true);
 
-  // 1. Categories (Instant Cache-First)
-  Future<List<CategoryInfo>> getCategories({bool forceRefresh = false}) async {
+  // 1. Categories (Instant Cache-First from MySQL)
+  Future<List<CategoryInfo>> getCategories({String type = 'artist', bool forceRefresh = false}) async {
     if (!forceRefresh && _cachedCategories != null && _cachedCategories!.isNotEmpty) {
       return _cachedCategories!;
     }
 
     try {
-      final res = await _client.get(ApiEndpoints.categories);
+      final res = await _client.get(
+        ApiEndpoints.categories,
+        queryParameters: {'type': type},
+      );
       if (_isSuccess(res)) {
         final list = res['data'] as List<dynamic>;
         _cachedCategories = list.map((item) {
@@ -45,6 +48,31 @@ class ApiService {
     } catch (_) {}
 
     return _cachedCategories ?? ArtistModel.categoryList;
+  }
+
+  // 1b. Event Categories (Dynamic from MySQL)
+  Future<List<String>> getEventCategories({bool forceRefresh = false}) async {
+    try {
+      final res = await _client.get(
+        ApiEndpoints.categories,
+        queryParameters: {'type': 'event'},
+      );
+      if (_isSuccess(res)) {
+        final list = res['data'] as List<dynamic>;
+        final fetched = list
+            .map((item) => (item['name'] ?? '').toString())
+            .where((name) => name.isNotEmpty)
+            .toList();
+        if (fetched.isNotEmpty) {
+          if (!fetched.contains('All Categories')) {
+            return ['All Categories', ...fetched];
+          }
+          return fetched;
+        }
+      }
+    } catch (_) {}
+
+    return ArtEventModel.categories;
   }
 
   // 2. Artists (Instant Cache-First)
@@ -87,7 +115,42 @@ class ApiService {
       }
     } catch (_) {}
 
-    return _cachedArtists ?? ArtistModel.mockArtists;
+    return _cachedArtists ?? [];
+  }
+
+  // 2b. Create Artist Profile (Save dynamically to MySQL)
+  Future<bool> createArtistProfile({
+    required String name,
+    required String category,
+    required String location,
+    required String bio,
+    String? email,
+    String? phone,
+    String? website,
+    String? instagram,
+    String? experienceLevel,
+  }) async {
+    try {
+      final res = await _client.post(
+        ApiEndpoints.artists,
+        data: {
+          'name': name,
+          'category': category,
+          'location': location,
+          'bio': bio,
+          'email': email ?? '',
+          'phone': phone ?? '',
+          'website': website ?? '',
+          'instagram': instagram ?? '',
+          'experience_level': experienceLevel ?? '',
+        },
+      );
+      if (_isSuccess(res)) {
+        _cachedArtists = null;
+        return true;
+      }
+    } catch (_) {}
+    return false;
   }
 
   // 3. Artist Details
@@ -183,6 +246,20 @@ class ApiService {
             );
           }).toList();
 
+          List<String> parsedTags = [];
+          if (m['tags'] is List) {
+            parsedTags = (m['tags'] as List).map((e) => e.toString()).toList();
+          } else if (m['tags'] is String && (m['tags'] as String).isNotEmpty) {
+            parsedTags = (m['tags'] as String)
+                .split(',')
+                .map((e) => e.trim())
+                .where((e) => e.isNotEmpty)
+                .toList();
+          }
+
+          final dateStr = (m['event_date'] ?? m['date_time'] ?? m['dateTime'] ?? '') as String;
+          final formattedDate = (m['formatted_date'] ?? m['event_date'] ?? dateStr) as String;
+
           return ArtEventModel(
             id: m['id']?.toString() ?? '0',
             title: m['title'] as String? ?? 'Art Event',
@@ -190,16 +267,16 @@ class ApiService {
             price: m['price'] as String? ?? 'Free',
             description: m['description'] as String? ?? '',
             requirements: m['requirements'] as String? ?? 'Open to all.',
-            dateTime: m['date_time'] as String? ?? '',
-            formattedDate: m['formatted_date'] as String? ?? '',
-            timeRange: m['time_range'] as String? ?? '',
-            location: m['location'] as String? ?? 'Dubai',
-            locationCity: m['location_city'] as String? ?? 'Dubai',
+            dateTime: dateStr,
+            formattedDate: formattedDate,
+            timeRange: (m['time_range'] ?? '10:00 AM - 08:00 PM') as String,
+            location: (m['location'] ?? 'Dubai') as String,
+            locationCity: (m['venue'] ?? m['location_city'] ?? m['location'] ?? 'Dubai') as String?,
             attendeesCount: (m['attendees_count'] as num?)?.toInt() ?? 0,
             maxAttendees: (m['max_attendees'] as num?)?.toInt() ?? 100,
-            organizer: m['organizer'] as String? ?? 'Artist Dubai',
-            organizerEmail: m['organizer_email'] as String?,
-            tags: (m['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+            organizer: (m['organizer_name'] ?? m['organizer'] ?? 'Artist Dubai') as String,
+            organizerEmail: (m['contact_email'] ?? m['organizer_email']) as String?,
+            tags: parsedTags,
             imageUrl: m['image_url'] as String?,
             galleries: galleries,
           );
@@ -228,6 +305,20 @@ class ApiService {
       );
       if (_isSuccess(res)) {
         final m = res['data'] as Map<String, dynamic>;
+        List<String> parsedTags = [];
+        if (m['tags'] is List) {
+          parsedTags = (m['tags'] as List).map((e) => e.toString()).toList();
+        } else if (m['tags'] is String && (m['tags'] as String).isNotEmpty) {
+          parsedTags = (m['tags'] as String)
+              .split(',')
+              .map((e) => e.trim())
+              .where((e) => e.isNotEmpty)
+              .toList();
+        }
+
+        final dateStr = (m['event_date'] ?? m['date_time'] ?? m['dateTime'] ?? '') as String;
+        final formattedDate = (m['formatted_date'] ?? m['event_date'] ?? dateStr) as String;
+
         final event = ArtEventModel(
           id: m['id']?.toString() ?? '0',
           title: m['title'] as String? ?? 'Art Event',
@@ -235,16 +326,16 @@ class ApiService {
           price: m['price'] as String? ?? 'Free',
           description: m['description'] as String? ?? '',
           requirements: m['requirements'] as String? ?? 'Open to all.',
-          dateTime: m['date_time'] as String? ?? '',
-          formattedDate: m['formatted_date'] as String? ?? '',
-          timeRange: m['time_range'] as String? ?? '',
-          location: m['location'] as String? ?? 'Dubai',
-          locationCity: m['location_city'] as String? ?? 'Dubai',
+          dateTime: dateStr,
+          formattedDate: formattedDate,
+          timeRange: (m['time_range'] ?? '10:00 AM - 08:00 PM') as String,
+          location: (m['location'] ?? 'Dubai') as String,
+          locationCity: (m['venue'] ?? m['location_city'] ?? m['location'] ?? 'Dubai') as String?,
           attendeesCount: (m['attendees_count'] as num?)?.toInt() ?? 0,
           maxAttendees: (m['max_attendees'] as num?)?.toInt() ?? 100,
-          organizer: m['organizer'] as String? ?? 'Artist Dubai',
-          organizerEmail: m['organizer_email'] as String?,
-          tags: (m['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+          organizer: (m['organizer_name'] ?? m['organizer'] ?? 'Artist Dubai') as String,
+          organizerEmail: (m['contact_email'] ?? m['organizer_email']) as String?,
+          tags: parsedTags,
           imageUrl: m['image_url'] as String?,
         );
         _cachedEventDetails[id] = event;
@@ -257,6 +348,51 @@ class ApiService {
           (e) => e.id == id,
           orElse: () => ArtEventModel.mockEvents.first,
         );
+  }
+
+  // 5c. Create Event (Save dynamically to MySQL)
+  Future<bool> createEvent({
+    required String title,
+    required String description,
+    required String category,
+    required String eventDate,
+    String? endDate,
+    required String location,
+    String? venue,
+    bool isFree = true,
+    String? price,
+    String? organizerName,
+    String? contactEmail,
+    String? contactPhone,
+    String? tags,
+    String? imageUrl,
+  }) async {
+    try {
+      final res = await _client.post(
+        ApiEndpoints.events,
+        data: {
+          'title': title,
+          'description': description,
+          'category': category,
+          'event_date': eventDate,
+          'end_date': endDate ?? '',
+          'location': location,
+          'venue': venue ?? '',
+          'is_free': isFree ? 1 : 0,
+          'price': isFree ? 'Free' : (price ?? 'AED 50'),
+          'organizer_name': organizerName ?? 'Artist Dubai',
+          'contact_email': contactEmail ?? '',
+          'contact_phone': contactPhone ?? '',
+          'tags': tags ?? '',
+          'image_url': imageUrl ?? '',
+        },
+      );
+      if (_isSuccess(res)) {
+        _cachedEvents = null;
+        return true;
+      }
+    } catch (_) {}
+    return false;
   }
 
   // 6. Government Entities (Instant Cache-First)
@@ -294,6 +430,19 @@ class ApiService {
     return _cachedGalleries ?? [];
   }
 
+  // 7b. Artworks (Instant Cache-First)
+  Future<List<Map<String, dynamic>>> getArtworks({bool forceRefresh = false}) async {
+    try {
+      final res = await _client.get(ApiEndpoints.artworks);
+      if (_isSuccess(res)) {
+        return (res['data'] as List<dynamic>)
+            .map((e) => e as Map<String, dynamic>)
+            .toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
   // 8. Gallery Registration
   Future<bool> registerGallery(Map<String, dynamic> data) async {
     try {
@@ -311,15 +460,13 @@ class ApiService {
 
   // 9. Auth Login
   Future<Map<String, dynamic>?> login(String email, String password) async {
-    try {
-      final res = await _client.post(
-        ApiEndpoints.login,
-        data: {'email': email, 'password': password},
-      );
-      if (_isSuccess(res)) {
-        return res['data'] as Map<String, dynamic>?;
-      }
-    } catch (_) {}
+    final res = await _client.post(
+      ApiEndpoints.login,
+      data: {'email': email, 'password': password},
+    );
+    if (_isSuccess(res)) {
+      return res['data'] as Map<String, dynamic>?;
+    }
     return null;
   }
 
@@ -330,20 +477,18 @@ class ApiService {
     required String password,
     String? phone,
   }) async {
-    try {
-      final res = await _client.post(
-        ApiEndpoints.register,
-        data: {
-          'name': name,
-          'email': email,
-          'password': password,
-          'phone': phone ?? '',
-        },
-      );
-      if (_isSuccess(res)) {
-        return res['data'] as Map<String, dynamic>?;
-      }
-    } catch (_) {}
+    final res = await _client.post(
+      ApiEndpoints.register,
+      data: {
+        'name': name,
+        'email': email,
+        'password': password,
+        'phone': phone ?? '',
+      },
+    );
+    if (_isSuccess(res)) {
+      return res['data'] as Map<String, dynamic>?;
+    }
     return null;
   }
 
@@ -353,6 +498,20 @@ class ApiService {
       final res = await _client.post(
         ApiEndpoints.bookingCreate,
         data: data,
+      );
+      return _isSuccess(res);
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> cancelBooking(dynamic bookingId) async {
+    try {
+      final res = await _client.post(
+        ApiEndpoints.bookings,
+        data: {
+          'action': 'cancel',
+          'id': bookingId,
+        },
       );
       return _isSuccess(res);
     } catch (_) {}
@@ -495,12 +654,14 @@ class ApiService {
   Future<List<Map<String, dynamic>>> getBookings({
     String? userId,
     String? artistId,
+    String? email,
     bool forceRefresh = false,
   }) async {
     try {
       final queryParams = <String, dynamic>{};
       if (userId != null && userId.isNotEmpty) queryParams['user_id'] = userId;
       if (artistId != null && artistId.isNotEmpty) queryParams['artist_id'] = artistId;
+      if (email != null && email.isNotEmpty) queryParams['email'] = email;
 
       final res = await _client.get(
         ApiEndpoints.bookings,
@@ -514,5 +675,50 @@ class ApiService {
       }
     } catch (_) {}
     return [];
+  }
+
+  // 15. User Profile (Dynamic MySQL read)
+  Future<Map<String, dynamic>?> getUserProfile(String email) async {
+    if (email.isEmpty) return null;
+    try {
+      final res = await _client.get(
+        ApiEndpoints.userProfile,
+        queryParameters: {'email': email},
+      );
+      if (_isSuccess(res)) {
+        return res['data'] as Map<String, dynamic>?;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  // 16. Change Password (MySQL Backend)
+  Future<bool> changePassword({
+    required String email,
+    required String newPassword,
+  }) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.login}&action=change_password',
+        data: {
+          'email': email,
+          'new_password': newPassword,
+        },
+      );
+      return _isSuccess(res);
+    } catch (_) {}
+    return false;
+  }
+
+  // 17. Delete Account (MySQL Backend)
+  Future<bool> deleteAccount(String email) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.login}&action=delete_account',
+        data: {'email': email},
+      );
+      return _isSuccess(res);
+    } catch (_) {}
+    return false;
   }
 }

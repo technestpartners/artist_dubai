@@ -13,6 +13,8 @@ import '../widgets/event_gallery_modal.dart';
 
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/notification_service.dart';
+import '../../../../core/services/storage_service.dart';
 
 class EventDetailView extends StatefulWidget {
   final ArtEventModel event;
@@ -987,8 +989,16 @@ class _EventDetailViewState extends State<EventDetailView> {
   }
 
   void _showBookTicketsModal(BuildContext context, ArtEventModel event) {
-    final nameController = TextEditingController();
-    final emailController = TextEditingController();
+    String prefilledName = '';
+    String prefilledEmail = '';
+    try {
+      final storage = sl<StorageService>();
+      prefilledName = storage.getString('user_name') ?? '';
+      prefilledEmail = storage.getString('user_email') ?? '';
+    } catch (_) {}
+
+    final nameController = TextEditingController(text: prefilledName);
+    final emailController = TextEditingController(text: prefilledEmail);
     final phoneController = TextEditingController();
     final ticketsController = TextEditingController(text: '1');
 
@@ -1057,6 +1067,12 @@ class _EventDetailViewState extends State<EventDetailView> {
                   const SizedBox(height: 6),
                   TextField(
                     controller: nameController,
+                    style: const TextStyle(
+                      color: Color(0xFF1E293B),
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    cursorColor: const Color(0xFF6A2777),
                     decoration: InputDecoration(
                       hintText: 'Your full name',
                       hintStyle: const TextStyle(
@@ -1105,6 +1121,12 @@ class _EventDetailViewState extends State<EventDetailView> {
                   TextField(
                     controller: emailController,
                     keyboardType: TextInputType.emailAddress,
+                    style: const TextStyle(
+                      color: Color(0xFF1E293B),
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    cursorColor: const Color(0xFF6A2777),
                     decoration: InputDecoration(
                       hintText: 'you@example.com',
                       hintStyle: const TextStyle(
@@ -1153,6 +1175,12 @@ class _EventDetailViewState extends State<EventDetailView> {
                   TextField(
                     controller: phoneController,
                     keyboardType: TextInputType.phone,
+                    style: const TextStyle(
+                      color: Color(0xFF1E293B),
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    cursorColor: const Color(0xFF6A2777),
                     decoration: InputDecoration(
                       hintText: '+971 ...',
                       hintStyle: const TextStyle(
@@ -1201,6 +1229,12 @@ class _EventDetailViewState extends State<EventDetailView> {
                   TextField(
                     controller: ticketsController,
                     keyboardType: TextInputType.number,
+                    style: const TextStyle(
+                      color: Color(0xFF1E293B),
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    cursorColor: const Color(0xFF6A2777),
                     decoration: InputDecoration(
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 14,
@@ -1267,7 +1301,7 @@ class _EventDetailViewState extends State<EventDetailView> {
                       const SizedBox(width: 12),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF5E227A),
+                          backgroundColor: const Color(0xFF6A2777),
                           foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -1278,17 +1312,63 @@ class _EventDetailViewState extends State<EventDetailView> {
                             vertical: 12,
                           ),
                         ),
-                        onPressed: () {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Booking confirmed for ${event.title}!',
+                        onPressed: () async {
+                          final name = nameController.text.trim();
+                          final email = emailController.text.trim();
+                          if (name.isEmpty || email.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please enter your name and email.'),
+                                backgroundColor: Colors.redAccent,
+                                behavior: SnackBarBehavior.floating,
                               ),
-                              backgroundColor: const Color(0xFF5E227A),
-                              behavior: SnackBarBehavior.floating,
-                            ),
+                            );
+                            return;
+                          }
+
+                          Navigator.pop(context);
+
+                          final ticketNum = int.tryParse(ticketsController.text.trim()) ?? 1;
+
+                          await sl<ApiService>().createBooking({
+                            'full_name': name,
+                            'email': email,
+                            'phone': phoneController.text.trim(),
+                            'event_id': event.id,
+                            'event_title': event.title,
+                            'booking_type': 'Event Booking',
+                            'event_date': event.formattedDate,
+                            'location': event.location,
+                            'tickets_count': ticketNum,
+                            'total_price': event.price,
+                            'status': 'Confirmed',
+                          });
+
+                          sl<NotificationService>().addNotification(
+                            title: 'Booking Confirmed!',
+                            body: 'Your booking for ${event.title} is confirmed.',
+                            icon: Icons.confirmation_number_outlined,
+                            route: RouteNames.myBookings,
                           );
+
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Booking confirmed for ${event.title}!',
+                                ),
+                                backgroundColor: const Color(0xFF6A2777),
+                                behavior: SnackBarBehavior.floating,
+                                action: SnackBarAction(
+                                  label: 'View Bookings',
+                                  textColor: Colors.white,
+                                  onPressed: () {
+                                    context.push(RouteNames.myBookings);
+                                  },
+                                ),
+                              ),
+                            );
+                          }
                         },
                         child: const Text(
                           'Confirm Booking',

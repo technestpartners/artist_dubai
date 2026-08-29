@@ -19,13 +19,21 @@ class ArtistsView extends StatefulWidget {
 class _ArtistsViewState extends State<ArtistsView> {
   String? _selectedCategory;
   bool _isCategoryListExpanded = false;
-  List<ArtistModel> _allArtists = ArtistModel.mockArtists;
+  OverlayEntry? _categoryOverlayEntry;
+  final GlobalKey _selectorKey = GlobalKey();
+  List<ArtistModel> _allArtists = [];
   List<CategoryInfo> _categories = ArtistModel.categoryList;
 
   @override
   void initState() {
     super.initState();
     _fetchData();
+  }
+
+  @override
+  void dispose() {
+    _hideCategoryOverlay();
+    super.dispose();
   }
 
   Future<void> _fetchData() async {
@@ -51,376 +59,340 @@ class _ArtistsViewState extends State<ArtistsView> {
 
   @override
   Widget build(BuildContext context) {
-    final bool loggedIn = _isLoggedIn;
+    final filteredArtists =
+        _selectedCategory == null
+            ? _allArtists
+            : _allArtists
+                .where((a) =>
+                    a.category.toLowerCase().contains(_selectedCategory!.toLowerCase()) ||
+                    _selectedCategory!.toLowerCase().contains(a.category.toLowerCase()))
+                .toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFFBFBFD),
       appBar: const AppTopBar(),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-          child: loggedIn ? _buildLoggedInView() : _buildLoggedOutView(),
+        child: RefreshIndicator(
+          color: const Color(0xFF5E227A),
+          onRefresh: _fetchData,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 1. Featured Artists Header
+                Center(
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Featured Artists',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1E1E1E),
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _allArtists.isEmpty
+                            ? 'No artist profiles available yet'
+                            : 'Discover ${filteredArtists.length} talented artists in Dubai',
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // 2. Artists List OR Empty State (Positioned Above Category Selector)
+                if (filteredArtists.isEmpty) ...[
+                  Center(
+                    child: Column(
+                      children: [
+                        const Text(
+                          'No Artists Yet',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1E1E1E),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Be the first to create an artist profile!',
+                          style: TextStyle(fontSize: 13.5, color: Color(0xFF616161)),
+                        ),
+                        const SizedBox(height: 14),
+                        SizedBox(
+                          height: 40,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF5E227A),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 8,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            onPressed: () {
+                              if (_isLoggedIn) {
+                                context.push(RouteNames.artistRegistration);
+                              } else {
+                                context.push(RouteNames.login);
+                              }
+                            },
+                            child: const Text(
+                              'Create Artist Profile',
+                              style: TextStyle(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ] else ...[
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: filteredArtists.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 14),
+                    itemBuilder: (context, index) {
+                      final artist = filteredArtists[index];
+                      return _buildArtistCard(artist);
+                    },
+                  ),
+                  const SizedBox(height: 18),
+                ],
+
+                // 3. Select a Category Input Box (Floating Dropdown)
+                _buildCategorySelectorField(),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
         ),
       ),
       bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
     );
   }
 
-  // 1. Logged Out View (Matches Screenshot media_1787743827404.png)
-  Widget _buildLoggedOutView() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Featured Artists Header
-        Center(
-          child: Column(
-            children: const [
-              Text(
-                'Featured Artists',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF1E1E1E),
-                  letterSpacing: -0.3,
-                ),
-              ),
-              SizedBox(height: 6),
-              Text(
-                'No artist profiles available yet',
-                style: TextStyle(fontSize: 14.5, color: Color(0xFF64748B)),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 28),
-
-        // No Artists Yet Box & Create Profile Button
-        Center(
-          child: Column(
-            children: [
-              const Text(
-                'No Artists Yet',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1E1E1E),
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Be the first to create an artist profile!',
-                style: TextStyle(fontSize: 14.5, color: Color(0xFF616161)),
-              ),
-              const SizedBox(height: 20),
-
-              // Create Artist Profile Button
-              SizedBox(
-                height: 44,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF5E227A),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 10,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  onPressed: () {
-                    context.push(RouteNames.login);
-                  },
-                  child: const Text(
-                    'Create Artist Profile',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 36),
-
-        // Select a Category Input Box
-        _buildCategorySelectorField(),
-        const SizedBox(height: 6),
-
-        // Inline Category List Box (Matching Screenshot)
-        if (_isCategoryListExpanded) _buildInlineCategoryList(),
-        const SizedBox(height: 24),
-      ],
-    );
-  }
-
-  // 2. Logged In View
-  Widget _buildLoggedInView() {
-    final filteredArtists =
-        _selectedCategory == null
-            ? _allArtists
-            : _allArtists
-                .where((a) => a.category == _selectedCategory)
-                .toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Header Section
-        Center(
-          child: Column(
-            children: [
-              const Text(
-                'Featured Artists',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF1E1E1E),
-                  letterSpacing: -0.3,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Discover ${filteredArtists.length} talented artists',
-                style: const TextStyle(fontSize: 14.5, color: Color(0xFF64748B)),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        // Active Category Filter Badge
-        if (_selectedCategory != null) ...[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF5E227A).withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: const Color(0xFF5E227A).withValues(alpha: 0.2),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.filter_list,
-                      size: 16,
-                      color: Color(0xFF5E227A),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Filtered by: $_selectedCategory',
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF5E227A),
-                      ),
-                    ),
-                  ],
-                ),
-                InkWell(
-                  onTap: () {
-                    setState(() {
-                      _selectedCategory = null;
-                    });
-                  },
-                  child: const Padding(
-                    padding: EdgeInsets.all(4.0),
-                    child: Text(
-                      'Clear',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF5E227A),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-
-        // Artists List
-        if (filteredArtists.isEmpty)
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 40),
-            alignment: Alignment.center,
-            child: Column(
-              children: [
-                Icon(
-                  Icons.palette_outlined,
-                  size: 48,
-                  color: Colors.grey.shade400,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'No artists found in this category',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          )
-        else
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: filteredArtists.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 18),
-            itemBuilder: (context, index) {
-              final artist = filteredArtists[index];
-              return _buildArtistCard(artist);
-            },
-          ),
-        const SizedBox(height: 28),
-
-        // Select a Category Field
-        _buildCategorySelectorField(),
-        const SizedBox(height: 6),
-        if (_isCategoryListExpanded) _buildInlineCategoryList(),
-        const SizedBox(height: 24),
-      ],
-    );
-  }
-
   // Select a Category Field
   Widget _buildCategorySelectorField() {
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _isCategoryListExpanded = !_isCategoryListExpanded;
-        });
-      },
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: Colors.black.withValues(alpha: 0.15),
-            width: 1.0,
+    return Container(
+      key: _selectorKey,
+      child: InkWell(
+        onTap: () {
+          if (_isCategoryListExpanded) {
+            _hideCategoryOverlay();
+          } else {
+            _showCategoryOverlay();
+          }
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 11.0),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: _isCategoryListExpanded
+                  ? const Color(0xFF5E227A)
+                  : Colors.black.withValues(alpha: 0.2),
+              width: _isCategoryListExpanded ? 1.5 : 1.0,
+            ),
           ),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.search, color: Color(0xFF5F6368), size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                _selectedCategory ?? 'Select a Category',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color:
-                      _selectedCategory != null
-                          ? const Color(0xFF1E1E1E)
-                          : const Color(0xFF222222),
+          child: Row(
+            children: [
+              const Icon(Icons.search, color: Color(0xFF5F6368), size: 19),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _selectedCategory ?? 'Select a Category',
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w500,
+                    color:
+                        _selectedCategory != null
+                            ? const Color(0xFF1E1E1E)
+                            : const Color(0xFF222222),
+                  ),
                 ),
               ),
-            ),
-            Icon(
-              _isCategoryListExpanded
-                  ? Icons.keyboard_arrow_up
-                  : Icons.keyboard_arrow_down,
-              color: const Color(0xFF5F6368),
-              size: 22,
-            ),
-          ],
+              Icon(
+                _isCategoryListExpanded
+                    ? Icons.keyboard_arrow_up
+                    : Icons.keyboard_arrow_down,
+                color: const Color(0xFF5F6368),
+                size: 20,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // Inline Category List Box (Exact Match to Screenshot)
-  Widget _buildInlineCategoryList() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: Colors.black.withValues(alpha: 0.12),
-          width: 1.0,
-        ),
-      ),
-      child: Column(
-        children: List.generate(_categories.length, (index) {
-          final cat = _categories[index];
-          final count = _allArtists.where((a) => a.category == cat.name).length;
-          final isSelected = _selectedCategory == cat.name;
-          final isLast = index == _categories.length - 1;
+  // Floating Auto-Adjusting Category Popup
+  void _showCategoryOverlay() {
+    _hideCategoryOverlay();
 
-          return Column(
-            children: [
-              InkWell(
-                onTap: () {
-                  if (!_isLoggedIn) {
-                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                    if (mounted) {
-                      context.push(RouteNames.login);
-                    }
-                  } else {
-                    setState(() {
-                      _selectedCategory = isSelected ? null : cat.name;
-                    });
-                  }
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 13.0,
-                  ),
-                  child: Row(
-                    children: [
-                      Text(cat.emoji, style: const TextStyle(fontSize: 16)),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          cat.name,
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            fontWeight:
-                                isSelected ? FontWeight.w700 : FontWeight.w500,
-                            color: const Color(0xFF1E1E1E),
-                          ),
-                        ),
-                      ),
-                      Text(
-                        '$count artists',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color:
-                              isSelected
-                                  ? const Color(0xFF5E227A)
-                                  : const Color(0xFF64748B),
-                          fontWeight:
-                              isSelected ? FontWeight.w600 : FontWeight.w400,
-                        ),
+    final renderBox = _selectorKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final size = renderBox.size;
+    final offset = renderBox.localToGlobal(Offset.zero);
+    final mediaQuery = MediaQuery.of(context);
+    final screenHeight = mediaQuery.size.height;
+    final screenWidth = mediaQuery.size.width;
+
+    // Compact dynamic popup height (approx 38px per item)
+    final double popupHeight = (_categories.length * 38.0 + 8.0).clamp(100.0, 245.0);
+
+    final double spaceBelow = screenHeight - (offset.dy + size.height) - mediaQuery.padding.bottom;
+    final double spaceAbove = offset.dy - mediaQuery.padding.top;
+
+    // Auto-adjust: If space below is insufficient, open above the selector
+    final bool showAbove = spaceBelow < popupHeight && spaceAbove > spaceBelow;
+
+    final double topPosition = showAbove
+        ? (offset.dy - popupHeight - 2).clamp(mediaQuery.padding.top + 8.0, screenHeight - popupHeight)
+        : (offset.dy + size.height + 2).clamp(0.0, screenHeight - popupHeight - mediaQuery.padding.bottom);
+
+    _categoryOverlayEntry = OverlayEntry(
+      builder: (overlayContext) {
+        return Stack(
+          children: [
+            // Full-screen transparent barrier to dismiss on tap outside
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: _hideCategoryOverlay,
+                child: Container(color: Colors.transparent),
+              ),
+            ),
+            // Floating Auto-Adjusting Overlay Card (Matching media_1787997749795.png)
+            Positioned(
+              left: offset.dx.clamp(16.0, (screenWidth - size.width - 16.0).clamp(16.0, screenWidth)),
+              top: topPosition,
+              width: size.width,
+              height: popupHeight,
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.black.withValues(alpha: 0.18),
+                      width: 1.0,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.12),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      shrinkWrap: true,
+                      itemCount: _categories.length,
+                      separatorBuilder: (context, index) => const Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: Color(0xFFF1F5F9),
+                      ),
+                      itemBuilder: (context, index) {
+                        final cat = _categories[index];
+                        final count = _allArtists.where((a) {
+                          final catLow = cat.name.toLowerCase();
+                          final aLow = a.category.toLowerCase();
+                          return aLow.contains(catLow) || catLow.contains(aLow);
+                        }).length;
+                        final isSelected = _selectedCategory == cat.name;
+
+                        return InkWell(
+                          onTap: () {
+                            setState(() {
+                              _selectedCategory = isSelected ? null : cat.name;
+                            });
+                            _hideCategoryOverlay();
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14.0,
+                              vertical: 8.5,
+                            ),
+                            child: Row(
+                              children: [
+                                Text(cat.emoji, style: const TextStyle(fontSize: 15)),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    cat.name,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                      color: isSelected ? const Color(0xFF5E227A) : const Color(0xFF1E1E1E),
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  '$count artists',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    color: isSelected ? const Color(0xFF5E227A) : const Color(0xFF64748B),
+                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                 ),
               ),
-              if (!isLast)
-                const Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: Color(0xFFF1F5F9),
-                ),
-            ],
-          );
-        }),
-      ),
+            ),
+          ],
+        );
+      },
     );
+
+    Overlay.of(context).insert(_categoryOverlayEntry!);
+    setState(() {
+      _isCategoryListExpanded = true;
+    });
+  }
+
+  void _hideCategoryOverlay() {
+    if (_categoryOverlayEntry != null) {
+      _categoryOverlayEntry?.remove();
+      _categoryOverlayEntry = null;
+    }
+    if (mounted && _isCategoryListExpanded) {
+      setState(() {
+        _isCategoryListExpanded = false;
+      });
+    }
   }
 
   Widget _buildArtistCard(ArtistModel artist) {
