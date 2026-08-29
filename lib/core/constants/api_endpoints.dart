@@ -18,37 +18,37 @@ class ApiEndpoints {
   static const Duration receiveTimeout = Duration(seconds: 3);
 
   // Auth
-  static const String login = '/login.php';
-  static const String register = '/login.php';
-  static const String userProfile = '/login.php';
+  static const String login = '/api.php?resource=login';
+  static const String register = '/api.php?resource=login';
+  static const String userProfile = '/api.php?resource=login&action=profile';
 
   // Artists
-  static const String artists = '/artists.php';
-  static const String artistDetails = '/artists.php';
-  static const String artistRegister = '/artists.php';
+  static const String artists = '/api.php?resource=artists';
+  static const String artistDetails = '/api.php?resource=artists';
+  static const String artistRegister = '/api.php?resource=artists';
 
   // Categories
-  static const String categories = '/categories.php';
+  static const String categories = '/api.php?resource=categories';
 
   // Events
-  static const String events = '/events.php';
-  static const String eventDetails = '/events.php';
-  static const String eventCreate = '/events.php';
+  static const String events = '/api.php?resource=events';
+  static const String eventDetails = '/api.php?resource=events';
+  static const String eventCreate = '/api.php?resource=events';
 
   // Government & Cultural Hubs
-  static const String government = '/government.php';
+  static const String government = '/api.php?resource=government';
 
   // Galleries & Art Centers
-  static const String galleries = '/galleries.php';
-  static const String galleryRegister = '/galleries.php';
+  static const String galleries = '/api.php?resource=galleries';
+  static const String galleryRegister = '/api.php?resource=galleries';
 
   // Bookings & RSVPs
-  static const String bookings = '/bookings.php';
-  static const String bookingCreate = '/bookings.php';
+  static const String bookings = '/api.php?resource=bookings';
+  static const String bookingCreate = '/api.php?resource=bookings';
 
   // Competitions & Open Calls
-  static const String competitions = '/events.php';
+  static const String competitions = '/api.php?resource=events';
 
   // About Platform
-  static const String aboutUs = '/index.php';
+  static const String aboutUs = '/api.php?resource=about';
 }
