@@ -14,8 +14,8 @@ class ApiEndpoints {
     return 'http://localhost/artist_dubai/api/v1';
   }
 
-  static const Duration connectionTimeout = Duration(seconds: 30);
-  static const Duration receiveTimeout = Duration(seconds: 30);
+  static const Duration connectionTimeout = Duration(seconds: 3);
+  static const Duration receiveTimeout = Duration(seconds: 3);
 
   // Auth
   static const String login = '/login.php';
