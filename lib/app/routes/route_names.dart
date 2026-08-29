@@ -27,4 +27,5 @@ class RouteNames {
   static const String categoryDetail = '/category-detail';
   static const String createCategory = '/create-category';
   static const String myEvents = '/my-events';
+  static const String bookingRequests = '/booking-requests';
 }

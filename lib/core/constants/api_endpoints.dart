@@ -46,6 +46,9 @@ class ApiEndpoints {
   static const String bookings = '/bookings/index.php';
   static const String bookingCreate = '/bookings/create.php';
 
+  // Competitions & Open Calls
+  static const String competitions = '/competitions/index.php';
+
   // About Platform
   static const String aboutUs = '/about/index.php';
 }

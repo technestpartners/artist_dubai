@@ -17,6 +17,7 @@ class ApiService {
   List<GovernmentEntity>? _cachedGovEntities;
   List<Map<String, dynamic>>? _cachedGalleries;
   Map<String, dynamic>? _cachedAbout;
+  List<Map<String, dynamic>>? _cachedCompetitions;
 
   ApiService(this._client);
 
@@ -370,5 +371,70 @@ class ApiService {
     } catch (_) {}
 
     return _cachedAbout;
+  }
+
+  // 13. Competitions & Open Calls (Instant Cache-First)
+  Future<List<Map<String, dynamic>>> getCompetitions({
+    String? status,
+    String? query,
+    bool forceRefresh = false,
+  }) async {
+    final isDefaultQuery = (status == null || status.isEmpty) && (query == null || query.isEmpty);
+
+    if (!forceRefresh && isDefaultQuery && _cachedCompetitions != null && _cachedCompetitions!.isNotEmpty) {
+      return _cachedCompetitions!;
+    }
+
+    try {
+      final queryParams = <String, dynamic>{};
+      if (status != null && status.isNotEmpty) {
+        queryParams['status'] = status;
+      }
+      if (query != null && query.isNotEmpty) {
+        queryParams['q'] = query;
+      }
+
+      final res = await _client.get(
+        ApiEndpoints.competitions,
+        queryParameters: queryParams,
+      );
+
+      if (res is Map<String, dynamic> && res['status'] == 'success') {
+        final list = (res['data'] as List<dynamic>)
+            .map((e) => e as Map<String, dynamic>)
+            .toList();
+        if (isDefaultQuery) {
+          _cachedCompetitions = list;
+        }
+        return list;
+      }
+    } catch (_) {}
+
+    return _cachedCompetitions ?? [];
+  }
+
+  // 14. My Bookings (user's booking history)
+  Future<List<Map<String, dynamic>>> getBookings({
+    String? userId,
+    String? artistId,
+    bool forceRefresh = false,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (userId != null && userId.isNotEmpty) queryParams['user_id'] = userId;
+      if (artistId != null && artistId.isNotEmpty) queryParams['artist_id'] = artistId;
+
+      final res = await _client.get(
+        ApiEndpoints.bookings,
+        queryParameters: queryParams,
+      );
+
+      if (res is Map<String, dynamic> && res['status'] == 'success') {
+        return (res['data'] as List<dynamic>)
+            .map((e) => e as Map<String, dynamic>)
+            .toList();
+      }
+    } catch (_) {}
+    return [];
   }
 }
