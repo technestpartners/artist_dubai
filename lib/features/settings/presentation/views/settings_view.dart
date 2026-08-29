@@ -34,7 +34,7 @@ class SettingsView extends StatelessWidget {
           insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: Container(
             width: double.infinity,
-            constraints: const BoxConstraints(maxWidth: 420),
+            constraints: const BoxConstraints(maxWidth: 440),
             padding: const EdgeInsets.all(20),
             child: SingleChildScrollView(
               child: Form(
@@ -89,8 +89,16 @@ class SettingsView extends StatelessWidget {
                         hintStyle: const TextStyle(fontSize: 13.5, color: Color(0xFF94A3B8)),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: Color(0xFF5E227A), width: 1.8),
                         ),
                       ),
                       validator: (val) {
@@ -118,8 +126,16 @@ class SettingsView extends StatelessWidget {
                         hintStyle: const TextStyle(fontSize: 13.5, color: Color(0xFF94A3B8)),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: Color(0xFF5E227A), width: 1.8),
                         ),
                       ),
                       validator: (val) {
@@ -137,19 +153,19 @@ class SettingsView extends StatelessWidget {
                           onPressed: () => Navigator.pop(dialogContext),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: const Color(0xFF1E1E1E),
-                            side: const BorderSide(color: Color(0xFFCBD5E1)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            side: const BorderSide(color: Color(0xFF1E1E1E), width: 1.2),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                           ),
-                          child: const Text('Cancel', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
+                          child: const Text('Cancel', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
                         ),
                         const SizedBox(width: 10),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF5E227A),
+                            backgroundColor: const Color(0xFFB180C4),
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                             elevation: 0,
                           ),
                           onPressed: () {
@@ -166,7 +182,7 @@ class SettingsView extends StatelessWidget {
                               );
                             }
                           },
-                          child: const Text('Update Password', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
+                          child: const Text('Update Password', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
@@ -221,12 +237,12 @@ class SettingsView extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: const [
-                      Text('• Your artist profile (if any)', style: TextStyle(fontSize: 12.5, color: Color(0xFF475569), height: 1.5)),
-                      Text('• All your artwork images', style: TextStyle(fontSize: 12.5, color: Color(0xFF475569), height: 1.5)),
-                      Text('• Your account information', style: TextStyle(fontSize: 12.5, color: Color(0xFF475569), height: 1.5)),
-                      Text('• All your bookings and event history', style: TextStyle(fontSize: 12.5, color: Color(0xFF475569), height: 1.5)),
-                      Text('• Any saved preferences', style: TextStyle(fontSize: 12.5, color: Color(0xFF475569), height: 1.5)),
-                      Text('• Your liked artists and galleries', style: TextStyle(fontSize: 12.5, color: Color(0xFF475569), height: 1.5)),
+                      Text('Your artist profile (if any)', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
+                      Text('All your artwork images', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
+                      Text('Your account information', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
+                      Text('All your bookings and event history', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
+                      Text('Any saved preferences', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
+                      Text('Your liked artists and galleries', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -235,7 +251,7 @@ class SettingsView extends StatelessWidget {
                       backgroundColor: const Color(0xFFEF4444),
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     onPressed: () {
@@ -258,11 +274,11 @@ class SettingsView extends StatelessWidget {
                     onPressed: () => Navigator.pop(dialogContext),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFF1E1E1E),
-                      side: const BorderSide(color: Color(0xFFCBD5E1)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      side: const BorderSide(color: Color(0xFF1E1E1E), width: 1.2),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: const Text('Cancel', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                    child: const Text('Cancel', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
