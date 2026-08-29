@@ -1,7 +1,7 @@
 <?php
 /**
  * Artist Dubai - Strictly Pure MySQL Single-File REST API System
- * Version: 6.2.0
+ * Version: 6.3.0
  * Database Engine: Pure MySQL (Laragon MySQL Engine)
  * Architecture: High-Performance Single-File OOP Controller-Router System
  */
@@ -137,7 +137,29 @@ class DatabaseManager {
                 emoji VARCHAR(50) DEFAULT '🎨',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            CREATE TABLE IF NOT EXISTS galleries (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                category VARCHAR(255) NULL,
+                location VARCHAR(255) NULL,
+                timing VARCHAR(255) NULL,
+                website VARCHAR(500) NULL,
+                image_url VARCHAR(500) NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         ");
+
+        // Seed MySQL galleries data if table is empty
+        $checkGalleries = $this->pdo->query("SELECT COUNT(*) FROM galleries")->fetchColumn();
+        if ($checkGalleries == 0) {
+            $this->pdo->exec("
+                INSERT INTO galleries (name, category, location, timing, website, image_url) VALUES 
+                ('Alserkal Avenue', 'Art District & Galleries Hub', 'Al Quoz, Dubai', '10:00 AM - 07:00 PM (Sat - Thu)', 'https://alserkal.online', 'https://picsum.photos/id/1015/800/600'),
+                ('Jameel Arts Centre', 'Contemporary Art Museum', 'Jaddaf Waterfront, Dubai', '10:00 AM - 08:00 PM (Daily)', 'https://jameelartscentre.org', 'https://picsum.photos/id/1018/800/600'),
+                ('Tashkeel Al Fahidi', 'Art Studio & Exhibition Space', 'Al Fahidi Historical Neighborhood, Dubai', '09:00 AM - 08:00 PM (Sun - Thu)', 'https://tashkeel.org', 'https://picsum.photos/id/1025/800/600');
+            ");
+        }
 
         // Seed MySQL events data if table is empty
         $checkEvents = $this->pdo->query("SELECT COUNT(*) FROM events")->fetchColumn();
@@ -148,20 +170,6 @@ class DatabaseManager {
                 ('Arabic Calligraphy & Typography Masterclass', 'Hands-on intensive masterclass exploring traditional Kufic script and modern digital typography techniques.', 'Masterclass & Workshop', 'Free', '22 Oct 2026', 'Jaddaf Waterfront, Dubai', 'Jameel Arts Centre', 1, 28, 40, 'Dubai Culture', 'workshop@dubaiculture.gov.ae', 'Calligraphy,Workshop,Typography'),
                 ('Emirates Digital Art & NFT Summit', 'Explore cutting-edge CGI, 3D render art, generative AI installations, and immersive digital media.', 'Digital Art & New Media', 'Free', '05 Nov 2026', 'DIFC, Dubai', 'Museum of the Future', 1, 85, 200, 'Emirates Art Foundation', 'digital@emiratesart.ae', 'DigitalArt,CGI,NFT'),
                 ('Al Quoz Outdoor Sculpture Showcase', 'Public outdoor exhibition of monumental 3D sculptures and kinetic art installations in the heart of Al Quoz.', 'Sculpture & 3D Installation', 'Free', '18 Nov 2026', 'Al Quoz Creative Zone, Dubai', 'Alserkal Outdoor Plaza', 1, 60, 300, 'Alserkal Avenue', 'info@alserkal.online', 'Sculpture,PublicArt,Outdoor');
-            ");
-        }
-
-        // Seed MySQL categories data if table is empty
-        $checkCat = $this->pdo->query("SELECT COUNT(*) FROM categories")->fetchColumn();
-        if ($checkCat == 0) {
-            $this->pdo->exec("
-                INSERT INTO categories (name, description, emoji) VALUES 
-                ('Contemporary Art', 'Modern visual artwork & experimental styles', '🎨'),
-                ('Mixed Media', 'Cross-genre painting, digital collage & sculpture', '✨'),
-                ('Digital Art & Illustration', 'CGI, 3D render art & concept design', '💻'),
-                ('Calligraphy & Typography', 'Traditional Arabic scripts & modern fonts', '🖋️'),
-                ('Sculpture & 3D Art', 'Physical installations & 3D art structures', '🗿'),
-                ('Photography', 'Architectural, urban & fine art photography', '📷');
             ");
         }
     }
@@ -436,6 +444,24 @@ class EventController {
         $stmt->execute($params);
         $events = $stmt->fetchAll();
 
+        // Dynamically attach event photo galleries
+        foreach ($events as &$ev) {
+            $ev['galleries'] = [
+                [
+                    'title' => 'Event Gallery: ' . $ev['title'],
+                    'subtitle' => 'Live artwork & event highlights',
+                    'photo_count' => 3,
+                    'date' => $ev['event_date'] ?? '15 Oct 2026',
+                    'image_url' => 'https://picsum.photos/id/1015/800/600',
+                    'images' => [
+                        ['title' => 'Artwork Showcase 1', 'image_url' => 'https://picsum.photos/id/1015/600/400', 'caption' => 'Exhibition highlight'],
+                        ['title' => 'Artwork Showcase 2', 'image_url' => 'https://picsum.photos/id/1018/600/400', 'caption' => 'Artist live installation'],
+                        ['title' => 'Artwork Showcase 3', 'image_url' => 'https://picsum.photos/id/1025/600/400', 'caption' => 'Gallery visitors']
+                    ]
+                ]
+            ];
+        }
+
         ApiResponse::success($events, 'Events retrieved successfully from MySQL');
     }
 
@@ -490,26 +516,31 @@ class BookingController {
 }
 
 class GalleryController {
+    private PDO $db;
+
+    public function __construct() {
+        $this->db = DatabaseManager::getInstance()->getConnection();
+    }
+
     public function getGalleries(): void {
-        $galleries = [
-            [
-                'id' => 'gal-1',
-                'name' => 'Alserkal Avenue',
-                'category' => 'Art District & Galleries Hub',
-                'location' => 'Al Quoz, Dubai',
-                'timing' => '10:00 AM - 07:00 PM (Sat - Thu)',
-                'website' => 'https://alserkal.online'
-            ],
-            [
-                'id' => 'gal-2',
-                'name' => 'Jameel Arts Centre',
-                'category' => 'Contemporary Art Museum',
-                'location' => 'Jaddaf Waterfront, Dubai',
-                'timing' => '10:00 AM - 08:00 PM (Daily)',
-                'website' => 'https://jameelartscentre.org'
-            ]
-        ];
-        ApiResponse::success($galleries, 'Galleries fetched successfully');
+        $stmt = $this->db->query('SELECT * FROM galleries ORDER BY id DESC');
+        $galleries = $stmt->fetchAll();
+        ApiResponse::success($galleries, 'Galleries retrieved successfully from MySQL');
+    }
+
+    public function createGallery(array $input): void {
+        $name = InputSanitizer::cleanString($input['name'] ?? '');
+        $category = InputSanitizer::cleanString($input['category'] ?? 'Art Gallery');
+        $location = InputSanitizer::cleanString($input['location'] ?? 'Dubai, UAE');
+
+        if (empty($name)) {
+            ApiResponse::error('Gallery name is required.');
+        }
+
+        $stmt = $this->db->prepare('INSERT INTO galleries (name, category, location) VALUES (?, ?, ?)');
+        $stmt->execute([$name, $category, $location]);
+
+        ApiResponse::success(['gallery_id' => (int)$this->db->lastInsertId()], 'Gallery registered successfully in MySQL', 201);
     }
 }
 
@@ -592,7 +623,9 @@ class UnifiedMySqlApiRouter {
                 break;
 
             case 'galleries':
-                (new GalleryController())->getGalleries();
+                $gal = new GalleryController();
+                if ($method === 'POST') $gal->createGallery($input);
+                else $gal->getGalleries();
                 break;
 
             case 'government':
