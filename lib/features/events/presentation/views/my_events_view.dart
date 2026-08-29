@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../home/presentation/widgets/home_footer_widget.dart';
@@ -40,61 +42,24 @@ class MyEventsView extends StatefulWidget {
 class _MyEventsViewState extends State<MyEventsView> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  List<ArtEventModel> _myCreatedEvents = [];
 
-  // Mock list of events created by the logged-in user / artist
-  final List<ArtEventModel> _myCreatedEvents = [
-    const ArtEventModel(
-      id: 'my-event-1',
-      title: 'Contemporary Arabic Calligraphy Masterclass',
-      category: 'Art Workshop',
-      price: '50.00 AED',
-      description: 'Join master artist Nizar Fahem for an exclusive live calligraphy workshop.',
-      dateTime: 'Thu, 4 Sep 2025 at 10:00 AM',
-      formattedDate: 'Thursday, 4 September 2025',
-      timeRange: '10:00 AM - 02:00 PM',
-      location: 'Alserkal Avenue, Al Quoz, Dubai',
-      attendeesCount: 10,
-      maxAttendees: 20,
-      organizer: 'Nizar Fahem',
-      organizerEmail: 'nizar@artistdubai.com',
-      imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1200&auto=format&fit=crop',
-      tags: ['Calligraphy', 'Masterclass', 'Workshop'],
-    ),
-    const ArtEventModel(
-      id: 'my-event-2',
-      title: 'Youth Digital Art & NFT Showcase 2026',
-      category: 'Art Exhibition',
-      price: 'Free',
-      description: 'Showcasing digital artwork from rising UAE artists and creators.',
-      dateTime: 'Sat, 12 Sep 2025 at 04:00 PM',
-      formattedDate: 'Saturday, 12 September 2025',
-      timeRange: '04:00 PM - 09:00 PM',
-      location: 'Dubai Design District (d3), Building 7',
-      attendeesCount: 6,
-      maxAttendees: 50,
-      organizer: 'Nizar Fahem',
-      organizerEmail: 'nizar@artistdubai.com',
-      imageUrl: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=1200&auto=format&fit=crop',
-      tags: ['Digital Art', 'Exhibition', 'd3'],
-    ),
-    const ArtEventModel(
-      id: 'my-event-3',
-      title: 'Oil Painting & Abstract Expressions',
-      category: 'Gallery Opening',
-      price: '30.00 AED',
-      description: 'Interactive gallery opening featuring abstract canvas paintings.',
-      dateTime: 'Sun, 20 Sep 2025 at 06:00 PM',
-      formattedDate: 'Sunday, 20 September 2025',
-      timeRange: '06:00 PM - 10:00 PM',
-      location: 'Jameel Arts Centre, Jaddaf Waterfront',
-      attendeesCount: 4,
-      maxAttendees: 30,
-      organizer: 'Nizar Fahem',
-      organizerEmail: 'nizar@artistdubai.com',
-      imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop',
-      tags: ['Oil Painting', 'Gallery', 'Abstract'],
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchMyEvents();
+  }
+
+  Future<void> _fetchMyEvents() async {
+    try {
+      final events = await sl<ApiService>().getEvents(forceRefresh: true);
+      if (mounted) {
+        setState(() {
+          _myCreatedEvents = events;
+        });
+      }
+    } catch (_) {}
+  }
 
   // Mock booking records per event (who booked tickets for each event)
   final Map<String, List<EventAttendeeBooking>> _eventBookingsMap = {

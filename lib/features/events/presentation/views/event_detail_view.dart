@@ -11,14 +11,42 @@ import '../../../artists/presentation/views/artist_detail_view.dart';
 import '../../domain/models/art_event_model.dart';
 import '../widgets/event_gallery_modal.dart';
 
-class EventDetailView extends StatelessWidget {
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/api_service.dart';
+
+class EventDetailView extends StatefulWidget {
   final ArtEventModel event;
 
   const EventDetailView({super.key, required this.event});
 
   @override
+  State<EventDetailView> createState() => _EventDetailViewState();
+}
+
+class _EventDetailViewState extends State<EventDetailView> {
+  List<ArtistModel> _featuredArtists = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchArtists();
+  }
+
+  Future<void> _fetchArtists() async {
+    try {
+      final artists = await sl<ApiService>().getArtists(forceRefresh: true);
+      if (mounted) {
+        setState(() {
+          _featuredArtists = artists;
+        });
+      }
+    } catch (_) {}
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final featuredArtists = ArtistModel.mockArtists.take(6).toList();
+    final event = widget.event;
+    final featuredArtists = _featuredArtists;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),

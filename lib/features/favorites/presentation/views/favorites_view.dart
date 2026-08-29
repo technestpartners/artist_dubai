@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../artists/domain/models/artist_model.dart';
@@ -16,23 +18,28 @@ class FavoritesView extends StatefulWidget {
 
 class _FavoritesViewState extends State<FavoritesView> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  List<ArtistModel> _favoritedArtists = [];
+  List<ArtEventModel> _favoritedEvents = [];
 
-  final List<ArtistModel> _favoritedArtists = [
-    ArtistModel.mockArtists.firstWhere(
-      (a) => a.name.contains('Frankie'),
-      orElse: () => ArtistModel.mockArtists.first,
-    ),
-    ArtistModel.mockArtists.firstWhere(
-      (a) => a.name.contains('Alexander'),
-      orElse: () => ArtistModel.mockArtists[1],
-    ),
-    ArtistModel.mockArtists.length > 2 ? ArtistModel.mockArtists[2] : ArtistModel.mockArtists.first,
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _fetchFavorites();
+  }
 
-  final List<ArtEventModel> _favoritedEvents = [
-    ArtEventModel.mockEvents.first,
-    ArtEventModel.mockEvents.length > 1 ? ArtEventModel.mockEvents[1] : ArtEventModel.mockEvents.first,
-  ];
+  Future<void> _fetchFavorites() async {
+    try {
+      final artists = await sl<ApiService>().getArtists(forceRefresh: true);
+      final events = await sl<ApiService>().getEvents(forceRefresh: true);
+      if (mounted) {
+        setState(() {
+          _favoritedArtists = artists;
+          _favoritedEvents = events;
+        });
+      }
+    } catch (_) {}
+  }
 
   final List<Map<String, String>> _favoritedArtworks = [
     {
@@ -60,12 +67,6 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
       'image': 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop',
     },
   ];
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-  }
 
   @override
   void dispose() {

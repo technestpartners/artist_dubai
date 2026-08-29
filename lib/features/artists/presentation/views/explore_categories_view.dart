@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
-import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/di/injection_container.dart';
-import '../../../../core/network/api_client.dart';
+import '../../../../core/services/api_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
@@ -19,7 +18,7 @@ class ExploreCategoriesView extends StatefulWidget {
 
 class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
   List<CategoryInfo> _categories = ArtistModel.categoryList;
-  final List<ArtistModel> _allArtists = ArtistModel.mockArtists;
+  List<ArtistModel> _allArtists = [];
 
   @override
   void initState() {
@@ -29,26 +28,13 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
 
   Future<void> _fetchCategoriesFromApi() async {
     try {
-      final apiClient = sl<ApiClient>();
-      final response = await apiClient.get(ApiEndpoints.categories);
-      if (response is Map<String, dynamic> &&
-          response['success'] == true &&
-          response['data'] is List) {
-        final List list = response['data'];
-        if (list.isNotEmpty) {
-          final fetched =
-              list.map((item) {
-                return CategoryInfo(
-                  name: item['name'] ?? '',
-                  emoji: item['emoji'] ?? '🎨',
-                );
-              }).toList();
-          if (mounted) {
-            setState(() {
-              _categories = fetched;
-            });
-          }
-        }
+      final categories = await sl<ApiService>().getCategories(forceRefresh: true);
+      final artists = await sl<ApiService>().getArtists(forceRefresh: true);
+      if (mounted) {
+        setState(() {
+          _categories = categories;
+          _allArtists = artists;
+        });
       }
     } catch (_) {}
   }

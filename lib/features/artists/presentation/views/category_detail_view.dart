@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../domain/models/artist_model.dart';
@@ -24,12 +26,28 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
 
   late final String _title;
   late final String _categoryEmoji;
+  List<ArtistModel> _categoryArtists = [];
 
   @override
   void initState() {
     super.initState();
     _title = widget.categoryName ?? 'Calligraphy & Typography';
     _categoryEmoji = widget.emoji ?? '✍️';
+    _fetchCategoryArtists();
+  }
+
+  Future<void> _fetchCategoryArtists() async {
+    try {
+      final artists = await sl<ApiService>().getArtists(
+        category: _title,
+        forceRefresh: true,
+      );
+      if (mounted) {
+        setState(() {
+          _categoryArtists = artists;
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -40,15 +58,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
 
   @override
   Widget build(BuildContext context) {
-    final artists =
-        ArtistModel.mockArtists.where((a) {
-          if (widget.categoryName == null) return true;
-          return a.category.toLowerCase().contains(_title.toLowerCase()) ||
-              _title.toLowerCase().contains(a.category.toLowerCase());
-        }).toList();
-
-    final activeArtists =
-        artists.isEmpty ? ArtistModel.mockArtists.take(1).toList() : artists;
+    final activeArtists = _categoryArtists;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
