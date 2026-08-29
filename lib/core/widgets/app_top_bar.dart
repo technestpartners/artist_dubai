@@ -206,21 +206,36 @@ class _AppTopBarState extends State<AppTopBar> {
           ),
           const SizedBox(width: 4),
 
-          // User Avatar Circle (dynamic first letter)
-          Container(
-            width: 32,
-            height: 32,
-            decoration: const BoxDecoration(
-              color: Color(0xFF5E227A),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                avatarLetter,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
+          // User Avatar Circle (dynamic first letter) - Tap opens Account Settings
+          GestureDetector(
+            onTap: () {
+              if (loggedIn) {
+                context.push(RouteNames.settings);
+              } else {
+                context.push(RouteNames.login);
+              }
+            },
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: Tooltip(
+                message: 'Account Settings',
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF5E227A),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      avatarLetter,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
