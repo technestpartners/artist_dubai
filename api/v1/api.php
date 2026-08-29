@@ -1,7 +1,7 @@
 <?php
 /**
  * Artist Dubai - Strictly Pure MySQL Single-File REST API System
- * Version: 6.0.0
+ * Version: 6.1.0
  * Database Engine: Pure MySQL (Laragon MySQL Engine)
  * Architecture: High-Performance Single-File OOP Controller-Router System
  */
@@ -127,15 +127,16 @@ class DatabaseManager {
         ");
 
         // Seed MySQL data if table is empty
-        $check = $this->pdo->query("SELECT COUNT(*) FROM artists")->fetchColumn();
+        $check = $this->pdo->query("SELECT COUNT(*) FROM categories")->fetchColumn();
         if ($check == 0) {
             $this->pdo->exec("
-                INSERT INTO users (full_name, email, password_hash) 
-                VALUES ('Allen Baiyee', 'allenbaiyee@me.com', '\$2y\$10\$e.1Wq2t.7/f5N6A8G7q.ue3H1F8/q5J9Y4V2S1Z8X7C6V5B4N3M2');
-
-                INSERT INTO artists (name, category, location, bio, followers_count, works_count) 
-                VALUES ('Frankie DeChiazza', 'Mixed Media', 'USA', 'TripTrap ... pop star', 120, 15),
-                       ('Alexander Mollov', 'Mixed Media', 'Dubai, UAE', 'Award-winning Music Video Director and multidisciplinary creative', 450, 28);
+                INSERT INTO categories (name, description, emoji) VALUES 
+                ('Contemporary Art', 'Modern visual artwork & experimental styles', '🎨'),
+                ('Mixed Media', 'Cross-genre painting, digital collage & sculpture', '✨'),
+                ('Digital Art & Illustration', 'CGI, 3D render art & concept design', '💻'),
+                ('Calligraphy & Typography', 'Traditional Arabic scripts & modern fonts', '🖋️'),
+                ('Sculpture & 3D Art', 'Physical installations & 3D art structures', '🗿'),
+                ('Photography', 'Architectural, urban & fine art photography', '📷');
             ");
         }
     }
@@ -277,6 +278,35 @@ class AuthController {
             ], 'Profile fetched');
         }
         ApiResponse::error('Profile not found', 404);
+    }
+}
+
+class CategoryController {
+    private PDO $db;
+
+    public function __construct() {
+        $this->db = DatabaseManager::getInstance()->getConnection();
+    }
+
+    public function getCategories(): void {
+        $stmt = $this->db->query('SELECT * FROM categories ORDER BY id ASC');
+        $categories = $stmt->fetchAll();
+        ApiResponse::success($categories, 'Categories retrieved successfully from MySQL');
+    }
+
+    public function createCategory(array $input): void {
+        $name = InputSanitizer::cleanString($input['name'] ?? '');
+        $description = InputSanitizer::cleanString($input['description'] ?? '');
+        $emoji = InputSanitizer::cleanString($input['emoji'] ?? '🎨');
+
+        if (empty($name)) {
+            ApiResponse::error('Category name is required.');
+        }
+
+        $stmt = $this->db->prepare('INSERT INTO categories (name, description, emoji) VALUES (?, ?, ?)');
+        $stmt->execute([$name, $description, $emoji]);
+
+        ApiResponse::success(['category_id' => (int)$this->db->lastInsertId()], 'Category created successfully in MySQL', 201);
     }
 }
 
@@ -458,6 +488,7 @@ class UnifiedMySqlApiRouter {
 
         if (empty($resource)) {
             if (strpos($uri, 'login') !== false || !empty($action)) $resource = 'login';
+            elseif (strpos($uri, 'categories') !== false) $resource = 'categories';
             elseif (strpos($uri, 'artists') !== false) $resource = 'artists';
             elseif (strpos($uri, 'events') !== false) $resource = 'events';
             elseif (strpos($uri, 'bookings') !== false) $resource = 'bookings';
@@ -474,6 +505,12 @@ class UnifiedMySqlApiRouter {
                 if ($action === 'register') $auth->register($input);
                 elseif ($action === 'profile') $auth->profile($input);
                 else $auth->login($input);
+                break;
+
+            case 'categories':
+                $cat = new CategoryController();
+                if ($method === 'POST') $cat->createCategory($input);
+                else $cat->getCategories();
                 break;
 
             case 'artists':
