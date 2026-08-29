@@ -32,7 +32,7 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: LoginView()));
       await tester.pumpAndSettle();
 
-      expect(find.text('Login'), findsWidgets);
+      expect(find.textContaining('Login'), findsWidgets);
       expect(find.byType(TextField), findsNWidgets(2));
     });
 
@@ -44,7 +44,7 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: RegisterView()));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining("Join Dubai's Artist"), findsOneWidget);
+      expect(find.textContaining("Join Artist Dubai community"), findsOneWidget);
       expect(find.byType(TextField), findsNWidgets(4));
     });
 

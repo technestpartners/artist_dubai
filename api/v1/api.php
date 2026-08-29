@@ -1,9 +1,8 @@
 <?php
 /**
  * Artist Dubai - Single-File Unified Object-Oriented REST API System
- * Version: 4.0.0
- * Database: MySQL (Laragon MySQL Engine)
- * Architecture: High-Performance Single-File OOP Controller-Router System
+ * Version: 5.0.0
+ * Database Engine: Pure MySQL Backend with Auto-Provisioning & Schema Seeding
  */
 
 ob_start();
@@ -26,6 +25,7 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS
 class DatabaseManager {
     private static ?DatabaseManager $instance = null;
     private PDO $pdo;
+    private string $engine = 'MySQL';
 
     private function __construct() {
         $host = '127.0.0.1';
@@ -34,27 +34,29 @@ class DatabaseManager {
         $pass = '';
 
         try {
-            // Ensure MySQL Database exists
+            // Connect to MySQL Server root to guarantee database creation
             $rootPdo = new PDO("mysql:host=$host;charset=utf8mb4", $user, $pass, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             ]);
             $rootPdo->exec("CREATE DATABASE IF NOT EXISTS `$db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
 
-            // Connect to artist_dubai MySQL Database
+            // Connect to MySQL artist_dubai Database
             $dsn = "mysql:host=$host;dbname=$db;charset=utf8mb4";
             $this->pdo = new PDO($dsn, $user, $pass, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
             ]);
-
-            $this->initializeMySqlTables();
+            $this->engine = 'MySQL';
+            $this->provisionMySqlSchema();
         } catch (\PDOException $e) {
-            // SQLite Fallback if MySQL service is stopped
+            // Backup SQLite connection if MySQL service is inactive
             $sqliteFile = __DIR__ . '/artist_dubai.sqlite';
             $this->pdo = new PDO("sqlite:" . $sqliteFile);
             $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+            $this->engine = 'SQLite Fallback';
+            $this->provisionSqliteSchema();
         }
     }
 
@@ -69,7 +71,11 @@ class DatabaseManager {
         return $this->pdo;
     }
 
-    private function initializeMySqlTables(): void {
+    public function getEngine(): string {
+        return $this->engine;
+    }
+
+    private function provisionMySqlSchema(): void {
         $this->pdo->exec("
             CREATE TABLE IF NOT EXISTS users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -122,6 +128,79 @@ class DatabaseManager {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         ");
+
+        // Seed MySQL data if table is empty
+        $check = $this->pdo->query("SELECT COUNT(*) FROM artists")->fetchColumn();
+        if ($check == 0) {
+            $this->pdo->exec("
+                INSERT INTO users (full_name, email, password_hash) 
+                VALUES ('Allen Baiyee', 'allenbaiyee@me.com', '\$2y\$10\$e.1Wq2t.7/f5N6A8G7q.ue3H1F8/q5J9Y4V2S1Z8X7C6V5B4N3M2');
+
+                INSERT INTO artists (name, category, location, bio, followers_count, works_count) 
+                VALUES ('Frankie DeChiazza', 'Mixed Media', 'USA', 'TripTrap ... pop star', 120, 15),
+                       ('Alexander Mollov', 'Mixed Media', 'Dubai, UAE', 'Award-winning Music Video Director and multidisciplinary creative', 450, 28);
+            ");
+        }
+    }
+
+    private function provisionSqliteSchema(): void {
+        $this->pdo->exec("
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                full_name TEXT NOT NULL,
+                email TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS artists (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                name TEXT NOT NULL,
+                category TEXT NOT NULL,
+                location TEXT NOT NULL,
+                bio TEXT,
+                avatar_url TEXT,
+                banner_url TEXT,
+                followers_count INTEGER DEFAULT 0,
+                works_count INTEGER DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                description TEXT,
+                category TEXT,
+                event_date TEXT,
+                location TEXT,
+                organizer_name TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS bookings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                full_name TEXT NOT NULL,
+                email TEXT NOT NULL,
+                phone TEXT,
+                artist_name TEXT,
+                booking_type TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS categories (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                description TEXT,
+                emoji TEXT DEFAULT '🎨',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+        ");
+
+        $check = $this->pdo->query("SELECT COUNT(*) FROM artists")->fetchColumn();
+        if ($check == 0) {
+            $this->pdo->exec("
+                INSERT INTO artists (name, category, location, bio) VALUES
+                ('Fatima Al Qasimi', 'Arabic Calligraphy', 'Dubai, UAE', 'Master Calligrapher'),
+                ('Marcus Vance', 'Digital Art', 'Dubai Design District', 'Digital Creator');
+            ");
+        }
     }
 }
 
@@ -131,11 +210,12 @@ class DatabaseManager {
 class ApiResponse {
     public static function success(mixed $data = [], string $message = 'Success', int $statusCode = 200): void {
         http_response_code($statusCode);
+        $engine = DatabaseManager::getInstance()->getEngine();
         echo json_encode([
             'status' => 'success',
             'success' => true,
             'message' => $message,
-            'database' => 'MySQL',
+            'database_engine' => $engine,
             'timestamp' => time(),
             'data' => $data
         ]);
@@ -144,11 +224,12 @@ class ApiResponse {
 
     public static function error(string $message = 'Error', int $statusCode = 400): void {
         http_response_code($statusCode);
+        $engine = DatabaseManager::getInstance()->getEngine();
         echo json_encode([
             'status' => 'error',
             'success' => false,
             'message' => $message,
-            'database' => 'MySQL',
+            'database_engine' => $engine,
             'timestamp' => time()
         ]);
         exit();
@@ -176,9 +257,8 @@ class InputSanitizer {
 }
 
 // -----------------------------------------------------------------------------
-// 4. Object-Oriented Feature Controllers (MySQL Backend)
+// 4. Object-Oriented Controllers
 // -----------------------------------------------------------------------------
-
 class AuthController {
     private PDO $db;
 
@@ -305,7 +385,7 @@ class ArtistController {
         $stmt->execute($params);
         $artists = $stmt->fetchAll();
 
-        ApiResponse::success($artists, 'Artists retrieved successfully from MySQL');
+        ApiResponse::success($artists, 'Artists retrieved successfully');
     }
 
     public function createArtist(array $input): void {
@@ -321,7 +401,7 @@ class ArtistController {
         $stmt = $this->db->prepare('INSERT INTO artists (name, category, location, bio) VALUES (?, ?, ?, ?)');
         $stmt->execute([$name, $category, $location, $bio]);
 
-        ApiResponse::success(['artist_id' => (int)$this->db->lastInsertId()], 'Artist profile created successfully in MySQL', 201);
+        ApiResponse::success(['artist_id' => (int)$this->db->lastInsertId()], 'Artist profile created successfully', 201);
     }
 }
 
@@ -335,7 +415,7 @@ class EventController {
     public function getEvents(array $query): void {
         $stmt = $this->db->query('SELECT * FROM events ORDER BY id DESC');
         $events = $stmt->fetchAll();
-        ApiResponse::success($events, 'Events retrieved successfully from MySQL');
+        ApiResponse::success($events, 'Events retrieved successfully');
     }
 
     public function createEvent(array $input): void {
@@ -351,7 +431,7 @@ class EventController {
         $stmt = $this->db->prepare('INSERT INTO events (title, category, location, event_date) VALUES (?, ?, ?, ?)');
         $stmt->execute([$title, $category, $location, $eventDate]);
 
-        ApiResponse::success(['event_id' => (int)$this->db->lastInsertId()], 'Event created successfully in MySQL', 201);
+        ApiResponse::success(['event_id' => (int)$this->db->lastInsertId()], 'Event created successfully', 201);
     }
 }
 
@@ -365,7 +445,7 @@ class BookingController {
     public function getBookings(array $query): void {
         $stmt = $this->db->query('SELECT * FROM bookings ORDER BY id DESC');
         $bookings = $stmt->fetchAll();
-        ApiResponse::success($bookings, 'Bookings retrieved successfully from MySQL');
+        ApiResponse::success($bookings, 'Bookings retrieved successfully');
     }
 
     public function createBooking(array $input): void {
@@ -380,7 +460,7 @@ class BookingController {
         $stmt = $this->db->prepare('INSERT INTO bookings (full_name, email, phone) VALUES (?, ?, ?)');
         $stmt->execute([$name, $email, $phone]);
 
-        ApiResponse::success(['booking_id' => (int)$this->db->lastInsertId()], 'Booking submitted successfully in MySQL', 201);
+        ApiResponse::success(['booking_id' => (int)$this->db->lastInsertId()], 'Booking submitted successfully', 201);
     }
 }
 
@@ -430,9 +510,9 @@ class FavoriteController {
 }
 
 // -----------------------------------------------------------------------------
-// 5. Unified MySQL API Router Class
+// 5. Unified API Router Class
 // -----------------------------------------------------------------------------
-class UnifiedMySqlApiRouter {
+class UnifiedApiRouter {
     public static function execute(): void {
         $method = $_SERVER['REQUEST_METHOD'];
         $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
@@ -498,5 +578,5 @@ class UnifiedMySqlApiRouter {
     }
 }
 
-// Execute MySQL API Router
-UnifiedMySqlApiRouter::execute();
+// Execute Unified API Router
+UnifiedApiRouter::execute();
