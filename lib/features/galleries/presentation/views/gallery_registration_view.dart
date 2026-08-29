@@ -189,7 +189,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                       ),
                       const SizedBox(height: 6),
                       DropdownButtonFormField<String>(
-                        initialValue: _selectedCategory,
+                        value: _selectedCategory,
                         items: _categories
                             .map((cat) => DropdownMenuItem(value: cat, child: Text(cat, style: const TextStyle(fontSize: 13.5))))
                             .toList(),

@@ -123,7 +123,7 @@ class ArtEventModel {
             GalleryImageItem(
               title: 'Event Image 2',
               imageUrl:
-                  'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1200&auto=format&fit=crop',
+                  'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1200&auto=format&fit=crop',
               caption: 'Live performance and acoustic session',
             ),
             GalleryImageItem(
