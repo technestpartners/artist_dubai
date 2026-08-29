@@ -21,6 +21,9 @@ class ApiService {
 
   ApiService(this._client);
 
+  bool _isSuccess(dynamic res) =>
+      res is Map<String, dynamic> && (res['status'] == 'success' || res['success'] == true);
+
   // 1. Categories (Instant Cache-First)
   Future<List<CategoryInfo>> getCategories({bool forceRefresh = false}) async {
     if (!forceRefresh && _cachedCategories != null && _cachedCategories!.isNotEmpty) {
@@ -29,7 +32,7 @@ class ApiService {
 
     try {
       final res = await _client.get(ApiEndpoints.categories);
-      if (res is Map<String, dynamic> && res['status'] == 'success') {
+      if (_isSuccess(res)) {
         final list = res['data'] as List<dynamic>;
         _cachedCategories = list.map((item) {
           return CategoryInfo(
@@ -74,7 +77,7 @@ class ApiService {
         queryParameters: queryParams,
       );
 
-      if (res is Map<String, dynamic> && res['status'] == 'success') {
+      if (_isSuccess(res)) {
         final list = res['data'] as List<dynamic>;
         final artists = list.map((e) => ArtistModel.fromJson(e as Map<String, dynamic>)).toList();
         if (isDefaultQuery) {
@@ -98,7 +101,7 @@ class ApiService {
         ApiEndpoints.artistDetails,
         queryParameters: {'id': id},
       );
-      if (res is Map<String, dynamic> && res['status'] == 'success') {
+      if (_isSuccess(res)) {
         final artist = ArtistModel.fromJson(res['data'] as Map<String, dynamic>);
         _cachedArtistDetails[id] = artist;
         return artist;
@@ -119,7 +122,7 @@ class ApiService {
         ApiEndpoints.artistRegister,
         data: data,
       );
-      if (res is Map<String, dynamic> && res['status'] == 'success') {
+      if (_isSuccess(res)) {
         _cachedArtists = null; // Invalidate cache for fresh live read
         return true;
       }
@@ -153,7 +156,7 @@ class ApiService {
         queryParameters: queryParams,
       );
 
-      if (res is Map<String, dynamic> && res['status'] == 'success') {
+      if (_isSuccess(res)) {
         final list = res['data'] as List<dynamic>;
         final events = list.map((e) {
           final m = e as Map<String, dynamic>;
@@ -223,7 +226,7 @@ class ApiService {
         ApiEndpoints.eventDetails,
         queryParameters: {'id': id},
       );
-      if (res is Map<String, dynamic> && res['status'] == 'success') {
+      if (_isSuccess(res)) {
         final m = res['data'] as Map<String, dynamic>;
         final event = ArtEventModel(
           id: m['id']?.toString() ?? '0',
@@ -264,7 +267,7 @@ class ApiService {
 
     try {
       final res = await _client.get(ApiEndpoints.government);
-      if (res is Map<String, dynamic> && res['status'] == 'success') {
+      if (_isSuccess(res)) {
         final list = res['data'] as List<dynamic>;
         _cachedGovEntities = list.map((e) => GovernmentEntity.fromJson(e as Map<String, dynamic>)).toList();
         return _cachedGovEntities!;
@@ -282,7 +285,7 @@ class ApiService {
 
     try {
       final res = await _client.get(ApiEndpoints.galleries);
-      if (res is Map<String, dynamic> && res['status'] == 'success') {
+      if (_isSuccess(res)) {
         _cachedGalleries = (res['data'] as List<dynamic>).map((e) => e as Map<String, dynamic>).toList();
         return _cachedGalleries!;
       }
@@ -298,7 +301,7 @@ class ApiService {
         ApiEndpoints.galleryRegister,
         data: data,
       );
-      if (res is Map<String, dynamic> && res['status'] == 'success') {
+      if (_isSuccess(res)) {
         _cachedGalleries = null; // Invalidate cache
         return true;
       }
@@ -313,7 +316,7 @@ class ApiService {
         ApiEndpoints.login,
         data: {'email': email, 'password': password},
       );
-      if (res is Map<String, dynamic> && res['status'] == 'success') {
+      if (_isSuccess(res)) {
         return res['data'] as Map<String, dynamic>?;
       }
     } catch (_) {}
@@ -337,7 +340,7 @@ class ApiService {
           'phone': phone ?? '',
         },
       );
-      if (res is Map<String, dynamic> && res['status'] == 'success') {
+      if (_isSuccess(res)) {
         return res['data'] as Map<String, dynamic>?;
       }
     } catch (_) {}
@@ -351,7 +354,7 @@ class ApiService {
         ApiEndpoints.bookingCreate,
         data: data,
       );
-      return res is Map<String, dynamic> && res['status'] == 'success';
+      return _isSuccess(res);
     } catch (_) {}
     return false;
   }
@@ -364,7 +367,7 @@ class ApiService {
 
     try {
       final res = await _client.get(ApiEndpoints.aboutUs);
-      if (res is Map<String, dynamic> && res['status'] == 'success') {
+      if (_isSuccess(res)) {
         _cachedAbout = res['data'] as Map<String, dynamic>?;
         return _cachedAbout;
       }
@@ -399,7 +402,7 @@ class ApiService {
         queryParameters: queryParams,
       );
 
-      if (res is Map<String, dynamic> && res['status'] == 'success') {
+      if (_isSuccess(res)) {
         final list = (res['data'] as List<dynamic>)
             .map((e) => e as Map<String, dynamic>)
             .toList();
@@ -504,7 +507,7 @@ class ApiService {
         queryParameters: queryParams,
       );
 
-      if (res is Map<String, dynamic> && res['status'] == 'success') {
+      if (_isSuccess(res)) {
         return (res['data'] as List<dynamic>)
             .map((e) => e as Map<String, dynamic>)
             .toList();

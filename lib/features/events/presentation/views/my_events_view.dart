@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import '../../../home/presentation/widgets/home_footer_widget.dart';
 import '../../domain/models/art_event_model.dart';
 
 class EventAttendeeBooking {
@@ -56,6 +57,7 @@ class _MyEventsViewState extends State<MyEventsView> {
       maxAttendees: 20,
       organizer: 'Nizar Fahem',
       organizerEmail: 'nizar@artistdubai.com',
+      imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1200&auto=format&fit=crop',
       tags: ['Calligraphy', 'Masterclass', 'Workshop'],
     ),
     const ArtEventModel(
@@ -72,6 +74,7 @@ class _MyEventsViewState extends State<MyEventsView> {
       maxAttendees: 50,
       organizer: 'Nizar Fahem',
       organizerEmail: 'nizar@artistdubai.com',
+      imageUrl: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=1200&auto=format&fit=crop',
       tags: ['Digital Art', 'Exhibition', 'd3'],
     ),
     const ArtEventModel(
@@ -88,6 +91,7 @@ class _MyEventsViewState extends State<MyEventsView> {
       maxAttendees: 30,
       organizer: 'Nizar Fahem',
       organizerEmail: 'nizar@artistdubai.com',
+      imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop',
       tags: ['Oil Painting', 'Gallery', 'Abstract'],
     ),
   ];
@@ -125,16 +129,6 @@ class _MyEventsViewState extends State<MyEventsView> {
         pricePaid: '50.00 AED',
         bookingDate: '25 Aug 2026, 09:20',
       ),
-      EventAttendeeBooking(
-        id: 'bk-104',
-        eventId: 'my-event-1',
-        attendeeName: 'Aisha Al Habbai',
-        attendeeEmail: 'aisha.habbai@dubaiart.ae',
-        attendeePhone: '+971 56 777 8899',
-        ticketsCount: 4,
-        pricePaid: '200.00 AED',
-        bookingDate: '24 Aug 2026, 16:45',
-      ),
     ],
     'my-event-2': const [
       EventAttendeeBooking(
@@ -157,16 +151,6 @@ class _MyEventsViewState extends State<MyEventsView> {
         pricePaid: 'Free',
         bookingDate: '26 Aug 2026, 18:00',
       ),
-      EventAttendeeBooking(
-        id: 'bk-203',
-        eventId: 'my-event-2',
-        attendeeName: 'Tariq Mansoor',
-        attendeeEmail: 'tariq.m@techart.ae',
-        attendeePhone: '+971 52 111 2233',
-        ticketsCount: 3,
-        pricePaid: 'Free',
-        bookingDate: '23 Aug 2026, 12:30',
-      ),
     ],
     'my-event-3': const [
       EventAttendeeBooking(
@@ -178,16 +162,6 @@ class _MyEventsViewState extends State<MyEventsView> {
         ticketsCount: 2,
         pricePaid: '60.00 AED',
         bookingDate: 'Today, 10:05',
-      ),
-      EventAttendeeBooking(
-        id: 'bk-302',
-        eventId: 'my-event-3',
-        attendeeName: 'David Chen',
-        attendeeEmail: 'david.chen@studio.com',
-        attendeePhone: '+971 56 333 4455',
-        ticketsCount: 2,
-        pricePaid: '60.00 AED',
-        bookingDate: '25 Aug 2026, 15:40',
       ),
     ],
   };
@@ -231,7 +205,6 @@ class _MyEventsViewState extends State<MyEventsView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Drag Handle Indicator
                   Center(
                     child: Container(
                       width: 40,
@@ -243,34 +216,19 @@ class _MyEventsViewState extends State<MyEventsView> {
                       ),
                     ),
                   ),
-
-                  // Modal Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Booked Attendees (${bookings.length})',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1E1E1E),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              event.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          event.title,
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1E1E1E),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       IconButton(
@@ -279,28 +237,26 @@ class _MyEventsViewState extends State<MyEventsView> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-
-                  // Summary Metric Bar inside Modal
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8F5FF),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE9D8F8)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _modalMetricItem('Total Attendees', '${bookings.length} Persons', Icons.group),
-                        Container(height: 24, width: 1, color: const Color(0xFFD6C8F2)),
-                        _modalMetricItem('Total Tickets', '$totalTickets Tickets', Icons.confirmation_number),
-                      ],
-                    ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      _modalMetricItem('Registered Bookings', '${bookings.length}', Icons.receipt_long_outlined),
+                      const SizedBox(width: 20),
+                      _modalMetricItem('Tickets Sold', '$totalTickets / ${event.maxAttendees}', Icons.confirmation_number_outlined),
+                    ],
                   ),
                   const SizedBox(height: 16),
-
-                  // Attendees List
+                  const Divider(height: 1),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Attendee Booking List',
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E1E1E),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   Expanded(
                     child: bookings.isEmpty
                         ? const Center(
@@ -318,10 +274,9 @@ class _MyEventsViewState extends State<MyEventsView> {
                               return Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Avatar Initials
                                   CircleAvatar(
                                     radius: 20,
-                                    backgroundColor: const Color(0xFF28208C),
+                                    backgroundColor: const Color(0xFF5E227A),
                                     child: Text(
                                       booking.attendeeName.substring(0, 1).toUpperCase(),
                                       style: const TextStyle(
@@ -332,8 +287,6 @@ class _MyEventsViewState extends State<MyEventsView> {
                                     ),
                                   ),
                                   const SizedBox(width: 12),
-
-                                  // Details Column
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -369,8 +322,6 @@ class _MyEventsViewState extends State<MyEventsView> {
                                           ],
                                         ),
                                         const SizedBox(height: 4),
-
-                                        // Email
                                         Row(
                                           children: [
                                             const Icon(Icons.email_outlined, size: 13, color: Color(0xFF64748B)),
@@ -382,8 +333,6 @@ class _MyEventsViewState extends State<MyEventsView> {
                                           ],
                                         ),
                                         const SizedBox(height: 2),
-
-                                        // Phone
                                         Row(
                                           children: [
                                             const Icon(Icons.phone_outlined, size: 13, color: Color(0xFF64748B)),
@@ -395,8 +344,6 @@ class _MyEventsViewState extends State<MyEventsView> {
                                           ],
                                         ),
                                         const SizedBox(height: 4),
-
-                                        // Tickets & Date Row
                                         Row(
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
@@ -405,7 +352,7 @@ class _MyEventsViewState extends State<MyEventsView> {
                                               style: const TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w600,
-                                                color: Color(0xFF28208C),
+                                                color: Color(0xFF5E227A),
                                               ),
                                             ),
                                             Text(
@@ -434,7 +381,7 @@ class _MyEventsViewState extends State<MyEventsView> {
   Widget _modalMetricItem(String title, String value, IconData icon) {
     return Row(
       children: [
-        Icon(icon, color: const Color(0xFF28208C), size: 18),
+        Icon(icon, color: const Color(0xFF5E227A), size: 18),
         const SizedBox(width: 6),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -462,338 +409,355 @@ class _MyEventsViewState extends State<MyEventsView> {
     final totalTicketsSold = _eventBookingsMap.values.fold<int>(
         0, (sum, list) => sum + list.fold<int>(0, (s, b) => s + b.ticketsCount));
 
+    final filtered = _filteredEvents;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9FB),
+      backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header Banner
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF28208C), Color(0xFF5E227A)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF28208C).withValues(alpha: 0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // 1. Header Title & Create Event Button (Dark Purple Theme)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Row(
-                            children: const [
-                              Icon(Icons.event_seat_outlined, color: Colors.white, size: 24),
-                              SizedBox(width: 8),
-                              Flexible(
-                                child: Text(
-                                  'My Created Events',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
+                        Text(
+                          'MY CREATED EVENTS',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        ElevatedButton.icon(
-                          onPressed: () => context.push(RouteNames.createArtEvent),
-                          icon: const Icon(Icons.add, size: 14),
-                          label: const Text('Create Event', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: const Color(0xFF28208C),
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Manage your published art events, track attendee ticket bookings, and review attendee records',
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            color: Colors.white70,
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Manage your published art events, track attendee ticket bookings, and review attendee records.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFFD6C8F2),
-                        height: 1.4,
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton.icon(
+                    onPressed: () => context.push(RouteNames.createArtEvent),
+                    icon: const Icon(Icons.add, size: 16),
+                    label: const Text('Create Event', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF5E227A),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Metric Overview Bar
-              Row(
-                children: [
-                  _metricCard('Events Created', '$totalCreated', Icons.event),
-                  const SizedBox(width: 10),
-                  _metricCard('Bookings', '$totalBookingsCount', Icons.people_outline),
-                  const SizedBox(width: 10),
-                  _metricCard('Tickets Sold', '$totalTicketsSold', Icons.confirmation_number_outlined),
+                  ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
-              // Search Input Field
-              TextField(
-                controller: _searchController,
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
-                decoration: InputDecoration(
-                  hintText: 'Search my created events...',
-                  hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13.5),
-                  prefixIcon: const Icon(Icons.search, color: Color(0xFF64748B)),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+              // 2. Metric Overview Bar (Translucent Cards)
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildMetricCard(
+                      title: 'Events Created',
+                      value: '$totalCreated',
+                      icon: Icons.event_outlined,
+                    ),
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildMetricCard(
+                      title: 'Total Bookings',
+                      value: '$totalBookingsCount',
+                      icon: Icons.receipt_long_outlined,
+                    ),
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Color(0xFF28208C), width: 1.8),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildMetricCard(
+                      title: 'Tickets Sold',
+                      value: '$totalTicketsSold',
+                      icon: Icons.confirmation_number_outlined,
+                    ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // 3. Search Bar
+              Container(
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white24),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  cursorColor: Colors.white,
+                  decoration: InputDecoration(
+                    hintText: 'Search my created events...',
+                    hintStyle: const TextStyle(color: Colors.white54, fontSize: 14),
+                    prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 20),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? GestureDetector(
+                            onTap: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = '');
+                            },
+                            child: const Icon(Icons.close, color: Colors.white54, size: 18),
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 11),
+                  ),
+                  onChanged: (v) => setState(() => _searchQuery = v),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
-              // List of Created Events
-              _filteredEvents.isEmpty
-                  ? Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(30),
+              // 4. Created Events List
+              if (filtered.isEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF5A1684).withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Column(
+                    children: [
+                      Icon(Icons.event_busy_outlined, size: 48, color: Colors.white54),
+                      SizedBox(height: 12),
+                      Text(
+                        'No created events found.',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Create your first art event to manage bookings here.',
+                        style: TextStyle(fontSize: 13, color: Colors.white70),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: filtered.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 16),
+                  itemBuilder: (context, index) {
+                    final event = filtered[index];
+                    final bookings = _eventBookingsMap[event.id] ?? const [];
+                    final ticketsSold = bookings.fold<int>(0, (sum, b) => sum + b.ticketsCount);
+
+                    return Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
+                        color: const Color(0xFF5A1684).withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
                       ),
                       child: Column(
-                        children: const [
-                          Icon(Icons.event_busy, size: 48, color: Color(0xFF94A3B8)),
-                          SizedBox(height: 12),
-                          Text(
-                            'No created events found.',
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E1E1E)),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _filteredEvents.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 16),
-                      itemBuilder: (context, index) {
-                        final event = _filteredEvents[index];
-                        final bookings = _eventBookingsMap[event.id] ?? const [];
-                        final ticketsCount = bookings.fold<int>(0, (sum, b) => sum + b.ticketsCount);
-
-                        return Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.04),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (event.imageUrl != null)
+                            ClipRRect(
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                              child: Image.network(
+                                event.imageUrl!,
+                                height: 140,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
                               ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Title & Category Row
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF28208C).withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      event.category,
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF28208C),
-                                      ),
-                                    ),
-                                  ),
-                                  Text(
-                                    event.price,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF5E227A),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-
-                              Text(
-                                event.title,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1E1E1E),
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-
-                              // Date & Location Info
-                              Row(
-                                children: [
-                                  const Icon(Icons.calendar_today_outlined, size: 14, color: Color(0xFF64748B)),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    event.dateTime,
-                                    style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  const Icon(Icons.location_on_outlined, size: 14, color: Color(0xFF64748B)),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      event.location,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-
-                              // Booked Data Summary Card
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF8F5FF),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: const Color(0xFFE9D8F8)),
-                                ),
-                                child: Row(
+                            ),
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          const Text(
-                                            'Booked Tickets Record',
-                                            style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            '$ticketsCount Tickets Booked (${bookings.length} Persons)',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              fontSize: 12.5,
-                                              fontWeight: FontWeight.bold,
-                                              color: Color(0xFF28208C),
-                                            ),
-                                          ),
-                                        ],
+                                      child: Text(
+                                        event.title,
+                                        style: const TextStyle(
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
-                                    OutlinedButton.icon(
-                                      onPressed: () => _showAttendeesModal(event),
-                                      icon: const Icon(Icons.visibility_outlined, size: 14),
-                                      label: const Text('View Attendees', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: const Color(0xFF28208C),
-                                        side: const BorderSide(color: Color(0xFF28208C)),
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        event.category,
+                                        style: const TextStyle(
+                                          color: Color(0xFFFFD700),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.calendar_today_outlined, size: 14, color: Colors.white70),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      event.dateTime,
+                                      style: const TextStyle(fontSize: 12.5, color: Colors.white70),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.location_on_outlined, size: 14, color: Colors.white70),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        event.location,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(fontSize: 12.5, color: Colors.white70),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Price: ${event.price}',
+                                      style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Colors.white),
+                                    ),
+                                    Text(
+                                      'Bookings: $ticketsSold / ${event.maxAttendees} Tickets',
+                                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFFFFD700)),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 14),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: ElevatedButton.icon(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.white,
+                                          foregroundColor: const Color(0xFF5E227A),
+                                          elevation: 0,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                          padding: const EdgeInsets.symmetric(vertical: 10),
+                                        ),
+                                        onPressed: () => _showAttendeesModal(event),
+                                        icon: const Icon(Icons.people_outline, size: 16),
+                                        label: Text(
+                                          'View Attendees (${bookings.length})',
+                                          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    OutlinedButton.icon(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: Colors.white,
+                                        side: BorderSide(color: Colors.white.withValues(alpha: 0.4)),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                      ),
+                                      onPressed: () {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Edit event ${event.title} opened.'),
+                                            behavior: SnackBarBehavior.floating,
+                                          ),
+                                        );
+                                      },
+                                      icon: const Icon(Icons.edit_outlined, size: 15),
+                                      label: const Text('Edit', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
-                        );
-                      },
-                    ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              const SizedBox(height: 24),
+
+              // Footer Attribution
+              const HomeFooterWidget(),
+              const SizedBox(height: 12),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: -1),
     );
   }
 
-  Widget _metricCard(String title, String value, IconData icon) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: const Color(0xFF28208C), size: 20),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E1E1E)),
+  Widget _buildMetricCard({
+    required String title,
+    required String value,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF5A1684).withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: const Color(0xFFFFD700), size: 20),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
             ),
-            const SizedBox(height: 2),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 11,
+              color: Colors.white70,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
