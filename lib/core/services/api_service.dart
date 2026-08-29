@@ -410,8 +410,83 @@ class ApiService {
       }
     } catch (_) {}
 
-    return _cachedCompetitions ?? [];
+    return (_cachedCompetitions != null && _cachedCompetitions!.isNotEmpty)
+        ? _cachedCompetitions!
+        : _defaultCompetitions;
   }
+
+  static const List<Map<String, dynamic>> _defaultCompetitions = [
+    {
+      'id': 'comp-1',
+      'title': 'Dubai Art Prize 2026',
+      'status': 'open',
+      'category': 'Visual Arts & Sculpture',
+      'theme': 'Future Horizons & Desert Dreams',
+      'organizer': 'Dubai Culture & Arts Authority',
+      'deadline': '30 Sep 2026',
+      'prize_pool': '100,000 AED',
+      'fee': 'Free Entry',
+      'description': 'Annual national art competition celebrating contemporary UAE and regional artists.',
+      'location': 'Alserkal Avenue, Dubai',
+      'eligibility': 'Open to all UAE residents and international artists aged 18+.'
+    },
+    {
+      'id': 'comp-2',
+      'title': 'Emerging Artists Showcase Call',
+      'status': 'open',
+      'category': 'Digital Art & Photography',
+      'theme': 'Urban Landscapes & Digital Frontiers',
+      'organizer': 'Alserkal Avenue',
+      'deadline': '15 Oct 2026',
+      'prize_pool': '50,000 AED',
+      'fee': 'Free Entry',
+      'description': 'Open call for early-career digital creators, animators, and photographers.',
+      'location': 'Al Quoz Creative Zone, Dubai',
+      'eligibility': 'Early-career artists with under 5 years professional experience.'
+    },
+    {
+      'id': 'comp-3',
+      'title': 'Emirates Calligraphy & Typography Award',
+      'status': 'upcoming',
+      'category': 'Calligraphy & Typography',
+      'theme': 'Tradition meets Innovation',
+      'organizer': 'Dubai Design District (d3)',
+      'deadline': '1 Dec 2026',
+      'prize_pool': '75,000 AED',
+      'fee': 'Free Entry',
+      'description': 'Honoring classic Arabic calligraphy and modern experimental typography.',
+      'location': 'Dubai Design District (d3)',
+      'eligibility': 'Global entry open to all calligraphers and graphic designers.'
+    },
+    {
+      'id': 'comp-4',
+      'title': 'Dubai Public Art Commissioning Grant',
+      'status': 'upcoming',
+      'category': '3D Installation & Sculpture',
+      'theme': 'Outdoor Sculptures & Environmental Installations',
+      'organizer': 'Dubai Culture',
+      'deadline': '15 Jan 2027',
+      'prize_pool': '200,000 AED',
+      'fee': 'Free Entry',
+      'description': 'Grant initiative to commission permanent public artworks across Dubai parks.',
+      'location': 'Public Parks & Waterfront Promenades, Dubai',
+      'eligibility': 'Sculptors, architects, and public art collectives.'
+    },
+    {
+      'id': 'comp-5',
+      'title': 'Dubai Annual Photography Biennale 2025',
+      'status': 'closed',
+      'category': 'Photography',
+      'theme': 'Light & Shadows of the Gulf',
+      'organizer': 'HIPA International Photography Award',
+      'deadline': '15 May 2025',
+      'prize_pool': '120,000 AED',
+      'fee': 'Free Entry',
+      'description': 'International photography competition capturing architecture and culture.',
+      'location': 'Dubai International Financial Centre (DIFC)',
+      'eligibility': 'All professional and amateur photographers.'
+    },
+  ];
 
   // 14. My Bookings (user's booking history)
   Future<List<Map<String, dynamic>>> getBookings({
