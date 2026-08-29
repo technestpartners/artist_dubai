@@ -221,6 +221,11 @@ class _LoginViewState extends State<LoginView> {
                       TextField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'name@example.com',
                           hintStyle: const TextStyle(
@@ -229,7 +234,7 @@ class _LoginViewState extends State<LoginView> {
                           ),
                           prefixIcon: const Icon(
                             Icons.email_outlined,
-                            color: Color(0xFF9CA3AF),
+                            color: Colors.black,
                             size: 20,
                           ),
                           filled: true,
@@ -294,6 +299,11 @@ class _LoginViewState extends State<LoginView> {
                       TextField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'Enter your password',
                           hintStyle: const TextStyle(
@@ -302,7 +312,7 @@ class _LoginViewState extends State<LoginView> {
                           ),
                           prefixIcon: const Icon(
                             Icons.lock_outline,
-                            color: Color(0xFF9CA3AF),
+                            color: Colors.black,
                             size: 20,
                           ),
                           suffixIcon: IconButton(
@@ -310,7 +320,7 @@ class _LoginViewState extends State<LoginView> {
                               _obscurePassword
                                   ? Icons.visibility_off_outlined
                                   : Icons.visibility_outlined,
-                              color: const Color(0xFF9CA3AF),
+                              color: Colors.black,
                               size: 20,
                             ),
                             onPressed: () {

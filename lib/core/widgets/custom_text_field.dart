@@ -65,7 +65,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           onTap: widget.onTap,
           maxLines: widget.isPassword ? 1 : widget.maxLines,
           style: TextStyle(
-            color: isDark ? Colors.white : const Color(0xFF0F172A),
+            color: isDark ? Colors.white : Colors.black,
             fontSize: 15,
             fontWeight: FontWeight.w500,
           ),
@@ -90,7 +90,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
                         _obscureText
                             ? Icons.visibility_off_outlined
                             : Icons.visibility_outlined,
-                        color: Colors.grey,
+                        color: isDark ? Colors.white70 : Colors.black,
                         size: 20,
                       ),
                       onPressed: () {
