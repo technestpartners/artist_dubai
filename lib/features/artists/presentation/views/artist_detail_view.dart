@@ -717,85 +717,98 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                     ),
                     const SizedBox(height: 28),
 
-                    // 3. Portfolio Section with View Mode Switcher (Matching Screenshots media_1787735140178.png & media_1787735153023.png)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    // 3. Portfolio Section with View Mode Switcher
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Portfolio',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1E1E1E),
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Portfolio',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1E1E1E),
+                              ),
+                            ),
+
+                            // View Mode Switcher Toggle (Grid 🔲 vs List ☰)
+                            Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE2E8F0),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  // Grid Mode Toggle Button
+                                  InkWell(
+                                    onTap: () {
+                                      setState(() {
+                                        _isGridView = true;
+                                      });
+                                    },
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            _isGridView
+                                                ? const Color(0xFF6A2777)
+                                                : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Icon(
+                                        Icons.grid_view,
+                                        size: 18,
+                                        color:
+                                            _isGridView
+                                                ? Colors.white
+                                                : const Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+
+                                  // List Mode Toggle Button
+                                  InkWell(
+                                    onTap: () {
+                                      setState(() {
+                                        _isGridView = false;
+                                      });
+                                    },
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            !_isGridView
+                                                ? const Color(0xFF6A2777)
+                                                : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Icon(
+                                        Icons.view_list,
+                                        size: 18,
+                                        color:
+                                            !_isGridView
+                                                ? Colors.white
+                                                : const Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-
-                        // View Mode Switcher Toggle (Grid 🔲 vs List ☰)
-                        Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE2E8F0),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: [
-                              // Grid Mode Toggle Button
-                              InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    _isGridView = true;
-                                  });
-                                },
-                                borderRadius: BorderRadius.circular(6),
-                                child: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        _isGridView
-                                            ? const Color(0xFF6A2777)
-                                            : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Icon(
-                                    Icons.grid_view,
-                                    size: 18,
-                                    color:
-                                        _isGridView
-                                            ? Colors.white
-                                            : const Color(0xFF64748B),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-
-                              // List Mode Toggle Button
-                              InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    _isGridView = false;
-                                  });
-                                },
-                                borderRadius: BorderRadius.circular(6),
-                                child: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        !_isGridView
-                                            ? const Color(0xFF6A2777)
-                                            : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Icon(
-                                    Icons.view_list,
-                                    size: 18,
-                                    color:
-                                        !_isGridView
-                                            ? Colors.white
-                                            : const Color(0xFF64748B),
-                                  ),
-                                ),
-                              ),
-                            ],
+                        const SizedBox(height: 4),
+                        Text(
+                          'Explore ${currentArtist.name}\'s collection of artworks',
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            color: Color(0xFF64748B),
                           ),
                         ),
                       ],
