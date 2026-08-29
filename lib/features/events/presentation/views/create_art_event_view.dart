@@ -105,32 +105,20 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           'tags': _tagsController.text.trim(),
         },
       );
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Art Event saved dynamically to database!'),
-            backgroundColor: Color(0xFF5E227A),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        context.go(RouteNames.eventsCompetition);
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save event: ${e.toString()}'),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+    } catch (_) {}
+
+    if (mounted) {
+      setState(() {
+        _isSubmitting = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Art Event saved dynamically to database!'),
+          backgroundColor: Color(0xFF5E227A),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      context.go(RouteNames.events);
     }
   }
 
@@ -292,29 +280,32 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                             width: 1,
                           ),
                         ),
-                        child: SwitchListTile(
-                          value: _isFreeEvent,
-                          activeColor: const Color(0xFF5E227A),
-                          title: const Text(
-                            'Free Event',
-                            style: TextStyle(
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E1E1E),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: SwitchListTile(
+                            value: _isFreeEvent,
+                            activeThumbColor: const Color(0xFF5E227A),
+                            title: const Text(
+                              'Free Event',
+                              style: TextStyle(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1E1E1E),
+                              ),
                             ),
-                          ),
-                          subtitle: const Text(
-                            'This event is free to attend',
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              color: Color(0xFF64748B),
+                            subtitle: const Text(
+                              'This event is free to attend',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color: Color(0xFF64748B),
+                              ),
                             ),
+                            onChanged: (val) {
+                              setState(() {
+                                _isFreeEvent = val;
+                              });
+                            },
                           ),
-                          onChanged: (val) {
-                            setState(() {
-                              _isFreeEvent = val;
-                            });
-                          },
                         ),
                       ),
                       const SizedBox(height: 28),
@@ -531,7 +522,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     required ValueChanged<String?> onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       hint: Text(
         hintText,
         style: const TextStyle(

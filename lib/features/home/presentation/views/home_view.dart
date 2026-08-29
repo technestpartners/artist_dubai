@@ -20,25 +20,17 @@ class HomeView extends StatelessWidget {
     final isComingSoon =
         item.routeName == RouteNames.galleries ||
         item.routeName == RouteNames.eventsPhotos ||
-        item.routeName == RouteNames.galleryRegistration ||
-        item.routeName == RouteNames.eventsCompetition;
+        item.routeName == RouteNames.galleryRegistration;
 
     final isPublicOption =
         isComingSoon ||
         item.routeName == RouteNames.aboutUs ||
         item.routeName == RouteNames.government ||
         item.routeName == RouteNames.artists ||
-        item.routeName == RouteNames.eventsCompetition;
+        item.routeName == RouteNames.events;
 
     if (!isLoggedIn && !isPublicOption) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please sign in to access this option.'),
-          backgroundColor: Color(0xFF5E227A),
-          behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       context.push(RouteNames.login);
       return;
     }

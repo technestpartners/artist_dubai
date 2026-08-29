@@ -8,7 +8,7 @@ class UiHelpers {
     BuildContext context, {
     required String message,
     bool isError = false,
-    Duration duration = const Duration(seconds: 3),
+    Duration duration = const Duration(milliseconds: 1500),
   }) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(

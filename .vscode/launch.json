@@ -2,13 +2,13 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "artist_dubai (Chrome - Port 8080)",
+            "name": "artist_dubai (Chrome - Port 8085)",
             "request": "launch",
             "type": "dart",
             "deviceId": "chrome",
             "args": [
                 "--web-port",
-                "8080"
+                "8085"
             ]
         },
         {

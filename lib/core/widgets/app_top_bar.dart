@@ -3,11 +3,13 @@ import 'package:go_router/go_router.dart';
 import '../../app/routes/route_names.dart';
 import '../di/injection_container.dart';
 import '../services/storage_service.dart';
+import 'notifications_panel.dart';
 
 enum TopBarMenuItem {
   accountSettings,
   createArtistProfile,
   myBookings,
+  bookingRequests,
   myEvents,
   privacyPolicy,
   termsConditions,
@@ -16,13 +18,20 @@ enum TopBarMenuItem {
   settings,
 }
 
-class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
+class AppTopBar extends StatefulWidget implements PreferredSizeWidget {
   const AppTopBar({super.key, this.backgroundColor = const Color(0xFFFAFAFA)});
 
   final Color backgroundColor;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight + 1.0);
+
+  @override
+  State<AppTopBar> createState() => _AppTopBarState();
+}
+
+class _AppTopBarState extends State<AppTopBar> {
+  final GlobalKey _bellKey = GlobalKey();
 
   bool get _isLoggedIn {
     try {
@@ -43,8 +52,11 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
       case TopBarMenuItem.myBookings:
         context.push(RouteNames.bookings);
         break;
+      case TopBarMenuItem.bookingRequests:
+        context.push(RouteNames.bookingRequests);
+        break;
       case TopBarMenuItem.myEvents:
-        context.push(RouteNames.eventsCompetition);
+        context.push(RouteNames.myEvents);
         break;
       case TopBarMenuItem.privacyPolicy:
         context.push(RouteNames.privacyPolicy);
@@ -74,8 +86,21 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final loggedIn = _isLoggedIn;
 
+    // Read dynamic user info from storage
+    String userName = 'User';
+    String userEmail = '';
+    String avatarLetter = 'U';
+    try {
+      final storage = sl<StorageService>();
+      userName = storage.getString('user_name') ?? 'User';
+      userEmail = storage.getString('user_email') ?? '';
+      if (userName.isNotEmpty) {
+        avatarLetter = userName[0].toUpperCase();
+      }
+    } catch (_) {}
+
     return AppBar(
-      backgroundColor: backgroundColor,
+      backgroundColor: widget.backgroundColor,
       elevation: 0,
       scrolledUnderElevation: 0,
       surfaceTintColor: Colors.transparent,
@@ -141,12 +166,13 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
             alignment: Alignment.center,
             children: [
               IconButton(
+                key: _bellKey,
                 icon: const Icon(
                   Icons.notifications_none,
                   color: Color(0xFF1E1E1E),
                   size: 24,
                 ),
-                onPressed: () {},
+                onPressed: () => showNotificationsPanel(context, _bellKey),
               ),
               Positioned(
                 top: 8,
@@ -176,7 +202,7 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
           ),
           const SizedBox(width: 4),
 
-          // User Avatar Circle "V"
+          // User Avatar Circle (dynamic first letter)
           Container(
             width: 32,
             height: 32,
@@ -184,10 +210,10 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
               color: Color(0xFF5E227A),
               shape: BoxShape.circle,
             ),
-            child: const Center(
+            child: Center(
               child: Text(
-                'V',
-                style: TextStyle(
+                avatarLetter,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
@@ -212,7 +238,7 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
           itemBuilder:
               (BuildContext context) => <PopupMenuEntry<TopBarMenuItem>>[
                 if (loggedIn) ...[
-                  // User Header inside Popup (vivek / vivek@gmail.com)
+                  // User Header inside Popup (dynamic from storage)
                   PopupMenuItem<TopBarMenuItem>(
                     enabled: false,
                     child: Container(
@@ -220,19 +246,19 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
                       padding: const EdgeInsets.only(bottom: 8.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
+                        children: [
                           Text(
-                            'vivek',
-                            style: TextStyle(
+                            userName,
+                            style: const TextStyle(
                               color: Color(0xFF1E1E1E),
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 2),
                           Text(
-                            'vivek@gmail.com',
-                            style: TextStyle(
+                            userEmail,
+                            style: const TextStyle(
                               color: Color(0xFF64748B),
                               fontSize: 13,
                             ),
@@ -294,6 +320,26 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
                         SizedBox(width: 10),
                         Text(
                           'My Bookings',
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            color: Color(0xFF1E1E1E),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem<TopBarMenuItem>(
+                    value: TopBarMenuItem.bookingRequests,
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.inbox_outlined,
+                          size: 18,
+                          color: Color(0xFF1E1E1E),
+                        ),
+                        SizedBox(width: 10),
+                        Text(
+                          'Booking Requests',
                           style: TextStyle(
                             fontSize: 14.5,
                             color: Color(0xFF1E1E1E),

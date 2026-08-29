@@ -20,7 +20,7 @@ class DashboardCardWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF1C0B5E),
+            color: const Color(0xFF28208C),
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
@@ -38,8 +38,8 @@ class DashboardCardWidget extends StatelessWidget {
               children: [
                 // Solid Circular Icon
                 SizedBox(
-                  width: 42,
-                  height: 42,
+                  width: 56,
+                  height: 56,
                   child: Image.asset(item.iconPath, fit: BoxFit.contain),
                 ),
                 const SizedBox(height: 6),
@@ -53,7 +53,7 @@ class DashboardCardWidget extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: item.title.contains('|') ? 10.0 : 12.0,
+                      fontSize: item.title.contains('|') ? 12.0 : 14.5,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.2,
                       height: 1.1,
@@ -63,7 +63,7 @@ class DashboardCardWidget extends StatelessWidget {
 
                 // Subtitle Text (if present)
                 if (item.subtitle != null) ...[
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 3),
                   Flexible(
                     child: Text(
                       item.subtitle!,
@@ -71,8 +71,8 @@ class DashboardCardWidget extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: item.title.contains('|') ? 9.0 : 9.5,
+                        color: const Color(0xFFD6C8F2),
+                        fontSize: item.title.contains('|') ? 10.5 : 11.5,
                         fontWeight: FontWeight.w400,
                         letterSpacing: 0.2,
                       ),

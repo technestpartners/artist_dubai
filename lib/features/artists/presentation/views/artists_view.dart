@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/api_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
-import '../../../../core/constants/api_endpoints.dart';
-import '../../../../core/network/api_client.dart';
 import '../../domain/models/artist_model.dart';
 import 'artist_detail_view.dart';
 
@@ -21,27 +20,23 @@ class _ArtistsViewState extends State<ArtistsView> {
   String? _selectedCategory;
   bool _isCategoryListExpanded = false;
   List<ArtistModel> _allArtists = ArtistModel.mockArtists;
-  final List<CategoryInfo> _categories = ArtistModel.categoryList;
-  bool _isLoading = false;
+  List<CategoryInfo> _categories = ArtistModel.categoryList;
 
   @override
   void initState() {
     super.initState();
-    _fetchDynamicArtists();
+    _fetchData();
   }
 
-  Future<void> _fetchDynamicArtists() async {
+  Future<void> _fetchData() async {
     try {
-      final apiClient = sl<ApiClient>();
-      final response = await apiClient.get(ApiEndpoints.artists);
-      if (response is Map<String, dynamic> && response['data'] is List) {
-        final List list = response['data'];
-        final fetched = list.map((json) => ArtistModel.fromJson(json)).toList();
-        if (fetched.isNotEmpty && mounted) {
-          setState(() {
-            _allArtists = fetched;
-          });
-        }
+      final categories = await sl<ApiService>().getCategories();
+      final artists = await sl<ApiService>().getArtists();
+      if (mounted) {
+        setState(() {
+          _categories = categories;
+          _allArtists = artists;
+        });
       }
     } catch (_) {}
   }
@@ -369,32 +364,10 @@ class _ArtistsViewState extends State<ArtistsView> {
               InkWell(
                 onTap: () {
                   if (!_isLoggedIn) {
-                    setState(() {
-                      _selectedCategory = isSelected ? null : cat.name;
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Please log in to view ${cat.name} artists',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        backgroundColor: const Color(0xFF6A2777),
-                        behavior: SnackBarBehavior.floating,
-                        action: SnackBarAction(
-                          label: 'Login',
-                          textColor: Colors.white,
-                          onPressed: () {
-                            if (mounted) {
-                              context.push(RouteNames.login);
-                            }
-                          },
-                        ),
-                      ),
-                    );
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    if (mounted) {
+                      context.push(RouteNames.login);
+                    }
                   } else {
                     setState(() {
                       _selectedCategory = isSelected ? null : cat.name;

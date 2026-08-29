@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../network/api_client.dart';
 import '../network/dio_interceptor.dart';
 import '../network/network_info.dart';
+import '../services/api_service.dart';
 import '../services/logger_service.dart';
 import '../services/storage_service.dart';
 
@@ -51,6 +52,9 @@ Future<void> initDependencyInjection() async {
     ),
   );
 
+  sl.registerLazySingleton<ApiService>(
+    () => ApiService(sl<ApiClient>()),
+  );
+
   //! 3. Features (Auth, Home, Artists, Bookings, Profile)
-  // Feature dependencies will be registered here as features are developed
 }

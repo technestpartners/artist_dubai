@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/di/injection_container.dart';
-import '../../../../core/network/api_client.dart';
+import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../domain/models/government_entity.dart';
@@ -16,26 +15,20 @@ class GovernmentPortalView extends StatefulWidget {
 
 class _GovernmentPortalViewState extends State<GovernmentPortalView> {
   List<GovernmentEntity> _entities = GovernmentEntity.entities;
-  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _fetchGovernmentEntities();
+    _fetchEntities();
   }
 
-  Future<void> _fetchGovernmentEntities() async {
+  Future<void> _fetchEntities() async {
     try {
-      final apiClient = sl<ApiClient>();
-      final response = await apiClient.get(ApiEndpoints.government);
-      if (response is Map<String, dynamic> && response['data'] is List) {
-        final List list = response['data'];
-        final fetched = list.map((json) => GovernmentEntity.fromJson(json)).toList();
-        if (fetched.isNotEmpty && mounted) {
-          setState(() {
-            _entities = fetched;
-          });
-        }
+      final entities = await sl<ApiService>().getGovernmentEntities();
+      if (mounted) {
+        setState(() {
+          _entities = entities;
+        });
       }
     } catch (_) {}
   }
@@ -107,6 +100,8 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
 
   @override
   Widget build(BuildContext context) {
+    final List<GovernmentEntity> entities = _entities;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF6F7F9),
       appBar: const AppTopBar(),
@@ -137,7 +132,7 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
             const SizedBox(height: 18),
 
             // Government Entity Cards List
-            ..._entities.map((entity) => _buildEntityCard(context, entity)),
+            ...entities.map((entity) => _buildEntityCard(context, entity)),
             const SizedBox(height: 16),
           ],
         ),
@@ -152,13 +147,14 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16.0),
-      padding: const EdgeInsets.all(18.0),
+      padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14.0),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -167,6 +163,7 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Title & Status Badge Row
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -174,180 +171,191 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
                 child: Text(
                   entity.name,
                   style: const TextStyle(
-                    fontSize: 18.0,
+                    fontSize: 16.5,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF1E1E1E),
-                    letterSpacing: -0.2,
+                    height: 1.25,
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10.0,
-                  vertical: 5.0,
+                  horizontal: 10,
+                  vertical: 3,
                 ),
                 decoration: BoxDecoration(
                   color:
                       isOpen
-                          ? const Color(0xFFDCFCE7)
+                          ? const Color(0xFFE8F8F0)
                           : const Color(0xFFFEE2E2),
-                  borderRadius: BorderRadius.circular(20.0),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color:
-                            isOpen
-                                ? const Color(0xFF16A34A)
-                                : const Color(0xFFDC2626),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      isOpen ? 'Open' : 'Closed',
-                      style: TextStyle(
-                        fontSize: 12.0,
-                        fontWeight: FontWeight.w700,
-                        color:
-                            isOpen
-                                ? const Color(0xFF15803D)
-                                : const Color(0xFFB91C1C),
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  isOpen ? 'Open' : 'Closed',
+                  style: TextStyle(
+                    color:
+                        isOpen
+                            ? const Color(0xFF059669)
+                            : const Color(0xFFDC2626),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              _buildRatingStars(entity.rating),
-              const SizedBox(width: 6),
-              Text(
-                '${entity.rating}',
-                style: const TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1E1E1E),
-                ),
-              ),
-              const SizedBox(width: 4),
-              InkWell(
-                onTap: () => _onReviewsTap(context, entity),
-                child: Text(
-                  '(${entity.reviewCount} reviews)',
+
+          // Rating, Stars, Reviews & Category Row (Tappable to view Google Reviews)
+          InkWell(
+            onTap: () => _onReviewsTap(context, entity),
+            borderRadius: BorderRadius.circular(4),
+            child: Row(
+              children: [
+                Text(
+                  entity.rating.toString(),
                   style: const TextStyle(
-                    fontSize: 13.0,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E1E1E),
+                  ),
+                ),
+                const SizedBox(width: 5),
+                _buildRatingStars(entity.rating),
+                const SizedBox(width: 5),
+                Text(
+                  '(${entity.reviewCount})',
+                  style: const TextStyle(
+                    fontSize: 13,
                     color: Color(0xFF64748B),
-                    decoration: TextDecoration.underline,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              const Icon(
-                Icons.category_outlined,
-                size: 15,
-                color: Color(0xFF64748B),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  entity.category,
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    color: Color(0xFF475569),
-                    fontWeight: FontWeight.w500,
+                const SizedBox(width: 4),
+                const Text(
+                  '·',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF64748B),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    entity.category,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              const Icon(
-                Icons.location_on_outlined,
-                size: 15,
-                color: Color(0xFF64748B),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
+          const SizedBox(height: 8),
+
+          // Location Row (Tappable to view Google Map)
+          InkWell(
+            onTap: () => _onDirectionsTap(context, entity),
+            borderRadius: BorderRadius.circular(4),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.location_on_outlined,
+                  size: 16,
+                  color: Color(0xFF64748B),
+                ),
+                const SizedBox(width: 4),
+                Text(
                   entity.location,
                   style: const TextStyle(
                     fontSize: 13.5,
-                    color: Color(0xFF475569),
+                    color: Color(0xFF64748B),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              const Icon(
-                Icons.access_time_outlined,
-                size: 15,
-                color: Color(0xFF64748B),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  timingText,
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    color:
-                        isOpen
-                            ? const Color(0xFF15803D)
-                            : const Color(0xFF64748B),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
+          const SizedBox(height: 8),
+
+          // Timing Status Row
+          Text(
+            timingText,
+            style: TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w600,
+              color: isOpen ? const Color(0xFF059669) : const Color(0xFFDC2626),
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
+
+          // Action Buttons (Website & Directions)
           Row(
             children: [
               Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _onWebsiteTap(context, entity),
-                  icon: const Icon(Icons.language, size: 16),
-                  label: const Text('Website'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF5E227A),
-                    side: const BorderSide(color: Color(0xFFCBD5E1)),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                child: InkWell(
+                  onTap: () => _onWebsiteTap(context, entity),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF4EEF7),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.language,
+                          size: 18,
+                          color: Color(0xFF6A2777),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Website',
+                          style: TextStyle(
+                            color: Color(0xFF6A2777),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _onDirectionsTap(context, entity),
-                  icon: const Icon(Icons.directions, size: 16),
-                  label: const Text('Directions'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF5E227A),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                child: InkWell(
+                  onTap: () => _onDirectionsTap(context, entity),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF4EEF7),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.near_me_outlined,
+                          size: 18,
+                          color: Color(0xFF6A2777),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Directions',
+                          style: TextStyle(
+                            color: Color(0xFF6A2777),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
