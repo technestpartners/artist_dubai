@@ -169,8 +169,8 @@ class _ArtistsViewState extends State<ArtistsView> {
         // Header Section
         Center(
           child: Column(
-            children: const [
-              Text(
+            children: [
+              const Text(
                 'Featured Artists',
                 style: TextStyle(
                   fontSize: 24,
@@ -179,10 +179,10 @@ class _ArtistsViewState extends State<ArtistsView> {
                   letterSpacing: -0.3,
                 ),
               ),
-              SizedBox(height: 6),
+              const SizedBox(height: 6),
               Text(
-                'Discover 30 talented artists',
-                style: TextStyle(fontSize: 14.5, color: Color(0xFF64748B)),
+                'Discover ${filteredArtists.length} talented artists',
+                style: const TextStyle(fontSize: 14.5, color: Color(0xFF64748B)),
               ),
             ],
           ),

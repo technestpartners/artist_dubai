@@ -520,8 +520,8 @@ class _EventsViewState extends State<EventsView> {
                   const SizedBox(width: 4),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
+                    children: [
+                      const Text(
                         'Art Events',
                         style: TextStyle(
                           fontSize: 22,
@@ -531,8 +531,8 @@ class _EventsViewState extends State<EventsView> {
                         ),
                       ),
                       Text(
-                        'Discover Art Events in Dubai',
-                        style: TextStyle(
+                        'Discover ${_allEvents.length} Art Events in Dubai',
+                        style: const TextStyle(
                           fontSize: 13.5,
                           color: Color(0xFF64748B),
                         ),
