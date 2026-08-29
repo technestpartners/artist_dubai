@@ -1,7 +1,7 @@
 <?php
 /**
  * Artist Dubai - Strictly Pure MySQL Single-File REST API System
- * Version: 6.1.0
+ * Version: 6.2.0
  * Database Engine: Pure MySQL (Laragon MySQL Engine)
  * Architecture: High-Performance Single-File OOP Controller-Router System
  */
@@ -101,9 +101,19 @@ class DatabaseManager {
                 title VARCHAR(255) NOT NULL,
                 description TEXT NULL,
                 category VARCHAR(100) NULL,
+                price VARCHAR(50) DEFAULT 'Free',
                 event_date VARCHAR(100) NULL,
+                end_date VARCHAR(100) NULL,
                 location VARCHAR(255) NULL,
+                venue VARCHAR(255) NULL,
+                is_free TINYINT(1) DEFAULT 1,
+                attendees_count INT DEFAULT 0,
+                max_attendees INT DEFAULT 100,
                 organizer_name VARCHAR(255) NULL,
+                contact_email VARCHAR(255) NULL,
+                contact_phone VARCHAR(100) NULL,
+                tags VARCHAR(500) NULL,
+                image_url VARCHAR(500) NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -114,6 +124,9 @@ class DatabaseManager {
                 phone VARCHAR(100) NULL,
                 artist_name VARCHAR(255) NULL,
                 booking_type VARCHAR(100) NULL,
+                event_date VARCHAR(100) NULL,
+                location VARCHAR(255) NULL,
+                description TEXT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -126,9 +139,21 @@ class DatabaseManager {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         ");
 
-        // Seed MySQL data if table is empty
-        $check = $this->pdo->query("SELECT COUNT(*) FROM categories")->fetchColumn();
-        if ($check == 0) {
+        // Seed MySQL events data if table is empty
+        $checkEvents = $this->pdo->query("SELECT COUNT(*) FROM events")->fetchColumn();
+        if ($checkEvents == 0) {
+            $this->pdo->exec("
+                INSERT INTO events (title, description, category, price, event_date, location, venue, is_free, attendees_count, max_attendees, organizer_name, contact_email, tags) VALUES 
+                ('Dubai Contemporary Art Night 2026', 'Annual showcase featuring contemporary fine art, sculpture installations, and live painting by top UAE artists.', 'Exhibition & Gallery Showcase', 'Free', '15 Oct 2026', 'Al Quoz, Dubai', 'Alserkal Avenue', 1, 45, 150, 'Artist Dubai', 'events@artistdubai.com', 'Contemporary,Exhibition,Painting'),
+                ('Arabic Calligraphy & Typography Masterclass', 'Hands-on intensive masterclass exploring traditional Kufic script and modern digital typography techniques.', 'Masterclass & Workshop', 'Free', '22 Oct 2026', 'Jaddaf Waterfront, Dubai', 'Jameel Arts Centre', 1, 28, 40, 'Dubai Culture', 'workshop@dubaiculture.gov.ae', 'Calligraphy,Workshop,Typography'),
+                ('Emirates Digital Art & NFT Summit', 'Explore cutting-edge CGI, 3D render art, generative AI installations, and immersive digital media.', 'Digital Art & New Media', 'Free', '05 Nov 2026', 'DIFC, Dubai', 'Museum of the Future', 1, 85, 200, 'Emirates Art Foundation', 'digital@emiratesart.ae', 'DigitalArt,CGI,NFT'),
+                ('Al Quoz Outdoor Sculpture Showcase', 'Public outdoor exhibition of monumental 3D sculptures and kinetic art installations in the heart of Al Quoz.', 'Sculpture & 3D Installation', 'Free', '18 Nov 2026', 'Al Quoz Creative Zone, Dubai', 'Alserkal Outdoor Plaza', 1, 60, 300, 'Alserkal Avenue', 'info@alserkal.online', 'Sculpture,PublicArt,Outdoor');
+            ");
+        }
+
+        // Seed MySQL categories data if table is empty
+        $checkCat = $this->pdo->query("SELECT COUNT(*) FROM categories")->fetchColumn();
+        if ($checkCat == 0) {
             $this->pdo->exec("
                 INSERT INTO categories (name, description, emoji) VALUES 
                 ('Contemporary Art', 'Modern visual artwork & experimental styles', '🎨'),
@@ -319,7 +344,7 @@ class ArtistController {
 
     public function getArtists(array $query): void {
         $category = InputSanitizer::cleanString($query['category'] ?? '');
-        $search = InputSanitizer::cleanString($query['search'] ?? '');
+        $search = InputSanitizer::cleanString($query['search'] ?? $query['q'] ?? '');
         $id = InputSanitizer::cleanString($query['id'] ?? '');
 
         if (!empty($id)) {
@@ -378,23 +403,57 @@ class EventController {
     }
 
     public function getEvents(array $query): void {
-        $stmt = $this->db->query('SELECT * FROM events ORDER BY id DESC');
+        $id = InputSanitizer::cleanString($query['id'] ?? '');
+        $category = InputSanitizer::cleanString($query['category'] ?? '');
+        $search = InputSanitizer::cleanString($query['q'] ?? $query['search'] ?? '');
+
+        if (!empty($id)) {
+            $stmt = $this->db->prepare('SELECT * FROM events WHERE id = ?');
+            $stmt->execute([$id]);
+            $event = $stmt->fetch();
+            if ($event) ApiResponse::success($event, 'Event details fetched from MySQL');
+            else ApiResponse::error('Event not found', 404);
+        }
+
+        $sql = 'SELECT * FROM events WHERE 1=1';
+        $params = [];
+
+        if (!empty($category) && $category !== 'All Categories' && $category !== 'All') {
+            $sql .= ' AND category LIKE ?';
+            $params[] = "%$category%";
+        }
+
+        if (!empty($search)) {
+            $sql .= ' AND (title LIKE ? OR description LIKE ? OR location LIKE ? OR venue LIKE ?)';
+            $params[] = "%$search%";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
+        }
+
+        $sql .= ' ORDER BY id DESC';
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
         $events = $stmt->fetchAll();
+
         ApiResponse::success($events, 'Events retrieved successfully from MySQL');
     }
 
     public function createEvent(array $input): void {
         $title = InputSanitizer::cleanString($input['title'] ?? '');
-        $category = InputSanitizer::cleanString($input['category'] ?? 'Workshop');
+        $description = InputSanitizer::cleanString($input['description'] ?? '');
+        $category = InputSanitizer::cleanString($input['category'] ?? 'Exhibition & Gallery Showcase');
         $location = InputSanitizer::cleanString($input['location'] ?? 'Dubai, UAE');
-        $eventDate = InputSanitizer::cleanString($input['event_date'] ?? $input['dateTime'] ?? '');
+        $venue = InputSanitizer::cleanString($input['venue'] ?? 'Alserkal Avenue');
+        $eventDate = InputSanitizer::cleanString($input['event_date'] ?? $input['dateTime'] ?? '15 Oct 2026');
+        $organizer = InputSanitizer::cleanString($input['organizer_name'] ?? 'Artist Dubai');
 
         if (empty($title)) {
             ApiResponse::error('Event title is required.');
         }
 
-        $stmt = $this->db->prepare('INSERT INTO events (title, category, location, event_date) VALUES (?, ?, ?, ?)');
-        $stmt->execute([$title, $category, $location, $eventDate]);
+        $stmt = $this->db->prepare('INSERT INTO events (title, description, category, location, venue, event_date, organizer_name) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$title, $description, $category, $location, $venue, $eventDate, $organizer]);
 
         ApiResponse::success(['event_id' => (int)$this->db->lastInsertId()], 'Event created successfully in MySQL', 201);
     }
@@ -417,13 +476,14 @@ class BookingController {
         $name = InputSanitizer::cleanString($input['full_name'] ?? '');
         $email = InputSanitizer::cleanEmail($input['email'] ?? '');
         $phone = InputSanitizer::cleanString($input['phone'] ?? '');
+        $artistName = InputSanitizer::cleanString($input['artist_name'] ?? '');
 
         if (empty($name) || empty($email)) {
             ApiResponse::error('Full name and valid email are required.');
         }
 
-        $stmt = $this->db->prepare('INSERT INTO bookings (full_name, email, phone) VALUES (?, ?, ?)');
-        $stmt->execute([$name, $email, $phone]);
+        $stmt = $this->db->prepare('INSERT INTO bookings (full_name, email, phone, artist_name) VALUES (?, ?, ?, ?)');
+        $stmt->execute([$name, $email, $phone, $artistName]);
 
         ApiResponse::success(['booking_id' => (int)$this->db->lastInsertId()], 'Booking submitted successfully in MySQL', 201);
     }

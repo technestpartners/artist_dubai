@@ -30,7 +30,11 @@ class _EventsViewState extends State<EventsView> {
 
   Future<void> _fetchEvents() async {
     try {
-      final events = await sl<ApiService>().getEvents();
+      final events = await sl<ApiService>().getEvents(
+        category: _selectedCategory,
+        query: _searchController.text.trim(),
+        forceRefresh: true,
+      );
       if (mounted) {
         setState(() {
           _allEvents = events;
@@ -452,6 +456,7 @@ class _EventsViewState extends State<EventsView> {
                           setState(() {
                             _selectedCategory = category;
                           });
+                          _fetchEvents();
                           Navigator.pop(context);
                         },
                       ),
