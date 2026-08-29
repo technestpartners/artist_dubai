@@ -12,26 +12,31 @@ class EventPhotosView extends StatefulWidget {
 }
 
 class _EventPhotosViewState extends State<EventPhotosView> {
-  final List<ArtEventModel> _eventsWithGalleries = ArtEventModel.mockEvents
-      .where((event) => event.galleries.isNotEmpty)
-      .toList();
-
-  void _openGallery(ArtEventModel event, EventPhotoGallery gallery) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => EventGalleryModal(
-        event: event,
-        gallery: gallery,
-      ),
+  void _openGallery(ArtEventModel event, EventPhotoGallery gallery, {int initialIndex = 0}) {
+    EventGalleryModal.show(
+      context,
+      event: event,
+      gallery: gallery,
+      initialIndex: initialIndex,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    // Generate default gallery cards if events list is short
+    final eventsWithGalleries = ArtEventModel.mockEvents
+        .where((event) => event.galleries.isNotEmpty)
+        .toList();
+
+    // Standard high quality fallback images for 3-thumbnail gallery cards
+    const defaultThumbnails = [
+      'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1552053831-71594a27632d?q=80&w=800&auto=format&fit=crop',
+    ];
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9FB),
+      backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -39,196 +44,114 @@ class _EventPhotosViewState extends State<EventPhotosView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header Card
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF28208C), Color(0xFF5E227A)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              // 1. Header Section
+              const Padding(
+                padding: EdgeInsets.only(left: 4, bottom: 4),
+                child: Text(
+                  'EVENTS PHOTOS',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
                   ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF28208C).withValues(alpha: 0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Row(
+              ),
+              const Padding(
+                padding: EdgeInsets.only(left: 4, bottom: 20),
+                child: Text(
+                  'Photo galleries from Dubai art events',
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    color: Colors.white70,
+                  ),
+                ),
+              ),
+
+              // 2. Galleries Card List
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: eventsWithGalleries.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 16),
+                itemBuilder: (context, eventIndex) {
+                  final event = eventsWithGalleries[eventIndex];
+                  final gallery = event.galleries.first;
+
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.photo_library_outlined, color: Colors.white, size: 28),
-                        SizedBox(width: 10),
                         Text(
-                          'Event Photo Galleries',
-                          style: TextStyle(
-                            fontSize: 20,
+                          gallery.title,
+                          style: const TextStyle(
+                            fontSize: 16.5,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
                         ),
-                      ],
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Browse photos, highlights, and visual archives from Dubai art events and exhibitions.',
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        color: Color(0xFFD6C8F2),
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Galleries Grid / List
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _eventsWithGalleries.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 16),
-                itemBuilder: (context, eventIndex) {
-                  final event = _eventsWithGalleries[eventIndex];
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 10, left: 4),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.event_note, size: 18, color: Color(0xFF28208C)),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                event.title,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1E1E1E),
-                                ),
-                              ),
+                        if (gallery.subtitle != null) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            gallery.subtitle!,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.white70,
                             ),
-                          ],
-                        ),
-                      ),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 1.1,
-                        ),
-                        itemCount: event.galleries.length,
-                        itemBuilder: (context, galIndex) {
-                          final gallery = event.galleries[galIndex];
-                          return GestureDetector(
-                            onTap: () => _openGallery(event, gallery),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFE2E8F0)),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.05),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
+                          ),
+                        ],
+                        const SizedBox(height: 14),
+
+                        // 3 Thumbnails Row
+                        Row(
+                          children: List.generate(3, (imgIdx) {
+                            String imgUrl;
+                            if (gallery.images.isNotEmpty && imgIdx < gallery.images.length) {
+                              imgUrl = gallery.images[imgIdx].imageUrl;
+                            } else {
+                              imgUrl = defaultThumbnails[imgIdx % defaultThumbnails.length];
+                            }
+
+                            return Expanded(
+                              child: Padding(
+                                padding: EdgeInsets.only(right: imgIdx < 2 ? 10.0 : 0.0),
+                                child: GestureDetector(
+                                  onTap: () => _openGallery(event, gallery, initialIndex: imgIdx),
+                                  child: AspectRatio(
+                                    aspectRatio: 1.0,
                                     child: ClipRRect(
-                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                                      child: Stack(
-                                        fit: StackFit.expand,
-                                        children: [
-                                          Image.network(
-                                            gallery.imageUrl,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) => Container(
-                                              color: const Color(0xFFF1F5F9),
-                                              child: const Icon(Icons.collections, color: Color(0xFF94A3B8), size: 32),
-                                            ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Image.network(
+                                        imgUrl,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) => Container(
+                                          color: Colors.white.withValues(alpha: 0.15),
+                                          child: const Icon(
+                                            Icons.collections,
+                                            color: Colors.white70,
+                                            size: 28,
                                           ),
-                                          Positioned(
-                                            bottom: 6,
-                                            right: 6,
-                                            child: Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                              decoration: BoxDecoration(
-                                                color: Colors.black.withValues(alpha: 0.7),
-                                                borderRadius: BorderRadius.circular(10),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  const Icon(Icons.photo, color: Colors.white, size: 12),
-                                                  const SizedBox(width: 4),
-                                                  Text(
-                                                    '${gallery.images.length}',
-                                                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                        ),
                                       ),
                                     ),
                                   ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(10.0),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          gallery.title,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF1E1E1E),
-                                          ),
-                                        ),
-                                        if (gallery.subtitle != null) ...[
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            gallery.subtitle!,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              fontSize: 11,
-                                              color: Color(0xFF64748B),
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                            );
+                          }),
+                        ),
+                      ],
+                    ),
                   );
                 },
               ),
+              const SizedBox(height: 20),
             ],
           ),
         ),
