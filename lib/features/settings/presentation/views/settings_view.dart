@@ -28,11 +28,17 @@ class SettingsView extends StatelessWidget {
       context: context,
       builder: (dialogContext) {
         return Dialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
           insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
             width: double.infinity,
             constraints: const BoxConstraints(maxWidth: 440),
             padding: const EdgeInsets.all(20),
@@ -201,11 +207,17 @@ class SettingsView extends StatelessWidget {
       context: context,
       builder: (dialogContext) {
         return Dialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
           insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
             width: double.infinity,
             constraints: const BoxConstraints(maxWidth: 440),
             padding: const EdgeInsets.all(20),
