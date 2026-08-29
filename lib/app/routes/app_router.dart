@@ -18,6 +18,7 @@ import '../../features/bookings/presentation/views/booking_requests_view.dart';
 import '../../features/events/presentation/views/create_art_event_view.dart';
 import '../../features/events/presentation/views/event_photos_view.dart';
 import '../../features/events/presentation/views/events_view.dart';
+import '../../features/favorites/presentation/views/favorites_view.dart';
 import '../../features/events/presentation/views/my_events_view.dart';
 import '../../features/events/presentation/views/events_competition_view.dart';
 import '../../features/galleries/presentation/views/galleries_view.dart';
@@ -94,6 +95,11 @@ class AppRouter {
         path: RouteNames.myEvents,
         name: 'myEvents',
         builder: (context, state) => const MyEventsView(),
+      ),
+      GoRoute(
+        path: RouteNames.favorites,
+        name: 'favorites',
+        builder: (context, state) => const FavoritesView(),
       ),
       GoRoute(
         path: RouteNames.eventsCompetition,

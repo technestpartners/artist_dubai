@@ -10,6 +10,7 @@ enum TopBarMenuItem {
   createArtistProfile,
   myBookings,
   bookingRequests,
+  myFavorites,
   myEvents,
   privacyPolicy,
   termsConditions,
@@ -54,6 +55,9 @@ class _AppTopBarState extends State<AppTopBar> {
         break;
       case TopBarMenuItem.bookingRequests:
         context.push(RouteNames.bookingRequests);
+        break;
+      case TopBarMenuItem.myFavorites:
+        context.push(RouteNames.favorites);
         break;
       case TopBarMenuItem.myEvents:
         context.push(RouteNames.myEvents);
@@ -349,11 +353,32 @@ class _AppTopBarState extends State<AppTopBar> {
                     ),
                   ),
                   const PopupMenuItem<TopBarMenuItem>(
+                    value: TopBarMenuItem.myFavorites,
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.favorite,
+                          size: 18,
+                          color: Color(0xFFEF4444),
+                        ),
+                        SizedBox(width: 10),
+                        Text(
+                          'My Favorites & Liked',
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            color: Color(0xFF1E1E1E),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem<TopBarMenuItem>(
                     value: TopBarMenuItem.myEvents,
                     child: Row(
                       children: [
                         Icon(
-                          Icons.favorite_border,
+                          Icons.event_outlined,
                           size: 18,
                           color: Color(0xFF1E1E1E),
                         ),
