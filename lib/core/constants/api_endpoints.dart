@@ -6,16 +6,17 @@ class ApiEndpoints {
   // Dynamic Base URL Resolution (Connects to Live PHP MySQL Server)
   static String get baseUrl {
     if (kIsWeb) {
-      return 'http://localhost:8000';
+      return 'http://localhost/dubai/artist_dubai';
     }
     if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:8000';
+      // USB device: ADB reverse tunnel (adb reverse tcp:8080 tcp:80)
+      return 'http://localhost:8080/dubai/artist_dubai';
     }
-    return 'http://localhost:8000';
+    return 'http://localhost/dubai/artist_dubai';
   }
 
-  static const Duration connectionTimeout = Duration(seconds: 3);
-  static const Duration receiveTimeout = Duration(seconds: 3);
+  static const Duration connectionTimeout = Duration(seconds: 15);
+  static const Duration receiveTimeout = Duration(seconds: 15);
 
   // Auth (MySQL Backend)
   static const String login = '/api.php?resource=login';
