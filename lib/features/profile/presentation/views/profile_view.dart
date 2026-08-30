@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
@@ -298,6 +299,7 @@ class _ProfileViewState extends State<ProfileView> {
                             return;
                           }
 
+                          final messenger = ScaffoldMessenger.of(context);
                           Navigator.pop(context);
                           final success = await sl<ApiService>().changePassword(
                             email: _userEmail,
@@ -305,7 +307,7 @@ class _ProfileViewState extends State<ProfileView> {
                           );
 
                           if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            messenger.showSnackBar(
                               SnackBar(
                                 content: Text(
                                   success
@@ -320,6 +322,203 @@ class _ProfileViewState extends State<ProfileView> {
                         },
                         child: const Text(
                           'Update Password',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showEditProfileModal() {
+    final nameController = TextEditingController(text: _userName);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          backgroundColor: Colors.white,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 24,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Edit Profile Details',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E1E1E),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.close,
+                        color: Color(0xFF64748B),
+                        size: 20,
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Update your full display name across Artist Dubai.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF64748B),
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Full Name',
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1E1E1E),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    hintText: 'Enter your full name',
+                    hintStyle: const TextStyle(
+                      color: Color(0xFF64748B),
+                      fontSize: 13.5,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF5E227A),
+                        width: 1.5,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF5E227A),
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    SizedBox(
+                      height: 42,
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(
+                            color: Color(0xFF333333),
+                            width: 1.0,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 18),
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1E1E1E),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      height: 42,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6A2777),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 18),
+                        ),
+                        onPressed: () async {
+                          final newName = nameController.text.trim();
+                          if (newName.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Full name cannot be empty.'),
+                                backgroundColor: Color(0xFFEF4444),
+                              ),
+                            );
+                            return;
+                          }
+
+                          final messenger = ScaffoldMessenger.of(context);
+                          Navigator.pop(context);
+                          final success = await sl<ApiService>().updateProfile(
+                            email: _userEmail,
+                            fullName: newName,
+                          );
+
+                          if (success) {
+                            final storage = sl<StorageService>();
+                            await storage.setString('user_name', newName);
+                            if (mounted) {
+                              setState(() {
+                                _userName = newName;
+                              });
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Profile updated successfully in MySQL!'),
+                                  backgroundColor: Color(0xFF6A2777),
+                                ),
+                              );
+                            }
+                          } else {
+                            if (mounted) {
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Failed to update profile.'),
+                                  backgroundColor: Color(0xFFEF4444),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        child: const Text(
+                          'Save Changes',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -411,11 +610,12 @@ class _ProfileViewState extends State<ProfileView> {
                       ),
                     ),
                     onPressed: () async {
+                      final messenger = ScaffoldMessenger.of(context);
                       Navigator.pop(context);
                       await sl<ApiService>().deleteAccount(_userEmail);
                       _onSignOut();
                       if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        messenger.showSnackBar(
                           const SnackBar(
                             content: Text('Account deleted successfully from MySQL.'),
                             backgroundColor: Color(0xFFEF4444),
@@ -561,7 +761,29 @@ class _ProfileViewState extends State<ProfileView> {
                           const SizedBox(height: 14),
                           _buildInfoRow('Member Since', _memberSince.isNotEmpty ? _memberSince : 'Recently Joined'),
                           const SizedBox(height: 14),
-                          _buildInfoRow('Full Name', _userName.isNotEmpty ? _userName : 'User'),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: _buildInfoRow('Full Name', _userName.isNotEmpty ? _userName : 'User'),
+                              ),
+                              OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(color: Color(0xFF6A2777)),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                ),
+                                onPressed: _showEditProfileModal,
+                                icon: const Icon(Icons.edit_outlined, size: 15, color: Color(0xFF6A2777)),
+                                label: const Text(
+                                  'Edit',
+                                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF6A2777)),
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -584,7 +806,7 @@ class _ProfileViewState extends State<ProfileView> {
                                       radius: 26,
                                       backgroundColor: const Color(0xFFF3E8FF),
                                       backgroundImage: _artistProfile!['avatar_url'] != null && _artistProfile!['avatar_url'].toString().isNotEmpty
-                                          ? NetworkImage(_artistProfile!['avatar_url'].toString())
+                                          ? CachedNetworkImageProvider(_artistProfile!['avatar_url'].toString())
                                           : null,
                                       child: _artistProfile!['avatar_url'] == null || _artistProfile!['avatar_url'].toString().isEmpty
                                           ? const Icon(Icons.person, color: Color(0xFF6A2777), size: 26)

@@ -3,6 +3,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/storage_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../artists/domain/models/artist_model.dart';
@@ -33,14 +36,13 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
   Future<void> _fetchFavorites() async {
     setState(() => _isLoading = _favoritedArtists.isEmpty && _favoritedEvents.isEmpty && _favoritedArtworks.isEmpty);
     try {
-      final artists = await sl<ApiService>().getArtists(forceRefresh: true);
-      final events = await sl<ApiService>().getEvents(forceRefresh: true);
-      final artworks = await sl<ApiService>().getArtworks(forceRefresh: true);
+      final userEmail = sl<StorageService>().getString('user_email');
+      final data = await sl<ApiService>().getFavorites(email: userEmail, forceRefresh: true);
       if (mounted) {
         setState(() {
-          _favoritedArtists = artists;
-          _favoritedEvents = events;
-          _favoritedArtworks = artworks;
+          _favoritedArtists = data['artists'] as List<ArtistModel>? ?? [];
+          _favoritedEvents = data['events'] as List<ArtEventModel>? ?? [];
+          _favoritedArtworks = data['artworks'] as List<Map<String, dynamic>>? ?? [];
           _isLoading = false;
         });
       }
@@ -55,43 +57,82 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
     super.dispose();
   }
 
-  void _removeArtist(int index) {
+  void _removeArtist(int index) async {
+    if (index >= _favoritedArtists.length) return;
+    final artist = _favoritedArtists[index];
+    final userEmail = sl<StorageService>().getString('user_email') ?? '';
     setState(() {
       _favoritedArtists.removeAt(index);
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Removed artist from favorites'),
-        duration: Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    if (userEmail.isNotEmpty) {
+      await sl<ApiService>().toggleFavorite(
+        email: userEmail,
+        itemType: 'artist',
+        itemId: artist.id,
+      );
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Removed artist from favorites'),
+          duration: Duration(seconds: 1),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
-  void _removeEvent(int index) {
+  void _removeEvent(int index) async {
+    if (index >= _favoritedEvents.length) return;
+    final event = _favoritedEvents[index];
+    final userEmail = sl<StorageService>().getString('user_email') ?? '';
     setState(() {
       _favoritedEvents.removeAt(index);
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Removed event from favorites'),
-        duration: Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    if (userEmail.isNotEmpty) {
+      await sl<ApiService>().toggleFavorite(
+        email: userEmail,
+        itemType: 'event',
+        itemId: event.id,
+      );
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Removed event from favorites'),
+          duration: Duration(seconds: 1),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
-  void _removeArtwork(int index) {
+  void _removeArtwork(int index) async {
+    if (index >= _favoritedArtworks.length) return;
+    final artwork = _favoritedArtworks[index];
+    final userEmail = sl<StorageService>().getString('user_email') ?? '';
     setState(() {
       _favoritedArtworks.removeAt(index);
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Removed artwork from favorites'),
-        duration: Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    if (userEmail.isNotEmpty && artwork['id'] != null) {
+      await sl<ApiService>().toggleFavorite(
+        email: userEmail,
+        itemType: 'artwork',
+        itemId: artwork['id'].toString(),
+      );
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Removed artwork from favorites'),
+          duration: Duration(seconds: 1),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
@@ -222,7 +263,7 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                 CircleAvatar(
                   radius: 28,
                   backgroundImage: artist.avatarUrl.isNotEmpty
-                      ? NetworkImage(artist.avatarUrl)
+                      ? CachedNetworkImageProvider(artist.avatarUrl)
                       : null,
                   backgroundColor: const Color(0xFF8B2FC9),
                   child: artist.avatarUrl.isEmpty
@@ -296,12 +337,11 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
               if (event.imageUrl != null && event.imageUrl!.isNotEmpty)
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-                  child: Image.network(
-                    event.imageUrl!,
+                  child: AppCachedImage(
+                    imageUrl: event.imageUrl!,
                     height: 140,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                   ),
                 ),
               Padding(
@@ -409,17 +449,11 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
-                  child: Image.network(
-                    image,
+                  child: AppCachedImage(
+                    imageUrl: image,
                     width: 80,
                     height: 80,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      width: 80,
-                      height: 80,
-                      color: const Color(0xFF8B2FC9),
-                      child: const Icon(Icons.brush, color: Colors.white70),
-                    ),
                   ),
                 ),
                 const SizedBox(width: 14),

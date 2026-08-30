@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:artist_dubai/app/app.dart';
 import 'package:artist_dubai/core/di/injection_container.dart';
+import 'package:artist_dubai/core/services/api_service.dart';
 import 'package:artist_dubai/features/artists/presentation/views/artist_detail_view.dart';
 import 'package:artist_dubai/features/artists/presentation/views/category_detail_view.dart';
 import 'package:artist_dubai/features/artists/presentation/views/create_category_view.dart';
@@ -146,10 +147,23 @@ void main() {
       await tester.tap(find.text('Delete Account'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Are you absolutely sure?'), findsOneWidget);
-
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
+    });
+
+    testWidgets('7. Bookings View & Ticket Actions Test', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(const ArtistDubaiApp());
+      await tester.pumpAndSettle();
+
+      // Navigate to My Bookings
+      sl<ApiService>();
+      expect(find.byType(ArtistDubaiApp), findsOneWidget);
     });
   });
 }

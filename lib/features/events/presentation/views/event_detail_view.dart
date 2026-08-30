@@ -1,9 +1,12 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../app/routes/route_names.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../artists/domain/models/artist_model.dart';
@@ -27,6 +30,7 @@ class EventDetailView extends StatefulWidget {
 
 class _EventDetailViewState extends State<EventDetailView> {
   List<ArtistModel> _featuredArtists = [];
+  final Set<String> _likedArtistIds = {};
 
   @override
   void initState() {
@@ -37,12 +41,106 @@ class _EventDetailViewState extends State<EventDetailView> {
   Future<void> _fetchArtists() async {
     try {
       final artists = await sl<ApiService>().getArtists(forceRefresh: true);
+      final userEmail = sl<StorageService>().getString('user_email');
+      Set<String> favIds = {};
+      if (userEmail != null && userEmail.isNotEmpty) {
+        final favData = await sl<ApiService>().getFavorites(email: userEmail, forceRefresh: true);
+        final favArtists = (favData['artists'] as List<ArtistModel>?) ?? [];
+        favIds = favArtists.map((a) => a.id).toSet();
+      }
       if (mounted) {
         setState(() {
           _featuredArtists = artists;
+          _likedArtistIds.clear();
+          _likedArtistIds.addAll(favIds);
         });
       }
     } catch (_) {}
+  }
+
+  void _shareArtist(ArtistModel artist) {
+    Clipboard.setData(
+      ClipboardData(
+        text: 'Check out ${artist.name} on Artist Dubai: https://artistdubai.com/artists/${artist.id}',
+      ),
+    );
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Profile link for ${artist.name} copied to clipboard!',
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF6A2777),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _toggleArtistLike(ArtistModel artist) async {
+    final userEmail = sl<StorageService>().getString('user_email') ?? '';
+    final wasLiked = _likedArtistIds.contains(artist.id);
+
+    setState(() {
+      if (wasLiked) {
+        _likedArtistIds.remove(artist.id);
+      } else {
+        _likedArtistIds.add(artist.id);
+      }
+
+      final idx = _featuredArtists.indexWhere((a) => a.id == artist.id);
+      if (idx != -1) {
+        final old = _featuredArtists[idx];
+        final newLikes = wasLiked
+            ? (old.followersCount - 1).clamp(0, 999999)
+            : (old.followersCount + 1);
+        _featuredArtists[idx] = ArtistModel(
+          id: old.id,
+          name: old.name,
+          category: old.category,
+          bio: old.bio,
+          location: old.location,
+          bannerUrl: old.bannerUrl,
+          avatarUrl: old.avatarUrl,
+          isFeatured: old.isFeatured,
+          tags: old.tags,
+          worksCount: old.worksCount,
+          followersCount: newLikes,
+        );
+      }
+    });
+
+    if (userEmail.isNotEmpty) {
+      await sl<ApiService>().likeArtist(
+        artistId: artist.id,
+        userEmail: userEmail,
+      );
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            wasLiked
+                ? 'Unliked ${artist.name}'
+                : 'Liked ${artist.name}\'s profile! ❤️',
+          ),
+          backgroundColor: wasLiked ? null : const Color(0xFF6A2777),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
@@ -66,9 +164,10 @@ class _EventDetailViewState extends State<EventDetailView> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   image: DecorationImage(
-                    image: NetworkImage(
-                      event.imageUrl ??
-                          'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1200&auto=format&fit=crop',
+                    image: CachedNetworkImageProvider(
+                      event.imageUrl != null && event.imageUrl!.isNotEmpty
+                          ? event.imageUrl!
+                          : 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1200&auto=format&fit=crop',
                     ),
                     fit: BoxFit.cover,
                   ),
@@ -349,21 +448,11 @@ class _EventDetailViewState extends State<EventDetailView> {
                                 borderRadius: const BorderRadius.vertical(
                                   top: Radius.circular(8),
                                 ),
-                                child: Image.network(
-                                  event.galleries.first.imageUrl,
+                                child: AppCachedImage(
+                                  imageUrl: event.galleries.first.imageUrl,
                                   height: 180,
                                   width: double.infinity,
                                   fit: BoxFit.cover,
-                                  errorBuilder:
-                                      (context, error, stackTrace) => Container(
-                                        height: 180,
-                                        color: Colors.grey.shade200,
-                                        child: const Icon(
-                                          Icons.image,
-                                          size: 40,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
                                 ),
                               ),
                               Padding(
@@ -581,17 +670,17 @@ class _EventDetailViewState extends State<EventDetailView> {
                     // Quick Stats Chips Row
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
+                      children: [
                         Text(
-                          '👥 6 Artists',
-                          style: TextStyle(
+                          '👥 ${featuredArtists.length} Artists',
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF334155),
                           ),
                         ),
-                        SizedBox(width: 14),
-                        Text(
+                        const SizedBox(width: 14),
+                        const Text(
                           '✨ Multiple Disciplines',
                           style: TextStyle(
                             fontSize: 12,
@@ -599,8 +688,8 @@ class _EventDetailViewState extends State<EventDetailView> {
                             color: Color(0xFF334155),
                           ),
                         ),
-                        SizedBox(width: 14),
-                        Text(
+                        const SizedBox(width: 14),
+                        const Text(
                           '📍 UAE-based',
                           style: TextStyle(
                             fontSize: 12,
@@ -754,8 +843,8 @@ class _EventDetailViewState extends State<EventDetailView> {
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(12),
                 ),
-                child: Image.network(
-                  artist.bannerUrl,
+                child: AppCachedImage(
+                  imageUrl: artist.bannerUrl,
                   height: 140,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -802,23 +891,54 @@ class _EventDetailViewState extends State<EventDetailView> {
               Positioned(
                 top: 10,
                 right: 10,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    'Professional (10+ years)',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
+                child: Row(
+                  children: [
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => _shareArtist(artist),
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.5),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.share_outlined,
+                            size: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => _toggleArtistLike(artist),
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: _likedArtistIds.contains(artist.id)
+                                ? const Color(0xFFE11D48).withValues(alpha: 0.8)
+                                : Colors.black.withValues(alpha: 0.5),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            _likedArtistIds.contains(artist.id)
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            size: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               Positioned(
@@ -927,16 +1047,16 @@ class _EventDetailViewState extends State<EventDetailView> {
                     ),
                     Expanded(
                       child: Column(
-                        children: const [
+                        children: [
                           Text(
-                            'AED 1500+',
-                            style: TextStyle(
+                            artist.bookingRate.isNotEmpty ? artist.bookingRate : 'AED 1500+',
+                            style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF1E1E1E),
                             ),
                           ),
-                          Text(
+                          const Text(
                             'Booking',
                             style: TextStyle(
                               fontSize: 11,
@@ -1391,6 +1511,7 @@ class _EventDetailViewState extends State<EventDetailView> {
     final descController = TextEditingController();
     final ImagePicker picker = ImagePicker();
     final List<XFile> modalImages = [];
+    bool isUploading = false;
 
     showDialog(
       context: context,
@@ -1473,10 +1594,16 @@ class _EventDetailViewState extends State<EventDetailView> {
                       const SizedBox(height: 6),
                       TextField(
                         controller: titleController,
+                        style: const TextStyle(
+                          color: Color(0xFF0F172A),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        cursorColor: const Color(0xFF6A2777),
                         decoration: InputDecoration(
                           hintText: 'Enter gallery title...',
                           hintStyle: const TextStyle(
-                            color: Color(0xFF64748B),
+                            color: Color(0xFF94A3B8),
                             fontSize: 13.5,
                           ),
                           contentPadding: const EdgeInsets.symmetric(
@@ -1489,7 +1616,7 @@ class _EventDetailViewState extends State<EventDetailView> {
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: const BorderSide(
-                              color: Color(0xFF5E227A),
+                              color: Color(0xFF6A2777),
                               width: 1.5,
                             ),
                           ),
@@ -1510,10 +1637,16 @@ class _EventDetailViewState extends State<EventDetailView> {
                       TextField(
                         controller: descController,
                         maxLines: 3,
+                        style: const TextStyle(
+                          color: Color(0xFF0F172A),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        cursorColor: const Color(0xFF6A2777),
                         decoration: InputDecoration(
                           hintText: 'Describe this gallery...',
                           hintStyle: const TextStyle(
-                            color: Color(0xFF64748B),
+                            color: Color(0xFF94A3B8),
                             fontSize: 13.5,
                           ),
                           contentPadding: const EdgeInsets.symmetric(
@@ -1668,7 +1801,7 @@ class _EventDetailViewState extends State<EventDetailView> {
                                 vertical: 12,
                               ),
                             ),
-                            onPressed: () => Navigator.pop(context),
+                            onPressed: isUploading ? null : () => Navigator.pop(context),
                             child: const Text(
                               'Cancel',
                               style: TextStyle(fontWeight: FontWeight.w600),
@@ -1688,24 +1821,85 @@ class _EventDetailViewState extends State<EventDetailView> {
                                 vertical: 12,
                               ),
                             ),
-                            onPressed: () {
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    modalImages.isNotEmpty
-                                        ? 'Gallery created with ${modalImages.length} photo(s)!'
-                                        : 'Gallery created successfully!',
+                            onPressed: isUploading
+                                ? null
+                                : () async {
+                                    final title = titleController.text.trim();
+                                    final desc = descController.text.trim();
+                                    if (title.isEmpty) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Please enter a gallery title')),
+                                      );
+                                      return;
+                                    }
+
+                                    setModalState(() {
+                                      isUploading = true;
+                                    });
+
+                                    const stockDefaults = [
+                                      'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80',
+                                      'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
+                                      'https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=800&q=80',
+                                      'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&fit=crop&w=1200&q=80',
+                                    ];
+
+                                    List<String> finalUploadedUrls = [];
+
+                                    if (modalImages.isNotEmpty) {
+                                      for (final xfile in modalImages) {
+                                        try {
+                                          final bytes = await xfile.readAsBytes();
+                                          final nameParts = xfile.name.split('.');
+                                          final ext = nameParts.length > 1 ? nameParts.last : 'jpg';
+                                          final url = await sl<ApiService>().uploadImageBytes(
+                                            bytes,
+                                            ext: ext.isNotEmpty ? ext : 'jpg',
+                                          );
+                                          if (url != null && url.isNotEmpty) {
+                                            finalUploadedUrls.add(url);
+                                          }
+                                        } catch (_) {}
+                                      }
+                                    }
+
+                                    if (finalUploadedUrls.isEmpty) {
+                                      finalUploadedUrls = List<String>.from(stockDefaults);
+                                    }
+
+                                    final coverUrl = finalUploadedUrls.first;
+
+                                    await sl<ApiService>().createGallery(
+                                      title: title,
+                                      description: desc.isNotEmpty ? desc : 'Curated collection for $titleName',
+                                      imageUrl: coverUrl,
+                                      images: finalUploadedUrls,
+                                    );
+
+                                    if (context.mounted) {
+                                      Navigator.pop(context);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Gallery "$title" saved to database!'),
+                                          backgroundColor: const Color(0xFF5E227A),
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    }
+                                  },
+                            child: isUploading
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Create Gallery',
+                                    style: TextStyle(fontWeight: FontWeight.bold),
                                   ),
-                                  backgroundColor: const Color(0xFF5E227A),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            },
-                            child: const Text(
-                              'Create Gallery',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
                           ),
                         ],
                       ),

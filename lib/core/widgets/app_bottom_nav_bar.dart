@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/routes/route_names.dart';
 
+import '../../core/di/injection_container.dart';
+import '../../core/services/storage_service.dart';
+
 class AppBottomNavBar extends StatelessWidget {
   const AppBottomNavBar({super.key, this.currentIndex = 0});
 
@@ -9,6 +12,8 @@ class AppBottomNavBar extends StatelessWidget {
 
   void _onTabSelected(BuildContext context, int index) {
     if (index == currentIndex) return;
+
+    final isLoggedIn = sl<StorageService>().getBool('is_logged_in') ?? false;
 
     switch (index) {
       case 0:
@@ -18,7 +23,12 @@ class AppBottomNavBar extends StatelessWidget {
         context.go(RouteNames.artists);
         break;
       case 2:
-        context.go(RouteNames.events);
+        if (!isLoggedIn) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          context.push(RouteNames.login);
+        } else {
+          context.go(RouteNames.events);
+        }
         break;
     }
   }

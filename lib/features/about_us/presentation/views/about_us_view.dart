@@ -8,38 +8,37 @@ class AboutUsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: Color(0xFF6A1B9A),
-      appBar: AppTopBar(),
+      backgroundColor: Color(0xFF6B1C9B),
+      appBar: AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 28.0),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'ABOUT US',
                 style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
                   color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.2,
+                  letterSpacing: 0.5,
                 ),
               ),
               SizedBox(height: 24),
               Text(
                 'Content to be provided.',
                 style: TextStyle(
-                  color: Color(0xFFE2D6F5),
-                  fontSize: 16,
+                  fontSize: 15,
+                  color: Colors.white,
                   fontWeight: FontWeight.w400,
-                  letterSpacing: 0.1,
                 ),
               ),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: AppBottomNavBar(currentIndex: -1),
+      bottomNavigationBar: AppBottomNavBar(currentIndex: 0),
     );
   }
 }

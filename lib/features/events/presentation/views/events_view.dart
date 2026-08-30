@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
@@ -22,6 +23,7 @@ class _EventsViewState extends State<EventsView> {
   String _selectedCategory = 'All Categories';
   List<ArtEventModel> _allEvents = [];
   List<String> _categories = ['All Categories'];
+  final Set<String> _likedEventIds = {};
   final GlobalKey _categorySelectorKey = GlobalKey();
   OverlayEntry? _categoryOverlayEntry;
   bool _isCategoryListExpanded = false;
@@ -41,15 +43,95 @@ class _EventsViewState extends State<EventsView> {
     }
   }
 
-  Future<void> _fetchEvents() async {
+  Future<void> _fetchEvents({bool forceRefresh = false}) async {
     try {
-      final events = await sl<ApiService>().getEvents(forceRefresh: true);
+      final userEmail = sl<StorageService>().getString('user_email');
+      final results = await Future.wait([
+        sl<ApiService>().getEvents(forceRefresh: forceRefresh),
+        if (userEmail != null && userEmail.isNotEmpty)
+          sl<ApiService>().getFavorites(email: userEmail, forceRefresh: forceRefresh)
+        else
+          Future.value(<String, dynamic>{'events': <ArtEventModel>[]}),
+      ]);
+
+      final events = results[0] as List<ArtEventModel>;
+      final favData = results[1] as Map<String, dynamic>;
+      final favEvents = (favData['events'] as List<ArtEventModel>?) ?? [];
+      final favIds = favEvents.map((e) => e.id).toSet();
+
       if (mounted) {
         setState(() {
           _allEvents = events;
+          _likedEventIds.clear();
+          _likedEventIds.addAll(favIds);
         });
       }
     } catch (_) {}
+  }
+
+  void _shareEvent(ArtEventModel event) {
+    Clipboard.setData(
+      ClipboardData(
+        text: 'Check out ${event.title} on Artist Dubai: https://artistdubai.com/events/${event.id}',
+      ),
+    );
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Event link for "${event.title}" copied to clipboard!',
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF6A2777),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _toggleEventLike(ArtEventModel event) async {
+    final userEmail = sl<StorageService>().getString('user_email') ?? '';
+    final wasLiked = _likedEventIds.contains(event.id);
+
+    setState(() {
+      if (wasLiked) {
+        _likedEventIds.remove(event.id);
+      } else {
+        _likedEventIds.add(event.id);
+      }
+    });
+
+    if (userEmail.isNotEmpty) {
+      await sl<ApiService>().toggleFavorite(
+        email: userEmail,
+        itemType: 'event',
+        itemId: event.id,
+      );
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            wasLiked
+                ? 'Removed "${event.title}" from saved events'
+                : 'Saved "${event.title}" to favorites! ❤️',
+          ),
+          backgroundColor: wasLiked ? null : const Color(0xFF6A2777),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Future<void> _fetchCategories() async {
@@ -523,7 +605,7 @@ class _EventsViewState extends State<EventsView> {
       body: SafeArea(
         child: RefreshIndicator(
           color: const Color(0xFF6A2777),
-          onRefresh: _fetchEvents,
+          onRefresh: () => _fetchEvents(forceRefresh: true),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
@@ -610,14 +692,13 @@ class _EventsViewState extends State<EventsView> {
                     ),
                   ),
                   SizedBox(
-                    height: 44,
-                    width: 220,
+                    height: 40,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF6B267B),
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -631,14 +712,15 @@ class _EventsViewState extends State<EventsView> {
                         );
                       },
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: const [
-                          Icon(Icons.add, size: 18, color: Colors.white),
-                          SizedBox(width: 6),
+                          Icon(Icons.add, size: 17, color: Colors.white),
+                          SizedBox(width: 5),
                           Text(
                             'Create Event',
                             style: TextStyle(
-                              fontSize: 14.5,
+                              fontSize: 13.5,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
                             ),
@@ -943,9 +1025,8 @@ class _EventsViewState extends State<EventsView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top Row: Category Tag and Price
+          // Top Row: Category Tag, Price, Share & Heart buttons
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -965,12 +1046,68 @@ class _EventsViewState extends State<EventsView> {
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
               Text(
                 event.price,
                 style: const TextStyle(
                   color: Color(0xFF6A2777),
                   fontWeight: FontWeight.w700,
                   fontSize: 14.5,
+                ),
+              ),
+              const Spacer(),
+              // Share button
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _shareEvent(event),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(
+                      Icons.share_outlined,
+                      size: 16,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Like/Favorite ❤️ button
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _toggleEventLike(event),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: _likedEventIds.contains(event.id)
+                          ? const Color(0xFFE11D48).withValues(alpha: 0.1)
+                          : Colors.transparent,
+                      border: Border.all(
+                        color: _likedEventIds.contains(event.id)
+                            ? const Color(0xFFE11D48)
+                            : const Color(0xFFE2E8F0),
+                      ),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Icon(
+                      _likedEventIds.contains(event.id)
+                          ? Icons.favorite
+                          : Icons.favorite_border,
+                      size: 16,
+                      color: _likedEventIds.contains(event.id)
+                          ? const Color(0xFFE11D48)
+                          : const Color(0xFF64748B),
+                    ),
+                  ),
                 ),
               ),
             ],

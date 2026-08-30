@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
-import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/di/injection_container.dart';
-import '../../../../core/network/api_client.dart';
+import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 
@@ -78,18 +77,15 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
         _isSubmitting = true;
       });
 
+      bool success = false;
       try {
-        final apiClient = sl<ApiClient>();
-        await apiClient.post(
-          ApiEndpoints.categories,
-          data: {
-            'name': _nameController.text.trim(),
-            'description': _descriptionController.text.trim(),
-            'emoji': _selectedIcon,
-            'color': _selectedColor,
-            'tags': _tags.join(','),
-            'is_featured': _isFeatured ? 1 : 0,
-          },
+        success = await sl<ApiService>().createCategory(
+          name: _nameController.text.trim(),
+          description: _descriptionController.text.trim(),
+          emoji: _selectedIcon,
+          color: _selectedColor,
+          tags: _tags.join(','),
+          isFeatured: _isFeatured,
         );
       } catch (_) {}
 
@@ -97,19 +93,29 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
         setState(() {
           _isSubmitting = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Category "${_nameController.text}" saved to MySQL database!',
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Category "${_nameController.text}" saved to MySQL database!',
+              ),
+              backgroundColor: const Color(0xFF6A2777),
+              behavior: SnackBarBehavior.floating,
             ),
-            backgroundColor: const Color(0xFF6A2777),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        if (context.canPop()) {
-          context.pop();
+          );
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go(RouteNames.categories);
+          }
         } else {
-          context.go(RouteNames.categories);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to save category. Please check your inputs.'),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
       }
     }

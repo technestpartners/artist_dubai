@@ -15,6 +15,7 @@ import '../../features/auth/presentation/views/register_view.dart';
 import '../../features/bookings/presentation/views/book_artist_view.dart';
 import '../../features/bookings/presentation/views/bookings_view.dart';
 import '../../features/bookings/presentation/views/booking_requests_view.dart';
+import '../../features/events/domain/models/art_event_model.dart';
 import '../../features/events/presentation/views/create_art_event_view.dart';
 import '../../features/events/presentation/views/event_photos_view.dart';
 import '../../features/events/presentation/views/events_view.dart';
@@ -139,7 +140,9 @@ class AppRouter {
       GoRoute(
         path: RouteNames.createArtEvent,
         name: 'createArtEvent',
-        builder: (context, state) => const CreateArtEventView(),
+        builder:
+            (context, state) =>
+                CreateArtEventView(event: state.extra as ArtEventModel?),
       ),
       GoRoute(
         path: RouteNames.profile,

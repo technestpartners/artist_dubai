@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
@@ -261,6 +262,7 @@ class _SettingsViewState extends State<SettingsView> {
                                   : () async {
                                       if (formKey.currentState?.validate() ?? false) {
                                         setDialogState(() => isUpdating = true);
+                                        final messenger = ScaffoldMessenger.of(context);
                                         final success = await sl<ApiService>().changePassword(
                                           email: _userEmail,
                                           newPassword: newPasswordController.text.trim(),
@@ -272,8 +274,8 @@ class _SettingsViewState extends State<SettingsView> {
                                         }
 
                                         if (mounted) {
-                                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                                          ScaffoldMessenger.of(context).showSnackBar(
+                                          messenger.hideCurrentSnackBar();
+                                          messenger.showSnackBar(
                                             SnackBar(
                                               content: Text(
                                                 success
@@ -598,7 +600,7 @@ class _SettingsViewState extends State<SettingsView> {
                                     radius: 28,
                                     backgroundColor: const Color(0xFFF3E8FF),
                                     backgroundImage: _artistProfile!['avatar_url'] != null && _artistProfile!['avatar_url'].toString().isNotEmpty
-                                        ? NetworkImage(_artistProfile!['avatar_url'].toString())
+                                        ? CachedNetworkImageProvider(_artistProfile!['avatar_url'].toString())
                                         : null,
                                     child: _artistProfile!['avatar_url'] == null || _artistProfile!['avatar_url'].toString().isEmpty
                                         ? const Icon(Icons.person, color: Color(0xFF6A2777), size: 28)
@@ -824,6 +826,16 @@ class _SettingsViewState extends State<SettingsView> {
                         ),
                       ),
                     ],
+                    const SizedBox(height: 20),
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Text(
+                          'Artist Dubai · v1.0.0',
+                          style: TextStyle(fontSize: 12, color: Colors.grey.withValues(alpha: 0.5)),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 20),
                   ],
                 ),

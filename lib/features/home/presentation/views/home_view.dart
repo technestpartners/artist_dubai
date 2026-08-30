@@ -16,18 +16,11 @@ class HomeView extends StatelessWidget {
   void _onCardTap(BuildContext context, MenuCardItem item) {
     final isLoggedIn = sl<StorageService>().getBool('is_logged_in') ?? false;
 
-    // Public view allowed for all standard options and ComingSoonView screens
-    final isComingSoon =
-        item.routeName == RouteNames.galleries ||
-        item.routeName == RouteNames.eventsPhotos ||
-        item.routeName == RouteNames.galleryRegistration;
-
+    // Public options allowed without login
     final isPublicOption =
-        isComingSoon ||
         item.routeName == RouteNames.aboutUs ||
         item.routeName == RouteNames.government ||
-        item.routeName == RouteNames.artists ||
-        item.routeName == RouteNames.events;
+        item.routeName == RouteNames.artists;
 
     if (!isLoggedIn && !isPublicOption) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();

@@ -18,6 +18,38 @@ class CreateArtistProfileView extends StatefulWidget {
       _CreateArtistProfileViewState();
 }
 
+class ProfileArtworkItem {
+  final XFile file;
+  final TextEditingController titleController;
+  final TextEditingController priceController;
+  final TextEditingController mediumController;
+  final TextEditingController dimensionsController;
+  final TextEditingController yearController;
+  bool isFeatured;
+
+  ProfileArtworkItem({
+    required this.file,
+    String? initialTitle,
+    String? initialMedium,
+    String? initialPrice,
+    String? initialDimensions,
+    String? initialYear,
+    this.isFeatured = false,
+  })  : titleController = TextEditingController(text: initialTitle ?? ''),
+        priceController = TextEditingController(text: initialPrice ?? '\$3,200'),
+        mediumController = TextEditingController(text: initialMedium ?? 'Oil on Canvas'),
+        dimensionsController = TextEditingController(text: initialDimensions ?? '150 x 100 cm'),
+        yearController = TextEditingController(text: initialYear ?? DateTime.now().year.toString());
+
+  void dispose() {
+    titleController.dispose();
+    priceController.dispose();
+    mediumController.dispose();
+    dimensionsController.dispose();
+    yearController.dispose();
+  }
+}
+
 class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
   final _formKey = GlobalKey<FormState>();
 
@@ -41,14 +73,24 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
   bool _isSubmitting = false;
 
   final ImagePicker _picker = ImagePicker();
-  final List<XFile> _pickedImages = [];
+  final List<ProfileArtworkItem> _portfolioArtworks = [];
 
   Future<void> _pickImagesFromGallery() async {
     try {
       final List<XFile> images = await _picker.pickMultiImage(imageQuality: 85);
       if (images.isNotEmpty) {
         setState(() {
-          _pickedImages.addAll(images);
+          for (final img in images) {
+            String baseTitle = img.name.split('.').first.replaceAll('_', ' ').replaceAll('-', ' ');
+            if (baseTitle.isEmpty || baseTitle.startsWith('image_picker')) {
+              baseTitle = 'Artwork Piece #${_portfolioArtworks.length + 1}';
+            }
+            _portfolioArtworks.add(ProfileArtworkItem(
+              file: img,
+              initialTitle: baseTitle,
+              initialMedium: _selectedCategory ?? 'Mixed Media',
+            ));
+          }
         });
       }
     } catch (e) {
@@ -71,7 +113,11 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
       );
       if (image != null) {
         setState(() {
-          _pickedImages.add(image);
+          _portfolioArtworks.add(ProfileArtworkItem(
+            file: image,
+            initialTitle: 'Artwork Piece #${_portfolioArtworks.length + 1}',
+            initialMedium: _selectedCategory ?? 'Mixed Media',
+          ));
         });
       }
     } catch (e) {
@@ -88,7 +134,8 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
 
   void _removeImage(int index) {
     setState(() {
-      _pickedImages.removeAt(index);
+      _portfolioArtworks[index].dispose();
+      _portfolioArtworks.removeAt(index);
     });
   }
 
@@ -165,6 +212,10 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     _linkedinController.dispose();
     _tiktokController.dispose();
     _youtubeController.dispose();
+
+    for (final art in _portfolioArtworks) {
+      art.dispose();
+    }
     super.dispose();
   }
 
@@ -199,7 +250,51 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     });
 
     try {
-      final success = await sl<ApiService>().createArtistProfile(
+      String? uploadedAvatar;
+      String? uploadedBanner;
+
+      // Upload artworks to server and collect their URLs & metadata
+      final List<Map<String, dynamic>> uploadedArtworksData = [];
+
+      if (_portfolioArtworks.isNotEmpty) {
+        for (int i = 0; i < _portfolioArtworks.length; i++) {
+          try {
+            final artItem = _portfolioArtworks[i];
+            final bytes = await artItem.file.readAsBytes();
+            final nameParts = artItem.file.name.split('.');
+            final ext = nameParts.length > 1 ? nameParts.last : 'jpg';
+            final url = await sl<ApiService>().uploadImageBytes(
+              bytes,
+              ext: ext.isNotEmpty ? ext : 'jpg',
+            );
+            if (url != null && url.isNotEmpty) {
+              if (i == 0) uploadedAvatar = url;
+              if (i == 1) uploadedBanner = url;
+              uploadedArtworksData.add({
+                'title': artItem.titleController.text.trim().isNotEmpty
+                    ? artItem.titleController.text.trim()
+                    : 'Artwork Piece #${i + 1}',
+                'medium': artItem.mediumController.text.trim().isNotEmpty
+                    ? artItem.mediumController.text.trim()
+                    : 'Oil on Canvas',
+                'price': artItem.priceController.text.trim().isNotEmpty
+                    ? artItem.priceController.text.trim()
+                    : '\$3,200',
+                'dimensions': artItem.dimensionsController.text.trim().isNotEmpty
+                    ? artItem.dimensionsController.text.trim()
+                    : '150 x 100 cm',
+                'year': artItem.yearController.text.trim().isNotEmpty
+                    ? artItem.yearController.text.trim()
+                    : DateTime.now().year.toString(),
+                'is_featured': artItem.isFeatured,
+                'image_url': url,
+              });
+            }
+          } catch (_) {}
+        }
+      }
+
+      final profileRes = await sl<ApiService>().createArtistProfile(
         name: name,
         category: _selectedCategory ?? (_categories.isNotEmpty ? _categories.first : 'Visual Arts'),
         location: _locationController.text.trim().isEmpty ? 'Dubai, UAE' : _locationController.text.trim(),
@@ -209,18 +304,39 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
         website: _websiteController.text.trim(),
         instagram: _instagramController.text.trim(),
         experienceLevel: _selectedExperienceLevel,
+        avatarUrl: uploadedAvatar,
+        bannerUrl: uploadedBanner,
       );
+
+      if (profileRes != null) {
+        final artistId = profileRes['artist_id']?.toString();
+
+        // Insert artworks into MySQL artworks table
+        for (final artData in uploadedArtworksData) {
+          await sl<ApiService>().createArtwork(
+            title: artData['title'].toString(),
+            artistId: artistId,
+            artistName: name,
+            year: artData['year'].toString(),
+            medium: artData['medium'].toString(),
+            dimensions: artData['dimensions'].toString(),
+            price: artData['price'].toString(),
+            imageUrl: artData['image_url'].toString(),
+            isFeatured: artData['is_featured'] == true,
+          );
+        }
+      }
 
       if (mounted) {
         setState(() {
           _isSubmitting = false;
         });
 
-        if (success) {
+        if (profileRes != null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Artist Profile created successfully in database!'),
-              backgroundColor: Color(0xFF6A2777),
+            SnackBar(
+              content: Text('Artist Profile & ${uploadedArtworksData.length} Artworks created successfully!'),
+              backgroundColor: const Color(0xFF6A2777),
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -622,76 +738,323 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                           ),
                         ),
                       ),
-                      if (_pickedImages.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'Selected Images (${_pickedImages.length}):',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E1E1E),
+                      if (_portfolioArtworks.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Portfolio Artworks (${_portfolioArtworks.length}):',
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1E1E1E),
+                              ),
                             ),
-                          ),
+                            TextButton.icon(
+                              onPressed: _pickImagesFromGallery,
+                              icon: const Icon(Icons.add_photo_alternate_outlined, size: 16, color: Color(0xFF6A2777)),
+                              label: const Text(
+                                'Add More',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF6A2777),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 8),
-                        SizedBox(
-                          height: 90,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: _pickedImages.length,
-                            itemBuilder: (context, index) {
-                              final xFile = _pickedImages[index];
-                              return Container(
-                                margin: const EdgeInsets.only(right: 10),
-                                width: 90,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: const Color(0xFFCBD5E1)),
-                                ),
-                                child: Stack(
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: kIsWeb
-                                          ? Image.network(
-                                              xFile.path,
-                                              width: 90,
-                                              height: 90,
-                                              fit: BoxFit.cover,
-                                            )
-                                          : Image.file(
-                                              File(xFile.path),
-                                              width: 90,
-                                              height: 90,
-                                              fit: BoxFit.cover,
-                                            ),
-                                    ),
-                                    Positioned(
-                                      top: 4,
-                                      right: 4,
-                                      child: GestureDetector(
-                                        onTap: () => _removeImage(index),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _portfolioArtworks.length,
+                          itemBuilder: (context, index) {
+                            final artItem = _portfolioArtworks[index];
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFCBD5E1)),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Artwork Preview Image
+                                  Stack(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: kIsWeb
+                                            ? Image.network(
+                                                artItem.file.path,
+                                                width: 80,
+                                                height: 80,
+                                                fit: BoxFit.cover,
+                                              )
+                                            : Image.file(
+                                                File(artItem.file.path),
+                                                width: 80,
+                                                height: 80,
+                                                fit: BoxFit.cover,
+                                              ),
+                                      ),
+                                      Positioned(
+                                        bottom: 2,
+                                        left: 2,
                                         child: Container(
-                                          padding: const EdgeInsets.all(4),
+                                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                           decoration: BoxDecoration(
-                                            color: Colors.black.withValues(alpha: 0.7),
-                                            shape: BoxShape.circle,
+                                            color: Colors.black.withValues(alpha: 0.6),
+                                            borderRadius: BorderRadius.circular(4),
                                           ),
-                                          child: const Icon(
-                                            Icons.close,
-                                            size: 14,
-                                            color: Colors.white,
+                                          child: Text(
+                                            '#${index + 1}',
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
                                         ),
                                       ),
+                                    ],
+                                  ),
+                                  const SizedBox(width: 12),
+
+                                  // Editable Artwork Details
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: TextField(
+                                                controller: artItem.titleController,
+                                                style: const TextStyle(
+                                                  fontSize: 13.5,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Color(0xFF0F172A),
+                                                ),
+                                                decoration: const InputDecoration(
+                                                  hintText: 'Artwork Title',
+                                                  hintStyle: TextStyle(
+                                                    fontSize: 12.5,
+                                                    color: Color(0xFF94A3B8),
+                                                  ),
+                                                  isDense: true,
+                                                  filled: true,
+                                                  fillColor: Colors.white,
+                                                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                                  border: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                    borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+                                                  ),
+                                                  enabledBorder: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                    borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+                                                  ),
+                                                  focusedBorder: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                    borderSide: BorderSide(color: Color(0xFF6A2777), width: 1.5),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.delete_outline,
+                                                size: 20,
+                                                color: Color(0xFFDC2626),
+                                              ),
+                                              onPressed: () => _removeImage(index),
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: TextField(
+                                                controller: artItem.mediumController,
+                                                style: const TextStyle(
+                                                  fontSize: 12.5,
+                                                  color: Color(0xFF334155),
+                                                ),
+                                                decoration: const InputDecoration(
+                                                  hintText: 'Medium (e.g. Oil on Canvas)',
+                                                  hintStyle: TextStyle(
+                                                    fontSize: 11.5,
+                                                    color: Color(0xFF94A3B8),
+                                                  ),
+                                                  isDense: true,
+                                                  filled: true,
+                                                  fillColor: Colors.white,
+                                                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                  border: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                    borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+                                                  ),
+                                                  enabledBorder: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                    borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+                                                  ),
+                                                  focusedBorder: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                    borderSide: BorderSide(color: Color(0xFF6A2777), width: 1.5),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: TextField(
+                                                controller: artItem.yearController,
+                                                style: const TextStyle(
+                                                  fontSize: 12.5,
+                                                  color: Color(0xFF334155),
+                                                ),
+                                                decoration: const InputDecoration(
+                                                  hintText: 'Year (e.g. 2026)',
+                                                  hintStyle: TextStyle(
+                                                    fontSize: 11.5,
+                                                    color: Color(0xFF94A3B8),
+                                                  ),
+                                                  isDense: true,
+                                                  filled: true,
+                                                  fillColor: Colors.white,
+                                                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                  border: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                    borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+                                                  ),
+                                                  enabledBorder: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                    borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+                                                  ),
+                                                  focusedBorder: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                    borderSide: BorderSide(color: Color(0xFF6A2777), width: 1.5),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: TextField(
+                                                controller: artItem.dimensionsController,
+                                                style: const TextStyle(
+                                                  fontSize: 12.5,
+                                                  color: Color(0xFF334155),
+                                                ),
+                                                decoration: const InputDecoration(
+                                                  hintText: 'Dimensions (e.g. 150 x 100 cm)',
+                                                  hintStyle: TextStyle(
+                                                    fontSize: 11.5,
+                                                    color: Color(0xFF94A3B8),
+                                                  ),
+                                                  isDense: true,
+                                                  filled: true,
+                                                  fillColor: Colors.white,
+                                                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                  border: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                    borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+                                                  ),
+                                                  enabledBorder: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                    borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+                                                  ),
+                                                  focusedBorder: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                    borderSide: BorderSide(color: Color(0xFF6A2777), width: 1.5),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: TextField(
+                                                controller: artItem.priceController,
+                                                style: const TextStyle(
+                                                  fontSize: 12.5,
+                                                  color: Color(0xFF334155),
+                                                ),
+                                                decoration: const InputDecoration(
+                                                  hintText: 'Price (e.g. \$3,200)',
+                                                  hintStyle: TextStyle(
+                                                    fontSize: 11.5,
+                                                    color: Color(0xFF94A3B8),
+                                                  ),
+                                                  isDense: true,
+                                                  filled: true,
+                                                  fillColor: Colors.white,
+                                                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                  border: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                    borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+                                                  ),
+                                                  enabledBorder: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                    borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+                                                  ),
+                                                  focusedBorder: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                    borderSide: BorderSide(color: Color(0xFF6A2777), width: 1.5),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        InkWell(
+                                          onTap: () {
+                                            setState(() {
+                                              artItem.isFeatured = !artItem.isFeatured;
+                                            });
+                                          },
+                                          borderRadius: BorderRadius.circular(6),
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(vertical: 2.0),
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  artItem.isFeatured ? Icons.check_box : Icons.check_box_outline_blank,
+                                                  size: 18,
+                                                  color: artItem.isFeatured ? const Color(0xFF6A2777) : const Color(0xFF94A3B8),
+                                                ),
+                                                const SizedBox(width: 6),
+                                                const Text(
+                                                  'Mark as Featured Artwork (show "Featured" badge)',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Color(0xFF334155),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
                         ),
                       ],
                       const SizedBox(height: 24),

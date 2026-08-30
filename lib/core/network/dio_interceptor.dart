@@ -25,14 +25,14 @@ class DioInterceptor extends Interceptor {
       options.headers['Content-Type'] = 'application/json';
     }
 
-    loggerService.debug('🌐 [HTTP REQUEST] [${options.method}] ${options.path} --> \nHeaders: ${options.headers}\nData: ${options.data}');
+    loggerService.debug('🌐 [HTTP] ${options.method} ${options.path}');
 
     return handler.next(options);
   }
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    loggerService.debug('✅ [HTTP RESPONSE] [${response.statusCode}] [${response.requestOptions.path}] <-- \nData: ${response.data}');
+    loggerService.debug('✅ [HTTP ${response.statusCode}] ${response.requestOptions.path}');
     return handler.next(response);
   }
 

@@ -174,38 +174,45 @@ class _AppTopBarState extends State<AppTopBar> {
 
               return Stack(
                 alignment: Alignment.center,
+                clipBehavior: Clip.none,
                 children: [
                   IconButton(
                     key: _bellKey,
                     icon: const Icon(
-                      Icons.notifications_none,
+                      Icons.notifications_none_rounded,
                       color: Color(0xFF1E1E1E),
-                      size: 24,
+                      size: 28,
                     ),
+                    padding: const EdgeInsets.all(8),
+                    constraints: const BoxConstraints(minWidth: 42, minHeight: 42),
                     onPressed: () => showNotificationsPanel(context, _bellKey),
                   ),
                   if (unreadCount > 0)
                     Positioned(
-                      top: 8,
-                      right: 8,
+                      top: 4,
+                      right: 4,
                       child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFE53935),
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE53935),
                           shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.5),
                         ),
                         constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
+                          minWidth: 20,
+                          minHeight: 20,
                         ),
-                        child: Text(
-                          unreadCount > 9 ? '9+' : '$unreadCount',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                        child: Center(
+                          child: Text(
+                            unreadCount > 9 ? '9+' : '$unreadCount',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              height: 1.0,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          textAlign: TextAlign.center,
                         ),
                       ),
                     ),
@@ -371,27 +378,6 @@ class _AppTopBarState extends State<AppTopBar> {
                           style: TextStyle(
                             fontSize: 14.5,
                             color: Color(0xFF1E1E1E),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem<TopBarMenuItem>(
-                    value: TopBarMenuItem.myFavorites,
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.favorite,
-                          size: 18,
-                          color: Color(0xFFEF4444),
-                        ),
-                        SizedBox(width: 10),
-                        Text(
-                          'My Favorites & Liked',
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            color: Color(0xFF1E1E1E),
-                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],

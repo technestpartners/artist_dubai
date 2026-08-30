@@ -136,8 +136,8 @@ class _RegisterViewState extends State<RegisterView> {
         }
 
         if (mounted) {
-          _showSnackBar('Account created successfully!');
-          context.go(RouteNames.home);
+          _showSnackBar('Account created successfully! Welcome to Artist Dubai.');
+          context.go(RouteNames.artists);
         }
       } else {
         if (mounted) {

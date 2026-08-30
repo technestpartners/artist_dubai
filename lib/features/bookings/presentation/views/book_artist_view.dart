@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
-import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/di/injection_container.dart';
-import '../../../../core/network/api_client.dart';
+import '../../../../core/services/api_service.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
@@ -87,47 +86,62 @@ class _BookArtistViewState extends State<BookArtistView> {
     });
 
     try {
-      final apiClient = sl<ApiClient>();
-      await apiClient.post(
-        ApiEndpoints.bookings,
-        data: {
-          'full_name':
-              _fullNameController.text.trim().isEmpty
-                  ? 'Guest User'
-                  : _fullNameController.text.trim(),
-          'email': _emailController.text.trim(),
-          'phone': _phoneController.text.trim(),
-          'artist_name': _artistNameController.text.trim(),
-          'booking_type': _selectedBookingType ?? 'Commission Artwork',
-          'budget_range': _selectedBudgetRange ?? '',
-          'event_date': _eventDateController.text.trim(),
-          'end_date': _endDateController.text.trim(),
-          'location': _locationController.text.trim(),
-          'description': _descriptionController.text.trim(),
-          'requirements': _requirementsController.text.trim(),
-        },
-      );
+      final success = await sl<ApiService>().createBooking({
+        'full_name': _fullNameController.text.trim().isEmpty
+            ? 'Valued Art Collector'
+            : _fullNameController.text.trim(),
+        'name': _fullNameController.text.trim(),
+        'email': _emailController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'artist_name': _artistNameController.text.trim(),
+        'booking_type': _selectedBookingType ?? 'Commission Artwork',
+        'budget_range': _selectedBudgetRange ?? 'AED 5,000 - 15,000',
+        'event_date': _eventDateController.text.trim().isNotEmpty
+            ? _eventDateController.text.trim()
+            : 'Flexible Date',
+        'end_date': _endDateController.text.trim(),
+        'location': _locationController.text.trim().isNotEmpty
+            ? _locationController.text.trim()
+            : 'Dubai, UAE',
+        'description': _descriptionController.text.trim(),
+        'requirements': _requirementsController.text.trim(),
+        'total_price': _selectedBudgetRange ?? 'AED 1500+',
+        'status': 'Confirmed',
+      });
+
       if (mounted) {
         setState(() {
           _isSubmitting = false;
         });
-        try {
-          sl<NotificationService>().addNotification(
-            title: 'Booking Request Sent!',
-            body: 'Your booking request for ${_artistNameController.text.trim()} was sent.',
-            icon: Icons.calendar_month_outlined,
-            route: RouteNames.bookings,
-          );
-        } catch (_) {}
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Booking request submitted and saved to database!'),
-            backgroundColor: Color(0xFF5E227A),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        context.go(RouteNames.bookings);
+        if (success) {
+          try {
+            sl<NotificationService>().addNotification(
+              title: 'Booking Request Sent!',
+              body:
+                  'Your booking request for ${_artistNameController.text.trim()} was successfully submitted.',
+              icon: Icons.calendar_month_outlined,
+              route: RouteNames.bookings,
+            );
+          } catch (_) {}
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Booking request submitted and saved to database!'),
+              backgroundColor: Color(0xFF5E227A),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          context.go(RouteNames.bookings);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please check your inputs and try again.'),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import '../../../../core/widgets/app_cached_image.dart';
 
 class GalleriesView extends StatefulWidget {
   const GalleriesView({super.key});
@@ -10,7 +13,28 @@ class GalleriesView extends StatefulWidget {
 }
 
 class _GalleriesViewState extends State<GalleriesView> {
-  final List<Map<String, dynamic>> _registeredGalleries = [];
+  List<Map<String, dynamic>> _registeredGalleries = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchGalleries();
+  }
+
+  Future<void> _fetchGalleries() async {
+    try {
+      final galleries = await sl<ApiService>().getGalleries(forceRefresh: true);
+      if (mounted) {
+        setState(() {
+          _registeredGalleries = galleries;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,8 +70,15 @@ class _GalleriesViewState extends State<GalleriesView> {
               ),
               const SizedBox(height: 24),
 
-              // 2. Empty State Container Card (Exact match to screenshot media_1787985962273.png)
-              if (_registeredGalleries.isEmpty) ...[
+              if (_isLoading) ...[
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: CircularProgressIndicator(color: Colors.white),
+                  ),
+                ),
+              ] else if (_registeredGalleries.isEmpty) ...[
+                // 2. Empty State Container Card (Exact match to screenshot media_1787985962273.png)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
@@ -65,7 +96,6 @@ class _GalleriesViewState extends State<GalleriesView> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Building / Art Center Icon
                       Container(
                         width: 56,
                         height: 56,
@@ -81,8 +111,6 @@ class _GalleriesViewState extends State<GalleriesView> {
                         ),
                       ),
                       const SizedBox(height: 16),
-
-                      // Title: No art centers listed yet
                       const Text(
                         'No art centers listed yet',
                         textAlign: TextAlign.center,
@@ -94,8 +122,6 @@ class _GalleriesViewState extends State<GalleriesView> {
                         ),
                       ),
                       const SizedBox(height: 8),
-
-                      // Subtitle: Registered galleries and art centers will be shown here.
                       const Text(
                         'Registered galleries and art centers will be shown here.',
                         textAlign: TextAlign.center,
@@ -108,20 +134,6 @@ class _GalleriesViewState extends State<GalleriesView> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 48),
-
-                // 3. Hosted by Nizar Fahem Footer (Exact match to screenshot)
-                const Center(
-                  child: Text(
-                    'Hosted by Nizar Fahem',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0.1,
-                    ),
-                  ),
-                ),
               ] else ...[
                 // Registered Galleries List View
                 ListView.separated(
@@ -131,20 +143,120 @@ class _GalleriesViewState extends State<GalleriesView> {
                   separatorBuilder: (context, index) => const SizedBox(height: 16),
                   itemBuilder: (context, index) {
                     final gallery = _registeredGalleries[index];
+                    final name = gallery['name'] as String? ?? 'Dubai Art Gallery';
+                    final category = gallery['category'] as String? ?? 'Art Gallery';
+                    final location = gallery['location'] as String? ?? 'Dubai, UAE';
+                    final timing = gallery['timing'] as String? ?? 'Open · Closes at 19:00';
+                    final imageUrl = gallery['image_url'] as String? ??
+                        'https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=800&q=80';
+
                     return Container(
-                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(16),
+                        color: const Color(0xFF5A1684).withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      child: Text(
-                        gallery['title'] ?? '',
-                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ClipRRect(
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                            child: AppCachedImage(
+                              imageUrl: imageUrl,
+                              height: 140,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        category,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      timing,
+                                      style: const TextStyle(
+                                        color: Color(0xFF4ADE80),
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  name,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.location_on_outlined, size: 15, color: Colors.white70),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        location,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.white70,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   },
                 ),
               ],
+              const SizedBox(height: 32),
+
+              // 3. Hosted by Nizar Fahem Footer (Exact match to screenshot)
+              const Center(
+                child: Text(
+                  'Hosted by Nizar Fahem',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.1,
+                  ),
+                ),
+              ),
             ],
           ),
         ),

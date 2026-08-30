@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
@@ -6,6 +7,7 @@ import '../../../../core/services/api_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import '../../../../core/widgets/app_cached_image.dart';
 import '../../domain/models/artist_model.dart';
 import 'artist_detail_view.dart';
 
@@ -23,6 +25,93 @@ class _ArtistsViewState extends State<ArtistsView> {
   final GlobalKey _selectorKey = GlobalKey();
   List<ArtistModel> _allArtists = [];
   List<CategoryInfo> _categories = ArtistModel.categoryList;
+  final Set<String> _favoritedArtistIds = {};
+
+  void _shareArtist(ArtistModel artist) {
+    Clipboard.setData(
+      ClipboardData(
+        text:
+            'Discover ${artist.name} (${artist.category}) on Artist Dubai!\nExplore their portfolio: https://artistdubai.com/artists/${artist.id}',
+      ),
+    );
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Profile link for ${artist.name} copied to clipboard!',
+                style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13.5),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF6A2777),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _toggleFavorite(ArtistModel artist) async {
+    final userEmail = sl<StorageService>().getString('user_email') ?? '';
+    final wasFav = _favoritedArtistIds.contains(artist.id);
+
+    setState(() {
+      if (wasFav) {
+        _favoritedArtistIds.remove(artist.id);
+      } else {
+        _favoritedArtistIds.add(artist.id);
+      }
+
+      final updatedIndex = _allArtists.indexWhere((a) => a.id == artist.id);
+      if (updatedIndex != -1) {
+        final old = _allArtists[updatedIndex];
+        final newLikes = wasFav
+            ? (old.followersCount - 1).clamp(0, 999999)
+            : (old.followersCount + 1);
+        _allArtists[updatedIndex] = ArtistModel(
+          id: old.id,
+          name: old.name,
+          category: old.category,
+          bio: old.bio,
+          location: old.location,
+          bannerUrl: old.bannerUrl,
+          avatarUrl: old.avatarUrl,
+          isFeatured: old.isFeatured,
+          tags: old.tags,
+          worksCount: old.worksCount,
+          followersCount: newLikes,
+        );
+      }
+    });
+
+    if (userEmail.isNotEmpty) {
+      await sl<ApiService>().likeArtist(
+        artistId: artist.id,
+        userEmail: userEmail,
+      );
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            wasFav
+                ? 'Unliked ${artist.name}'
+                : 'Liked ${artist.name}\'s profile! ❤️',
+          ),
+          backgroundColor: wasFav ? null : const Color(0xFF6A2777),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
 
   @override
   void initState() {
@@ -38,12 +127,28 @@ class _ArtistsViewState extends State<ArtistsView> {
 
   Future<void> _fetchData() async {
     try {
-      final categories = await sl<ApiService>().getCategories();
-      final artists = await sl<ApiService>().getArtists();
+      final userEmail = sl<StorageService>().getString('user_email');
+      final results = await Future.wait([
+        sl<ApiService>().getCategories(),
+        sl<ApiService>().getArtists(),
+        if (userEmail != null && userEmail.isNotEmpty)
+          sl<ApiService>().getFavorites(email: userEmail)
+        else
+          Future.value(<String, dynamic>{'artists': <ArtistModel>[]}),
+      ]);
+
+      final categories = results[0] as List<CategoryInfo>;
+      final artists = results[1] as List<ArtistModel>;
+      final favData = results[2] as Map<String, dynamic>;
+      final favArtists = (favData['artists'] as List<ArtistModel>?) ?? [];
+      final favIds = favArtists.map((a) => a.id).toSet();
+
       if (mounted) {
         setState(() {
           _categories = categories;
           _allArtists = artists;
+          _favoritedArtistIds.clear();
+          _favoritedArtistIds.addAll(favIds);
         });
       }
     } catch (_) {}
@@ -59,10 +164,11 @@ class _ArtistsViewState extends State<ArtistsView> {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveArtists = _isLoggedIn ? _allArtists : <ArtistModel>[];
     final filteredArtists =
         _selectedCategory == null
-            ? _allArtists
-            : _allArtists
+            ? effectiveArtists
+            : effectiveArtists
                 .where((a) =>
                     a.category.toLowerCase().contains(_selectedCategory!.toLowerCase()) ||
                     _selectedCategory!.toLowerCase().contains(a.category.toLowerCase()))
@@ -96,7 +202,7 @@ class _ArtistsViewState extends State<ArtistsView> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _allArtists.isEmpty
+                        filteredArtists.isEmpty
                             ? 'No artist profiles available yet'
                             : 'Discover ${filteredArtists.length} talented artists in Dubai',
                         style: const TextStyle(
@@ -415,23 +521,11 @@ class _ArtistsViewState extends State<ArtistsView> {
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(15),
                 ),
-                child: Image.network(
-                  artist.bannerUrl,
+                child: AppCachedImage(
+                  imageUrl: artist.bannerUrl,
                   height: 165,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  errorBuilder:
-                      (context, error, stackTrace) => Container(
-                        height: 165,
-                        color: const Color(0xFF5E227A).withValues(alpha: 0.15),
-                        child: const Center(
-                          child: Icon(
-                            Icons.image_outlined,
-                            size: 44,
-                            color: Color(0xFF5E227A),
-                          ),
-                        ),
-                      ),
                 ),
               ),
               Positioned(
@@ -439,32 +533,56 @@ class _ArtistsViewState extends State<ArtistsView> {
                 right: 10,
                 child: Row(
                   children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.35),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.share_outlined,
-                        color: Colors.white,
-                        size: 20,
+                    // Interactive Share Button
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => _shareArtist(artist),
+                        borderRadius: BorderRadius.circular(18),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.35),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.share_outlined,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.35),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.favorite_border,
-                        color: Colors.white,
-                        size: 20,
-                      ),
+
+                    // Interactive Favorite Heart Button
+                    Builder(
+                      builder: (context) {
+                        final isFav = _favoritedArtistIds.contains(artist.id);
+                        return Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => _toggleFavorite(artist),
+                            borderRadius: BorderRadius.circular(18),
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: isFav
+                                    ? const Color(0xFFE11D48).withValues(alpha: 0.9)
+                                    : Colors.black.withValues(alpha: 0.35),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                isFav ? Icons.favorite : Icons.favorite_border,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -546,9 +664,11 @@ class _ArtistsViewState extends State<ArtistsView> {
                       width: 1.0,
                     ),
                   ),
-                  child: const Text(
-                    'Professional (10+ years)',
-                    style: TextStyle(
+                  child: Text(
+                    artist.experienceLevel.isNotEmpty
+                        ? artist.experienceLevel
+                        : 'Professional (5+ years)',
+                    style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF1E1E1E),

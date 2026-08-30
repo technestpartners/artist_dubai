@@ -7,8 +7,12 @@ import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 
+import '../../domain/models/art_event_model.dart';
+
 class CreateArtEventView extends StatefulWidget {
-  const CreateArtEventView({super.key});
+  final ArtEventModel? event;
+
+  const CreateArtEventView({super.key, this.event});
 
   @override
   State<CreateArtEventView> createState() => _CreateArtEventViewState();
@@ -28,6 +32,8 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
   late final TextEditingController _contactPhoneController;
   late final TextEditingController _notesController;
   late final TextEditingController _tagsController;
+  late final TextEditingController _maxTicketsController;
+  late final TextEditingController _ticketPriceController;
 
   String? _selectedCategory;
   bool _isFreeEvent = true;
@@ -59,17 +65,51 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       if (uEmail != null && uEmail.isNotEmpty) prefilledEmail = uEmail;
     } catch (_) {}
 
-    _eventTitleController = TextEditingController();
-    _descriptionController = TextEditingController();
-    _eventDateController = TextEditingController();
-    _endDateController = TextEditingController();
-    _locationController = TextEditingController(text: 'Dubai, UAE');
-    _venueController = TextEditingController();
-    _organizerNameController = TextEditingController(text: prefilledOrganizer);
-    _contactEmailController = TextEditingController(text: prefilledEmail);
-    _contactPhoneController = TextEditingController();
-    _notesController = TextEditingController();
-    _tagsController = TextEditingController();
+    final ev = widget.event;
+    if (ev != null) {
+      _eventTitleController = TextEditingController(text: ev.title);
+      _descriptionController = TextEditingController(text: ev.description);
+      _eventDateController = TextEditingController(
+        text: ev.dateTime.isNotEmpty ? ev.dateTime : ev.formattedDate,
+      );
+      _endDateController = TextEditingController();
+      _locationController = TextEditingController(text: ev.location);
+      _venueController = TextEditingController(text: ev.locationCity ?? '');
+      _organizerNameController = TextEditingController(
+        text: ev.organizer.isNotEmpty ? ev.organizer : prefilledOrganizer,
+      );
+      _contactEmailController = TextEditingController(
+        text: ev.organizerEmail != null && ev.organizerEmail!.isNotEmpty
+            ? ev.organizerEmail!
+            : prefilledEmail,
+      );
+      _contactPhoneController = TextEditingController();
+      _notesController = TextEditingController(text: ev.requirements);
+      _tagsController = TextEditingController(text: ev.tags.join(', '));
+      _maxTicketsController = TextEditingController(
+        text: ev.maxAttendees.toString(),
+      );
+      final rawPrice = ev.price.replaceAll(RegExp(r'[^0-9.]'), '');
+      _ticketPriceController = TextEditingController(
+        text: rawPrice.isNotEmpty ? rawPrice : '50',
+      );
+      _selectedCategory = ev.category;
+      _isFreeEvent = ev.price.toLowerCase().contains('free');
+    } else {
+      _eventTitleController = TextEditingController();
+      _descriptionController = TextEditingController();
+      _eventDateController = TextEditingController();
+      _endDateController = TextEditingController();
+      _locationController = TextEditingController(text: 'Dubai, UAE');
+      _venueController = TextEditingController();
+      _organizerNameController = TextEditingController(text: prefilledOrganizer);
+      _contactEmailController = TextEditingController(text: prefilledEmail);
+      _contactPhoneController = TextEditingController();
+      _notesController = TextEditingController();
+      _tagsController = TextEditingController();
+      _maxTicketsController = TextEditingController(text: '100');
+      _ticketPriceController = TextEditingController(text: '50');
+    }
     _loadDynamicCategories();
   }
 
@@ -150,6 +190,8 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     _contactPhoneController.dispose();
     _notesController.dispose();
     _tagsController.dispose();
+    _maxTicketsController.dispose();
+    _ticketPriceController.dispose();
     super.dispose();
   }
 
@@ -171,21 +213,44 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     });
 
     try {
-      final success = await sl<ApiService>().createEvent(
-        title: title,
-        description: _descriptionController.text.trim(),
-        category: _selectedCategory ?? (_categories.isNotEmpty ? _categories.first : 'Art Exhibition'),
-        eventDate: _eventDateController.text.trim().isEmpty ? '15 Oct 2026' : _eventDateController.text.trim(),
-        endDate: _endDateController.text.trim(),
-        location: _locationController.text.trim().isEmpty ? 'Dubai, UAE' : _locationController.text.trim(),
-        venue: _venueController.text.trim(),
-        isFree: _isFreeEvent,
-        price: _isFreeEvent ? 'Free' : 'AED 50',
-        organizerName: _organizerNameController.text.trim(),
-        contactEmail: _contactEmailController.text.trim(),
-        contactPhone: _contactPhoneController.text.trim(),
-        tags: _tagsController.text.trim(),
-      );
+      final isEdit = widget.event != null;
+      final enteredPrice = _ticketPriceController.text.trim();
+      final formattedPrice = _isFreeEvent ? 'Free' : 'AED ${enteredPrice.isNotEmpty ? enteredPrice : '50'}';
+      final parsedCapacity = int.tryParse(_maxTicketsController.text.trim()) ?? 100;
+      bool success = false;
+
+      if (isEdit) {
+        success = await sl<ApiService>().updateEvent({
+          'id': widget.event!.id,
+          'title': title,
+          'description': _descriptionController.text.trim(),
+          'category': _selectedCategory ?? (_categories.isNotEmpty ? _categories.first : 'Art Exhibition'),
+          'event_date': _eventDateController.text.trim().isEmpty ? '15 Oct 2026' : _eventDateController.text.trim(),
+          'end_date': _endDateController.text.trim(),
+          'location': _locationController.text.trim().isEmpty ? 'Dubai, UAE' : _locationController.text.trim(),
+          'venue': _venueController.text.trim(),
+          'price': formattedPrice,
+          'max_attendees': parsedCapacity,
+          'tags': _tagsController.text.trim(),
+        });
+      } else {
+        success = await sl<ApiService>().createEvent(
+          title: title,
+          description: _descriptionController.text.trim(),
+          category: _selectedCategory ?? (_categories.isNotEmpty ? _categories.first : 'Art Exhibition'),
+          eventDate: _eventDateController.text.trim().isEmpty ? '15 Oct 2026' : _eventDateController.text.trim(),
+          endDate: _endDateController.text.trim(),
+          location: _locationController.text.trim().isEmpty ? 'Dubai, UAE' : _locationController.text.trim(),
+          venue: _venueController.text.trim(),
+          isFree: _isFreeEvent,
+          price: formattedPrice,
+          maxAttendees: parsedCapacity,
+          organizerName: _organizerNameController.text.trim(),
+          contactEmail: _contactEmailController.text.trim(),
+          contactPhone: _contactPhoneController.text.trim(),
+          tags: _tagsController.text.trim(),
+        );
+      }
 
       if (mounted) {
         setState(() {
@@ -194,13 +259,21 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Art Event saved dynamically to database!'),
-              backgroundColor: Color(0xFF6A2777),
+            SnackBar(
+              content: Text(
+                isEdit
+                    ? 'Art Event updated successfully in database!'
+                    : 'Art Event saved dynamically to database!',
+              ),
+              backgroundColor: const Color(0xFF6A2777),
               behavior: SnackBarBehavior.floating,
             ),
           );
-          context.go(RouteNames.events);
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go(RouteNames.myEvents);
+          }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -229,6 +302,8 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
   @override
   Widget build(BuildContext context) {
+    final isEdit = widget.event != null;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9FB),
       appBar: const AppTopBar(backgroundColor: Colors.white),
@@ -282,20 +357,22 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                       // Title & Subtitle
                       Center(
                         child: Column(
-                          children: const [
+                          children: [
                             Text(
-                              'Create Art Event',
-                              style: TextStyle(
+                              isEdit ? 'Edit Art Event' : 'Create Art Event',
+                              style: const TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF5E227A),
                               ),
                             ),
-                            SizedBox(height: 6),
+                            const SizedBox(height: 6),
                             Text(
-                              'Organize and promote your art event in Dubai',
+                              isEdit
+                                  ? 'Update and manage your art event in Dubai'
+                                  : 'Organize and promote your art event in Dubai',
                               textAlign: TextAlign.center,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 13.5,
                                 color: Color(0xFF64748B),
                               ),
@@ -374,8 +451,8 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
                       // SECTION 3: Ticketing
                       _buildSectionTitle(
-                        icon: Icons.attach_money,
-                        title: 'Ticketing',
+                        icon: Icons.confirmation_number_outlined,
+                        title: 'Ticketing & Capacity',
                       ),
                       const SizedBox(height: 14),
                       Container(
@@ -414,6 +491,24 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                             },
                           ),
                         ),
+                      ),
+                      if (!_isFreeEvent) ...[
+                        const SizedBox(height: 14),
+                        _buildLabel('Ticket Price (AED)'),
+                        _buildTextField(
+                          controller: _ticketPriceController,
+                          hintText: 'e.g. 50',
+                          prefixIcon: Icons.attach_money,
+                          keyboardType: TextInputType.number,
+                        ),
+                      ],
+                      const SizedBox(height: 14),
+                      _buildLabel('Number of Tickets (Total Capacity)'),
+                      _buildTextField(
+                        controller: _maxTicketsController,
+                        hintText: 'e.g. 100',
+                        prefixIcon: Icons.people_outline,
+                        keyboardType: TextInputType.number,
                       ),
                       const SizedBox(height: 28),
 
@@ -512,13 +607,13 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                             strokeWidth: 2,
                                           ),
                                         )
-                                        : const Text(
-                                          'Create Event',
-                                          style: TextStyle(
-                                            fontSize: 14.5,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
+                                        : Text(
+                                           isEdit ? 'Update Event' : 'Create Event',
+                                           style: const TextStyle(
+                                             fontSize: 14.5,
+                                             fontWeight: FontWeight.bold,
+                                           ),
+                                         ),
                               ),
                             ),
                           ),

@@ -69,6 +69,40 @@ class ArtEventModel {
     this.galleries = const [],
   });
 
+  factory ArtEventModel.fromJson(Map<String, dynamic> json) {
+    List<String> parsedTags = [];
+    if (json['tags'] is List) {
+      parsedTags = (json['tags'] as List).map((e) => e.toString()).toList();
+    } else if (json['tags'] is String && (json['tags'] as String).isNotEmpty) {
+      parsedTags = (json['tags'] as String)
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
+
+    final dateStr = (json['event_date'] ?? json['date_time'] ?? json['dateTime'] ?? '') as String;
+    return ArtEventModel(
+      id: json['id']?.toString() ?? '',
+      title: json['title'] as String? ?? 'Art Event',
+      category: json['category'] as String? ?? 'Art Exhibition',
+      price: json['price'] as String? ?? 'Free Entry',
+      description: json['description'] as String? ?? '',
+      requirements: json['requirements'] as String? ?? 'Open to all creators.',
+      dateTime: dateStr,
+      formattedDate: json['formatted_date'] as String? ?? dateStr,
+      timeRange: json['time_range'] as String? ?? '10:00 AM - 10:00 PM',
+      location: json['location'] as String? ?? json['venue'] as String? ?? 'Dubai, UAE',
+      locationCity: json['location_city'] as String? ?? 'Dubai',
+      attendeesCount: (json['attendees_count'] as num?)?.toInt() ?? 0,
+      maxAttendees: (json['max_attendees'] as num?)?.toInt() ?? 100,
+      organizer: json['organizer_name'] as String? ?? json['organizer'] as String? ?? 'Artist Dubai',
+      organizerEmail: json['contact_email'] as String? ?? json['organizerEmail'] as String?,
+      tags: parsedTags,
+      imageUrl: json['image_url'] as String? ?? json['imageUrl'] as String?,
+    );
+  }
+
   int get spotsRemaining =>
       (maxAttendees - attendeesCount).clamp(0, maxAttendees);
 

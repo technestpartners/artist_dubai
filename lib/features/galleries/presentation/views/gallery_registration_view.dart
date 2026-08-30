@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../home/presentation/widgets/home_footer_widget.dart';
@@ -38,24 +40,49 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
     super.dispose();
   }
 
-  void _submitForm() {
+  void _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSubmitting = true);
 
-    Future.delayed(const Duration(milliseconds: 600), () {
+    try {
+      final success = await sl<ApiService>().registerGallery({
+        'name': _nameController.text.trim(),
+        'category': _typeController.text.trim().isNotEmpty ? _typeController.text.trim() : 'Art Gallery',
+        'type': _typeController.text.trim(),
+        'address': _addressController.text.trim(),
+        'location': _addressController.text.trim().isNotEmpty ? _addressController.text.trim() : 'Dubai, UAE',
+        'website': _websiteController.text.trim(),
+        'contact_person': _contactPersonController.text.trim(),
+        'email': _emailController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'about': _aboutController.text.trim(),
+      });
+
       if (mounted) {
         setState(() => _isSubmitting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Gallery registration submitted successfully!'),
-            backgroundColor: Color(0xFF6B1C9B),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        context.go(RouteNames.galleries);
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Gallery registered successfully in MySQL database!'),
+              backgroundColor: Color(0xFF6B1C9B),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          context.go(RouteNames.galleries);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to register gallery. Please check inputs.'),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
-    });
+    } catch (_) {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   InputDecoration _whiteInputDecoration({String? hintText}) {

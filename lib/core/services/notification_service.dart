@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../di/injection_container.dart';
 import 'api_service.dart';
+import 'storage_service.dart';
 
 class AppNotificationItem {
   final String id;
@@ -27,126 +28,140 @@ class AppNotificationItem {
 }
 
 class NotificationService extends ChangeNotifier {
-  final List<AppNotificationItem> _notifications = [
-    AppNotificationItem(
-      id: 'welcome_1',
-      title: 'Welcome to Artist Dubai',
-      body: 'Explore top UAE talent, artworks, and register your artist profile.',
-      timeAgo: '1d ago',
-      icon: Icons.palette_outlined,
-      iconColor: const Color(0xFF2563EB),
-      iconBg: const Color(0xFFDBEAFE),
-      route: '/artists',
-      isRead: false,
-    ),
-  ];
-
-  final Set<String> _readIds = {};
-  final Set<String> _dismissedIds = {};
+  final List<AppNotificationItem> _notifications = [];
+  bool _isLoading = false;
 
   NotificationService() {
     syncWithBackend();
   }
 
-  List<AppNotificationItem> get notifications =>
-      List.unmodifiable(_notifications.where((n) => !_dismissedIds.contains(n.id)));
+  bool get isLoading => _isLoading;
 
-  int get unreadCount =>
-      _notifications.where((n) => !n.isRead && !_dismissedIds.contains(n.id)).length;
+  List<AppNotificationItem> get notifications => List.unmodifiable(_notifications);
+
+  int get unreadCount => _notifications.where((n) => !n.isRead).length;
+
+  String? get _userEmail {
+    try {
+      final email = sl<StorageService>().getString('user_email');
+      return (email != null && email.isNotEmpty) ? email : null;
+    } catch (_) {
+      return null;
+    }
+  }
 
   Future<void> syncWithBackend() async {
+    _isLoading = true;
     try {
       final api = sl<ApiService>();
-      final bookings = await api.getBookings();
-      final events = await api.getEvents();
+      final res = await api.getNotifications(email: _userEmail, forceRefresh: true);
+      final rawList = (res['notifications'] as List<dynamic>?) ?? [];
 
-      // 1. Convert recent bookings from MySQL into live notifications
-      for (final b in bookings.take(5)) {
-        final id = 'booking_${b['id']}';
-        if (_dismissedIds.contains(id)) continue;
+      if (rawList.isNotEmpty) {
+        _notifications.clear();
+        for (final item in rawList) {
+          final m = item as Map<String, dynamic>;
+          final id = m['id']?.toString() ?? '0';
+          final title = m['title'] as String? ?? 'Notification';
+          final body = m['body'] as String? ?? '';
+          final type = (m['type'] as String? ?? 'general').toLowerCase();
+          final route = m['route'] as String?;
+          final isRead = m['is_read'] == true || m['is_read'] == 1 || m['is_read'] == '1';
+          final timeAgo = m['time_ago'] as String? ?? 'Recent';
 
-        final isArtist = (b['booking_type'] as String? ?? '').toLowerCase().contains('artist');
-        final eventTitle = b['event_title'] as String? ?? 'Art Event';
-        final name = b['full_name'] as String? ?? 'A client';
-        final tickets = b['tickets_count'] ?? 1;
+          IconData icon;
+          Color iconColor;
+          Color iconBg;
 
-        final existingIdx = _notifications.indexWhere((n) => n.id == id);
-        if (existingIdx == -1) {
-          _notifications.insert(
-            0,
-            AppNotificationItem(
-              id: id,
-              title: isArtist ? 'New Booking Request' : 'Ticket Booking Confirmed',
-              body: isArtist
-                  ? '$name sent a booking request.'
-                  : 'Booking for $eventTitle ($tickets ticket${tickets == 1 ? '' : 's'}) is confirmed.',
-              timeAgo: 'Recent',
-              icon: isArtist ? Icons.calendar_month_outlined : Icons.confirmation_number_outlined,
-              iconColor: const Color(0xFF6A2777),
-              iconBg: const Color(0xFFEDE9FE),
-              route: isArtist ? '/booking-requests' : '/bookings',
-              isRead: _readIds.contains(id),
-            ),
-          );
-        }
-      }
+          if (type.contains('booking') || type.contains('request')) {
+            icon = Icons.calendar_month_outlined;
+            iconColor = const Color(0xFF6A2777);
+            iconBg = const Color(0xFFEDE9FE);
+          } else if (type.contains('event') || type.contains('exhibition')) {
+            icon = Icons.celebration_outlined;
+            iconColor = const Color(0xFFD97706);
+            iconBg = const Color(0xFFFEF3C7);
+          } else if (type.contains('artist') || type.contains('welcome')) {
+            icon = Icons.palette_outlined;
+            iconColor = const Color(0xFF2563EB);
+            iconBg = const Color(0xFFDBEAFE);
+          } else if (type.contains('review')) {
+            icon = Icons.star_outline_rounded;
+            iconColor = const Color(0xFFEAB308);
+            iconBg = const Color(0xFFFEF9C3);
+          } else {
+            icon = Icons.notifications_none_rounded;
+            iconColor = const Color(0xFF6A2777);
+            iconBg = const Color(0xFFEDE9FE);
+          }
 
-      // 2. Convert recent events from MySQL into live notifications
-      for (final ev in events.take(3)) {
-        final id = 'event_${ev.id}';
-        if (_dismissedIds.contains(id)) continue;
-
-        final existingIdx = _notifications.indexWhere((n) => n.id == id);
-        if (existingIdx == -1) {
           _notifications.add(
             AppNotificationItem(
               id: id,
-              title: 'Upcoming: ${ev.title}',
-              body: '${ev.title} at ${ev.location}.',
-              timeAgo: 'Upcoming',
-              icon: Icons.celebration_outlined,
-              iconColor: const Color(0xFFD97706),
-              iconBg: const Color(0xFFFEF3C7),
-              route: '/events',
-              isRead: _readIds.contains(id),
+              title: title,
+              body: body,
+              timeAgo: timeAgo,
+              icon: icon,
+              iconColor: iconColor,
+              iconBg: iconBg,
+              route: route,
+              isRead: isRead,
             ),
           );
         }
       }
-
+    } catch (_) {
+    } finally {
+      _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> markAllAsRead() async {
+    for (final n in _notifications) {
+      n.isRead = true;
+    }
+    notifyListeners();
+
+    try {
+      await sl<ApiService>().markAllNotificationsRead(email: _userEmail);
     } catch (_) {}
   }
 
-  void markAllAsRead() {
-    for (final n in _notifications) {
-      n.isRead = true;
-      _readIds.add(n.id);
-    }
-    notifyListeners();
-  }
-
-  void markAsRead(String id) {
-    _readIds.add(id);
+  Future<void> markAsRead(String id) async {
     final idx = _notifications.indexWhere((n) => n.id == id);
     if (idx != -1 && !_notifications[idx].isRead) {
       _notifications[idx].isRead = true;
       notifyListeners();
+
+      final numericId = int.tryParse(id);
+      if (numericId != null && numericId > 0) {
+        try {
+          await sl<ApiService>().markNotificationRead(numericId);
+        } catch (_) {}
+      }
     }
   }
 
-  void dismiss(String id) {
-    _dismissedIds.add(id);
+  Future<void> dismiss(String id) async {
     _notifications.removeWhere((n) => n.id == id);
     notifyListeners();
+
+    final numericId = int.tryParse(id);
+    if (numericId != null && numericId > 0) {
+      try {
+        await sl<ApiService>().deleteNotification(numericId);
+      } catch (_) {}
+    }
   }
 
-  void clearAll() {
-    for (final n in _notifications) {
-      _dismissedIds.add(n.id);
-    }
+  Future<void> clearAll() async {
     _notifications.clear();
     notifyListeners();
+
+    try {
+      await sl<ApiService>().markAllNotificationsRead(email: _userEmail);
+    } catch (_) {}
   }
 
   void addNotification({

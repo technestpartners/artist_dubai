@@ -1,3 +1,65 @@
+class ReviewModel {
+  final int? id;
+  final String entityName;
+  final String authorName;
+  final String? authorPhoto;
+  final double rating;
+  final String text;
+  final String relativeTime;
+  final bool isLocalGuide;
+  final int likesCount;
+
+  const ReviewModel({
+    this.id,
+    required this.entityName,
+    required this.authorName,
+    this.authorPhoto,
+    required this.rating,
+    required this.text,
+    this.relativeTime = 'Recent',
+    this.isLocalGuide = true,
+    this.likesCount = 0,
+  });
+
+  static String calculateRelativeTime(dynamic createdAtRaw, String? fallback) {
+    if (createdAtRaw != null && createdAtRaw.toString().isNotEmpty) {
+      final parsed = DateTime.tryParse(createdAtRaw.toString());
+      if (parsed != null) {
+        final now = DateTime.now();
+        final diff = now.difference(parsed.toLocal());
+        if (diff.inSeconds < 60) return 'Just now';
+        if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+        if (diff.inHours < 24) return '${diff.inHours}h ago';
+        if (diff.inDays < 7) return '${diff.inDays}d ago';
+        if (diff.inDays < 30) return '${(diff.inDays / 7).floor()}w ago';
+        if (diff.inDays < 365) return '${(diff.inDays / 30).floor()}mo ago';
+        return '${(diff.inDays / 365).floor()}y ago';
+      }
+    }
+    return fallback ?? 'Recent';
+  }
+
+  factory ReviewModel.fromJson(Map<String, dynamic> json) {
+    final rawCreatedAt = json['created_at'] ?? json['timestamp'];
+    final relativeTime = calculateRelativeTime(
+      rawCreatedAt,
+      json['relative_time'] as String?,
+    );
+
+    return ReviewModel(
+      id: json['id'] != null ? int.tryParse(json['id'].toString()) : null,
+      entityName: json['entity_name'] as String? ?? '',
+      authorName: json['author_name'] as String? ?? 'Reviewer',
+      authorPhoto: json['author_photo'] as String?,
+      rating: double.tryParse(json['rating']?.toString() ?? '5.0') ?? 5.0,
+      text: json['text'] as String? ?? '',
+      relativeTime: relativeTime,
+      isLocalGuide: json['is_local_guide'] == 1 || json['is_local_guide'] == true || json['is_local_guide'] == '1',
+      likesCount: (json['likes_count'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
 class GovernmentEntity {
   final String name;
   final bool defaultIsOpen;
@@ -9,6 +71,7 @@ class GovernmentEntity {
   final String websiteUrl;
   final String directionsUrl;
   final String? googleMapsReviewsUrl;
+  final List<ReviewModel> reviews;
 
   // Operating hours in 24h format for dynamic status calculation (Dubai GST: UTC+4)
   final int? openHour;
@@ -29,6 +92,7 @@ class GovernmentEntity {
     required this.websiteUrl,
     required this.directionsUrl,
     this.googleMapsReviewsUrl,
+    this.reviews = const [],
     this.openHour,
     this.openMinute = 0,
     this.closeHour,
@@ -38,17 +102,24 @@ class GovernmentEntity {
   });
 
   factory GovernmentEntity.fromJson(Map<String, dynamic> json) {
+    final locationName = (json['name'] as String? ?? 'Dubai').replaceAll(' ', '+');
+    final defaultMapsUrl = 'https://www.google.com/maps/search/?api=1&query=$locationName+Dubai';
+
     return GovernmentEntity(
       name: json['name'] as String,
       defaultIsOpen: json['default_is_open'] as bool? ?? true,
-      rating: (json['rating'] as num?)?.toDouble() ?? 4.5,
+      rating: double.tryParse(json['rating']?.toString() ?? '4.5') ?? 4.5,
       reviewCount: (json['review_count'] as num?)?.toInt() ?? 0,
       category: json['category'] as String,
       location: json['location'] as String,
-      defaultTiming: json['default_timing'] as String,
-      websiteUrl: json['website_url'] as String,
-      directionsUrl: json['directions_url'] as String,
-      googleMapsReviewsUrl: json['google_maps_reviews_url'] as String?,
+      defaultTiming: json['default_timing'] as String? ?? 'Open · Closes at 20:00',
+      websiteUrl: json['website_url'] as String? ?? 'https://dubaiculture.gov.ae/',
+      directionsUrl: json['directions_url'] as String? ?? defaultMapsUrl,
+      googleMapsReviewsUrl: json['google_maps_reviews_url'] as String? ?? defaultMapsUrl,
+      reviews: (json['reviews'] as List?)
+              ?.map((e) => ReviewModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
       openHour: (json['open_hour'] as num?)?.toInt(),
       openMinute: (json['open_minute'] as num?)?.toInt() ?? 0,
       closeHour: (json['close_hour'] as num?)?.toInt(),

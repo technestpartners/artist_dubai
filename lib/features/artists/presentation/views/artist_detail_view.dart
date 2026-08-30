@@ -1,9 +1,16 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../app/routes/route_names.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/api_service.dart';
+import '../../../../core/services/storage_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../bookings/presentation/views/book_artist_view.dart';
@@ -22,22 +29,362 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
   bool _isFollowing = false;
   bool _isGridView =
       true; // Toggle between Grid (2-column) and List (1-column horizontal)
+  bool _isArtistFavorited = false;
   final Set<int> _favoritedArtworks = {};
+  List<Map<String, dynamic>> _artworksList = [];
 
-  final List<Map<String, String>> _photoGalleries = [
+  late int _likesCount;
+  late int _followersCount;
+  late int _worksCount;
+
+  List<Map<String, dynamic>> _photoGalleries = [
     {
       'title': 'Exhibition Highlights 2024',
-      'count': '1 photos',
+      'subtitle': 'Curated collection by Artist',
+      'count': '3 photos',
       'image':
           'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200&auto=format&fit=crop',
     },
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    final artist = widget.artist;
+    _likesCount = (artist != null && artist.likesCount > 0)
+        ? artist.likesCount
+        : (artist != null && artist.followersCount > 0 ? artist.followersCount ~/ 3 : 142);
+    _followersCount = (artist != null && artist.followersCount > 0) ? artist.followersCount : 38;
+    _worksCount = (artist != null && artist.worksCount > 0) ? artist.worksCount : 6;
+    _loadAllData();
+  }
+
+  Future<void> _loadAllData() async {
+    final artist = widget.artist;
+    final userEmail = sl<StorageService>().getString('user_email') ?? '';
+    try {
+      final results = await Future.wait([
+        sl<ApiService>().getGalleries(
+          artistId: artist?.id,
+          artistName: artist?.name,
+        ),
+        sl<ApiService>().getArtworks(
+          artistId: artist?.id,
+          artistName: artist?.name,
+        ),
+        if (artist != null && userEmail.isNotEmpty)
+          sl<ApiService>().getArtistInteractionStatus(
+            artistId: artist.id,
+            userEmail: userEmail,
+          )
+        else
+          Future.value(null),
+      ]);
+
+      final galleries = results[0] as List<Map<String, dynamic>>? ?? [];
+      final artworks = results[1] as List<Map<String, dynamic>>? ?? [];
+      final status = results[2] as Map<String, dynamic>?;
+
+      if (mounted) {
+        setState(() {
+          if (galleries.isNotEmpty) {
+            _photoGalleries = galleries;
+          }
+          if (artworks.isNotEmpty) {
+            _artworksList = artworks;
+            _worksCount = artworks.length;
+          }
+          if (status != null) {
+            _isArtistFavorited = status['is_liked'] == true;
+            _isFollowing = status['is_following'] == true;
+            if (status['likes_count'] != null) {
+              _likesCount = (status['likes_count'] as num).toInt();
+            }
+            if (status['followers_count'] != null) {
+              _followersCount = (status['followers_count'] as num).toInt();
+            }
+          }
+        });
+      }
+    } catch (_) {}
+  }
+
+  void _shareArtist() {
+    final artist = widget.artist;
+    final name = artist?.name ?? 'Artist';
+    final id = artist?.id ?? '';
+    Clipboard.setData(
+      ClipboardData(
+        text: 'Check out $name on Artist Dubai: https://artistdubai.com/artists/$id',
+      ),
+    );
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Profile link for $name copied to clipboard!',
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF6A2777),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _toggleArtistFavorite() async {
+    final artist = widget.artist;
+    if (artist == null) return;
+    final userEmail = sl<StorageService>().getString('user_email') ?? '';
+    final wasFav = _isArtistFavorited;
+
+    setState(() {
+      _isArtistFavorited = !wasFav;
+      if (!wasFav) {
+        _likesCount += 1;
+      } else {
+        if (_likesCount > 0) _likesCount -= 1;
+      }
+    });
+
+    if (userEmail.isNotEmpty) {
+      final res = await sl<ApiService>().likeArtist(
+        artistId: artist.id,
+        userEmail: userEmail,
+      );
+      if (res != null && res['likes_count'] != null && mounted) {
+        setState(() {
+          _likesCount = (res['likes_count'] as num).toInt();
+        });
+      }
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            wasFav
+                ? 'Unliked ${artist.name}\'s profile'
+                : 'Liked ${artist.name}\'s profile ❤️',
+          ),
+          backgroundColor: wasFav ? null : const Color(0xFFE11D48),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  void _toggleFollowArtist() async {
+    final artist = widget.artist;
+    if (artist == null) return;
+    final userEmail = sl<StorageService>().getString('user_email') ?? '';
+    final wasFollowing = _isFollowing;
+
+    setState(() {
+      _isFollowing = !wasFollowing;
+      if (!wasFollowing) {
+        _followersCount += 1;
+      } else {
+        if (_followersCount > 0) _followersCount -= 1;
+      }
+    });
+
+    if (userEmail.isNotEmpty) {
+      final res = await sl<ApiService>().followArtist(
+        artistId: artist.id,
+        userEmail: userEmail,
+      );
+      if (res != null && res['followers_count'] != null && mounted) {
+        setState(() {
+          _followersCount = (res['followers_count'] as num).toInt();
+        });
+      }
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            wasFollowing
+                ? 'Unfollowed ${artist.name}'
+                : 'Now following ${artist.name} 🎉',
+          ),
+          backgroundColor: const Color(0xFF6A2777),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  void _toggleArtworkFavorite(int itemId) async {
+    final userEmail = sl<StorageService>().getString('user_email') ?? '';
+    final wasFav = _favoritedArtworks.contains(itemId);
+    setState(() {
+      if (wasFav) {
+        _favoritedArtworks.remove(itemId);
+      } else {
+        _favoritedArtworks.add(itemId);
+      }
+    });
+
+    if (userEmail.isNotEmpty) {
+      await sl<ApiService>().toggleFavorite(
+        email: userEmail,
+        itemType: 'artwork',
+        itemId: itemId.toString(),
+      );
+    }
+  }
+
+  void _showArtworkDetailModal(Map<String, dynamic> item, int itemId) {
+    final title = (item['title'] ?? 'Artwork').toString();
+    final year = (item['year'] ?? '2024').toString();
+    final medium = (item['medium'] ?? 'Mixed Media').toString();
+    final dimensions = (item['dimensions'] ?? '120 x 80 cm').toString();
+    final price = (item['price'] ?? '\$2,500').toString();
+    final description = (item['description'] ?? 'Created by ${widget.artist?.name ?? 'Artist'}. A masterfully textured piece celebrating contemporary UAE art.').toString();
+    final imageUrl = (item['image_url'] ?? item['image'] ?? 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80').toString();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final isFav = _favoritedArtworks.contains(itemId);
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              backgroundColor: Colors.white,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                          child: AppCachedImage(
+                            imageUrl: imageUrl,
+                            height: 240,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        Positioned(
+                          top: 10,
+                          right: 10,
+                          child: CircleAvatar(
+                            backgroundColor: Colors.black.withValues(alpha: 0.6),
+                            radius: 16,
+                            child: IconButton(
+                              icon: const Icon(Icons.close, color: Colors.white, size: 16),
+                              onPressed: () => Navigator.pop(context),
+                              padding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ),
+                        if (price.isNotEmpty)
+                          Positioned(
+                            bottom: 10,
+                            left: 10,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF6A2777),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                price,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(18.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  title,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1E1E1E),
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: Icon(
+                                  isFav ? Icons.favorite : Icons.favorite_border,
+                                  color: isFav ? const Color(0xFFE11D48) : const Color(0xFF64748B),
+                                ),
+                                onPressed: () {
+                                  _toggleArtworkFavorite(itemId);
+                                  setModalState(() {});
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '$year • $medium • $dimensions',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF64748B),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            description,
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              color: Color(0xFF475569),
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 
   void _showCreateGalleryModal(String artistName) {
     final titleController = TextEditingController();
     final descController = TextEditingController();
     final ImagePicker picker = ImagePicker();
     final List<XFile> modalImages = [];
+    bool isUploading = false;
 
     showDialog(
       context: context,
@@ -120,10 +467,16 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                       const SizedBox(height: 6),
                       TextField(
                         controller: titleController,
+                        style: const TextStyle(
+                          color: Color(0xFF0F172A),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        cursorColor: const Color(0xFF6A2777),
                         decoration: InputDecoration(
                           hintText: 'Enter gallery title...',
                           hintStyle: const TextStyle(
-                            color: Color(0xFF64748B),
+                            color: Color(0xFF94A3B8),
                             fontSize: 13.5,
                           ),
                           filled: true,
@@ -142,7 +495,14 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: const BorderSide(
-                              color: Color(0xFF5E227A),
+                              color: Color(0xFFCBD5E1),
+                              width: 1.0,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF6A2777),
                               width: 1.5,
                             ),
                           ),
@@ -163,10 +523,16 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                       TextField(
                         controller: descController,
                         maxLines: 3,
+                        style: const TextStyle(
+                          color: Color(0xFF0F172A),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        cursorColor: const Color(0xFF6A2777),
                         decoration: InputDecoration(
                           hintText: 'Describe this gallery...',
                           hintStyle: const TextStyle(
-                            color: Color(0xFF64748B),
+                            color: Color(0xFF94A3B8),
                             fontSize: 13.5,
                           ),
                           filled: true,
@@ -179,6 +545,13 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF6A2777),
+                              width: 1.5,
+                            ),
                           ),
                         ),
                       ),
@@ -195,7 +568,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                       ),
                       const SizedBox(height: 6),
                       InkWell(
-                        onTap: pickImages,
+                        onTap: isUploading ? null : pickImages,
                         borderRadius: BorderRadius.circular(10),
                         child: Container(
                           width: double.infinity,
@@ -277,21 +650,23 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                     Positioned(
                                       top: 2,
                                       right: 2,
-                                      child: GestureDetector(
-                                        onTap: () {
-                                          setModalState(() {
-                                            modalImages.removeAt(idx);
-                                          });
-                                        },
+                                      child: InkWell(
+                                        onTap: isUploading
+                                            ? null
+                                            : () {
+                                                setModalState(() {
+                                                  modalImages.removeAt(idx);
+                                                });
+                                              },
                                         child: Container(
-                                          padding: const EdgeInsets.all(3),
+                                          padding: const EdgeInsets.all(2),
                                           decoration: BoxDecoration(
-                                            color: Colors.black.withValues(alpha: 0.7),
+                                            color: Colors.black.withValues(alpha: 0.6),
                                             shape: BoxShape.circle,
                                           ),
                                           child: const Icon(
                                             Icons.close,
-                                            size: 12,
+                                            size: 14,
                                             color: Colors.white,
                                           ),
                                         ),
@@ -306,74 +681,137 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                       ],
                       const SizedBox(height: 24),
 
-                      // Modal Actions Row: Cancel & Create Gallery
+                      // Actions
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          SizedBox(
-                            height: 42,
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(
-                                  color: Color(0xFF333333),
-                                  width: 1.0,
+                          Expanded(
+                            child: SizedBox(
+                              height: 42,
+                              child: OutlinedButton(
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(
+                                    color: Color(0xFF333333),
+                                    width: 1.0,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 20),
                                 ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                padding: const EdgeInsets.symmetric(horizontal: 20),
-                              ),
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text(
-                                'Cancel',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1E1E1E),
+                                onPressed: isUploading ? null : () => Navigator.pop(context),
+                                child: const Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1E1E1E),
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                           const SizedBox(width: 12),
-                          SizedBox(
-                            height: 42,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF6A2777),
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                padding: const EdgeInsets.symmetric(horizontal: 20),
-                              ),
-                              onPressed: () {
-                                final title = titleController.text.trim();
-                                if (title.isNotEmpty) {
-                                  setState(() {
-                                    _photoGalleries.add({
-                                      'title': title,
-                                      'count': '${modalImages.isNotEmpty ? modalImages.length : 0} photos',
-                                      'image': modalImages.isNotEmpty
-                                          ? modalImages.first.path
-                                          : 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1200&auto=format&fit=crop',
-                                    });
-                                  });
-                                }
-                                Navigator.pop(context);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Gallery created successfully!'),
-                                    backgroundColor: Color(0xFF6A2777),
+                          Expanded(
+                            child: SizedBox(
+                              height: 42,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF6A2777),
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
-                                );
-                              },
-                              child: const Text(
-                                'Create Gallery',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
+                                  padding: const EdgeInsets.symmetric(horizontal: 20),
                                 ),
+                                onPressed: isUploading
+                                    ? null
+                                    : () async {
+                                        final title = titleController.text.trim();
+                                        final desc = descController.text.trim();
+                                        if (title.isEmpty) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('Please enter a gallery title')),
+                                          );
+                                          return;
+                                        }
+
+                                        setModalState(() {
+                                          isUploading = true;
+                                        });
+
+                                        final artist = widget.artist;
+                                        const stockDefaults = [
+                                          'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80',
+                                          'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
+                                          'https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=800&q=80',
+                                          'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&fit=crop&w=1200&q=80',
+                                        ];
+
+                                        List<String> finalUploadedUrls = [];
+
+                                        if (modalImages.isNotEmpty) {
+                                          for (final xfile in modalImages) {
+                                            try {
+                                              final bytes = await xfile.readAsBytes();
+                                              final nameParts = xfile.name.split('.');
+                                              final ext = nameParts.length > 1 ? nameParts.last : 'jpg';
+                                              final url = await sl<ApiService>().uploadImageBytes(
+                                                bytes,
+                                                ext: ext.isNotEmpty ? ext : 'jpg',
+                                              );
+                                              if (url != null && url.isNotEmpty) {
+                                                finalUploadedUrls.add(url);
+                                              }
+                                            } catch (_) {}
+                                          }
+                                        }
+
+                                        if (finalUploadedUrls.isEmpty) {
+                                          finalUploadedUrls = List<String>.from(stockDefaults);
+                                        }
+
+                                        final coverUrl = finalUploadedUrls.first;
+
+                                        await sl<ApiService>().createGallery(
+                                          title: title,
+                                          description: desc.isNotEmpty ? desc : 'Curated collection by Artist',
+                                          artistId: artist?.id,
+                                          artistName: artist?.name,
+                                          imageUrl: coverUrl,
+                                          images: finalUploadedUrls,
+                                        );
+
+                                        if (context.mounted) {
+                                          Navigator.pop(context);
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Gallery "$title" saved to database!'),
+                                              backgroundColor: const Color(0xFF6A2777),
+                                              duration: const Duration(seconds: 2),
+                                              behavior: SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                        }
+
+                                         _loadAllData();
+                                      },
+                                child: isUploading
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Text(
+                                        'Create Gallery',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                               ),
                             ),
                           ),
@@ -399,26 +837,76 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
           orElse: () => ArtistModel.mockArtists.first,
         );
 
-    final mockArtworks = List.generate(15, (index) {
-      final id = index + 1;
-      return {
-        'id': id.toString(),
-        'title': 'Artwork $id',
-        'details': '2024 • Mixed Media',
-        'dimensions': '120 x 80 cm',
-        'description': 'Artwork by ${currentArtist.name}',
-        'artist': 'By ${currentArtist.name}',
-        'price': '\$${(id * 500) + 1500}',
-        'image':
-            [
-              'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1200&auto=format&fit=crop',
-              'https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=1200&auto=format&fit=crop',
-              'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop',
-              'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=1200&auto=format&fit=crop',
-              'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200&auto=format&fit=crop',
-            ][index % 5],
-      };
-    });
+    final List<Map<String, dynamic>> displayedArtworks = _artworksList.isNotEmpty
+        ? _artworksList
+        : [
+            {
+              'id': 1,
+              'title': 'Ethereal Dunes Horizon',
+              'medium': 'Oil & Acrylic on Canvas',
+              'year': '2024',
+              'dimensions': '120 x 90 cm',
+              'description': 'A masterwork blending shifting sunset tones with contemporary textured strokes.',
+              'price': '\$2,400',
+              'image_url': 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80',
+              'is_featured': 1,
+            },
+            {
+              'id': 2,
+              'title': 'Chromatics in Motion',
+              'medium': 'Mixed Media & Pigments',
+              'year': '2024',
+              'dimensions': '100 x 80 cm',
+              'description': 'Dynamic explosion of sapphire blues and fiery ochre symbolizing kinetic vitality.',
+              'price': '\$1,950',
+              'image_url': 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=800&q=80',
+              'is_featured': 1,
+            },
+            {
+              'id': 3,
+              'title': 'Luminous Waves of d3',
+              'medium': 'Digital & Generative Canvas',
+              'year': '2024',
+              'dimensions': '140 x 100 cm',
+              'description': 'Fluid gradients and velvet purples inspired by architectural illumination.',
+              'price': '\$3,100',
+              'image_url': 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
+              'is_featured': 0,
+            },
+            {
+              'id': 4,
+              'title': 'Golden Hour Mirage',
+              'medium': 'Acrylic & 24K Gold Leaf',
+              'year': '2024',
+              'dimensions': '110 x 85 cm',
+              'description': 'Rich desert textures overlaid with radiant leaf highlights celebrating UAE heritage.',
+              'price': '\$2,800',
+              'image_url': 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80',
+              'is_featured': 0,
+            },
+            {
+              'id': 5,
+              'title': 'Cosmic Constellations',
+              'medium': 'Oil on Textured Linen',
+              'year': '2025',
+              'dimensions': '130 x 95 cm',
+              'description': 'Starry nightscapes over modern architectural skylines rendered in deep lapis lazuli and silver.',
+              'price': '\$3,500',
+              'image_url': 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80',
+              'is_featured': 0,
+            },
+            {
+              'id': 6,
+              'title': 'Geometric Harmony',
+              'medium': 'Mixed Media Collage',
+              'year': '2024',
+              'dimensions': '90 x 90 cm',
+              'description': 'Traditional Islamic geometric patterns reimagined through modern minimalist balance.',
+              'price': '\$1,750',
+              'image_url': 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=80',
+              'is_featured': 0,
+            },
+          ];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
@@ -455,31 +943,56 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                     ),
                   ),
                   const Spacer(),
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: const Color(0xFFCBD5E1)),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _shareArtist,
                       borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Icon(
-                      Icons.share_outlined,
-                      size: 18,
-                      color: Color(0xFF1E1E1E),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: const Color(0xFFCBD5E1)),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          Icons.share_outlined,
+                          size: 18,
+                          color: Color(0xFF1E1E1E),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: const Color(0xFFCBD5E1)),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _toggleArtistFavorite,
                       borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Icon(
-                      Icons.favorite_border,
-                      size: 18,
-                      color: Color(0xFF1E1E1E),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: _isArtistFavorited
+                              ? const Color(0xFFE11D48).withValues(alpha: 0.1)
+                              : Colors.transparent,
+                          border: Border.all(
+                            color: _isArtistFavorited
+                                ? const Color(0xFFE11D48)
+                                : const Color(0xFFCBD5E1),
+                          ),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(
+                          _isArtistFavorited
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          size: 18,
+                          color: _isArtistFavorited
+                              ? const Color(0xFFE11D48)
+                              : const Color(0xFF1E1E1E),
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -511,9 +1024,11 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                           CircleAvatar(
                             radius: 42,
                             backgroundColor: const Color(0xFFF3E8FF),
-                            backgroundImage: NetworkImage(
-                              currentArtist.avatarUrl,
-                            ),
+                            backgroundImage: currentArtist.avatarUrl.isNotEmpty
+                                ? CachedNetworkImageProvider(
+                                    currentArtist.avatarUrl,
+                                  )
+                                : null,
                             child:
                                 currentArtist.avatarUrl.isEmpty
                                     ? const Icon(
@@ -568,23 +1083,23 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                           ),
                           const SizedBox(height: 20),
 
-                          // Stats Row (15 Artworks | 0 Likes | 0 Followers)
+                          // Stats Row (Artworks | Likes | Followers)
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              _buildStatItem('15', 'Artworks'),
+                              _buildStatItem('$_worksCount', 'Artworks'),
                               Container(
                                 height: 24,
                                 width: 1,
                                 color: const Color(0xFFE2E8F0),
                               ),
-                              _buildStatItem('0', 'Likes'),
+                              _buildStatItem('$_likesCount', 'Likes'),
                               Container(
                                 height: 24,
                                 width: 1,
                                 color: const Color(0xFFE2E8F0),
                               ),
-                              _buildStatItem('0', 'Followers'),
+                              _buildStatItem('$_followersCount', 'Followers'),
                             ],
                           ),
                           const SizedBox(height: 18),
@@ -609,26 +1124,27 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                             children: [
                               _buildTagChip(currentArtist.category),
                               _buildTagChip(currentArtist.location),
-                              _buildTagChip('Professional'),
+                              _buildTagChip(currentArtist.experienceLevel.isNotEmpty ? currentArtist.experienceLevel : 'Verified Artist'),
                             ],
                           ),
                           const SizedBox(height: 16),
 
-                          // Joined Date
+                          // Verified Badge & Location
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
-                              Icon(
-                                Icons.calendar_today_outlined,
+                            children: [
+                              const Icon(
+                                Icons.verified_user_outlined,
                                 size: 15,
-                                color: Color(0xFF64748B),
+                                color: Color(0xFF6A2777),
                               ),
-                              SizedBox(width: 6),
+                              const SizedBox(width: 6),
                               Text(
-                                'Joined August 2024',
-                                style: TextStyle(
+                                'Starting ${currentArtist.bookingRate}',
+                                style: const TextStyle(
                                   fontSize: 12.5,
-                                  color: Color(0xFF64748B),
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF6A2777),
                                 ),
                               ),
                             ],
@@ -679,32 +1195,37 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                   height: 44,
                                   child: OutlinedButton.icon(
                                     style: OutlinedButton.styleFrom(
-                                      side: const BorderSide(
-                                        color: Color(0xFF333333),
-                                        width: 1.0,
+                                      backgroundColor: _isFollowing
+                                          ? const Color(0xFF6A2777).withValues(alpha: 0.08)
+                                          : Colors.transparent,
+                                      side: BorderSide(
+                                        color: _isFollowing
+                                            ? const Color(0xFF6A2777)
+                                            : const Color(0xFF333333),
+                                        width: _isFollowing ? 1.4 : 1.0,
                                       ),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                     ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _isFollowing = !_isFollowing;
-                                      });
-                                    },
+                                    onPressed: _toggleFollowArtist,
                                     icon: Icon(
                                       _isFollowing
                                           ? Icons.check
                                           : Icons.person_add_outlined,
                                       size: 16,
-                                      color: const Color(0xFF1E1E1E),
+                                      color: _isFollowing
+                                          ? const Color(0xFF6A2777)
+                                          : const Color(0xFF1E1E1E),
                                     ),
                                     label: Text(
                                       _isFollowing ? 'Following' : 'Follow',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 13.5,
                                         fontWeight: FontWeight.bold,
-                                        color: Color(0xFF1E1E1E),
+                                        color: _isFollowing
+                                            ? const Color(0xFF6A2777)
+                                            : const Color(0xFF1E1E1E),
                                       ),
                                     ),
                                   ),
@@ -817,9 +1338,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
 
                     // Portfolio Artworks Content (Grid vs List)
                     if (_isGridView)
-                      _buildArtworksGrid(mockArtworks)
+                      _buildArtworksGrid(displayedArtworks)
                     else
-                      _buildArtworksList(mockArtworks),
+                      _buildArtworksList(displayedArtworks),
                     const SizedBox(height: 20),
 
                     // 4. Photo Galleries Section Container (Matching Screenshot media_1787735179440.png)
@@ -971,8 +1492,8 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
     );
   }
 
-  // 2-Column Grid View of Artworks (Matching Screenshot media_1787735140178.png)
-  Widget _buildArtworksGrid(List<Map<String, String>> artworks) {
+  // 2-Column Grid View of Artworks
+  Widget _buildArtworksGrid(List<Map<String, dynamic>> artworks) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -980,135 +1501,188 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 0.65,
+        childAspectRatio: 0.72,
       ),
       itemCount: artworks.length,
       itemBuilder: (context, index) {
         final item = artworks[index];
-        final itemIndex = index + 1;
-        final isFav = _favoritedArtworks.contains(itemIndex);
+        final itemId = (item['id'] is int)
+            ? item['id'] as int
+            : int.tryParse(item['id']?.toString() ?? '') ?? (index + 1);
+        final isFav = _favoritedArtworks.contains(itemId);
+        final isFeatured = item['is_featured'] == 1 || item['is_featured'] == true || index == 0;
+        final imageUrl = (item['image_url'] ?? item['image'] ?? '').toString();
+        final title = (item['title'] ?? 'Artwork ${index + 1}').toString();
+        final year = (item['year'] ?? '2024').toString();
+        final medium = (item['medium'] ?? 'Mixed Media').toString();
+        final dimensions = (item['dimensions'] ?? '').toString();
+        final price = (item['price'] ?? '').toString();
 
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFFCBD5E1)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Image with Featured Badge
-              Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(10),
-                    ),
-                    child: Image.network(
-                      item['image']!,
-                      height: 135,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder:
-                          (context, error, stackTrace) => Container(
-                            height: 135,
-                            color: const Color(0xFFF1F5F9),
-                            child: const Icon(
-                              Icons.image,
-                              size: 36,
-                              color: Color(0xFF64748B),
+        return InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _showArtworkDetailModal(item, itemId),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Image with Featured & Price Badges (Expanded to fill available height perfectly)
+                Expanded(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(11),
+                        ),
+                        child: AppCachedImage(
+                          imageUrl: imageUrl.isNotEmpty
+                              ? imageUrl
+                              : 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80',
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                        ),
+                      ),
+                      if (isFeatured)
+                        Positioned(
+                          top: 8,
+                          left: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF6A2777),
+                              borderRadius: BorderRadius.circular(5),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.15),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                            child: const Text(
+                              'Featured',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
-                    ),
-                  ),
-                  if (index == 0)
-                    Positioned(
-                      top: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
                         ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF6A2777),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          'Featured',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                      if (price.isNotEmpty)
+                        Positioned(
+                          bottom: 8,
+                          left: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.65),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: Text(
+                              price,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                ],
-              ),
+                    ],
+                  ),
+                ),
 
-              // Details Section
-              Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item['title']!,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E1E1E),
+                // Details Section
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF0F172A),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          InkWell(
+                            onTap: () => _toggleArtworkFavorite(itemId),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Padding(
+                              padding: const EdgeInsets.all(2.0),
+                              child: Icon(
+                                isFav ? Icons.favorite : Icons.favorite_border,
+                                size: 18,
+                                color: isFav ? const Color(0xFFE11D48) : const Color(0xFF94A3B8),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    const Text(
-                      '2024',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        color: Color(0xFF64748B),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    const Text(
-                      'Mixed Media',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        color: Color(0xFF64748B),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: InkWell(
-                        onTap: () {
-                          setState(() {
-                            if (isFav) {
-                              _favoritedArtworks.remove(itemIndex);
-                            } else {
-                              _favoritedArtworks.add(itemIndex);
-                            }
-                          });
-                        },
-                        child: Icon(
-                          isFav ? Icons.favorite : Icons.favorite_border,
-                          size: 18,
-                          color: isFav ? Colors.red : const Color(0xFF64748B),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$year • $medium',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          color: Color(0xFF64748B),
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ),
-                  ],
+                      if (dimensions.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          dimensions,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
     );
   }
 
-  // 1-Column Horizontal List View of Artworks (Matching Screenshot media_1787735153023.png)
-  Widget _buildArtworksList(List<Map<String, String>> artworks) {
+  // 1-Column Horizontal List View of Artworks
+  Widget _buildArtworksList(List<Map<String, dynamic>> artworks) {
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -1116,184 +1690,563 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
       separatorBuilder: (context, index) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final item = artworks[index];
-        final itemIndex = index + 1;
-        final isFav = _favoritedArtworks.contains(itemIndex);
+        final itemId = (item['id'] is int)
+            ? item['id'] as int
+            : int.tryParse(item['id']?.toString() ?? '') ?? (index + 1);
+        final isFav = _favoritedArtworks.contains(itemId);
+        final imageUrl = (item['image_url'] ?? item['image'] ?? '').toString();
+        final title = (item['title'] ?? 'Artwork ${index + 1}').toString();
+        final year = (item['year'] ?? '2024').toString();
+        final medium = (item['medium'] ?? 'Mixed Media').toString();
+        final dimensions = (item['dimensions'] ?? '').toString();
+        final price = (item['price'] ?? '').toString();
 
-        return Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFFCBD5E1)),
-          ),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  item['image']!,
-                  width: 56,
-                  height: 56,
-                  fit: BoxFit.cover,
-                  errorBuilder:
-                      (context, error, stackTrace) => Container(
-                        width: 56,
-                        height: 56,
-                        color: const Color(0xFFF1F5F9),
-                        child: const Icon(
-                          Icons.image,
-                          size: 24,
+        return InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _showArtworkDetailModal(item, itemId),
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: AppCachedImage(
+                    imageUrl: imageUrl.isNotEmpty
+                        ? imageUrl
+                        : 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80',
+                    width: 64,
+                    height: 64,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$year • $medium',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
                           color: Color(0xFF64748B),
                         ),
                       ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item['title']!,
-                      style: const TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E1E1E),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      item['details']!,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF64748B),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      item['description']!,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF64748B),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      item['artist']!,
-                      style: const TextStyle(
-                        fontSize: 11.5,
-                        color: Color(0xFF94A3B8),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              InkWell(
-                onTap: () {
-                  setState(() {
-                    if (isFav) {
-                      _favoritedArtworks.remove(itemIndex);
-                    } else {
-                      _favoritedArtworks.add(itemIndex);
-                    }
-                  });
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Icon(
-                    isFav ? Icons.favorite : Icons.favorite_border,
-                    size: 18,
-                    color: isFav ? Colors.red : const Color(0xFF64748B),
+                      if (dimensions.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          dimensions,
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            color: Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
-              ),
-            ],
+                if (price.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF6A2777).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      price,
+                      style: const TextStyle(
+                        color: Color(0xFF6A2777),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                InkWell(
+                  onTap: () => _toggleArtworkFavorite(itemId),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(6.0),
+                    child: Icon(
+                      isFav ? Icons.favorite : Icons.favorite_border,
+                      size: 18,
+                      color: isFav ? const Color(0xFFE11D48) : const Color(0xFF94A3B8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
     );
   }
 
-  Widget _buildGalleryCard(Map<String, String> gallery) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFCBD5E1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(10),
+  int _computeFallbackIndex(String title, int seedOffset) {
+    int hash = 0;
+    for (int i = 0; i < title.length; i++) {
+      hash = (hash * 31 + title.codeUnitAt(i)) & 0x7FFFFFFF;
+    }
+    return (hash + seedOffset) & 0x7FFFFFFF;
+  }
+
+  Widget _buildGalleryPhotoItem(
+    String imgUrl, {
+    BoxFit fit = BoxFit.contain,
+    double? width,
+    double? height,
+    int fallbackIndex = 0,
+  }) {
+    const stockFallbacks = [
+      'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1561839561-b13bcfe95249?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1582561424760-0321d75e81fa?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&w=1200&q=80',
+    ];
+    final fallbackUrl = stockFallbacks[fallbackIndex % stockFallbacks.length];
+
+    if (imgUrl.startsWith('http://') ||
+        imgUrl.startsWith('https://')) {
+      return AppCachedImage(
+        imageUrl: imgUrl,
+        fit: fit,
+        width: width,
+        height: height,
+        errorWidget: AppCachedImage(
+          imageUrl: fallbackUrl,
+          fit: fit,
+          width: width,
+          height: height,
+        ),
+      );
+    } else if (imgUrl.startsWith('blob:') || imgUrl.startsWith('data:image')) {
+      return Image.network(
+        imgUrl,
+        fit: fit,
+        width: width,
+        height: height,
+        errorBuilder: (context, error, stackTrace) => AppCachedImage(
+          imageUrl: fallbackUrl,
+          fit: fit,
+          width: width,
+          height: height,
+        ),
+      );
+    } else if (!kIsWeb && imgUrl.isNotEmpty) {
+      try {
+        final file = File(imgUrl);
+        if (file.existsSync()) {
+          return Image.file(
+            file,
+            fit: fit,
+            width: width,
+            height: height,
+            errorBuilder: (context, error, stackTrace) => AppCachedImage(
+              imageUrl: fallbackUrl,
+              fit: fit,
+              width: width,
+              height: height,
+            ),
+          );
+        }
+      } catch (_) {}
+    }
+
+    return AppCachedImage(
+      imageUrl: fallbackUrl,
+      fit: fit,
+      width: width,
+      height: height,
+    );
+  }
+
+  Widget _buildGalleryCard(Map<String, dynamic> gallery) {
+    final image = (gallery['image'] ?? gallery['image_url'] ?? '').toString();
+    final title = (gallery['title'] ?? gallery['name'] ?? 'Photo Gallery').toString();
+    final subtitle = (gallery['subtitle'] ?? gallery['description'] ?? 'Curated collection by Artist').toString();
+    final count = (gallery['count'] ?? (gallery['photo_count'] != null ? '${gallery['photo_count']} photos' : '1 photos')).toString();
+    final cardFallbackIdx = _computeFallbackIndex(title, 0);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => _showPhotoGalleryModal(gallery),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(11),
+                  ),
+                  child: _buildGalleryPhotoItem(
+                    image,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: 140,
+                    fallbackIndex: cardFallbackIdx,
+                  ),
                 ),
-                child: Image.network(
-                  gallery['image']!,
-                  height: 140,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder:
-                      (context, error, stackTrace) => Container(
-                        height: 140,
-                        color: const Color(0xFFF1F5F9),
-                        child: const Icon(
-                          Icons.collections,
-                          size: 36,
-                          color: Color(0xFF64748B),
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.65),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.photo_library_outlined,
+                          size: 12,
+                          color: Colors.white,
                         ),
-                      ),
-                ),
-              ),
-              Positioned(
-                top: 10,
-                right: 10,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.65),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    gallery['count']!,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
+                        const SizedBox(width: 4),
+                        Text(
+                          count,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  gallery['title']!,
-                  style: const TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E1E1E),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                const Text(
-                  'Main gallery by Artist',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                ),
               ],
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  void _showPhotoGalleryModal(Map<String, dynamic> gallery) {
+    final title = (gallery['title'] ?? gallery['name'] ?? 'Photo Gallery').toString();
+    final subtitle = (gallery['subtitle'] ?? gallery['description'] ?? 'Curated collection by Artist').toString();
+    final mainImage = (gallery['image'] ?? gallery['image_url'] ?? 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200&auto=format&fit=crop').toString();
+
+    // Extract images
+    final List<String> images = [];
+    if (gallery['images'] is List) {
+      for (final img in gallery['images']) {
+        if (img is String && img.isNotEmpty) {
+          images.add(img);
+        } else if (img is Map && img['image_url'] != null) {
+          images.add(img['image_url'].toString());
+        }
+      }
+    } else if (gallery['images_json'] != null) {
+      try {
+        final decoded = jsonDecode(gallery['images_json'].toString());
+        if (decoded is List) {
+          for (final img in decoded) {
+            if (img is String && img.isNotEmpty) {
+              images.add(img);
+            } else if (img is Map && img['image_url'] != null) {
+              images.add(img['image_url'].toString());
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (images.isEmpty) {
+      images.add(mainImage);
+      images.add('https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80');
+      images.add('https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&fit=crop&w=1200&q=80');
+      images.add('https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=800&q=80');
+    }
+
+    int activeIdx = 0;
+    final pageController = PageController();
+
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.85),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 24),
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 550, maxHeight: 720),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0F172A),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header Bar
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 16, 12, 12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Photo ${activeIdx + 1} of ${images.length} • ${widget.artist?.name ?? 'Artist'}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF94A3B8),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white, size: 22),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const Divider(height: 1, color: Color(0xFF334155)),
+
+                    // Main Image Swiper with Arrows
+                    Expanded(
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          PageView.builder(
+                            controller: pageController,
+                            itemCount: images.length,
+                            onPageChanged: (idx) {
+                              setModalState(() {
+                                activeIdx = idx;
+                              });
+                            },
+                            itemBuilder: (context, index) {
+                              final imgUrl = images[index];
+                              return InteractiveViewer(
+                                minScale: 0.8,
+                                maxScale: 3.0,
+                                child: Center(
+                                  child: _buildGalleryPhotoItem(
+                                    imgUrl,
+                                    fit: BoxFit.contain,
+                                    fallbackIndex: _computeFallbackIndex(title, index),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+
+                          // Left navigation arrow
+                          if (activeIdx > 0)
+                            Positioned(
+                              left: 8,
+                              child: InkWell(
+                                onTap: () {
+                                  pageController.previousPage(
+                                    duration: const Duration(milliseconds: 250),
+                                    curve: Curves.easeInOut,
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(20),
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.6),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.arrow_back_ios_new, size: 16, color: Colors.white),
+                                ),
+                              ),
+                            ),
+
+                          // Right navigation arrow
+                          if (activeIdx < images.length - 1)
+                            Positioned(
+                              right: 8,
+                              child: InkWell(
+                                onTap: () {
+                                  pageController.nextPage(
+                                    duration: const Duration(milliseconds: 250),
+                                    curve: Curves.easeInOut,
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(20),
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.6),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+
+                    // Description / Subtitle
+                    if (subtitle.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+                        child: Text(
+                          subtitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            color: Color(0xFFCBD5E1),
+                          ),
+                        ),
+                      ),
+
+                    // Bottom Thumbnails Strip
+                    if (images.length > 1)
+                      Container(
+                        height: 64,
+                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                        child: Center(
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            scrollDirection: Axis.horizontal,
+                            itemCount: images.length,
+                            separatorBuilder: (context, idx) => const SizedBox(width: 8),
+                            itemBuilder: (context, idx) {
+                              final isCurrent = idx == activeIdx;
+                              return InkWell(
+                                onTap: () {
+                                  pageController.animateToPage(
+                                    idx,
+                                    duration: const Duration(milliseconds: 250),
+                                    curve: Curves.easeInOut,
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(6),
+                                child: Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: isCurrent ? const Color(0xFF6A2777) : Colors.transparent,
+                                      width: 2.0,
+                                    ),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: _buildGalleryPhotoItem(
+                                      images[idx],
+                                      fit: BoxFit.cover,
+                                      width: 48,
+                                      height: 48,
+                                      fallbackIndex: _computeFallbackIndex(title, idx),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

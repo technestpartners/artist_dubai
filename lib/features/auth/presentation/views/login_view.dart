@@ -86,7 +86,7 @@ class _LoginViewState extends State<LoginView> {
 
         if (mounted) {
           _showSnackBar('Signed in successfully!');
-          context.go(RouteNames.home);
+          context.go(RouteNames.artists);
         }
       } else {
         if (mounted) {

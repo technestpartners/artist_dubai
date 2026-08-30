@@ -3,6 +3,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
+import '../../../../core/widgets/app_cached_image.dart';
 
 class EventsCompetitionView extends StatefulWidget {
   const EventsCompetitionView({super.key});
@@ -326,16 +327,11 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView>
             if (c['image_url'] != null && (c['image_url'] as String).isNotEmpty)
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-                child: Image.network(
-                  c['image_url'] as String,
+                child: AppCachedImage(
+                  imageUrl: c['image_url'] as String,
                   height: 160,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    height: 160,
-                    color: _purpleLight,
-                    child: const Icon(Icons.image_outlined, color: Colors.white30, size: 48),
-                  ),
                 ),
               ),
 
@@ -573,12 +569,11 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView>
                     if (c['image_url'] != null && (c['image_url'] as String).isNotEmpty)
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.network(
-                          c['image_url'] as String,
+                        child: AppCachedImage(
+                          imageUrl: c['image_url'] as String,
                           height: 200,
                           width: double.infinity,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                         ),
                       ),
                     const SizedBox(height: 16),

@@ -15,17 +15,25 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS
     exit();
 }
 
-$host = '127.0.0.1';
-$db   = 'artist_dubai';
-$user = 'root';
-$pass = '';
+$isLive = (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'technestpartners.com') !== false)
+       || (isset($_SERVER['SERVER_NAME']) && strpos($_SERVER['SERVER_NAME'], 'technestpartners.com') !== false)
+       || (getenv('APP_ENV') === 'production');
+
+$host = getenv('DB_HOST') ?: ($isLive ? 'localhost' : '127.0.0.1');
+$db   = getenv('DB_NAME') ?: ($isLive ? 'u530915492_artist_dubai' : 'artist_dubai');
+$user = getenv('DB_USER') ?: ($isLive ? 'u530915492_artist_dubai' : 'root');
+$pass = getenv('DB_PASS') !== false && getenv('DB_PASS') !== null ? getenv('DB_PASS') : ($isLive ? 'Artist@Dubai@TN21' : '');
 
 try {
-    // 1. Connect to MySQL server root to ensure database exists
-    $rootPdo = new PDO("mysql:host=$host;charset=utf8mb4", $user, $pass, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-    ]);
-    $rootPdo->exec("CREATE DATABASE IF NOT EXISTS `$db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+    // 1. If local environment, ensure database exists
+    if (!$isLive && $user === 'root' && ($host === '127.0.0.1' || $host === 'localhost')) {
+        try {
+            $rootPdo = new PDO("mysql:host=$host;charset=utf8mb4", $user, $pass, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            ]);
+            $rootPdo->exec("CREATE DATABASE IF NOT EXISTS `$db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        } catch (\Throwable $t) {}
+    }
 
     // 2. Connect to artist_dubai MySQL database
     $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass, [

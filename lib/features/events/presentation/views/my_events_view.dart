@@ -5,6 +5,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import '../../../../core/widgets/app_cached_image.dart';
 import '../../../home/presentation/widgets/home_footer_widget.dart';
 import '../../domain/models/art_event_model.dart';
 
@@ -509,11 +510,11 @@ class _MyEventsViewState extends State<MyEventsView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (event.imageUrl != null)
+                          if (event.imageUrl != null && event.imageUrl!.isNotEmpty)
                             ClipRRect(
                               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                              child: Image.network(
-                                event.imageUrl!,
+                              child: AppCachedImage(
+                                imageUrl: event.imageUrl!,
                                 height: 140,
                                 width: double.infinity,
                                 fit: BoxFit.cover,
@@ -618,20 +619,24 @@ class _MyEventsViewState extends State<MyEventsView> {
                                     OutlinedButton.icon(
                                       style: OutlinedButton.styleFrom(
                                         foregroundColor: Colors.white,
-                                        side: BorderSide(color: Colors.white.withValues(alpha: 0.4)),
+                                        backgroundColor: Colors.white.withValues(alpha: 0.15),
+                                        side: const BorderSide(color: Colors.white70, width: 1.2),
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                                       ),
-                                      onPressed: () {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text('Edit event ${event.title} opened.'),
-                                            behavior: SnackBarBehavior.floating,
-                                          ),
-                                        );
+                                      onPressed: () async {
+                                        await context.push(RouteNames.createArtEvent, extra: event);
+                                        _fetchMyEvents();
                                       },
-                                      icon: const Icon(Icons.edit_outlined, size: 15),
-                                      label: const Text('Edit', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                                      icon: const Icon(Icons.edit, size: 16, color: Colors.white),
+                                      label: const Text(
+                                        'Edit',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),

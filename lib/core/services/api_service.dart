@@ -1,8 +1,46 @@
+import 'dart:convert';
 import '../../features/artists/domain/models/artist_model.dart';
 import '../../features/events/domain/models/art_event_model.dart';
 import '../../features/government/domain/models/government_entity.dart';
 import '../constants/api_endpoints.dart';
 import '../network/api_client.dart';
+
+/// Pagination metadata returned from every list endpoint
+class PagedResult<T> {
+  final List<T> data;
+  final int page;
+  final int limit;
+  final int total;
+  final int totalPages;
+  final bool hasMore;
+
+  const PagedResult({
+    required this.data,
+    required this.page,
+    required this.limit,
+    required this.total,
+    required this.totalPages,
+    required this.hasMore,
+  });
+
+  factory PagedResult.fromResponse(
+    dynamic res,
+    T Function(Map<String, dynamic>) fromJson,
+  ) {
+    final list = (res['data'] as List<dynamic>)
+        .map((e) => fromJson(e as Map<String, dynamic>))
+        .toList();
+    final p = res['pagination'] as Map<String, dynamic>? ?? {};
+    return PagedResult<T>(
+      data: list,
+      page: (p['page'] as num?)?.toInt() ?? 1,
+      limit: (p['limit'] as num?)?.toInt() ?? list.length,
+      total: (p['total'] as num?)?.toInt() ?? list.length,
+      totalPages: (p['total_pages'] as num?)?.toInt() ?? 1,
+      hasMore: p['has_more'] == true,
+    );
+  }
+}
 
 /// Ultra-Fast, Load-Free ApiService with In-Memory Caching & Stale-While-Revalidate
 class ApiService {
@@ -75,7 +113,38 @@ class ApiService {
     return ArtEventModel.categories;
   }
 
-  // 2. Artists (Instant Cache-First)
+  // 2. Artists — paginated fetch
+  Future<PagedResult<ArtistModel>> getArtistsPaged({
+    String? category,
+    String? query,
+    bool? featured,
+    int page = 1,
+    int limit = 50,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{'page': page, 'limit': limit};
+      if (category != null && category != 'All' && category != 'All Categories') {
+        queryParams['category'] = category;
+      }
+      if (query != null && query.isNotEmpty) queryParams['q'] = query;
+      if (featured != null) queryParams['featured'] = featured ? 1 : 0;
+
+      final res = await _client.get(ApiEndpoints.artists, queryParameters: queryParams);
+      if (_isSuccess(res)) {
+        final result = PagedResult.fromResponse(res, ArtistModel.fromJson);
+        if (page == 1 && category == null && (query == null || query.isEmpty) && featured == null) {
+          _cachedArtists = result.data;
+        }
+        return result;
+      }
+    } catch (_) {}
+    return PagedResult<ArtistModel>(
+      data: page == 1 ? (_cachedArtists ?? []) : [],
+      page: page, limit: limit, total: 0, totalPages: 1, hasMore: false,
+    );
+  }
+
+  // 2. Artists (Instant Cache-First — backwards-compat simple version)
   Future<List<ArtistModel>> getArtists({
     String? category,
     String? query,
@@ -89,7 +158,7 @@ class ApiService {
     }
 
     try {
-      final queryParams = <String, dynamic>{};
+      final queryParams = <String, dynamic>{'all': 1};
       if (category != null && category != 'All' && category != 'All Categories') {
         queryParams['category'] = category;
       }
@@ -118,8 +187,9 @@ class ApiService {
     return _cachedArtists ?? [];
   }
 
+
   // 2b. Create Artist Profile (Save dynamically to MySQL)
-  Future<bool> createArtistProfile({
+  Future<Map<String, dynamic>?> createArtistProfile({
     required String name,
     required String category,
     required String location,
@@ -129,6 +199,8 @@ class ApiService {
     String? website,
     String? instagram,
     String? experienceLevel,
+    String? avatarUrl,
+    String? bannerUrl,
   }) async {
     try {
       final res = await _client.post(
@@ -143,14 +215,19 @@ class ApiService {
           'website': website ?? '',
           'instagram': instagram ?? '',
           'experience_level': experienceLevel ?? '',
+          if (avatarUrl != null && avatarUrl.isNotEmpty) 'avatar_url': avatarUrl,
+          if (bannerUrl != null && bannerUrl.isNotEmpty) 'banner_url': bannerUrl,
         },
       );
-      if (_isSuccess(res)) {
+      if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
         _cachedArtists = null;
-        return true;
+        return res['data'] as Map<String, dynamic>;
+      } else if (_isSuccess(res)) {
+        _cachedArtists = null;
+        return {'status': 'success'};
       }
     } catch (_) {}
-    return false;
+    return null;
   }
 
   // 3. Artist Details
@@ -206,7 +283,7 @@ class ApiService {
     }
 
     try {
-      final queryParams = <String, dynamic>{};
+      final queryParams = <String, dynamic>{'all': 1};
       if (category != null && category != 'All Categories' && category != 'All') {
         queryParams['category'] = category;
       }
@@ -361,6 +438,7 @@ class ApiService {
     String? venue,
     bool isFree = true,
     String? price,
+    int? maxAttendees,
     String? organizerName,
     String? contactEmail,
     String? contactPhone,
@@ -380,6 +458,7 @@ class ApiService {
           'venue': venue ?? '',
           'is_free': isFree ? 1 : 0,
           'price': isFree ? 'Free' : (price ?? 'AED 50'),
+          'max_attendees': maxAttendees ?? 100,
           'organizer_name': organizerName ?? 'Artist Dubai',
           'contact_email': contactEmail ?? '',
           'contact_phone': contactPhone ?? '',
@@ -413,27 +492,164 @@ class ApiService {
     return _cachedGovEntities ?? GovernmentEntity.entities;
   }
 
-  // 7. Galleries (Instant Cache-First)
-  Future<List<Map<String, dynamic>>> getGalleries({bool forceRefresh = false}) async {
-    if (!forceRefresh && _cachedGalleries != null && _cachedGalleries!.isNotEmpty) {
+  // 6b. Reviews (Dynamic MySQL Backend)
+  Future<List<ReviewModel>> getReviews({required String entityName}) async {
+    try {
+      final res = await _client.get(
+        ApiEndpoints.reviews,
+        queryParameters: {'entity_name': entityName},
+      );
+      if (_isSuccess(res)) {
+        final list = res['data'] as List<dynamic>;
+        return list.map((e) => ReviewModel.fromJson(e as Map<String, dynamic>)).toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  Future<bool> addReview({
+    required String entityName,
+    required String authorName,
+    required double rating,
+    required String text,
+  }) async {
+    try {
+      final res = await _client.post(
+        ApiEndpoints.reviews,
+        data: {
+          'entity_name': entityName,
+          'author_name': authorName,
+          'rating': rating,
+          'text': text,
+        },
+      );
+      if (_isSuccess(res)) {
+        _cachedGovEntities = null; // Invalidate cache so ratings refresh
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  // 7. Galleries (Instant Cache-First with artist filtering)
+  Future<List<Map<String, dynamic>>> getGalleries({
+    String? artistId,
+    String? artistName,
+    String? search,
+    int page = 1,
+    int limit = 50,
+    bool forceRefresh = false,
+  }) async {
+    final isFullFetch = (artistId == null || artistId.isEmpty) && (artistName == null || artistName.isEmpty);
+
+    if (!forceRefresh && isFullFetch && page == 1 && _cachedGalleries != null && _cachedGalleries!.isNotEmpty) {
       return _cachedGalleries!;
     }
 
     try {
-      final res = await _client.get(ApiEndpoints.galleries);
+      final queryParams = <String, dynamic>{};
+      if (artistId != null && artistId.isNotEmpty) {
+        queryParams['artist_id'] = artistId;
+      } else if (artistName != null && artistName.isNotEmpty) {
+        queryParams['artist_name'] = artistName;
+      } else {
+        // Full listing — use pagination
+        queryParams['page'] = page;
+        queryParams['limit'] = limit;
+      }
+      if (search != null && search.isNotEmpty) queryParams['search'] = search;
+
+      final res = await _client.get(
+        ApiEndpoints.galleries,
+        queryParameters: queryParams,
+      );
       if (_isSuccess(res)) {
-        _cachedGalleries = (res['data'] as List<dynamic>).map((e) => e as Map<String, dynamic>).toList();
-        return _cachedGalleries!;
+        final list = (res['data'] as List<dynamic>).map((e) => e as Map<String, dynamic>).toList();
+        if (isFullFetch && page == 1) {
+          _cachedGalleries = list;
+        }
+        return list;
       }
     } catch (_) {}
 
     return _cachedGalleries ?? [];
   }
 
-  // 7b. Artworks (Instant Cache-First)
-  Future<List<Map<String, dynamic>>> getArtworks({bool forceRefresh = false}) async {
+
+  // 7b. Create Gallery (MySQL Backend)
+  Future<Map<String, dynamic>?> createGallery({
+    required String title,
+    String? description,
+    String? artistId,
+    String? artistName,
+    String? imageUrl,
+    List<String>? images,
+  }) async {
     try {
-      final res = await _client.get(ApiEndpoints.artworks);
+      final res = await _client.post(
+        ApiEndpoints.galleries,
+        data: {
+          'title': title,
+          'description': description ?? 'Curated collection by Artist',
+          'artist_id': artistId,
+          'artist_name': artistName,
+          'image_url': imageUrl,
+          'images': images,
+          'photo_count': images != null && images.isNotEmpty ? images.length : 1,
+        },
+      );
+      if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
+        _cachedGalleries = null; // Invalidate cache
+        return res['data'] as Map<String, dynamic>;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  // 7c. Upload Image File / Bytes (MySQL Backend)
+  Future<String?> uploadImageBytes(List<int> bytes, {String ext = 'jpg'}) async {
+    try {
+      final base64String = 'data:image/$ext;base64,${base64Encode(bytes)}';
+      final res = await _client.post(
+        ApiEndpoints.upload,
+        data: {'base64': base64String},
+      );
+      if (_isSuccess(res) && res['data'] is Map && res['data']['url'] != null) {
+        return res['data']['url'].toString();
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  // 7b. Artworks (Instant Cache-First, paginated)
+  Future<List<Map<String, dynamic>>> getArtworks({
+    String? artistId,
+    String? artistName,
+    String? search,
+    int? isFeatured,
+    int page = 1,
+    int limit = 50,
+    bool forceRefresh = false,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (artistId != null && artistId.isNotEmpty) {
+        queryParams['artist_id'] = artistId;
+        queryParams['all'] = 1; // return all for a specific artist's portfolio
+      } else if (artistName != null && artistName.isNotEmpty) {
+        queryParams['artist_name'] = artistName;
+        queryParams['all'] = 1;
+      } else {
+        queryParams['page'] = page;
+        queryParams['limit'] = limit;
+      }
+      if (search != null && search.isNotEmpty) queryParams['search'] = search;
+      if (isFeatured != null) queryParams['is_featured'] = isFeatured;
+
+      final res = await _client.get(
+        ApiEndpoints.artworks,
+        queryParameters: queryParams,
+      );
       if (_isSuccess(res)) {
         return (res['data'] as List<dynamic>)
             .map((e) => e as Map<String, dynamic>)
@@ -441,6 +657,43 @@ class ApiService {
       }
     } catch (_) {}
     return [];
+  }
+
+
+  // 7d. Create Artwork in MySQL
+  Future<Map<String, dynamic>?> createArtwork({
+    required String title,
+    String? artistId,
+    String? artistName,
+    String? year,
+    String? medium,
+    String? dimensions,
+    String? description,
+    String? price,
+    String? imageUrl,
+    bool isFeatured = false,
+  }) async {
+    try {
+      final res = await _client.post(
+        ApiEndpoints.artworks,
+        data: {
+          'title': title,
+          if (artistId != null) 'artist_id': artistId,
+          if (artistName != null) 'artist_name': artistName,
+          'year': year ?? '2026',
+          'medium': medium ?? 'Oil on Canvas',
+          'dimensions': dimensions ?? '150 x 100 cm',
+          'description': description ?? '',
+          'price': price ?? '\$3,200',
+          if (imageUrl != null) 'image_url': imageUrl,
+          'is_featured': isFeatured ? 1 : 0,
+        },
+      );
+      if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
+        return res['data'] as Map<String, dynamic>;
+      }
+    } catch (_) {}
+    return null;
   }
 
   // 8. Gallery Registration
@@ -692,6 +945,53 @@ class ApiService {
     return null;
   }
 
+  // 15b. Update User Profile (MySQL Backend)
+  Future<bool> updateProfile({
+    required String email,
+    required String fullName,
+  }) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.login}&action=update_profile',
+        data: {
+          'email': email,
+          'full_name': fullName,
+        },
+      );
+      return _isSuccess(res);
+    } catch (_) {}
+    return false;
+  }
+
+  // 15c. Create Category (MySQL Backend)
+  Future<bool> createCategory({
+    required String name,
+    required String description,
+    String emoji = '🎨',
+    String color = 'Primary',
+    String tags = '',
+    bool isFeatured = false,
+  }) async {
+    try {
+      final res = await _client.post(
+        ApiEndpoints.categories,
+        data: {
+          'name': name,
+          'description': description,
+          'emoji': emoji,
+          'color': color,
+          'tags': tags,
+          'is_featured': isFeatured ? 1 : 0,
+        },
+      );
+      if (_isSuccess(res)) {
+        _cachedCategories = null;
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
   // 16. Change Password (MySQL Backend)
   Future<bool> changePassword({
     required String email,
@@ -721,4 +1021,195 @@ class ApiService {
     } catch (_) {}
     return false;
   }
-}
+
+  // 18. Dynamic Favorites (MySQL Backend)
+  Future<Map<String, dynamic>> getFavorites({String? email, bool forceRefresh = false}) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (email != null && email.isNotEmpty) queryParams['email'] = email;
+
+      final res = await _client.get(
+        ApiEndpoints.favorites,
+        queryParameters: queryParams,
+      );
+
+      if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
+        final data = res['data'] as Map<String, dynamic>;
+        final artistsRaw = data['artists'] as List<dynamic>? ?? [];
+        final eventsRaw = data['events'] as List<dynamic>? ?? [];
+        final artworksRaw = data['artworks'] as List<dynamic>? ?? [];
+
+        final artists = artistsRaw.map((e) => ArtistModel.fromJson(e as Map<String, dynamic>)).toList();
+        final events = eventsRaw.map((e) => ArtEventModel.fromJson(e as Map<String, dynamic>)).toList();
+        final artworks = artworksRaw.map((e) => e as Map<String, dynamic>).toList();
+
+        return {
+          'artists': artists,
+          'events': events,
+          'artworks': artworks,
+        };
+      }
+    } catch (_) {}
+    return {
+      'artists': <ArtistModel>[],
+      'events': <ArtEventModel>[],
+      'artworks': <Map<String, dynamic>>[],
+    };
+  }
+
+  Future<bool> toggleFavorite({
+    required String email,
+    required String itemType,
+    required String itemId,
+  }) async {
+    try {
+      final res = await _client.post(
+        ApiEndpoints.favorites,
+        data: {
+          'user_email': email,
+          'item_type': itemType,
+          'item_id': itemId,
+        },
+      );
+      return _isSuccess(res);
+    } catch (_) {}
+    return false;
+  }
+
+  // 19. Like Artist Profile (MySQL Backend)
+  Future<Map<String, dynamic>?> likeArtist({
+    required String artistId,
+    required String userEmail,
+  }) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.artists}&action=like',
+        data: {
+          'artist_id': artistId,
+          'user_email': userEmail,
+          'action': 'toggle',
+        },
+      );
+      if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
+        _cachedArtists = null;
+        return res['data'] as Map<String, dynamic>;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  // 19b. Follow Artist (MySQL Backend)
+  Future<Map<String, dynamic>?> followArtist({
+    required String artistId,
+    required String userEmail,
+  }) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.artists}&action=follow',
+        data: {
+          'artist_id': artistId,
+          'user_email': userEmail,
+          'action': 'toggle',
+        },
+      );
+      if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
+        _cachedArtists = null;
+        return res['data'] as Map<String, dynamic>;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  // 19c. Get Artist Follow & Like Status (MySQL Backend)
+  Future<Map<String, dynamic>?> getArtistInteractionStatus({
+    required String artistId,
+    required String userEmail,
+  }) async {
+    try {
+      final res = await _client.get(
+        '${ApiEndpoints.artists}&action=status',
+        queryParameters: {
+          'artist_id': artistId,
+          'user_email': userEmail,
+        },
+      );
+      if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
+        return res['data'] as Map<String, dynamic>;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  // 20. Update Event (MySQL Backend)
+  Future<bool> updateEvent(Map<String, dynamic> data) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.events}&action=update',
+        data: data,
+      );
+      if (_isSuccess(res)) {
+        _cachedEvents = null;
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  // 21. Get Notifications (MySQL Backend)
+  Future<Map<String, dynamic>> getNotifications({
+    String? email,
+    bool forceRefresh = false,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (email != null && email.isNotEmpty) {
+        queryParams['email'] = email;
+      }
+      final res = await _client.get(
+        ApiEndpoints.notifications,
+        queryParameters: queryParams,
+      );
+      if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
+        return res['data'] as Map<String, dynamic>;
+      }
+    } catch (_) {}
+    return {'notifications': [], 'unread_count': 0, 'total': 0};
+  }
+
+  // 22. Mark Notification as Read (MySQL Backend)
+  Future<bool> markNotificationRead(int id) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.notifications}&action=mark_read',
+        data: {'id': id},
+      );
+      return _isSuccess(res);
+    } catch (_) {}
+    return false;
+  }
+
+  // 23. Mark All Notifications as Read (MySQL Backend)
+  Future<bool> markAllNotificationsRead({String? email}) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.notifications}&action=mark_all_read',
+        data: email != null && email.isNotEmpty ? {'email': email} : {},
+      );
+      return _isSuccess(res);
+    } catch (_) {}
+    return false;
+  }
+
+  // 24. Delete Notification (MySQL Backend)
+  Future<bool> deleteNotification(int id) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.notifications}&action=delete',
+        data: {'id': id},
+      );
+      return _isSuccess(res);
+    } catch (_) {}
+    return false;
+  }
+
+}

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import '../../../../core/widgets/app_cached_image.dart';
 import '../../domain/models/artist_model.dart';
 import 'artist_detail_view.dart';
 
@@ -27,6 +30,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
   late final String _title;
   late final String _categoryEmoji;
   List<ArtistModel> _categoryArtists = [];
+  final Set<String> _likedArtistIds = {};
 
   @override
   void initState() {
@@ -42,12 +46,109 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
         category: _title,
         forceRefresh: true,
       );
+      final userEmail = sl<StorageService>().getString('user_email');
+      Set<String> favIds = {};
+      if (userEmail != null && userEmail.isNotEmpty) {
+        final favData = await sl<ApiService>().getFavorites(email: userEmail, forceRefresh: true);
+        final favArtists = (favData['artists'] as List<ArtistModel>?) ?? [];
+        favIds = favArtists.map((a) => a.id).toSet();
+      }
       if (mounted) {
         setState(() {
           _categoryArtists = artists;
+          _likedArtistIds.clear();
+          _likedArtistIds.addAll(favIds);
         });
       }
     } catch (_) {}
+  }
+
+  void _shareArtist(ArtistModel artist) {
+    final name = artist.name.isEmpty ? 'Fatima Al Qasimi' : artist.name;
+    final id = artist.id;
+    Clipboard.setData(
+      ClipboardData(
+        text: 'Check out $name on Artist Dubai: https://artistdubai.com/artists/$id',
+      ),
+    );
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Profile link for $name copied to clipboard!',
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF6A2777),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _toggleLike(ArtistModel artist) async {
+    final userEmail = sl<StorageService>().getString('user_email') ?? '';
+    final wasLiked = _likedArtistIds.contains(artist.id);
+    final artistName = artist.name.isEmpty ? 'Artist' : artist.name;
+
+    setState(() {
+      if (wasLiked) {
+        _likedArtistIds.remove(artist.id);
+      } else {
+        _likedArtistIds.add(artist.id);
+      }
+
+      final idx = _categoryArtists.indexWhere((a) => a.id == artist.id);
+      if (idx != -1) {
+        final old = _categoryArtists[idx];
+        final newLikes = wasLiked
+            ? (old.followersCount - 1).clamp(0, 999999)
+            : (old.followersCount + 1);
+        _categoryArtists[idx] = ArtistModel(
+          id: old.id,
+          name: old.name,
+          category: old.category,
+          bio: old.bio,
+          location: old.location,
+          bannerUrl: old.bannerUrl,
+          avatarUrl: old.avatarUrl,
+          isFeatured: old.isFeatured,
+          tags: old.tags,
+          worksCount: old.worksCount,
+          followersCount: newLikes,
+        );
+      }
+    });
+
+    if (userEmail.isNotEmpty) {
+      await sl<ApiService>().likeArtist(
+        artistId: artist.id,
+        userEmail: userEmail,
+      );
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            wasLiked
+                ? 'Unliked $artistName'
+                : 'Liked $artistName\'s profile! ❤️',
+          ),
+          backgroundColor: wasLiked ? null : const Color(0xFF6A2777),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
@@ -660,6 +761,8 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
 
   // Artist Card (Matching Screenshot media_1787732673273.png)
   Widget _buildArtistCard(BuildContext context, ArtistModel artist) {
+    final isLiked = _likedArtistIds.contains(artist.id);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -721,6 +824,58 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                   ],
                 ),
               ),
+              // Share button
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _shareArtist(artist),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(
+                      Icons.share_outlined,
+                      size: 16,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Like ❤️ button
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _toggleLike(artist),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: isLiked
+                          ? const Color(0xFFE11D48).withValues(alpha: 0.1)
+                          : Colors.transparent,
+                      border: Border.all(
+                        color: isLiked
+                            ? const Color(0xFFE11D48)
+                            : const Color(0xFFE2E8F0),
+                      ),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Icon(
+                      isLiked ? Icons.favorite : Icons.favorite_border,
+                      size: 16,
+                      color: isLiked
+                          ? const Color(0xFFE11D48)
+                          : const Color(0xFF64748B),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -738,13 +893,19 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
           ),
           const SizedBox(height: 14),
 
-          // Experience & Artwork Count Stats Row
+          // Experience & Likes/Artwork Count Stats Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Professional - 15+ years',
-                style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+              Row(
+                children: [
+                  const Icon(Icons.people_outline, size: 14, color: Color(0xFF64748B)),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${artist.followersCount} likes',
+                    style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                  ),
+                ],
               ),
               Text(
                 '${artist.worksCount > 0 ? artist.worksCount : 3} artworks',
@@ -806,21 +967,11 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(12),
                 ),
-                child: Image.network(
-                  'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1200&auto=format&fit=crop',
+                child: const AppCachedImage(
+                  imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1200&auto=format&fit=crop',
                   height: 380,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  errorBuilder:
-                      (context, error, stackTrace) => Container(
-                        height: 380,
-                        color: const Color(0xFFF1F5F9),
-                        child: const Icon(
-                          Icons.image,
-                          size: 64,
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
                 ),
               ),
               Positioned(

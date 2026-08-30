@@ -44,7 +44,7 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: RegisterView()));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining("Join Artist Dubai community"), findsOneWidget);
+      expect(find.textContaining("Join Dubai's Artist Community"), findsOneWidget);
       expect(find.byType(TextField), findsNWidgets(4));
     });
 
@@ -107,8 +107,6 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(const MaterialApp(home: AboutUsView()));
-      await tester.pumpAndSettle();
-
       expect(find.text('ABOUT US'), findsOneWidget);
     });
   });

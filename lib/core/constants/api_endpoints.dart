@@ -3,19 +3,34 @@ import 'package:flutter/foundation.dart';
 class ApiEndpoints {
   ApiEndpoints._();
 
+  // Live Hostinger Production URL
+  static const String liveProductionUrl = 'https://technestpartners.com/api';
+  static const String localDevUrl = 'http://localhost:8000';
+
+  // Set to false for ultra-fast local Laragon/PHP development, or true for remote production
+  static bool useLiveApi = false;
+
   // Dynamic Base URL Resolution (Connects to Live PHP MySQL Server)
   static String get baseUrl {
     if (kIsWeb) {
-      return 'http://localhost:8000';
+      if (Uri.base.host.isNotEmpty &&
+          Uri.base.host != 'localhost' &&
+          Uri.base.host != '127.0.0.1') {
+        return '${Uri.base.origin}/api';
+      }
+      return useLiveApi ? liveProductionUrl : localDevUrl;
+    }
+    if (useLiveApi) {
+      return liveProductionUrl;
     }
     if (defaultTargetPlatform == TargetPlatform.android) {
       return 'http://10.0.2.2:8000';
     }
-    return 'http://localhost:8000';
+    return localDevUrl;
   }
 
-  static const Duration connectionTimeout = Duration(seconds: 3);
-  static const Duration receiveTimeout = Duration(seconds: 3);
+  static const Duration connectionTimeout = Duration(seconds: 15);
+  static const Duration receiveTimeout = Duration(seconds: 15);
 
   // Auth (MySQL Backend)
   static const String login = '/api.php?resource=login';
@@ -38,6 +53,9 @@ class ApiEndpoints {
   // Government & Cultural Hubs (MySQL Backend)
   static const String government = '/api.php?resource=government';
 
+  // Reviews (MySQL Backend)
+  static const String reviews = '/api.php?resource=reviews';
+
   // Galleries & Art Centers (MySQL Backend)
   static const String galleries = '/api.php?resource=galleries';
   static const String galleryRegister = '/api.php?resource=galleries';
@@ -52,6 +70,12 @@ class ApiEndpoints {
   // Artworks & Favorites (MySQL Backend)
   static const String artworks = '/api.php?resource=artworks';
   static const String favorites = '/api.php?resource=favorites';
+
+  // Upload
+  static const String upload = '/api.php?resource=upload';
+
+  // Notifications (MySQL Backend)
+  static const String notifications = '/api.php?resource=notifications';
 
   // About Platform (MySQL Backend)
   static const String aboutUs = '/api.php?resource=about';

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../domain/models/art_event_model.dart';
+import '../../../../core/widgets/app_cached_image.dart';
 
 class EventGalleryModal extends StatefulWidget {
   final ArtEventModel event;
@@ -252,20 +253,9 @@ class _EventGalleryModalState extends State<EventGalleryModal> {
                   },
                   itemBuilder: (context, index) {
                     final item = _images[index];
-                    return Image.network(
-                      item.imageUrl,
+                    return AppCachedImage(
+                      imageUrl: item.imageUrl,
                       fit: BoxFit.cover,
-                      errorBuilder:
-                          (context, error, stackTrace) => Container(
-                            color: Colors.grey.shade200,
-                            child: const Center(
-                              child: Icon(
-                                Icons.image_not_supported_outlined,
-                                size: 48,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ),
                     );
                   },
                 ),
