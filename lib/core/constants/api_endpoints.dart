@@ -7,21 +7,21 @@ class ApiEndpoints {
   static const String liveProductionUrl = 'https://technestpartners.com/api';
   static const String localDevUrl = 'http://localhost:8000';
 
-  // Set to false for ultra-fast local Laragon/PHP development, or true for remote production
-  static bool useLiveApi = false;
+  // Set to true to use live Hostinger API across the whole app
+  static bool useLiveApi = true;
 
-  // Dynamic Base URL Resolution (Connects to Live PHP MySQL Server)
+  // Dynamic Base URL Resolution (Connects to Live Hostinger PHP MySQL Server)
   static String get baseUrl {
+    if (useLiveApi) {
+      return liveProductionUrl;
+    }
     if (kIsWeb) {
       if (Uri.base.host.isNotEmpty &&
           Uri.base.host != 'localhost' &&
           Uri.base.host != '127.0.0.1') {
         return '${Uri.base.origin}/api';
       }
-      return useLiveApi ? liveProductionUrl : localDevUrl;
-    }
-    if (useLiveApi) {
-      return liveProductionUrl;
+      return localDevUrl;
     }
     if (defaultTargetPlatform == TargetPlatform.android) {
       return 'http://10.0.2.2:8000';
