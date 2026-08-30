@@ -1,7 +1,17 @@
-# Redirect root requests to build/web for Laragon Apache
+# Exclude API and existing files from build/web redirect
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteCond %{REQUEST_URI} !^/build/web/
+    
+    # Do not rewrite api.php or api/
+    RewriteRule ^api\.php - [L]
+    RewriteRule ^api/ - [L]
+
+    # Don't rewrite if the requested file or directory exists
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    RewriteCond %{REQUEST_URI} !build/web/
     RewriteRule ^(.*)$ build/web/$1 [L]
 </IfModule>
 
