@@ -35,6 +35,7 @@ import 'package:artist_dubai/features/onboarding/presentation/views/onboarding_v
 import 'package:artist_dubai/features/placeholder/presentation/views/coming_soon_view.dart';
 import 'package:artist_dubai/features/profile/presentation/views/profile_view.dart';
 import 'package:artist_dubai/features/settings/presentation/views/settings_view.dart';
+import 'package:artist_dubai/features/splash/presentation/views/splash_screen_view.dart';
 
 class _TestHttpOverrides extends HttpOverrides {}
 
@@ -418,6 +419,20 @@ void main() {
       expect(find.text('Events'), findsWidgets);
       expect(find.text('Galleries'), findsWidgets);
       expect(find.text('Bookings'), findsWidgets);
+    });
+
+    testWidgets('31. SplashScreenView renders animated intro and brand assets', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(testApp(const SplashScreenView()));
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text('ARTIST DUBAI'), findsOneWidget);
+      expect(find.text('COMMUNITY PLATFORM'), findsOneWidget);
+      expect(find.text('Hosted by'), findsOneWidget);
+      expect(find.text('Nizar Fahem'), findsOneWidget);
     });
   });
 }

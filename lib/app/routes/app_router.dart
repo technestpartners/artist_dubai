@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/di/injection_container.dart';
-import '../../core/services/storage_service.dart';
 import '../../features/about_us/presentation/views/about_us_view.dart';
 import '../../features/admin/presentation/views/admin_dashboard_view.dart';
 import '../../features/artists/domain/models/artist_model.dart';
@@ -33,6 +31,7 @@ import '../../features/onboarding/presentation/views/onboarding_view.dart';
 import '../../features/placeholder/presentation/views/coming_soon_view.dart';
 import '../../features/profile/presentation/views/profile_view.dart';
 import '../../features/settings/presentation/views/settings_view.dart';
+import '../../features/splash/presentation/views/splash_screen_view.dart';
 import 'route_names.dart';
 
 class AppRouter {
@@ -40,22 +39,17 @@ class AppRouter {
 
   static final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
-  static String get initialLocation {
-    try {
-      final storage = sl<StorageService>();
-      final hasCompleted =
-          storage.getBool(StorageServiceImpl.keyHasCompletedOnboarding) ??
-          false;
-      return hasCompleted ? RouteNames.home : RouteNames.onboarding;
-    } catch (_) {
-      return RouteNames.onboarding;
-    }
-  }
+  static String get initialLocation => RouteNames.splash;
 
   static final GoRouter router = GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: initialLocation,
     routes: [
+      GoRoute(
+        path: RouteNames.splash,
+        name: 'splash',
+        builder: (context, state) => const SplashScreenView(),
+      ),
       GoRoute(
         path: RouteNames.onboarding,
         name: 'onboarding',
