@@ -14,10 +14,8 @@ class SplashScreenView extends StatefulWidget {
 }
 
 class _SplashScreenViewState extends State<SplashScreenView>
-    with TickerProviderStateMixin {
-  late final AnimationController _mainController;
-  late final AnimationController _pulseController;
-  late final AnimationController _floatController;
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
 
   late final Animation<double> _logoScale;
   late final Animation<double> _logoFade;
@@ -35,78 +33,66 @@ class _SplashScreenViewState extends State<SplashScreenView>
   void initState() {
     super.initState();
 
-    // 1. Main Entrance Timeline (1400ms)
-    _mainController = AnimationController(
+    // Unified 2200ms timeline for splash sequence
+    _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: const Duration(milliseconds: 2200),
     );
 
-    // 2. Pulse / Aura Loop Controller (2000ms)
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2000),
-    )..repeat(reverse: true);
-
-    // 3. Floating Ambient Loop (3000ms)
-    _floatController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 3000),
-    )..repeat(reverse: true);
-
-    // Logo entrance: Elastic scale & fade (0.0 -> 0.6)
-    _logoScale = Tween<double>(begin: 0.3, end: 1.0).animate(
+    // Logo entrance: Elastic scale & fade (0.0 -> 0.5)
+    _logoScale = Tween<double>(begin: 0.35, end: 1.0).animate(
       CurvedAnimation(
-        parent: _mainController,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeOutBack),
+        parent: _controller,
+        curve: const Interval(0.0, 0.5, curve: Curves.easeOutBack),
       ),
     );
 
     _logoFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-        parent: _mainController,
-        curve: const Interval(0.0, 0.4, curve: Curves.easeIn),
+        parent: _controller,
+        curve: const Interval(0.0, 0.35, curve: Curves.easeIn),
       ),
     );
 
-    // Outward expansion of ambient icons/rings (0.1 -> 0.8)
+    // Outward expansion of ambient icons/rings (0.1 -> 0.75)
     _outwardExpansion = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-        parent: _mainController,
-        curve: const Interval(0.1, 0.8, curve: Curves.easeOutCubic),
+        parent: _controller,
+        curve: const Interval(0.1, 0.75, curve: Curves.easeOutCubic),
       ),
     );
 
-    // Title Entrance (0.4 -> 0.8)
+    // Title Entrance (0.35 -> 0.7)
     _titleFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-        parent: _mainController,
-        curve: const Interval(0.4, 0.75, curve: Curves.easeIn),
+        parent: _controller,
+        curve: const Interval(0.35, 0.7, curve: Curves.easeIn),
       ),
     );
 
     _titleSlide = Tween<Offset>(
-      begin: const Offset(0, 0.3),
+      begin: const Offset(0, 0.35),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(
-        parent: _mainController,
-        curve: const Interval(0.4, 0.8, curve: Curves.easeOutCubic),
+        parent: _controller,
+        curve: const Interval(0.35, 0.75, curve: Curves.easeOutCubic),
       ),
     );
 
-    // Subtitle Entrance (0.55 -> 0.9)
+    // Subtitle Entrance (0.5 -> 0.85)
     _subtitleFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-        parent: _mainController,
-        curve: const Interval(0.55, 0.9, curve: Curves.easeIn),
+        parent: _controller,
+        curve: const Interval(0.5, 0.85, curve: Curves.easeIn),
       ),
     );
 
-    // Footer "Hosted by Nizar Fahem" Entrance (0.65 -> 1.0)
+    // Footer "Hosted by Nizar Fahem" Entrance (0.6 -> 0.95)
     _footerFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-        parent: _mainController,
-        curve: const Interval(0.65, 1.0, curve: Curves.easeIn),
+        parent: _controller,
+        curve: const Interval(0.6, 0.95, curve: Curves.easeIn),
       ),
     );
 
@@ -115,42 +101,47 @@ class _SplashScreenViewState extends State<SplashScreenView>
       end: Offset.zero,
     ).animate(
       CurvedAnimation(
-        parent: _mainController,
-        curve: const Interval(0.65, 1.0, curve: Curves.easeOutCubic),
+        parent: _controller,
+        curve: const Interval(0.6, 0.95, curve: Curves.easeOutCubic),
       ),
     );
 
-    _mainController.forward();
+    _controller.forward();
 
-    // Auto navigate after 2.8 seconds
-    _navigationTimer = Timer(const Duration(milliseconds: 2800), _navigateToNext);
+    // Auto navigate after 2.6 seconds
+    _navigationTimer = Timer(const Duration(milliseconds: 2600), () {
+      if (mounted) _navigateToNext();
+    });
   }
 
   @override
   void dispose() {
     _navigationTimer?.cancel();
-    _mainController.dispose();
-    _pulseController.dispose();
-    _floatController.dispose();
+    _controller.stop();
+    _controller.dispose();
     super.dispose();
   }
 
   void _navigateToNext() {
     if (_hasNavigated || !mounted) return;
     _hasNavigated = true;
+    _navigationTimer?.cancel();
 
-    try {
-      final storage = sl<StorageService>();
-      final hasCompleted =
-          storage.getBool(StorageServiceImpl.keyHasCompletedOnboarding) ?? false;
-      if (hasCompleted) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      try {
+        final storage = sl<StorageService>();
+        final hasCompleted =
+            storage.getBool(StorageServiceImpl.keyHasCompletedOnboarding) ?? false;
+        if (hasCompleted) {
+          context.go(RouteNames.home);
+        } else {
+          context.go(RouteNames.onboarding);
+        }
+      } catch (_) {
         context.go(RouteNames.home);
-      } else {
-        context.go(RouteNames.onboarding);
       }
-    } catch (_) {
-      context.go(RouteNames.home);
-    }
+    });
   }
 
   @override
@@ -179,14 +170,12 @@ class _SplashScreenViewState extends State<SplashScreenView>
           ),
           child: SafeArea(
             child: AnimatedBuilder(
-              animation: Listenable.merge([
-                _mainController,
-                _pulseController,
-                _floatController,
-              ]),
+              animation: _controller,
               builder: (context, child) {
-                final pulse = _pulseController.value;
-                final floatOffset = math.sin(_floatController.value * 2 * math.pi) * 5;
+                // Subtle breathing pulse derived smoothly from the controller
+                final progress = _controller.value;
+                final pulse = math.sin(progress * math.pi);
+                final floatOffset = math.sin(progress * 2 * math.pi) * 4;
 
                 return Stack(
                   alignment: Alignment.center,
@@ -195,9 +184,9 @@ class _SplashScreenViewState extends State<SplashScreenView>
                     Positioned(
                       top: size.height * 0.22,
                       child: Opacity(
-                        opacity: _logoFade.value * (0.3 + 0.2 * pulse),
+                        opacity: (_logoFade.value * (0.3 + 0.2 * pulse)).clamp(0.0, 1.0),
                         child: Transform.scale(
-                          scale: 0.8 + (_outwardExpansion.value * 0.4) + (pulse * 0.1),
+                          scale: 0.8 + (_outwardExpansion.value * 0.4) + (pulse * 0.08),
                           child: Container(
                             width: 260,
                             height: 260,
@@ -234,7 +223,7 @@ class _SplashScreenViewState extends State<SplashScreenView>
                           child: Transform.scale(
                             scale: _logoScale.value,
                             child: Opacity(
-                              opacity: _logoFade.value,
+                              opacity: _logoFade.value.clamp(0.0, 1.0),
                               child: Container(
                                 width: 160,
                                 height: 160,
