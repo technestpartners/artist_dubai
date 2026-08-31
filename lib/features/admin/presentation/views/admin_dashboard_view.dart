@@ -124,30 +124,55 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF3B1E78), // Royal purple dialog background
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-        content: Text(message, style: const TextStyle(fontSize: 14, color: Color(0xFF475569))),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: Colors.white,
+          ),
+        ),
+        content: Text(
+          message,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.white.withValues(alpha: 0.85),
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFDC2626),
+              backgroundColor: const Color(0xFFDC2626), // Red delete button
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             onPressed: () async {
               Navigator.pop(ctx);
               await onConfirm();
             },
-            child: const Text('Delete'),
+            child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
           ),
         ],
       ),
     );
   }
+
+
 
   // --- Modal Dialog: New Government Entry & Edit Entry (Screenshots 3 & 4) ---
   void _showGovernmentDialog({GovernmentEntity? existing, int? index}) {
@@ -357,17 +382,18 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     );
   }
 
-  // --- Modal Dialog: New Art Center (Screenshot 5) ---
-  void _showArtCenterDialog() {
-    final nameCtrl = TextEditingController();
-    final typeCtrl = TextEditingController(text: 'Gallery · Exhibition space');
-    final addressCtrl = TextEditingController();
-    final hoursCtrl = TextEditingController(text: 'Sat–Thu 10:00–20:00');
-    final websiteCtrl = TextEditingController();
-    final imageCtrl = TextEditingController();
-    final descCtrl = TextEditingController();
-    final orderCtrl = TextEditingController(text: '0');
-    bool isCurrentlyOpen = true;
+  // --- Modal Dialog: New Art Center & Edit Art Center ---
+  void _showArtCenterDialog({Map<String, dynamic>? existing, int? index}) {
+    final isEdit = existing != null;
+    final nameCtrl = TextEditingController(text: existing?['name'] ?? '');
+    final typeCtrl = TextEditingController(text: existing?['category'] ?? 'Gallery · Exhibition space');
+    final addressCtrl = TextEditingController(text: existing?['location'] ?? '');
+    final hoursCtrl = TextEditingController(text: existing?['timing'] ?? 'Sat–Thu 10:00–20:00');
+    final websiteCtrl = TextEditingController(text: existing?['website'] ?? '');
+    final imageCtrl = TextEditingController(text: existing?['image_url'] ?? '');
+    final descCtrl = TextEditingController(text: existing?['description'] ?? '');
+    final orderCtrl = TextEditingController(text: '${existing?['display_order'] ?? 0}');
+    bool isCurrentlyOpen = (existing?['currently_open'] ?? 1) == 1;
 
     showDialog(
       context: context,
@@ -387,9 +413,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'New art center',
-                        style: TextStyle(
+                      Text(
+                        isEdit ? 'Edit art center' : 'New art center',
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF0F172A),
@@ -405,7 +431,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   ),
                   const SizedBox(height: 16),
 
-                  _buildFormField(label: 'Name', controller: nameCtrl),
+                  _buildFormField(label: 'Name', controller: nameCtrl, isFocused: true),
                   const SizedBox(height: 12),
 
                   _buildFormField(label: 'Type', controller: typeCtrl, hint: 'Gallery · Exhibition space'),
@@ -473,6 +499,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       if (name.isEmpty) return;
 
                       final payload = {
+                        if (existing?['id'] != null) 'id': existing!['id'],
                         'name': name,
                         'category': typeCtrl.text.trim(),
                         'location': addressCtrl.text.trim(),
@@ -480,16 +507,23 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         'website': websiteCtrl.text.trim(),
                         'image_url': imageCtrl.text.trim(),
                         'description': descCtrl.text.trim(),
+                        'currently_open': isCurrentlyOpen ? 1 : 0,
                       };
 
                       Navigator.pop(ctx);
 
-                      setState(() {
-                        _artCenters.insert(0, payload);
-                        _galleries.insert(0, payload);
-                      });
-
-                      await sl<ApiService>().createArtCenter(payload);
+                      if (isEdit) {
+                        if (index != null && index < _artCenters.length) {
+                          setState(() => _artCenters[index] = payload);
+                        }
+                        await sl<ApiService>().updateArtCenter(payload);
+                      } else {
+                        setState(() {
+                          _artCenters.insert(0, payload);
+                          _galleries.insert(0, payload);
+                        });
+                        await sl<ApiService>().createArtCenter(payload);
+                      }
                     },
                     child: const Text('Save', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   ),
@@ -510,13 +544,14 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     );
   }
 
-  // --- Modal Dialog: Create Gallery (Matching Screenshot) ---
-  void _showCreateGalleryDialog() {
-    final titleCtrl = TextEditingController();
-    final descCtrl = TextEditingController();
-    final coverImageCtrl = TextEditingController();
-    String? selectedEvent;
-    bool isVisibleToEveryone = true;
+  // --- Modal Dialog: Create & Edit Gallery ---
+  void _showCreateGalleryDialog({Map<String, dynamic>? existing, int? index}) {
+    final isEdit = existing != null;
+    final titleCtrl = TextEditingController(text: existing?['name'] ?? existing?['title'] ?? '');
+    final descCtrl = TextEditingController(text: existing?['description'] ?? '');
+    final coverImageCtrl = TextEditingController(text: existing?['image_url'] ?? existing?['cover_url'] ?? '');
+    String? selectedEvent = existing?['event_name'];
+    bool isVisibleToEveryone = (existing?['is_public'] ?? 1) == 1;
 
     showDialog(
       context: context,
@@ -536,9 +571,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Create gallery',
-                        style: TextStyle(
+                      Text(
+                        isEdit ? 'Edit gallery' : 'Create gallery',
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF0F172A),
@@ -673,6 +708,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       if (title.isEmpty) return;
 
                       final payload = {
+                        if (existing?['id'] != null) 'id': existing!['id'],
                         'name': title,
                         'title': title,
                         'description': descCtrl.text.trim(),
@@ -685,13 +721,19 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
 
                       Navigator.pop(ctx);
 
-                      setState(() {
-                        _galleries.insert(0, payload);
-                      });
-
-                      await sl<ApiService>().createArtCenter(payload);
+                      if (isEdit) {
+                        if (index != null && index < _galleries.length) {
+                          setState(() => _galleries[index] = payload);
+                        }
+                        await sl<ApiService>().updateArtCenter(payload);
+                      } else {
+                        setState(() {
+                          _galleries.insert(0, payload);
+                        });
+                        await sl<ApiService>().createArtCenter(payload);
+                      }
                     },
-                    child: const Text('Create', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    child: Text(isEdit ? 'Save' : 'Create', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   ),
                   const SizedBox(height: 8),
 
@@ -1042,7 +1084,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           subtitle: artist.location.isNotEmpty ? artist.location : 'Dubai, UAE',
           badgeText: artist.category,
           onEdit: () {
-            context.push('${RouteNames.artists}/${artist.id}');
+            context.push(RouteNames.artistDetail, extra: artist);
           },
           onDelete: () {
             _confirmDelete(
@@ -1103,7 +1145,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 badgeText: 'active',
                 isStatusBadge: true,
                 onEdit: () {
-                  context.push(RouteNames.events);
+                  context.push(RouteNames.createArtEvent, extra: ev);
                 },
                 onDelete: () {
                   _confirmDelete(
@@ -1185,8 +1227,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            icon: const Icon(Icons.add, size: 14),
-            label: const Text('New gallery', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+            icon: const Icon(Icons.add, size: 14, color: Colors.white),
+            label: const Text('New gallery', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
             onPressed: _showCreateGalleryDialog,
           ),
         ),
@@ -1216,6 +1258,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 subtitle: 'Artist gallery',
                 badgeText: 'Public',
                 isPurpleBadge: true,
+                onEdit: () => _showCreateGalleryDialog(existing: gal, index: index),
                 onDelete: () {
                   _confirmDelete(
                     title: 'Delete Gallery',
@@ -1252,12 +1295,21 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final b = _bookings[index];
-        final title = b['event_title'] as String? ?? b['full_name'] as String? ?? 'Booking';
+        final eventTitle = b['event_title'] as String? ?? '';
+        final userName = b['full_name'] as String? ?? b['artist_name'] as String? ?? '';
         final status = b['status'] as String? ?? 'Confirmed';
         final date = b['event_date'] as String? ?? b['created_at'] as String? ?? '';
+
+        final title = eventTitle.isNotEmpty
+            ? eventTitle
+            : (userName.isNotEmpty ? userName : 'Booking #${b['id'] ?? (index + 1)}');
+        final subtitle = userName.isNotEmpty && eventTitle.isNotEmpty
+            ? '$userName • $date'
+            : date;
+
         return _buildListItemCard(
           title: title,
-          subtitle: date,
+          subtitle: subtitle,
           badgeText: status,
           isStatusBadge: true,
         );
@@ -1307,8 +1359,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
-              icon: const Icon(Icons.add, size: 14),
-              label: const Text('New center', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+              icon: const Icon(Icons.add, size: 14, color: Colors.white),
+              label: const Text('New center', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
               onPressed: _showArtCenterDialog,
             ),
           ],
@@ -1338,6 +1390,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 subtitle: location,
                 badgeText: 'Open',
                 isPurpleBadge: true,
+                onEdit: () => _showArtCenterDialog(existing: center, index: index),
                 onDelete: () {
                   _confirmDelete(
                     title: 'Delete Art Center',
@@ -1380,8 +1433,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
-              icon: const Icon(Icons.add, size: 14),
-              label: const Text('New entry', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+              icon: const Icon(Icons.add, size: 14, color: Colors.white),
+              label: const Text('New entry', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
               onPressed: () => _showGovernmentDialog(),
             ),
           ],
@@ -1567,15 +1620,17 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF0F172A),
+                if (title.isNotEmpty) ...[
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF0F172A),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 3),
+                  const SizedBox(height: 3),
+                ],
                 Text(
                   subtitle,
                   style: const TextStyle(

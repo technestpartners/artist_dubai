@@ -88,7 +88,10 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       _maxTicketsController = TextEditingController(
         text: ev.maxAttendees.toString(),
       );
-      _selectedCategory = ev.category;
+      _selectedCategory = ev.category.isNotEmpty ? ev.category : null;
+      if (_selectedCategory != null && !_categories.contains(_selectedCategory)) {
+        _categories.insert(0, _selectedCategory!);
+      }
     } else {
       _eventTitleController = TextEditingController();
       _descriptionController = TextEditingController();
@@ -112,7 +115,8 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       final filtered = fetched.where((c) => c != 'All Categories' && c != 'All').toList();
       if (mounted && filtered.isNotEmpty) {
         setState(() {
-          _categories = filtered;
+          final combined = <String>{..._categories, ...filtered}.toList();
+          _categories = combined;
         });
       }
     } catch (_) {}
@@ -312,253 +316,264 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Back Arrow & Top Icon Header (Matching Screenshot media_1787728280911.png)
+                      // Top Back Bar & Header Title matching exact screenshot
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           IconButton(
                             icon: const Icon(
                               Icons.arrow_back,
-                              color: Colors.black87,
+                              color: Color(0xFF1E293B),
+                              size: 20,
                             ),
                             onPressed: () => context.pop(),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                           ),
-                          const Spacer(),
-                          Container(
-                            width: 50,
-                            height: 50,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFF3E8FF),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.calendar_today_outlined,
-                              color: Color(0xFF5E227A),
-                              size: 24,
-                            ),
+                          const SizedBox(width: 14),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                isEdit ? 'Edit Event' : 'Create Event',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF0F172A),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                isEdit
+                                    ? 'Update your event details and image'
+                                    : 'Add your event details and image',
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  color: Color(0xFF64748B),
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ],
                           ),
-                          const Spacer(),
-                          const SizedBox(width: 24),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 20),
 
-                      // Title & Subtitle
-                      Center(
-                        child: Column(
+                      // Featured Image Card
+                      _buildCardSection(
+                        title: 'Featured Image',
+                        child: Row(
                           children: [
-                            Text(
-                              isEdit ? 'Edit Art Event' : 'Create Art Event',
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF5E227A),
+                            OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF1E293B),
+                                side: const BorderSide(color: Color(0xFFCBD5E1)),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               ),
+                              icon: const Icon(Icons.upload_outlined, size: 16),
+                              label: const Text('Upload Image', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                              onPressed: () {},
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              isEdit
-                                  ? 'Update and manage your art event in Dubai'
-                                  : 'Organize and promote your art event in Dubai',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 13.5,
-                                color: Color(0xFF64748B),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Maximum file size: 5MB. Supported formats: JPG, PNG, WebP',
+                                style: TextStyle(fontSize: 11, color: const Color(0xFF64748B).withValues(alpha: 0.8)),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 14),
 
-                      // SECTION 1: Event Details
-                      _buildSectionTitle(
-                        icon: Icons.calendar_today_outlined,
-                        title: 'Event Details',
-                      ),
-                      const SizedBox(height: 14),
-                      _buildLabel('Event Title'),
-                      _buildTextField(
-                        controller: _eventTitleController,
-                        hintText: 'Enter event title',
-                      ),
-                      const SizedBox(height: 14),
-                      _buildLabel('Description'),
-                      _buildTextField(
-                        controller: _descriptionController,
-                        hintText: 'Describe your event..',
-                        maxLines: 4,
-                      ),
-                      const SizedBox(height: 14),
-                      _buildLabel('Event Category'),
-                      _buildDropdownField(
-                        value: _selectedCategory,
-                        hintText: 'Select event category',
-                        items: _categories,
-                        onChanged: (val) {
-                          setState(() {
-                            _selectedCategory = val;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 14),
-                       _buildLabel('Event Date & Time'),
-                       _buildTextField(
-                         controller: _eventDateController,
-                         hintText: 'dd-mm-yyyy --:--',
-                         suffixIcon: Icons.calendar_today_outlined,
-                         onTap: () => _pickDateTime(_eventDateController),
-                       ),
-                       const SizedBox(height: 14),
-                       _buildLabel('End Date & Time (Optional)'),
-                       _buildTextField(
-                         controller: _endDateController,
-                         hintText: 'dd-mm-yyyy --:--',
-                         suffixIcon: Icons.calendar_today_outlined,
-                         onTap: () => _pickDateTime(_endDateController),
-                       ),
-                      const SizedBox(height: 28),
-
-                      // SECTION 2: Location
-                      _buildSectionTitle(
-                        icon: Icons.location_on_outlined,
-                        title: 'Location',
-                      ),
-                      const SizedBox(height: 14),
-                      _buildLabel('Location'),
-                      _buildTextField(
-                        controller: _locationController,
-                        hintText: 'Dubai, UAE',
-                      ),
-                      const SizedBox(height: 14),
-                      _buildLabel('Venue (Optional)'),
-                      _buildTextField(
-                        controller: _venueController,
-                        hintText: 'Gallery name or address',
-                      ),
-                      const SizedBox(height: 28),
-
-                      // SECTION 3: Capacity & Attendance
-                      _buildSectionTitle(
-                        icon: Icons.people_outline,
-                        title: 'Attendance & Capacity',
-                      ),
-                      const SizedBox(height: 14),
-                      _buildLabel('Maximum Capacity (Total RSVP Limit)'),
-                      _buildTextField(
-                        controller: _maxTicketsController,
-                        hintText: 'e.g. 100',
-                        prefixIcon: Icons.people_outline,
-                        keyboardType: TextInputType.number,
-                      ),
-                      const SizedBox(height: 28),
-
-                      // SECTION 4: Organizer Information
-                      _buildSectionTitle(
-                        icon: Icons.people_outline,
-                        title: 'Organizer Information',
-                      ),
-                      const SizedBox(height: 14),
-                      _buildLabel('Organizer Name'),
-                      _buildTextField(
-                        controller: _organizerNameController,
-                        hintText: 'Your name or organization',
-                      ),
-                      const SizedBox(height: 14),
-                      _buildLabel('Contact Email'),
-                      _buildTextField(
-                        controller: _contactEmailController,
-                        hintText: 'your@email.com',
-                        prefixIcon: Icons.email_outlined,
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 14),
-                      _buildLabel('Contact Phone (Optional)'),
-                      _buildTextField(
-                        controller: _contactPhoneController,
-                        hintText: '+971 50 XXX XXXX',
-                        prefixIcon: Icons.phone_outlined,
-                        keyboardType: TextInputType.phone,
-                      ),
-                      const SizedBox(height: 14),
-                      _buildLabel('Requirements or Notes'),
-                      _buildTextField(
-                        controller: _notesController,
-                        hintText:
-                            'Any special requirements, dress code, or additional information..',
-                        maxLines: 3,
-                      ),
-                      const SizedBox(height: 14),
-                      _buildLabel('Tags (comma-separated)'),
-                      _buildTextField(
-                        controller: _tagsController,
-                        hintText: 'art, exhibition, gallery, painting',
-                      ),
-                      const SizedBox(height: 28),
-
-                      // Action Row: Cancel & Create Event
-                      Row(
-                        children: [
-                          Expanded(
-                            child: SizedBox(
-                              height: 46,
-                              child: OutlinedButton(
-                                style: OutlinedButton.styleFrom(
-                                  side: const BorderSide(
-                                    color: Color(0xFF1E1E1E),
-                                    width: 1.0,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                onPressed: () => context.pop(),
-                                child: const Text(
-                                  'Cancel',
-                                  style: TextStyle(
-                                    fontSize: 14.5,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1E1E1E),
-                                  ),
-                                ),
-                              ),
+                      // Event Information Card
+                      _buildCardSection(
+                        title: 'Event Information',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildLabel('Event Title'),
+                            _buildTextField(
+                              controller: _eventTitleController,
+                              hintText: 'Enter event title',
                             ),
+                            const SizedBox(height: 12),
+                            _buildLabel('Category'),
+                            _buildDropdownField(
+                              value: _selectedCategory,
+                              hintText: 'Select category',
+                              items: _categories,
+                              onChanged: (val) {
+                                setState(() {
+                                  _selectedCategory = val;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            _buildLabel('Description'),
+                            _buildTextField(
+                              controller: _descriptionController,
+                              hintText: 'Describe your event..',
+                              maxLines: 3,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Date & Time Card
+                      _buildCardSection(
+                        title: 'Date & Time',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildLabel('Start Date & Time'),
+                            _buildTextField(
+                              controller: _eventDateController,
+                              hintText: 'dd-mm-yyyy --:--',
+                              suffixIcon: Icons.calendar_today_outlined,
+                              onTap: () => _pickDateTime(_eventDateController),
+                            ),
+                            const SizedBox(height: 12),
+                            _buildLabel('End Date & Time (Optional)'),
+                            _buildTextField(
+                              controller: _endDateController,
+                              hintText: 'dd-mm-yyyy --:--',
+                              suffixIcon: Icons.calendar_today_outlined,
+                              onTap: () => _pickDateTime(_endDateController),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Location Card
+                      _buildCardSection(
+                        title: 'Location',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildLabel('Venue Name (Optional)'),
+                            _buildTextField(
+                              controller: _venueController,
+                              hintText: 'e.g., Dubai Opera',
+                            ),
+                            const SizedBox(height: 12),
+                            _buildLabel('Address/Location'),
+                            _buildTextField(
+                              controller: _locationController,
+                              hintText: 'UAE',
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Pricing & Capacity Card
+                      _buildCardSection(
+                        title: 'Pricing & Capacity',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: Checkbox(
+                                    value: true,
+                                    activeColor: const Color(0xFF2563EB),
+                                    onChanged: (val) {},
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'This is a free event',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF1E293B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            _buildLabel('Max Attendees (Optional)'),
+                            _buildTextField(
+                              controller: _maxTicketsController,
+                              hintText: 'Leave empty for unlimited',
+                              keyboardType: TextInputType.number,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Additional Details Card
+                      _buildCardSection(
+                        title: 'Additional Details',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildLabel('Phone Number (Optional)'),
+                            _buildTextField(
+                              controller: _contactPhoneController,
+                              hintText: '+971 50 123 4567',
+                              keyboardType: TextInputType.phone,
+                            ),
+                            const SizedBox(height: 12),
+                            _buildLabel('Requirements (Optional)'),
+                            _buildTextField(
+                              controller: _notesController,
+                              hintText: 'Any special requirements or instructions for attendees..',
+                              maxLines: 3,
+                            ),
+                            const SizedBox(height: 12),
+                            _buildLabel('Tags (Optional)'),
+                            _buildTextField(
+                              controller: _tagsController,
+                              hintText: 'Add tags (press Enter to add)',
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Action Row: Cancel & Update Event (Right aligned matching screenshot)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF334155),
+                              side: const BorderSide(color: Color(0xFFCBD5E1)),
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            onPressed: () => context.pop(),
+                            child: const Text('Cancel', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                           ),
                           const SizedBox(width: 12),
-                          Expanded(
-                            child: SizedBox(
-                              height: 46,
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF5E227A),
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                onPressed: _isSubmitting ? null : _submitEvent,
-                                child:
-                                    _isSubmitting
-                                        ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            color: Colors.white,
-                                            strokeWidth: 2,
-                                          ),
-                                        )
-                                        : Text(
-                                           isEdit ? 'Update Event' : 'Create Event',
-                                           style: const TextStyle(
-                                             fontSize: 14.5,
-                                             fontWeight: FontWeight.bold,
-                                           ),
-                                         ),
-                              ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF5E227A),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
+                            onPressed: _isSubmitting ? null : _submitEvent,
+                            child: _isSubmitting
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                  )
+                                : Text(
+                                    isEdit ? 'Update Event' : 'Create Event',
+                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                  ),
                           ),
                         ],
                       ),
@@ -575,22 +590,34 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     );
   }
 
-  Widget _buildSectionTitle({required IconData icon, required String title}) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: const Color(0xFF5E227A)),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1E1E1E),
+  Widget _buildCardSection({required String title, required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF0F172A),
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 14),
+          child,
+        ],
+      ),
     );
   }
+
+
 
   Widget _buildLabel(String label) {
     return Padding(
@@ -672,8 +699,11 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     required List<String> items,
     required ValueChanged<String?> onChanged,
   }) {
+    final uniqueItems = items.toSet().toList();
+    final validValue = (value != null && uniqueItems.contains(value)) ? value : null;
+
     return DropdownButtonFormField<String>(
-      value: value,
+      value: validValue,
       dropdownColor: Colors.white,
       borderRadius: BorderRadius.circular(12),
       menuMaxHeight: 320,
@@ -712,7 +742,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           borderSide: const BorderSide(color: Color(0xFF5E227A), width: 1.5),
         ),
       ),
-      items: items.map((item) {
+      items: uniqueItems.map((item) {
         return DropdownMenuItem<String>(
           value: item,
           child: Text(

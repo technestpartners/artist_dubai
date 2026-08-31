@@ -25,7 +25,7 @@ class HomeHeaderWidget extends StatelessWidget {
                   width: logoSize,
                   height: logoSize,
                   child: Image.asset(
-                    'assets/images/artist-dubai-logo-26Kex3Rz.png',
+                    'assets/images/header_logo.png',
                     fit: BoxFit.contain,
                   ),
                 ),

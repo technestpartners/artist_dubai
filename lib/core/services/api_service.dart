@@ -1432,4 +1432,40 @@ class ApiService {
     } catch (_) {}
     return false;
   }
+
+  // 33. Update Art Center / Gallery
+  Future<bool> updateArtCenter(Map<String, dynamic> data) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.galleries}&action=update',
+        data: data,
+      );
+      if (_isSuccess(res)) {
+        _cachedGalleries = null;
+        try {
+          sl<LiveSyncService>().notifyGalleriesChanged();
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  // 34. Update Artist (Admin)
+  Future<bool> updateArtist(Map<String, dynamic> data) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.artists}&action=update',
+        data: data,
+      );
+      if (_isSuccess(res)) {
+        _cachedArtists = null;
+        try {
+          sl<LiveSyncService>().notifyArtistsChanged();
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
 }

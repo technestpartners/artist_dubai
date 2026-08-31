@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class DashboardHeaderWidget extends StatelessWidget {
   const DashboardHeaderWidget({super.key});
@@ -26,7 +26,7 @@ class DashboardHeaderWidget extends StatelessWidget {
             ),
             child: ClipOval(
               child: Image.asset(
-                'assets/images/artist-dubai-logo-26Kex3Rz.png',
+                'assets/images/header_logo.png',
                 fit: BoxFit.cover,
               ),
             ),

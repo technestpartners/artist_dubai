@@ -26,7 +26,7 @@ class ComingSoonView extends StatelessWidget {
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Image.asset(
-                        'assets/images/artist-dubai-logo-26Kex3Rz.png',
+                        'assets/images/header_logo.png',
                         fit: BoxFit.cover,
                       );
                     },

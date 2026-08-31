@@ -13,13 +13,19 @@ class SplashScreenView extends StatefulWidget {
 }
 
 class _SplashScreenViewState extends State<SplashScreenView>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
+    with TickerProviderStateMixin {
+  late final AnimationController _mainController;
+  late final AnimationController _pulseController;
+
   late final Animation<double> _logoScale;
   late final Animation<double> _logoFade;
-  late final Animation<double> _textFade;
-  late final Animation<Offset> _textSlide;
+  late final Animation<double> _logoRotate;
+  late final Animation<double> _titleFade;
+  late final Animation<Offset> _titleSlide;
+  late final Animation<double> _subtitleFade;
+  late final Animation<Offset> _subtitleSlide;
   late final Animation<double> _footerFade;
+  late final Animation<Offset> _footerSlide;
 
   Timer? _navigationTimer;
   bool _hasNavigated = false;
@@ -28,56 +34,98 @@ class _SplashScreenViewState extends State<SplashScreenView>
   void initState() {
     super.initState();
 
-    _controller = AnimationController(
+    // Main entrance sequence (2.2 seconds)
+    _mainController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 2200),
     );
 
-    // Minimal, refined logo scale (0.85 -> 1.0) & fade (0.0 -> 0.4)
-    _logoScale = Tween<double>(begin: 0.88, end: 1.0).animate(
+    // Continuous pulse effect for logo glow
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat(reverse: true);
+
+    // 1. Logo Sequence (0ms -> 700ms)
+    _logoScale = Tween<double>(begin: 0.7, end: 1.0).animate(
       CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.0, 0.55, curve: Curves.easeOutCubic),
+        parent: _mainController,
+        curve: const Interval(0.0, 0.35, curve: Curves.elasticOut),
       ),
     );
 
     _logoFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.0, 0.4, curve: Curves.easeIn),
+        parent: _mainController,
+        curve: const Interval(0.0, 0.25, curve: Curves.easeIn),
       ),
     );
 
-    // Title & Subtitle subtle slide up & fade (0.3 -> 0.75)
-    _textFade = Tween<double>(begin: 0.0, end: 1.0).animate(
+    _logoRotate = Tween<double>(begin: -0.05, end: 0.0).animate(
       CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.3, 0.7, curve: Curves.easeIn),
+        parent: _mainController,
+        curve: const Interval(0.0, 0.4, curve: Curves.easeOutCubic),
       ),
     );
 
-    _textSlide = Tween<Offset>(
-      begin: const Offset(0, 0.2),
+    // 2. Title "ARTIST DUBAI" Reveal (300ms -> 900ms)
+    _titleFade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _mainController,
+        curve: const Interval(0.25, 0.55, curve: Curves.easeIn),
+      ),
+    );
+
+    _titleSlide = Tween<Offset>(
+      begin: const Offset(0, 0.4),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.3, 0.75, curve: Curves.easeOutCubic),
+        parent: _mainController,
+        curve: const Interval(0.25, 0.55, curve: Curves.easeOutCubic),
       ),
     );
 
-    // Hosted by Nizar Fahem footer fade (0.55 -> 0.95)
+    // 3. Subtitle "COMMUNITY PLATFORM" (500ms -> 1100ms)
+    _subtitleFade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _mainController,
+        curve: const Interval(0.4, 0.7, curve: Curves.easeIn),
+      ),
+    );
+
+    _subtitleSlide = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _mainController,
+        curve: const Interval(0.4, 0.7, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    // 4. Footer "Hosted by Nizar Fahem" (700ms -> 1400ms)
     _footerFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.55, 0.95, curve: Curves.easeIn),
+        parent: _mainController,
+        curve: const Interval(0.55, 0.85, curve: Curves.easeIn),
       ),
     );
 
-    _controller.forward();
+    _footerSlide = Tween<Offset>(
+      begin: const Offset(0, 0.4),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _mainController,
+        curve: const Interval(0.55, 0.85, curve: Curves.easeOutCubic),
+      ),
+    );
 
-    // Clean auto transition to main dashboard after 3.5 seconds (3 - 4 seconds)
-    _navigationTimer = Timer(const Duration(milliseconds: 3500), () {
+    _mainController.forward();
+
+    // Auto transition after exactly 4 seconds
+    _navigationTimer = Timer(const Duration(milliseconds: 4000), () {
       if (mounted) _navigateToNext();
     });
   }
@@ -85,8 +133,10 @@ class _SplashScreenViewState extends State<SplashScreenView>
   @override
   void dispose() {
     _navigationTimer?.cancel();
-    _controller.stop();
-    _controller.dispose();
+    _mainController.stop();
+    _mainController.dispose();
+    _pulseController.stop();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -126,9 +176,9 @@ class _SplashScreenViewState extends State<SplashScreenView>
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                Color(0xFF6B268B), // Subtle top royal purple highlight
-                Color(0xFF5E227A), // Signature Dubai Royal Purple
-                Color(0xFF4A1761), // Elegant deep purple base
+                Color(0xFF3B0D4A), // Rich Dark Purple Header
+                Color(0xFF5E227A), // Signature Royal Dubai Purple
+                Color(0xFF23072E), // Midnight Velvet Base
               ],
               stops: [0.0, 0.5, 1.0],
             ),
@@ -138,69 +188,119 @@ class _SplashScreenViewState extends State<SplashScreenView>
               children: [
                 const Spacer(flex: 3),
 
-                // 1. Minimal & Clean Central Logo
-                ScaleTransition(
-                  scale: _logoScale,
-                  child: FadeTransition(
-                    opacity: _logoFade,
-                    child: Container(
-                      width: 140,
-                      height: 140,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(22),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.25),
-                            blurRadius: 24,
-                            offset: const Offset(0, 10),
+                // 1. Animated Pulsing Central Logo Badge
+                AnimatedBuilder(
+                  animation: Listenable.merge([_mainController, _pulseController]),
+                  builder: (context, child) {
+                    return Transform.rotate(
+                      angle: _logoRotate.value,
+                      child: Transform.scale(
+                        scale: _logoScale.value,
+                        child: Opacity(
+                          opacity: _logoFade.value,
+                          child: Container(
+                            width: 210,
+                            height: 210,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.35),
+                                  blurRadius: 32,
+                                  offset: const Offset(0, 14),
+                                ),
+                              ],
+                            ),
+                            padding: const EdgeInsets.all(4),
+                            child: ClipOval(
+                              child: Image.asset(
+                                'assets/images/header_logo.png',
+                                fit: BoxFit.cover,
+                              ),
+                            ),
                           ),
-                          BoxShadow(
-                            color: const Color(0xFF6A2777).withValues(alpha: 0.35),
-                            blurRadius: 30,
-                            spreadRadius: 2,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 36),
+
+                // 2. Staggered Animated Typography
+                SlideTransition(
+                  position: _titleSlide,
+                  child: FadeTransition(
+                    opacity: _titleFade,
+                    child: const Text(
+                      'ARTIST DUBAI',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 27,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: 4.0,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black38,
+                            blurRadius: 10,
+                            offset: Offset(0, 4),
                           ),
                         ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(22),
-                        child: Image.asset(
-                          'assets/images/artist-dubai-logo-26Kex3Rz.png',
-                          fit: BoxFit.cover,
-                        ),
                       ),
                     ),
                   ),
                 ),
 
+                const SizedBox(height: 10),
+
+                SlideTransition(
+                  position: _subtitleSlide,
+                  child: FadeTransition(
+                    opacity: _subtitleFade,
+                    child: const Text(
+                      'COMMUNITY PLATFORM',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white70,
+                        letterSpacing: 3.5,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const Spacer(flex: 3),
+
                 const SizedBox(height: 28),
 
-                // 2. Minimal & Professional Typography
+                // 4. Animated "Hosted by Nizar Fahem" Footer
                 SlideTransition(
-                  position: _textSlide,
+                  position: _footerSlide,
                   child: FadeTransition(
-                    opacity: _textFade,
+                    opacity: _footerFade,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text(
-                          'ARTIST DUBAI',
-                          textAlign: TextAlign.center,
+                        Text(
+                          'Hosted by',
                           style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                            letterSpacing: 2.8,
+                            fontSize: 12.5,
+                            color: Colors.white.withValues(alpha: 0.65),
+                            fontWeight: FontWeight.w400,
+                            letterSpacing: 1.0,
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'COMMUNITY PLATFORM',
-                          textAlign: TextAlign.center,
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Nizar Fahem',
                           style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white.withValues(alpha: 0.85),
-                            letterSpacing: 3.2,
+                            fontSize: 17.5,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.2,
                           ),
                         ),
                       ],
@@ -208,38 +308,7 @@ class _SplashScreenViewState extends State<SplashScreenView>
                   ),
                 ),
 
-                const Spacer(flex: 4),
-
-                // 3. Hosted by Nizar Fahem (Clean Minimal Bottom Alignment)
-                FadeTransition(
-                  opacity: _footerFade,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Hosted by',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.72),
-                          fontWeight: FontWeight.w400,
-                          letterSpacing: 0.6,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      const Text(
-                        'Nizar Fahem',
-                        style: TextStyle(
-                          fontSize: 16.5,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 32),
+                const SizedBox(height: 28),
               ],
             ),
           ),
