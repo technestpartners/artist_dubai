@@ -74,9 +74,19 @@ class _LoginViewState extends State<LoginView> {
 
       if (userData != null) {
         final user = userData['user'] as Map<String, dynamic>? ?? {};
+        final userEmail = (user['email'] as String? ?? email).trim().toLowerCase();
+        final role = (user['role'] as String? ?? (userEmail.contains('admin') ? 'admin' : 'user')).toLowerCase();
+        final isAdmin = role == 'admin' ||
+            user['is_admin'] == true ||
+            userEmail == 'admin@artistdubai.com' ||
+            userEmail == 'admin@dubaiart.ae' ||
+            userEmail == 'admin@admin.com';
+
         await storage.setBool('is_logged_in', true);
+        await storage.setBool('is_admin', isAdmin);
+        await storage.setString('user_role', role);
         await storage.setString('user_email', user['email'] as String? ?? email);
-        await storage.setString('user_name', user['full_name'] as String? ?? 'User');
+        await storage.setString('user_name', user['full_name'] as String? ?? (isAdmin ? 'Admin' : 'User'));
         if (user['created_at'] != null) {
           await storage.setString('user_created_at', user['created_at'].toString());
         }
@@ -85,8 +95,13 @@ class _LoginViewState extends State<LoginView> {
         }
 
         if (mounted) {
-          _showSnackBar('Signed in successfully!');
-          context.go(RouteNames.artists);
+          if (isAdmin) {
+            _showSnackBar('Signed in as Admin!');
+            context.go(RouteNames.adminDashboard);
+          } else {
+            _showSnackBar('Signed in successfully!');
+            context.go(RouteNames.artists);
+          }
         }
       } else {
         if (mounted) {

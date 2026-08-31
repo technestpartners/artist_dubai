@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:artist_dubai/core/di/injection_container.dart';
+import 'package:artist_dubai/core/services/api_service.dart';
 import 'package:artist_dubai/features/about_us/presentation/views/about_us_view.dart';
 import 'package:artist_dubai/features/admin/presentation/views/admin_dashboard_view.dart';
 import 'package:artist_dubai/features/artists/domain/models/artist_model.dart';
@@ -433,6 +434,14 @@ void main() {
       expect(find.text('COMMUNITY PLATFORM'), findsOneWidget);
       expect(find.text('Hosted by'), findsOneWidget);
       expect(find.text('Nizar Fahem'), findsOneWidget);
+    });
+
+    testWidgets('32. Admin Login credentials and role privileges test', (tester) async {
+      final res = await sl<ApiService>().login('admin@artistdubai.com', 'admin123');
+      expect(res, isNotNull);
+      final user = res!['user'] as Map<String, dynamic>;
+      expect(user['role'], equals('admin'));
+      expect(user['is_admin'], isTrue);
     });
   });
 }
