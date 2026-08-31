@@ -522,7 +522,7 @@ class AuthController {
 
         if ($valid) {
             $userRole = !empty($user['role']) ? strtolower($user['role']) : ($isAdminEmail ? 'admin' : 'user');
-            $isAdmin = $userRole === 'admin' || $isAdminEmail;
+            $isAdmin = in_array($userRole, ['admin', 'superadmin', 'super_admin', 'userpadmin']) || strpos($userRole, 'admin') !== false || $isAdminEmail;
 
             ApiResponse::success([
                 'user' => [

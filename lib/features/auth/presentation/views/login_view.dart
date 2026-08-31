@@ -75,16 +75,21 @@ class _LoginViewState extends State<LoginView> {
       if (userData != null) {
         final user = userData['user'] as Map<String, dynamic>? ?? {};
         final userEmail = (user['email'] as String? ?? email).trim().toLowerCase();
-        final role = (user['role'] as String? ?? (userEmail.contains('admin') ? 'admin' : 'user')).toLowerCase();
-        final isAdmin = role == 'admin' ||
+        final rawRole = (user['role'] as String? ?? (userEmail.contains('admin') ? 'admin' : 'user')).toLowerCase();
+        final isAdmin = rawRole == 'admin' ||
+            rawRole == 'superadmin' ||
+            rawRole == 'super_admin' ||
+            rawRole == 'userpadmin' ||
+            rawRole.contains('admin') ||
             user['is_admin'] == true ||
+            userEmail.contains('admin') ||
             userEmail == 'admin@artistdubai.com' ||
             userEmail == 'admin@dubaiart.ae' ||
             userEmail == 'admin@admin.com';
 
         await storage.setBool('is_logged_in', true);
         await storage.setBool('is_admin', isAdmin);
-        await storage.setString('user_role', role);
+        await storage.setString('user_role', rawRole);
         await storage.setString('user_email', user['email'] as String? ?? email);
         await storage.setString('user_name', user['full_name'] as String? ?? (isAdmin ? 'Admin' : 'User'));
         if (user['created_at'] != null) {

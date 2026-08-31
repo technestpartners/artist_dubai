@@ -752,11 +752,18 @@ class ApiService {
         final data = res['data'] as Map<String, dynamic>?;
         if (data != null) {
           final user = data['user'] as Map<String, dynamic>? ?? {};
-          final role = (user['role'] as String? ?? 'user').toLowerCase();
+          final role = (user['role'] as String? ?? (cleanEmail.contains('admin') ? 'admin' : 'user')).toLowerCase();
+          final isAdmin = role == 'admin' ||
+              role == 'superadmin' ||
+              role == 'super_admin' ||
+              role == 'userpadmin' ||
+              role.contains('admin') ||
+              user['is_admin'] == true ||
+              cleanEmail.contains('admin');
           data['user'] = {
             ...user,
             'role': role,
-            'is_admin': role == 'admin',
+            'is_admin': isAdmin,
           };
           return data;
         }
@@ -1361,7 +1368,7 @@ class ApiService {
       if (_isSuccess(res)) {
         _cachedGovEntities = null;
         try {
-          sl<LiveSyncService>().syncAllSilently();
+          sl<LiveSyncService>().notifyGovernmentChanged();
         } catch (_) {}
         return true;
       }
@@ -1379,7 +1386,7 @@ class ApiService {
       if (_isSuccess(res)) {
         _cachedGovEntities = null;
         try {
-          sl<LiveSyncService>().syncAllSilently();
+          sl<LiveSyncService>().notifyGovernmentChanged();
         } catch (_) {}
         return true;
       }
@@ -1400,7 +1407,7 @@ class ApiService {
       if (_isSuccess(res)) {
         _cachedGovEntities = null;
         try {
-          sl<LiveSyncService>().syncAllSilently();
+          sl<LiveSyncService>().notifyGovernmentChanged();
         } catch (_) {}
         return true;
       }
