@@ -80,6 +80,58 @@ class _BookArtistViewState extends State<BookArtistView> {
     super.dispose();
   }
 
+  Future<void> _pickDateTime(TextEditingController controller) async {
+    final now = DateTime.now();
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: now.subtract(const Duration(days: 1)),
+      lastDate: now.add(const Duration(days: 730)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF5E227A),
+              onPrimary: Colors.white,
+              onSurface: Color(0xFF1E1E1E),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedDate == null || !mounted) return;
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 18, minute: 0),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF5E227A),
+              onPrimary: Colors.white,
+              onSurface: Color(0xFF1E1E1E),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    final hour = pickedTime?.hour ?? 18;
+    final minute = pickedTime?.minute ?? 0;
+    final dt = DateTime(pickedDate.year, pickedDate.month, pickedDate.day, hour, minute);
+
+    final formatted =
+        '${dt.day.toString().padLeft(2, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.year} ${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+
+    setState(() {
+      controller.text = formatted;
+    });
+  }
+
   void _submitBooking() async {
     setState(() {
       _isSubmitting = true;
@@ -331,6 +383,7 @@ class _BookArtistViewState extends State<BookArtistView> {
                               controller: _eventDateController,
                               hintText: 'dd-mm-yyyy --:--',
                               suffixIcon: Icons.calendar_today_outlined,
+                              onTap: () => _pickDateTime(_eventDateController),
                             ),
                             const SizedBox(height: 14),
                             _buildLabel('End Date & Time (Optional)'),
@@ -338,6 +391,7 @@ class _BookArtistViewState extends State<BookArtistView> {
                               controller: _endDateController,
                               hintText: 'dd-mm-yyyy --:--',
                               suffixIcon: Icons.calendar_today_outlined,
+                              onTap: () => _pickDateTime(_endDateController),
                             ),
                             const SizedBox(height: 14),
                             _buildLabel('Location'),
@@ -531,11 +585,14 @@ class _BookArtistViewState extends State<BookArtistView> {
     IconData? suffixIcon,
     TextInputType? keyboardType,
     int maxLines = 1,
+    VoidCallback? onTap,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       maxLines: maxLines,
+      readOnly: onTap != null,
+      onTap: onTap,
       style: const TextStyle(
         fontSize: 14.5,
         color: Color(0xFF0F172A),
@@ -554,7 +611,10 @@ class _BookArtistViewState extends State<BookArtistView> {
                 : null,
         suffixIcon:
             suffixIcon != null
-                ? Icon(suffixIcon, size: 18, color: const Color(0xFF64748B))
+                ? GestureDetector(
+                    onTap: onTap,
+                    child: Icon(suffixIcon, size: 18, color: const Color(0xFF64748B)),
+                  )
                 : null,
         filled: true,
         fillColor: Colors.white,
