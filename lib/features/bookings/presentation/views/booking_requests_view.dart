@@ -186,7 +186,7 @@ class _BookingRequestsViewState extends State<BookingRequestsView> {
           ),
         ],
       ),
-      bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: -1),
     );
   }
 

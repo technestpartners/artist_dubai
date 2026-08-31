@@ -287,10 +287,10 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
                 ),
               ),
             ),
-            const AppBottomNavBar(currentIndex: 1),
           ],
         ),
       ),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
     );
   }
 }

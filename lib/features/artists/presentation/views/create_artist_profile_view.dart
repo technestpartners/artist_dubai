@@ -1247,10 +1247,10 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                 ),
               ),
             ),
-            const AppBottomNavBar(currentIndex: 1),
           ],
         ),
       ),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
     );
   }
 

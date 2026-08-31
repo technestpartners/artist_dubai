@@ -1464,12 +1464,10 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                 ),
               ),
             ),
-
-            // Bottom Navigation Bar
-            const AppBottomNavBar(currentIndex: 1),
           ],
         ),
       ),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
     );
   }
 

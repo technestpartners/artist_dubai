@@ -676,10 +676,10 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                 ),
               ),
             ),
-            const AppBottomNavBar(currentIndex: 1),
           ],
         ),
       ),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
     );
   }
 

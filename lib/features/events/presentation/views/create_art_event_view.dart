@@ -627,10 +627,10 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                 ),
               ),
             ),
-            const AppBottomNavBar(currentIndex: 2),
           ],
         ),
       ),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
     );
   }
 

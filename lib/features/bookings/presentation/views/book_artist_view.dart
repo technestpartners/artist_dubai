@@ -542,10 +542,10 @@ class _BookArtistViewState extends State<BookArtistView> {
                 ),
               ),
             ),
-            const AppBottomNavBar(currentIndex: 2),
           ],
         ),
       ),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: -1),
     );
   }
 

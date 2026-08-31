@@ -219,7 +219,7 @@ class _EventPhotosViewState extends State<EventPhotosView> {
           ),
         ),
       ),
-      bottomNavigationBar: const AppBottomNavBar(),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
     );
   }
 }

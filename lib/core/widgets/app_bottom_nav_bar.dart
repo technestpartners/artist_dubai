@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/routes/route_names.dart';
-
 import '../../core/di/injection_container.dart';
 import '../../core/services/storage_service.dart';
 
@@ -11,22 +10,29 @@ class AppBottomNavBar extends StatelessWidget {
   final int currentIndex;
 
   void _onTabSelected(BuildContext context, int index) {
-    if (index == currentIndex) return;
+    String matchedLocation = '';
+    try {
+      matchedLocation = GoRouterState.of(context).matchedLocation;
+    } catch (_) {}
 
     final isLoggedIn = sl<StorageService>().getBool('is_logged_in') ?? false;
 
     switch (index) {
       case 0:
-        context.go(RouteNames.home);
+        if (matchedLocation != RouteNames.home) {
+          context.go(RouteNames.home);
+        }
         break;
       case 1:
-        context.go(RouteNames.artists);
+        if (matchedLocation != RouteNames.artists) {
+          context.go(RouteNames.artists);
+        }
         break;
       case 2:
         if (!isLoggedIn) {
           ScaffoldMessenger.of(context).hideCurrentSnackBar();
           context.push(RouteNames.login);
-        } else {
+        } else if (matchedLocation != RouteNames.events) {
           context.go(RouteNames.events);
         }
         break;
@@ -37,39 +43,74 @@ class AppBottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 64,
-      decoration: const BoxDecoration(color: Color(0xFF6A2777)),
+      decoration: const BoxDecoration(
+        color: Color(0xFF6A2777),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 8,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
       child: SafeArea(
+        top: false,
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            IconButton(
-              icon: Icon(
-                Icons.home_outlined,
-                color:
-                    currentIndex == 0 ? Colors.white : const Color(0xFFE2D6F5),
-                size: 28,
+            Expanded(
+              child: _buildNavItem(
+                context: context,
+                index: 0,
+                icon: Icons.home_outlined,
+                activeIcon: Icons.home,
+                tooltip: 'Home',
               ),
-              onPressed: () => _onTabSelected(context, 0),
             ),
-            IconButton(
-              icon: Icon(
-                Icons.people_outline,
-                color:
-                    currentIndex == 1 ? Colors.white : const Color(0xFFE2D6F5),
-                size: 28,
+            Expanded(
+              child: _buildNavItem(
+                context: context,
+                index: 1,
+                icon: Icons.people_outline,
+                activeIcon: Icons.people,
+                tooltip: 'Artists',
               ),
-              onPressed: () => _onTabSelected(context, 1),
             ),
-            IconButton(
-              icon: Icon(
-                Icons.calendar_today_outlined,
-                color:
-                    currentIndex == 2 ? Colors.white : const Color(0xFFE2D6F5),
-                size: 24,
+            Expanded(
+              child: _buildNavItem(
+                context: context,
+                index: 2,
+                icon: Icons.calendar_today_outlined,
+                activeIcon: Icons.calendar_today,
+                tooltip: 'Events',
               ),
-              onPressed: () => _onTabSelected(context, 2),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required BuildContext context,
+    required int index,
+    required IconData icon,
+    required IconData activeIcon,
+    required String tooltip,
+  }) {
+    final isSelected = currentIndex == index;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _onTabSelected(context, index),
+        child: Center(
+          child: Tooltip(
+            message: tooltip,
+            child: Icon(
+              isSelected ? activeIcon : icon,
+              color: isSelected ? Colors.white : const Color(0xFFE2D6F5),
+              size: index == 2 ? 24 : 28,
+            ),
+          ),
         ),
       ),
     );

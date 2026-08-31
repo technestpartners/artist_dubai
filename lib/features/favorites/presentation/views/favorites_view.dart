@@ -243,7 +243,7 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
           ],
         ),
       ),
-      bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: -1),
     );
   }
 

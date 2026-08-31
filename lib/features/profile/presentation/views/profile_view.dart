@@ -1073,12 +1073,10 @@ class _ProfileViewState extends State<ProfileView> {
                 ),
               ),
             ),
-
-            // Bottom Navigation Bar
-            const AppBottomNavBar(currentIndex: 2),
           ],
         ),
       ),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: -1),
     );
   }
 

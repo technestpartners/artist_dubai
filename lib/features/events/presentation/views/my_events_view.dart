@@ -698,7 +698,7 @@ class _MyEventsViewState extends State<MyEventsView> {
         ),
       ),
       ),
-      bottomNavigationBar: const AppBottomNavBar(currentIndex: -1),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
     );
   }
 

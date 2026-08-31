@@ -165,10 +165,9 @@ class _BookingsViewState extends State<BookingsView> {
                         ),
                       ),
           ),
-
-          const AppBottomNavBar(currentIndex: 2),
         ],
       ),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: -1),
     );
   }
 

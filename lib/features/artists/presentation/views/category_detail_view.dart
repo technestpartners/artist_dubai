@@ -774,10 +774,10 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                 ),
               ),
             ),
-            const AppBottomNavBar(currentIndex: 1),
           ],
         ),
       ),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
     );
   }
 
