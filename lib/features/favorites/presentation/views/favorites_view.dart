@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/widgets/app_cached_image.dart';
@@ -25,12 +27,23 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
   List<ArtEventModel> _favoritedEvents = [];
   List<Map<String, dynamic>> _favoritedArtworks = [];
   bool _isLoading = true;
+  StreamSubscription<Map<String, dynamic>>? _favSub;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _fetchFavorites();
+    _favSub = sl<LiveSyncService>().favoritesStream.listen((data) {
+      if (mounted && data.isNotEmpty) {
+        setState(() {
+          _favoritedArtists = data['artists'] as List<ArtistModel>? ?? [];
+          _favoritedEvents = data['events'] as List<ArtEventModel>? ?? [];
+          _favoritedArtworks = data['artworks'] as List<Map<String, dynamic>>? ?? [];
+          _isLoading = false;
+        });
+      }
+    });
   }
 
   Future<void> _fetchFavorites() async {
@@ -53,6 +66,7 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
 
   @override
   void dispose() {
+    _favSub?.cancel();
     _tabController.dispose();
     super.dispose();
   }

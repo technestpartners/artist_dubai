@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
@@ -26,6 +28,8 @@ class _ArtistsViewState extends State<ArtistsView> {
   List<ArtistModel> _allArtists = [];
   List<CategoryInfo> _categories = ArtistModel.categoryList;
   final Set<String> _favoritedArtistIds = {};
+  StreamSubscription<List<ArtistModel>>? _artistsSub;
+  StreamSubscription<Map<String, dynamic>>? _favSub;
 
   void _shareArtist(ArtistModel artist) {
     Clipboard.setData(
@@ -117,10 +121,29 @@ class _ArtistsViewState extends State<ArtistsView> {
   void initState() {
     super.initState();
     _fetchData();
+    _artistsSub = sl<LiveSyncService>().artistsStream.listen((artists) {
+      if (mounted && artists.isNotEmpty) {
+        setState(() {
+          _allArtists = artists;
+        });
+      }
+    });
+    _favSub = sl<LiveSyncService>().favoritesStream.listen((favData) {
+      if (mounted && favData.isNotEmpty) {
+        final favArtists = (favData['artists'] as List<ArtistModel>?) ?? [];
+        final favIds = favArtists.map((a) => a.id).toSet();
+        setState(() {
+          _favoritedArtistIds.clear();
+          _favoritedArtistIds.addAll(favIds);
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
+    _artistsSub?.cancel();
+    _favSub?.cancel();
     _hideCategoryOverlay();
     super.dispose();
   }

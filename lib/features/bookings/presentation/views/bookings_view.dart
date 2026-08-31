@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
@@ -22,11 +24,26 @@ class BookingsView extends StatefulWidget {
 class _BookingsViewState extends State<BookingsView> {
   List<Map<String, dynamic>> _bookings = [];
   bool _isLoading = true;
+  StreamSubscription<List<Map<String, dynamic>>>? _bookingsSub;
 
   @override
   void initState() {
     super.initState();
     _fetchBookings();
+    _bookingsSub = sl<LiveSyncService>().bookingsStream.listen((bookings) {
+      if (mounted) {
+        setState(() {
+          _bookings = bookings;
+          _isLoading = false;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _bookingsSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchBookings({bool forceRefresh = false}) async {

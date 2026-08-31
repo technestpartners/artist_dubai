@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../domain/models/government_entity.dart';
@@ -18,11 +19,19 @@ class GovernmentPortalView extends StatefulWidget {
 class _GovernmentPortalViewState extends State<GovernmentPortalView> {
   List<GovernmentEntity> _entities = GovernmentEntity.entities;
   Timer? _timer;
+  StreamSubscription<List<GovernmentEntity>>? _govSub;
 
   @override
   void initState() {
     super.initState();
     _fetchEntities();
+    _govSub = sl<LiveSyncService>().governmentStream.listen((entities) {
+      if (mounted && entities.isNotEmpty) {
+        setState(() {
+          _entities = entities;
+        });
+      }
+    });
     // Live update every 30 seconds to recalculate Dubai GST operating hours
     _timer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) setState(() {});
@@ -31,6 +40,7 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
 
   @override
   void dispose() {
+    _govSub?.cancel();
     _timer?.cancel();
     super.dispose();
   }

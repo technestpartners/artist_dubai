@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
@@ -27,12 +29,31 @@ class _EventsViewState extends State<EventsView> {
   final GlobalKey _categorySelectorKey = GlobalKey();
   OverlayEntry? _categoryOverlayEntry;
   bool _isCategoryListExpanded = false;
+  StreamSubscription<List<ArtEventModel>>? _eventsSub;
+  StreamSubscription<Map<String, dynamic>>? _favSub;
 
   @override
   void initState() {
     super.initState();
     _fetchEvents();
     _fetchCategories();
+    _eventsSub = sl<LiveSyncService>().eventsStream.listen((events) {
+      if (mounted && events.isNotEmpty) {
+        setState(() {
+          _allEvents = events;
+        });
+      }
+    });
+    _favSub = sl<LiveSyncService>().favoritesStream.listen((favData) {
+      if (mounted && favData.isNotEmpty) {
+        final favEvents = (favData['events'] as List<ArtEventModel>?) ?? [];
+        final favIds = favEvents.map((e) => e.id).toSet();
+        setState(() {
+          _likedEventIds.clear();
+          _likedEventIds.addAll(favIds);
+        });
+      }
+    });
   }
 
   void _hideCategoryOverlay() {
@@ -147,6 +168,8 @@ class _EventsViewState extends State<EventsView> {
 
   @override
   void dispose() {
+    _eventsSub?.cancel();
+    _favSub?.cancel();
     _searchController.dispose();
     super.dispose();
   }

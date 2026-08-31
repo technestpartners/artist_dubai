@@ -3,7 +3,9 @@ import '../../features/artists/domain/models/artist_model.dart';
 import '../../features/events/domain/models/art_event_model.dart';
 import '../../features/government/domain/models/government_entity.dart';
 import '../constants/api_endpoints.dart';
+import '../di/injection_container.dart';
 import '../network/api_client.dart';
+import 'live_sync_service.dart';
 
 /// Pagination metadata returned from every list endpoint
 class PagedResult<T> {
@@ -264,6 +266,9 @@ class ApiService {
       );
       if (_isSuccess(res)) {
         _cachedArtists = null; // Invalidate cache for fresh live read
+        try {
+          sl<LiveSyncService>().notifyArtistsChanged();
+        } catch (_) {}
         return true;
       }
     } catch (_) {}
@@ -468,6 +473,9 @@ class ApiService {
       );
       if (_isSuccess(res)) {
         _cachedEvents = null;
+        try {
+          sl<LiveSyncService>().notifyEventsChanged();
+        } catch (_) {}
         return true;
       }
     } catch (_) {}
@@ -752,7 +760,12 @@ class ApiService {
         ApiEndpoints.bookingCreate,
         data: data,
       );
-      return _isSuccess(res);
+      if (_isSuccess(res)) {
+        try {
+          sl<LiveSyncService>().notifyBookingsChanged();
+        } catch (_) {}
+        return true;
+      }
     } catch (_) {}
     return false;
   }
@@ -766,7 +779,12 @@ class ApiService {
           'id': bookingId,
         },
       );
-      return _isSuccess(res);
+      if (_isSuccess(res)) {
+        try {
+          sl<LiveSyncService>().notifyBookingsChanged();
+        } catch (_) {}
+        return true;
+      }
     } catch (_) {}
     return false;
   }
@@ -1071,7 +1089,12 @@ class ApiService {
           'item_id': itemId,
         },
       );
-      return _isSuccess(res);
+      if (_isSuccess(res)) {
+        try {
+          sl<LiveSyncService>().notifyFavoritesChanged();
+        } catch (_) {}
+        return true;
+      }
     } catch (_) {}
     return false;
   }
@@ -1092,6 +1115,10 @@ class ApiService {
       );
       if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
         _cachedArtists = null;
+        try {
+          sl<LiveSyncService>().notifyArtistsChanged();
+          sl<LiveSyncService>().notifyFavoritesChanged();
+        } catch (_) {}
         return res['data'] as Map<String, dynamic>;
       }
     } catch (_) {}
@@ -1114,6 +1141,9 @@ class ApiService {
       );
       if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
         _cachedArtists = null;
+        try {
+          sl<LiveSyncService>().notifyArtistsChanged();
+        } catch (_) {}
         return res['data'] as Map<String, dynamic>;
       }
     } catch (_) {}
