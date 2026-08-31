@@ -510,6 +510,206 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     );
   }
 
+  // --- Modal Dialog: Create Gallery (Matching Screenshot) ---
+  void _showCreateGalleryDialog() {
+    final titleCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    final coverImageCtrl = TextEditingController();
+    String? selectedEvent;
+    bool isVisibleToEveryone = true;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Dialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Create gallery',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Color(0xFF64748B), size: 20),
+                        onPressed: () => Navigator.pop(ctx),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  _buildFormField(
+                    label: 'Title',
+                    controller: titleCtrl,
+                    hint: 'Gallery title',
+                    isFocused: true,
+                  ),
+                  const SizedBox(height: 12),
+
+                  _buildFormField(
+                    label: 'Description',
+                    controller: descCtrl,
+                    hint: 'Short description',
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 12),
+
+                  _buildFormField(
+                    label: 'Cover image URL',
+                    controller: coverImageCtrl,
+                    hint: 'https://...',
+                  ),
+                  const SizedBox(height: 12),
+
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Linked event (optional)',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF334155),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFCBD5E1)),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String?>(
+                            value: selectedEvent,
+                            isExpanded: true,
+                            icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF64748B)),
+                            hint: const Text(
+                              'No event',
+                              style: TextStyle(fontSize: 13.5, color: Color(0xFF1E293B)),
+                            ),
+                            items: [
+                              const DropdownMenuItem<String?>(
+                                value: null,
+                                child: Text('No event', style: TextStyle(fontSize: 13.5, color: Color(0xFF1E293B))),
+                              ),
+                              ..._events.map((e) => DropdownMenuItem<String?>(
+                                    value: e.title,
+                                    child: Text(
+                                      e.title,
+                                      style: const TextStyle(fontSize: 13.5, color: Color(0xFF1E293B)),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  )),
+                            ],
+                            onChanged: (val) {
+                              setModalState(() => selectedEvent = val);
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFCBD5E1)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Visible to everyone',
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1E293B),
+                          ),
+                        ),
+                        Switch(
+                          value: isVisibleToEveryone,
+                          activeColor: const Color(0xFF6A2777),
+                          activeTrackColor: const Color(0xFFD8B4E2),
+                          onChanged: (val) {
+                            setModalState(() => isVisibleToEveryone = val);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6A2777),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () async {
+                      final title = titleCtrl.text.trim();
+                      if (title.isEmpty) return;
+
+                      final payload = {
+                        'name': title,
+                        'title': title,
+                        'description': descCtrl.text.trim(),
+                        'image_url': coverImageCtrl.text.trim(),
+                        'cover_url': coverImageCtrl.text.trim(),
+                        'event_name': selectedEvent ?? '',
+                        'is_public': isVisibleToEveryone ? 1 : 0,
+                        'category': 'Artist gallery',
+                      };
+
+                      Navigator.pop(ctx);
+
+                      setState(() {
+                        _galleries.insert(0, payload);
+                      });
+
+                      await sl<ApiService>().createArtCenter(payload);
+                    },
+                    child: const Text('Create', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  ),
+                  const SizedBox(height: 8),
+
+                  Center(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildFormField({
     required String label,
     required TextEditingController controller,
@@ -987,7 +1187,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             ),
             icon: const Icon(Icons.add, size: 14),
             label: const Text('New gallery', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
-            onPressed: () => context.push(RouteNames.galleryRegistration),
+            onPressed: _showCreateGalleryDialog,
           ),
         ),
         const SizedBox(height: 12),
