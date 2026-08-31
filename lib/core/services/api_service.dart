@@ -1242,4 +1242,74 @@ class ApiService {
     return false;
   }
 
+  // 25. Delete Artist (MySQL Backend)
+  Future<bool> deleteArtist(dynamic id) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.artists}&action=delete',
+        data: {'id': id},
+      );
+      if (_isSuccess(res)) {
+        _cachedArtists = null;
+        try {
+          sl<LiveSyncService>().notifyArtistsChanged();
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  // 26. Delete Event (MySQL Backend)
+  Future<bool> deleteEvent(dynamic id) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.events}&action=delete',
+        data: {'id': id},
+      );
+      if (_isSuccess(res)) {
+        _cachedEvents = null;
+        try {
+          sl<LiveSyncService>().notifyEventsChanged();
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  // 27. Delete Gallery (MySQL Backend)
+  Future<bool> deleteGallery(dynamic id) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.galleries}&action=delete',
+        data: {'id': id},
+      );
+      if (_isSuccess(res)) {
+        _cachedGalleries = null;
+        try {
+          sl<LiveSyncService>().notifyGalleriesChanged();
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  // 28. Delete Artwork (MySQL Backend)
+  Future<bool> deleteArtwork(dynamic id) async {
+    try {
+      final res = await _client.post(
+        '/api.php?resource=artworks&action=delete',
+        data: {'id': id},
+      );
+      if (_isSuccess(res)) {
+        try {
+          sl<LiveSyncService>().notifyArtistsChanged();
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
 }

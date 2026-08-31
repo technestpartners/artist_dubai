@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/di/injection_container.dart';
 import '../../core/services/storage_service.dart';
 import '../../features/about_us/presentation/views/about_us_view.dart';
+import '../../features/admin/presentation/views/admin_dashboard_view.dart';
 import '../../features/artists/domain/models/artist_model.dart';
 import '../../features/artists/presentation/views/artist_detail_view.dart';
 import '../../features/artists/presentation/views/artists_view.dart';
@@ -193,6 +194,11 @@ class AppRouter {
         path: RouteNames.createCategory,
         name: 'createCategory',
         builder: (context, state) => const CreateCategoryView(),
+      ),
+      GoRoute(
+        path: RouteNames.adminDashboard,
+        name: 'adminDashboard',
+        builder: (context, state) => const AdminDashboardView(),
       ),
     ],
     errorBuilder: (context, state) => const ComingSoonView(),

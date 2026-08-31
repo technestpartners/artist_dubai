@@ -7,6 +7,7 @@ import '../services/storage_service.dart';
 import 'notifications_panel.dart';
 
 enum TopBarMenuItem {
+  adminDashboard,
   accountSettings,
   createArtistProfile,
   myBookings,
@@ -45,6 +46,9 @@ class _AppTopBarState extends State<AppTopBar> {
 
   void _onMenuItemSelected(BuildContext context, TopBarMenuItem item) async {
     switch (item) {
+      case TopBarMenuItem.adminDashboard:
+        context.push(RouteNames.adminDashboard);
+        break;
       case TopBarMenuItem.accountSettings:
         context.push(RouteNames.settings);
         break;
@@ -303,6 +307,27 @@ class _AppTopBarState extends State<AppTopBar> {
                     ),
                   ),
                   const PopupMenuDivider(height: 1),
+                  const PopupMenuItem<TopBarMenuItem>(
+                    value: TopBarMenuItem.adminDashboard,
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.admin_panel_settings_outlined,
+                          size: 18,
+                          color: Color(0xFF6A2777),
+                        ),
+                        SizedBox(width: 10),
+                        Text(
+                          'Admin Dashboard',
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF6A2777),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   const PopupMenuItem<TopBarMenuItem>(
                     value: TopBarMenuItem.accountSettings,
                     child: Row(

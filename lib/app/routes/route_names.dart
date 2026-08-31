@@ -30,4 +30,5 @@ class RouteNames {
   static const String myEvents = '/my-events';
   static const String bookingRequests = '/booking-requests';
   static const String favorites = '/favorites';
+  static const String adminDashboard = '/admin';
 }

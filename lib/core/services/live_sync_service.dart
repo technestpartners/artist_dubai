@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import '../../features/artists/domain/models/artist_model.dart';
 import '../../features/events/domain/models/art_event_model.dart';

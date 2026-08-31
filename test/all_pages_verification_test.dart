@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:artist_dubai/core/di/injection_container.dart';
 import 'package:artist_dubai/features/about_us/presentation/views/about_us_view.dart';
+import 'package:artist_dubai/features/admin/presentation/views/admin_dashboard_view.dart';
 import 'package:artist_dubai/features/artists/domain/models/artist_model.dart';
 import 'package:artist_dubai/features/artists/presentation/views/artist_detail_view.dart';
 import 'package:artist_dubai/features/artists/presentation/views/artists_view.dart';
@@ -401,6 +402,22 @@ void main() {
 
       expect(find.text('Actively from'), findsOneWidget);
       expect(find.text('back to home'), findsOneWidget);
+    });
+
+    testWidgets('30. AdminDashboardView renders KPI metrics and tabs', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(testApp(const AdminDashboardView()));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Admin Dashboard'), findsOneWidget);
+      expect(find.text('Artist Dubai management'), findsOneWidget);
+      expect(find.text('Artists'), findsWidgets);
+      expect(find.text('Events'), findsWidgets);
+      expect(find.text('Galleries'), findsWidgets);
+      expect(find.text('Bookings'), findsWidgets);
     });
   });
 }
