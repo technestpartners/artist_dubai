@@ -1052,18 +1052,10 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                 ),
                 const SizedBox(height: 16),
 
-                // Price Range & View Details Button Row
+                // View Details Button Row
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    const Text(
-                      'USD 1800 - 2200',
-                      style: TextStyle(
-                        fontSize: 15.5,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF5E227A),
-                      ),
-                    ),
                     SizedBox(
                       height: 38,
                       child: OutlinedButton(
@@ -1087,8 +1079,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                   content: const Text(
                                     'Sacred Verses by Fatima Al Qasimi\n\n'
                                     'Medium: Mixed Media on Paper\n'
-                                    'Dimensions: 70 x 50 cm\n'
-                                    'Price Range: USD 1800 - 2200\n\n'
+                                    'Dimensions: 70 x 50 cm\n\n'
                                     'Original artwork combining traditional Arabic calligraphy with classical gold leaf & ink techniques.',
                                   ),
                                   actions: [

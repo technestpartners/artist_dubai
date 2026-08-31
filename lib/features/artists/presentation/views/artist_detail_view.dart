@@ -273,7 +273,6 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
     final year = (item['year'] ?? '2024').toString();
     final medium = (item['medium'] ?? 'Mixed Media').toString();
     final dimensions = (item['dimensions'] ?? '120 x 80 cm').toString();
-    final price = (item['price'] ?? '\$2,500').toString();
     final description = (item['description'] ?? 'Created by ${widget.artist?.name ?? 'Artist'}. A masterfully textured piece celebrating contemporary UAE art.').toString();
     final imageUrl = (item['image_url'] ?? item['image'] ?? 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80').toString();
 
@@ -316,26 +315,6 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                             ),
                           ),
                         ),
-                        if (price.isNotEmpty)
-                          Positioned(
-                            bottom: 10,
-                            left: 10,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF6A2777),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                price,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                          ),
                       ],
                     ),
                     Padding(
@@ -1152,16 +1131,16 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                           // Verified Badge & Location
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
+                            children: const [
+                              Icon(
                                 Icons.verified_user_outlined,
                                 size: 15,
                                 color: Color(0xFF6A2777),
                               ),
-                              const SizedBox(width: 6),
+                              SizedBox(width: 6),
                               Text(
-                                'Starting ${currentArtist.bookingRate}',
-                                style: const TextStyle(
+                                'Verified Artist • Dubai, UAE',
+                                style: TextStyle(
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w600,
                                   color: Color(0xFF6A2777),
@@ -1534,7 +1513,6 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         final year = (item['year'] ?? '2024').toString();
         final medium = (item['medium'] ?? 'Mixed Media').toString();
         final dimensions = (item['dimensions'] ?? '').toString();
-        final price = (item['price'] ?? '').toString();
 
         return InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -1598,29 +1576,6 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      if (price.isNotEmpty)
-                        Positioned(
-                          bottom: 8,
-                          left: 8,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.65),
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            child: Text(
-                              price,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -1717,7 +1672,6 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         final year = (item['year'] ?? '2024').toString();
         final medium = (item['medium'] ?? 'Mixed Media').toString();
         final dimensions = (item['dimensions'] ?? '').toString();
-        final price = (item['price'] ?? '').toString();
 
         return InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -1787,23 +1741,6 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                     ],
                   ),
                 ),
-                if (price.isNotEmpty)
-                  Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF6A2777).withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      price,
-                      style: const TextStyle(
-                        color: Color(0xFF6A2777),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
                 InkWell(
                   onTap: () => _toggleArtworkFavorite(itemId),
                   borderRadius: BorderRadius.circular(12),

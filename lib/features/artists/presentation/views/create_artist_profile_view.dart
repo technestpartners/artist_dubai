@@ -991,74 +991,35 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                           ],
                                         ),
                                         const SizedBox(height: 8),
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: TextField(
-                                                controller: artItem.dimensionsController,
-                                                style: const TextStyle(
-                                                  fontSize: 12.5,
-                                                  color: Color(0xFF334155),
-                                                ),
-                                                decoration: const InputDecoration(
-                                                  hintText: 'Dimensions (e.g. 150 x 100 cm)',
-                                                  hintStyle: TextStyle(
-                                                    fontSize: 11.5,
-                                                    color: Color(0xFF94A3B8),
-                                                  ),
-                                                  isDense: true,
-                                                  filled: true,
-                                                  fillColor: Colors.white,
-                                                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                                  border: OutlineInputBorder(
-                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
-                                                    borderSide: BorderSide(color: Color(0xFFCBD5E1)),
-                                                  ),
-                                                  enabledBorder: OutlineInputBorder(
-                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
-                                                    borderSide: BorderSide(color: Color(0xFFCBD5E1)),
-                                                  ),
-                                                  focusedBorder: OutlineInputBorder(
-                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
-                                                    borderSide: BorderSide(color: Color(0xFF6A2777), width: 1.5),
-                                                  ),
-                                                ),
-                                              ),
+                                        TextField(
+                                          controller: artItem.dimensionsController,
+                                          style: const TextStyle(
+                                            fontSize: 12.5,
+                                            color: Color(0xFF334155),
+                                          ),
+                                          decoration: const InputDecoration(
+                                            hintText: 'Dimensions (e.g. 150 x 100 cm)',
+                                            hintStyle: TextStyle(
+                                              fontSize: 11.5,
+                                              color: Color(0xFF94A3B8),
                                             ),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: TextField(
-                                                controller: artItem.priceController,
-                                                style: const TextStyle(
-                                                  fontSize: 12.5,
-                                                  color: Color(0xFF334155),
-                                                ),
-                                                decoration: const InputDecoration(
-                                                  hintText: 'Price (e.g. \$3,200)',
-                                                  hintStyle: TextStyle(
-                                                    fontSize: 11.5,
-                                                    color: Color(0xFF94A3B8),
-                                                  ),
-                                                  isDense: true,
-                                                  filled: true,
-                                                  fillColor: Colors.white,
-                                                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                                  border: OutlineInputBorder(
-                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
-                                                    borderSide: BorderSide(color: Color(0xFFCBD5E1)),
-                                                  ),
-                                                  enabledBorder: OutlineInputBorder(
-                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
-                                                    borderSide: BorderSide(color: Color(0xFFCBD5E1)),
-                                                  ),
-                                                  focusedBorder: OutlineInputBorder(
-                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
-                                                    borderSide: BorderSide(color: Color(0xFF6A2777), width: 1.5),
-                                                  ),
-                                                ),
-                                              ),
+                                            isDense: true,
+                                            filled: true,
+                                            fillColor: Colors.white,
+                                            contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                            border: OutlineInputBorder(
+                                              borderRadius: BorderRadius.all(Radius.circular(6)),
+                                              borderSide: BorderSide(color: Color(0xFFCBD5E1)),
                                             ),
-                                          ],
+                                            enabledBorder: OutlineInputBorder(
+                                              borderRadius: BorderRadius.all(Radius.circular(6)),
+                                              borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+                                            ),
+                                            focusedBorder: OutlineInputBorder(
+                                              borderRadius: BorderRadius.all(Radius.circular(6)),
+                                              borderSide: BorderSide(color: Color(0xFF6A2777), width: 1.5),
+                                            ),
+                                          ),
                                         ),
                                         const SizedBox(height: 8),
                                         InkWell(

@@ -1072,17 +1072,17 @@ class _EventDetailViewState extends State<EventDetailView> {
                     ),
                     Expanded(
                       child: Column(
-                        children: [
+                        children: const [
                           Text(
-                            artist.bookingRate.isNotEmpty ? artist.bookingRate : 'AED 1500+',
-                            style: const TextStyle(
+                            'Active',
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E1E1E),
+                              color: Color(0xFF16A34A),
                             ),
                           ),
-                          const Text(
-                            'Booking',
+                          Text(
+                            'Status',
                             style: TextStyle(
                               fontSize: 11,
                               color: Color(0xFF64748B),

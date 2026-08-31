@@ -447,7 +447,6 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
         final year = item['year']?.toString() ?? '2025';
         final medium = item['medium']?.toString() ?? item['details']?.toString() ?? 'Mixed Media';
         final dimensions = item['dimensions']?.toString() ?? '120 x 80 cm';
-        final price = item['price']?.toString() ?? '\$2,000';
         final image = item['image_url']?.toString() ?? item['image']?.toString() ?? 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1200&auto=format&fit=crop';
 
         return Container(
@@ -488,11 +487,6 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                       Text(
                         '$year • $medium • $dimensions',
                         style: const TextStyle(fontSize: 11.5, color: Colors.white70),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        price,
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ],
                   ),
