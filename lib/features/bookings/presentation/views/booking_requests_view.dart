@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
@@ -20,11 +22,45 @@ class _BookingRequestsViewState extends State<BookingRequestsView> {
 
   List<Map<String, dynamic>> _requests = [];
   List<Map<String, dynamic>> _attendees = [];
+  StreamSubscription<List<Map<String, dynamic>>>? _bookingsSub;
 
   @override
   void initState() {
     super.initState();
     _fetchBookingRequests();
+    _bookingsSub = sl<LiveSyncService>().bookingsStream.listen((allBookings) {
+      if (mounted) {
+        _processBookings(allBookings);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _bookingsSub?.cancel();
+    super.dispose();
+  }
+
+  void _processBookings(List<Map<String, dynamic>> allBookings) {
+    final requestsList = <Map<String, dynamic>>[];
+    final attendeesList = <Map<String, dynamic>>[];
+
+    for (final b in allBookings) {
+      final type = (b['booking_type'] as String? ?? '').toLowerCase();
+      if (type.contains('artist') || type.contains('direct') || type.contains('custom')) {
+        requestsList.add(b);
+      } else {
+        attendeesList.add(b);
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _requests = requestsList;
+        _attendees = attendeesList;
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _fetchBookingRequests({bool forceRefresh = false}) async {
@@ -43,26 +79,7 @@ class _BookingRequestsViewState extends State<BookingRequestsView> {
         forceRefresh: forceRefresh,
       );
 
-      final requestsList = <Map<String, dynamic>>[];
-      final attendeesList = <Map<String, dynamic>>[];
-
-      for (final b in allBookings) {
-        final type = (b['booking_type'] as String? ?? '').toLowerCase();
-        if (type.contains('artist') || type.contains('direct') || type.contains('custom')) {
-          requestsList.add(b);
-        } else {
-          attendeesList.add(b);
-        }
-      }
-
-      // If user has bookings, populate them
-      if (mounted) {
-        setState(() {
-          _requests = requestsList;
-          _attendees = attendeesList;
-          _isLoading = false;
-        });
-      }
+      _processBookings(allBookings);
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
     }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -10,6 +11,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/storage_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
@@ -36,6 +38,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
   late int _likesCount;
   late int _followersCount;
   late int _worksCount;
+  StreamSubscription<List<ArtistModel>>? _artistLiveSub;
 
   List<Map<String, dynamic>> _photoGalleries = [
     {
@@ -57,6 +60,23 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
     _followersCount = (artist != null && artist.followersCount > 0) ? artist.followersCount : 38;
     _worksCount = (artist != null && artist.worksCount > 0) ? artist.worksCount : 6;
     _loadAllData();
+    _artistLiveSub = sl<LiveSyncService>().artistsStream.listen((artists) {
+      if (mounted && widget.artist != null) {
+        final match = artists.where((a) => a.id == widget.artist!.id).firstOrNull;
+        if (match != null) {
+          setState(() {
+            _followersCount = match.followersCount;
+            _worksCount = match.worksCount;
+          });
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _artistLiveSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadAllData() async {

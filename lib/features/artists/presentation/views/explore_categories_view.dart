@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
@@ -19,11 +21,26 @@ class ExploreCategoriesView extends StatefulWidget {
 class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
   List<CategoryInfo> _categories = ArtistModel.categoryList;
   List<ArtistModel> _allArtists = [];
+  StreamSubscription<List<CategoryInfo>>? _catSub;
+  StreamSubscription<List<ArtistModel>>? _artistSub;
 
   @override
   void initState() {
     super.initState();
     _fetchCategoriesFromApi();
+    _catSub = sl<LiveSyncService>().categoriesStream.listen((cats) {
+      if (mounted && cats.isNotEmpty) setState(() => _categories = cats);
+    });
+    _artistSub = sl<LiveSyncService>().artistsStream.listen((artists) {
+      if (mounted && artists.isNotEmpty) setState(() => _allArtists = artists);
+    });
+  }
+
+  @override
+  void dispose() {
+    _catSub?.cancel();
+    _artistSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchCategoriesFromApi() async {

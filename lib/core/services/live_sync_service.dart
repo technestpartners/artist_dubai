@@ -48,8 +48,8 @@ class LiveSyncService {
     }
   }
 
-  /// Start automatic background live-polling
-  void startAutoSync({Duration interval = const Duration(seconds: 8)}) {
+  /// Start automatic background live-polling (3s high responsiveness)
+  void startAutoSync({Duration interval = const Duration(seconds: 3)}) {
     _syncTimer?.cancel();
     _syncTimer = Timer.periodic(interval, (_) => syncAllSilently());
   }
@@ -77,6 +77,7 @@ class LiveSyncService {
         _apiService.getEvents(forceRefresh: true).catchError((_) => <ArtEventModel>[]),
         _apiService.getGalleries(forceRefresh: true).catchError((_) => <Map<String, dynamic>>[]),
         _apiService.getGovernmentEntities(forceRefresh: true).catchError((_) => <GovernmentEntity>[]),
+        _apiService.getCategories(forceRefresh: true).catchError((_) => <CategoryInfo>[]),
         if (userEmail != null && userEmail.isNotEmpty)
           _apiService.getBookings(email: userEmail, forceRefresh: true).catchError((_) => <Map<String, dynamic>>[])
         else
@@ -91,8 +92,9 @@ class LiveSyncService {
       final events = results[1] as List<ArtEventModel>;
       final galleries = results[2] as List<Map<String, dynamic>>;
       final govEntities = results[3] as List<GovernmentEntity>;
-      final bookings = results[4] as List<Map<String, dynamic>>;
-      final favorites = results[5] as Map<String, dynamic>;
+      final categories = results[4] as List<CategoryInfo>;
+      final bookings = results[5] as List<Map<String, dynamic>>;
+      final favorites = results[6] as Map<String, dynamic>;
 
       // Broadcast fresh updates silently if active listeners exist
       if (artists.isNotEmpty && !_artistsController.isClosed) {
@@ -106,6 +108,9 @@ class LiveSyncService {
       }
       if (govEntities.isNotEmpty && !_governmentController.isClosed) {
         _governmentController.add(govEntities);
+      }
+      if (categories.isNotEmpty && !_categoriesController.isClosed) {
+        _categoriesController.add(categories);
       }
       if (!_bookingsController.isClosed) {
         _bookingsController.add(bookings);
@@ -155,6 +160,20 @@ class LiveSyncService {
   void notifyGalleriesChanged([List<Map<String, dynamic>>? updatedGalleries]) {
     if (updatedGalleries != null && !_galleriesController.isClosed) {
       _galleriesController.add(updatedGalleries);
+    }
+    syncAllSilently();
+  }
+
+  void notifyGovernmentChanged([List<GovernmentEntity>? updatedList]) {
+    if (updatedList != null && !_governmentController.isClosed) {
+      _governmentController.add(updatedList);
+    }
+    syncAllSilently();
+  }
+
+  void notifyCategoriesChanged([List<CategoryInfo>? updatedList]) {
+    if (updatedList != null && !_categoriesController.isClosed) {
+      _categoriesController.add(updatedList);
     }
     syncAllSilently();
   }

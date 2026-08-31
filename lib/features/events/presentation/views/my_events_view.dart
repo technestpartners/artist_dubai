@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
@@ -46,11 +48,55 @@ class _MyEventsViewState extends State<MyEventsView> {
   List<ArtEventModel> _myCreatedEvents = [];
   Map<String, List<EventAttendeeBooking>> _eventBookingsMap = {};
   bool _isLoading = true;
+  StreamSubscription<List<ArtEventModel>>? _eventsSub;
+  StreamSubscription<List<Map<String, dynamic>>>? _bookingsSub;
 
   @override
   void initState() {
     super.initState();
     _fetchMyEvents();
+    _eventsSub = sl<LiveSyncService>().eventsStream.listen((events) {
+      if (mounted && events.isNotEmpty) {
+        setState(() => _myCreatedEvents = events);
+      }
+    });
+    _bookingsSub = sl<LiveSyncService>().bookingsStream.listen((bookings) {
+      if (mounted) {
+        _processBookings(bookings);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _eventsSub?.cancel();
+    _bookingsSub?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _processBookings(List<Map<String, dynamic>> rawBookings) {
+    final Map<String, List<EventAttendeeBooking>> map = {};
+    for (final b in rawBookings) {
+      final evId = b['event_id']?.toString() ?? '1';
+      final bookingObj = EventAttendeeBooking(
+        id: b['id']?.toString() ?? 'bk-1',
+        eventId: evId,
+        attendeeName: b['full_name'] as String? ?? b['customer_name'] as String? ?? 'Attendee',
+        attendeeEmail: b['email'] as String? ?? b['customer_email'] as String? ?? '',
+        attendeePhone: b['phone'] as String? ?? '+971 50 000 0000',
+        ticketsCount: (b['tickets_count'] as num?)?.toInt() ?? 1,
+        pricePaid: b['total_price'] as String? ?? 'Free',
+        bookingDate: b['created_at'] as String? ?? 'Today',
+        status: b['status'] as String? ?? 'Confirmed',
+      );
+
+      if (!map.containsKey(evId)) {
+        map[evId] = [];
+      }
+      map[evId]!.add(bookingObj);
+    }
+    setState(() => _eventBookingsMap = map);
   }
 
   Future<void> _fetchMyEvents() async {
@@ -91,12 +137,6 @@ class _MyEventsViewState extends State<MyEventsView> {
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 
   List<ArtEventModel> get _filteredEvents {

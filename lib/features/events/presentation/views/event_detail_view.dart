@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ import '../widgets/event_gallery_modal.dart';
 
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/storage_service.dart';
 
@@ -31,11 +33,34 @@ class EventDetailView extends StatefulWidget {
 class _EventDetailViewState extends State<EventDetailView> {
   List<ArtistModel> _featuredArtists = [];
   final Set<String> _likedArtistIds = {};
+  StreamSubscription<List<ArtistModel>>? _artistsSub;
+  StreamSubscription<Map<String, dynamic>>? _favSub;
 
   @override
   void initState() {
     super.initState();
     _fetchArtists();
+    _artistsSub = sl<LiveSyncService>().artistsStream.listen((artists) {
+      if (mounted && artists.isNotEmpty) {
+        setState(() => _featuredArtists = artists);
+      }
+    });
+    _favSub = sl<LiveSyncService>().favoritesStream.listen((favData) {
+      if (mounted && favData.isNotEmpty) {
+        final favArtists = (favData['artists'] as List<ArtistModel>?) ?? [];
+        setState(() {
+          _likedArtistIds.clear();
+          _likedArtistIds.addAll(favArtists.map((a) => a.id));
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _artistsSub?.cancel();
+    _favSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchArtists() async {

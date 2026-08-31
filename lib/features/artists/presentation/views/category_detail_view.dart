@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
@@ -31,6 +33,8 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
   late final String _categoryEmoji;
   List<ArtistModel> _categoryArtists = [];
   final Set<String> _likedArtistIds = {};
+  StreamSubscription<List<ArtistModel>>? _artistSub;
+  StreamSubscription<Map<String, dynamic>>? _favSub;
 
   @override
   void initState() {
@@ -38,6 +42,30 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
     _title = widget.categoryName ?? 'Calligraphy & Typography';
     _categoryEmoji = widget.emoji ?? '✍️';
     _fetchCategoryArtists();
+    _artistSub = sl<LiveSyncService>().artistsStream.listen((artists) {
+      if (mounted && artists.isNotEmpty) {
+        setState(() {
+          _categoryArtists = artists.where((a) => a.category.toLowerCase().contains(_title.toLowerCase()) || _title.toLowerCase().contains(a.category.toLowerCase())).toList();
+        });
+      }
+    });
+    _favSub = sl<LiveSyncService>().favoritesStream.listen((favData) {
+      if (mounted && favData.isNotEmpty) {
+        final favArtists = (favData['artists'] as List<ArtistModel>?) ?? [];
+        setState(() {
+          _likedArtistIds.clear();
+          _likedArtistIds.addAll(favArtists.map((a) => a.id));
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _artistSub?.cancel();
+    _favSub?.cancel();
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchCategoryArtists() async {
@@ -149,12 +177,6 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
         ),
       );
     }
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 
   @override
