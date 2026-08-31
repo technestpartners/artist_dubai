@@ -35,10 +35,10 @@ import '../../features/profile/presentation/views/profile_view.dart';
 import '../../features/settings/presentation/views/settings_view.dart';
 import 'route_names.dart';
 
-final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
-
 class AppRouter {
   AppRouter._();
+
+  static final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
   static String get initialLocation {
     try {
@@ -53,7 +53,7 @@ class AppRouter {
   }
 
   static final GoRouter router = GoRouter(
-    navigatorKey: _rootNavigatorKey,
+    navigatorKey: rootNavigatorKey,
     initialLocation: initialLocation,
     routes: [
       GoRoute(

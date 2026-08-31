@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../app/routes/app_router.dart';
 import '../../app/routes/route_names.dart';
 import '../../core/di/injection_container.dart';
 import '../../core/services/storage_service.dart';
@@ -10,29 +11,31 @@ class AppBottomNavBar extends StatelessWidget {
   final int currentIndex;
 
   void _onTabSelected(BuildContext context, int index) {
-    String matchedLocation = '';
+    // 1. Pop any open dialogs, bottom sheets, or imperatively pushed routes back to root
     try {
-      matchedLocation = GoRouterState.of(context).matchedLocation;
-    } catch (_) {}
+      AppRouter.rootNavigatorKey.currentState?.popUntil((route) => route.isFirst);
+    } catch (_) {
+      try {
+        while (Navigator.of(context, rootNavigator: true).canPop()) {
+          Navigator.of(context, rootNavigator: true).pop();
+        }
+      } catch (_) {}
+    }
 
     final isLoggedIn = sl<StorageService>().getBool('is_logged_in') ?? false;
 
     switch (index) {
       case 0:
-        if (matchedLocation != RouteNames.home) {
-          context.go(RouteNames.home);
-        }
+        context.go(RouteNames.home);
         break;
       case 1:
-        if (matchedLocation != RouteNames.artists) {
-          context.go(RouteNames.artists);
-        }
+        context.go(RouteNames.artists);
         break;
       case 2:
         if (!isLoggedIn) {
           ScaffoldMessenger.of(context).hideCurrentSnackBar();
           context.push(RouteNames.login);
-        } else if (matchedLocation != RouteNames.events) {
+        } else {
           context.go(RouteNames.events);
         }
         break;
