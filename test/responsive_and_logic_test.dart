@@ -64,7 +64,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('About this event'), findsOneWidget);
-      expect(find.text('Book Now'), findsOneWidget);
+      expect(find.text('RSVP for Event'), findsOneWidget);
       expect(find.text('Discover More Talented Artists'), findsOneWidget);
     });
 

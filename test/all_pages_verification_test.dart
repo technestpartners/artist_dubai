@@ -193,7 +193,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('About this event'), findsOneWidget);
-      expect(find.text('Book Now'), findsOneWidget);
+      expect(find.text('RSVP for Event'), findsOneWidget);
     });
 
     testWidgets('12. CreateArtEventView renders event submission form', (tester) async {

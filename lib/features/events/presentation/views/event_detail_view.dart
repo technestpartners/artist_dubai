@@ -652,7 +652,7 @@ class _EventDetailViewState extends State<EventDetailView> {
                           _showBookTicketsModal(context, event);
                         },
                         child: const Text(
-                          'Book Now',
+                          'RSVP for Event',
                           style: TextStyle(
                             fontSize: 14.5,
                             fontWeight: FontWeight.bold,
