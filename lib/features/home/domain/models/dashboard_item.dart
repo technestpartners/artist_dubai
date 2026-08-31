@@ -1,4 +1,4 @@
-﻿class DashboardItem {
+class DashboardItem {
   final String title;
   final String? subtitle;
   final String iconPath;
@@ -61,8 +61,8 @@
       route: '/events-photos',
     ),
     DashboardItem(
-      title: 'GALLERIES | ART CENTERS',
-      subtitle: 'REGISTRATION',
+      title: 'Gal | Art Center',
+      subtitle: 'Registration',
       iconPath: 'assets/icons/dashboard/galleries_registration.png',
       imagePath: 'assets/images/gallery-registration-DU8u0zfk.jpg',
       route: '/gallery-registration',
