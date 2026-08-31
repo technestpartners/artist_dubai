@@ -18,7 +18,6 @@ class GovernmentPortalView extends StatefulWidget {
 
 class _GovernmentPortalViewState extends State<GovernmentPortalView> {
   List<GovernmentEntity> _entities = GovernmentEntity.entities;
-  Timer? _timer;
   StreamSubscription<List<GovernmentEntity>>? _govSub;
 
   @override
@@ -32,16 +31,11 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
         });
       }
     });
-    // Live update every 30 seconds to recalculate Dubai GST operating hours
-    _timer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted) setState(() {});
-    });
   }
 
   @override
   void dispose() {
     _govSub?.cancel();
-    _timer?.cancel();
     super.dispose();
   }
 
