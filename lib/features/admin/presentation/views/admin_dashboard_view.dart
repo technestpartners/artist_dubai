@@ -33,6 +33,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   List<ArtistModel> _artists = [];
   List<ArtEventModel> _events = [];
   List<Map<String, dynamic>> _galleries = [];
+  List<Map<String, dynamic>> _artCenters = [];
   List<Map<String, dynamic>> _bookings = [];
   List<GovernmentEntity> _govEntities = [];
 
@@ -40,6 +41,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   StreamSubscription<List<ArtEventModel>>? _eventsSub;
   StreamSubscription<List<Map<String, dynamic>>>? _galleriesSub;
   StreamSubscription<List<Map<String, dynamic>>>? _bookingsSub;
+  StreamSubscription<List<GovernmentEntity>>? _govSub;
 
   @override
   void initState() {
@@ -62,12 +64,20 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     });
     _galleriesSub = liveSync.galleriesStream.listen((list) {
       if (mounted && list.isNotEmpty) {
-        setState(() => _galleries = list);
+        setState(() {
+          _galleries = list;
+          _artCenters = list.where((g) => (g['category'] ?? '').toString().toLowerCase().contains('center') || (g['name'] ?? '').toString().toLowerCase().contains('center')).toList();
+        });
       }
     });
     _bookingsSub = liveSync.bookingsStream.listen((list) {
       if (mounted) {
         setState(() => _bookings = list);
+      }
+    });
+    _govSub = liveSync.governmentStream.listen((list) {
+      if (mounted && list.isNotEmpty) {
+        setState(() => _govEntities = list);
       }
     });
   }
@@ -78,6 +88,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     _eventsSub?.cancel();
     _galleriesSub?.cancel();
     _bookingsSub?.cancel();
+    _govSub?.cancel();
     super.dispose();
   }
 
@@ -92,12 +103,14 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       ]);
 
       if (mounted) {
+        final galleries = results[2] as List<Map<String, dynamic>>;
         setState(() {
           _artists = results[0] as List<ArtistModel>;
           _events = results[1] as List<ArtEventModel>;
-          _galleries = results[2] as List<Map<String, dynamic>>;
+          _galleries = galleries;
+          _artCenters = galleries.where((g) => (g['category'] ?? '').toString().toLowerCase().contains('center') || (g['name'] ?? '').toString().toLowerCase().contains('center')).toList();
           _bookings = results[3] as List<Map<String, dynamic>>;
-          _govEntities = results[4] as List<GovernmentEntity>;
+          _govEntities = (results[4] as List<GovernmentEntity>).isNotEmpty ? (results[4] as List<GovernmentEntity>) : GovernmentEntity.entities;
         });
       }
     } catch (_) {}
@@ -133,6 +146,423 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           ),
         ],
       ),
+    );
+  }
+
+  // --- Modal Dialog: New Government Entry & Edit Entry (Screenshots 3 & 4) ---
+  void _showGovernmentDialog({GovernmentEntity? existing, int? index}) {
+    final isEdit = existing != null;
+    final nameCtrl = TextEditingController(text: existing?.name ?? '');
+    final typeCtrl = TextEditingController(text: existing?.category ?? 'Government · Cultural Authority');
+    final addressCtrl = TextEditingController(text: existing?.location ?? '');
+    final websiteCtrl = TextEditingController(text: existing?.websiteUrl ?? '');
+    final ratingCtrl = TextEditingController(text: existing != null ? '${existing.rating}' : '0');
+    final reviewsCtrl = TextEditingController(text: existing != null ? '${existing.reviewCount}' : '0');
+    final orderCtrl = TextEditingController(text: index != null ? '${index + 1}' : '0');
+    final statusTextCtrl = TextEditingController(text: existing?.defaultTiming ?? 'Open · Closes at 15:00');
+    bool isCurrentlyOpen = existing?.defaultIsOpen ?? true;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Dialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        isEdit ? 'Edit entry' : 'New government entry',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Color(0xFF64748B), size: 20),
+                        onPressed: () => Navigator.pop(ctx),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  _buildFormField(label: 'Name', controller: nameCtrl, isFocused: true),
+                  const SizedBox(height: 12),
+
+                  _buildFormField(
+                    label: 'Type',
+                    controller: typeCtrl,
+                    hint: 'Government · Cultural Authority',
+                  ),
+                  const SizedBox(height: 12),
+
+                  _buildFormField(label: 'Address', controller: addressCtrl, hint: 'Al Shindagha, Dubai'),
+                  const SizedBox(height: 12),
+
+                  _buildFormField(label: 'Website', controller: websiteCtrl, hint: 'https://...'),
+                  const SizedBox(height: 12),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildFormField(
+                          label: 'Rating',
+                          controller: ratingCtrl,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildFormField(
+                          label: 'Reviews',
+                          controller: reviewsCtrl,
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildFormField(
+                          label: 'Order',
+                          controller: orderCtrl,
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  _buildFormField(
+                    label: 'Status text',
+                    controller: statusTextCtrl,
+                    hint: 'Open · Closes at 15:00',
+                  ),
+                  const SizedBox(height: 14),
+
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFCBD5E1)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Currently open',
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1E293B),
+                          ),
+                        ),
+                        Switch(
+                          value: isCurrentlyOpen,
+                          activeColor: const Color(0xFF6A2777),
+                          activeTrackColor: const Color(0xFFD8B4E2),
+                          onChanged: (val) {
+                            setModalState(() => isCurrentlyOpen = val);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6A2777),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () async {
+                      final name = nameCtrl.text.trim();
+                      if (name.isEmpty) return;
+
+                      final payload = {
+                        'name': name,
+                        'type': typeCtrl.text.trim(),
+                        'address': addressCtrl.text.trim(),
+                        'website': websiteCtrl.text.trim(),
+                        'rating': double.tryParse(ratingCtrl.text.trim()) ?? 4.5,
+                        'reviews': int.tryParse(reviewsCtrl.text.trim()) ?? 100,
+                        'status_text': statusTextCtrl.text.trim(),
+                        'currently_open': isCurrentlyOpen ? 1 : 0,
+                      };
+
+                      Navigator.pop(ctx);
+
+                      if (isEdit) {
+                        final updated = GovernmentEntity(
+                          name: name,
+                          defaultIsOpen: isCurrentlyOpen,
+                          rating: double.tryParse(ratingCtrl.text.trim()) ?? 4.5,
+                          reviewCount: int.tryParse(reviewsCtrl.text.trim()) ?? 100,
+                          category: typeCtrl.text.trim(),
+                          location: addressCtrl.text.trim(),
+                          defaultTiming: statusTextCtrl.text.trim(),
+                          websiteUrl: websiteCtrl.text.trim(),
+                          directionsUrl: existing.directionsUrl,
+                        );
+                        if (index != null && index < _govEntities.length) {
+                          setState(() => _govEntities[index] = updated);
+                        }
+                        await sl<ApiService>().updateGovernmentEntity(payload);
+                      } else {
+                        final newEntity = GovernmentEntity(
+                          name: name,
+                          defaultIsOpen: isCurrentlyOpen,
+                          rating: double.tryParse(ratingCtrl.text.trim()) ?? 4.5,
+                          reviewCount: int.tryParse(reviewsCtrl.text.trim()) ?? 100,
+                          category: typeCtrl.text.trim(),
+                          location: addressCtrl.text.trim(),
+                          defaultTiming: statusTextCtrl.text.trim(),
+                          websiteUrl: websiteCtrl.text.trim(),
+                          directionsUrl: 'https://www.google.com/maps/search/?api=1&query=$name+Dubai',
+                        );
+                        setState(() => _govEntities.insert(0, newEntity));
+                        await sl<ApiService>().createGovernmentEntity(payload);
+                      }
+                    },
+                    child: const Text('Save', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  ),
+                  const SizedBox(height: 8),
+
+                  Center(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // --- Modal Dialog: New Art Center (Screenshot 5) ---
+  void _showArtCenterDialog() {
+    final nameCtrl = TextEditingController();
+    final typeCtrl = TextEditingController(text: 'Gallery · Exhibition space');
+    final addressCtrl = TextEditingController();
+    final hoursCtrl = TextEditingController(text: 'Sat–Thu 10:00–20:00');
+    final websiteCtrl = TextEditingController();
+    final imageCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    final orderCtrl = TextEditingController(text: '0');
+    bool isCurrentlyOpen = true;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Dialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'New art center',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Color(0xFF64748B), size: 20),
+                        onPressed: () => Navigator.pop(ctx),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  _buildFormField(label: 'Name', controller: nameCtrl),
+                  const SizedBox(height: 12),
+
+                  _buildFormField(label: 'Type', controller: typeCtrl, hint: 'Gallery · Exhibition space'),
+                  const SizedBox(height: 12),
+
+                  _buildFormField(label: 'Address', controller: addressCtrl),
+                  const SizedBox(height: 12),
+
+                  _buildFormField(label: 'Opening hours', controller: hoursCtrl, hint: 'Sat–Thu 10:00–20:00'),
+                  const SizedBox(height: 12),
+
+                  _buildFormField(label: 'Website', controller: websiteCtrl, hint: 'https://...'),
+                  const SizedBox(height: 12),
+
+                  _buildFormField(label: 'Image URL', controller: imageCtrl),
+                  const SizedBox(height: 12),
+
+                  _buildFormField(label: 'Description', controller: descCtrl, maxLines: 3),
+                  const SizedBox(height: 12),
+
+                  _buildFormField(label: 'Display order', controller: orderCtrl, keyboardType: TextInputType.number),
+                  const SizedBox(height: 14),
+
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFCBD5E1)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Currently open',
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1E293B),
+                          ),
+                        ),
+                        Switch(
+                          value: isCurrentlyOpen,
+                          activeColor: const Color(0xFF6A2777),
+                          activeTrackColor: const Color(0xFFD8B4E2),
+                          onChanged: (val) {
+                            setModalState(() => isCurrentlyOpen = val);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6A2777),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () async {
+                      final name = nameCtrl.text.trim();
+                      if (name.isEmpty) return;
+
+                      final payload = {
+                        'name': name,
+                        'category': typeCtrl.text.trim(),
+                        'location': addressCtrl.text.trim(),
+                        'timing': hoursCtrl.text.trim(),
+                        'website': websiteCtrl.text.trim(),
+                        'image_url': imageCtrl.text.trim(),
+                        'description': descCtrl.text.trim(),
+                      };
+
+                      Navigator.pop(ctx);
+
+                      setState(() {
+                        _artCenters.insert(0, payload);
+                        _galleries.insert(0, payload);
+                      });
+
+                      await sl<ApiService>().createArtCenter(payload);
+                    },
+                    child: const Text('Save', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  ),
+                  const SizedBox(height: 8),
+
+                  Center(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildFormField({
+    required String label,
+    required TextEditingController controller,
+    String? hint,
+    int maxLines = 1,
+    TextInputType keyboardType = TextInputType.text,
+    bool isFocused = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF334155),
+          ),
+        ),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          keyboardType: keyboardType,
+          style: const TextStyle(fontSize: 13.5, color: Color(0xFF1E293B)),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+            isDense: true,
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(
+                color: isFocused ? const Color(0xFF6A2777) : const Color(0xFFCBD5E1),
+                width: isFocused ? 1.5 : 1,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(
+                color: isFocused ? const Color(0xFF6A2777) : const Color(0xFFCBD5E1),
+                width: isFocused ? 1.5 : 1,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -635,42 +1065,274 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     );
   }
 
-  // --- 6. Art Centers Tab ---
+  // --- 6. Art Centers Tab (Screenshot 1 & Screenshot 5) ---
   Widget _buildArtCentersTab() {
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _galleries.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        final gal = _galleries[index];
-        return _buildListItemCard(
-          title: gal['name'] as String? ?? 'Art Center',
-          subtitle: gal['location'] as String? ?? 'Dubai, UAE',
-          badgeText: 'Verified',
-          isStatusBadge: true,
-        );
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: const [
+            Icon(Icons.business_outlined, size: 18, color: Color(0xFF64748B)),
+            SizedBox(width: 8),
+            Text(
+              'Physical art centers shown in the app',
+              style: TextStyle(
+                fontSize: 13,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              '${_artCenters.length} centers',
+              style: const TextStyle(
+                fontSize: 13.5,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6A2777),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              icon: const Icon(Icons.add, size: 14),
+              label: const Text('New center', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+              onPressed: _showArtCenterDialog,
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        if (_artCenters.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Text(
+              'No art centers yet.',
+              style: TextStyle(color: Color(0xFF64748B), fontSize: 13.5),
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _artCenters.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              final center = _artCenters[index];
+              final name = center['name'] as String? ?? 'Art Center';
+              final location = center['location'] as String? ?? 'Dubai, UAE';
+              return _buildListItemCard(
+                title: name,
+                subtitle: location,
+                badgeText: 'Open',
+                isPurpleBadge: true,
+                onDelete: () {
+                  _confirmDelete(
+                    title: 'Delete Art Center',
+                    message: 'Are you sure you want to remove "$name"?',
+                    onConfirm: () async {
+                      setState(() => _artCenters.removeAt(index));
+                      await sl<ApiService>().deleteGallery(center['id']);
+                    },
+                  );
+                },
+              );
+            },
+          ),
+      ],
     );
   }
 
-  // --- 7. Government Tab ---
+  // --- 7. Government Tab (Screenshots 2, 3, 4) ---
   Widget _buildGovernmentTab() {
-    final list = _govEntities.isNotEmpty ? _govEntities : GovernmentEntity.entities;
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: list.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        final g = list[index];
-        return _buildListItemCard(
-          title: g.name,
-          subtitle: g.category,
-          badgeText: g.defaultIsOpen ? 'Open Now' : 'Closed',
-          isStatusBadge: true,
-        );
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              '${_govEntities.length} entries',
+              style: const TextStyle(
+                fontSize: 13.5,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6A2777),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              icon: const Icon(Icons.add, size: 14),
+              label: const Text('New entry', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+              onPressed: () => _showGovernmentDialog(),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        if (_govEntities.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 32),
+            child: Center(
+              child: Text(
+                'No government entries registered.',
+                style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+              ),
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _govEntities.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final g = _govEntities[index];
+              return _buildGovernmentCard(
+                entity: g,
+                onEdit: () => _showGovernmentDialog(existing: g, index: index),
+                onDelete: () {
+                  _confirmDelete(
+                    title: 'Delete Government Entry',
+                    message: 'Are you sure you want to remove "${g.name}"?',
+                    onConfirm: () async {
+                      setState(() => _govEntities.removeAt(index));
+                      await sl<ApiService>().deleteGovernmentEntity(name: g.name);
+                    },
+                  );
+                },
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  // Government Card matching Screenshot 2
+  Widget _buildGovernmentCard({
+    required GovernmentEntity entity,
+    required VoidCallback onEdit,
+    required VoidCallback onDelete,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x06000000),
+            blurRadius: 4,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  entity.name,
+                  style: const TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: entity.defaultIsOpen ? const Color(0xFF6A2777) : const Color(0xFF94A3B8),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  entity.defaultIsOpen ? 'Open' : 'Closed',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+
+          Text(
+            entity.category,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF64748B),
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+          const SizedBox(height: 4),
+
+          Text(
+            entity.location,
+            style: const TextStyle(
+              fontSize: 12.5,
+              color: Color(0xFF334155),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${entity.rating} ★ · ${entity.reviewCount} reviews',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF64748B),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 16, color: Color(0xFF1E293B)),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    onPressed: onEdit,
+                  ),
+                  const SizedBox(width: 6),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded, size: 16, color: Color(0xFFEF4444)),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    onPressed: onDelete,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

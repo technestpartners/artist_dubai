@@ -1312,4 +1312,79 @@ class ApiService {
     } catch (_) {}
     return false;
   }
+
+  // 29. Create Government Entity
+  Future<bool> createGovernmentEntity(Map<String, dynamic> data) async {
+    try {
+      final res = await _client.post(
+        ApiEndpoints.government,
+        data: data,
+      );
+      if (_isSuccess(res)) {
+        _cachedGovEntities = null;
+        try {
+          sl<LiveSyncService>().syncAllSilently();
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  // 30. Update Government Entity
+  Future<bool> updateGovernmentEntity(Map<String, dynamic> data) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.government}&action=update',
+        data: data,
+      );
+      if (_isSuccess(res)) {
+        _cachedGovEntities = null;
+        try {
+          sl<LiveSyncService>().syncAllSilently();
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  // 31. Delete Government Entity
+  Future<bool> deleteGovernmentEntity({dynamic id, String? name}) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.government}&action=delete',
+        data: {
+          if (id != null) 'id': id,
+          if (name != null) 'name': name,
+        },
+      );
+      if (_isSuccess(res)) {
+        _cachedGovEntities = null;
+        try {
+          sl<LiveSyncService>().syncAllSilently();
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  // 32. Create Art Center / Gallery
+  Future<bool> createArtCenter(Map<String, dynamic> data) async {
+    try {
+      final res = await _client.post(
+        ApiEndpoints.galleries,
+        data: data,
+      );
+      if (_isSuccess(res)) {
+        _cachedGalleries = null;
+        try {
+          sl<LiveSyncService>().notifyGalleriesChanged();
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
 }

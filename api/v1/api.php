@@ -1805,6 +1805,77 @@ class GovernmentController {
 
         ApiResponse::success($entities, 'Government entities fetched successfully from MySQL');
     }
+
+    public function createEntity(array $input): void {
+        $name = InputSanitizer::cleanString($input['name'] ?? '');
+        if (empty($name)) {
+            ApiResponse::error('Entity name is required', 422);
+        }
+        $category = InputSanitizer::cleanString($input['type'] ?? $input['category'] ?? 'Government · Cultural Authority');
+        $location = InputSanitizer::cleanString($input['address'] ?? $input['location'] ?? 'Dubai, UAE');
+        $website = InputSanitizer::cleanString($input['website'] ?? $input['website_url'] ?? '');
+        $rating = (float)($input['rating'] ?? 4.5);
+        $reviews = (int)($input['reviews'] ?? $input['review_count'] ?? 100);
+        $timing = InputSanitizer::cleanString($input['status_text'] ?? $input['default_timing'] ?? 'Open · Closes at 18:00');
+        $isOpen = isset($input['is_open']) ? (int)$input['is_open'] : (isset($input['currently_open']) ? (int)$input['currently_open'] : 1);
+
+        try {
+            $stmt = $this->db->prepare("INSERT INTO government_entities (name, category, location, base_rating, base_review_count, default_timing, default_is_open, website_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$name, $category, $location, $rating, $reviews, $timing, $isOpen, $website]);
+            $id = $this->db->lastInsertId();
+            ApiResponse::success(['id' => $id, 'name' => $name], 'Government entity created successfully');
+        } catch (\Throwable $e) {
+            ApiResponse::error('Failed to create government entity: ' . $e->getMessage(), 500);
+        }
+    }
+
+    public function updateEntity(array $input): void {
+        $id = $input['id'] ?? null;
+        $name = InputSanitizer::cleanString($input['name'] ?? '');
+        if (empty($id) && empty($name)) {
+            ApiResponse::error('Entity ID or name is required for update', 422);
+        }
+        $category = InputSanitizer::cleanString($input['type'] ?? $input['category'] ?? 'Government · Cultural Authority');
+        $location = InputSanitizer::cleanString($input['address'] ?? $input['location'] ?? 'Dubai, UAE');
+        $website = InputSanitizer::cleanString($input['website'] ?? $input['website_url'] ?? '');
+        $rating = (float)($input['rating'] ?? 4.5);
+        $reviews = (int)($input['reviews'] ?? $input['review_count'] ?? 100);
+        $timing = InputSanitizer::cleanString($input['status_text'] ?? $input['default_timing'] ?? 'Open · Closes at 18:00');
+        $isOpen = isset($input['is_open']) ? (int)$input['is_open'] : (isset($input['currently_open']) ? (int)$input['currently_open'] : 1);
+
+        try {
+            if (!empty($id)) {
+                $stmt = $this->db->prepare("UPDATE government_entities SET name = ?, category = ?, location = ?, base_rating = ?, base_review_count = ?, default_timing = ?, default_is_open = ?, website_url = ? WHERE id = ?");
+                $stmt->execute([$name, $category, $location, $rating, $reviews, $timing, $isOpen, $website, $id]);
+            } else {
+                $stmt = $this->db->prepare("UPDATE government_entities SET category = ?, location = ?, base_rating = ?, base_review_count = ?, default_timing = ?, default_is_open = ?, website_url = ? WHERE name = ?");
+                $stmt->execute([$category, $location, $rating, $reviews, $timing, $isOpen, $website, $name]);
+            }
+            ApiResponse::success(['id' => $id, 'name' => $name], 'Government entity updated successfully');
+        } catch (\Throwable $e) {
+            ApiResponse::error('Failed to update government entity: ' . $e->getMessage(), 500);
+        }
+    }
+
+    public function deleteEntity(array $input): void {
+        $id = $input['id'] ?? null;
+        $name = $input['name'] ?? null;
+        if (empty($id) && empty($name)) {
+            ApiResponse::error('Entity ID or name is required for deletion', 422);
+        }
+        try {
+            if (!empty($id)) {
+                $stmt = $this->db->prepare("DELETE FROM government_entities WHERE id = ?");
+                $stmt->execute([$id]);
+            } else {
+                $stmt = $this->db->prepare("DELETE FROM government_entities WHERE name = ?");
+                $stmt->execute([$name]);
+            }
+            ApiResponse::success(['id' => $id, 'name' => $name], 'Government entity deleted successfully');
+        } catch (\Throwable $e) {
+            ApiResponse::error('Failed to delete government entity: ' . $e->getMessage(), 500);
+        }
+    }
 }
 
 class ArtworkController {
@@ -2409,7 +2480,17 @@ class UnifiedMySqlApiRouter {
                 break;
 
             case 'government':
-                (new GovernmentController())->getEntities();
+                $govCtrl = new GovernmentController();
+                $govAction = strtolower(trim($_GET['action'] ?? $input['action'] ?? ''));
+                if ($govAction === 'delete') {
+                    $govCtrl->deleteEntity(array_merge($input, $_GET));
+                } elseif ($govAction === 'update' || $method === 'PUT') {
+                    $govCtrl->updateEntity(array_merge($input, $_GET));
+                } elseif ($method === 'POST') {
+                    $govCtrl->createEntity($input);
+                } else {
+                    $govCtrl->getEntities();
+                }
                 break;
 
             case 'artworks':
