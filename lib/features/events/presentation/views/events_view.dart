@@ -480,13 +480,13 @@ class _EventsViewState extends State<EventsView> {
                   ),
                   const SizedBox(height: 14),
 
-                  // Total Display
-                  Text(
-                    'Total: ${event.price}',
-                    style: const TextStyle(
+                  // Admission Display
+                  const Text(
+                    'Admission: Free Community Entry',
+                    style: TextStyle(
                       fontSize: 14.5,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E1E1E),
+                      color: Color(0xFF16A34A),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -1067,15 +1067,6 @@ class _EventsViewState extends State<EventsView> {
                     fontWeight: FontWeight.w600,
                     fontSize: 12,
                   ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                event.price,
-                style: const TextStyle(
-                  color: Color(0xFF6A2777),
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14.5,
                 ),
               ),
               const Spacer(),

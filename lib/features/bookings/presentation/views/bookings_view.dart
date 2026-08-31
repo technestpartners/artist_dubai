@@ -271,16 +271,16 @@ class _BookingsViewState extends State<BookingsView> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(
-                      amountStr,
-                      style: const TextStyle(
+                    const Text(
+                      'Free Entry',
+                      style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF1E1E1E),
+                        color: Color(0xFF16A34A),
                       ),
                     ),
                     Text(
-                      '$ticketsCount ticket${ticketsCount == 1 ? '' : 's'}',
+                      '$ticketsCount Guest${ticketsCount == 1 ? '' : 's'}',
                       style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
                     ),
                   ],
@@ -515,7 +515,6 @@ class _BookingsViewState extends State<BookingsView> {
     final fullName = b['full_name'] ?? b['name'] ?? 'Attendee';
     final email = b['email'] ?? '';
     final ticketsCount = b['tickets_count'] ?? 1;
-    final totalPrice = b['total_price'] ?? 'Free';
 
     showDialog(
       context: context,
@@ -612,9 +611,9 @@ class _BookingsViewState extends State<BookingsView> {
                           const SizedBox(height: 6),
                           _ticketRow('Venue', location),
                           const SizedBox(height: 6),
-                          _ticketRow('Quantity', '$ticketsCount Ticket(s)'),
+                          _ticketRow('Guests', '$ticketsCount Attendee(s)'),
                           const SizedBox(height: 6),
-                          _ticketRow('Total', totalPrice, isHighlight: true),
+                          _ticketRow('Admission', 'Free Community Entry', isHighlight: true),
                         ],
                       ),
                     ),
@@ -627,7 +626,7 @@ class _BookingsViewState extends State<BookingsView> {
                       child: ElevatedButton.icon(
                         icon: const Icon(Icons.download_rounded, size: 18),
                         label: const Text(
-                          'Save / Download PDF Ticket',
+                          'Save / Download PDF Pass',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         style: ElevatedButton.styleFrom(

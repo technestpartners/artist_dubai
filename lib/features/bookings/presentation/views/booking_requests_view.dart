@@ -427,7 +427,7 @@ class _BookingRequestsViewState extends State<BookingRequestsView> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      '$tickets Ticket${tickets == 1 ? '' : 's'}',
+                      '$tickets Guest${tickets == 1 ? '' : 's'}',
                       style: const TextStyle(
                         fontSize: 11.5,
                         fontWeight: FontWeight.bold,

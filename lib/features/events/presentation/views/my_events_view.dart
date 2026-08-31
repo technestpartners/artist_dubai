@@ -207,9 +207,9 @@ class _MyEventsViewState extends State<MyEventsView> {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      _modalMetricItem('Registered Bookings', '${bookings.length}', Icons.receipt_long_outlined),
+                      _modalMetricItem('Registered RSVPs', '${bookings.length}', Icons.receipt_long_outlined),
                       const SizedBox(width: 20),
-                      _modalMetricItem('Tickets Sold', '$totalTickets / ${event.maxAttendees}', Icons.confirmation_number_outlined),
+                      _modalMetricItem('Total Attendees', '$totalTickets / ${event.maxAttendees}', Icons.people_outline),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -413,7 +413,7 @@ class _MyEventsViewState extends State<MyEventsView> {
                         ),
                         SizedBox(height: 4),
                         Text(
-                          'Manage your published art events, track attendee ticket bookings, and review attendee records',
+                          'Manage your published art events, track attendee RSVPs, and review attendee records',
                           style: TextStyle(
                             fontSize: 13.5,
                             color: Colors.white70,
@@ -455,7 +455,7 @@ class _MyEventsViewState extends State<MyEventsView> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: _buildMetricCard(
-                      title: 'Total Bookings',
+                      title: 'Total RSVPs',
                       value: '$totalBookingsCount',
                       icon: Icons.receipt_long_outlined,
                     ),
@@ -463,9 +463,9 @@ class _MyEventsViewState extends State<MyEventsView> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: _buildMetricCard(
-                      title: 'Tickets Sold',
+                      title: 'Total Attendees',
                       value: '$totalTicketsSold',
-                      icon: Icons.confirmation_number_outlined,
+                      icon: Icons.people_outline,
                     ),
                   ),
                 ],
@@ -625,12 +625,12 @@ class _MyEventsViewState extends State<MyEventsView> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      'Price: ${event.price}',
-                                      style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Colors.white),
+                                    const Text(
+                                      'Free Community Entry',
+                                      style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Colors.white),
                                     ),
                                     Text(
-                                      'Bookings: $ticketsSold / ${event.maxAttendees} Tickets',
+                                      'RSVPs: $ticketsSold / ${event.maxAttendees}',
                                       style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFFFFD700)),
                                     ),
                                   ],

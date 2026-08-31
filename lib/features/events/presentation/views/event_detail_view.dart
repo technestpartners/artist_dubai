@@ -615,21 +615,21 @@ class _EventDetailViewState extends State<EventDetailView> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    // Ticket Price
+                    // Admission Type
                     Row(
-                      children: [
-                        const Icon(
-                          Icons.confirmation_number_outlined,
+                      children: const [
+                        Icon(
+                          Icons.how_to_reg_outlined,
                           size: 18,
                           color: Color(0xFF64748B),
                         ),
-                        const SizedBox(width: 10),
+                        SizedBox(width: 10),
                         Text(
-                          event.price,
-                          style: const TextStyle(
+                          'Free Community Admission',
+                          style: TextStyle(
                             fontSize: 13.5,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF1E1E1E),
+                            color: Color(0xFF16A34A),
                           ),
                         ),
                       ],
@@ -1410,13 +1410,13 @@ class _EventDetailViewState extends State<EventDetailView> {
                   ),
                   const SizedBox(height: 14),
 
-                  // Total Display
-                  Text(
-                    'Total: ${event.price}',
-                    style: const TextStyle(
+                  // Admission Display
+                  const Text(
+                    'Admission: Free Community Entry',
+                    style: TextStyle(
                       fontSize: 14.5,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E1E1E),
+                      color: Color(0xFF16A34A),
                     ),
                   ),
                   const SizedBox(height: 20),

@@ -34,10 +34,8 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
   late final TextEditingController _notesController;
   late final TextEditingController _tagsController;
   late final TextEditingController _maxTicketsController;
-  late final TextEditingController _ticketPriceController;
 
   String? _selectedCategory;
-  bool _isFreeEvent = true;
   bool _isSubmitting = false;
 
   List<String> _categories = [
@@ -90,12 +88,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       _maxTicketsController = TextEditingController(
         text: ev.maxAttendees.toString(),
       );
-      final rawPrice = ev.price.replaceAll(RegExp(r'[^0-9.]'), '');
-      _ticketPriceController = TextEditingController(
-        text: rawPrice.isNotEmpty ? rawPrice : '50',
-      );
       _selectedCategory = ev.category;
-      _isFreeEvent = ev.price.toLowerCase().contains('free');
     } else {
       _eventTitleController = TextEditingController();
       _descriptionController = TextEditingController();
@@ -109,7 +102,6 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       _notesController = TextEditingController();
       _tagsController = TextEditingController();
       _maxTicketsController = TextEditingController(text: '100');
-      _ticketPriceController = TextEditingController(text: '50');
     }
     _loadDynamicCategories();
   }
@@ -192,7 +184,6 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     _notesController.dispose();
     _tagsController.dispose();
     _maxTicketsController.dispose();
-    _ticketPriceController.dispose();
     super.dispose();
   }
 
@@ -215,8 +206,6 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
     try {
       final isEdit = widget.event != null;
-      final enteredPrice = _ticketPriceController.text.trim();
-      final formattedPrice = _isFreeEvent ? 'Free' : 'AED ${enteredPrice.isNotEmpty ? enteredPrice : '50'}';
       final parsedCapacity = int.tryParse(_maxTicketsController.text.trim()) ?? 100;
       bool success = false;
 
@@ -230,7 +219,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           'end_date': _endDateController.text.trim(),
           'location': _locationController.text.trim().isEmpty ? 'Dubai, UAE' : _locationController.text.trim(),
           'venue': _venueController.text.trim(),
-          'price': formattedPrice,
+          'price': 'Free Entry',
           'max_attendees': parsedCapacity,
           'tags': _tagsController.text.trim(),
         });
@@ -243,8 +232,8 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           endDate: _endDateController.text.trim(),
           location: _locationController.text.trim().isEmpty ? 'Dubai, UAE' : _locationController.text.trim(),
           venue: _venueController.text.trim(),
-          isFree: _isFreeEvent,
-          price: formattedPrice,
+          isFree: true,
+          price: 'Free Entry',
           maxAttendees: parsedCapacity,
           organizerName: _organizerNameController.text.trim(),
           contactEmail: _contactEmailController.text.trim(),
@@ -451,61 +440,13 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                       ),
                       const SizedBox(height: 28),
 
-                      // SECTION 3: Ticketing
+                      // SECTION 3: Capacity & Attendance
                       _buildSectionTitle(
-                        icon: Icons.confirmation_number_outlined,
-                        title: 'Ticketing & Capacity',
+                        icon: Icons.people_outline,
+                        title: 'Attendance & Capacity',
                       ),
                       const SizedBox(height: 14),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: const Color(0xFFCBD5E1),
-                            width: 1,
-                          ),
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: SwitchListTile(
-                            value: _isFreeEvent,
-                            activeColor: const Color(0xFF5E227A),
-                            title: const Text(
-                              'Free Event',
-                              style: TextStyle(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1E1E1E),
-                              ),
-                            ),
-                            subtitle: const Text(
-                              'This event is free to attend',
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                            onChanged: (val) {
-                              setState(() {
-                                _isFreeEvent = val;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                      if (!_isFreeEvent) ...[
-                        const SizedBox(height: 14),
-                        _buildLabel('Ticket Price (AED)'),
-                        _buildTextField(
-                          controller: _ticketPriceController,
-                          hintText: 'e.g. 50',
-                          prefixIcon: Icons.attach_money,
-                          keyboardType: TextInputType.number,
-                        ),
-                      ],
-                      const SizedBox(height: 14),
-                      _buildLabel('Number of Tickets (Total Capacity)'),
+                      _buildLabel('Maximum Capacity (Total RSVP Limit)'),
                       _buildTextField(
                         controller: _maxTicketsController,
                         hintText: 'e.g. 100',
