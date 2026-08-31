@@ -442,6 +442,7 @@ void main() {
       final user = res!['user'] as Map<String, dynamic>;
       expect(user['role'], equals('admin'));
       expect(user['is_admin'], isTrue);
+      await tester.pump(const Duration(milliseconds: 50));
     });
   });
 }
