@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
@@ -17,11 +19,26 @@ class EventPhotosView extends StatefulWidget {
 class _EventPhotosViewState extends State<EventPhotosView> {
   List<ArtEventModel> _eventsWithGalleries = [];
   bool _isLoading = true;
+  StreamSubscription<List<ArtEventModel>>? _eventsSub;
 
   @override
   void initState() {
     super.initState();
     _fetchEventPhotos();
+    _eventsSub = sl<LiveSyncService>().eventsStream.listen((events) {
+      if (mounted && events.isNotEmpty) {
+        setState(() {
+          _eventsWithGalleries = events.where((e) => e.galleries.isNotEmpty).toList();
+          _isLoading = false;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _eventsSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchEventPhotos() async {

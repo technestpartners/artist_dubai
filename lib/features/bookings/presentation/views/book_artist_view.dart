@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
@@ -167,6 +168,7 @@ class _BookArtistViewState extends State<BookArtistView> {
         });
 
         if (success) {
+          sl<LiveSyncService>().notifyBookingsChanged();
           try {
             sl<NotificationService>().addNotification(
               title: 'Booking Request Sent!',

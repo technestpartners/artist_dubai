@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
@@ -363,6 +364,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
         });
 
         if (profileRes != null) {
+          sl<LiveSyncService>().notifyArtistsChanged();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Artist Profile & ${uploadedArtworksData.length} Artworks created successfully!'),

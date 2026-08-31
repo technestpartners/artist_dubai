@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
+import '../../domain/models/art_event_model.dart';
 
 class EventsCompetitionView extends StatefulWidget {
   const EventsCompetitionView({super.key});
@@ -19,6 +22,7 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView>
   bool _isLoading = true;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  StreamSubscription<List<ArtEventModel>>? _compSub;
 
   static const Color _purple = Color(0xFF5E227A);
   static const Color _purpleLight = Color(0xFF7B3FA0);
@@ -34,10 +38,14 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView>
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
     _fetchCompetitions();
+    _compSub = sl<LiveSyncService>().eventsStream.listen((_) {
+      _fetchCompetitions(forceRefresh: true);
+    });
   }
 
   @override
   void dispose() {
+    _compSub?.cancel();
     _tabController.dispose();
     _searchController.dispose();
     super.dispose();
