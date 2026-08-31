@@ -30,21 +30,21 @@ class _SplashScreenViewState extends State<SplashScreenView>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1600),
+      duration: const Duration(milliseconds: 2000),
     );
 
     // Minimal, refined logo scale (0.85 -> 1.0) & fade (0.0 -> 0.4)
     _logoScale = Tween<double>(begin: 0.88, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeOutCubic),
+        curve: const Interval(0.0, 0.55, curve: Curves.easeOutCubic),
       ),
     );
 
     _logoFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.45, curve: Curves.easeIn),
+        curve: const Interval(0.0, 0.4, curve: Curves.easeIn),
       ),
     );
 
@@ -76,8 +76,8 @@ class _SplashScreenViewState extends State<SplashScreenView>
 
     _controller.forward();
 
-    // Clean auto transition to main dashboard after 2.4 seconds
-    _navigationTimer = Timer(const Duration(milliseconds: 2400), () {
+    // Clean auto transition to main dashboard after 3.5 seconds (3 - 4 seconds)
+    _navigationTimer = Timer(const Duration(milliseconds: 3500), () {
       if (mounted) _navigateToNext();
     });
   }
