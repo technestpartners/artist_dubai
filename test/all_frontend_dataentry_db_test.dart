@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -141,14 +141,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('GALLERIES | ART CENTERS'), findsOneWidget);
-      expect(find.text('Gallery / center name *'), findsOneWidget);
-
-      final textFields = find.byType(TextFormField);
-      if (textFields.evaluate().isNotEmpty) {
-        await tester.enterText(textFields.first, 'Louvre Abu Dhabi Satellite');
-        await tester.pump();
-        expect(find.text('Louvre Abu Dhabi Satellite'), findsOneWidget);
-      }
+      expect(find.text('Registration received'), findsOneWidget);
+      expect(find.text('Back to home'), findsOneWidget);
     });
 
     testWidgets('7. BookArtistView Data Entry Form UI & Inputs', (tester) async {

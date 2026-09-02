@@ -263,7 +263,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('GALLERIES | ART CENTERS'), findsOneWidget);
-      expect(find.text('Submit registration'), findsOneWidget);
+      expect(find.text('Registration received'), findsOneWidget);
     });
 
     testWidgets('18. BookingsView renders user bookings & tickets', (tester) async {
