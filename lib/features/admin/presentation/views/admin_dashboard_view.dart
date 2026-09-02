@@ -412,7 +412,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     final imageCtrl = TextEditingController(text: existing?['image_url'] ?? '');
     final descCtrl = TextEditingController(text: existing?['description'] ?? '');
     final orderCtrl = TextEditingController(text: '${existing?['display_order'] ?? 0}');
-    bool isCurrentlyOpen = (existing?['currently_open'] ?? 1) == 1;
+    bool isCurrentlyOpen = (existing?['currently_open'] == 1 || existing?['currently_open'] == true);
+    bool isApproved = (existing?['status'] ?? 'approved').toString().toLowerCase() != 'pending' &&
+                      existing?['is_approved'] != 0 &&
+                      existing?['is_approved'] != '0' &&
+                      existing?['is_public'] != 0 &&
+                      existing?['is_public'] != '0';
 
     showDialog(
       context: context,
@@ -527,6 +532,46 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 12),
+
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFCBD5E1)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Approved & Published',
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1E293B),
+                              ),
+                            ),
+                            Text(
+                              isApproved ? 'Visible in public app' : 'Pending admin review',
+                              style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                            ),
+                          ],
+                        ),
+                        Switch(
+                          value: isApproved,
+                          activeColor: const Color(0xFF16A34A),
+                          activeTrackColor: const Color(0xFFBBF7D0),
+                          onChanged: (val) {
+                            setModalState(() => isApproved = val);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 18),
 
                   ElevatedButton(
@@ -551,6 +596,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         'image_url': imageCtrl.text.trim(),
                         'description': descCtrl.text.trim(),
                         'currently_open': isCurrentlyOpen ? 1 : 0,
+                        'status': isApproved ? 'approved' : 'pending',
+                        'is_approved': isApproved ? 1 : 0,
+                        'is_public': isApproved ? 1 : 0,
                       };
 
                       Navigator.pop(ctx);
@@ -1292,13 +1340,86 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     );
   }
 
-  // --- 4. Galleries Tab ---
+  bool _isItemPending(Map<String, dynamic> item) {
+    final rawStatus = (item['status'] ?? '').toString().trim().toLowerCase();
+    if (rawStatus == 'pending' || rawStatus == 'awaiting' || rawStatus == 'in_review' || rawStatus == 'unapproved') {
+      return true;
+    }
+    if (rawStatus == 'approved' || rawStatus == 'active' || rawStatus == 'open') {
+      return false;
+    }
+    final isApproved = item['is_approved'];
+    if (isApproved == 0 || isApproved == '0' || isApproved == false || isApproved == 'false') {
+      return true;
+    }
+    final isPublic = item['is_public'];
+    if (isPublic == 0 || isPublic == '0' || isPublic == false || isPublic == 'false') {
+      return true;
+    }
+    return false;
+  }
+
+  Future<void> _toggleGalleryApproval(Map<String, dynamic> item, int index) async {
+    final isCurrentlyPending = _isItemPending(item);
+    final targetStatus = isCurrentlyPending ? 'approved' : 'pending';
+    final targetFlag = isCurrentlyPending ? 1 : 0;
+    final name = (item['name'] ?? item['title'] ?? 'Art Space').toString();
+    final id = item['id'];
+
+    final updated = Map<String, dynamic>.from(item);
+    updated['status'] = targetStatus;
+    updated['is_public'] = targetFlag;
+    updated['is_approved'] = targetFlag;
+
+    setState(() {
+      final gIndex = _galleries.indexWhere((g) => g['id'] == id);
+      if (gIndex != -1) _galleries[gIndex] = updated;
+      final aIndex = _artCenters.indexWhere((c) => c['id'] == id);
+      if (aIndex != -1) _artCenters[aIndex] = updated;
+    });
+
+    await sl<ApiService>().updateArtCenter({
+      'id': id,
+      'status': targetStatus,
+      'is_public': targetFlag,
+      'is_approved': targetFlag,
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isCurrentlyPending
+              ? '"$name" request accepted and published to app!'
+              : '"$name" set to pending (hidden from public).'),
+          backgroundColor: isCurrentlyPending ? const Color(0xFF16A34A) : const Color(0xFFD97706),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  // --- 4. Galleries Tab (Screenshot 6) ---
   Widget _buildGalleriesTab() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        Row(
+          children: const [
+            Icon(Icons.photo_library_outlined, size: 18, color: Color(0xFF64748B)),
+            SizedBox(width: 8),
+            Text(
+              'Public photo galleries',
+              style: TextStyle(
+                fontSize: 13,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
         Align(
-          alignment: Alignment.centerRight,
+          alignment: Alignment.centerLeft,
           child: ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF6A2777),
@@ -1333,7 +1454,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               final gal = _galleries[index];
               final name = gal['name'] as String? ?? 'Gallery';
               final id = gal['id'];
-              final isPending = (gal['status'] ?? '').toString().toLowerCase() == 'pending' || gal['is_approved'] == 0 || gal['is_public'] == 0;
+              final isPending = _isItemPending(gal);
               return _buildListItemCard(
                 title: name,
                 subtitle: (gal['category'] ?? gal['location'] ?? 'Artist gallery').toString(),
@@ -1341,6 +1462,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 isPurpleBadge: !isPending,
                 isAmberBadge: isPending,
                 onApprove: isPending ? () => _approveGallery(gal, index) : null,
+                onToggleStatus: () => _toggleGalleryApproval(gal, index),
                 onEdit: () => _showCreateGalleryDialog(existing: gal, index: index),
                 onDelete: () {
                   _confirmDelete(
@@ -1469,7 +1591,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               final name = (center['name'] ?? center['title'] ?? 'Art Center').toString();
               final subtitle = (center['category'] ?? center['location'] ?? center['address'] ?? 'Dubai, UAE').toString();
               final isCurrentlyOpen = center['currently_open'] == 1 || center['currently_open'] == true;
-              final isPending = (center['status'] ?? '').toString().toLowerCase() == 'pending' || center['is_approved'] == 0 || center['is_public'] == 0;
+              final isPending = _isItemPending(center);
               return _buildListItemCard(
                 title: name,
                 subtitle: subtitle,
@@ -1477,6 +1599,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 isPurpleBadge: !isPending,
                 isAmberBadge: isPending,
                 onApprove: isPending ? () => _approveGallery(center, index) : null,
+                onToggleStatus: () => _toggleGalleryApproval(center, index),
                 onEdit: () => _showArtCenterDialog(existing: center, index: index),
                 onDelete: () {
                   _confirmDelete(
@@ -1718,6 +1841,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     bool isPurpleBadge = false,
     bool isAmberBadge = false,
     VoidCallback? onApprove,
+    VoidCallback? onToggleStatus,
     VoidCallback? onEdit,
     VoidCallback? onDelete,
   }) {
@@ -1764,30 +1888,34 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             ),
           ),
           if (badgeText != null) ...[
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: isAmberBadge
-                    ? const Color(0xFFFEF3C7)
-                    : (isPurpleBadge
-                        ? const Color(0xFF6A2777)
-                        : (isStatusBadge ? const Color(0xFFF1F5F9) : const Color(0xFFF8FAFC))),
-                borderRadius: BorderRadius.circular(12),
-                border: isPurpleBadge
-                    ? null
-                    : Border.all(
-                        color: isAmberBadge ? const Color(0xFFFDE68A) : const Color(0xFFCBD5E1),
-                        width: 0.8,
-                      ),
-              ),
-              child: Text(
-                badgeText,
-                style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w600,
+            InkWell(
+              onTap: onToggleStatus,
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
                   color: isAmberBadge
-                      ? const Color(0xFFD97706)
-                      : (isPurpleBadge ? Colors.white : const Color(0xFF334155)),
+                      ? const Color(0xFFFEF3C7)
+                      : (isPurpleBadge
+                          ? const Color(0xFF6A2777)
+                          : (isStatusBadge ? const Color(0xFFF1F5F9) : const Color(0xFFF8FAFC))),
+                  borderRadius: BorderRadius.circular(12),
+                  border: isPurpleBadge
+                      ? null
+                      : Border.all(
+                          color: isAmberBadge ? const Color(0xFFFDE68A) : const Color(0xFFCBD5E1),
+                          width: 0.8,
+                        ),
+                ),
+                child: Text(
+                  badgeText,
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
+                    color: isAmberBadge
+                        ? const Color(0xFFD97706)
+                        : (isPurpleBadge ? Colors.white : const Color(0xFF334155)),
+                  ),
                 ),
               ),
             ),
