@@ -13,13 +13,15 @@ import '../../../../core/widgets/app_top_bar.dart';
 import '../../domain/models/art_event_model.dart';
 
 class EventsView extends StatefulWidget {
-  const EventsView({super.key});
+  final int initialTabIndex;
+  const EventsView({super.key, this.initialTabIndex = 0});
 
   @override
   State<EventsView> createState() => _EventsViewState();
 }
 
 class _EventsViewState extends State<EventsView> {
+  late int _selectedTabIndex;
   final TextEditingController _searchController = TextEditingController();
   String _selectedCategory = 'All Categories';
   List<ArtEventModel> _allEvents = [];
@@ -34,6 +36,7 @@ class _EventsViewState extends State<EventsView> {
   @override
   void initState() {
     super.initState();
+    _selectedTabIndex = widget.initialTabIndex;
     _fetchEvents();
     _fetchCategories();
     _eventsSub = sl<LiveSyncService>().eventsStream.listen((events) {
@@ -292,43 +295,68 @@ class _EventsViewState extends State<EventsView> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF6B267B),
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.08),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'Art Events',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13.5,
+                      child: GestureDetector(
+                        onTap: () {
+                          if (_selectedTabIndex != 0) {
+                            setState(() => _selectedTabIndex = 0);
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            color: _selectedTabIndex == 0 ? const Color(0xFF6B267B) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: _selectedTabIndex == 0
+                                ? [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.08),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Art Events',
+                              style: TextStyle(
+                                color: _selectedTabIndex == 0 ? Colors.white : const Color(0xFF64748B),
+                                fontWeight: _selectedTabIndex == 0 ? FontWeight.w700 : FontWeight.w600,
+                                fontSize: 13.5,
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
                     Expanded(
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(8),
-                        onTap: () => context.push(RouteNames.eventsCompetition),
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 8),
+                      child: GestureDetector(
+                        onTap: () {
+                          if (_selectedTabIndex != 1) {
+                            setState(() => _selectedTabIndex = 1);
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            color: _selectedTabIndex == 1 ? const Color(0xFF6B267B) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: _selectedTabIndex == 1
+                                ? [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.08),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ]
+                                : null,
+                          ),
                           child: Center(
                             child: Text(
                               'Competitions & Open Calls',
                               style: TextStyle(
-                                color: Color(0xFF64748B),
-                                fontWeight: FontWeight.w600,
+                                color: _selectedTabIndex == 1 ? Colors.white : const Color(0xFF64748B),
+                                fontWeight: _selectedTabIndex == 1 ? FontWeight.w700 : FontWeight.w600,
                                 fontSize: 13.5,
                               ),
                             ),
@@ -933,9 +961,9 @@ class _EventsViewState extends State<EventsView> {
                 ),
               ),
               onPressed: () => _showEventDetails(event),
-              child: const Text(
-                'View Details',
-                style: TextStyle(
+              child: Text(
+                _selectedTabIndex == 1 ? 'Apply Now' : 'View Details',
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                 ),

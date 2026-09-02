@@ -44,7 +44,7 @@ class DashboardItem {
       subtitle: 'COMPETITION',
       iconPath: 'assets/icons/dashboard/events_competition.png',
       imagePath: 'assets/images/events-competition-DvLzKG_2.jpg',
-      route: '/events-competition',
+      route: '/events',
     ),
     DashboardItem(
       title: 'GALLERIES',

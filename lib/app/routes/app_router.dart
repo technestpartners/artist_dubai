@@ -21,7 +21,6 @@ import '../../features/events/presentation/views/event_photos_view.dart';
 import '../../features/events/presentation/views/events_view.dart';
 import '../../features/favorites/presentation/views/favorites_view.dart';
 import '../../features/events/presentation/views/my_events_view.dart';
-import '../../features/events/presentation/views/events_competition_view.dart';
 import '../../features/galleries/presentation/views/galleries_view.dart';
 import '../../features/galleries/presentation/views/gallery_registration_view.dart';
 import '../../features/government/presentation/views/government_portal_view.dart';
@@ -194,7 +193,7 @@ class AppRouter {
         pageBuilder: (context, state) => _buildSlidePage(
           context: context,
           state: state,
-          child: const EventsCompetitionView(),
+          child: const EventsView(initialTabIndex: 1),
         ),
       ),
       GoRoute(
