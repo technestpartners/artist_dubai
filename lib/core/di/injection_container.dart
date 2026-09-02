@@ -16,6 +16,10 @@ import '../services/storage_service.dart';
 final sl = GetIt.instance;
 
 Future<void> initDependencyInjection() async {
+  if (sl.isRegistered<SharedPreferences>()) {
+    await sl.reset();
+  }
+
   //! 1. External & Core Services
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerLazySingleton<SharedPreferences>(() => sharedPreferences);
