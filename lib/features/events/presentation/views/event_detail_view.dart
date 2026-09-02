@@ -938,6 +938,7 @@ class _EventDetailViewState extends State<EventDetailView> {
                   ),
                 ),
               ),
+              if (_isLoggedIn)
               Positioned(
                 top: 10,
                 right: 10,
