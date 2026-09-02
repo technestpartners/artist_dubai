@@ -63,6 +63,14 @@ class _EventDetailViewState extends State<EventDetailView> {
     super.dispose();
   }
 
+  bool get _isLoggedIn {
+    try {
+      return sl<StorageService>().getBool('is_logged_in') ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> _fetchArtists({bool forceRefresh = false}) async {
     try {
       final artists = await sl<ApiService>().getArtists(forceRefresh: forceRefresh);
@@ -428,6 +436,7 @@ class _EventDetailViewState extends State<EventDetailView> {
                             color: Color(0xFF1E1E1E),
                           ),
                         ),
+                        if (_isLoggedIn)
                         OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
                             foregroundColor: const Color(0xFF1E1E1E),
