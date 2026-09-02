@@ -69,6 +69,48 @@ class ArtEventModel {
     this.galleries = const [],
   });
 
+  ArtEventModel copyWith({
+    String? id,
+    String? title,
+    String? category,
+    String? price,
+    String? description,
+    String? requirements,
+    String? dateTime,
+    String? formattedDate,
+    String? timeRange,
+    String? location,
+    String? locationCity,
+    int? attendeesCount,
+    int? maxAttendees,
+    String? organizer,
+    String? organizerEmail,
+    List<String>? tags,
+    String? imageUrl,
+    List<EventPhotoGallery>? galleries,
+  }) {
+    return ArtEventModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      category: category ?? this.category,
+      price: price ?? this.price,
+      description: description ?? this.description,
+      requirements: requirements ?? this.requirements,
+      dateTime: dateTime ?? this.dateTime,
+      formattedDate: formattedDate ?? this.formattedDate,
+      timeRange: timeRange ?? this.timeRange,
+      location: location ?? this.location,
+      locationCity: locationCity ?? this.locationCity,
+      attendeesCount: attendeesCount ?? this.attendeesCount,
+      maxAttendees: maxAttendees ?? this.maxAttendees,
+      organizer: organizer ?? this.organizer,
+      organizerEmail: organizerEmail ?? this.organizerEmail,
+      tags: tags ?? this.tags,
+      imageUrl: imageUrl ?? this.imageUrl,
+      galleries: galleries ?? this.galleries,
+    );
+  }
+
   factory ArtEventModel.fromJson(Map<String, dynamic> json) {
     List<String> parsedTags = [];
     if (json['tags'] is List) {

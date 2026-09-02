@@ -42,6 +42,16 @@ class _EventPhotosViewState extends State<EventPhotosView> {
     super.dispose();
   }
 
+  bool _isValidImageUrl(String? url) {
+    if (url == null || url.trim().isEmpty) return false;
+    final u = url.trim().toLowerCase();
+    return u.startsWith('http://') ||
+        u.startsWith('https://') ||
+        u.startsWith('assets/') ||
+        u.startsWith('/') ||
+        u.startsWith('data:image/');
+  }
+
   Future<void> _fetchEventPhotos({bool forceRefresh = false}) async {
     try {
       final results = await Future.wait([
@@ -79,28 +89,31 @@ class _EventPhotosViewState extends State<EventPhotosView> {
         final List<GalleryImageItem> imagesList = [];
         for (var idx = 0; idx < rawImgs.length; idx++) {
           final item = rawImgs[idx];
-          if (item is String && item.isNotEmpty) {
-            imagesList.add(GalleryImageItem(title: '$title #${idx + 1}', imageUrl: item));
+          if (item is String && _isValidImageUrl(item)) {
+            imagesList.add(GalleryImageItem(title: '$title #${idx + 1}', imageUrl: item.trim()));
           } else if (item is Map<String, dynamic>) {
-            imagesList.add(GalleryImageItem(
-              title: item['title'] as String? ?? '$title #${idx + 1}',
-              imageUrl: item['image_url'] as String? ?? item['image'] as String? ?? '',
-              caption: item['caption'] as String? ?? 'Gallery photo',
-            ));
+            final u = item['image_url'] as String? ?? item['image'] as String? ?? '';
+            if (_isValidImageUrl(u)) {
+              imagesList.add(GalleryImageItem(
+                title: item['title'] as String? ?? '$title #${idx + 1}',
+                imageUrl: u.trim(),
+                caption: item['caption'] as String? ?? 'Gallery photo',
+              ));
+            }
           }
         }
 
-        if (imagesList.isEmpty && coverImage.isNotEmpty) {
-          imagesList.add(GalleryImageItem(title: title, imageUrl: coverImage));
+        if (imagesList.isEmpty && _isValidImageUrl(coverImage)) {
+          imagesList.add(GalleryImageItem(title: title, imageUrl: coverImage.trim()));
         }
 
-        if (imagesList.isNotEmpty || coverImage.isNotEmpty) {
+        if (imagesList.isNotEmpty || _isValidImageUrl(coverImage)) {
           final photoGallery = EventPhotoGallery(
             title: title,
             subtitle: subtitle,
             photoCount: imagesList.isNotEmpty ? imagesList.length : 1,
             date: g['created_at'] as String? ?? 'Recent',
-            imageUrl: coverImage.isNotEmpty ? coverImage : (imagesList.isNotEmpty ? imagesList.first.imageUrl : ''),
+            imageUrl: _isValidImageUrl(coverImage) ? coverImage : (imagesList.isNotEmpty ? imagesList.first.imageUrl : ''),
             images: imagesList,
           );
 
@@ -123,8 +136,20 @@ class _EventPhotosViewState extends State<EventPhotosView> {
 
       // 2. Add events with galleries from MySQL
       for (final e in events) {
-        if (e.galleries.isNotEmpty) {
-          combined.add(e);
+        final validGalleries = e.galleries.map((gal) {
+          final validImgs = gal.images.where((img) => _isValidImageUrl(img.imageUrl)).toList();
+          return EventPhotoGallery(
+            title: gal.title,
+            subtitle: gal.subtitle,
+            photoCount: validImgs.length,
+            date: gal.date,
+            imageUrl: _isValidImageUrl(gal.imageUrl) ? gal.imageUrl : (validImgs.isNotEmpty ? validImgs.first.imageUrl : ''),
+            images: validImgs,
+          );
+        }).where((gal) => gal.images.isNotEmpty || _isValidImageUrl(gal.imageUrl)).toList();
+
+        if (validGalleries.isNotEmpty) {
+          combined.add(e.copyWith(galleries: validGalleries));
         }
       }
 
