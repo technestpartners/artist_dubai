@@ -1227,6 +1227,26 @@ class ApiService {
     return null;
   }
 
+  // 19d. Get All User Interactions — liked & followed artist IDs in one call (MySQL Backend)
+  Future<Map<String, Set<String>>> getUserInteractions({required String userEmail}) async {
+    try {
+      final res = await _client.get(
+        '${ApiEndpoints.artists}&action=interactions',
+        queryParameters: {'user_email': userEmail},
+      );
+      if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
+        final data = res['data'] as Map<String, dynamic>;
+        final likedRaw   = (data['liked_artist_ids']   as List<dynamic>?) ?? [];
+        final followedRaw = (data['followed_artist_ids'] as List<dynamic>?) ?? [];
+        return {
+          'liked':    likedRaw.map((e) => e.toString()).toSet(),
+          'followed': followedRaw.map((e) => e.toString()).toSet(),
+        };
+      }
+    } catch (_) {}
+    return {'liked': {}, 'followed': {}};
+  }
+
   // 20. Update Event (MySQL Backend)
   Future<bool> updateEvent(Map<String, dynamic> data) async {
     try {

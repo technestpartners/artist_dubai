@@ -21,11 +21,13 @@ import '../../domain/models/artist_model.dart';
 class ArtistDetailView extends StatefulWidget {
   final ArtistModel? artist;
   final bool? initialIsFavorited;
+  final bool? initialIsFollowing;
 
   const ArtistDetailView({
     super.key,
     this.artist,
     this.initialIsFavorited,
+    this.initialIsFollowing,
   });
 
   @override
@@ -34,8 +36,7 @@ class ArtistDetailView extends StatefulWidget {
 
 class _ArtistDetailViewState extends State<ArtistDetailView> {
   bool _isFollowing = false;
-  bool _isGridView =
-      true; // Toggle between Grid (2-column) and List (1-column horizontal)
+  bool _isGridView = true;
   bool _isArtistFavorited = false;
   final Set<int> _favoritedArtworks = {};
   List<Map<String, dynamic>> _artworksList = [];
@@ -50,48 +51,20 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
 
   List<Map<String, dynamic>> _photoGalleries = [];
 
-  // ── Helpers for local follow/like cache ─────────────────────────────────────
-  String _followCacheKey(String artistId) => 'follow_state_$artistId';
-  String _likeCacheKey(String artistId)   => 'like_state_$artistId';
-
-  void _persistFollowState(String artistId, bool isFollowing) {
-    try { sl<StorageService>().setBool(_followCacheKey(artistId), isFollowing); } catch (_) {}
-  }
-
-  void _persistLikeState(String artistId, bool isLiked) {
-    try { sl<StorageService>().setBool(_likeCacheKey(artistId), isLiked); } catch (_) {}
-  }
-
-  bool _cachedFollowState(String artistId) {
-    try { return sl<StorageService>().getBool(_followCacheKey(artistId)) ?? false; } catch (_) { return false; }
-  }
-
-  bool _cachedLikeState(String artistId) {
-    try { return sl<StorageService>().getBool(_likeCacheKey(artistId)) ?? false; } catch (_) { return false; }
-  }
-  // ────────────────────────────────────────────────────────────────────────────
-
   @override
   void initState() {
     super.initState();
     final artist = widget.artist;
-    final artistId = artist?.id ?? '';
 
-    // ── Restore cached state instantly (no flicker) ──────────────────────────
-    if (artistId.isNotEmpty) {
-      _isFollowing = _cachedFollowState(artistId);
-      final cachedLiked = _cachedLikeState(artistId);
-      _isArtistFavorited = widget.initialIsFavorited ?? cachedLiked;
-    } else {
-      _isArtistFavorited = widget.initialIsFavorited ?? false;
-    }
-    // ─────────────────────────────────────────────────────────────────────────
+    // Initialise instantly from parent-passed DB state — zero flicker
+    _isArtistFavorited = widget.initialIsFavorited ?? false;
+    _isFollowing       = widget.initialIsFollowing  ?? false;
 
-    _likesCount = artist?.likesCount ?? 0;
+    _likesCount     = artist?.likesCount     ?? 0;
     _followersCount = artist?.followersCount ?? 0;
-    _worksCount = artist?.worksCount ?? 0;
-    if (_isArtistFavorited && _likesCount == 0) _likesCount = 1;
-    if (_isFollowing && _followersCount == 0) _followersCount = 1;
+    _worksCount     = artist?.worksCount     ?? 0;
+    if (_isArtistFavorited && _likesCount == 0)   _likesCount     = 1;
+    if (_isFollowing        && _followersCount == 0) _followersCount = 1;
     _loadAllData();
 
     _artistLiveSub = sl<LiveSyncService>().artistsStream.listen((artists) {
@@ -215,18 +188,10 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
             if (status['works_count'] != null && _artworksList.isEmpty) {
               _worksCount = (status['works_count'] as num).toInt();
             }
-            // Persist confirmed states so next open is instant
-            if (artist != null) {
-              _persistFollowState(artist.id, _isFollowing);
-              _persistLikeState(artist.id, _isArtistFavorited);
-            }
           } else {
             _isArtistFavorited = isFavInBackend;
             if (_isArtistFavorited && _likesCount == 0) {
               _likesCount = 1;
-            }
-            if (artist != null) {
-              _persistLikeState(artist.id, _isArtistFavorited);
             }
           }
         });
@@ -281,8 +246,6 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         if (_likesCount > 0) _likesCount -= 1;
       }
     });
-    // Persist optimistically so re-opening shows correct heart state immediately
-    _persistLikeState(artist.id, !wasFav);
 
     final res = await sl<ApiService>().likeArtist(
       artistId: artist.id,
@@ -290,18 +253,13 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
       action: wasFav ? 'unlike' : 'like',
     );
     if (res != null && mounted) {
-      final confirmed = res['is_liked'] == true;
       setState(() {
         if (res['likes_count'] != null) {
           _likesCount = (res['likes_count'] as num).toInt();
         }
-        _isArtistFavorited = confirmed;
-        if (_isArtistFavorited && _likesCount == 0) {
-          _likesCount = 1;
-        }
+        _isArtistFavorited = res['is_liked'] == true;
+        if (_isArtistFavorited && _likesCount == 0) _likesCount = 1;
       });
-      // Persist confirmed state from server
-      _persistLikeState(artist.id, confirmed);
     }
 
     if (mounted) {
@@ -336,8 +294,6 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         if (_followersCount > 0) _followersCount -= 1;
       }
     });
-    // Persist optimistically so re-opening this page shows correct state immediately
-    _persistFollowState(artist.id, !wasFollowing);
 
     final res = await sl<ApiService>().followArtist(
       artistId: artist.id,
@@ -345,18 +301,13 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
       action: wasFollowing ? 'unfollow' : 'follow',
     );
     if (res != null && mounted) {
-      final confirmed = res['is_following'] == true;
       setState(() {
         if (res['followers_count'] != null) {
           _followersCount = (res['followers_count'] as num).toInt();
         }
-        _isFollowing = confirmed;
-        if (_isFollowing && _followersCount == 0) {
-          _followersCount = 1;
-        }
+        _isFollowing = res['is_following'] == true;
+        if (_isFollowing && _followersCount == 0) _followersCount = 1;
       });
-      // Persist confirmed state from server
-      _persistFollowState(artist.id, confirmed);
     }
 
     if (mounted) {

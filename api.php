@@ -979,6 +979,37 @@ class ArtistController {
         ], 'Artist status retrieved from MySQL');
     }
 
+    public function getUserInteractions(array $query): void {
+        $email = InputSanitizer::cleanEmail($query['user_email'] ?? $query['email'] ?? '');
+
+        if (empty($email)) {
+            ApiResponse::success([
+                'liked_artist_ids' => [],
+                'followed_artist_ids' => [],
+            ], 'No email provided');
+            return;
+        }
+
+        // All liked artist IDs
+        $likedStmt = $this->db->prepare(
+            'SELECT item_id FROM favorites WHERE user_email = ? AND item_type = "artist"'
+        );
+        $likedStmt->execute([$email]);
+        $likedIds = array_map(fn($r) => (string)$r['item_id'], $likedStmt->fetchAll(PDO::FETCH_ASSOC));
+
+        // All followed artist IDs
+        $followedStmt = $this->db->prepare(
+            'SELECT artist_id FROM follows WHERE user_email = ?'
+        );
+        $followedStmt->execute([$email]);
+        $followedIds = array_map(fn($r) => (string)$r['artist_id'], $followedStmt->fetchAll(PDO::FETCH_ASSOC));
+
+        ApiResponse::success([
+            'liked_artist_ids'   => $likedIds,
+            'followed_artist_ids' => $followedIds,
+        ], 'User interactions retrieved from MySQL');
+    }
+
     public function updateArtist(array $input): void {
         $id = (int)($input['id'] ?? $input['artist_id'] ?? 0);
         if ($id <= 0) { ApiResponse::error('Artist ID is required.'); return; }
@@ -2595,6 +2626,8 @@ class UnifiedMySqlApiRouter {
                     $artist->followArtist($input);
                 } elseif ($artistAction === 'status') {
                     $artist->getArtistStatus($_GET);
+                } elseif ($artistAction === 'interactions') {
+                    $artist->getUserInteractions($_GET);
                 } elseif ($method === 'POST') {
                     $artist->createArtist($input);
                 } else {

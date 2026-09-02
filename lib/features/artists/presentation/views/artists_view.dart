@@ -28,6 +28,7 @@ class _ArtistsViewState extends State<ArtistsView> {
   List<ArtistModel> _allArtists = [];
   List<CategoryInfo> _categories = ArtistModel.categoryList;
   final Set<String> _favoritedArtistIds = {};
+  final Set<String> _followedArtistIds = {};
   StreamSubscription<List<ArtistModel>>? _artistsSub;
   StreamSubscription<Map<String, dynamic>>? _favSub;
   StreamSubscription<List<CategoryInfo>>? _catSub;
@@ -192,48 +193,41 @@ class _ArtistsViewState extends State<ArtistsView> {
       final results = await Future.wait([
         sl<ApiService>().getCategories(forceRefresh: true),
         sl<ApiService>().getArtists(forceRefresh: true),
-        sl<ApiService>().getFavorites(email: userEmail, forceRefresh: true),
+        sl<ApiService>().getUserInteractions(userEmail: userEmail),
       ]);
 
-      final categories = results[0] as List<CategoryInfo>;
-      final artists = results[1] as List<ArtistModel>;
-      final favData = results[2] as Map<String, dynamic>;
-      final favArtists = (favData['artists'] as List<ArtistModel>?) ?? [];
-      final favIds = favArtists.map((a) => a.id).toSet();
+      final categories   = results[0] as List<CategoryInfo>;
+      final artists      = results[1] as List<ArtistModel>;
+      final interactions = results[2] as Map<String, Set<String>>;
 
       if (mounted) {
         setState(() {
           _categories = categories;
           _allArtists = artists;
-          _favoritedArtistIds.clear();
-          _favoritedArtistIds.addAll(favIds);
+          _favoritedArtistIds
+            ..clear()
+            ..addAll(interactions['liked']!);
+          _followedArtistIds
+            ..clear()
+            ..addAll(interactions['followed']!);
         });
       }
     } catch (_) {}
   }
 
   void _openArtistDetail(ArtistModel artist) async {
-    final result = await Navigator.push<bool?>(
+    await Navigator.push<void>(
       context,
       MaterialPageRoute(
         builder: (context) => ArtistDetailView(
           artist: artist,
           initialIsFavorited: _favoritedArtistIds.contains(artist.id),
+          initialIsFollowing: _followedArtistIds.contains(artist.id),
         ),
       ),
     );
-    if (result != null && mounted) {
-      setState(() {
-        if (result == true) {
-          _favoritedArtistIds.add(artist.id);
-        } else {
-          _favoritedArtistIds.remove(artist.id);
-        }
-      });
-    }
-    if (mounted) {
-      await _fetchData();
-    }
+    // Re-fetch from DB on return — source of truth is always MySQL
+    if (mounted) await _fetchData();
   }
 
   bool get _isLoggedIn {
