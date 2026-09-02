@@ -1446,10 +1446,10 @@ class GalleryController {
         $offset = ($page - 1) * $limit;
 
         if (!empty($artistId) || !empty($artistName)) {
-            // Artist-specific gallery — return all (no pagination needed, small subset)
-            $sql = 'SELECT * FROM galleries WHERE (artist_id = ? OR artist_name = ? OR artist_id IS NULL OR artist_id = "") ORDER BY (artist_name = ?) DESC, id DESC';
+            // Artist-specific photo gallery — return only galleries belonging to this artist
+            $sql = 'SELECT * FROM galleries WHERE (artist_id = ? OR (artist_name = ? AND artist_name != "")) AND (status = "approved" OR status = "active" OR status = "1" OR status IS NULL OR status = "" OR is_public = 1) ORDER BY id DESC';
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$artistId, $artistName, $artistName]);
+            $stmt->execute([$artistId, $artistName]);
             $galleries = $stmt->fetchAll();
             foreach ($galleries as &$g) {
                 $g['title'] = $g['name'];
@@ -1458,7 +1458,8 @@ class GalleryController {
                 $g['count'] = ($g['photo_count'] ?? 1) . ' photos';
                 if (!empty($g['images_json'])) { $g['images'] = json_decode($g['images_json'], true); }
             }
-            ApiResponse::success($galleries, 'Galleries retrieved successfully from MySQL');
+            ApiResponse::success($galleries, 'Artist galleries retrieved successfully from MySQL');
+            return;
         }
 
         $status = InputSanitizer::cleanString($query['status'] ?? '');

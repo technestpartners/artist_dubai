@@ -103,15 +103,24 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
           Future.value(null),
       ]);
 
-      final galleries = results[0] as List<Map<String, dynamic>>? ?? [];
+      final rawGalleries = results[0] as List<Map<String, dynamic>>? ?? [];
       final artworks = results[1] as List<Map<String, dynamic>>? ?? [];
       final status = results[2] as Map<String, dynamic>?;
 
+      // Filter out physical art centers that don't belong to this artist
+      final galleries = rawGalleries.where((g) {
+        final artistId = (g['artist_id'] ?? '').toString();
+        final artistName = (g['artist_name'] ?? '').toString();
+        final currentArtistId = artist?.id ?? '';
+        final currentArtistName = artist?.name ?? '';
+        final matchesArtist = (currentArtistId.isNotEmpty && artistId == currentArtistId) ||
+            (currentArtistName.isNotEmpty && artistName.toLowerCase() == currentArtistName.toLowerCase());
+        return matchesArtist;
+      }).toList();
+
       if (mounted) {
         setState(() {
-          if (galleries.isNotEmpty) {
-            _photoGalleries = galleries;
-          }
+          _photoGalleries = galleries;
           if (artworks.isNotEmpty) {
             _artworksList = artworks;
             _worksCount = artworks.length;
