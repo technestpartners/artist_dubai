@@ -303,9 +303,8 @@ class _GalleriesViewState extends State<GalleriesView> {
                     itemBuilder: (context, index) {
                       final gallery = _registeredGalleries[index];
                       final name = (gallery['name'] ?? gallery['title'] ?? 'Art Gallery').toString();
-                      final category = (gallery['category'] ?? '').toString();
-                      final location = (gallery['location'] ?? 'Dubai, UAE').toString();
-                      final timing = (gallery['timing'] ?? '').toString();
+                      final category = (gallery['category'] ?? gallery['type'] ?? '').toString();
+                      final location = (gallery['location'] ?? gallery['address'] ?? 'Dubai, UAE').toString();
                       final imageUrl = (gallery['image_url'] ?? gallery['image'] ?? '').toString();
 
                       return Material(
@@ -332,63 +331,69 @@ class _GalleriesViewState extends State<GalleriesView> {
                                     ),
                                   ),
                                 Padding(
-                                  padding: const EdgeInsets.all(16.0),
+                                  padding: const EdgeInsets.all(20.0),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
+                                      // Top Row: Title + Open Pill Badge
                                       Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          Flexible(
-                                            child: Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                              decoration: BoxDecoration(
-                                                color: Colors.white.withValues(alpha: 0.15),
-                                                borderRadius: BorderRadius.circular(20),
+                                          Expanded(
+                                            child: Text(
+                                              name,
+                                              style: const TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
                                               ),
-                                              child: Text(
-                                                category,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 11.5,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
                                           ),
                                           const SizedBox(width: 8),
-                                          Text(
-                                            timing,
-                                            style: const TextStyle(
-                                              color: Color(0xFF4ADE80),
-                                              fontSize: 11.5,
-                                              fontWeight: FontWeight.w600,
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withValues(alpha: 0.18),
+                                              borderRadius: BorderRadius.circular(16),
                                             ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
+                                            child: const Text(
+                                              'Open',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12.5,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 10),
-                                      Text(
-                                        name,
-                                        style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
                                       const SizedBox(height: 6),
+
+                                      // Subtitle: Category / Type
+                                      Text(
+                                        category.isNotEmpty ? category : 'Art Space',
+                                        style: const TextStyle(
+                                          fontSize: 13.5,
+                                          color: Colors.white70,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 10),
+
+                                      // Location Pin & Address
                                       Row(
                                         children: [
-                                          const Icon(Icons.location_on_outlined, size: 15, color: Colors.white70),
-                                          const SizedBox(width: 4),
+                                          const Icon(Icons.location_on_outlined, size: 16, color: Colors.white70),
+                                          const SizedBox(width: 6),
                                           Expanded(
                                             child: Text(
                                               location,
                                               style: const TextStyle(
-                                                fontSize: 13,
+                                                fontSize: 13.5,
                                                 color: Colors.white70,
                                               ),
                                               maxLines: 1,
@@ -396,6 +401,33 @@ class _GalleriesViewState extends State<GalleriesView> {
                                             ),
                                           ),
                                         ],
+                                      ),
+                                      const SizedBox(height: 16),
+
+                                      // Full-width Directions Button
+                                      SizedBox(
+                                        width: double.infinity,
+                                        height: 44,
+                                        child: ElevatedButton.icon(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.white.withValues(alpha: 0.15),
+                                            foregroundColor: Colors.white,
+                                            elevation: 0,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                          onPressed: () => _launchUrl('https://maps.google.com/?q=${Uri.encodeComponent('$name $location')}'),
+                                          icon: const Icon(Icons.location_on_outlined, size: 18, color: Colors.white),
+                                          label: const Text(
+                                            'Directions',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
                                       ),
                                     ],
                                   ),
