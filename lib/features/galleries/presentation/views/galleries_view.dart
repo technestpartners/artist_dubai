@@ -22,22 +22,25 @@ class _GalleriesViewState extends State<GalleriesView> {
   static const Color _screenBg = Color(0xFF651B8A);
   static const Color _cardBg = Color(0xFF551478);
 
+  void _updateGalleriesList(List<Map<String, dynamic>> galleries) {
+    if (!mounted) return;
+    setState(() {
+      _registeredGalleries = galleries.where((g) {
+        final status = (g['status'] ?? '').toString().trim().toLowerCase();
+        if (status == 'pending' || status == 'rejected') return false;
+        final isPublic = g['is_public'];
+        if (isPublic == 0 || isPublic == '0' || isPublic == false || isPublic == 'false') return false;
+        return true;
+      }).toList();
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     _fetchGalleries();
     _galleriesSub = sl<LiveSyncService>().galleriesStream.listen((galleries) {
-      if (mounted) {
-        setState(() {
-          _registeredGalleries = galleries.where((g) =>
-            g['status'] == 'approved' ||
-            g['status'] == 'active' ||
-            g['status'] == 'Open' ||
-            g['is_approved'] == 1 ||
-            (g['is_public'] == 1 && g['status'] != 'pending')
-          ).toList();
-        });
-      }
+      _updateGalleriesList(galleries);
     });
   }
 
@@ -49,18 +52,8 @@ class _GalleriesViewState extends State<GalleriesView> {
 
   Future<void> _fetchGalleries() async {
     try {
-      final galleries = await sl<ApiService>().getGalleries(status: 'approved');
-      if (mounted) {
-        setState(() {
-          _registeredGalleries = galleries.where((g) =>
-            g['status'] == 'approved' ||
-            g['status'] == 'active' ||
-            g['status'] == 'Open' ||
-            g['is_approved'] == 1 ||
-            (g['is_public'] == 1 && g['status'] != 'pending')
-          ).toList();
-        });
-      }
+      final galleries = await sl<ApiService>().getGalleries();
+      _updateGalleriesList(galleries);
     } catch (_) {}
   }
 

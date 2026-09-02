@@ -1475,11 +1475,11 @@ class GalleryController {
         }
 
         if (!$isAdmin && $status !== 'all') {
-            if (!empty($status)) {
+            if (!empty($status) && $status !== 'approved') {
                 $sql .= ' AND status = ?';
                 $params[] = $status;
             } else {
-                $sql .= " AND (status = 'approved' OR status = 'active' OR status = 'Open' OR (status IS NULL AND is_public = 1))";
+                $sql .= " AND (status = 'approved' OR status = 'active' OR status = 'Active' OR status = 'Open' OR status = 'open' OR status = '1' OR status IS NULL OR status = '' OR is_public = 1 OR is_approved = 1) AND (status != 'pending' AND status != 'rejected') AND (is_public IS NULL OR is_public != 0)";
             }
         }
 
