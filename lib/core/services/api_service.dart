@@ -65,6 +65,7 @@ class ApiService {
   /// Public read-only access to in-memory artist cache for stale-while-revalidate
   List<ArtistModel>? get cachedArtists => _cachedArtists;
   List<Map<String, dynamic>>? get cachedCompetitions => _cachedCompetitions;
+  List<Map<String, dynamic>>? get cachedGalleries => _cachedGalleries;
 
   bool _isSuccess(dynamic res) =>
       res is Map<String, dynamic> && (res['status'] == 'success' || res['success'] == true);
@@ -513,9 +514,15 @@ class ApiService {
         ApiEndpoints.galleries,
         queryParameters: queryParams,
       );
-      if (_isSuccess(res)) {
-        final list = (res['data'] as List<dynamic>).map((e) => e as Map<String, dynamic>).toList();
-        if (isFullFetch && page == 1) {
+      if (_isSuccess(res) && res['data'] is List) {
+        final rawList = res['data'] as List;
+        final list = <Map<String, dynamic>>[];
+        for (final item in rawList) {
+          if (item is Map) {
+            list.add(Map<String, dynamic>.from(item));
+          }
+        }
+        if (isFullFetch && page == 1 && list.isNotEmpty) {
           _cachedGalleries = list;
         }
         return list;
