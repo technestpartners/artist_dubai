@@ -2161,19 +2161,10 @@ class FavoriteController {
             }
         }
 
-        $stmtArtworks = $this->db->query('SELECT * FROM artworks ORDER BY id ASC');
-        $artworks = $stmtArtworks->fetchAll();
-
-        $stmtArtists = $this->db->query('SELECT * FROM artists ORDER BY id DESC');
-        $artists = $stmtArtists->fetchAll();
-
-        $stmtEvents = $this->db->query('SELECT * FROM events ORDER BY id DESC');
-        $events = $stmtEvents->fetchAll();
-
         ApiResponse::success([
-            'artists' => $artists,
-            'events' => $events,
-            'artworks' => $artworks
+            'artists' => [],
+            'events' => [],
+            'artworks' => []
         ], 'Favorites retrieved successfully from MySQL');
     }
 
