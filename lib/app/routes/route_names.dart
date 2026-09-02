@@ -13,7 +13,6 @@ class RouteNames {
   static const String artistRegistration = '/artist-registration';
   static const String government = '/government';
   static const String events = '/events';
-  static const String artEvents = '/art-events';
   static const String eventsCompetition = '/events-competition';
   static const String galleries = '/galleries';
   static const String eventsPhotos = '/events-photos';

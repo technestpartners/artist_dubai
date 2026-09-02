@@ -8,6 +8,7 @@ import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
+import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../domain/models/art_event_model.dart';
 
@@ -278,7 +279,66 @@ class _EventsViewState extends State<EventsView> {
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
+
+              // Mode Switcher: Art Events | Competitions & Open Calls
+              Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6B267B),
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'Art Events',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () => context.push(RouteNames.eventsCompetition),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Center(
+                            child: Text(
+                              'Competitions & Open Calls',
+                              style: TextStyle(
+                                color: Color(0xFF64748B),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
               // Action Row (Home Breadcrumb & Wide Create Event Button)
               Row(
@@ -650,8 +710,22 @@ class _EventsViewState extends State<EventsView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-          // Top Row: Category Tag, Price, Share & Heart buttons
-          Row(
+              // Event Cover Image
+              if (event.imageUrl != null && event.imageUrl!.isNotEmpty) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: AppCachedImage(
+                    imageUrl: event.imageUrl!,
+                    height: 160,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(height: 14),
+              ],
+
+              // Top Row: Category Tag, Price, Share & Heart buttons
+              Row(
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(
