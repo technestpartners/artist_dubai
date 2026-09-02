@@ -864,16 +864,16 @@ class ArtistController {
             $favCheck->execute([$email, (string)$id]);
             $existing = $favCheck->fetch();
 
-            if ($existing && ($action === 'toggle' || $action === 'unlike')) {
-                $del = $this->db->prepare('DELETE FROM favorites WHERE id = ?');
-                $del->execute([$existing['id']]);
+            if ($action === 'unlike' || ($action === 'toggle' && $existing)) {
+                $del = $this->db->prepare('DELETE FROM favorites WHERE user_email = ? AND item_type = "artist" AND item_id = ?');
+                $del->execute([$email, (string)$id]);
                 $isLiked = false;
-            } elseif (!$existing && ($action === 'toggle' || $action === 'like')) {
-                $ins = $this->db->prepare('INSERT INTO favorites (user_email, item_type, item_id) VALUES (?, "artist", ?)');
-                $ins->execute([$email, (string)$id]);
+            } elseif ($action === 'like' || ($action === 'toggle' && !$existing)) {
+                if (!$existing) {
+                    $ins = $this->db->prepare('INSERT INTO favorites (user_email, item_type, item_id) VALUES (?, "artist", ?)');
+                    $ins->execute([$email, (string)$id]);
+                }
                 $isLiked = true;
-            } else {
-                $isLiked = (bool)$existing;
             }
         }
 
@@ -906,16 +906,16 @@ class ArtistController {
             $folCheck->execute([$email, (string)$id]);
             $existing = $folCheck->fetch();
 
-            if ($existing && ($action === 'toggle' || $action === 'unfollow')) {
-                $del = $this->db->prepare('DELETE FROM follows WHERE id = ?');
-                $del->execute([$existing['id']]);
+            if ($action === 'unfollow' || ($action === 'toggle' && $existing)) {
+                $del = $this->db->prepare('DELETE FROM follows WHERE user_email = ? AND artist_id = ?');
+                $del->execute([$email, (string)$id]);
                 $isFollowing = false;
-            } elseif (!$existing && ($action === 'toggle' || $action === 'follow')) {
-                $ins = $this->db->prepare('INSERT INTO follows (user_email, artist_id) VALUES (?, ?)');
-                $ins->execute([$email, (string)$id]);
+            } elseif ($action === 'follow' || ($action === 'toggle' && !$existing)) {
+                if (!$existing) {
+                    $ins = $this->db->prepare('INSERT INTO follows (user_email, artist_id) VALUES (?, ?)');
+                    $ins->execute([$email, (string)$id]);
+                }
                 $isFollowing = true;
-            } else {
-                $isFollowing = (bool)$existing;
             }
         }
 
@@ -2195,8 +2195,8 @@ class FavoriteController {
         $existing = $check->fetch();
 
         if ($existing) {
-            $del = $this->db->prepare('DELETE FROM favorites WHERE id = ?');
-            $del->execute([$existing['id']]);
+            $del = $this->db->prepare('DELETE FROM favorites WHERE user_email = ? AND item_type = ? AND item_id = ?');
+            $del->execute([$email, $itemType, $itemId]);
             ApiResponse::success([
                 'is_favorited' => false,
                 'action' => 'removed',

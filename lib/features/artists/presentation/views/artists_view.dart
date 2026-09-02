@@ -75,9 +75,12 @@ class _ArtistsViewState extends State<ArtistsView> {
     }
   }
 
+  DateTime? _lastUserToggleTime;
+
   void _toggleFavorite(ArtistModel artist) async {
     final userEmail = _getEffectiveEmail();
     final wasFav = _favoritedArtistIds.contains(artist.id);
+    _lastUserToggleTime = DateTime.now();
 
     setState(() {
       if (wasFav) {
@@ -108,11 +111,23 @@ class _ArtistsViewState extends State<ArtistsView> {
       }
     });
 
-    await sl<ApiService>().likeArtist(
+    final res = await sl<ApiService>().likeArtist(
       artistId: artist.id,
       userEmail: userEmail,
       action: wasFav ? 'unlike' : 'like',
     );
+
+    if (res != null && mounted) {
+      setState(() {
+        if (res['is_liked'] != null) {
+          if (res['is_liked'] == true) {
+            _favoritedArtistIds.add(artist.id);
+          } else {
+            _favoritedArtistIds.remove(artist.id);
+          }
+        }
+      });
+    }
 
     if (mounted) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -146,6 +161,9 @@ class _ArtistsViewState extends State<ArtistsView> {
 
     _favSub = sl<LiveSyncService>().favoritesStream.listen((favData) {
       if (mounted) {
+        if (_lastUserToggleTime != null && DateTime.now().difference(_lastUserToggleTime!).inSeconds < 3) {
+          return;
+        }
         final favArtists = (favData['artists'] as List<ArtistModel>?) ?? [];
         final favIds = favArtists.map((a) => a.id).toSet();
         setState(() {
