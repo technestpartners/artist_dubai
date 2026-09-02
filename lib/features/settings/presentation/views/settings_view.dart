@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
@@ -93,6 +94,7 @@ class _SettingsViewState extends State<SettingsView> {
       await storage.setString('user_name', '');
       await storage.setString('user_created_at', '');
       await storage.setString('auth_token', '');
+      sl<LiveSyncService>().notifyAuthChanged(false);
     } catch (_) {}
     if (mounted) {
       context.go(RouteNames.home);

@@ -4,6 +4,7 @@ import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
@@ -99,13 +100,21 @@ class _LoginViewState extends State<LoginView> {
           await storage.setString('auth_token', userData['token'].toString());
         }
 
+        try {
+          sl<LiveSyncService>().notifyAuthChanged(true);
+        } catch (_) {}
+
         if (mounted) {
           if (isAdmin) {
             _showSnackBar('Signed in as Admin!');
             context.go(RouteNames.adminDashboard);
           } else {
             _showSnackBar('Signed in successfully!');
-            context.go(RouteNames.home);
+            if (context.canPop()) {
+              context.pop(true);
+            } else {
+              context.go(RouteNames.home);
+            }
           }
         }
       } else {
@@ -441,7 +450,9 @@ class _LoginViewState extends State<LoginView> {
                             backgroundColor: _isLoginFormValid
                                 ? const Color(0xFF6A2777)
                                 : const Color(0xFFA581AB),
+                            disabledBackgroundColor: const Color(0xFF6A2777),
                             foregroundColor: Colors.white,
+                            disabledForegroundColor: Colors.white,
                             elevation: _isLoginFormValid ? 2 : 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8.0),

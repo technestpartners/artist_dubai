@@ -33,6 +33,7 @@ class _ArtistsViewState extends State<ArtistsView> {
   StreamSubscription<List<ArtistModel>>? _artistsSub;
   StreamSubscription<Map<String, dynamic>>? _favSub;
   StreamSubscription<List<CategoryInfo>>? _catSub;
+  StreamSubscription<bool>? _authSub;
 
   void _shareArtist(ArtistModel artist) {
     Clipboard.setData(
@@ -186,6 +187,15 @@ class _ArtistsViewState extends State<ArtistsView> {
         });
       }
     });
+
+    _authSub = sl<LiveSyncService>().authStream.listen((isLoggedIn) {
+      if (mounted) {
+        setState(() {});
+        if (isLoggedIn) {
+          _fetchData(silent: false);
+        }
+      }
+    });
   }
 
   @override
@@ -193,6 +203,7 @@ class _ArtistsViewState extends State<ArtistsView> {
     _artistsSub?.cancel();
     _favSub?.cancel();
     _catSub?.cancel();
+    _authSub?.cancel();
     _hideCategoryOverlay();
     super.dispose();
   }
@@ -376,7 +387,15 @@ class _ArtistsViewState extends State<ArtistsView> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            onPressed: () => context.push(RouteNames.login),
+                            onPressed: () async {
+                              await context.push(RouteNames.login);
+                              if (mounted) {
+                                setState(() {});
+                                if (_isLoggedIn) {
+                                  _fetchData(silent: false);
+                                }
+                              }
+                            },
                             child: const Text(
                               'Create Artist Profile',
                               style: TextStyle(

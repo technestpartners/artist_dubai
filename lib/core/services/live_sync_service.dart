@@ -28,6 +28,8 @@ class LiveSyncService {
       StreamController<List<GovernmentEntity>>.broadcast();
   final StreamController<List<CategoryInfo>> _categoriesController =
       StreamController<List<CategoryInfo>>.broadcast();
+  final StreamController<bool> _authController =
+      StreamController<bool>.broadcast();
 
   // Public Streams for UI consumption
   Stream<List<ArtistModel>> get artistsStream => _artistsController.stream;
@@ -37,8 +39,16 @@ class LiveSyncService {
   Stream<List<Map<String, dynamic>>> get galleriesStream => _galleriesController.stream;
   Stream<List<GovernmentEntity>> get governmentStream => _governmentController.stream;
   Stream<List<CategoryInfo>> get categoriesStream => _categoriesController.stream;
+  Stream<bool> get authStream => _authController.stream;
 
   LiveSyncService(this._apiService);
+
+  /// Trigger auth state notification to immediately update UI everywhere
+  void notifyAuthChanged(bool isLoggedIn) {
+    if (!_authController.isClosed) {
+      _authController.add(isLoggedIn);
+    }
+  }
 
   /// Trigger sync for artists when an Add / Update / Delete / View occurs
   Future<void> notifyArtistsChanged([List<ArtistModel>? updatedList]) async {
@@ -219,5 +229,6 @@ class LiveSyncService {
     _galleriesController.close();
     _governmentController.close();
     _categoriesController.close();
+    _authController.close();
   }
 }

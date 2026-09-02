@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/routes/route_names.dart';
 import '../di/injection_container.dart';
+import '../services/live_sync_service.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
 import 'notifications_panel.dart';
@@ -80,6 +81,7 @@ class _AppTopBarState extends State<AppTopBar> {
         try {
           final storage = sl<StorageService>();
           await storage.setBool('is_logged_in', false);
+          sl<LiveSyncService>().notifyAuthChanged(false);
         } catch (_) {}
         if (context.mounted) {
           context.go(RouteNames.home);

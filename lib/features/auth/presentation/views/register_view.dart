@@ -5,6 +5,7 @@ import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
@@ -134,6 +135,10 @@ class _RegisterViewState extends State<RegisterView> {
         if (res['token'] != null) {
           await storage.setString('auth_token', res['token'].toString());
         }
+
+        try {
+          sl<LiveSyncService>().notifyAuthChanged(true);
+        } catch (_) {}
 
         if (mounted) {
           _showSnackBar('Account created successfully! Welcome to Artist Dubai.');
