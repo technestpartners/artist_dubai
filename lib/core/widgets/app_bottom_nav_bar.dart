@@ -30,38 +30,38 @@ class AppBottomNavBar extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 56,
+          height: 68,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               IconButton(
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                constraints: const BoxConstraints(minWidth: 54, minHeight: 54),
                 icon: Icon(
                   currentIndex == 0 ? Icons.home_rounded : Icons.home_outlined,
                   color: currentIndex == 0 ? Colors.white : Colors.white70,
-                  size: 24,
+                  size: 26,
                 ),
                 onPressed: () => _onTabSelected(context, 0),
               ),
               IconButton(
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                constraints: const BoxConstraints(minWidth: 54, minHeight: 54),
                 icon: Icon(
                   currentIndex == 1 ? Icons.people_rounded : Icons.people_outline_rounded,
                   color: currentIndex == 1 ? Colors.white : Colors.white70,
-                  size: 24,
+                  size: 26,
                 ),
                 onPressed: () => _onTabSelected(context, 1),
               ),
               IconButton(
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                constraints: const BoxConstraints(minWidth: 54, minHeight: 54),
                 icon: Icon(
                   currentIndex == 2 ? Icons.calendar_month_rounded : Icons.calendar_today_outlined,
                   color: currentIndex == 2 ? Colors.white : Colors.white70,
-                  size: 22,
+                  size: 24,
                 ),
                 onPressed: () => _onTabSelected(context, 2),
               ),
