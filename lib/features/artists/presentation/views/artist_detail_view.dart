@@ -20,8 +20,13 @@ import '../../domain/models/artist_model.dart';
 
 class ArtistDetailView extends StatefulWidget {
   final ArtistModel? artist;
+  final bool? initialIsFavorited;
 
-  const ArtistDetailView({super.key, this.artist});
+  const ArtistDetailView({
+    super.key,
+    this.artist,
+    this.initialIsFavorited,
+  });
 
   @override
   State<ArtistDetailView> createState() => _ArtistDetailViewState();
@@ -49,9 +54,11 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
   void initState() {
     super.initState();
     final artist = widget.artist;
+    _isArtistFavorited = widget.initialIsFavorited ?? false;
     _likesCount = artist?.likesCount ?? 0;
     _followersCount = artist?.followersCount ?? 0;
     _worksCount = artist?.worksCount ?? 0;
+    if (_isArtistFavorited && _likesCount == 0) _likesCount = 1;
     _loadAllData();
 
     _artistLiveSub = sl<LiveSyncService>().artistsStream.listen((artists) {

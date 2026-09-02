@@ -93,8 +93,8 @@ class _ArtistsViewState extends State<ArtistsView> {
       if (updatedIndex != -1) {
         final old = _allArtists[updatedIndex];
         final newLikes = wasFav
-            ? (old.followersCount - 1).clamp(0, 999999)
-            : (old.followersCount + 1);
+            ? (old.likesCount - 1).clamp(0, 999999)
+            : (old.likesCount + 1);
         _allArtists[updatedIndex] = ArtistModel(
           id: old.id,
           name: old.name,
@@ -106,7 +106,8 @@ class _ArtistsViewState extends State<ArtistsView> {
           isFeatured: old.isFeatured,
           tags: old.tags,
           worksCount: old.worksCount,
-          followersCount: newLikes,
+          followersCount: old.followersCount,
+          likesCount: newLikes,
         );
       }
     });
@@ -125,6 +126,24 @@ class _ArtistsViewState extends State<ArtistsView> {
           } else {
             _favoritedArtistIds.remove(artist.id);
           }
+        }
+        final updatedIndex = _allArtists.indexWhere((a) => a.id == artist.id);
+        if (updatedIndex != -1 && res['likes_count'] != null) {
+          final old = _allArtists[updatedIndex];
+          _allArtists[updatedIndex] = ArtistModel(
+            id: old.id,
+            name: old.name,
+            category: old.category,
+            bio: old.bio,
+            location: old.location,
+            bannerUrl: old.bannerUrl,
+            avatarUrl: old.avatarUrl,
+            isFeatured: old.isFeatured,
+            tags: old.tags,
+            worksCount: old.worksCount,
+            followersCount: old.followersCount,
+            likesCount: (res['likes_count'] as num).toInt(),
+          );
         }
       });
     }
@@ -572,7 +591,10 @@ class _ArtistsViewState extends State<ArtistsView> {
           await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ArtistDetailView(artist: artist),
+              builder: (context) => ArtistDetailView(
+                artist: artist,
+                initialIsFavorited: _favoritedArtistIds.contains(artist.id),
+              ),
             ),
           );
           if (mounted) _fetchData();
@@ -767,7 +789,7 @@ class _ArtistsViewState extends State<ArtistsView> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          '${artist.followersCount} likes   ${artist.worksCount} artworks',
+                          '${artist.likesCount} likes   ${artist.worksCount} artworks',
                           style: const TextStyle(
                             fontSize: 13,
                             color: Color(0xFF757575),
@@ -793,7 +815,10 @@ class _ArtistsViewState extends State<ArtistsView> {
                             context,
                             MaterialPageRoute(
                               builder:
-                                  (context) => ArtistDetailView(artist: artist),
+                                  (context) => ArtistDetailView(
+                                    artist: artist,
+                                    initialIsFavorited: _favoritedArtistIds.contains(artist.id),
+                                  ),
                             ),
                           );
                           if (mounted) _fetchData();
