@@ -1,0 +1,142 @@
+name: Publish to App Store (Production)
+
+on:
+  workflow_dispatch:
+    inputs:
+      action_type:
+        description: 'Publish Mode'
+        type: choice
+        options:
+          - 'Build & Submit New Binary'
+          - 'Promote Existing TestFlight Build'
+        default: 'Build & Submit New Binary'
+      app_version:
+        description: 'App Version (e.g. 1.0.0) [Required if promoting TestFlight build]'
+        required: false
+        default: '1.0.0'
+      build_number:
+        description: 'Build Number (e.g. 1) [Required if promoting TestFlight build, or override for build]'
+        required: false
+        default: ''
+      submit_for_review:
+        description: 'Automatically submit for Apple App Review?'
+        type: boolean
+        required: false
+        default: true
+      automatic_release:
+        description: 'Automatically release to users once Apple approves the build?'
+        type: boolean
+        required: false
+        default: true
+      phased_release:
+        description: 'Use 7-day Phased Release for rollouts?'
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  publish_appstore:
+    name: Publish to Apple App Store
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Set up Ruby & Bundler
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: 'ios'
+
+      - name: Determine Build Number
+        id: build_info
+        run: |
+          if [ -n "${{ github.event.inputs.build_number }}" ]; then
+            BUILD_NUM="${{ github.event.inputs.build_number }}"
+          else
+            BUILD_NUM="${{ github.run_number }}"
+          fi
+          echo "BUILD_NUMBER=$BUILD_NUM" >> $GITHUB_OUTPUT
+
+      - name: Install Apple Certificate & Provisioning Profile
+        if: ${{ github.event.inputs.action_type == 'Build & Submit New Binary' }}
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD || 'temporary_keychain_password' }}
+        run: |
+          if [ -z "$BUILD_CERTIFICATE_BASE64" ] || [ -z "$BUILD_PROVISION_PROFILE_BASE64" ]; then
+            echo "::warning ::Apple certificate or provisioning profile secrets not set."
+            exit 0
+          fi
+
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
+          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o "$PP_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | sed -e 's/^[ \t]*//' | tr -d '"')
+
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp "$PP_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/
+
+      - name: Build Flutter iOS IPA
+        if: ${{ github.event.inputs.action_type == 'Build & Submit New Binary' }}
+        run: |
+          flutter pub get
+          cd ios && pod install --repo-update && cd ..
+          flutter build ipa --release \
+            --export-options-plist=ios/ExportOptions.plist \
+            --build-number=${{ steps.build_info.outputs.BUILD_NUMBER }}
+
+      - name: Publish to App Store via Fastlane
+        env:
+          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+        run: |
+          cd ios
+          if [ "${{ github.event.inputs.action_type }}" = "Promote Existing TestFlight Build" ]; then
+            bundle exec fastlane promote_to_app_store \
+              app_version:"${{ github.event.inputs.app_version }}" \
+              build_number:"${{ github.event.inputs.build_number }}" \
+              submit_for_review:${{ github.event.inputs.submit_for_review }} \
+              automatic_release:${{ github.event.inputs.automatic_release }} \
+              phased_release:${{ github.event.inputs.phased_release }}
+          else
+            bundle exec fastlane release \
+              submit_for_review:${{ github.event.inputs.submit_for_review }} \
+              automatic_release:${{ github.event.inputs.automatic_release }} \
+              phased_release:${{ github.event.inputs.phased_release }}
+          fi
+
+      - name: Clean up Keychain
+        if: always()
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          if [ -f "$KEYCHAIN_PATH" ]; then
+            security delete-keychain "$KEYCHAIN_PATH"
+          fi

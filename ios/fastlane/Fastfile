@@ -31,12 +31,10 @@ platform :ios do
 
   desc "Build Flutter iOS and upload to TestFlight"
   lane :beta do |options|
-    # Locate IPA or build it if not already built
     ipa_path = options[:ipa_path] || Dir["../build/ios/ipa/*.ipa"].first
 
     unless ipa_path && File.exist?(ipa_path)
       UI.message("Building Flutter iOS IPA...")
-      # Run flutter build from root directory
       sh("cd ../.. && flutter build ipa --release --export-options-plist=ios/ExportOptions.plist")
       ipa_path = Dir["../build/ios/ipa/*.ipa"].first
     end
@@ -52,34 +50,50 @@ platform :ios do
     )
   end
 
-  desc "Upload existing IPA directly to TestFlight"
-  lane :upload_ipa do |options|
-    ipa_path = options[:ipa_path] || Dir["../build/ios/ipa/*.ipa"].first
-    UI.user_error!("Please provide an ipa_path or ensure IPA exists in build/ios/ipa/") unless ipa_path && File.exist?(ipa_path)
-
-    upload_to_testflight(
-      ipa: ipa_path,
-      skip_waiting_for_build_processing: options[:skip_waiting] || false,
-      changelog: options[:changelog] || "New build uploaded via Fastlane"
-    )
-  end
-
-  desc "Build and submit to App Store Connect for Production review"
+  desc "Build Flutter iOS and upload/publish directly to the App Store for Production Review"
   lane :release do |options|
     ipa_path = options[:ipa_path] || Dir["../build/ios/ipa/*.ipa"].first
 
     unless ipa_path && File.exist?(ipa_path)
+      UI.message("Building Flutter iOS IPA for App Store...")
       sh("cd ../.. && flutter build ipa --release --export-options-plist=ios/ExportOptions.plist")
       ipa_path = Dir["../build/ios/ipa/*.ipa"].first
     end
 
     UI.user_error!("IPA not found at #{ipa_path}") unless ipa_path && File.exist?(ipa_path)
 
+    submit_review = options[:submit_for_review].nil? ? true : options[:submit_for_review]
+    auto_release = options[:automatic_release].nil? ? true : options[:automatic_release]
+    phased = options[:phased_release].nil? ? false : options[:phased_release]
+
+    UI.message("Uploading to App Store Connect and preparing submission...")
     upload_to_app_store(
       ipa: ipa_path,
       force: true,
       skip_screenshots: true,
-      skip_metadata: options[:skip_metadata] || true
+      skip_metadata: options[:skip_metadata].nil? ? true : options[:skip_metadata],
+      submit_for_review: submit_review,
+      automatic_release: auto_release,
+      phased_release: phased,
+      reject_if_possible: options[:reject_if_possible] || false
+    )
+  end
+
+  desc "Promote an existing TestFlight build to App Store for Production Review without rebuilding"
+  lane :promote_to_app_store do |options|
+    app_version = options[:app_version]
+    build_number = options[:build_number]
+
+    upload_to_app_store(
+      app_version: app_version,
+      build_number: build_number,
+      force: true,
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      skip_metadata: true,
+      submit_for_review: options[:submit_for_review].nil? ? true : options[:submit_for_review],
+      automatic_release: options[:automatic_release].nil? ? true : options[:automatic_release],
+      phased_release: options[:phased_release].nil? ? false : options[:phased_release]
     )
   end
 end
