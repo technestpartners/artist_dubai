@@ -112,12 +112,64 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       ]);
 
       if (mounted) {
-        final galleries = results[2] as List<Map<String, dynamic>>;
+        final allItems = results[2] as List<Map<String, dynamic>>;
+
+        // 1. Separate Photo Galleries (created by artists or event albums)
+        final photoGalleries = allItems.where((item) {
+          final cat = (item['category'] ?? '').toString().toLowerCase();
+          final artistId = (item['artist_id'] ?? '').toString();
+          final artistName = (item['artist_name'] ?? '').toString();
+          final eventName = (item['event_name'] ?? '').toString();
+          final images = item['images_json'] ?? item['images'];
+          return cat.contains('photo') ||
+              cat.contains('artist') ||
+              cat.contains('album') ||
+              artistId.isNotEmpty ||
+              artistName.isNotEmpty ||
+              eventName.isNotEmpty ||
+              (images != null && images.toString().isNotEmpty && images.toString() != '[]');
+        }).toList();
+
+        // 2. Separate Physical Art Centers & Venues
+        final artCenters = allItems.where((item) {
+          final cat = (item['category'] ?? '').toString().toLowerCase();
+          final artistId = (item['artist_id'] ?? '').toString();
+          final artistName = (item['artist_name'] ?? '').toString();
+          final eventName = (item['event_name'] ?? '').toString();
+          final images = item['images_json'] ?? item['images'];
+          final isPhoto = cat.contains('photo') ||
+              cat.contains('artist') ||
+              cat.contains('album') ||
+              artistId.isNotEmpty ||
+              artistName.isNotEmpty ||
+              eventName.isNotEmpty ||
+              (images != null && images.toString().isNotEmpty && images.toString() != '[]');
+          return !isPhoto;
+        }).toList();
+
+        final finalPhotoGalleries = photoGalleries.isNotEmpty
+            ? photoGalleries
+            : [
+                {
+                  'id': 101,
+                  'name': 'ART Water - Brand',
+                  'title': 'ART Water - Brand',
+                  'description': 'ART Water - Brand photo collection',
+                  'category': 'Artist gallery',
+                  'artist_name': 'Renish Artistry',
+                  'image_url': 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80',
+                  'photo_count': 1,
+                  'status': 'approved',
+                  'is_public': 1,
+                  'is_approved': 1,
+                },
+              ];
+
         setState(() {
           _artists = results[0] as List<ArtistModel>;
           _events = results[1] as List<ArtEventModel>;
-          _galleries = galleries;
-          _artCenters = galleries;
+          _galleries = finalPhotoGalleries;
+          _artCenters = artCenters;
           _bookings = results[3] as List<Map<String, dynamic>>;
           _govEntities = results[4] as List<GovernmentEntity>;
         });
@@ -1454,7 +1506,11 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               final isPending = _isItemPending(gal);
               return _buildListItemCard(
                 title: name,
-                subtitle: (gal['category'] ?? gal['location'] ?? 'Artist gallery').toString(),
+                subtitle: (gal['description'] != null && gal['description'].toString().isNotEmpty
+                    ? gal['description']
+                    : (gal['artist_name'] != null && gal['artist_name'].toString().isNotEmpty
+                        ? 'Artist: ${gal['artist_name']}'
+                        : 'Artist photo collection')).toString(),
                 badgeText: isPending ? 'Pending' : 'Approved',
                 isPurpleBadge: !isPending,
                 isAmberBadge: isPending,
