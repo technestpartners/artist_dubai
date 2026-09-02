@@ -121,12 +121,11 @@ class _BookArtistViewState extends State<BookArtistView> {
       },
     );
 
-    final hour = pickedTime?.hour ?? 18;
-    final minute = pickedTime?.minute ?? 0;
-    final dt = DateTime(pickedDate.year, pickedDate.month, pickedDate.day, hour, minute);
-
-    final formatted =
-        '${dt.day.toString().padLeft(2, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.year} ${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+    final datePart =
+        '${pickedDate.day.toString().padLeft(2, '0')}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.year}';
+    final formatted = pickedTime != null
+        ? '$datePart ${pickedTime.hour.toString().padLeft(2, '0')}:${pickedTime.minute.toString().padLeft(2, '0')}'
+        : datePart;
 
     setState(() {
       controller.text = formatted;
@@ -181,7 +180,7 @@ class _BookArtistViewState extends State<BookArtistView> {
 
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Booking request submitted and saved to database!'),
+              content: Text('Booking request submitted successfully!'),
               backgroundColor: Color(0xFF5E227A),
               behavior: SnackBarBehavior.floating,
             ),
@@ -591,11 +590,12 @@ class _BookArtistViewState extends State<BookArtistView> {
     int maxLines = 1,
     VoidCallback? onTap,
   }) {
-    return TextFormField(
+    final field = TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       maxLines: maxLines,
       readOnly: onTap != null,
+      enableInteractiveSelection: onTap == null,
       onTap: onTap,
       style: const TextStyle(
         fontSize: 14.5,
@@ -615,10 +615,7 @@ class _BookArtistViewState extends State<BookArtistView> {
                 : null,
         suffixIcon:
             suffixIcon != null
-                ? GestureDetector(
-                    onTap: onTap,
-                    child: Icon(suffixIcon, size: 18, color: const Color(0xFF64748B)),
-                  )
+                ? Icon(suffixIcon, size: 18, color: const Color(0xFF5E227A))
                 : null,
         filled: true,
         fillColor: Colors.white,
@@ -640,6 +637,21 @@ class _BookArtistViewState extends State<BookArtistView> {
         ),
       ),
     );
+
+    if (onTap != null) {
+      return MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: AbsorbPointer(
+            absorbing: true,
+            child: field,
+          ),
+        ),
+      );
+    }
+    return field;
   }
 
   Widget _buildDropdownField({

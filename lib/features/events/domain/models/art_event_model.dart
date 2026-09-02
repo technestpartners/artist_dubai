@@ -47,6 +47,8 @@ class ArtEventModel {
   final List<String> tags;
   final String? imageUrl;
   final List<EventPhotoGallery> galleries;
+  final String status;
+  final bool isActive;
 
   const ArtEventModel({
     required this.id,
@@ -67,6 +69,8 @@ class ArtEventModel {
     required this.tags,
     this.imageUrl,
     this.galleries = const [],
+    this.status = 'active',
+    this.isActive = true,
   });
 
   ArtEventModel copyWith({
@@ -88,6 +92,8 @@ class ArtEventModel {
     List<String>? tags,
     String? imageUrl,
     List<EventPhotoGallery>? galleries,
+    String? status,
+    bool? isActive,
   }) {
     return ArtEventModel(
       id: id ?? this.id,
@@ -108,6 +114,8 @@ class ArtEventModel {
       tags: tags ?? this.tags,
       imageUrl: imageUrl ?? this.imageUrl,
       galleries: galleries ?? this.galleries,
+      status: status ?? this.status,
+      isActive: isActive ?? this.isActive,
     );
   }
 
@@ -171,6 +179,8 @@ class ArtEventModel {
       tags: parsedTags,
       imageUrl: json['image_url'] as String? ?? json['imageUrl'] as String?,
       galleries: parsedGalleries,
+      status: json['status'] as String? ?? 'active',
+      isActive: json['is_active'] == 1 || json['is_active'] == true || json['is_active'] == '1' || json['status'] == 'active' || json['status'] == null,
     );
   }
 

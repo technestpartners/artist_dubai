@@ -297,7 +297,12 @@ class _ArtistsViewState extends State<ArtistsView> {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveArtists = _allArtists;
+    final effectiveArtists = _allArtists.where((a) {
+      if (!a.isActive) return false;
+      final st = a.status.toLowerCase().trim();
+      if (st == 'inactive' || st == 'deactive' || st == 'suspended' || st == 'deleted' || st == 'pending') return false;
+      return true;
+    }).toList();
     final filteredArtists =
         _selectedCategory == null
             ? effectiveArtists

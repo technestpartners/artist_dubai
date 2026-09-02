@@ -314,66 +314,7 @@ class ApiService {
 
       if (_isSuccess(res)) {
         final list = res['data'] as List<dynamic>;
-        final events = list.map((e) {
-          final m = e as Map<String, dynamic>;
-          final galleriesList = (m['galleries'] as List<dynamic>?) ?? [];
-          final galleries = galleriesList.map((g) {
-            final gm = g as Map<String, dynamic>;
-            final imgsList = (gm['images'] as List<dynamic>?) ?? [];
-            final images = imgsList.map((im) {
-              final imm = im as Map<String, dynamic>;
-              return GalleryImageItem(
-                title: imm['title'] as String? ?? 'Image',
-                imageUrl: imm['image_url'] as String? ?? '',
-                caption: imm['caption'] as String? ?? 'Event highlight',
-              );
-            }).toList();
-
-            return EventPhotoGallery(
-              title: gm['title'] as String? ?? 'Gallery',
-              subtitle: gm['subtitle'] as String?,
-              photoCount: (gm['photo_count'] as num?)?.toInt() ?? images.length,
-              date: gm['date'] as String? ?? '',
-              imageUrl: gm['image_url'] as String? ?? '',
-              images: images,
-            );
-          }).toList();
-
-          List<String> parsedTags = [];
-          if (m['tags'] is List) {
-            parsedTags = (m['tags'] as List).map((e) => e.toString()).toList();
-          } else if (m['tags'] is String && (m['tags'] as String).isNotEmpty) {
-            parsedTags = (m['tags'] as String)
-                .split(',')
-                .map((e) => e.trim())
-                .where((e) => e.isNotEmpty)
-                .toList();
-          }
-
-          final dateStr = (m['event_date'] ?? m['date_time'] ?? m['dateTime'] ?? '') as String;
-          final formattedDate = (m['formatted_date'] ?? m['event_date'] ?? dateStr) as String;
-
-          return ArtEventModel(
-            id: m['id']?.toString() ?? '0',
-            title: m['title'] as String? ?? 'Art Event',
-            category: m['category'] as String? ?? 'Art Exhibition',
-            price: m['price'] as String? ?? 'Free',
-            description: m['description'] as String? ?? '',
-            requirements: m['requirements'] as String? ?? 'Open to all.',
-            dateTime: dateStr,
-            formattedDate: formattedDate,
-            timeRange: (m['time_range'] ?? '10:00 AM - 08:00 PM') as String,
-            location: (m['location'] ?? 'Dubai') as String,
-            locationCity: (m['venue'] ?? m['location_city'] ?? m['location'] ?? 'Dubai') as String?,
-            attendeesCount: (m['attendees_count'] as num?)?.toInt() ?? 0,
-            maxAttendees: (m['max_attendees'] as num?)?.toInt() ?? 100,
-            organizer: (m['organizer_name'] ?? m['organizer'] ?? 'Artist Dubai') as String,
-            organizerEmail: (m['contact_email'] ?? m['organizer_email']) as String?,
-            tags: parsedTags,
-            imageUrl: m['image_url'] as String?,
-            galleries: galleries,
-          );
-        }).toList();
+        final events = list.map((e) => ArtEventModel.fromJson(e as Map<String, dynamic>)).toList();
 
         if (isDefaultQuery) {
           _cachedEvents = events;
@@ -478,10 +419,12 @@ class ApiService {
     return _cachedGovEntities ?? GovernmentEntity.entities;
   }
 
-  // 7. Galleries (Instant Cache-First with artist filtering)
+  // 7. Galleries (Instant Cache-First with artist and event filtering)
   Future<List<Map<String, dynamic>>> getGalleries({
     String? artistId,
     String? artistName,
+    String? eventName,
+    String? eventId,
     String? search,
     String? status,
     bool isAdmin = false,
@@ -489,7 +432,12 @@ class ApiService {
     int limit = 50,
     bool forceRefresh = false,
   }) async {
-    final isFullFetch = (artistId == null || artistId.isEmpty) && (artistName == null || artistName.isEmpty) && !isAdmin && status == null;
+    final isFullFetch = (artistId == null || artistId.isEmpty) &&
+        (artistName == null || artistName.isEmpty) &&
+        (eventName == null || eventName.isEmpty) &&
+        (eventId == null || eventId.isEmpty) &&
+        !isAdmin &&
+        status == null;
 
     if (!forceRefresh && isFullFetch && page == 1 && _cachedGalleries != null && _cachedGalleries!.isNotEmpty) {
       return _cachedGalleries!;
@@ -501,6 +449,9 @@ class ApiService {
         queryParams['artist_id'] = artistId;
       } else if (artistName != null && artistName.isNotEmpty) {
         queryParams['artist_name'] = artistName;
+      } else if (eventName != null && eventName.isNotEmpty) {
+        queryParams['event_name'] = eventName;
+        if (eventId != null && eventId.isNotEmpty) queryParams['event_id'] = eventId;
       } else {
         // Full listing — use pagination
         queryParams['page'] = page;
@@ -539,6 +490,8 @@ class ApiService {
     String? description,
     String? artistId,
     String? artistName,
+    String? eventName,
+    String? eventId,
     String? imageUrl,
     List<String>? images,
   }) async {
@@ -547,12 +500,17 @@ class ApiService {
         ApiEndpoints.galleries,
         data: {
           'title': title,
-          'description': description ?? 'Curated collection by Artist',
-          'artist_id': artistId,
-          'artist_name': artistName,
+          'description': description ?? (eventName != null ? 'Curated collection for $eventName' : 'Curated collection by Artist'),
+          if (artistId != null) 'artist_id': artistId,
+          if (artistName != null) 'artist_name': artistName,
+          if (eventName != null) 'event_name': eventName,
+          if (eventId != null) 'event_id': eventId,
           'image_url': imageUrl,
           'images': images,
           'photo_count': images != null && images.isNotEmpty ? images.length : 1,
+          'status': 'approved',
+          'is_approved': 1,
+          'is_public': 1,
         },
       );
       if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
@@ -788,6 +746,22 @@ class ApiService {
           'action': 'cancel',
           'id': bookingId,
         },
+      );
+      if (_isSuccess(res)) {
+        try {
+          sl<LiveSyncService>().notifyBookingsChanged();
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> deleteBooking(dynamic bookingId) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.bookings}&action=delete',
+        data: {'id': bookingId},
       );
       if (_isSuccess(res)) {
         try {

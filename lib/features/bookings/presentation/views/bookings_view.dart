@@ -741,7 +741,7 @@ class _BookingsViewState extends State<BookingsView> {
               const SizedBox(height: 16),
 
               Text(
-                'Are you sure you want to cancel your booking for "$eventTitle"? This will update your reservation in the database.',
+                'Are you sure you want to cancel your booking for "$eventTitle"?',
                 style: const TextStyle(
                   fontSize: 13.5,
                   color: Color(0xFF64748B),

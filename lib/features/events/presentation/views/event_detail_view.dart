@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -33,13 +34,16 @@ class EventDetailView extends StatefulWidget {
 class _EventDetailViewState extends State<EventDetailView> {
   List<ArtistModel> _featuredArtists = [];
   final Set<String> _likedArtistIds = {};
+  List<EventPhotoGallery> _eventGalleries = [];
   StreamSubscription<List<ArtistModel>>? _artistsSub;
   StreamSubscription<Map<String, dynamic>>? _favSub;
+  StreamSubscription<List<Map<String, dynamic>>>? _galleriesSub;
 
   @override
   void initState() {
     super.initState();
     _fetchArtists();
+    _fetchEventGalleries();
     _artistsSub = sl<LiveSyncService>().artistsStream.listen((artists) {
       if (mounted) {
         setState(() => _featuredArtists = artists);
@@ -54,12 +58,16 @@ class _EventDetailViewState extends State<EventDetailView> {
         });
       }
     });
+    _galleriesSub = sl<LiveSyncService>().galleriesStream.listen((_) {
+      _fetchEventGalleries(forceRefresh: true);
+    });
   }
 
   @override
   void dispose() {
     _artistsSub?.cancel();
     _favSub?.cancel();
+    _galleriesSub?.cancel();
     super.dispose();
   }
 
@@ -86,6 +94,99 @@ class _EventDetailViewState extends State<EventDetailView> {
           _featuredArtists = artists;
           _likedArtistIds.clear();
           _likedArtistIds.addAll(favIds);
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _fetchEventGalleries({bool forceRefresh = false}) async {
+    try {
+      final allGals = await sl<ApiService>().getGalleries(
+        eventName: widget.event.title,
+        eventId: widget.event.id,
+        forceRefresh: forceRefresh,
+      );
+      final eventTitleLower = widget.event.title.toLowerCase().trim();
+      final eventId = widget.event.id.toString().trim();
+
+      final List<EventPhotoGallery> matched = [];
+
+      for (final g in allGals) {
+        final status = (g['status'] ?? '').toString().toLowerCase().trim();
+        if (status == 'pending' || status == 'rejected' || status == 'unapproved') continue;
+        final isApproved = g['is_approved'];
+        if (isApproved == 0 || isApproved == '0' || isApproved == false || isApproved == 'false') continue;
+        final isPublic = g['is_public'];
+        if (isPublic == 0 || isPublic == '0' || isPublic == false || isPublic == 'false') continue;
+
+        final evName = (g['event_name'] ?? '').toString().toLowerCase().trim();
+        final evId = (g['event_id'] ?? '').toString().trim();
+        final desc = (g['description'] ?? g['subtitle'] ?? g['about'] ?? '').toString().toLowerCase();
+        final title = (g['name'] ?? g['title'] ?? '').toString().toLowerCase();
+
+        final matches = (evId.isNotEmpty && evId == eventId) ||
+            (evName.isNotEmpty && (evName == eventTitleLower || eventTitleLower.contains(evName))) ||
+            desc.contains(eventTitleLower) ||
+            title.contains(eventTitleLower);
+
+        if (matches) {
+          final galTitle = (g['name'] ?? g['title'] ?? 'Gallery').toString();
+          final galSubtitle = (g['description'] ?? g['subtitle'] ?? g['about'])?.toString();
+          final coverImage = (g['image_url'] ?? g['image'] ?? '').toString();
+
+          List<dynamic> rawImgs = [];
+          if (g['images'] is List) {
+            rawImgs = g['images'] as List<dynamic>;
+          } else if (g['images'] is String && (g['images'] as String).isNotEmpty) {
+            try {
+              final decoded = jsonDecode(g['images'] as String);
+              if (decoded is List) rawImgs = decoded;
+            } catch (_) {
+              rawImgs = (g['images'] as String).split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+            }
+          }
+
+          final List<GalleryImageItem> imagesList = [];
+          for (var i = 0; i < rawImgs.length; i++) {
+            final itm = rawImgs[i];
+            if (itm is String && itm.trim().isNotEmpty) {
+              imagesList.add(GalleryImageItem(title: '$galTitle #${i + 1}', imageUrl: itm.trim()));
+            } else if (itm is Map) {
+              final u = (itm['image_url'] ?? itm['image'] ?? '').toString().trim();
+              if (u.isNotEmpty) {
+                imagesList.add(GalleryImageItem(
+                  title: (itm['title'] ?? '$galTitle #${i + 1}').toString(),
+                  imageUrl: u,
+                  caption: itm['caption']?.toString() ?? 'Event photo',
+                ));
+              }
+            }
+          }
+
+          if (imagesList.isEmpty && coverImage.isNotEmpty) {
+            imagesList.add(GalleryImageItem(title: galTitle, imageUrl: coverImage.trim()));
+          }
+
+          final effectiveCover = coverImage.isNotEmpty
+              ? coverImage
+              : (imagesList.isNotEmpty ? imagesList.first.imageUrl : '');
+
+          if (effectiveCover.isNotEmpty || imagesList.isNotEmpty) {
+            matched.add(EventPhotoGallery(
+              title: galTitle,
+              subtitle: galSubtitle,
+              photoCount: imagesList.isNotEmpty ? imagesList.length : 1,
+              date: (g['created_at'] ?? 'Recent').toString(),
+              imageUrl: effectiveCover,
+              images: imagesList,
+            ));
+          }
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _eventGalleries = matched;
         });
       }
     } catch (_) {}
@@ -422,11 +523,9 @@ class _EventDetailViewState extends State<EventDetailView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Wrap(
-                      alignment: WrapAlignment.spaceBetween,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 8,
-                      runSpacing: 8,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         const Text(
                           'Event Photos',
@@ -437,105 +536,179 @@ class _EventDetailViewState extends State<EventDetailView> {
                           ),
                         ),
                         if (_isLoggedIn)
-                        OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF1E1E1E),
-                            side: const BorderSide(
-                              color: Color(0xFF333333),
-                              width: 1.0,
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF6A2777),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 7,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6),
+                            onPressed: () {
+                              _showCreateGalleryModal(context, event.title);
+                            },
+                            icon: const Icon(Icons.add_photo_alternate_outlined, size: 15, color: Colors.white),
+                            label: const Text(
+                              'Add Photo',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
-                          onPressed: () {
-                            _showCreateGalleryModal(context, event.title);
-                          },
-                          icon: const Icon(Icons.add, size: 16),
-                          label: const Text(
-                            '+ Add Event Photo',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
                       ],
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 14),                    // 5. Event Photos / Galleries (Live Synced with Admin)
+                    Builder(
+                      builder: (context) {
+                        final Set<String> seenKeys = {};
+                        final List<EventPhotoGallery> allGalleries = [];
+                        for (final g in [..._eventGalleries, ...event.galleries]) {
+                          final key = '${g.title}_${g.imageUrl}'.trim().toLowerCase();
+                          if (seenKeys.add(key)) {
+                            allGalleries.add(g);
+                          }
+                        }
 
-                    // Gallery Card Item
-                    if (event.galleries.isNotEmpty)
-                      InkWell(
-                        onTap: () {
-                          EventGalleryModal.show(
-                            context,
-                            event: event,
-                            gallery: event.galleries.first,
+                        if (allGalleries.isEmpty) {
+                          return Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                            ),
+                            child: Column(
+                              children: const [
+                                Icon(Icons.photo_library_outlined, size: 36, color: Color(0xFF94A3B8)),
+                                SizedBox(height: 8),
+                                Text(
+                                  'No event photos yet',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Photos approved in admin dashboard will appear here.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF94A3B8),
+                                  ),
+                                ),
+                              ],
+                            ),
                           );
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFFCBD5E1)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              ClipRRect(
-                                borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(8),
-                                ),
-                                child: AppCachedImage(
-                                  imageUrl: event.galleries.first.imageUrl,
-                                  height: 180,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(12.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      event.galleries.first.title,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF1E1E1E),
-                                      ),
-                                    ),
-                                    if (event.galleries.first.subtitle !=
-                                        null) ...[
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        event.galleries.first.subtitle!,
-                                        style: const TextStyle(
-                                          fontSize: 12.5,
-                                          color: Color(0xFF64748B),
+                        }
+
+                        return Column(
+                          children: allGalleries.map((gallery) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12.0),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(8),
+                                onTap: () {
+                                  EventGalleryModal.show(
+                                    context,
+                                    event: event,
+                                    gallery: gallery,
+                                  );
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: const Color(0xFFCBD5E1)),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      if (gallery.imageUrl.isNotEmpty)
+                                        ClipRRect(
+                                          borderRadius: const BorderRadius.vertical(
+                                            top: Radius.circular(8),
+                                          ),
+                                          child: AppCachedImage(
+                                            imageUrl: gallery.imageUrl,
+                                            height: 180,
+                                            width: double.infinity,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+                                      Padding(
+                                        padding: const EdgeInsets.all(12.0),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    gallery.title,
+                                                    style: const TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Color(0xFF1E1E1E),
+                                                    ),
+                                                  ),
+                                                ),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(0xFF6A2777).withValues(alpha: 0.1),
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                  child: Text(
+                                                    '${gallery.photoCount} photos',
+                                                    style: const TextStyle(
+                                                      fontSize: 11,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: Color(0xFF6A2777),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            if (gallery.subtitle != null && gallery.subtitle!.isNotEmpty) ...[
+                                              const SizedBox(height: 3),
+                                              Text(
+                                                gallery.subtitle!,
+                                                style: const TextStyle(
+                                                  fontSize: 12.5,
+                                                  color: Color(0xFF64748B),
+                                                ),
+                                              ),
+                                            ],
+                                            const SizedBox(height: 3),
+                                            Text(
+                                              gallery.date,
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Color(0xFF94A3B8),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ],
-                                    const SizedBox(height: 3),
-                                    Text(
-                                      event.galleries.first.date,
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Color(0xFF94A3B8),
-                                      ),
-                                    ),
-                                  ],
+                                  ),
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -1929,13 +2102,16 @@ class _EventDetailViewState extends State<EventDetailView> {
                                       description: desc.isNotEmpty ? desc : 'Curated collection for $titleName',
                                       imageUrl: coverUrl,
                                       images: finalUploadedUrls,
+                                      eventName: titleName,
+                                      eventId: widget.event.id,
                                     );
+                                    _fetchEventGalleries(forceRefresh: true);
 
                                     if (context.mounted) {
                                       Navigator.pop(context);
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
-                                          content: Text('Gallery "$title" saved to database!'),
+                                          content: Text('Gallery "$title" created successfully!'),
                                           backgroundColor: const Color(0xFF5E227A),
                                           behavior: SnackBarBehavior.floating,
                                         ),

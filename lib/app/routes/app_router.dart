@@ -253,11 +253,43 @@ class AppRouter {
       GoRoute(
         path: RouteNames.createArtEvent,
         name: 'createArtEvent',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: CreateArtEventView(event: state.extra as ArtEventModel?),
-        ),
+        pageBuilder: (context, state) {
+          ArtEventModel? event;
+          bool isCalendar = false;
+          bool fromAdmin = false;
+
+          if (state.extra is ArtEventModel) {
+            event = state.extra as ArtEventModel;
+          } else if (state.extra is Map) {
+            final map = state.extra as Map;
+            if (map['event'] is ArtEventModel) {
+              event = map['event'] as ArtEventModel;
+            }
+            if (map['isCalendar'] == true) {
+              isCalendar = true;
+            }
+            if (map['fromAdmin'] == true) {
+              fromAdmin = true;
+            }
+          }
+          if (state.uri.queryParameters['mode'] == 'calendar') {
+            isCalendar = true;
+          }
+          if (state.uri.queryParameters['fromAdmin'] == 'true' || state.uri.queryParameters['admin'] == '1') {
+            fromAdmin = true;
+          }
+
+          return _buildSlidePage(
+            context: context,
+            state: state,
+            child: CreateArtEventView(
+              event: event,
+              isCalendar: isCalendar,
+              fromAdmin: fromAdmin,
+              showBottomBar: !fromAdmin && !isCalendar,
+            ),
+          );
+        },
       ),
       GoRoute(
         path: RouteNames.profile,
@@ -298,11 +330,20 @@ class AppRouter {
       GoRoute(
         path: RouteNames.artistRegistration,
         name: 'artistRegistration',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const CreateArtistProfileView(),
-        ),
+        pageBuilder: (context, state) {
+          bool fromAdmin = false;
+          if (state.extra is Map && (state.extra as Map)['fromAdmin'] == true) {
+            fromAdmin = true;
+          }
+          if (state.uri.queryParameters['fromAdmin'] == 'true') {
+            fromAdmin = true;
+          }
+          return _buildSlidePage(
+            context: context,
+            state: state,
+            child: CreateArtistProfileView(fromAdmin: fromAdmin),
+          );
+        },
       ),
       GoRoute(
         path: RouteNames.privacyPolicy,

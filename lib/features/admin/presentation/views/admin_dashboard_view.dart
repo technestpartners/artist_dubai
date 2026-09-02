@@ -6,7 +6,6 @@ import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
-import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../artists/domain/models/artist_model.dart';
 import '../../../events/domain/models/art_event_model.dart';
 import '../../../government/domain/models/government_entity.dart';
@@ -380,7 +379,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       if (name.isEmpty) return;
 
                       final payload = {
-                        'name': name,
+                        if (existing?.id != null) 'id': existing!.id,
+                        'name': existing?.name ?? name,
+                        'new_name': name,
                         'type': typeCtrl.text.trim(),
                         'address': addressCtrl.text.trim(),
                         'website': websiteCtrl.text.trim(),
@@ -394,6 +395,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
 
                       if (isEdit) {
                         final updated = GovernmentEntity(
+                          id: existing.id,
                           name: name,
                           defaultIsOpen: isCurrentlyOpen,
                           rating: double.tryParse(ratingCtrl.text.trim()) ?? 4.5,
@@ -403,6 +405,14 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                           defaultTiming: statusTextCtrl.text.trim(),
                           websiteUrl: websiteCtrl.text.trim(),
                           directionsUrl: existing.directionsUrl,
+                          googleMapsReviewsUrl: existing.googleMapsReviewsUrl,
+                          reviews: existing.reviews,
+                          openHour: existing.openHour,
+                          openMinute: existing.openMinute,
+                          closeHour: existing.closeHour,
+                          closeMinute: existing.closeMinute,
+                          closedDays: existing.closedDays,
+                          seasonalNotice: existing.seasonalNotice,
                         );
                         if (index != null && index < _govEntities.length) {
                           setState(() => _govEntities[index] = updated);
@@ -423,6 +433,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         setState(() => _govEntities.insert(0, newEntity));
                         await sl<ApiService>().createGovernmentEntity(payload);
                       }
+                      try {
+                        sl<LiveSyncService>().notifyGovernmentChanged();
+                      } catch (_) {}
                     },
                     child: const Text('Save', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   ),
@@ -504,9 +517,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   const SizedBox(height: 12),
 
                   _buildFormField(label: 'Address', controller: addressCtrl),
-                  const SizedBox(height: 12),
-
-                  _buildFormField(label: 'Opening hours', controller: hoursCtrl, hint: 'Sat–Thu 10:00–20:00'),
                   const SizedBox(height: 12),
 
                   _buildFormField(label: 'Website', controller: websiteCtrl, hint: 'https://...'),
@@ -872,11 +882,15 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         if (existing?['id'] != null) 'id': existing!['id'],
                         'name': title,
                         'title': title,
-                        'description': descCtrl.text.trim(),
+                        'description': descCtrl.text.trim().isNotEmpty
+                            ? descCtrl.text.trim()
+                            : (selectedEvent != null ? 'Curated collection for $selectedEvent' : ''),
                         'image_url': coverImageCtrl.text.trim(),
                         'cover_url': coverImageCtrl.text.trim(),
                         'event_name': selectedEvent ?? '',
                         'is_public': isVisibleToEveryone ? 1 : 0,
+                        'is_approved': isVisibleToEveryone ? 1 : 0,
+                        'status': isVisibleToEveryone ? 'approved' : 'pending',
                         'category': 'Artist gallery',
                       };
 
@@ -920,7 +934,48 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     int maxLines = 1,
     TextInputType keyboardType = TextInputType.text,
     bool isFocused = false,
+    bool readOnly = false,
+    VoidCallback? onTap,
+    IconData? suffixIcon,
   }) {
+    final textField = TextField(
+      controller: controller,
+      maxLines: maxLines,
+      keyboardType: keyboardType,
+      readOnly: readOnly || onTap != null,
+      enableInteractiveSelection: onTap == null,
+      style: const TextStyle(fontSize: 13.5, color: Color(0xFF1E293B)),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+        isDense: true,
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        suffixIcon: suffixIcon != null
+            ? Icon(suffixIcon, size: 18, color: const Color(0xFF6A2777))
+            : null,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(
+            color: isFocused ? const Color(0xFF6A2777) : const Color(0xFFCBD5E1),
+            width: isFocused ? 1.5 : 1,
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(
+            color: isFocused ? const Color(0xFF6A2777) : const Color(0xFFCBD5E1),
+            width: isFocused ? 1.5 : 1,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5),
+        ),
+      ),
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -933,38 +988,20 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           ),
         ),
         const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          maxLines: maxLines,
-          keyboardType: keyboardType,
-          style: const TextStyle(fontSize: 13.5, color: Color(0xFF1E293B)),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
-            isDense: true,
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(
-                color: isFocused ? const Color(0xFF6A2777) : const Color(0xFFCBD5E1),
-                width: isFocused ? 1.5 : 1,
+        if (onTap != null)
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onTap,
+              child: AbsorbPointer(
+                absorbing: true,
+                child: textField,
               ),
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(
-                color: isFocused ? const Color(0xFF6A2777) : const Color(0xFFCBD5E1),
-                width: isFocused ? 1.5 : 1,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5),
-            ),
-          ),
-        ),
+          )
+        else
+          textField,
       ],
     );
   }
@@ -1033,7 +1070,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           ),
         ),
       ),
-      bottomNavigationBar: const AppBottomNavBar(),
     );
   }
 
@@ -1047,6 +1083,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 icon: Icons.people_outline_rounded,
                 count: '${_artists.length}',
                 label: 'Artists',
+                isSelected: _selectedTab == AdminTab.artists,
+                onTap: () => setState(() => _selectedTab = AdminTab.artists),
               ),
             ),
             const SizedBox(width: 12),
@@ -1055,6 +1093,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 icon: Icons.calendar_today_outlined,
                 count: '${_events.length}',
                 label: 'Events',
+                isSelected: _selectedTab == AdminTab.events || _selectedTab == AdminTab.calendar,
+                onTap: () => setState(() => _selectedTab = AdminTab.events),
               ),
             ),
           ],
@@ -1067,6 +1107,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 icon: Icons.image_outlined,
                 count: '${_galleries.length}',
                 label: 'Galleries',
+                isSelected: _selectedTab == AdminTab.galleries,
+                onTap: () => setState(() => _selectedTab = AdminTab.galleries),
               ),
             ),
             const SizedBox(width: 12),
@@ -1075,6 +1117,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 icon: Icons.confirmation_number_outlined,
                 count: '${_bookings.length}',
                 label: 'Bookings',
+                isSelected: _selectedTab == AdminTab.bookings,
+                onTap: () => setState(() => _selectedTab = AdminTab.bookings),
               ),
             ),
           ],
@@ -1087,44 +1131,72 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     required IconData icon,
     required String count,
     required String label,
+    required VoidCallback onTap,
+    bool isSelected = false,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 6,
-            offset: Offset(0, 2),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF6A2777) : const Color(0xFFE2E8F0),
+            width: isSelected ? 1.8 : 1.0,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: const Color(0xFF6A2777), size: 22),
-          const SizedBox(height: 8),
-          Text(
-            count,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF0F172A),
+          boxShadow: [
+            BoxShadow(
+              color: isSelected ? const Color(0x186A2777) : const Color(0x08000000),
+              blurRadius: isSelected ? 8 : 6,
+              offset: const Offset(0, 2),
             ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF64748B),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Icon(
+                  icon,
+                  color: const Color(0xFF6A2777),
+                  size: 22,
+                ),
+                if (isSelected)
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF6A2777),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              count,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF0F172A),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? const Color(0xFF6A2777) : const Color(0xFF64748B),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1221,45 +1293,109 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
 
   // --- 1. Artists Tab ---
   Widget _buildArtistsTab() {
-    if (_artists.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 32),
-        child: Center(
-          child: Text(
-            'No artists registered yet.',
-            style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              '${_artists.length} artists',
+              style: const TextStyle(
+                fontSize: 13.5,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6A2777),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              icon: const Icon(Icons.add, size: 14, color: Colors.white),
+              label: const Text('New artist', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
+              onPressed: () => context.push(
+                RouteNames.artistRegistration,
+                extra: {'fromAdmin': true},
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        if (_artists.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 32),
+            child: Center(
+              child: Text(
+                'No artists registered yet.',
+                style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+              ),
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _artists.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              final artist = _artists[index];
+              final isActive = artist.isActive;
+              return _buildListItemCard(
+                title: artist.name,
+                subtitle: '${artist.category} · ${artist.location.isNotEmpty ? artist.location : 'Dubai, UAE'}',
+                badgeText: isActive ? 'Active' : 'Inactive',
+                isPurpleBadge: isActive,
+                onToggleStatus: () => _toggleArtistStatus(artist, index),
+                onEdit: () {
+                  context.push(RouteNames.artistDetail, extra: artist);
+                },
+                onDelete: () {
+                  _confirmDelete(
+                    title: 'Delete Artist Profile',
+                    message: 'Are you sure you want to remove ${artist.name}?',
+                    onConfirm: () async {
+                      setState(() => _artists.removeAt(index));
+                      await sl<ApiService>().deleteArtist(artist.id);
+                    },
+                  );
+                },
+              );
+            },
           ),
+      ],
+    );
+  }
+
+  Future<void> _toggleArtistStatus(ArtistModel artist, int index) async {
+    final newActive = !artist.isActive;
+    final newStatus = newActive ? 'active' : 'inactive';
+    final updated = artist.copyWith(isActive: newActive, status: newStatus);
+
+    setState(() {
+      _artists[index] = updated;
+    });
+
+    await sl<ApiService>().updateArtist({
+      'id': int.tryParse(artist.id) ?? artist.id,
+      'status': newStatus,
+      'is_active': newActive ? 1 : 0,
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${artist.name} is now ${newActive ? "Active" : "Inactive"}'),
+          backgroundColor: newActive ? const Color(0xFF6A2777) : const Color(0xFF64748B),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
-
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _artists.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        final artist = _artists[index];
-        return _buildListItemCard(
-          title: artist.name,
-          subtitle: artist.location.isNotEmpty ? artist.location : 'Dubai, UAE',
-          badgeText: artist.category,
-          onEdit: () {
-            context.push(RouteNames.artistDetail, extra: artist);
-          },
-          onDelete: () {
-            _confirmDelete(
-              title: 'Delete Artist Profile',
-              message: 'Are you sure you want to remove ${artist.name}?',
-              onConfirm: () async {
-                setState(() => _artists.removeAt(index));
-                await sl<ApiService>().deleteArtist(artist.id);
-              },
-            );
-          },
-        );
-      },
-    );
   }
 
   // --- 2. Events Tab ---
@@ -1267,19 +1403,37 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Align(
-          alignment: Alignment.centerRight,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6A2777),
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              '${_events.length} events',
+              style: const TextStyle(
+                fontSize: 13.5,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
+              ),
             ),
-            onPressed: () => context.push(RouteNames.createArtEvent),
-            child: const Text('New event', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
-          ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6A2777),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              icon: const Icon(Icons.add, size: 14, color: Colors.white),
+              label: const Text('New event', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
+              onPressed: () async {
+                await context.push(
+                  RouteNames.createArtEvent,
+                  extra: {'fromAdmin': true},
+                );
+                _loadAllData();
+              },
+            ),
+          ],
         ),
         const SizedBox(height: 12),
         if (_events.isEmpty)
@@ -1300,13 +1454,19 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (context, index) {
               final ev = _events[index];
+              final isActive = ev.isActive;
               return _buildListItemCard(
                 title: ev.title,
-                subtitle: '${ev.formattedDate} - ${ev.location}',
-                badgeText: 'active',
-                isStatusBadge: true,
-                onEdit: () {
-                  context.push(RouteNames.createArtEvent, extra: ev);
+                subtitle: '${ev.formattedDate.isNotEmpty ? ev.formattedDate : ev.dateTime} - ${ev.location}',
+                badgeText: isActive ? 'Active' : 'Inactive',
+                isPurpleBadge: isActive,
+                onToggleStatus: () => _toggleEventStatus(ev, index),
+                onEdit: () async {
+                  await context.push(
+                    RouteNames.createArtEvent,
+                    extra: {'event': ev, 'fromAdmin': true},
+                  );
+                  _loadAllData();
                 },
                 onDelete: () {
                   _confirmDelete(
@@ -1325,26 +1485,71 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     );
   }
 
+  Future<void> _toggleEventStatus(ArtEventModel ev, int index) async {
+    final newActive = !ev.isActive;
+    final newStatus = newActive ? 'active' : 'inactive';
+    final updated = ev.copyWith(isActive: newActive, status: newStatus);
+
+    setState(() {
+      _events[index] = updated;
+    });
+
+    await sl<ApiService>().updateEvent({
+      'id': int.tryParse(ev.id) ?? ev.id,
+      'status': newStatus,
+      'is_active': newActive ? 1 : 0,
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('"${ev.title}" is now ${newActive ? "Active" : "Inactive"}'),
+          backgroundColor: newActive ? const Color(0xFF6A2777) : const Color(0xFF64748B),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   // --- 3. Calendar Tab ---
   Widget _buildCalendarTab() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Align(
-          alignment: Alignment.centerRight,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6A2777),
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              '${_events.length} calendar events',
+              style: const TextStyle(
+                fontSize: 13.5,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
+              ),
             ),
-            onPressed: () => context.push(RouteNames.createArtEvent),
-            child: const Text('Add to calendar', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
-          ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6A2777),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              icon: const Icon(Icons.add, size: 14, color: Colors.white),
+              label: const Text('Add to calendar', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
+              onPressed: () async {
+                await context.push(
+                  RouteNames.createArtEvent,
+                  extra: {'isCalendar': true, 'fromAdmin': true},
+                );
+                _loadAllData();
+              },
+            ),
+          ],
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 14),
         if (_events.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
@@ -1361,16 +1566,29 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (context, index) {
               final ev = _events[index];
+              final isActive = ev.isActive;
               return _buildListItemCard(
                 title: ev.title,
                 subtitle: '${ev.formattedDate.isNotEmpty ? ev.formattedDate : ev.dateTime} - ${ev.locationCity ?? ev.location}',
-                badgeText: 'Scheduled',
-                isStatusBadge: true,
-                onEdit: () => context.push(RouteNames.createArtEvent, extra: ev),
+                badgeText: isActive ? 'Scheduled' : 'Cancelled',
+                isPurpleBadge: isActive,
+                isRedBadge: !isActive,
+                onToggleStatus: () => _toggleCalendarEventStatus(ev, index),
+                onEdit: () async {
+                  await context.push(
+                    RouteNames.createArtEvent,
+                    extra: {
+                      'event': ev,
+                      'isCalendar': true,
+                      'fromAdmin': true,
+                    },
+                  );
+                  _loadAllData();
+                },
                 onDelete: () {
                   _confirmDelete(
                     title: 'Remove from Calendar',
-                    message: 'Are you sure you want to delete "${ev.title}" from the database calendar?',
+                    message: 'Are you sure you want to remove "${ev.title}" from the calendar?',
                     onConfirm: () async {
                       setState(() {
                         _events.removeAt(index);
@@ -1384,6 +1602,33 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           ),
       ],
     );
+  }
+
+  Future<void> _toggleCalendarEventStatus(ArtEventModel ev, int index) async {
+    final newActive = !ev.isActive;
+    final newStatus = newActive ? 'active' : 'cancelled';
+    final updated = ev.copyWith(isActive: newActive, status: newStatus);
+
+    setState(() {
+      _events[index] = updated;
+    });
+
+    await sl<ApiService>().updateEvent({
+      'id': int.tryParse(ev.id) ?? ev.id,
+      'status': newStatus,
+      'is_active': newActive ? 1 : 0,
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('"${ev.title}" is now ${newActive ? "Scheduled" : "Cancelled"}'),
+          backgroundColor: newActive ? const Color(0xFF6A2777) : const Color(0xFFDC2626),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   bool _isItemPending(Map<String, dynamic> item) {
@@ -1536,43 +1781,355 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
 
   // --- 5. Bookings Tab ---
   Widget _buildBookingsTab() {
-    if (_bookings.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 24),
-        child: Text(
-          'No bookings visible.',
-          style: TextStyle(color: Color(0xFF64748B), fontSize: 13.5),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              '${_bookings.length} bookings',
+              style: const TextStyle(
+                fontSize: 13.5,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6A2777),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              icon: const Icon(Icons.add, size: 14, color: Colors.white),
+              label: const Text('New booking', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
+              onPressed: _showCreateBookingDialog,
+            ),
+          ],
         ),
-      );
-    }
+        const SizedBox(height: 14),
+        if (_bookings.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 32),
+            child: Center(
+              child: Text(
+                'No bookings registered yet.',
+                style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+              ),
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _bookings.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              final b = _bookings[index];
+              final eventTitle = (b['event_title'] ?? '').toString();
+              final userName = (b['full_name'] ?? b['artist_name'] ?? '').toString();
+              final status = (b['status'] ?? 'Confirmed').toString().trim();
+              final date = (b['event_date'] ?? b['created_at'] ?? '').toString();
 
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _bookings.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        final b = _bookings[index];
-        final eventTitle = b['event_title'] as String? ?? '';
-        final userName = b['full_name'] as String? ?? b['artist_name'] as String? ?? '';
-        final status = b['status'] as String? ?? 'Confirmed';
-        final date = b['event_date'] as String? ?? b['created_at'] as String? ?? '';
+              final isPending = status.toLowerCase() == 'pending';
+              final isConfirmed = status.toLowerCase() == 'confirmed';
+              final isCompleted = status.toLowerCase() == 'completed';
+              final isCancelled = status.toLowerCase() == 'cancelled';
 
-        final title = eventTitle.isNotEmpty
-            ? eventTitle
-            : (userName.isNotEmpty ? userName : 'Booking #${b['id'] ?? (index + 1)}');
-        final subtitle = userName.isNotEmpty && eventTitle.isNotEmpty
-            ? '$userName • $date'
-            : date;
+              final title = eventTitle.isNotEmpty
+                  ? eventTitle
+                  : (userName.isNotEmpty ? userName : 'Booking #${b['id'] ?? (index + 1)}');
+              final subtitle = userName.isNotEmpty && eventTitle.isNotEmpty
+                  ? '$userName • $date'
+                  : (date.isNotEmpty ? date : 'Dubai, UAE');
 
-        return _buildListItemCard(
-          title: title,
-          subtitle: subtitle,
-          badgeText: status,
-          isStatusBadge: true,
+              return _buildListItemCard(
+                title: title,
+                subtitle: subtitle,
+                badgeText: status,
+                isPurpleBadge: isConfirmed,
+                isAmberBadge: isPending,
+                isGreenBadge: isCompleted,
+                isRedBadge: isCancelled,
+                onApprove: isPending ? () => _acceptBooking(b, index) : null,
+                onToggleStatus: () => _toggleBookingStatus(b, index),
+                onDelete: () {
+                  _confirmDelete(
+                    title: 'Delete Booking',
+                    message: 'Are you sure you want to delete this booking?',
+                    onConfirm: () async {
+                      final id = b['id'];
+                      setState(() => _bookings.removeAt(index));
+                      if (id != null) {
+                        await sl<ApiService>().deleteBooking(id);
+                      }
+                    },
+                  );
+                },
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  Future<void> _pickBookingDateTime(
+    BuildContext ctx,
+    TextEditingController controller,
+    StateSetter setModalState,
+  ) async {
+    final now = DateTime.now();
+    final pickedDate = await showDatePicker(
+      context: ctx,
+      initialDate: now,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(now.year + 5),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF6A2777),
+              onPrimary: Colors.white,
+              onSurface: Color(0xFF1E1E1E),
+            ),
+          ),
+          child: child!,
         );
       },
     );
+
+    if (pickedDate == null) return;
+    if (!ctx.mounted) return;
+
+    final pickedTime = await showTimePicker(
+      context: ctx,
+      initialTime: const TimeOfDay(hour: 18, minute: 0),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF6A2777),
+              onPrimary: Colors.white,
+              onSurface: Color(0xFF1E1E1E),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    final datePart =
+        '${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}';
+    final formatted = pickedTime != null
+        ? '$datePart ${pickedTime.hour.toString().padLeft(2, '0')}:${pickedTime.minute.toString().padLeft(2, '0')}'
+        : datePart;
+
+    setModalState(() {
+      controller.text = formatted;
+    });
+  }
+
+  void _showCreateBookingDialog() {
+    final nameCtrl = TextEditingController();
+    final emailCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    final eventTitleCtrl = TextEditingController();
+    final dateCtrl = TextEditingController(text: DateTime.now().toString().split(' ')[0]);
+    String selectedStatus = 'Confirmed';
+
+    final messenger = ScaffoldMessenger.of(context);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Dialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'New booking',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Color(0xFF64748B), size: 20),
+                        onPressed: () => Navigator.pop(ctx),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFormField(label: 'Guest / Artist Name', controller: nameCtrl, isFocused: true),
+                  const SizedBox(height: 12),
+                  _buildFormField(label: 'Email', controller: emailCtrl, keyboardType: TextInputType.emailAddress, hint: 'guest@example.com'),
+                  const SizedBox(height: 12),
+                  _buildFormField(label: 'Phone', controller: phoneCtrl, keyboardType: TextInputType.phone, hint: '+971 50 123 4567'),
+                  const SizedBox(height: 12),
+                  _buildFormField(label: 'Event / Booking Title', controller: eventTitleCtrl, hint: 'Exhibition entry / Art workshop'),
+                  const SizedBox(height: 12),
+                  _buildFormField(
+                    label: 'Date & Time',
+                    controller: dateCtrl,
+                    hint: 'Select event date & time',
+                    readOnly: true,
+                    suffixIcon: Icons.calendar_today_outlined,
+                    onTap: () => _pickBookingDateTime(ctx, dateCtrl, setModalState),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      const Text('Status: ', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF334155))),
+                      const SizedBox(width: 8),
+                      DropdownButton<String>(
+                        value: selectedStatus,
+                        underline: const SizedBox(),
+                        items: ['Confirmed', 'Pending', 'Completed', 'Cancelled']
+                            .map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 13))))
+                            .toList(),
+                        onChanged: (v) {
+                          if (v != null) setModalState(() => selectedStatus = v);
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6A2777),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () async {
+                      final name = nameCtrl.text.trim();
+                      if (name.isEmpty) return;
+                      final payload = {
+                        'full_name': name,
+                        'email': emailCtrl.text.trim().isNotEmpty ? emailCtrl.text.trim() : 'admin@technestpartners.com',
+                        'phone': phoneCtrl.text.trim(),
+                        'event_title': eventTitleCtrl.text.trim().isNotEmpty ? eventTitleCtrl.text.trim() : 'Art Event Booking',
+                        'event_date': dateCtrl.text.trim(),
+                        'status': selectedStatus,
+                      };
+                      Navigator.pop(ctx);
+                      setState(() {
+                        _bookings.insert(0, payload);
+                      });
+                      await sl<ApiService>().createBooking(payload);
+                      if (mounted) {
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text('Booking for "$name" created successfully!'),
+                            backgroundColor: const Color(0xFF16A34A),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    },
+                    child: const Text('Save booking', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  ),
+                  const SizedBox(height: 8),
+                  Center(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _toggleBookingStatus(Map<String, dynamic> b, int index) async {
+    final currentStatus = (b['status'] ?? 'pending').toString().toLowerCase();
+    String newStatus;
+    if (currentStatus == 'pending') {
+      newStatus = 'confirmed';
+    } else if (currentStatus == 'confirmed') {
+      newStatus = 'completed';
+    } else if (currentStatus == 'completed') {
+      newStatus = 'cancelled';
+    } else {
+      newStatus = 'confirmed';
+    }
+
+    final id = b['id'];
+    final updated = Map<String, dynamic>.from(b);
+    updated['status'] = newStatus[0].toUpperCase() + newStatus.substring(1);
+
+    setState(() {
+      _bookings[index] = updated;
+    });
+
+    if (id != null) {
+      await sl<ApiService>().updateBookingStatus(bookingId: id, status: newStatus);
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Booking status updated to ${updated['status']}'),
+          backgroundColor: const Color(0xFF6A2777),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+    await _refreshBookings();
+  }
+
+  Future<void> _acceptBooking(Map<String, dynamic> b, int index) async {
+    final id = b['id'];
+    final updated = Map<String, dynamic>.from(b);
+    updated['status'] = 'Confirmed';
+
+    setState(() {
+      _bookings[index] = updated;
+    });
+
+    if (id != null) {
+      await sl<ApiService>().updateBookingStatus(bookingId: id, status: 'confirmed');
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Booking accepted and confirmed!'),
+          backgroundColor: const Color(0xFF16A34A),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+    await _refreshBookings();
+  }
+
+  /// Force-refresh all bookings from MySQL (admin: no email filter)
+  Future<void> _refreshBookings() async {
+    try {
+      final fresh = await sl<ApiService>().getBookings(forceRefresh: true);
+      if (mounted) {
+        setState(() => _bookings = fresh);
+      }
+    } catch (_) {}
   }
 
   // --- 6. Art Centers Tab (Screenshot 1 & Screenshot 5) ---
@@ -1648,11 +2205,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               return _buildListItemCard(
                 title: name,
                 subtitle: subtitle,
-                badgeText: isPending ? 'Pending' : (isCurrentlyOpen ? 'Open' : 'Active'),
-                isPurpleBadge: !isPending,
+                badgeText: isPending ? 'Pending' : (isCurrentlyOpen ? 'Open' : 'Closed'),
+                isPurpleBadge: !isPending && isCurrentlyOpen,
                 isAmberBadge: isPending,
+                isRedBadge: !isPending && !isCurrentlyOpen,
                 onApprove: isPending ? () => _approveGallery(center, index) : null,
-                onToggleStatus: () => _toggleGalleryApproval(center, index),
+                onToggleStatus: () => _toggleArtCenterStatus(center, index),
                 onEdit: () => _showArtCenterDialog(existing: center, index: index),
                 onDelete: () {
                   _confirmDelete(
@@ -1669,6 +2227,47 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           ),
       ],
     );
+  }
+
+  Future<void> _toggleArtCenterStatus(Map<String, dynamic> center, int index) async {
+    final isCurrentlyOpen = center['currently_open'] == 1 || center['currently_open'] == true;
+    final isPending = _isItemPending(center);
+    final newOpen = isPending ? 1 : (isCurrentlyOpen ? 0 : 1);
+    final newStatus = isPending ? 'approved' : (newOpen == 1 ? 'approved' : 'inactive');
+
+    final updated = Map<String, dynamic>.from(center);
+    updated['currently_open'] = newOpen;
+    updated['status'] = newStatus;
+    updated['is_public'] = 1;
+    updated['is_approved'] = 1;
+
+    setState(() {
+      _artCenters[index] = updated;
+      final gIndex = _galleries.indexWhere((g) => g['id'] == center['id']);
+      if (gIndex != -1) _galleries[gIndex] = updated;
+    });
+
+    await sl<ApiService>().updateArtCenter({
+      'id': center['id'],
+      'currently_open': newOpen,
+      'status': newStatus,
+      'is_public': 1,
+      'is_approved': 1,
+    });
+    try {
+      sl<LiveSyncService>().notifyGalleriesChanged();
+    } catch (_) {}
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${center['name'] ?? 'Art Center'} is now ${newOpen == 1 ? "OPEN" : "CLOSED"}!'),
+          backgroundColor: newOpen == 1 ? const Color(0xFF6A2777) : const Color(0xFF64748B),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Future<void> _approveGallery(Map<String, dynamic> item, int index) async {
@@ -1760,6 +2359,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               final g = _govEntities[index];
               return _buildGovernmentCard(
                 entity: g,
+                index: index,
                 onEdit: () => _showGovernmentDialog(existing: g, index: index),
                 onDelete: () {
                   _confirmDelete(
@@ -1767,7 +2367,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     message: 'Are you sure you want to remove "${g.name}"?',
                     onConfirm: () async {
                       setState(() => _govEntities.removeAt(index));
-                      await sl<ApiService>().deleteGovernmentEntity(name: g.name);
+                      await sl<ApiService>().deleteGovernmentEntity(id: g.id, name: g.name);
                     },
                   );
                 },
@@ -1778,9 +2378,60 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     );
   }
 
+  Future<void> _toggleGovernmentOpen(GovernmentEntity entity, int index) async {
+    final newIsOpen = !entity.defaultIsOpen;
+    final newTiming = newIsOpen ? 'Open · Closes at 18:00' : 'Closed · Opens tomorrow';
+    final updated = GovernmentEntity(
+      id: entity.id,
+      name: entity.name,
+      defaultIsOpen: newIsOpen,
+      rating: entity.rating,
+      reviewCount: entity.reviewCount,
+      category: entity.category,
+      location: entity.location,
+      defaultTiming: newTiming,
+      websiteUrl: entity.websiteUrl,
+      directionsUrl: entity.directionsUrl,
+      googleMapsReviewsUrl: entity.googleMapsReviewsUrl,
+      reviews: entity.reviews,
+      openHour: entity.openHour,
+      openMinute: entity.openMinute,
+      closeHour: entity.closeHour,
+      closeMinute: entity.closeMinute,
+      closedDays: entity.closedDays,
+      seasonalNotice: entity.seasonalNotice,
+    );
+
+    setState(() {
+      _govEntities[index] = updated;
+    });
+
+    await sl<ApiService>().updateGovernmentEntity({
+      if (entity.id != null) 'id': entity.id,
+      'name': entity.name,
+      'currently_open': newIsOpen ? 1 : 0,
+      'status_text': newTiming,
+    });
+    try {
+      sl<LiveSyncService>().notifyGovernmentChanged();
+    } catch (_) {}
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${entity.name} is now ${newIsOpen ? "Open" : "Closed"}'),
+          backgroundColor: newIsOpen ? const Color(0xFF6A2777) : const Color(0xFF64748B),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   // Government Card matching Screenshot 2
   Widget _buildGovernmentCard({
     required GovernmentEntity entity,
+    required int index,
     required VoidCallback onEdit,
     required VoidCallback onDelete,
   }) {
@@ -1814,18 +2465,25 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   ),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: entity.defaultIsOpen ? const Color(0xFF6A2777) : const Color(0xFF94A3B8),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  entity.defaultIsOpen ? 'Open' : 'Closed',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => _toggleGovernmentOpen(entity, index),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: entity.defaultIsOpen ? const Color(0xFF6A2777) : const Color(0xFF64748B),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      entity.defaultIsOpen ? 'Open' : 'Closed',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -1893,14 +2551,41 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     required String title,
     required String subtitle,
     String? badgeText,
-    bool isStatusBadge = false,
     bool isPurpleBadge = false,
     bool isAmberBadge = false,
+    bool isGreenBadge = false,
+    bool isRedBadge = false,
     VoidCallback? onApprove,
     VoidCallback? onToggleStatus,
     VoidCallback? onEdit,
     VoidCallback? onDelete,
   }) {
+    Color badgeBg;
+    Color badgeFg;
+    Border? badgeBorder;
+
+    if (isPurpleBadge) {
+      badgeBg = const Color(0xFF6A2777);
+      badgeFg = Colors.white;
+      badgeBorder = null;
+    } else if (isAmberBadge) {
+      badgeBg = const Color(0xFFFEF3C7);
+      badgeFg = const Color(0xFFD97706);
+      badgeBorder = Border.all(color: const Color(0xFFFDE68A), width: 0.8);
+    } else if (isGreenBadge) {
+      badgeBg = const Color(0xFFDCFCE7);
+      badgeFg = const Color(0xFF16A34A);
+      badgeBorder = Border.all(color: const Color(0xFFBBF7D0), width: 0.8);
+    } else if (isRedBadge) {
+      badgeBg = const Color(0xFFFEE2E2);
+      badgeFg = const Color(0xFFDC2626);
+      badgeBorder = Border.all(color: const Color(0xFFFECACA), width: 0.8);
+    } else {
+      badgeBg = const Color(0xFFF1F5F9);
+      badgeFg = const Color(0xFF475569);
+      badgeBorder = Border.all(color: const Color(0xFFCBD5E1), width: 0.8);
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
@@ -1944,33 +2629,34 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             ),
           ),
           if (badgeText != null) ...[
-            InkWell(
-              onTap: onToggleStatus,
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isAmberBadge
-                      ? const Color(0xFFFEF3C7)
-                      : (isPurpleBadge
-                          ? const Color(0xFF6A2777)
-                          : (isStatusBadge ? const Color(0xFFF1F5F9) : const Color(0xFFF8FAFC))),
-                  borderRadius: BorderRadius.circular(12),
-                  border: isPurpleBadge
-                      ? null
-                      : Border.all(
-                          color: isAmberBadge ? const Color(0xFFFDE68A) : const Color(0xFFCBD5E1),
-                          width: 0.8,
+            MouseRegion(
+              cursor: onToggleStatus != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onToggleStatus,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: badgeBg,
+                    borderRadius: BorderRadius.circular(12),
+                    border: badgeBorder,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (onToggleStatus != null && (isPurpleBadge || isGreenBadge)) ...[
+                        const Icon(Icons.check, size: 11, color: Colors.white),
+                        const SizedBox(width: 3),
+                      ],
+                      Text(
+                        badgeText,
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                          color: badgeFg,
                         ),
-                ),
-                child: Text(
-                  badgeText,
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w600,
-                    color: isAmberBadge
-                        ? const Color(0xFFD97706)
-                        : (isPurpleBadge ? Colors.white : const Color(0xFF334155)),
+                      ),
+                    ],
                   ),
                 ),
               ),

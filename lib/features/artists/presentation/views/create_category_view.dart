@@ -99,7 +99,7 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Category "${_nameController.text}" saved to MySQL database!',
+                'Category "${_nameController.text}" created successfully!',
               ),
               backgroundColor: const Color(0xFF6A2777),
               behavior: SnackBarBehavior.floating,

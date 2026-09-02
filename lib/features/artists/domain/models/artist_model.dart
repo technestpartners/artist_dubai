@@ -24,6 +24,8 @@ class ArtistModel {
   final String phone;
   final String website;
   final String instagram;
+  final String status;
+  final bool isActive;
 
   const ArtistModel({
     required this.id,
@@ -44,6 +46,8 @@ class ArtistModel {
     this.phone = '',
     this.website = '',
     this.instagram = '',
+    this.status = 'active',
+    this.isActive = true,
   });
 
   factory ArtistModel.fromJson(Map<String, dynamic> json) {
@@ -67,6 +71,8 @@ class ArtistModel {
       phone: json['phone'] as String? ?? '',
       website: json['website'] as String? ?? '',
       instagram: json['instagram'] as String? ?? '',
+      status: json['status'] as String? ?? 'active',
+      isActive: json['is_active'] == 1 || json['is_active'] == true || json['is_active'] == '1' || json['status'] == 'active' || json['status'] == null,
     );
   }
 
@@ -110,6 +116,8 @@ class ArtistModel {
     String? phone,
     String? website,
     String? instagram,
+    String? status,
+    bool? isActive,
   }) {
     return ArtistModel(
       id: id ?? this.id,
@@ -130,6 +138,8 @@ class ArtistModel {
       phone: phone ?? this.phone,
       website: website ?? this.website,
       instagram: instagram ?? this.instagram,
+      status: status ?? this.status,
+      isActive: isActive ?? this.isActive,
     );
   }
 

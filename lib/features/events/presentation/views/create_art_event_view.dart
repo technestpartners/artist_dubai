@@ -9,15 +9,24 @@ import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
-import '../../../../core/widgets/app_top_bar.dart';
+
 import '../../../../core/widgets/app_cached_image.dart';
 
 import '../../domain/models/art_event_model.dart';
 
 class CreateArtEventView extends StatefulWidget {
   final ArtEventModel? event;
+  final bool isCalendar;
+  final bool fromAdmin;
+  final bool showBottomBar;
 
-  const CreateArtEventView({super.key, this.event});
+  const CreateArtEventView({
+    super.key,
+    this.event,
+    this.isCalendar = false,
+    this.fromAdmin = false,
+    this.showBottomBar = true,
+  });
 
   @override
   State<CreateArtEventView> createState() => _CreateArtEventViewState();
@@ -158,29 +167,171 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
   void _showImageSourceActionSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.white,
+      elevation: 20,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined, color: Color(0xFF6A2777)),
-              title: const Text('Choose from Gallery'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickImage(ImageSource.gallery);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt_outlined, color: Color(0xFF6A2777)),
-              title: const Text('Take a Photo'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickImage(ImageSource.camera);
-              },
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drag Handle
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+
+              // Header Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Upload Featured Image',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 20, color: Color(0xFF64748B)),
+                    onPressed: () => Navigator.pop(ctx),
+                    splashRadius: 20,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Option 1: Choose from Gallery
+              InkWell(
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickImage(ImageSource.gallery);
+                },
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF3E8FF),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.photo_library_rounded,
+                          color: Color(0xFF6A2777),
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Choose from Gallery',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF0F172A),
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Select a banner or photo from your device',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, color: Color(0xFF94A3B8)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Option 2: Take a Photo
+              InkWell(
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickImage(ImageSource.camera);
+                },
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF3E8FF),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt_rounded,
+                          color: Color(0xFF6A2777),
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Take a Photo',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF0F172A),
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Use your camera to capture an event image',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, color: Color(0xFF94A3B8)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -239,12 +390,11 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       },
     );
 
-    final hour = pickedTime?.hour ?? 18;
-    final minute = pickedTime?.minute ?? 0;
-    final dt = DateTime(pickedDate.year, pickedDate.month, pickedDate.day, hour, minute);
-
-    final formatted =
-        '${dt.day.toString().padLeft(2, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.year} ${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+    final datePart =
+        '${pickedDate.day.toString().padLeft(2, '0')}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.year}';
+    final formatted = pickedTime != null
+        ? '$datePart ${pickedTime.hour.toString().padLeft(2, '0')}:${pickedTime.minute.toString().padLeft(2, '0')}'
+        : datePart;
 
     setState(() {
       controller.text = formatted;
@@ -347,9 +497,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                isEdit
-                    ? 'Art Event updated successfully in database!'
-                    : 'Art Event saved dynamically to database!',
+                widget.isCalendar
+                    ? (isEdit ? 'Calendar event updated successfully!' : 'Event scheduled on calendar successfully!')
+                    : (isEdit ? 'Event updated successfully!' : 'Event created successfully!'),
               ),
               backgroundColor: const Color(0xFF6A2777),
               behavior: SnackBarBehavior.floating,
@@ -358,12 +508,12 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           if (context.canPop()) {
             context.pop();
           } else {
-            context.go(RouteNames.myEvents);
+            context.go(widget.fromAdmin ? RouteNames.adminDashboard : RouteNames.myEvents);
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Failed to save art event. Please check inputs.'),
+              content: Text('Failed to save event. Please check inputs.'),
               backgroundColor: Colors.redAccent,
               behavior: SnackBarBehavior.floating,
             ),
@@ -383,9 +533,43 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
   Widget build(BuildContext context) {
     final isEdit = widget.event != null;
 
+    final appBarTitle = widget.isCalendar
+        ? (isEdit ? 'Edit Calendar Event' : 'Add to Calendar')
+        : (isEdit ? 'Edit Event' : 'Create Event');
+
+    final headerTitle = widget.isCalendar
+        ? (isEdit ? 'EDIT CALENDAR EVENT' : 'SCHEDULE CALENDAR EVENT')
+        : (isEdit ? 'EDIT ART EVENT' : 'CREATE ART EVENT');
+
+    final headerSubtitle = widget.isCalendar
+        ? (isEdit ? 'Update scheduled exhibition or calendar date.' : 'Schedule an upcoming exhibition, showcase, or cultural date on the calendar.')
+        : (isEdit ? 'Update details, tickets, and photos for this event.' : 'Publish a new exhibition, workshop, or cultural gathering.');
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      appBar: const AppTopBar(backgroundColor: Colors.white),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF1E293B)),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(widget.fromAdmin ? RouteNames.adminDashboard : RouteNames.events);
+            }
+          },
+        ),
+        titleSpacing: 0,
+        title: Text(
+          appBarTitle,
+          style: const TextStyle(
+            color: Color(0xFF1E293B),
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -413,9 +597,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                 color: const Color(0xFF6A2777).withValues(alpha: 0.15),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
-                                Icons.event_note,
-                                color: Color(0xFF6A2777),
+                              child: Icon(
+                                widget.isCalendar ? Icons.calendar_month_rounded : Icons.event_note,
+                                color: const Color(0xFF6A2777),
                                 size: 24,
                               ),
                             ),
@@ -425,7 +609,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    isEdit ? 'EDIT ART EVENT' : 'CREATE ART EVENT',
+                                    headerTitle,
                                     style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -434,9 +618,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    isEdit
-                                        ? 'Update details, tickets, and photos for this event.'
-                                        : 'Publish a new exhibition, workshop, or cultural gathering.',
+                                    headerSubtitle,
                                     style: const TextStyle(
                                       fontSize: 12,
                                       color: Color(0xFF64748B),
@@ -736,7 +918,13 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
-                            onPressed: () => context.pop(),
+                            onPressed: () {
+                              if (context.canPop()) {
+                                context.pop();
+                              } else {
+                                context.go(widget.fromAdmin ? RouteNames.adminDashboard : RouteNames.events);
+                              }
+                            },
                             child: const Text('Cancel', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                           ),
                           ElevatedButton(
@@ -754,10 +942,12 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                     height: 18,
                                     child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                                   )
-                                : Text(
-                                    isEdit ? 'Update Event' : 'Create Event',
-                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                                  ),
+                                  : Text(
+                                      isEdit
+                                          ? (widget.isCalendar ? 'Update Calendar Event' : 'Update Event')
+                                          : (widget.isCalendar ? 'Schedule on Calendar' : 'Create Event'),
+                                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                    ),
                           ),
                         ],
                       ),
@@ -770,7 +960,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           ],
         ),
       ),
-      bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
+      bottomNavigationBar: (!widget.fromAdmin && !widget.isCalendar && widget.showBottomBar)
+          ? const AppBottomNavBar(currentIndex: 2)
+          : null,
     );
   }
 
@@ -826,11 +1018,12 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     int maxLines = 1,
     VoidCallback? onTap,
   }) {
-    return TextFormField(
+    final field = TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       maxLines: maxLines,
       readOnly: onTap != null,
+      enableInteractiveSelection: onTap == null,
       onTap: onTap,
       style: const TextStyle(
         fontSize: 14.5,
@@ -850,10 +1043,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                 : null,
         suffixIcon:
             suffixIcon != null
-                ? GestureDetector(
-                    onTap: onTap,
-                    child: Icon(suffixIcon, size: 18, color: const Color(0xFF64748B)),
-                  )
+                ? Icon(suffixIcon, size: 18, color: const Color(0xFF6A2777))
                 : null,
         filled: true,
         fillColor: Colors.white,
@@ -871,10 +1061,25 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFF5E227A), width: 1.5),
+          borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5),
         ),
       ),
     );
+
+    if (onTap != null) {
+      return MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: AbsorbPointer(
+            absorbing: true,
+            child: field,
+          ),
+        ),
+      );
+    }
+    return field;
   }
 
   Widget _buildDropdownField({

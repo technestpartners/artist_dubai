@@ -99,12 +99,19 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         });
       }
     });
+
+    _galleryLiveSub = sl<LiveSyncService>().galleriesStream.listen((_) {
+      if (mounted) _loadAllData();
+    });
   }
+
+  StreamSubscription<List<Map<String, dynamic>>>? _galleryLiveSub;
 
   @override
   void dispose() {
     _artistLiveSub?.cancel();
     _favLiveSub?.cancel();
+    _galleryLiveSub?.cancel();
     super.dispose();
   }
 
@@ -876,7 +883,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                           Navigator.pop(context);
                                           ScaffoldMessenger.of(context).showSnackBar(
                                             SnackBar(
-                                              content: Text('Gallery "$title" saved to database!'),
+                                              content: Text('Gallery "$title" created successfully!'),
                                               backgroundColor: const Color(0xFF6A2777),
                                               duration: const Duration(seconds: 2),
                                               behavior: SnackBarBehavior.floating,

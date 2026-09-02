@@ -61,6 +61,7 @@ class ReviewModel {
 }
 
 class GovernmentEntity {
+  final int? id;
   final String name;
   final bool defaultIsOpen;
   final double rating;
@@ -82,6 +83,7 @@ class GovernmentEntity {
   final String? seasonalNotice;
 
   const GovernmentEntity({
+    this.id,
     required this.name,
     required this.defaultIsOpen,
     required this.rating,
@@ -106,6 +108,7 @@ class GovernmentEntity {
     final defaultMapsUrl = 'https://www.google.com/maps/search/?api=1&query=$locationName+Dubai';
 
     return GovernmentEntity(
+      id: json['id'] != null ? int.tryParse(json['id'].toString()) : null,
       name: json['name'] as String? ?? 'Entity',
       defaultIsOpen: json['default_is_open'] == 1 || json['default_is_open'] == true || json['is_open'] == true,
       rating: double.tryParse(json['rating']?.toString() ?? '4.5') ?? 4.5,

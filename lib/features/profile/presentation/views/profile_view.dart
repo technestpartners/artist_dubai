@@ -323,7 +323,7 @@ class _ProfileViewState extends State<ProfileView> {
                               SnackBar(
                                 content: Text(
                                   success
-                                      ? 'Password updated successfully in MySQL!'
+                                      ? 'Password updated successfully!'
                                       : 'Failed to update password.',
                                 ),
                                 backgroundColor:
@@ -513,7 +513,7 @@ class _ProfileViewState extends State<ProfileView> {
                               });
                               messenger.showSnackBar(
                                 const SnackBar(
-                                  content: Text('Profile updated successfully in MySQL!'),
+                                  content: Text('Profile updated successfully!'),
                                   backgroundColor: Color(0xFF6A2777),
                                 ),
                               );
@@ -629,7 +629,7 @@ class _ProfileViewState extends State<ProfileView> {
                       if (mounted) {
                         messenger.showSnackBar(
                           const SnackBar(
-                            content: Text('Account deleted successfully from MySQL.'),
+                            content: Text('Account deleted successfully.'),
                             backgroundColor: Color(0xFFEF4444),
                           ),
                         );

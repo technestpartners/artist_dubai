@@ -822,7 +822,7 @@ class _SettingsViewState extends State<SettingsView> {
                                 border: Border.all(color: const Color(0xFFE2E8F0)),
                               ),
                               child: const Text(
-                                'Note: Account deletion permanently removes your account and all associated data from the MySQL database.',
+                                'Note: Account deletion permanently removes your account and all associated data.',
                                 style: TextStyle(
                                   fontSize: 12.5,
                                   color: Color(0xFF64748B),

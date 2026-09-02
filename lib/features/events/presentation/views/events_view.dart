@@ -208,6 +208,10 @@ class _EventsViewState extends State<EventsView> {
 
     final filteredEvents =
         _allEvents.where((e) {
+          if (!e.isActive) return false;
+          final st = e.status.toLowerCase().trim();
+          if (st == 'cancelled' || st == 'inactive' || st == 'draft' || st == 'deleted') return false;
+
           final matchesCategory =
               _selectedCategory == 'All Categories' ||
               e.category == _selectedCategory;
@@ -283,90 +287,6 @@ class _EventsViewState extends State<EventsView> {
                 ],
               ),
               const SizedBox(height: 12),
-
-              // Mode Switcher: Art Events | Competitions & Open Calls
-              Container(
-                margin: const EdgeInsets.only(bottom: 14),
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          if (_selectedTabIndex != 0) {
-                            setState(() => _selectedTabIndex = 0);
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          decoration: BoxDecoration(
-                            color: _selectedTabIndex == 0 ? const Color(0xFF6B267B) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: _selectedTabIndex == 0
-                                ? [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.08),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ]
-                                : null,
-                          ),
-                          child: Center(
-                            child: Text(
-                              'Art Events',
-                              style: TextStyle(
-                                color: _selectedTabIndex == 0 ? Colors.white : const Color(0xFF64748B),
-                                fontWeight: _selectedTabIndex == 0 ? FontWeight.w700 : FontWeight.w600,
-                                fontSize: 13.5,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          if (_selectedTabIndex != 1) {
-                            setState(() => _selectedTabIndex = 1);
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          decoration: BoxDecoration(
-                            color: _selectedTabIndex == 1 ? const Color(0xFF6B267B) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: _selectedTabIndex == 1
-                                ? [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.08),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ]
-                                : null,
-                          ),
-                          child: Center(
-                            child: Text(
-                              'Competitions & Open Calls',
-                              style: TextStyle(
-                                color: _selectedTabIndex == 1 ? Colors.white : const Color(0xFF64748B),
-                                fontWeight: _selectedTabIndex == 1 ? FontWeight.w700 : FontWeight.w600,
-                                fontSize: 13.5,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
 
               // Action Row (Home Breadcrumb & Wide Create Event Button)
               Row(

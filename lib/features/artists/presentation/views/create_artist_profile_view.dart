@@ -12,7 +12,9 @@ import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 
 class CreateArtistProfileView extends StatefulWidget {
-  const CreateArtistProfileView({super.key});
+  final bool fromAdmin;
+
+  const CreateArtistProfileView({super.key, this.fromAdmin = false});
 
   @override
   State<CreateArtistProfileView> createState() =>
@@ -1212,7 +1214,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
           ],
         ),
       ),
-      bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
+      bottomNavigationBar: widget.fromAdmin ? null : const AppBottomNavBar(currentIndex: 1),
     );
   }
 

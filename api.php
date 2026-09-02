@@ -285,7 +285,14 @@ class DatabaseManager {
             "ALTER TABLE artworks ADD INDEX idx_artworks_artist (artist_id)",
             "ALTER TABLE galleries ADD INDEX idx_gallery_cat (category)",
             "ALTER TABLE galleries ADD INDEX idx_gallery_status (status)",
-            "ALTER TABLE events ADD COLUMN galleries_json LONGTEXT NULL"
+            "ALTER TABLE events ADD COLUMN galleries_json LONGTEXT NULL",
+            "ALTER TABLE events ADD COLUMN status VARCHAR(50) DEFAULT 'active'",
+            "ALTER TABLE events ADD COLUMN is_active TINYINT(1) DEFAULT 1",
+            "ALTER TABLE artists ADD COLUMN status VARCHAR(50) DEFAULT 'active'",
+            "ALTER TABLE artists ADD COLUMN is_active TINYINT(1) DEFAULT 1",
+            "ALTER TABLE galleries ADD COLUMN event_name VARCHAR(255) NULL",
+            "ALTER TABLE galleries ADD COLUMN event_id VARCHAR(100) NULL",
+            "ALTER TABLE galleries ADD INDEX idx_gallery_event (event_name)"
         ];
         foreach ($migrations as $m) {
             try { $this->pdo->exec($m); } catch (\Throwable $t) {}
@@ -611,7 +618,7 @@ class AuthController {
         ApiResponse::success([
             'email' => $email,
             'full_name' => $newName
-        ], 'Profile updated successfully in MySQL');
+        ], 'Profile updated successfully');
     }
 
     public function profile(array $input): void {
@@ -666,7 +673,7 @@ class AuthController {
         $stmt->execute([$hash, $email]);
 
         if ($stmt->rowCount() > 0) {
-            ApiResponse::success([], 'Password updated successfully in MySQL');
+            ApiResponse::success([], 'Password updated successfully');
         } else {
             // User might exist with same password or not found
             $check = $this->db->prepare('SELECT id FROM users WHERE email = ?');
@@ -698,7 +705,7 @@ class AuthController {
             $this->db->prepare('DELETE FROM bookings WHERE email = ?')->execute([$email]);
             $this->db->prepare('DELETE FROM users WHERE id = ?')->execute([$userId]);
 
-            ApiResponse::success([], 'Account deleted successfully from MySQL');
+            ApiResponse::success([], 'Account deleted successfully');
         } else {
             ApiResponse::error('Account not found', 404);
         }
@@ -721,7 +728,7 @@ class CategoryController {
             $stmt = $this->db->query('SELECT * FROM categories ORDER BY id ASC');
         }
         $categories = $stmt->fetchAll();
-        ApiResponse::success($categories, 'Categories retrieved successfully from MySQL');
+        ApiResponse::success($categories, 'Categories retrieved successfully');
     }
 
     public function createCategory(array $input): void {
@@ -736,7 +743,7 @@ class CategoryController {
         $stmt = $this->db->prepare('INSERT INTO categories (name, description, emoji) VALUES (?, ?, ?)');
         $stmt->execute([$name, $description, $emoji]);
 
-        ApiResponse::success(['category_id' => (int)$this->db->lastInsertId()], 'Category created successfully in MySQL', 201);
+        ApiResponse::success(['category_id' => (int)$this->db->lastInsertId()], 'Category created successfully', 201);
     }
 }
 
@@ -813,7 +820,7 @@ class ArtistController {
             'has_more' => ($offset + count($artists)) < $total
         ];
 
-        ApiResponse::success($artists, 'Artists retrieved successfully from MySQL', 200, $pagination);
+        ApiResponse::success($artists, 'Artists retrieved successfully', 200, $pagination);
     }
 
     public function createArtist(array $input): void {
@@ -846,7 +853,7 @@ class ArtistController {
         $stmt = $this->db->prepare('INSERT INTO artists (user_id, name, category, location, bio, email, phone, website, instagram, experience_level, booking_rate, avatar_url, banner_url, followers_count, works_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)');
         $stmt->execute([$userId, $name, $category, $location, $bio, $email, $phone, $website, $instagram, $experience_level, $booking_rate, $avatar_url, $banner_url]);
 
-        ApiResponse::success(['artist_id' => (int)$this->db->lastInsertId()], 'Artist profile created successfully in MySQL', 201);
+        ApiResponse::success(['artist_id' => (int)$this->db->lastInsertId()], 'Artist profile created successfully', 201);
     }
 
     public function likeArtist(array $input): void {
@@ -978,7 +985,7 @@ class ArtistController {
             'works_count' => $works,
             'is_liked' => $isLiked,
             'is_following' => $isFollowing
-        ], 'Artist status retrieved from MySQL');
+        ], 'Artist status retrieved successfully');
     }
 
     public function getUserInteractions(array $query): void {
@@ -1009,7 +1016,7 @@ class ArtistController {
         ApiResponse::success([
             'liked_artist_ids'   => $likedIds,
             'followed_artist_ids' => $followedIds,
-        ], 'User interactions retrieved from MySQL');
+        ], 'User interactions retrieved successfully');
     }
 
     public function updateArtist(array $input): void {
@@ -1018,7 +1025,7 @@ class ArtistController {
 
         $fields = [];
         $params = [];
-        $allowed = ['name','category','location','bio','email','phone','website','instagram','experience_level','booking_rate','avatar_url','banner_url'];
+        $allowed = ['name','category','location','bio','email','phone','website','instagram','experience_level','booking_rate','avatar_url','banner_url','status','is_active'];
         foreach ($allowed as $f) {
             if (isset($input[$f])) {
                 $fields[] = "$f = ?";
@@ -1059,12 +1066,30 @@ class EventController {
             $stmt->execute([$id]);
             $event = $stmt->fetch();
             if ($event) {
+                $eventGalleries = [];
                 if (!empty($event['galleries_json'])) {
-                    $event['galleries'] = json_decode($event['galleries_json'], true);
-                } else {
-                    $event['galleries'] = [];
+                    $eventGalleries = json_decode($event['galleries_json'], true) ?: [];
                 }
-                ApiResponse::success($event, 'Event details fetched from MySQL');
+                try {
+                    $gStmt = $this->db->prepare('SELECT * FROM galleries WHERE (event_id = ? OR event_name = ? OR (description LIKE ?)) AND (status = "approved" OR status = "active" OR is_public = 1 OR is_approved = 1) ORDER BY id DESC');
+                    $gStmt->execute([$id, $event['title'], "%{$event['title']}%"]);
+                    $dbGals = $gStmt->fetchAll();
+                    foreach ($dbGals as $dg) {
+                        $imgs = !empty($dg['images_json']) ? json_decode($dg['images_json'], true) : [];
+                        if (empty($imgs) && !empty($dg['image_url'])) $imgs = [$dg['image_url']];
+                        $eventGalleries[] = [
+                            'id' => (int)$dg['id'],
+                            'title' => $dg['name'],
+                            'subtitle' => $dg['description'] ?: '',
+                            'image_url' => $dg['image_url'] ?: ($imgs[0] ?? ''),
+                            'photo_count' => count($imgs) ?: 1,
+                            'date' => $dg['created_at'] ?: '',
+                            'images' => $imgs,
+                        ];
+                    }
+                } catch (\Throwable $t) {}
+                $event['galleries'] = $eventGalleries;
+                ApiResponse::success($event, 'Event details retrieved successfully');
             } else {
                 ApiResponse::error('Event not found', 404);
             }
@@ -1116,11 +1141,29 @@ class EventController {
 
         // Attach event photo galleries if stored in MySQL
         foreach ($events as &$ev) {
+            $eventGalleries = [];
             if (!empty($ev['galleries_json'])) {
-                $ev['galleries'] = json_decode($ev['galleries_json'], true);
-            } else {
-                $ev['galleries'] = [];
+                $eventGalleries = json_decode($ev['galleries_json'], true) ?: [];
             }
+            try {
+                $gStmt = $this->db->prepare('SELECT * FROM galleries WHERE (event_id = ? OR event_name = ? OR (description LIKE ?)) AND (status = "approved" OR status = "active" OR is_public = 1 OR is_approved = 1) ORDER BY id DESC');
+                $gStmt->execute([$ev['id'], $ev['title'], "%{$ev['title']}%"]);
+                $dbGals = $gStmt->fetchAll();
+                foreach ($dbGals as $dg) {
+                    $imgs = !empty($dg['images_json']) ? json_decode($dg['images_json'], true) : [];
+                    if (empty($imgs) && !empty($dg['image_url'])) $imgs = [$dg['image_url']];
+                    $eventGalleries[] = [
+                        'id' => (int)$dg['id'],
+                        'title' => $dg['name'],
+                        'subtitle' => $dg['description'] ?: '',
+                        'image_url' => $dg['image_url'] ?: ($imgs[0] ?? ''),
+                        'photo_count' => count($imgs) ?: 1,
+                        'date' => $dg['created_at'] ?: '',
+                        'images' => $imgs,
+                    ];
+                }
+            } catch (\Throwable $t) {}
+            $ev['galleries'] = $eventGalleries;
         }
 
         $pagination = [
@@ -1131,7 +1174,7 @@ class EventController {
             'has_more' => ($offset + count($events)) < $total
         ];
 
-        ApiResponse::success($events, 'Events retrieved successfully from MySQL', 200, $pagination);
+        ApiResponse::success($events, 'Events retrieved successfully', 200, $pagination);
     }
 
     public function createEvent(array $input): void {
@@ -1173,7 +1216,7 @@ class EventController {
                      ->execute(["New Event: $title", "Explore the newly scheduled event '$title' in $location.", 'event', '/events', null]);
         } catch (\Throwable $nt) {}
 
-        ApiResponse::success(['event_id' => $newEventId], 'Event created successfully in MySQL', 201);
+        ApiResponse::success(['event_id' => $newEventId], 'Event created successfully', 201);
     }
 
     public function updateEvent(array $input): void {
@@ -1214,6 +1257,8 @@ class EventController {
         }
         if (!empty($eventDate)) { $fields[] = 'event_date = ?'; $params[] = $eventDate; }
         if ($maxAttendees !== null) { $fields[] = 'max_attendees = ?'; $params[] = $maxAttendees; }
+        if (isset($input['status'])) { $fields[] = 'status = ?'; $params[] = InputSanitizer::cleanString((string)$input['status']); }
+        if (isset($input['is_active'])) { $fields[] = 'is_active = ?'; $params[] = (int)$input['is_active']; }
 
         if (empty($fields)) {
             ApiResponse::error('No fields provided to update.', 400);
@@ -1225,7 +1270,7 @@ class EventController {
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
 
-        ApiResponse::success(['event_id' => $id], 'Event updated successfully in MySQL');
+        ApiResponse::success(['event_id' => $id], 'Event updated successfully');
     }
 
     public function deleteEvent(array $input): void {
@@ -1254,7 +1299,7 @@ class BookingController {
             $stmt = $this->db->query('SELECT * FROM bookings ORDER BY id DESC');
         }
         $bookings = $stmt->fetchAll();
-        ApiResponse::success($bookings, 'Bookings retrieved successfully from MySQL');
+        ApiResponse::success($bookings, 'Bookings retrieved successfully');
     }
 
     public function createBooking(array $input): void {
@@ -1320,7 +1365,7 @@ class BookingController {
             'requirements' => $requirements,
             'total_price' => $totalPrice,
             'status' => $status
-        ], 'Booking submitted successfully in MySQL', 201);
+        ], 'Booking submitted successfully', 201);
     }
 
     public function cancelBooking(array $input): void {
@@ -1332,7 +1377,7 @@ class BookingController {
         $stmt = $this->db->prepare("UPDATE bookings SET status = 'Cancelled' WHERE id = ?");
         $stmt->execute([$id]);
 
-        ApiResponse::success(['booking_id' => $id, 'status' => 'Cancelled'], 'Booking cancelled successfully in MySQL');
+        ApiResponse::success(['booking_id' => $id, 'status' => 'Cancelled'], 'Booking cancelled successfully');
     }
 
     public function downloadTicketPdf(array $query): void {
@@ -1471,6 +1516,16 @@ class BookingController {
         $this->db->prepare('UPDATE bookings SET status = ? WHERE id = ?')->execute([$status, $id]);
         ApiResponse::success(['id' => $id, 'status' => $status], 'Booking status updated');
     }
+
+    public function deleteBooking(array $input): void {
+        $id = (int)($input['id'] ?? $input['booking_id'] ?? 0);
+        if ($id <= 0) {
+            ApiResponse::error('Valid booking ID required.');
+            return;
+        }
+        $this->db->prepare('DELETE FROM bookings WHERE id = ?')->execute([$id]);
+        ApiResponse::success(['id' => $id], 'Booking deleted successfully');
+    }
 }
 
 class GalleryController {
@@ -1483,11 +1538,30 @@ class GalleryController {
     public function getGalleries(array $query = []): void {
         $artistId = InputSanitizer::cleanString($query['artist_id'] ?? '');
         $artistName = InputSanitizer::cleanString($query['artist_name'] ?? '');
+        $eventName = InputSanitizer::cleanString($query['event_name'] ?? $query['event'] ?? '');
+        $eventId = InputSanitizer::cleanString($query['event_id'] ?? '');
         $search = InputSanitizer::cleanString($query['search'] ?? $query['q'] ?? '');
 
         $page = max(1, (int)($query['page'] ?? 1));
         $limit = isset($query['limit']) ? min(200, max(1, (int)$query['limit'])) : (isset($query['all']) && $query['all'] == 1 ? 1000 : 50);
         $offset = ($page - 1) * $limit;
+
+        if (!empty($eventName) || !empty($eventId)) {
+            // Event-specific photo gallery
+            $sql = 'SELECT * FROM galleries WHERE (event_id = ? OR event_name = ? OR (event_name IS NOT NULL AND event_name != "" AND ? LIKE CONCAT("%", event_name, "%")) OR (description LIKE ?)) AND (status = "approved" OR status = "active" OR status = "1" OR is_public = 1 OR is_approved = 1) ORDER BY id DESC';
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$eventId, $eventName, $eventName, "%$eventName%"]);
+            $galleries = $stmt->fetchAll();
+            foreach ($galleries as &$g) {
+                $g['title'] = $g['name'];
+                $g['subtitle'] = !empty($g['description']) ? $g['description'] : '';
+                $g['image'] = !empty($g['image_url']) ? $g['image_url'] : '';
+                $g['count'] = ($g['photo_count'] ?? 1) . ' photos';
+                if (!empty($g['images_json'])) { $g['images'] = json_decode($g['images_json'], true); }
+            }
+            ApiResponse::success($galleries, 'Event galleries retrieved successfully');
+            return;
+        }
 
         if (!empty($artistId) || !empty($artistName)) {
             // Artist-specific photo gallery — return only galleries belonging to this artist
@@ -1502,7 +1576,7 @@ class GalleryController {
                 $g['count'] = ($g['photo_count'] ?? 1) . ' photos';
                 if (!empty($g['images_json'])) { $g['images'] = json_decode($g['images_json'], true); }
             }
-            ApiResponse::success($galleries, 'Artist galleries retrieved successfully from MySQL');
+            ApiResponse::success($galleries, 'Artist galleries retrieved successfully');
             return;
         }
 
@@ -1554,7 +1628,7 @@ class GalleryController {
             'has_more' => ($offset + count($galleries)) < $total
         ];
 
-        ApiResponse::success($galleries, 'Galleries retrieved successfully from MySQL', 200, $pagination);
+        ApiResponse::success($galleries, 'Galleries retrieved successfully', 200, $pagination);
     }
 
 
@@ -1570,6 +1644,8 @@ class GalleryController {
         $about = InputSanitizer::cleanString($input['about'] ?? $input['description'] ?? '');
         $artistId = InputSanitizer::cleanString($input['artist_id'] ?? '');
         $artistName = InputSanitizer::cleanString($input['artist_name'] ?? '');
+        $eventName = InputSanitizer::cleanString($input['event_name'] ?? '');
+        $eventId = InputSanitizer::cleanString($input['event_id'] ?? '');
         $photoCount = isset($input['photo_count']) ? (int)$input['photo_count'] : (isset($input['images']) && is_array($input['images']) ? count($input['images']) : 1);
         $imageUrl = InputSanitizer::cleanString($input['image_url'] ?? $input['image'] ?? '');
         $imagesJson = isset($input['images']) && is_array($input['images']) ? json_encode($input['images']) : null;
@@ -1582,8 +1658,8 @@ class GalleryController {
             return;
         }
 
-        $stmt = $this->db->prepare('INSERT INTO galleries (name, category, location, website, contact_person, email, phone, about, image_url, artist_id, artist_name, description, photo_count, images_json, status, is_public, is_approved) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        $stmt->execute([$name, $category, $location, $website, $contactPerson, $email, $phone, $about, $imageUrl, $artistId, $artistName, $description, $photoCount, $imagesJson, $status, $isPublic, $isApproved]);
+        $stmt = $this->db->prepare('INSERT INTO galleries (name, category, location, website, contact_person, email, phone, about, image_url, artist_id, artist_name, description, photo_count, images_json, status, is_public, is_approved, event_name, event_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$name, $category, $location, $website, $contactPerson, $email, $phone, $about, $imageUrl, $artistId, $artistName, $description, $photoCount, $imagesJson, $status, $isPublic, $isApproved, $eventName, $eventId]);
 
         $newId = (int)$this->db->lastInsertId();
 
@@ -1608,10 +1684,12 @@ class GalleryController {
             'image' => $imageUrl,
             'artist_id' => $artistId,
             'artist_name' => $artistName,
+            'event_name' => $eventName,
+            'event_id' => $eventId,
             'status' => $status,
             'is_public' => $isPublic,
             'is_approved' => $isApproved
-        ], 'Gallery registered successfully in MySQL', 201);
+        ], 'Gallery registered successfully', 201);
     }
 
     public function updateGallery(array $input): void {
@@ -1619,7 +1697,7 @@ class GalleryController {
         if ($id <= 0) { ApiResponse::error('Gallery ID is required.'); return; }
         $fields = [];
         $params = [];
-        $allowed = ['name','title','description','category','location','image_url','cover_url','status','is_public','is_approved','about','website','timing','currently_open','display_order','event_name'];
+        $allowed = ['name','title','description','category','location','image_url','cover_url','status','is_public','is_approved','about','website','timing','currently_open','display_order','event_name','event_id'];
         foreach ($allowed as $f) {
             if (isset($input[$f])) { $fields[] = "$f = ?"; $params[] = InputSanitizer::cleanString((string)$input[$f]); }
         }
@@ -1757,76 +1835,26 @@ class GovernmentController {
         ];
 
         try {
-            // Check and sync database records with exact fields
-            $checkStmt = $this->db->prepare("SELECT id FROM government_entities WHERE name = ?");
-            $updStmt = $this->db->prepare("UPDATE government_entities SET category = ?, location = ?, base_rating = ?, base_review_count = ?, rating = ?, review_count = ?, default_timing = ?, default_is_open = ?, website_url = ?, directions_url = ?, google_maps_reviews_url = ?, open_hour = ?, open_minute = ?, close_hour = ?, close_minute = ?, closed_days = ?, seasonal_notice = ? WHERE id = ?");
-            $insStmt = $this->db->prepare("INSERT INTO government_entities (name, category, location, base_rating, base_review_count, rating, review_count, default_timing, default_is_open, website_url, directions_url, google_maps_reviews_url, open_hour, open_minute, close_hour, close_minute, closed_days, seasonal_notice) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-
-            foreach ($baseEntities as $be) {
-                $checkStmt->execute([$be['name']]);
-                $existingId = $checkStmt->fetchColumn();
-                $closedDaysStr = is_array($be['closed_days'] ?? null) ? implode(',', $be['closed_days']) : ($be['closed_days'] ?? '');
-                if ($existingId) {
-                    $updStmt->execute([
-                        $be['category'],
-                        $be['location'],
-                        $be['base_rating'],
-                        $be['base_review_count'],
-                        $be['base_rating'],
-                        $be['base_review_count'],
-                        $be['default_timing'],
-                        $be['default_is_open'],
-                        $be['website_url'],
-                        $be['directions_url'],
-                        $be['google_maps_reviews_url'],
-                        $be['open_hour'] ?? 8,
-                        $be['open_minute'] ?? 0,
-                        $be['close_hour'] ?? 18,
-                        $be['close_minute'] ?? 0,
-                        $closedDaysStr,
-                        $be['seasonal_notice'] ?? null,
-                        $existingId
-                    ]);
-                } else {
+            // Only seed default entities if table is empty
+            $countStmt = $this->db->query("SELECT COUNT(*) FROM government_entities");
+            $totalCount = (int)$countStmt->fetchColumn();
+            if ($totalCount === 0) {
+                $insStmt = $this->db->prepare("INSERT INTO government_entities (name, category, location, base_rating, base_review_count, rating, review_count, default_timing, default_is_open, website_url, directions_url, google_maps_reviews_url, open_hour, open_minute, close_hour, close_minute, closed_days, seasonal_notice) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                foreach ($baseEntities as $be) {
+                    $closedDaysStr = is_array($be['closed_days'] ?? null) ? implode(',', $be['closed_days']) : ($be['closed_days'] ?? '');
                     $insStmt->execute([
-                        $be['name'],
-                        $be['category'],
-                        $be['location'],
-                        $be['base_rating'],
-                        $be['base_review_count'],
-                        $be['base_rating'],
-                        $be['base_review_count'],
-                        $be['default_timing'],
-                        $be['default_is_open'],
-                        $be['website_url'],
-                        $be['directions_url'],
-                        $be['google_maps_reviews_url'],
-                        $be['open_hour'] ?? 8,
-                        $be['open_minute'] ?? 0,
-                        $be['close_hour'] ?? 18,
-                        $be['close_minute'] ?? 0,
-                        $closedDaysStr,
-                        $be['seasonal_notice'] ?? null
+                        $be['name'], $be['category'], $be['location'],
+                        $be['base_rating'], $be['base_review_count'], $be['base_rating'], $be['base_review_count'],
+                        $be['default_timing'], $be['default_is_open'], $be['website_url'],
+                        $be['directions_url'], $be['google_maps_reviews_url'],
+                        $be['open_hour'] ?? 8, $be['open_minute'] ?? 0, $be['close_hour'] ?? 18, $be['close_minute'] ?? 0,
+                        $closedDaysStr, $be['seasonal_notice'] ?? null
                     ]);
                 }
             }
 
-            // Remove any outdated entities that are not among the 6 exact portals
-            $validNames = array_column($baseEntities, 'name');
-            $inClause = implode(',', array_fill(0, count($validNames), '?'));
-            $delStmt = $this->db->prepare("DELETE FROM government_entities WHERE name NOT IN ($inClause)");
-            $delStmt->execute($validNames);
-
-            // Clean up obsolete reviews table from MySQL database
-            $this->db->exec("DROP TABLE IF EXISTS reviews");
-
-            // Fetch records in exact requested order
-            $orderCases = [];
-            foreach ($validNames as $idx => $vName) {
-                $orderCases[] = "WHEN name = " . $this->db->quote($vName) . " THEN " . ($idx + 1);
-            }
-            $orderSql = "CASE " . implode(' ', $orderCases) . " ELSE 99 END ASC";
-            $stmtGov = $this->db->query("SELECT * FROM government_entities ORDER BY $orderSql");
+            // Fetch all records from database (preserves admin additions, edits, open/close status, and deletions!)
+            $stmtGov = $this->db->query("SELECT * FROM government_entities ORDER BY id ASC");
             $dbEntities = $stmtGov->fetchAll();
             if (empty($dbEntities)) {
                 $dbEntities = $baseEntities;
@@ -1856,7 +1884,7 @@ class GovernmentController {
             $entities[] = $ent;
         }
 
-        ApiResponse::success($entities, 'Government entities fetched successfully from MySQL');
+        ApiResponse::success($entities, 'Government entities fetched successfully');
     }
 
     public function createEntity(array $input): void {
@@ -1887,23 +1915,64 @@ class GovernmentController {
         $name = InputSanitizer::cleanString($input['name'] ?? '');
         if (empty($id) && empty($name)) {
             ApiResponse::error('Entity ID or name is required for update', 422);
+            return;
         }
-        $category = InputSanitizer::cleanString($input['type'] ?? $input['category'] ?? 'Government · Cultural Authority');
-        $location = InputSanitizer::cleanString($input['address'] ?? $input['location'] ?? 'Dubai, UAE');
-        $website = InputSanitizer::cleanString($input['website'] ?? $input['website_url'] ?? '');
-        $rating = (float)($input['rating'] ?? 4.5);
-        $reviews = (int)($input['reviews'] ?? $input['review_count'] ?? 100);
-        $timing = InputSanitizer::cleanString($input['status_text'] ?? $input['default_timing'] ?? 'Open · Closes at 18:00');
-        $isOpen = isset($input['is_open']) ? (int)$input['is_open'] : (isset($input['currently_open']) ? (int)$input['currently_open'] : 1);
+        
+        $fields = [];
+        $params = [];
+        if (isset($input['new_name']) && !empty($input['new_name'])) { 
+            $fields[] = 'name = ?'; 
+            $params[] = InputSanitizer::cleanString($input['new_name']); 
+        }
+        if (isset($input['type']) || isset($input['category'])) { 
+            $fields[] = 'category = ?'; 
+            $params[] = InputSanitizer::cleanString($input['type'] ?? $input['category']); 
+        }
+        if (isset($input['address']) || isset($input['location'])) { 
+            $fields[] = 'location = ?'; 
+            $params[] = InputSanitizer::cleanString($input['address'] ?? $input['location']); 
+        }
+        if (isset($input['website']) || isset($input['website_url'])) { 
+            $fields[] = 'website_url = ?'; 
+            $params[] = InputSanitizer::cleanString($input['website'] ?? $input['website_url']); 
+        }
+        if (isset($input['rating'])) { 
+            $fields[] = 'rating = ?'; 
+            $params[] = (float)$input['rating']; 
+        }
+        if (isset($input['reviews']) || isset($input['review_count'])) { 
+            $fields[] = 'review_count = ?'; 
+            $params[] = (int)($input['reviews'] ?? $input['review_count']); 
+        }
+        if (isset($input['status_text']) || isset($input['default_timing'])) { 
+            $fields[] = 'default_timing = ?'; 
+            $params[] = InputSanitizer::cleanString($input['status_text'] ?? $input['default_timing']); 
+        }
+        if (isset($input['currently_open'])) { 
+            $fields[] = 'default_is_open = ?'; 
+            $params[] = (int)$input['currently_open']; 
+        } elseif (isset($input['is_open'])) { 
+            $fields[] = 'default_is_open = ?'; 
+            $params[] = (int)$input['is_open']; 
+        } elseif (isset($input['default_is_open'])) { 
+            $fields[] = 'default_is_open = ?'; 
+            $params[] = (int)$input['default_is_open']; 
+        }
+
+        if (empty($fields)) {
+            ApiResponse::error('No fields provided to update', 422);
+            return;
+        }
 
         try {
             if (!empty($id)) {
-                $stmt = $this->db->prepare("UPDATE government_entities SET name = ?, category = ?, location = ?, base_rating = ?, base_review_count = ?, default_timing = ?, default_is_open = ?, website_url = ? WHERE id = ?");
-                $stmt->execute([$name, $category, $location, $rating, $reviews, $timing, $isOpen, $website, $id]);
+                $params[] = $id;
+                $sql = 'UPDATE government_entities SET ' . implode(', ', $fields) . ' WHERE id = ?';
             } else {
-                $stmt = $this->db->prepare("UPDATE government_entities SET category = ?, location = ?, base_rating = ?, base_review_count = ?, default_timing = ?, default_is_open = ?, website_url = ? WHERE name = ?");
-                $stmt->execute([$category, $location, $rating, $reviews, $timing, $isOpen, $website, $name]);
+                $params[] = $name;
+                $sql = 'UPDATE government_entities SET ' . implode(', ', $fields) . ' WHERE name = ?';
             }
+            $this->db->prepare($sql)->execute($params);
             ApiResponse::success(['id' => $id, 'name' => $name], 'Government entity updated successfully');
         } catch (\Throwable $e) {
             ApiResponse::error('Failed to update government entity: ' . $e->getMessage(), 500);
@@ -1989,7 +2058,7 @@ class ArtworkController {
             'has_more' => ($offset + count($artworks)) < $total
         ];
 
-        ApiResponse::success($artworks, 'Artworks retrieved successfully from MySQL', 200, $pagination);
+        ApiResponse::success($artworks, 'Artworks retrieved successfully', 200, $pagination);
     }
 
 
@@ -2032,7 +2101,7 @@ class ArtworkController {
             'price' => $price,
             'image_url' => $imageUrl,
             'is_featured' => $isFeatured,
-        ], 'Artwork created successfully in MySQL', 201);
+        ], 'Artwork created successfully', 201);
     }
 
     public function updateArtwork(array $input): void {
@@ -2118,7 +2187,7 @@ class FavoriteController {
                     'artists' => $artists,
                     'events' => $events,
                     'artworks' => $artworks
-                ], 'Favorites retrieved successfully from MySQL');
+                ], 'Favorites retrieved successfully');
                 return;
             }
         }
@@ -2127,7 +2196,7 @@ class FavoriteController {
             'artists' => [],
             'events' => [],
             'artworks' => []
-        ], 'Favorites retrieved successfully from MySQL');
+        ], 'Favorites retrieved successfully');
     }
 
     public function toggleFavorite(array $data): void {
@@ -2240,7 +2309,7 @@ class NotificationController {
             'notifications' => $notifs,
             'unread_count' => $unreadCount,
             'total' => $total,
-        ], 'Notifications retrieved successfully from MySQL');
+        ], 'Notifications retrieved successfully');
     }
 
     public function markAsRead(array $input): void {
@@ -2251,7 +2320,7 @@ class NotificationController {
         }
         $stmt = $this->db->prepare('UPDATE notifications SET is_read = 1 WHERE id = ?');
         $stmt->execute([$id]);
-        ApiResponse::success(['id' => $id, 'is_read' => true], 'Notification marked as read in MySQL');
+        ApiResponse::success(['id' => $id, 'is_read' => true], 'Notification marked as read');
     }
 
     public function markAllAsRead(array $input): void {
@@ -2262,7 +2331,7 @@ class NotificationController {
         } else {
             $this->db->exec('UPDATE notifications SET is_read = 1');
         }
-        ApiResponse::success(null, 'All notifications marked as read in MySQL');
+        ApiResponse::success(null, 'All notifications marked as read');
     }
 
     public function createNotification(array $input): void {
@@ -2291,7 +2360,7 @@ class NotificationController {
             'is_read' => false,
             'created_at' => date('Y-m-d H:i:s'),
             'time_ago' => 'Just now'
-        ], 'Notification created successfully in MySQL', 201);
+        ], 'Notification created successfully', 201);
     }
 
     public function deleteNotification(array $input): void {
@@ -2302,7 +2371,7 @@ class NotificationController {
         }
         $stmt = $this->db->prepare('DELETE FROM notifications WHERE id = ?');
         $stmt->execute([$id]);
-        ApiResponse::success(['id' => $id], 'Notification deleted from MySQL');
+        ApiResponse::success(['id' => $id], 'Notification deleted successfully');
     }
 }
 
@@ -2575,6 +2644,8 @@ class UnifiedMySqlApiRouter {
                     $booking->downloadTicketPdf($_GET);
                 } elseif ($action === 'cancel') {
                     $booking->cancelBooking($input);
+                } elseif ($action === 'delete') {
+                    $booking->deleteBooking(array_merge($input, $_GET));
                 } elseif ($action === 'update_status') {
                     $booking->updateBookingStatus(array_merge($input, $_GET));
                 } elseif ($action === 'list' || ($method === 'GET' && isset($_GET['all']))) {
