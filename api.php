@@ -1693,9 +1693,25 @@ class ReviewController {
         ApiResponse::success($reviews, 'Reviews retrieved successfully from MySQL');
     }
 
+    public function likeReview(array $input): void {
+        $reviewId = (int)($input['review_id'] ?? $input['id'] ?? 0);
+        if ($reviewId > 0) {
+            $stmt = $this->db->prepare("UPDATE reviews SET likes_count = likes_count + 1 WHERE id = ?");
+            $stmt->execute([$reviewId]);
+            $newLikes = (int)$this->db->query("SELECT likes_count FROM reviews WHERE id = $reviewId")->fetchColumn();
+            ApiResponse::success(['likes_count' => $newLikes], 'Review marked as helpful in MySQL');
+        } else {
+            ApiResponse::error('Invalid review ID', 400);
+        }
+    }
+
     public function createReview(array $input): void {
         $entityName = InputSanitizer::cleanString($input['entity_name'] ?? $input['entity'] ?? 'Art Dubai');
         $authorName = InputSanitizer::cleanString($input['author_name'] ?? $input['name'] ?? 'Guest Art Reviewer');
+        $authorPhoto = InputSanitizer::cleanString($input['author_photo'] ?? '');
+        if (empty($authorPhoto)) {
+            $authorPhoto = null;
+        }
         $rating = isset($input['rating']) ? (float)$input['rating'] : 5.0;
         $rating = max(1.0, min(5.0, $rating));
         $text = InputSanitizer::cleanString($input['text'] ?? $input['comment'] ?? 'Excellent experience!');
@@ -1703,8 +1719,13 @@ class ReviewController {
         $isLocalGuide = 1;
         $likesCount = 0;
 
-        $stmt = $this->db->prepare("INSERT INTO reviews (entity_name, author_name, rating, text, relative_time, is_local_guide, likes_count) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$entityName, $authorName, $rating, $text, $relativeTime, $isLocalGuide, $likesCount]);
+        $stmt = $this->db->prepare("INSERT INTO reviews (entity_name, author_name, author_photo, rating, text, relative_time, is_local_guide, likes_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$entityName, $authorName, $authorPhoto, $rating, $text, $relativeTime, $isLocalGuide, $likesCount]);
+
+        // Increment review_count in government_entities
+        try {
+            $this->db->prepare("UPDATE government_entities SET review_count = review_count + 1, base_review_count = base_review_count + 1 WHERE name = ?")->execute([$entityName]);
+        } catch (\Throwable $t) {}
 
         ApiResponse::success(['review_id' => (int)$this->db->lastInsertId()], 'Review submitted successfully in MySQL', 201);
     }
@@ -1904,32 +1925,33 @@ class GovernmentController {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
-            $revCount = (int)$this->db->query("SELECT COUNT(*) FROM reviews")->fetchColumn();
-            if ($revCount === 0) {
+            $hasPhotos = (int)$this->db->query("SELECT COUNT(*) FROM reviews WHERE author_photo IS NOT NULL")->fetchColumn();
+            if ($hasPhotos === 0) {
+                $this->db->exec("DELETE FROM reviews");
                 $seedReviews = [
-                    ['Dubai Culture & Arts Authority', 'Sultan Al-Marzooqi', null, 5.0, 'Fantastic support for traditional and contemporary Emirati artists. Their Al Shindagha facilities are world-class.', '1d ago', 1, 14],
-                    ['Dubai Culture & Arts Authority', 'Elena Rostova', null, 4.5, 'Very professional cultural foundation. Great licensing process and artist residency initiatives in Dubai.', '3d ago', 1, 8],
-                    ['Dubai Culture & Arts Authority', 'Mariam Al-Hashemi', null, 4.0, 'Beautiful heritage location in Al Shindagha and excellent community workshops.', '1w ago', 0, 5],
+                    ['Dubai Culture & Arts Authority', 'Mariam Al-Hashemi', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80', 4.0, 'Beautiful heritage location in Al Shindagha and excellent community workshops.', '5h ago', 0, 5],
+                    ['Dubai Culture & Arts Authority', 'Elena Rostova', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80', 5.0, 'Very professional cultural foundation. Great licensing process and artist residency initiatives in Dubai.', '5h ago', 1, 8],
+                    ['Dubai Culture & Arts Authority', 'Sultan Al-Marzooqi', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80', 5.0, 'Fantastic support for traditional and contemporary Emirati artists. Their Al Shindagha facilities are world-class.', '5h ago', 1, 14],
 
-                    ['Ministry of Culture & Youth', 'Rashid Al-Nuaimi', null, 4.5, 'Great federal grants and cultural funding initiatives for young UAE creators.', '2d ago', 1, 11],
-                    ['Ministry of Culture & Youth', 'Sarah Jenkins', null, 4.0, 'Helpful staff and swift cultural permits processing for international exhibitions.', '5d ago', 0, 4],
-                    ['Ministry of Culture & Youth', 'Khalid bin Thani', null, 4.0, 'Pioneering work in safeguarding national identity and advancing youth creative talent.', '2w ago', 1, 7],
+                    ['Ministry of Culture & Youth', 'Rashid Al-Nuaimi', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80', 4.5, 'Great federal grants and cultural funding initiatives for young UAE creators.', '1d ago', 1, 11],
+                    ['Ministry of Culture & Youth', 'Sarah Jenkins', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80', 4.0, 'Helpful staff and swift cultural permits processing for international exhibitions.', '3d ago', 0, 4],
+                    ['Ministry of Culture & Youth', 'Khalid bin Thani', 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80', 4.0, 'Pioneering work in safeguarding national identity and advancing youth creative talent.', '1w ago', 1, 7],
 
-                    ['Dubai Design District (d3)', 'Marcus Vance', null, 5.0, 'The heartbeat of Dubai design scene. Amazing galleries, showrooms, and coffee shops.', '4h ago', 1, 23],
-                    ['Dubai Design District (d3)', 'Noor Al-Sabah', null, 4.5, 'Incredible space for modern artists and annual design week events. Always inspiring.', '2d ago', 1, 16],
-                    ['Dubai Design District (d3)', 'Priya Sharma', null, 5.0, 'Vibrant creative atmosphere with top design agencies and contemporary installations.', '1w ago', 0, 9],
+                    ['Dubai Design District (d3)', 'Marcus Vance', 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=150&q=80', 5.0, 'The heartbeat of Dubai design scene. Amazing galleries, showrooms, and coffee shops.', '4h ago', 1, 23],
+                    ['Dubai Design District (d3)', 'Noor Al-Sabah', 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80', 4.5, 'Incredible space for modern artists and annual design week events. Always inspiring.', '2d ago', 1, 16],
+                    ['Dubai Design District (d3)', 'Priya Sharma', 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80', 5.0, 'Vibrant creative atmosphere with top design agencies and contemporary installations.', '5d ago', 0, 9],
 
-                    ['Art Dubai', 'David Chen', null, 5.0, 'The leading international art fair in the Middle East. Madinat Jumeirah is the perfect setting.', '1d ago', 1, 31],
-                    ['Art Dubai', 'Amira Khalfan', null, 4.5, 'Spectacular curations from Global South and MENA artists every spring.', '4d ago', 1, 18],
-                    ['Art Dubai', 'Jean-Luc Moreau', null, 4.5, 'Outstanding gallery selections and thought-provoking Global Art Forum talks.', '2w ago', 0, 12],
+                    ['Art Dubai', 'David Chen', 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80', 5.0, 'The leading international art fair in the Middle East. Madinat Jumeirah is the perfect setting.', '1d ago', 1, 31],
+                    ['Art Dubai', 'Amira Khalfan', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80', 4.5, 'Spectacular curations from Global South and MENA artists every spring.', '4d ago', 1, 18],
+                    ['Art Dubai', 'Jean-Luc Moreau', 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=150&q=80', 4.5, 'Outstanding gallery selections and thought-provoking Global Art Forum talks.', '2w ago', 0, 12],
 
-                    ['Alserkal Avenue', 'Tariq Mansoor', null, 5.0, 'Industrial warehouse aesthetic with world-class contemporary art galleries and independent cinema.', '6h ago', 1, 29],
-                    ['Alserkal Avenue', 'Chloe Dubois', null, 4.8, 'A must-visit for any art collector in Dubai. Great exhibitions and gallery nights all year.', '2d ago', 1, 19],
-                    ['Alserkal Avenue', 'Zayed Al-Maktoum', null, 5.0, 'A thriving cultural district that redefined the Dubai contemporary arts movement.', '1w ago', 1, 15],
+                    ['Alserkal Avenue', 'Tariq Mansoor', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80', 5.0, 'Industrial warehouse aesthetic with world-class contemporary art galleries and independent cinema.', '6h ago', 1, 29],
+                    ['Alserkal Avenue', 'Chloe Dubois', 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=150&q=80', 4.8, 'A must-visit for any art collector in Dubai. Great exhibitions and gallery nights all year.', '2d ago', 1, 19],
+                    ['Alserkal Avenue', 'Zayed Al-Maktoum', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80', 5.0, 'A thriving cultural district that redefined the Dubai contemporary arts movement.', '1w ago', 1, 15],
 
-                    ['Dubai Opera', 'Ahmed Al-Zahra', null, 5.0, 'Architectural masterpiece in Downtown. The acoustics and stage productions are phenomenal.', '3h ago', 1, 42],
-                    ['Dubai Opera', 'Liam Gallagher', null, 4.8, 'Breathtaking venue with stellar performances right beside Burj Khalifa.', '1d ago', 1, 27],
-                    ['Dubai Opera', 'Fatima Noor', null, 5.0, 'World-class ballet and orchestral concerts with flawless hospitality.', '3d ago', 1, 20],
+                    ['Dubai Opera', 'Ahmed Al-Zahra', 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=150&q=80', 5.0, 'Architectural masterpiece in Downtown. The acoustics and stage productions are phenomenal.', '3h ago', 1, 42],
+                    ['Dubai Opera', 'Liam Gallagher', 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=150&q=80', 4.8, 'Breathtaking venue with stellar performances right beside Burj Khalifa.', '1d ago', 1, 27],
+                    ['Dubai Opera', 'Fatima Noor', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80', 5.0, 'World-class ballet and orchestral concerts with flawless hospitality.', '3d ago', 1, 20],
                 ];
                 $revStmt = $this->db->prepare("INSERT INTO reviews (entity_name, author_name, author_photo, rating, text, relative_time, is_local_guide, likes_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
                 foreach ($seedReviews as $sr) {
@@ -2790,8 +2812,13 @@ class UnifiedMySqlApiRouter {
 
             case 'reviews':
                 $rev = new ReviewController();
-                if ($method === 'POST') $rev->createReview($input);
-                else $rev->getReviews($_GET);
+                if ($action === 'like' || $action === 'helpful') {
+                    $rev->likeReview($input);
+                } elseif ($method === 'POST') {
+                    $rev->createReview($input);
+                } else {
+                    $rev->getReviews($_GET);
+                }
                 break;
 
             case 'seed':

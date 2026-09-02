@@ -796,17 +796,9 @@ class _GoogleReviewsSheetState extends State<_GoogleReviewsSheet> {
                       ),
                       const SizedBox(width: 20),
 
-                      // Breakdown Bars
+                      // Dynamic Breakdown Bars
                       Expanded(
-                        child: Column(
-                          children: [
-                            _buildBreakdownBar('5', 0.78),
-                            _buildBreakdownBar('4', 0.16),
-                            _buildBreakdownBar('3', 0.04),
-                            _buildBreakdownBar('2', 0.01),
-                            _buildBreakdownBar('1', 0.01),
-                          ],
-                        ),
+                        child: _buildBreakdownBars(),
                       ),
                     ],
                   ),
@@ -904,6 +896,33 @@ class _GoogleReviewsSheetState extends State<_GoogleReviewsSheet> {
     );
   }
 
+  Widget _buildBreakdownBars() {
+    final total = _reviews.length;
+    double p5 = 0.78, p4 = 0.16, p3 = 0.04, p2 = 0.01, p1 = 0.01;
+    if (total > 0) {
+      final c5 = _reviews.where((r) => r.rating >= 4.5).length;
+      final c4 = _reviews.where((r) => r.rating >= 3.5 && r.rating < 4.5).length;
+      final c3 = _reviews.where((r) => r.rating >= 2.5 && r.rating < 3.5).length;
+      final c2 = _reviews.where((r) => r.rating >= 1.5 && r.rating < 2.5).length;
+      final c1 = _reviews.where((r) => r.rating < 1.5).length;
+      p5 = c5 / total;
+      p4 = c4 / total;
+      p3 = c3 / total;
+      p2 = c2 / total;
+      p1 = c1 / total;
+    }
+
+    return Column(
+      children: [
+        _buildBreakdownBar('5', p5),
+        _buildBreakdownBar('4', p4),
+        _buildBreakdownBar('3', p3),
+        _buildBreakdownBar('2', p2),
+        _buildBreakdownBar('1', p1),
+      ],
+    );
+  }
+
   Widget _buildBreakdownBar(String star, double percent) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 1.5),
@@ -956,6 +975,18 @@ class _GoogleReviewsSheetState extends State<_GoogleReviewsSheet> {
     );
   }
 
+  Color _getAvatarBg(String name) {
+    const bgColors = [
+      Color(0xFFE9D5FF),
+      Color(0xFFDBEAFE),
+      Color(0xFFDCFCE7),
+      Color(0xFFFEF3C7),
+      Color(0xFFFFE4E6),
+    ];
+    final idx = name.isEmpty ? 0 : name.codeUnitAt(0);
+    return bgColors[idx % bgColors.length];
+  }
+
   Widget _buildReviewItem(ReviewModel r) {
     final rId = r.id ?? r.hashCode;
     final isLiked = _likedReviewIds.contains(rId);
@@ -976,11 +1007,11 @@ class _GoogleReviewsSheetState extends State<_GoogleReviewsSheet> {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: const Color(0xFFE9D5FF),
+                backgroundColor: _getAvatarBg(r.authorName),
                 backgroundImage: (r.authorPhoto != null && r.authorPhoto!.isNotEmpty)
                     ? CachedNetworkImageProvider(r.authorPhoto!)
                     : null,
-                child: r.authorPhoto == null
+                child: (r.authorPhoto == null || r.authorPhoto!.isEmpty)
                     ? Text(
                         r.authorName.isNotEmpty ? r.authorName[0].toUpperCase() : 'A',
                         style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF6A2777)),
@@ -1048,7 +1079,7 @@ class _GoogleReviewsSheetState extends State<_GoogleReviewsSheet> {
 
           // Helpful / Like Button
           InkWell(
-            onTap: () {
+            onTap: () async {
               setState(() {
                 if (isLiked) {
                   _likedReviewIds.remove(rId);
@@ -1056,6 +1087,12 @@ class _GoogleReviewsSheetState extends State<_GoogleReviewsSheet> {
                   _likedReviewIds.add(rId);
                 }
               });
+              if (r.id != null) {
+                final newLikes = await sl<ApiService>().likeReview(reviewId: r.id!);
+                if (newLikes != null && mounted) {
+                  _fetchLiveReviews();
+                }
+              }
             },
             borderRadius: BorderRadius.circular(6),
             child: Padding(

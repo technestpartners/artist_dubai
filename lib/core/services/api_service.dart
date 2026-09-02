@@ -518,6 +518,19 @@ class ApiService {
     return false;
   }
 
+  Future<int?> likeReview({required int reviewId}) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.reviews}&action=helpful',
+        data: {'review_id': reviewId},
+      );
+      if (_isSuccess(res)) {
+        return (res['data']?['likes_count'] as num?)?.toInt();
+      }
+    } catch (_) {}
+    return null;
+  }
+
   // 7. Galleries (Instant Cache-First with artist filtering)
   Future<List<Map<String, dynamic>>> getGalleries({
     String? artistId,
