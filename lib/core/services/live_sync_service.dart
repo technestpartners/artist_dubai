@@ -130,20 +130,14 @@ class LiveSyncService {
     }
   }
 
-  Timer? _heartbeatTimer;
-
-  /// Start periodic multi-device live sync heartbeat across all active user devices
-  void startMultiDeviceSync({Duration interval = const Duration(seconds: 25)}) {
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = Timer.periodic(interval, (_) {
-      syncAllSilently(forceRefresh: true);
-    });
+  /// Strictly on-demand multi-device live sync (NO periodic loop/polling timer)
+  void startMultiDeviceSync({Duration? interval}) {
+    // Disabled polling loop to prevent continuous HTTP requests
   }
 
-  /// Stop periodic multi-device live sync heartbeat
+  /// Stop live sync timer
   void stopMultiDeviceSync() {
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = null;
+    // No-op
   }
 
   /// Lightweight multi-device sync for all active data from MySQL database
