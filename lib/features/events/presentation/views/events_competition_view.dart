@@ -18,6 +18,7 @@ class EventsCompetitionView extends StatefulWidget {
 class _EventsCompetitionViewState extends State<EventsCompetitionView> {
   List<Map<String, dynamic>> _competitions = [];
   StreamSubscription<List<ArtEventModel>>? _compSub;
+  bool _isLoading = true;
 
   static const Color _screenBg = Color(0xFF651B8A);
   static const Color _cardBg = Color(0xFF551478);
@@ -29,6 +30,11 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
   @override
   void initState() {
     super.initState();
+    final cached = sl<ApiService>().cachedCompetitions;
+    if (cached != null && cached.isNotEmpty) {
+      _competitions = List.from(cached);
+      _isLoading = false;
+    }
     _fetchCompetitions();
     _compSub = sl<LiveSyncService>().eventsStream.listen((_) {
       _fetchCompetitions(forceRefresh: true);
@@ -43,14 +49,22 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
 
   Future<void> _fetchCompetitions({bool forceRefresh = false}) async {
     if (!mounted) return;
+    if (_competitions.isEmpty) {
+      setState(() => _isLoading = true);
+    }
     try {
       final data = await sl<ApiService>().getCompetitions(forceRefresh: forceRefresh);
       if (mounted) {
         setState(() {
           _competitions = data;
+          _isLoading = false;
         });
       }
-    } catch (_) {}
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -60,9 +74,13 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
       appBar: const AppTopBar(),
       body: SafeArea(
         top: false,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Padding(
+        child: RefreshIndicator(
+          color: const Color(0xFF651B8A),
+          backgroundColor: Colors.white,
+          onRefresh: () => _fetchCompetitions(forceRefresh: true),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,8 +106,18 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                 ),
                 const SizedBox(height: 24),
 
-                // 2. Main Announcement Card / List
-                if (_competitions.isEmpty) ...[
+                // 2. Loading State OR Empty State OR Main Announcement List
+                if (_isLoading && _competitions.isEmpty) ...[
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 48.0),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2.5,
+                      ),
+                    ),
+                  ),
+                ] else if (_competitions.isEmpty) ...[
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
@@ -158,9 +186,10 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
           ),
         ),
       ),
-      bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
-    );
-  }
+    ),
+    bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
+  );
+}
 
 
 
