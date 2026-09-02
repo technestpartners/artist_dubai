@@ -190,9 +190,9 @@ class _ArtistsViewState extends State<ArtistsView> {
     try {
       final userEmail = _getEffectiveEmail();
       final results = await Future.wait([
-        sl<ApiService>().getCategories(),
-        sl<ApiService>().getArtists(),
-        sl<ApiService>().getFavorites(email: userEmail),
+        sl<ApiService>().getCategories(forceRefresh: true),
+        sl<ApiService>().getArtists(forceRefresh: true),
+        sl<ApiService>().getFavorites(email: userEmail, forceRefresh: true),
       ]);
 
       final categories = results[0] as List<CategoryInfo>;
@@ -210,6 +210,30 @@ class _ArtistsViewState extends State<ArtistsView> {
         });
       }
     } catch (_) {}
+  }
+
+  void _openArtistDetail(ArtistModel artist) async {
+    final result = await Navigator.push<bool?>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ArtistDetailView(
+          artist: artist,
+          initialIsFavorited: _favoritedArtistIds.contains(artist.id),
+        ),
+      ),
+    );
+    if (result != null && mounted) {
+      setState(() {
+        if (result == true) {
+          _favoritedArtistIds.add(artist.id);
+        } else {
+          _favoritedArtistIds.remove(artist.id);
+        }
+      });
+    }
+    if (mounted) {
+      await _fetchData();
+    }
   }
 
   bool get _isLoggedIn {
@@ -563,18 +587,7 @@ class _ArtistsViewState extends State<ArtistsView> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ArtistDetailView(
-                artist: artist,
-                initialIsFavorited: _favoritedArtistIds.contains(artist.id),
-              ),
-            ),
-          );
-          if (mounted) _fetchData();
-        },
+        onTap: () => _openArtistDetail(artist),
         borderRadius: BorderRadius.circular(16),
         child: Container(
           decoration: BoxDecoration(
@@ -786,19 +799,7 @@ class _ArtistsViewState extends State<ArtistsView> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        onPressed: () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (context) => ArtistDetailView(
-                                    artist: artist,
-                                    initialIsFavorited: _favoritedArtistIds.contains(artist.id),
-                                  ),
-                            ),
-                          );
-                          if (mounted) _fetchData();
-                        },
+                        onPressed: () => _openArtistDetail(artist),
                         child: const Text(
                           'View Profile',
                           style: TextStyle(

@@ -13,10 +13,9 @@ if (!headers_sent()) {
     header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, If-None-Match");
     header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
     header("Content-Type: application/json; charset=UTF-8");
-    if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'GET') {
-        header("Cache-Control: public, max-age=60, stale-while-revalidate=300");
-        header("Vary: Accept-Encoding, Origin");
-    }
+    header("Cache-Control: no-cache, no-store, must-revalidate, max-age=0");
+    header("Pragma: no-cache");
+    header("Expires: 0");
 }
 
 if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS') {

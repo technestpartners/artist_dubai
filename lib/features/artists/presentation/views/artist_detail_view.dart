@@ -965,7 +965,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                     ),
                     onPressed: () {
                       if (context.canPop()) {
-                        context.pop();
+                        context.pop(_isArtistFavorited);
                       } else {
                         context.go(RouteNames.home);
                       }
