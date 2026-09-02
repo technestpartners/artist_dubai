@@ -550,13 +550,14 @@ class _ArtistsViewState extends State<ArtistsView> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {
-          Navigator.push(
+        onTap: () async {
+          await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => ArtistDetailView(artist: artist),
             ),
           );
+          if (mounted) _fetchData();
         },
         borderRadius: BorderRadius.circular(16),
         child: Container(
@@ -769,14 +770,15 @@ class _ArtistsViewState extends State<ArtistsView> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        onPressed: () {
-                          Navigator.push(
+                        onPressed: () async {
+                          await Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder:
                                   (context) => ArtistDetailView(artist: artist),
                             ),
                           );
+                          if (mounted) _fetchData();
                         },
                         child: const Text(
                           'View Profile',

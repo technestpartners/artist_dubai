@@ -39,6 +39,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
   late int _followersCount;
   late int _worksCount;
   StreamSubscription<List<ArtistModel>>? _artistLiveSub;
+  StreamSubscription<Map<String, dynamic>>? _favLiveSub;
 
   List<Map<String, dynamic>> _photoGalleries = [];
 
@@ -46,21 +47,31 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
   void initState() {
     super.initState();
     final artist = widget.artist;
-    _likesCount = (artist != null && artist.likesCount > 0)
-        ? artist.likesCount
-        : (artist != null && artist.followersCount > 0 ? artist.followersCount ~/ 3 : 142);
-    _followersCount = (artist != null && artist.followersCount > 0) ? artist.followersCount : 38;
-    _worksCount = (artist != null && artist.worksCount > 0) ? artist.worksCount : 6;
+    _likesCount = artist?.likesCount ?? 0;
+    _followersCount = artist?.followersCount ?? 0;
+    _worksCount = artist?.worksCount ?? 0;
     _loadAllData();
+
     _artistLiveSub = sl<LiveSyncService>().artistsStream.listen((artists) {
       if (mounted && widget.artist != null) {
         final match = artists.where((a) => a.id == widget.artist!.id).firstOrNull;
         if (match != null) {
           setState(() {
+            _likesCount = match.likesCount;
             _followersCount = match.followersCount;
             _worksCount = match.worksCount;
           });
         }
+      }
+    });
+
+    _favLiveSub = sl<LiveSyncService>().favoritesStream.listen((favData) {
+      if (mounted && widget.artist != null) {
+        final favArtists = (favData['artists'] as List<ArtistModel>?) ?? [];
+        final isFav = favArtists.any((a) => a.id == widget.artist!.id);
+        setState(() {
+          _isArtistFavorited = isFav;
+        });
       }
     });
   }
@@ -68,6 +79,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
   @override
   void dispose() {
     _artistLiveSub?.cancel();
+    _favLiveSub?.cancel();
     super.dispose();
   }
 
@@ -98,18 +110,22 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
           artistId: artist?.id,
           artistName: artist?.name,
         ),
-        if (artist != null && userEmail.isNotEmpty)
+        if (artist != null)
           sl<ApiService>().getArtistInteractionStatus(
             artistId: artist.id,
             userEmail: userEmail,
           )
         else
           Future.value(null),
+        sl<ApiService>().getFavorites(email: userEmail),
       ]);
 
       final rawGalleries = results[0] as List<Map<String, dynamic>>? ?? [];
       final artworks = results[1] as List<Map<String, dynamic>>? ?? [];
       final status = results[2] as Map<String, dynamic>?;
+      final favData = results[3] as Map<String, dynamic>? ?? {};
+      final favArtists = (favData['artists'] as List<ArtistModel>?) ?? [];
+      final isFavInBackend = artist != null && favArtists.any((a) => a.id == artist.id);
 
       // Filter out physical art centers that don't belong to this artist
       final galleries = rawGalleries.where((g) {
@@ -130,7 +146,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
             _worksCount = artworks.length;
           }
           if (status != null) {
-            _isArtistFavorited = status['is_liked'] == true;
+            _isArtistFavorited = (status['is_liked'] == true) || isFavInBackend;
             _isFollowing = status['is_following'] == true;
             if (status['likes_count'] != null) {
               _likesCount = (status['likes_count'] as num).toInt();
@@ -138,6 +154,8 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
             if (status['followers_count'] != null) {
               _followersCount = (status['followers_count'] as num).toInt();
             }
+          } else {
+            _isArtistFavorited = isFavInBackend;
           }
         });
       }
