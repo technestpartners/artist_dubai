@@ -95,20 +95,7 @@ class _ArtistsViewState extends State<ArtistsView> {
         final newLikes = wasFav
             ? (old.likesCount - 1).clamp(0, 999999)
             : (old.likesCount + 1);
-        _allArtists[updatedIndex] = ArtistModel(
-          id: old.id,
-          name: old.name,
-          category: old.category,
-          bio: old.bio,
-          location: old.location,
-          bannerUrl: old.bannerUrl,
-          avatarUrl: old.avatarUrl,
-          isFeatured: old.isFeatured,
-          tags: old.tags,
-          worksCount: old.worksCount,
-          followersCount: old.followersCount,
-          likesCount: newLikes,
-        );
+        _allArtists[updatedIndex] = old.copyWith(likesCount: newLikes);
       }
     });
 
@@ -130,18 +117,7 @@ class _ArtistsViewState extends State<ArtistsView> {
         final updatedIndex = _allArtists.indexWhere((a) => a.id == artist.id);
         if (updatedIndex != -1 && res['likes_count'] != null) {
           final old = _allArtists[updatedIndex];
-          _allArtists[updatedIndex] = ArtistModel(
-            id: old.id,
-            name: old.name,
-            category: old.category,
-            bio: old.bio,
-            location: old.location,
-            bannerUrl: old.bannerUrl,
-            avatarUrl: old.avatarUrl,
-            isFeatured: old.isFeatured,
-            tags: old.tags,
-            worksCount: old.worksCount,
-            followersCount: old.followersCount,
+          _allArtists[updatedIndex] = old.copyWith(
             likesCount: (res['likes_count'] as num).toInt(),
           );
         }

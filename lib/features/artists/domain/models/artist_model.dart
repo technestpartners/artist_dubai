@@ -91,6 +91,48 @@ class ArtistModel {
     };
   }
 
+  ArtistModel copyWith({
+    String? id,
+    String? name,
+    String? category,
+    String? bio,
+    String? location,
+    String? bannerUrl,
+    String? avatarUrl,
+    bool? isFeatured,
+    List<String>? tags,
+    int? worksCount,
+    int? followersCount,
+    int? likesCount,
+    String? experienceLevel,
+    String? bookingRate,
+    String? email,
+    String? phone,
+    String? website,
+    String? instagram,
+  }) {
+    return ArtistModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      category: category ?? this.category,
+      bio: bio ?? this.bio,
+      location: location ?? this.location,
+      bannerUrl: bannerUrl ?? this.bannerUrl,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      isFeatured: isFeatured ?? this.isFeatured,
+      tags: tags ?? this.tags,
+      worksCount: worksCount ?? this.worksCount,
+      followersCount: followersCount ?? this.followersCount,
+      likesCount: likesCount ?? this.likesCount,
+      experienceLevel: experienceLevel ?? this.experienceLevel,
+      bookingRate: bookingRate ?? this.bookingRate,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      website: website ?? this.website,
+      instagram: instagram ?? this.instagram,
+    );
+  }
+
   static const List<CategoryInfo> categoryList = [
     CategoryInfo(name: 'Calligraphy & Typography', emoji: '✍️'),
     CategoryInfo(name: 'Contemporary Painting', emoji: '🎨'),
