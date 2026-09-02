@@ -85,7 +85,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       if (mounted) {
         setState(() {
           _galleries = list;
-          _artCenters = list.where((g) => (g['category'] ?? '').toString().toLowerCase().contains('center') || (g['name'] ?? '').toString().toLowerCase().contains('center')).toList();
+          _artCenters = list;
         });
       }
     });
@@ -127,7 +127,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           _artists = results[0] as List<ArtistModel>;
           _events = results[1] as List<ArtEventModel>;
           _galleries = galleries;
-          _artCenters = galleries.where((g) => (g['category'] ?? '').toString().toLowerCase().contains('center') || (g['name'] ?? '').toString().toLowerCase().contains('center')).toList();
+          _artCenters = galleries;
           _bookings = results[3] as List<Map<String, dynamic>>;
           _govEntities = results[4] as List<GovernmentEntity>;
         });
@@ -1463,12 +1463,13 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (context, index) {
               final center = _artCenters[index];
-              final name = center['name'] as String? ?? 'Art Center';
-              final location = center['location'] as String? ?? 'Dubai, UAE';
+              final name = (center['name'] ?? center['title'] ?? 'Art Center').toString();
+              final subtitle = (center['category'] ?? center['location'] ?? center['address'] ?? 'Dubai, UAE').toString();
+              final isCurrentlyOpen = center['currently_open'] == 1 || center['currently_open'] == true;
               return _buildListItemCard(
                 title: name,
-                subtitle: location,
-                badgeText: 'Open',
+                subtitle: subtitle,
+                badgeText: isCurrentlyOpen ? 'Open' : 'Active',
                 isPurpleBadge: true,
                 onEdit: () => _showArtCenterDialog(existing: center, index: index),
                 onDelete: () {
