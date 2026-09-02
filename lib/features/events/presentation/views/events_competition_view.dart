@@ -18,8 +18,8 @@ class EventsCompetitionView extends StatefulWidget {
 class _EventsCompetitionViewState extends State<EventsCompetitionView>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  List<Map<String, dynamic>> _competitions = [];
-  bool _isLoading = true;
+  List<Map<String, dynamic>> _competitions = List.from(ApiService.mockCompetitions);
+  bool _isLoading = false;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   StreamSubscription<List<ArtEventModel>>? _compSub;
@@ -53,12 +53,11 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView>
 
   Future<void> _fetchCompetitions({bool forceRefresh = false}) async {
     if (!mounted) return;
-    setState(() => _isLoading = _competitions.isEmpty);
     try {
       final data = await sl<ApiService>().getCompetitions(forceRefresh: forceRefresh);
       if (mounted) {
         setState(() {
-          _competitions = data;
+          _competitions = data.isNotEmpty ? data : List.from(ApiService.mockCompetitions);
           _isLoading = false;
         });
       }
