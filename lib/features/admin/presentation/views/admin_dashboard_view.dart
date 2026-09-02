@@ -740,6 +740,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                           child: DropdownButton<String?>(
                             value: selectedEvent,
                             isExpanded: true,
+                            dropdownColor: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            elevation: 4,
+                            menuMaxHeight: 280,
                             icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF64748B)),
                             hint: const Text(
                               'No event',
@@ -748,7 +752,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             items: [
                               const DropdownMenuItem<String?>(
                                 value: null,
-                                child: Text('No event', style: TextStyle(fontSize: 13.5, color: Color(0xFF1E293B))),
+                                child: Text('No event', style: TextStyle(fontSize: 13.5, color: Color(0xFF1E293B), fontWeight: FontWeight.w500)),
                               ),
                               ..._events.map((e) => DropdownMenuItem<String?>(
                                     value: e.title,
