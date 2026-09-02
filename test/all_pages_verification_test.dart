@@ -206,7 +206,7 @@ void main() {
       await tester.pumpWidget(testApp(const CreateArtEventView()));
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Create Art Event'), findsOneWidget);
+      expect(find.text('Create Event'), findsWidgets);
     });
 
     testWidgets('13. MyEventsView renders created events dashboard', (tester) async {

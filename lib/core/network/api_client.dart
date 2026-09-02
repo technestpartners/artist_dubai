@@ -169,6 +169,18 @@ class ApiClientImpl implements ApiClient {
       final response = await request();
       return response.data;
     } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        // Retry once on transient network/timeout error
+        try {
+          await Future.delayed(const Duration(milliseconds: 600));
+          final retryResponse = await request();
+          return retryResponse.data;
+        } on DioException catch (retryError) {
+          _handleDioError(retryError);
+        }
+      }
       _handleDioError(e);
     } catch (e) {
       throw ServerException(message: e.toString());
@@ -176,6 +188,20 @@ class ApiClientImpl implements ApiClient {
   }
 
   void _handleDioError(DioException error) {
+    if (error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.receiveTimeout ||
+        error.type == DioExceptionType.sendTimeout) {
+      throw const NetworkException(
+        message: 'Connection timed out. Please check your internet connection and try again.',
+      );
+    }
+
+    if (error.type == DioExceptionType.connectionError) {
+      throw const NetworkException(
+        message: 'Unable to reach server. Please check your internet connection and try again.',
+      );
+    }
+
     final statusCode = error.response?.statusCode;
     final data = error.response?.data;
 

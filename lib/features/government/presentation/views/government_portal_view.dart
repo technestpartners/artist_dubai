@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
+import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../domain/models/government_entity.dart';
@@ -15,9 +16,8 @@ class GovernmentPortalView extends StatefulWidget {
   @override
   State<GovernmentPortalView> createState() => _GovernmentPortalViewState();
 }
-
 class _GovernmentPortalViewState extends State<GovernmentPortalView> {
-  List<GovernmentEntity> _entities = GovernmentEntity.entities;
+  List<GovernmentEntity> _entities = [];
   StreamSubscription<List<GovernmentEntity>>? _govSub;
 
   @override
@@ -25,7 +25,7 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
     super.initState();
     _fetchEntities();
     _govSub = sl<LiveSyncService>().governmentStream.listen((entities) {
-      if (mounted && entities.isNotEmpty) {
+      if (mounted) {
         setState(() {
           _entities = entities;
         });
@@ -301,11 +301,15 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
                   color: Color(0xFF64748B),
                 ),
                 const SizedBox(width: 4),
-                Text(
-                  entity.location,
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    color: Color(0xFF64748B),
+                Expanded(
+                  child: Text(
+                    entity.location,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      color: Color(0xFF64748B),
+                    ),
                   ),
                 ),
               ],
@@ -345,13 +349,17 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
                           size: 18,
                           color: Color(0xFF6A2777),
                         ),
-                        SizedBox(width: 8),
-                        Text(
-                          'Website',
-                          style: TextStyle(
-                            color: Color(0xFF6A2777),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                        SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            'Website',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Color(0xFF6A2777),
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ],
@@ -378,13 +386,17 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
                           size: 18,
                           color: Color(0xFF6A2777),
                         ),
-                        SizedBox(width: 8),
-                        Text(
-                          'Directions',
-                          style: TextStyle(
-                            color: Color(0xFF6A2777),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                        SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            'Directions',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Color(0xFF6A2777),
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ],
@@ -443,7 +455,8 @@ class _GoogleReviewsSheetState extends State<_GoogleReviewsSheet> {
 
   void _showAddReviewModal() {
     double selectedRating = 5.0;
-    final nameCtrl = TextEditingController(text: 'Renish');
+    final loggedInUser = sl<StorageService>().getString('user_name') ?? '';
+    final nameCtrl = TextEditingController(text: loggedInUser);
     final commentCtrl = TextEditingController();
 
     showDialog(

@@ -8,19 +8,19 @@ class HomeHeaderWidget extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final screenWidth = constraints.maxWidth;
-        final logoSize = (screenWidth * 0.26).clamp(92.0, 125.0);
-        final titleFontSize = (screenWidth * 0.052).clamp(18.0, 24.0);
-        final subtitleFontSize = (screenWidth * 0.028).clamp(10.0, 13.0);
+        final logoSize = (screenWidth * 0.22).clamp(64.0, 110.0);
+        final titleFontSize = (screenWidth * 0.048).clamp(16.0, 22.0);
+        final subtitleFontSize = (screenWidth * 0.026).clamp(9.5, 12.5);
 
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 6.0),
+          padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
           child: Center(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Enlarged Logo Image
+                // Responsive Logo Image
                 SizedBox(
                   width: logoSize,
                   height: logoSize,
@@ -29,12 +29,12 @@ class HomeHeaderWidget extends StatelessWidget {
                     fit: BoxFit.contain,
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 10),
 
-                // Header Titles (Aligned to exact same width)
-                IntrinsicWidth(
+                // Header Titles
+                Flexible(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
@@ -46,19 +46,20 @@ class HomeHeaderWidget extends StatelessWidget {
                           letterSpacing: 0.4,
                           height: 1.1,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
-                      FittedBox(
-                        fit: BoxFit.fitWidth,
-                        child: Text(
-                          'COMMUNITY PLATFORM',
-                          style: TextStyle(
-                            color: const Color(0xFFD4C2F0),
-                            fontSize: subtitleFontSize,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 1.0,
-                          ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'COMMUNITY PLATFORM',
+                        style: TextStyle(
+                          color: const Color(0xFFD4C2F0),
+                          fontSize: subtitleFontSize,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.8,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),

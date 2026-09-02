@@ -554,12 +554,14 @@ class _BookArtistViewState extends State<BookArtistView> {
       children: [
         Icon(icon, size: 20, color: const Color(0xFF5E227A)),
         const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1E1E1E),
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1E1E1E),
+            ),
           ),
         ),
       ],
@@ -647,7 +649,8 @@ class _BookArtistViewState extends State<BookArtistView> {
     required ValueChanged<String?> onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
+      isExpanded: true,
       dropdownColor: Colors.white,
       borderRadius: BorderRadius.circular(12),
       menuMaxHeight: 320,

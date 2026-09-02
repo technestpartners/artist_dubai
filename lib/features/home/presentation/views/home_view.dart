@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../app/routes/route_names.dart';
-import '../../../../core/di/injection_container.dart';
-import '../../../../core/services/storage_service.dart';
 import '../../domain/models/menu_card_item.dart';
 import '../widgets/home_footer_widget.dart';
 import '../widgets/home_header_widget.dart';
@@ -14,20 +11,6 @@ class HomeView extends StatelessWidget {
   final List<MenuCardItem> _items = MenuCardItem.items;
 
   void _onCardTap(BuildContext context, MenuCardItem item) {
-    final isLoggedIn = sl<StorageService>().getBool('is_logged_in') ?? false;
-
-    // Public options allowed without login
-    final isPublicOption =
-        item.routeName == RouteNames.aboutUs ||
-        item.routeName == RouteNames.government ||
-        item.routeName == RouteNames.artists;
-
-    if (!isLoggedIn && !isPublicOption) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      context.push(RouteNames.login);
-      return;
-    }
-
     context.push(item.routeName);
   }
 

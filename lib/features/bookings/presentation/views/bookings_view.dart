@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../app/routes/route_names.dart';
+import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
@@ -433,20 +434,20 @@ class _BookingsViewState extends State<BookingsView> {
         orElse: () => ArtEventModel(
           id: rawEventId?.toString() ?? '1',
           title: eventTitle.toString(),
-          category: 'Art Exhibition',
+          category: b['category']?.toString() ?? 'Art Event',
           price: b['total_price']?.toString() ?? 'Free',
           description: b['description'] != null && b['description'].toString().isNotEmpty
               ? b['description'].toString()
-              : 'A premier art gathering bringing together contemporary painters, sculptors, and digital creators in Dubai.',
-          dateTime: b['event_date']?.toString() ?? '15 Oct 2026',
-          formattedDate: b['event_date']?.toString() ?? '15 Oct 2026',
+              : '',
+          dateTime: b['event_date']?.toString() ?? '',
+          formattedDate: b['event_date']?.toString() ?? '',
           location: b['location']?.toString() ?? 'Dubai, UAE',
           attendeesCount: 0,
           maxAttendees: 100,
-          organizer: b['artist_name']?.toString() ?? 'Renish Artistry',
-          organizerEmail: b['email']?.toString() ?? 'contact@artistdubai.com',
-          tags: const ['Art', 'Exhibition', 'Dubai'],
-          imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80',
+          organizer: b['artist_name']?.toString() ?? b['organizer']?.toString() ?? 'Organizer',
+          organizerEmail: b['email']?.toString() ?? '',
+          tags: const ['Art', 'Event'],
+          imageUrl: b['image_url']?.toString() ?? b['image']?.toString() ?? '',
         ),
       );
 
@@ -463,18 +464,20 @@ class _BookingsViewState extends State<BookingsView> {
         final fallback = ArtEventModel(
           id: rawEventId?.toString() ?? '1',
           title: eventTitle.toString(),
-          category: 'Art Exhibition',
+          category: b['category']?.toString() ?? 'Art Event',
           price: b['total_price']?.toString() ?? 'Free',
-          description: 'A premier art gathering bringing together contemporary painters, sculptors, and digital creators in Dubai.',
-          dateTime: b['event_date']?.toString() ?? '15 Oct 2026',
-          formattedDate: b['event_date']?.toString() ?? '15 Oct 2026',
+          description: b['description'] != null && b['description'].toString().isNotEmpty
+              ? b['description'].toString()
+              : '',
+          dateTime: b['event_date']?.toString() ?? '',
+          formattedDate: b['event_date']?.toString() ?? '',
           location: b['location']?.toString() ?? 'Dubai, UAE',
           attendeesCount: 0,
           maxAttendees: 100,
-          organizer: b['artist_name']?.toString() ?? 'Renish Artistry',
-          organizerEmail: b['email']?.toString() ?? 'contact@artistdubai.com',
-          tags: const ['Art', 'Exhibition', 'Dubai'],
-          imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80',
+          organizer: b['artist_name']?.toString() ?? b['organizer']?.toString() ?? 'Organizer',
+          organizerEmail: b['email']?.toString() ?? '',
+          tags: const ['Art', 'Event'],
+          imageUrl: b['image_url']?.toString() ?? b['image']?.toString() ?? '',
         );
         Navigator.push(
           context,
@@ -488,7 +491,7 @@ class _BookingsViewState extends State<BookingsView> {
 
   Future<void> _downloadTicketPdf(BuildContext context, dynamic bookingId) async {
     HapticFeedback.heavyImpact();
-    final url = 'http://127.0.0.1:8000/api.php?resource=bookings&action=download_ticket&id=$bookingId';
+    final url = '${ApiEndpoints.baseUrl}api.php?resource=bookings&action=download_ticket&id=$bookingId';
     try {
       final uri = Uri.parse(url);
       await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -510,7 +513,7 @@ class _BookingsViewState extends State<BookingsView> {
     HapticFeedback.lightImpact();
     final bookingId = b['id'] ?? b['booking_id'] ?? '2';
     final eventTitle = b['event_title'] ?? b['artist_name'] ?? 'Dubai Art Event';
-    final date = b['event_date'] ?? '15 Oct 2026';
+    final date = (b['event_date'] ?? '').toString();
     final location = b['location'] ?? 'Dubai, UAE';
     final fullName = b['full_name'] ?? b['name'] ?? 'Attendee';
     final email = b['email'] ?? '';

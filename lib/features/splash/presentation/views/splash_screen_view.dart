@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
 
 class SplashScreenView extends StatefulWidget {
@@ -33,6 +34,11 @@ class _SplashScreenViewState extends State<SplashScreenView>
   @override
   void initState() {
     super.initState();
+
+    // Pre-warm data caches in background during splash animation for instant 0ms loads
+    try {
+      sl<LiveSyncService>().syncAllSilently();
+    } catch (_) {}
 
     // Main entrance sequence (2.2 seconds)
     _mainController = AnimationController(

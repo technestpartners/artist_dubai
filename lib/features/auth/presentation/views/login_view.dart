@@ -105,7 +105,7 @@ class _LoginViewState extends State<LoginView> {
             context.go(RouteNames.adminDashboard);
           } else {
             _showSnackBar('Signed in successfully!');
-            context.go(RouteNames.artists);
+            context.go(RouteNames.home);
           }
         }
       } else {
@@ -468,28 +468,33 @@ class _LoginViewState extends State<LoginView> {
                       const SizedBox(height: 24),
 
                       // Sign Up Redirect
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            "Don't have an account? ",
-                            style: TextStyle(
-                              color: Color(0xFF6B7280),
-                              fontSize: 13,
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () => context.go(RouteNames.register),
-                            child: const Text(
-                              'Sign Up',
-                              style: TextStyle(
-                                color: Color(0xFF6A2777),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
+                      Center(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => context.go(RouteNames.register),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                            child: RichText(
+                              textAlign: TextAlign.center,
+                              text: const TextSpan(
+                                style: TextStyle(
+                                  color: Color(0xFF6B7280),
+                                  fontSize: 13,
+                                ),
+                                children: [
+                                  TextSpan(text: "Don't have an account? "),
+                                  TextSpan(
+                                    text: 'Sign Up',
+                                    style: TextStyle(
+                                      color: Color(0xFF6A2777),
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ],
                   ),

@@ -694,8 +694,10 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                               const SizedBox(height: 16),
 
                               // 2 Action Buttons: Choose Files & Camera
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                              Wrap(
+                                alignment: WrapAlignment.center,
+                                spacing: 10,
+                                runSpacing: 8,
                                 children: [
                                   OutlinedButton.icon(
                                     style: OutlinedButton.styleFrom(
@@ -726,7 +728,6 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
                                   OutlinedButton.icon(
                                     style: OutlinedButton.styleFrom(
                                       side: const BorderSide(
@@ -1220,12 +1221,14 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
       children: [
         Icon(icon, size: 20, color: const Color(0xFF5E227A)),
         const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1E1E1E),
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1E1E1E),
+            ),
           ),
         ),
       ],
@@ -1297,7 +1300,8 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     required ValueChanged<String?> onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
+      isExpanded: true,
       dropdownColor: Colors.white,
       borderRadius: BorderRadius.circular(12),
       menuMaxHeight: 320,

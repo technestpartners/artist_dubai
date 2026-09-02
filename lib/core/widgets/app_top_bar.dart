@@ -117,58 +117,62 @@ class _AppTopBarState extends State<AppTopBar> {
       surfaceTintColor: Colors.transparent,
       automaticallyImplyLeading: false,
       centerTitle: false,
-      titleSpacing: 16.0,
-      title: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Circular Logo Badge
-          Container(
-            width: 38,
-            height: 38,
-            decoration: const BoxDecoration(shape: BoxShape.circle),
-            child: ClipOval(
-              child: Image.asset(
-                'assets/images/header_logo.png',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Image.asset(
-                    'assets/images/header_logo.png',
-                    fit: BoxFit.cover,
-                  );
-                },
+      titleSpacing: 12.0,
+      title: InkWell(
+        onTap: () => context.go(RouteNames.home),
+        borderRadius: BorderRadius.circular(8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Circular Logo Badge
+            Container(
+              width: 36,
+              height: 36,
+              decoration: const BoxDecoration(shape: BoxShape.circle),
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/images/header_logo.png',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Image.asset(
+                      'assets/images/header_logo.png',
+                      fit: BoxFit.cover,
+                    );
+                  },
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 10),
+            const SizedBox(width: 8),
 
-          // Brand Titles
-          const Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Artist',
-                style: TextStyle(
-                  color: Color(0xFF1E1E1E),
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w700,
-                  height: 1.15,
+            // Brand Titles
+            const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Artist',
+                  style: TextStyle(
+                    color: Color(0xFF1E1E1E),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    height: 1.15,
+                  ),
                 ),
-              ),
-              Text(
-                'Dubai',
-                style: TextStyle(
-                  color: Color(0xFF1E1E1E),
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w700,
-                  height: 1.15,
+                Text(
+                  'Dubai',
+                  style: TextStyle(
+                    color: Color(0xFF1E1E1E),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    height: 1.15,
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
       actions: [
         if (loggedIn) ...[
@@ -187,16 +191,16 @@ class _AppTopBarState extends State<AppTopBar> {
                     icon: const Icon(
                       Icons.notifications_none_rounded,
                       color: Color(0xFF1E1E1E),
-                      size: 28,
+                      size: 24,
                     ),
-                    padding: const EdgeInsets.all(8),
-                    constraints: const BoxConstraints(minWidth: 42, minHeight: 42),
+                    padding: const EdgeInsets.all(4),
+                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                     onPressed: () => showNotificationsPanel(context, _bellKey),
                   ),
                   if (unreadCount > 0)
                     Positioned(
-                      top: 4,
-                      right: 4,
+                      top: 2,
+                      right: 2,
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                         decoration: BoxDecoration(
@@ -205,15 +209,15 @@ class _AppTopBarState extends State<AppTopBar> {
                           border: Border.all(color: Colors.white, width: 1.5),
                         ),
                         constraints: const BoxConstraints(
-                          minWidth: 20,
-                          minHeight: 20,
+                          minWidth: 18,
+                          minHeight: 18,
                         ),
                         child: Center(
                           child: Text(
                             unreadCount > 9 ? '9+' : '$unreadCount',
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 10.5,
+                              fontSize: 9.5,
                               fontWeight: FontWeight.w700,
                               height: 1.0,
                             ),
@@ -226,10 +230,11 @@ class _AppTopBarState extends State<AppTopBar> {
               );
             },
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 2),
 
           // User Avatar Circle (dynamic first letter) - Tap opens Account Settings
           GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: () {
               if (loggedIn) {
                 context.push(RouteNames.settings);
@@ -242,8 +247,8 @@ class _AppTopBarState extends State<AppTopBar> {
               child: Tooltip(
                 message: 'Account Settings',
                 child: Container(
-                  width: 32,
-                  height: 32,
+                  width: 30,
+                  height: 30,
                   decoration: const BoxDecoration(
                     color: Color(0xFF5E227A),
                     shape: BoxShape.circle,
@@ -253,7 +258,7 @@ class _AppTopBarState extends State<AppTopBar> {
                       avatarLetter,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -262,12 +267,14 @@ class _AppTopBarState extends State<AppTopBar> {
               ),
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 2),
         ],
 
         // Popup Menu (Matching Screenshot media_1787726981939.png)
         PopupMenuButton<TopBarMenuItem>(
-          icon: const Icon(Icons.more_vert, color: Color(0xFF1E1E1E), size: 24),
+          icon: const Icon(Icons.more_vert, color: Color(0xFF1E1E1E), size: 22),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10.0),
             side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.0),

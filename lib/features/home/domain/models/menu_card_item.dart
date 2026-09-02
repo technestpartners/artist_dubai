@@ -44,7 +44,7 @@ class MenuCardItem {
       title: 'EVENTS',
       subtitle: 'COMPETITION',
       imagePath: 'assets/images/events-competition-DvLzKG_2.jpg',
-      routeName: '/events',
+      routeName: '/events-competition',
     ),
     MenuCardItem(
       title: 'GALLERIES',

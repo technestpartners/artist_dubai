@@ -51,30 +51,22 @@ class _EventGalleryModalState extends State<EventGalleryModal> {
   @override
   void initState() {
     super.initState();
-    _images =
-        widget.gallery.images.isNotEmpty
-            ? widget.gallery.images
-            : [
-              GalleryImageItem(
-                title: 'Event Image 1',
-                imageUrl: widget.gallery.imageUrl,
-                caption: 'Event highlight',
-              ),
-              const GalleryImageItem(
-                title: 'Event Image 2',
-                imageUrl:
-                    'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1200&auto=format&fit=crop',
-                caption: 'Event highlight',
-              ),
-              const GalleryImageItem(
-                title: 'Event Image 3',
-                imageUrl:
-                    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200&auto=format&fit=crop',
-                caption: 'Event highlight',
-              ),
-            ];
+    final validImages = widget.gallery.images.where((img) => img.imageUrl.isNotEmpty).toList();
+    if (validImages.isNotEmpty) {
+      _images = validImages;
+    } else if (widget.gallery.imageUrl.isNotEmpty) {
+      _images = [
+        GalleryImageItem(
+          title: widget.gallery.title,
+          imageUrl: widget.gallery.imageUrl,
+          caption: widget.gallery.subtitle ?? 'Event photo',
+        ),
+      ];
+    } else {
+      _images = [];
+    }
 
-    _currentIndex = widget.initialIndex.clamp(0, _images.length - 1);
+    _currentIndex = _images.isNotEmpty ? widget.initialIndex.clamp(0, _images.length - 1) : 0;
     _pageController = PageController(initialPage: _currentIndex);
   }
 
@@ -148,6 +140,45 @@ class _EventGalleryModalState extends State<EventGalleryModal> {
 
   @override
   Widget build(BuildContext context) {
+    if (_images.isEmpty) {
+      return Container(
+        constraints: const BoxConstraints(maxWidth: 500),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.gallery.title,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            const Icon(Icons.photo_library_outlined, size: 48, color: Colors.black26),
+            const SizedBox(height: 12),
+            const Text(
+              'No photos available for this gallery.',
+              style: TextStyle(color: Colors.black54, fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      );
+    }
+
     final currentImage = _images[_currentIndex];
 
     return Container(

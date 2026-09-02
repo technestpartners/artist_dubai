@@ -32,6 +32,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
   late final String _title;
   late final String _categoryEmoji;
   List<ArtistModel> _categoryArtists = [];
+  List<Map<String, dynamic>> _categoryArtworks = [];
   final Set<String> _likedArtistIds = {};
   StreamSubscription<List<ArtistModel>>? _artistSub;
   StreamSubscription<Map<String, dynamic>>? _favSub;
@@ -74,6 +75,13 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
         category: _title,
         forceRefresh: true,
       );
+      final artworks = await sl<ApiService>().getArtworks(forceRefresh: true);
+      final categoryArtistNames = artists.map((a) => a.name.toLowerCase().trim()).toSet();
+      final filteredArtworks = artworks.where((aw) {
+        final awArtist = (aw['artist_name'] ?? aw['artist'] ?? '').toString().toLowerCase().trim();
+        return categoryArtistNames.contains(awArtist);
+      }).toList();
+
       final userEmail = sl<StorageService>().getString('user_email');
       Set<String> favIds = {};
       if (userEmail != null && userEmail.isNotEmpty) {
@@ -84,6 +92,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
       if (mounted) {
         setState(() {
           _categoryArtists = artists;
+          _categoryArtworks = filteredArtworks;
           _likedArtistIds.clear();
           _likedArtistIds.addAll(favIds);
         });
@@ -92,7 +101,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
   }
 
   void _shareArtist(ArtistModel artist) {
-    final name = artist.name.isEmpty ? 'Fatima Al Qasimi' : artist.name;
+    final name = artist.name.isEmpty ? 'Artist' : artist.name;
     final id = artist.id;
     Clipboard.setData(
       ClipboardData(
@@ -731,7 +740,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
-                                      'Artworks (1)',
+                                      'Artworks (${_categoryArtworks.length})',
                                       style: TextStyle(
                                         fontSize: 13.5,
                                         fontWeight:
@@ -755,20 +764,36 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                     const SizedBox(height: 18),
 
                     // 7. Tab Content List
-                    if (_selectedTabIndex == 0)
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: activeArtists.length,
-                        separatorBuilder:
-                            (context, index) => const SizedBox(height: 14),
-                        itemBuilder: (context, index) {
-                          final artist = activeArtists[index];
-                          return _buildArtistCard(context, artist);
-                        },
-                      )
-                    else
-                      _buildArtworkCard(),
+                    if (_selectedTabIndex == 0) ...[
+                      if (activeArtists.isNotEmpty)
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: activeArtists.length,
+                          separatorBuilder:
+                              (context, index) => const SizedBox(height: 14),
+                          itemBuilder: (context, index) {
+                            final artist = activeArtists[index];
+                            return _buildArtistCard(context, artist);
+                          },
+                        )
+                      else
+                        _buildEmptyState('No artists found in this category yet.'),
+                    ] else ...[
+                      if (_categoryArtworks.isNotEmpty)
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _categoryArtworks.length,
+                          separatorBuilder:
+                              (context, index) => const SizedBox(height: 14),
+                          itemBuilder: (context, index) {
+                            return _buildArtworkCard(_categoryArtworks[index]);
+                          },
+                        )
+                      else
+                        _buildEmptyState('No artworks found in this category yet.'),
+                    ],
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -816,7 +841,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      artist.name.isEmpty ? 'Fatima Al Qasimi' : artist.name,
+                      artist.name.isEmpty ? 'Artist' : artist.name,
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
@@ -834,7 +859,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                         const SizedBox(width: 4),
                         Text(
                           artist.location.isEmpty
-                              ? 'Sharjah, UAE'
+                              ? 'Dubai, UAE'
                               : artist.location,
                           style: const TextStyle(
                             fontSize: 12.5,
@@ -905,7 +930,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
           // Bio Snippet
           Text(
             artist.bio.isEmpty
-                ? 'Traditional calligrapher and contemporary artist specializing in Arabic typography and mixed media installations.'
+                ? 'Artist based in Dubai, UAE.'
                 : artist.bio,
             style: const TextStyle(
               fontSize: 13,
@@ -972,7 +997,51 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
     );
   }
 
-  Widget _buildArtworkCard() {
+  Widget _buildEmptyState(String message) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        vertical: 48,
+        horizontal: 24,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.palette_outlined,
+              size: 48,
+              color: Color(0xFF94A3B8),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Color(0xFF64748B),
+                fontSize: 14.5,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildArtworkCard(Map<String, dynamic> item) {
+    final title = (item['title'] ?? 'Artwork').toString();
+    final artist = (item['artist_name'] ?? item['artist'] ?? 'Artist').toString();
+    final medium = (item['medium'] ?? '').toString();
+    final dimensions = (item['dimensions'] ?? '').toString();
+    final description = (item['description'] ?? '').toString();
+    final imageUrl = (item['image_url'] ?? item['image'] ?? '').toString();
+    final isFeatured = item['is_featured'] == 1 || item['is_featured'] == true;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -982,44 +1051,45 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image with Top-Right Featured Badge (Matching Screenshot media_1787732712379.png)
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(12),
-                ),
-                child: const AppCachedImage(
-                  imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1200&auto=format&fit=crop',
-                  height: 380,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              Positioned(
-                top: 12,
-                right: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
+          if (imageUrl.isNotEmpty)
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(12),
                   ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEF4444),
-                    borderRadius: BorderRadius.circular(12),
+                  child: AppCachedImage(
+                    imageUrl: imageUrl,
+                    height: 380,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
                   ),
-                  child: const Text(
-                    'Featured',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.bold,
+                ),
+                if (isFeatured)
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        'Featured',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-            ],
-          ),
+              ],
+            ),
 
           // Artwork Text Details
           Padding(
@@ -1027,29 +1097,33 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Sacred Verses',
-                  style: TextStyle(
+                Text(
+                  title,
+                  style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF1E1E1E),
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'by Fatima Al Qasimi',
-                  style: TextStyle(fontSize: 13.5, color: Color(0xFF64748B)),
+                Text(
+                  'by $artist',
+                  style: const TextStyle(fontSize: 13.5, color: Color(0xFF64748B)),
                 ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Mixed Media on Paper',
-                  style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-                ),
-                const SizedBox(height: 2),
-                const Text(
-                  '70 x 50 cm',
-                  style: TextStyle(fontSize: 12.5, color: Color(0xFF94A3B8)),
-                ),
+                if (medium.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    medium,
+                    style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                  ),
+                ],
+                if (dimensions.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    dimensions,
+                    style: const TextStyle(fontSize: 12.5, color: Color(0xFF94A3B8)),
+                  ),
+                ],
                 const SizedBox(height: 16),
 
                 // View Details Button Row
@@ -1075,12 +1149,12 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                             context: context,
                             builder:
                                 (context) => AlertDialog(
-                                  title: const Text('Sacred Verses'),
-                                  content: const Text(
-                                    'Sacred Verses by Fatima Al Qasimi\n\n'
-                                    'Medium: Mixed Media on Paper\n'
-                                    'Dimensions: 70 x 50 cm\n\n'
-                                    'Original artwork combining traditional Arabic calligraphy with classical gold leaf & ink techniques.',
+                                  title: Text(title),
+                                  content: Text(
+                                    '$title by $artist\n\n'
+                                    '${medium.isNotEmpty ? 'Medium: $medium\n' : ''}'
+                                    '${dimensions.isNotEmpty ? 'Dimensions: $dimensions\n\n' : '\n'}'
+                                    '$description',
                                   ),
                                   actions: [
                                     TextButton(

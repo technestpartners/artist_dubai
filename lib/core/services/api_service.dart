@@ -223,9 +223,15 @@ class ApiService {
       );
       if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
         _cachedArtists = null;
+        try {
+          sl<LiveSyncService>().notifyArtistsChanged();
+        } catch (_) {}
         return res['data'] as Map<String, dynamic>;
       } else if (_isSuccess(res)) {
         _cachedArtists = null;
+        try {
+          sl<LiveSyncService>().notifyArtistsChanged();
+        } catch (_) {}
         return {'status': 'success'};
       }
     } catch (_) {}
@@ -250,11 +256,10 @@ class ApiService {
       }
     } catch (_) {}
 
-    return _cachedArtistDetails[id] ??
-        ArtistModel.mockArtists.firstWhere(
-          (a) => a.id == id,
-          orElse: () => ArtistModel.mockArtists.first,
-        );
+    if (_cachedArtistDetails.containsKey(id)) {
+      return _cachedArtistDetails[id]!;
+    }
+    throw Exception('Artist not found in database');
   }
 
   // 4. Artist Registration
@@ -371,7 +376,7 @@ class ApiService {
       }
     } catch (_) {}
 
-    return _cachedEvents ?? ArtEventModel.mockEvents;
+    return _cachedEvents ?? [];
   }
 
   // 5b. Event Details (Instant Cache-First)
@@ -387,49 +392,16 @@ class ApiService {
       );
       if (_isSuccess(res)) {
         final m = res['data'] as Map<String, dynamic>;
-        List<String> parsedTags = [];
-        if (m['tags'] is List) {
-          parsedTags = (m['tags'] as List).map((e) => e.toString()).toList();
-        } else if (m['tags'] is String && (m['tags'] as String).isNotEmpty) {
-          parsedTags = (m['tags'] as String)
-              .split(',')
-              .map((e) => e.trim())
-              .where((e) => e.isNotEmpty)
-              .toList();
-        }
-
-        final dateStr = (m['event_date'] ?? m['date_time'] ?? m['dateTime'] ?? '') as String;
-        final formattedDate = (m['formatted_date'] ?? m['event_date'] ?? dateStr) as String;
-
-        final event = ArtEventModel(
-          id: m['id']?.toString() ?? '0',
-          title: m['title'] as String? ?? 'Art Event',
-          category: m['category'] as String? ?? 'Art Exhibition',
-          price: m['price'] as String? ?? 'Free',
-          description: m['description'] as String? ?? '',
-          requirements: m['requirements'] as String? ?? 'Open to all.',
-          dateTime: dateStr,
-          formattedDate: formattedDate,
-          timeRange: (m['time_range'] ?? '10:00 AM - 08:00 PM') as String,
-          location: (m['location'] ?? 'Dubai') as String,
-          locationCity: (m['venue'] ?? m['location_city'] ?? m['location'] ?? 'Dubai') as String?,
-          attendeesCount: (m['attendees_count'] as num?)?.toInt() ?? 0,
-          maxAttendees: (m['max_attendees'] as num?)?.toInt() ?? 100,
-          organizer: (m['organizer_name'] ?? m['organizer'] ?? 'Artist Dubai') as String,
-          organizerEmail: (m['contact_email'] ?? m['organizer_email']) as String?,
-          tags: parsedTags,
-          imageUrl: m['image_url'] as String?,
-        );
+        final event = ArtEventModel.fromJson(m);
         _cachedEventDetails[id] = event;
         return event;
       }
     } catch (_) {}
 
-    return _cachedEventDetails[id] ??
-        ArtEventModel.mockEvents.firstWhere(
-          (e) => e.id == id,
-          orElse: () => ArtEventModel.mockEvents.first,
-        );
+    if (_cachedEventDetails.containsKey(id)) {
+      return _cachedEventDetails[id]!;
+    }
+    throw Exception('Event not found in database');
   }
 
   // 5c. Create Event (Save dynamically to MySQL)
@@ -497,7 +469,7 @@ class ApiService {
       }
     } catch (_) {}
 
-    return _cachedGovEntities ?? GovernmentEntity.entities;
+    return _cachedGovEntities ?? [];
   }
 
   // 6b. Reviews (Dynamic MySQL Backend)
@@ -533,6 +505,9 @@ class ApiService {
       );
       if (_isSuccess(res)) {
         _cachedGovEntities = null; // Invalidate cache so ratings refresh
+        try {
+          sl<LiveSyncService>().notifyGovernmentChanged();
+        } catch (_) {}
         return true;
       }
     } catch (_) {}
@@ -608,6 +583,9 @@ class ApiService {
       );
       if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
         _cachedGalleries = null; // Invalidate cache
+        try {
+          sl<LiveSyncService>().notifyGalleriesChanged();
+        } catch (_) {}
         return res['data'] as Map<String, dynamic>;
       }
     } catch (_) {}
@@ -617,13 +595,19 @@ class ApiService {
   // 7c. Upload Image File / Bytes (MySQL Backend)
   Future<String?> uploadImageBytes(List<int> bytes, {String ext = 'jpg'}) async {
     try {
-      final base64String = 'data:image/$ext;base64,${base64Encode(bytes)}';
+      final cleanExt = ext.replaceAll('.', '').toLowerCase();
+      final base64String = 'data:image/$cleanExt;base64,${base64Encode(bytes)}';
       final res = await _client.post(
         ApiEndpoints.upload,
-        data: {'base64': base64String},
+        data: {'base64': base64String, 'ext': cleanExt},
       );
-      if (_isSuccess(res) && res['data'] is Map && res['data']['url'] != null) {
-        return res['data']['url'].toString();
+      if (res is Map) {
+        if (res['data'] is Map && res['data']['url'] != null) {
+          return res['data']['url'].toString();
+        }
+        if (res['url'] != null) {
+          return res['url'].toString();
+        }
       }
     } catch (_) {}
     return null;
@@ -698,6 +682,10 @@ class ApiService {
         },
       );
       if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
+        try {
+          sl<LiveSyncService>().notifyArtistsChanged();
+          sl<LiveSyncService>().notifyGalleriesChanged();
+        } catch (_) {}
         return res['data'] as Map<String, dynamic>;
       }
     } catch (_) {}
@@ -713,6 +701,9 @@ class ApiService {
       );
       if (_isSuccess(res)) {
         _cachedGalleries = null; // Invalidate cache
+        try {
+          sl<LiveSyncService>().notifyGalleriesChanged();
+        } catch (_) {}
         return true;
       }
     } catch (_) {}
@@ -834,6 +825,28 @@ class ApiService {
     return false;
   }
 
+  Future<bool> updateBookingStatus({
+    required dynamic bookingId,
+    required String status,
+  }) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.bookings}&action=update_status',
+        data: {
+          'id': bookingId,
+          'status': status,
+        },
+      );
+      if (_isSuccess(res)) {
+        try {
+          sl<LiveSyncService>().notifyBookingsChanged();
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
   // 12. About Us (Instant Cache-First)
   Future<Map<String, dynamic>?> getAboutData({bool forceRefresh = false}) async {
     if (!forceRefresh && _cachedAbout != null) {
@@ -890,81 +903,8 @@ class ApiService {
 
     return (_cachedCompetitions != null && _cachedCompetitions!.isNotEmpty)
         ? _cachedCompetitions!
-        : _defaultCompetitions;
+        : [];
   }
-
-  static const List<Map<String, dynamic>> _defaultCompetitions = [
-    {
-      'id': 'comp-1',
-      'title': 'Dubai Art Prize 2026',
-      'status': 'open',
-      'category': 'Visual Arts & Sculpture',
-      'theme': 'Future Horizons & Desert Dreams',
-      'organizer': 'Dubai Culture & Arts Authority',
-      'deadline': '30 Sep 2026',
-      'prize_pool': '100,000 AED',
-      'fee': 'Free Entry',
-      'description': 'Annual national art competition celebrating contemporary UAE and regional artists.',
-      'location': 'Alserkal Avenue, Dubai',
-      'eligibility': 'Open to all UAE residents and international artists aged 18+.'
-    },
-    {
-      'id': 'comp-2',
-      'title': 'Emerging Artists Showcase Call',
-      'status': 'open',
-      'category': 'Digital Art & Photography',
-      'theme': 'Urban Landscapes & Digital Frontiers',
-      'organizer': 'Alserkal Avenue',
-      'deadline': '15 Oct 2026',
-      'prize_pool': '50,000 AED',
-      'fee': 'Free Entry',
-      'description': 'Open call for early-career digital creators, animators, and photographers.',
-      'location': 'Al Quoz Creative Zone, Dubai',
-      'eligibility': 'Early-career artists with under 5 years professional experience.'
-    },
-    {
-      'id': 'comp-3',
-      'title': 'Emirates Calligraphy & Typography Award',
-      'status': 'upcoming',
-      'category': 'Calligraphy & Typography',
-      'theme': 'Tradition meets Innovation',
-      'organizer': 'Dubai Design District (d3)',
-      'deadline': '1 Dec 2026',
-      'prize_pool': '75,000 AED',
-      'fee': 'Free Entry',
-      'description': 'Honoring classic Arabic calligraphy and modern experimental typography.',
-      'location': 'Dubai Design District (d3)',
-      'eligibility': 'Global entry open to all calligraphers and graphic designers.'
-    },
-    {
-      'id': 'comp-4',
-      'title': 'Dubai Public Art Commissioning Grant',
-      'status': 'upcoming',
-      'category': '3D Installation & Sculpture',
-      'theme': 'Outdoor Sculptures & Environmental Installations',
-      'organizer': 'Dubai Culture',
-      'deadline': '15 Jan 2027',
-      'prize_pool': '200,000 AED',
-      'fee': 'Free Entry',
-      'description': 'Grant initiative to commission permanent public artworks across Dubai parks.',
-      'location': 'Public Parks & Waterfront Promenades, Dubai',
-      'eligibility': 'Sculptors, architects, and public art collectives.'
-    },
-    {
-      'id': 'comp-5',
-      'title': 'Dubai Annual Photography Biennale 2025',
-      'status': 'closed',
-      'category': 'Photography',
-      'theme': 'Light & Shadows of the Gulf',
-      'organizer': 'HIPA International Photography Award',
-      'deadline': '15 May 2025',
-      'prize_pool': '120,000 AED',
-      'fee': 'Free Entry',
-      'description': 'International photography competition capturing architecture and culture.',
-      'location': 'Dubai International Financial Centre (DIFC)',
-      'eligibility': 'All professional and amateur photographers.'
-    },
-  ];
 
   // 14. My Bookings (user's booking history)
   Future<List<Map<String, dynamic>>> getBookings({
@@ -1021,7 +961,12 @@ class ApiService {
           'full_name': fullName,
         },
       );
-      return _isSuccess(res);
+      if (_isSuccess(res)) {
+        try {
+          sl<LiveSyncService>().syncAllSilently();
+        } catch (_) {}
+        return true;
+      }
     } catch (_) {}
     return false;
   }
@@ -1049,6 +994,9 @@ class ApiService {
       );
       if (_isSuccess(res)) {
         _cachedCategories = null;
+        try {
+          sl<LiveSyncService>().notifyCategoriesChanged();
+        } catch (_) {}
         return true;
       }
     } catch (_) {}
@@ -1080,7 +1028,12 @@ class ApiService {
         '${ApiEndpoints.login}&action=delete_account',
         data: {'email': email},
       );
-      return _isSuccess(res);
+      if (_isSuccess(res)) {
+        try {
+          sl<LiveSyncService>().syncAllSilently();
+        } catch (_) {}
+        return true;
+      }
     } catch (_) {}
     return false;
   }
@@ -1224,6 +1177,9 @@ class ApiService {
       );
       if (_isSuccess(res)) {
         _cachedEvents = null;
+        try {
+          sl<LiveSyncService>().notifyEventsChanged();
+        } catch (_) {}
         return true;
       }
     } catch (_) {}
@@ -1345,7 +1301,7 @@ class ApiService {
   Future<bool> deleteArtwork(dynamic id) async {
     try {
       final res = await _client.post(
-        '/api.php?resource=artworks&action=delete',
+        'api.php?resource=artworks&action=delete',
         data: {'id': id},
       );
       if (_isSuccess(res)) {
@@ -1467,5 +1423,20 @@ class ApiService {
       }
     } catch (_) {}
     return false;
+  }
+
+  // 35. About Platform Metrics & Info (MySQL Backend)
+  Future<Map<String, dynamic>?> getAboutPlatform({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedAbout != null) {
+      return _cachedAbout;
+    }
+    try {
+      final res = await _client.get(ApiEndpoints.aboutUs);
+      if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
+        _cachedAbout = res['data'] as Map<String, dynamic>;
+        return _cachedAbout;
+      }
+    } catch (_) {}
+    return _cachedAbout;
   }
 }

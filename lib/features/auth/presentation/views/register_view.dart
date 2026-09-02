@@ -650,13 +650,17 @@ class _RegisterViewState extends State<RegisterView> {
                       // Sign In Redirect
                       Center(
                         child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
                           onTap: () => context.go(RouteNames.login),
-                          child: const Text(
-                            'Already have an account? Sign in',
-                            style: TextStyle(
-                              color: Color(0xFF6A2777),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                            child: Text(
+                              'Already have an account? Sign in',
+                              style: TextStyle(
+                                color: Color(0xFF6A2777),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),

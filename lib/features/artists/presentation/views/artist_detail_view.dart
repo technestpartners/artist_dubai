@@ -39,16 +39,10 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
   late int _followersCount;
   late int _worksCount;
   StreamSubscription<List<ArtistModel>>? _artistLiveSub;
+  StreamSubscription<List<Map<String, dynamic>>>? _galleryLiveSub;
+  StreamSubscription<Map<String, dynamic>>? _favLiveSub;
 
-  List<Map<String, dynamic>> _photoGalleries = [
-    {
-      'title': 'Exhibition Highlights 2024',
-      'subtitle': 'Curated collection by Artist',
-      'count': '3 photos',
-      'image':
-          'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200&auto=format&fit=crop',
-    },
-  ];
+  List<Map<String, dynamic>> _photoGalleries = [];
 
   @override
   void initState() {
@@ -71,11 +65,19 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         }
       }
     });
+    _galleryLiveSub = sl<LiveSyncService>().galleriesStream.listen((_) {
+      if (mounted) _loadAllData();
+    });
+    _favLiveSub = sl<LiveSyncService>().favoritesStream.listen((_) {
+      if (mounted) _loadAllData();
+    });
   }
 
   @override
   void dispose() {
     _artistLiveSub?.cancel();
+    _galleryLiveSub?.cancel();
+    _favLiveSub?.cancel();
     super.dispose();
   }
 
@@ -270,11 +272,11 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
 
   void _showArtworkDetailModal(Map<String, dynamic> item, int itemId) {
     final title = (item['title'] ?? 'Artwork').toString();
-    final year = (item['year'] ?? '2024').toString();
-    final medium = (item['medium'] ?? 'Mixed Media').toString();
-    final dimensions = (item['dimensions'] ?? '120 x 80 cm').toString();
-    final description = (item['description'] ?? 'Created by ${widget.artist?.name ?? 'Artist'}. A masterfully textured piece celebrating contemporary UAE art.').toString();
-    final imageUrl = (item['image_url'] ?? item['image'] ?? 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80').toString();
+    final year = (item['year'] ?? '').toString();
+    final medium = (item['medium'] ?? '').toString();
+    final dimensions = (item['dimensions'] ?? '').toString();
+    final description = (item['description'] ?? '').toString();
+    final imageUrl = (item['image_url'] ?? item['image'] ?? '').toString();
 
     showDialog(
       context: context,
@@ -740,13 +742,6 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                         });
 
                                         final artist = widget.artist;
-                                        const stockDefaults = [
-                                          'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80',
-                                          'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
-                                          'https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=800&q=80',
-                                          'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&fit=crop&w=1200&q=80',
-                                        ];
-
                                         List<String> finalUploadedUrls = [];
 
                                         if (modalImages.isNotEmpty) {
@@ -767,7 +762,18 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                         }
 
                                         if (finalUploadedUrls.isEmpty) {
-                                          finalUploadedUrls = List<String>.from(stockDefaults);
+                                          setModalState(() {
+                                            isUploading = false;
+                                          });
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(
+                                                content: Text('Please select at least one photo from your device.'),
+                                                backgroundColor: Color(0xFFDC2626),
+                                              ),
+                                            );
+                                          }
+                                          return;
                                         }
 
                                         final coverUrl = finalUploadedUrls.first;
@@ -831,81 +837,19 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
   Widget build(BuildContext context) {
     final currentArtist =
         widget.artist ??
-        ArtistModel.mockArtists.firstWhere(
-          (a) => a.category.contains('Calligraphy'),
-          orElse: () => ArtistModel.mockArtists.first,
+        const ArtistModel(
+          id: '0',
+          name: 'Artist',
+          category: 'Artist',
+          bio: '',
+          location: 'Dubai, UAE',
+          avatarUrl: '',
+          bannerUrl: '',
+          worksCount: 0,
+          followersCount: 0,
         );
 
-    final List<Map<String, dynamic>> displayedArtworks = _artworksList.isNotEmpty
-        ? _artworksList
-        : [
-            {
-              'id': 1,
-              'title': 'Ethereal Dunes Horizon',
-              'medium': 'Oil & Acrylic on Canvas',
-              'year': '2024',
-              'dimensions': '120 x 90 cm',
-              'description': 'A masterwork blending shifting sunset tones with contemporary textured strokes.',
-              'price': '\$2,400',
-              'image_url': 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80',
-              'is_featured': 1,
-            },
-            {
-              'id': 2,
-              'title': 'Chromatics in Motion',
-              'medium': 'Mixed Media & Pigments',
-              'year': '2024',
-              'dimensions': '100 x 80 cm',
-              'description': 'Dynamic explosion of sapphire blues and fiery ochre symbolizing kinetic vitality.',
-              'price': '\$1,950',
-              'image_url': 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=800&q=80',
-              'is_featured': 1,
-            },
-            {
-              'id': 3,
-              'title': 'Luminous Waves of d3',
-              'medium': 'Digital & Generative Canvas',
-              'year': '2024',
-              'dimensions': '140 x 100 cm',
-              'description': 'Fluid gradients and velvet purples inspired by architectural illumination.',
-              'price': '\$3,100',
-              'image_url': 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
-              'is_featured': 0,
-            },
-            {
-              'id': 4,
-              'title': 'Golden Hour Mirage',
-              'medium': 'Acrylic & 24K Gold Leaf',
-              'year': '2024',
-              'dimensions': '110 x 85 cm',
-              'description': 'Rich desert textures overlaid with radiant leaf highlights celebrating UAE heritage.',
-              'price': '\$2,800',
-              'image_url': 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80',
-              'is_featured': 0,
-            },
-            {
-              'id': 5,
-              'title': 'Cosmic Constellations',
-              'medium': 'Oil on Textured Linen',
-              'year': '2025',
-              'dimensions': '130 x 95 cm',
-              'description': 'Starry nightscapes over modern architectural skylines rendered in deep lapis lazuli and silver.',
-              'price': '\$3,500',
-              'image_url': 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80',
-              'is_featured': 0,
-            },
-            {
-              'id': 6,
-              'title': 'Geometric Harmony',
-              'medium': 'Mixed Media Collage',
-              'year': '2024',
-              'dimensions': '90 x 90 cm',
-              'description': 'Traditional Islamic geometric patterns reimagined through modern minimalist balance.',
-              'price': '\$1,750',
-              'image_url': 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=80',
-              'is_featured': 0,
-            },
-          ];
+    final List<Map<String, dynamic>> displayedArtworks = _artworksList;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
@@ -933,15 +877,18 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                       }
                     },
                   ),
-                  const Text(
-                    'Artist Profile',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E1E1E),
+                  const Expanded(
+                    child: Text(
+                      'Artist Profile',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1E1E1E),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const Spacer(),
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
@@ -1071,11 +1018,15 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                 color: Color(0xFF64748B),
                               ),
                               const SizedBox(width: 4),
-                              Text(
-                                currentArtist.location,
-                                style: const TextStyle(
-                                  fontSize: 13.5,
-                                  color: Color(0xFF64748B),
+                              Flexible(
+                                child: Text(
+                                  currentArtist.location,
+                                  style: const TextStyle(
+                                    fontSize: 13.5,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
@@ -1129,8 +1080,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                           const SizedBox(height: 16),
 
                           // Verified Badge & Location
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: const [
                               Icon(
                                 Icons.verified_user_outlined,
@@ -1353,8 +1305,11 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          Wrap(
+                            alignment: WrapAlignment.spaceBetween,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 8,
+                            runSpacing: 8,
                             children: [
                               const Text(
                                 'Photo Galleries',
@@ -1543,9 +1498,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                           top: Radius.circular(11),
                         ),
                         child: AppCachedImage(
-                          imageUrl: imageUrl.isNotEmpty
-                              ? imageUrl
-                              : 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80',
+                          imageUrl: imageUrl,
                           fit: BoxFit.cover,
                           width: double.infinity,
                           height: double.infinity,
@@ -1695,9 +1648,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: AppCachedImage(
-                    imageUrl: imageUrl.isNotEmpty
-                        ? imageUrl
-                        : 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80',
+                    imageUrl: imageUrl,
                     width: 64,
                     height: 64,
                     fit: BoxFit.cover,
@@ -1776,19 +1727,14 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
     double? height,
     int fallbackIndex = 0,
   }) {
-    const stockFallbacks = [
-      'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1561839561-b13bcfe95249?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1582561424760-0321d75e81fa?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&w=1200&q=80',
-    ];
-    final fallbackUrl = stockFallbacks[fallbackIndex % stockFallbacks.length];
+    final Widget errorPlaceholder = Container(
+      width: width,
+      height: height,
+      color: const Color(0xFFF3F4F6),
+      child: const Center(
+        child: Icon(Icons.broken_image_outlined, color: Color(0xFF9CA3AF), size: 24),
+      ),
+    );
 
     if (imgUrl.startsWith('http://') ||
         imgUrl.startsWith('https://')) {
@@ -1797,12 +1743,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         fit: fit,
         width: width,
         height: height,
-        errorWidget: AppCachedImage(
-          imageUrl: fallbackUrl,
-          fit: fit,
-          width: width,
-          height: height,
-        ),
+        errorWidget: errorPlaceholder,
       );
     } else if (imgUrl.startsWith('blob:') || imgUrl.startsWith('data:image')) {
       return Image.network(
@@ -1810,12 +1751,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         fit: fit,
         width: width,
         height: height,
-        errorBuilder: (context, error, stackTrace) => AppCachedImage(
-          imageUrl: fallbackUrl,
-          fit: fit,
-          width: width,
-          height: height,
-        ),
+        errorBuilder: (context, error, stackTrace) => errorPlaceholder,
       );
     } else if (!kIsWeb && imgUrl.isNotEmpty) {
       try {
@@ -1826,29 +1762,19 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
             fit: fit,
             width: width,
             height: height,
-            errorBuilder: (context, error, stackTrace) => AppCachedImage(
-              imageUrl: fallbackUrl,
-              fit: fit,
-              width: width,
-              height: height,
-            ),
+            errorBuilder: (context, error, stackTrace) => errorPlaceholder,
           );
         }
       } catch (_) {}
     }
 
-    return AppCachedImage(
-      imageUrl: fallbackUrl,
-      fit: fit,
-      width: width,
-      height: height,
-    );
+    return errorPlaceholder;
   }
 
   Widget _buildGalleryCard(Map<String, dynamic> gallery) {
     final image = (gallery['image'] ?? gallery['image_url'] ?? '').toString();
     final title = (gallery['title'] ?? gallery['name'] ?? 'Photo Gallery').toString();
-    final subtitle = (gallery['subtitle'] ?? gallery['description'] ?? 'Curated collection by Artist').toString();
+    final subtitle = (gallery['subtitle'] ?? gallery['description'] ?? '').toString();
     final count = (gallery['count'] ?? (gallery['photo_count'] != null ? '${gallery['photo_count']} photos' : '1 photos')).toString();
     final cardFallbackIdx = _computeFallbackIndex(title, 0);
 
@@ -1949,8 +1875,8 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
 
   void _showPhotoGalleryModal(Map<String, dynamic> gallery) {
     final title = (gallery['title'] ?? gallery['name'] ?? 'Photo Gallery').toString();
-    final subtitle = (gallery['subtitle'] ?? gallery['description'] ?? 'Curated collection by Artist').toString();
-    final mainImage = (gallery['image'] ?? gallery['image_url'] ?? 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200&auto=format&fit=crop').toString();
+    final subtitle = (gallery['subtitle'] ?? gallery['description'] ?? '').toString();
+    final mainImage = (gallery['image'] ?? gallery['image_url'] ?? '').toString();
 
     // Extract images
     final List<String> images = [];
@@ -1958,7 +1884,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
       for (final img in gallery['images']) {
         if (img is String && img.isNotEmpty) {
           images.add(img);
-        } else if (img is Map && img['image_url'] != null) {
+        } else if (img is Map && img['image_url'] != null && img['image_url'].toString().isNotEmpty) {
           images.add(img['image_url'].toString());
         }
       }
@@ -1969,7 +1895,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
           for (final img in decoded) {
             if (img is String && img.isNotEmpty) {
               images.add(img);
-            } else if (img is Map && img['image_url'] != null) {
+            } else if (img is Map && img['image_url'] != null && img['image_url'].toString().isNotEmpty) {
               images.add(img['image_url'].toString());
             }
           }
@@ -1977,11 +1903,8 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
       } catch (_) {}
     }
 
-    if (images.isEmpty) {
+    if (images.isEmpty && mainImage.isNotEmpty) {
       images.add(mainImage);
-      images.add('https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80');
-      images.add('https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&fit=crop&w=1200&q=80');
-      images.add('https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=800&q=80');
     }
 
     int activeIdx = 0;

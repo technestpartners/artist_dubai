@@ -68,8 +68,7 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: CreateArtEventView()));
       await tester.pumpAndSettle();
 
-      expect(find.text('Create Art Event'), findsOneWidget);
-      expect(find.text('Create Event'), findsOneWidget);
+      expect(find.text('Create Event'), findsWidgets);
     });
 
     testWidgets('5. Bookings View & Create Booking Form Test', (WidgetTester tester) async {

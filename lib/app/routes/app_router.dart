@@ -16,6 +16,7 @@ import '../../features/bookings/presentation/views/bookings_view.dart';
 import '../../features/bookings/presentation/views/booking_requests_view.dart';
 import '../../features/events/domain/models/art_event_model.dart';
 import '../../features/events/presentation/views/create_art_event_view.dart';
+import '../../features/events/presentation/views/event_detail_view.dart';
 import '../../features/events/presentation/views/event_photos_view.dart';
 import '../../features/events/presentation/views/events_view.dart';
 import '../../features/favorites/presentation/views/favorites_view.dart';
@@ -41,6 +42,58 @@ class AppRouter {
 
   static String get initialLocation => RouteNames.splash;
 
+  static Page<dynamic> _buildFadePage({
+    required BuildContext context,
+    required GoRouterState state,
+    required Widget child,
+  }) {
+    return CustomTransitionPage<void>(
+      key: state.pageKey,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 220),
+      reverseTransitionDuration: const Duration(milliseconds: 180),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+          ),
+          child: child,
+        );
+      },
+    );
+  }
+
+  static Page<dynamic> _buildSlidePage({
+    required BuildContext context,
+    required GoRouterState state,
+    required Widget child,
+  }) {
+    return CustomTransitionPage<void>(
+      key: state.pageKey,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 240),
+      reverseTransitionDuration: const Duration(milliseconds: 200),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final curvedAnimation = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0.05, 0.0),
+            end: Offset.zero,
+          ).animate(curvedAnimation),
+          child: FadeTransition(
+            opacity: curvedAnimation,
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+
   static final GoRouter router = GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: initialLocation,
@@ -48,151 +101,272 @@ class AppRouter {
       GoRoute(
         path: RouteNames.splash,
         name: 'splash',
-        builder: (context, state) => const SplashScreenView(),
+        pageBuilder: (context, state) => _buildFadePage(
+          context: context,
+          state: state,
+          child: const SplashScreenView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.onboarding,
         name: 'onboarding',
-        builder: (context, state) => const OnboardingView(),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const OnboardingView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.home,
         name: 'home',
-        builder: (context, state) => const HomeView(),
+        pageBuilder: (context, state) => _buildFadePage(
+          context: context,
+          state: state,
+          child: const HomeView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.aboutUs,
         name: 'aboutUs',
-        builder: (context, state) => const AboutUsView(),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const AboutUsView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.artists,
         name: 'artists',
-        builder: (context, state) => const ArtistsView(),
+        pageBuilder: (context, state) => _buildFadePage(
+          context: context,
+          state: state,
+          child: const ArtistsView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.artistDetail,
         name: 'artistDetail',
-        builder:
-            (context, state) =>
-                ArtistDetailView(artist: state.extra as ArtistModel?),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: ArtistDetailView(artist: state.extra as ArtistModel?),
+        ),
       ),
       GoRoute(
         path: RouteNames.government,
         name: 'government',
-        builder: (context, state) => const GovernmentPortalView(),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const GovernmentPortalView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.events,
         name: 'events',
-        builder: (context, state) => const EventsView(),
+        pageBuilder: (context, state) => _buildFadePage(
+          context: context,
+          state: state,
+          child: const EventsView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.myEvents,
         name: 'myEvents',
-        builder: (context, state) => const MyEventsView(),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const MyEventsView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.favorites,
         name: 'favorites',
-        builder: (context, state) => const FavoritesView(),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const FavoritesView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.eventsCompetition,
         name: 'eventsCompetition',
-        builder: (context, state) => const EventsCompetitionView(),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const EventsCompetitionView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.galleries,
         name: 'galleries',
-        builder: (context, state) => const GalleriesView(),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const GalleriesView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.eventsPhotos,
         name: 'eventsPhotos',
-        builder: (context, state) => const EventPhotosView(),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const EventPhotosView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.galleryRegistration,
         name: 'galleryRegistration',
-        builder: (context, state) => const GalleryRegistrationView(),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const GalleryRegistrationView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.bookings,
         name: 'bookings',
-        builder: (context, state) => const BookingsView(),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const BookingsView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.bookingRequests,
         name: 'bookingRequests',
-        builder: (context, state) => const BookingRequestsView(),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const BookingRequestsView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.bookArtist,
         name: 'bookArtist',
-        builder: (context, state) => const BookArtistView(),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: BookArtistView(artistName: state.extra as String?),
+        ),
       ),
       GoRoute(
         path: RouteNames.createArtEvent,
         name: 'createArtEvent',
-        builder:
-            (context, state) =>
-                CreateArtEventView(event: state.extra as ArtEventModel?),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: CreateArtEventView(event: state.extra as ArtEventModel?),
+        ),
       ),
       GoRoute(
         path: RouteNames.profile,
         name: 'profile',
-        builder: (context, state) => const ProfileView(),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const ProfileView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.settings,
         name: 'settings',
-        builder: (context, state) => const SettingsView(),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const SettingsView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.login,
         name: 'login',
-        builder: (context, state) => const LoginView(),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const LoginView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.register,
         name: 'register',
-        builder: (context, state) => const RegisterView(),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const RegisterView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.artistRegistration,
         name: 'artistRegistration',
-        builder: (context, state) => const CreateArtistProfileView(),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const CreateArtistProfileView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.privacyPolicy,
         name: 'privacyPolicy',
-        builder: (context, state) => const PrivacyPolicyView(),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const PrivacyPolicyView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.termsConditions,
         name: 'termsConditions',
-        builder: (context, state) => const TermsView(),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const TermsView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.categories,
         name: 'categories',
-        builder: (context, state) => const ExploreCategoriesView(),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const ExploreCategoriesView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.categoryDetail,
         name: 'categoryDetail',
-        builder: (context, state) => const CategoryDetailView(),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const CategoryDetailView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.createCategory,
         name: 'createCategory',
-        builder: (context, state) => const CreateCategoryView(),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const CreateCategoryView(),
+        ),
       ),
       GoRoute(
         path: RouteNames.adminDashboard,
         name: 'adminDashboard',
-        builder: (context, state) => const AdminDashboardView(),
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const AdminDashboardView(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.eventDetail,
+        name: 'eventDetail',
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: EventDetailView(event: state.extra as ArtEventModel),
+        ),
       ),
     ],
     errorBuilder: (context, state) => const ComingSoonView(),

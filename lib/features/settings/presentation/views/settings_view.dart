@@ -533,12 +533,14 @@ class _SettingsViewState extends State<SettingsView> {
                               children: const [
                                 Icon(Icons.person_outline, size: 22, color: Color(0xFF1E1E1E)),
                                 SizedBox(width: 10),
-                                Text(
-                                  'Account Information',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1E1E1E),
+                                Expanded(
+                                  child: Text(
+                                    'Account Information',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF1E1E1E),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -574,12 +576,14 @@ class _SettingsViewState extends State<SettingsView> {
                               children: const [
                                 Icon(Icons.palette_outlined, size: 22, color: Color(0xFF1E1E1E)),
                                 SizedBox(width: 10),
-                                Text(
-                                  'Artist Profile',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1E1E1E),
+                                Expanded(
+                                  child: Text(
+                                    'Artist Profile',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF1E1E1E),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -724,12 +728,14 @@ class _SettingsViewState extends State<SettingsView> {
                               children: const [
                                 Icon(Icons.shield_outlined, size: 22, color: Color(0xFF1E1E1E)),
                                 SizedBox(width: 10),
-                                Text(
-                                  'Account Actions',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1E1E1E),
+                                Expanded(
+                                  child: Text(
+                                    'Account Actions',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF1E1E1E),
+                                    ),
                                   ),
                                 ),
                               ],

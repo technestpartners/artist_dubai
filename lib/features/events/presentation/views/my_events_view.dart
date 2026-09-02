@@ -56,7 +56,7 @@ class _MyEventsViewState extends State<MyEventsView> {
     super.initState();
     _fetchMyEvents();
     _eventsSub = sl<LiveSyncService>().eventsStream.listen((events) {
-      if (mounted && events.isNotEmpty) {
+      if (mounted) {
         setState(() => _myCreatedEvents = events);
       }
     });
@@ -99,11 +99,11 @@ class _MyEventsViewState extends State<MyEventsView> {
     setState(() => _eventBookingsMap = map);
   }
 
-  Future<void> _fetchMyEvents() async {
+  Future<void> _fetchMyEvents({bool forceRefresh = false}) async {
     setState(() => _isLoading = _myCreatedEvents.isEmpty);
     try {
-      final events = await sl<ApiService>().getEvents(forceRefresh: true);
-      final rawBookings = await sl<ApiService>().getBookings(forceRefresh: true);
+      final events = await sl<ApiService>().getEvents(forceRefresh: forceRefresh);
+      final rawBookings = await sl<ApiService>().getBookings(forceRefresh: forceRefresh);
 
       final Map<String, List<EventAttendeeBooking>> map = {};
 

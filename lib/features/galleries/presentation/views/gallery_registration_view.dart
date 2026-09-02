@@ -1,11 +1,15 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import '../../../../core/widgets/app_cached_image.dart';
 import '../../../home/presentation/widgets/home_footer_widget.dart';
 
 class GalleryRegistrationView extends StatefulWidget {
@@ -26,6 +30,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
   final _phoneController = TextEditingController();
   final _aboutController = TextEditingController();
 
+  XFile? _selectedImage;
+  String? _uploadedImageUrl;
+  bool _isUploadingImage = false;
   bool _isSubmitting = false;
 
   @override
@@ -39,6 +46,74 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
     _phoneController.dispose();
     _aboutController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(source: source, imageQuality: 85);
+      if (picked != null) {
+        setState(() {
+          _selectedImage = picked;
+          _isUploadingImage = true;
+        });
+
+        final bytes = await picked.readAsBytes();
+        final nameParts = picked.name.split('.');
+        final ext = nameParts.length > 1 ? nameParts.last : 'jpg';
+        final url = await sl<ApiService>().uploadImageBytes(bytes, ext: ext);
+        if (mounted) {
+          setState(() {
+            _uploadedImageUrl = url;
+            _isUploadingImage = false;
+          });
+          if (url != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Gallery photo uploaded successfully!'),
+                backgroundColor: Color(0xFF6B1C9B),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploadingImage = false);
+      }
+    }
+  }
+
+  void _showImageSourceActionSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined, color: Color(0xFF6B1C9B)),
+              title: const Text('Choose from Gallery'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined, color: Color(0xFF6B1C9B)),
+              title: const Text('Take a Photo'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _submitForm() async {
@@ -58,6 +133,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
         'email': _emailController.text.trim(),
         'phone': _phoneController.text.trim(),
         'about': _aboutController.text.trim(),
+        if (_uploadedImageUrl != null && _uploadedImageUrl!.isNotEmpty) 'image_url': _uploadedImageUrl!,
       });
 
       if (mounted) {
@@ -272,6 +348,111 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                         maxLines: 4,
                         decoration: _whiteInputDecoration(),
                       ),
+                      const SizedBox(height: 14),
+
+                      // Gallery Cover / Showcase Photo
+                      const Text(
+                        'Gallery Cover Photo',
+                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
+                      ),
+                      const SizedBox(height: 6),
+                      if (_isUploadingImage) ...[
+                        Container(
+                          width: double.infinity,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.white30),
+                          ),
+                          child: const Center(
+                            child: CircularProgressIndicator(color: Colors.white),
+                          ),
+                        ),
+                      ] else if (_selectedImage != null || (_uploadedImageUrl != null && _uploadedImageUrl!.isNotEmpty)) ...[
+                        Container(
+                          width: double.infinity,
+                          height: 140,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.white30),
+                          ),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: _selectedImage != null
+                                    ? (kIsWeb
+                                        ? Image.network(_selectedImage!.path, fit: BoxFit.cover)
+                                        : Image.file(File(_selectedImage!.path), fit: BoxFit.cover))
+                                    : AppCachedImage(imageUrl: _uploadedImageUrl!, fit: BoxFit.cover),
+                              ),
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedImage = null;
+                                      _uploadedImageUrl = null;
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.black54,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.delete_outline, color: Colors.white, size: 18),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                side: const BorderSide(color: Colors.white70),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              ),
+                              icon: const Icon(Icons.refresh, size: 16, color: Colors.white),
+                              label: const Text('Change Photo', style: TextStyle(fontSize: 12.5, color: Colors.white)),
+                              onPressed: () => _showImageSourceActionSheet(context),
+                            ),
+                          ],
+                        ),
+                      ] else ...[
+                        InkWell(
+                          onTap: () => _showImageSourceActionSheet(context),
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 20),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.white30, style: BorderStyle.solid),
+                            ),
+                            child: const Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.cloud_upload_outlined, size: 32, color: Colors.white),
+                                SizedBox(height: 6),
+                                Text(
+                                  'Tap to upload gallery banner photo',
+                                  style: TextStyle(fontSize: 13, color: Colors.white70),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 20),
 
                       // Field 9: Submit registration button (Exact match to screenshot)

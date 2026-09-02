@@ -216,12 +216,14 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                               color: Color(0xFF1E1E1E),
                             ),
                             SizedBox(width: 10),
-                            Text(
-                              'Category Details',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1E1E1E),
+                            Expanded(
+                              child: Text(
+                                'Category Details',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1E1E1E),
+                                ),
                               ),
                             ),
                           ],
@@ -506,12 +508,14 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                                   });
                                 },
                               ),
-                              const Text(
-                                'Mark as Featured Category',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xFF1E1E1E),
+                              const Expanded(
+                                child: Text(
+                                  'Mark as Featured Category',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xFF1E1E1E),
+                                  ),
                                 ),
                               ),
                             ],
@@ -717,8 +721,8 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
         });
       },
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 3),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFF6A2777) : Colors.white,
           borderRadius: BorderRadius.circular(6),
@@ -728,12 +732,15 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
           ),
         ),
         child: Center(
-          child: Text(
-            colorName,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: isSelected ? Colors.white : const Color(0xFF1E1E1E),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              colorName,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? Colors.white : const Color(0xFF1E1E1E),
+              ),
             ),
           ),
         ),

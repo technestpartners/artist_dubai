@@ -313,6 +313,7 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView>
     }
 
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () => _showDetail(c),
       child: Container(
         margin: const EdgeInsets.only(bottom: 14),

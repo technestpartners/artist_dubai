@@ -37,7 +37,7 @@ class _EventsViewState extends State<EventsView> {
     _fetchEvents();
     _fetchCategories();
     _eventsSub = sl<LiveSyncService>().eventsStream.listen((events) {
-      if (mounted && events.isNotEmpty) {
+      if (mounted) {
         setState(() {
           _allEvents = events;
         });
@@ -256,27 +256,29 @@ class _EventsViewState extends State<EventsView> {
                       ),
                     ),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        'Art Events',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF1E1E1E),
-                          letterSpacing: -0.3,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'Art Events',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF1E1E1E),
+                            letterSpacing: -0.3,
+                          ),
                         ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Discover Art Events in Dubai',
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          color: Color(0xFF5B6E8C),
+                        SizedBox(height: 2),
+                        Text(
+                          'Discover Art Events in Dubai',
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            color: Color(0xFF5B6E8C),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -627,26 +629,31 @@ class _EventsViewState extends State<EventsView> {
   }
 
   Widget _buildEventCard(ArtEventModel event) {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _showEventDetails(event),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFF2E2E3E).withValues(alpha: 0.2),
-          width: 1.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+        child: Container(
+          padding: const EdgeInsets.all(16.0),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color(0xFF2E2E3E).withValues(alpha: 0.2),
+              width: 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           // Top Row: Category Tag, Price, Share & Heart buttons
           Row(
             children: [
@@ -865,6 +872,8 @@ class _EventsViewState extends State<EventsView> {
           ),
         ],
       ),
+    ),
+    ),
     );
   }
 }

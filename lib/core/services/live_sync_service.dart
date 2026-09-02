@@ -130,8 +130,24 @@ class LiveSyncService {
     }
   }
 
-  /// On-demand manual or pull-to-refresh sync for all active data (no auto loop)
-  Future<void> syncAllSilently() async {
+  Timer? _heartbeatTimer;
+
+  /// Start periodic multi-device live sync heartbeat across all active user devices
+  void startMultiDeviceSync({Duration interval = const Duration(seconds: 25)}) {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = Timer.periodic(interval, (_) {
+      syncAllSilently(forceRefresh: true);
+    });
+  }
+
+  /// Stop periodic multi-device live sync heartbeat
+  void stopMultiDeviceSync() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
+  }
+
+  /// Lightweight multi-device sync for all active data from MySQL database
+  Future<void> syncAllSilently({bool forceRefresh = false}) async {
     if (_isSyncing) return;
     _isSyncing = true;
 
@@ -141,37 +157,44 @@ class LiveSyncService {
         userEmail = sl<StorageService>().getString('user_email');
       } catch (_) {}
 
-      final results = await Future.wait([
-        _apiService.getArtists(forceRefresh: true).catchError((_) => <ArtistModel>[]),
-        _apiService.getEvents(forceRefresh: true).catchError((_) => <ArtEventModel>[]),
-        _apiService.getGalleries(forceRefresh: true).catchError((_) => <Map<String, dynamic>>[]),
-        _apiService.getGovernmentEntities(forceRefresh: true).catchError((_) => <GovernmentEntity>[]),
-        _apiService.getCategories(forceRefresh: true).catchError((_) => <CategoryInfo>[]),
+      // Phase 1: High-priority core streams (Artists, Events, Categories)
+      final coreBatch = await Future.wait([
+        _apiService.getArtists(forceRefresh: forceRefresh).catchError((_) => <ArtistModel>[]),
+        _apiService.getEvents(forceRefresh: forceRefresh).catchError((_) => <ArtEventModel>[]),
+        _apiService.getCategories(forceRefresh: forceRefresh).catchError((_) => <CategoryInfo>[]),
+      ]);
+
+      final artists = coreBatch[0] as List<ArtistModel>;
+      final events = coreBatch[1] as List<ArtEventModel>;
+      final categories = coreBatch[2] as List<CategoryInfo>;
+
+      if (!_artistsController.isClosed) _artistsController.add(artists);
+      if (!_eventsController.isClosed) _eventsController.add(events);
+      if (!_categoriesController.isClosed) _categoriesController.add(categories);
+
+      // Phase 2: Secondary streams (Galleries, Government, User Bookings & Favorites)
+      final secondaryBatch = await Future.wait([
+        _apiService.getGalleries(forceRefresh: forceRefresh).catchError((_) => <Map<String, dynamic>>[]),
+        _apiService.getGovernmentEntities(forceRefresh: forceRefresh).catchError((_) => <GovernmentEntity>[]),
         if (userEmail != null && userEmail.isNotEmpty)
-          _apiService.getBookings(email: userEmail, forceRefresh: true).catchError((_) => <Map<String, dynamic>>[])
+          _apiService.getBookings(email: userEmail, forceRefresh: forceRefresh).catchError((_) => <Map<String, dynamic>>[])
         else
           Future.value(<Map<String, dynamic>>[]),
         if (userEmail != null && userEmail.isNotEmpty)
-          _apiService.getFavorites(email: userEmail, forceRefresh: true).catchError((_) => <String, dynamic>{})
+          _apiService.getFavorites(email: userEmail, forceRefresh: forceRefresh).catchError((_) => <String, dynamic>{})
         else
           Future.value(<String, dynamic>{}),
       ]);
 
-      final artists = results[0] as List<ArtistModel>;
-      final events = results[1] as List<ArtEventModel>;
-      final galleries = results[2] as List<Map<String, dynamic>>;
-      final govEntities = results[3] as List<GovernmentEntity>;
-      final categories = results[4] as List<CategoryInfo>;
-      final bookings = results[5] as List<Map<String, dynamic>>;
-      final favorites = results[6] as Map<String, dynamic>;
+      final galleries = secondaryBatch[0] as List<Map<String, dynamic>>;
+      final govEntities = secondaryBatch[1] as List<GovernmentEntity>;
+      final bookings = secondaryBatch[2] as List<Map<String, dynamic>>;
+      final favorites = secondaryBatch[3] as Map<String, dynamic>;
 
-      if (artists.isNotEmpty && !_artistsController.isClosed) _artistsController.add(artists);
-      if (events.isNotEmpty && !_eventsController.isClosed) _eventsController.add(events);
-      if (galleries.isNotEmpty && !_galleriesController.isClosed) _galleriesController.add(galleries);
-      if (govEntities.isNotEmpty && !_governmentController.isClosed) _governmentController.add(govEntities);
-      if (categories.isNotEmpty && !_categoriesController.isClosed) _categoriesController.add(categories);
+      if (!_galleriesController.isClosed) _galleriesController.add(galleries);
+      if (!_governmentController.isClosed) _governmentController.add(govEntities);
       if (!_bookingsController.isClosed) _bookingsController.add(bookings);
-      if (favorites.isNotEmpty && !_favoritesController.isClosed) _favoritesController.add(favorites);
+      if (!_favoritesController.isClosed) _favoritesController.add(favorites);
 
       try {
         sl<NotificationService>().syncWithBackend();
@@ -183,6 +206,7 @@ class LiveSyncService {
   }
 
   void dispose() {
+    stopMultiDeviceSync();
     _artistsController.close();
     _eventsController.close();
     _bookingsController.close();

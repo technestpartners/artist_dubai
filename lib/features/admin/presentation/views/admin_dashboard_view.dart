@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
@@ -43,6 +44,24 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   StreamSubscription<List<Map<String, dynamic>>>? _bookingsSub;
   StreamSubscription<List<GovernmentEntity>>? _govSub;
 
+  Future<void> _pickAndUploadImageForField(TextEditingController controller, StateSetter setModalState) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+      if (picked != null) {
+        final bytes = await picked.readAsBytes();
+        final nameParts = picked.name.split('.');
+        final ext = nameParts.length > 1 ? nameParts.last : 'jpg';
+        final url = await sl<ApiService>().uploadImageBytes(bytes, ext: ext);
+        if (url != null && url.isNotEmpty) {
+          setModalState(() {
+            controller.text = url;
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
   @override
   void initState() {
     super.initState();
@@ -53,17 +72,17 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   void _subscribeLiveStreams() {
     final liveSync = sl<LiveSyncService>();
     _artistsSub = liveSync.artistsStream.listen((list) {
-      if (mounted && list.isNotEmpty) {
+      if (mounted) {
         setState(() => _artists = list);
       }
     });
     _eventsSub = liveSync.eventsStream.listen((list) {
-      if (mounted && list.isNotEmpty) {
+      if (mounted) {
         setState(() => _events = list);
       }
     });
     _galleriesSub = liveSync.galleriesStream.listen((list) {
-      if (mounted && list.isNotEmpty) {
+      if (mounted) {
         setState(() {
           _galleries = list;
           _artCenters = list.where((g) => (g['category'] ?? '').toString().toLowerCase().contains('center') || (g['name'] ?? '').toString().toLowerCase().contains('center')).toList();
@@ -76,7 +95,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       }
     });
     _govSub = liveSync.governmentStream.listen((list) {
-      if (mounted && list.isNotEmpty) {
+      if (mounted) {
         setState(() => _govEntities = list);
       }
     });
@@ -110,7 +129,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           _galleries = galleries;
           _artCenters = galleries.where((g) => (g['category'] ?? '').toString().toLowerCase().contains('center') || (g['name'] ?? '').toString().toLowerCase().contains('center')).toList();
           _bookings = results[3] as List<Map<String, dynamic>>;
-          _govEntities = (results[4] as List<GovernmentEntity>).isNotEmpty ? (results[4] as List<GovernmentEntity>) : GovernmentEntity.entities;
+          _govEntities = results[4] as List<GovernmentEntity>;
         });
       }
     } catch (_) {}
@@ -295,7 +314,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         ),
                         Switch(
                           value: isCurrentlyOpen,
-                          activeColor: const Color(0xFF6A2777),
+                          activeThumbColor: const Color(0xFF6A2777),
                           activeTrackColor: const Color(0xFFD8B4E2),
                           onChanged: (val) {
                             setModalState(() => isCurrentlyOpen = val);
@@ -446,7 +465,31 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   _buildFormField(label: 'Website', controller: websiteCtrl, hint: 'https://...'),
                   const SizedBox(height: 12),
 
-                  _buildFormField(label: 'Image URL', controller: imageCtrl),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Image URL',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF334155),
+                        ),
+                      ),
+                      TextButton.icon(
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        icon: const Icon(Icons.upload_file_outlined, size: 14, color: Color(0xFF6A2777)),
+                        label: const Text('Upload photo', style: TextStyle(fontSize: 12, color: Color(0xFF6A2777), fontWeight: FontWeight.bold)),
+                        onPressed: () => _pickAndUploadImageForField(imageCtrl, setModalState),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  _buildFormField(label: '', controller: imageCtrl, hint: 'https://... or click Upload'),
                   const SizedBox(height: 12),
 
                   _buildFormField(label: 'Description', controller: descCtrl, maxLines: 3),
@@ -475,7 +518,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         ),
                         Switch(
                           value: isCurrentlyOpen,
-                          activeColor: const Color(0xFF6A2777),
+                          activeThumbColor: const Color(0xFF6A2777),
                           activeTrackColor: const Color(0xFFD8B4E2),
                           onChanged: (val) {
                             setModalState(() => isCurrentlyOpen = val);
@@ -605,10 +648,34 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   ),
                   const SizedBox(height: 12),
 
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Cover image URL',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF334155),
+                        ),
+                      ),
+                      TextButton.icon(
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        icon: const Icon(Icons.upload_file_outlined, size: 14, color: Color(0xFF6A2777)),
+                        label: const Text('Upload photo', style: TextStyle(fontSize: 12, color: Color(0xFF6A2777), fontWeight: FontWeight.bold)),
+                        onPressed: () => _pickAndUploadImageForField(coverImageCtrl, setModalState),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
                   _buildFormField(
-                    label: 'Cover image URL',
+                    label: '',
                     controller: coverImageCtrl,
-                    hint: 'https://...',
+                    hint: 'https://... or click Upload',
                   ),
                   const SizedBox(height: 12),
 
@@ -684,7 +751,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         ),
                         Switch(
                           value: isVisibleToEveryone,
-                          activeColor: const Color(0xFF6A2777),
+                          activeThumbColor: const Color(0xFF6A2777),
                           activeTrackColor: const Color(0xFFD8B4E2),
                           onChanged: (val) {
                             setModalState(() => isVisibleToEveryone = val);
@@ -1202,9 +1269,22 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               final ev = _events[index];
               return _buildListItemCard(
                 title: ev.title,
-                subtitle: '${ev.formattedDate} - ${ev.locationCity ?? ev.location}',
+                subtitle: '${ev.formattedDate.isNotEmpty ? ev.formattedDate : ev.dateTime} - ${ev.locationCity ?? ev.location}',
                 badgeText: 'Scheduled',
                 isStatusBadge: true,
+                onEdit: () => context.push(RouteNames.createArtEvent, extra: ev),
+                onDelete: () {
+                  _confirmDelete(
+                    title: 'Remove from Calendar',
+                    message: 'Are you sure you want to delete "${ev.title}" from the database calendar?',
+                    onConfirm: () async {
+                      setState(() {
+                        _events.removeAt(index);
+                      });
+                      await sl<ApiService>().deleteEvent(ev.id);
+                    },
+                  );
+                },
               );
             },
           ),

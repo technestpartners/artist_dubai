@@ -41,7 +41,7 @@ class _EventDetailViewState extends State<EventDetailView> {
     super.initState();
     _fetchArtists();
     _artistsSub = sl<LiveSyncService>().artistsStream.listen((artists) {
-      if (mounted && artists.isNotEmpty) {
+      if (mounted) {
         setState(() => _featuredArtists = artists);
       }
     });
@@ -63,13 +63,13 @@ class _EventDetailViewState extends State<EventDetailView> {
     super.dispose();
   }
 
-  Future<void> _fetchArtists() async {
+  Future<void> _fetchArtists({bool forceRefresh = false}) async {
     try {
-      final artists = await sl<ApiService>().getArtists(forceRefresh: true);
+      final artists = await sl<ApiService>().getArtists(forceRefresh: forceRefresh);
       final userEmail = sl<StorageService>().getString('user_email');
       Set<String> favIds = {};
       if (userEmail != null && userEmail.isNotEmpty) {
-        final favData = await sl<ApiService>().getFavorites(email: userEmail, forceRefresh: true);
+        final favData = await sl<ApiService>().getFavorites(email: userEmail, forceRefresh: forceRefresh);
         final favArtists = (favData['artists'] as List<ArtistModel>?) ?? [];
         favIds = favArtists.map((a) => a.id).toSet();
       }
@@ -188,14 +188,19 @@ class _EventDetailViewState extends State<EventDetailView> {
                 width: double.infinity,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  image: DecorationImage(
-                    image: CachedNetworkImageProvider(
-                      event.imageUrl != null && event.imageUrl!.isNotEmpty
-                          ? event.imageUrl!
-                          : 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1200&auto=format&fit=crop',
-                    ),
-                    fit: BoxFit.cover,
-                  ),
+                  gradient: (event.imageUrl == null || event.imageUrl!.isEmpty)
+                      ? const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF6B1C9B), Color(0xFF4A106D)],
+                        )
+                      : null,
+                  image: event.imageUrl != null && event.imageUrl!.isNotEmpty
+                      ? DecorationImage(
+                          image: CachedNetworkImageProvider(event.imageUrl!),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
                 ),
                 child: Container(
                   padding: const EdgeInsets.all(16),
@@ -409,8 +414,11 @@ class _EventDetailViewState extends State<EventDetailView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
                         const Text(
                           'Event Photos',
@@ -547,25 +555,27 @@ class _EventDetailViewState extends State<EventDetailView> {
                           color: Color(0xFF64748B),
                         ),
                         const SizedBox(width: 10),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              event.formattedDate,
-                              style: const TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1E1E1E),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                event.formattedDate,
+                                style: const TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1E1E1E),
+                                ),
                               ),
-                            ),
-                            Text(
-                              event.timeRange,
-                              style: const TextStyle(
-                                fontSize: 12.5,
-                                color: Color(0xFF64748B),
+                              Text(
+                                event.timeRange,
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  color: Color(0xFF64748B),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -579,18 +589,20 @@ class _EventDetailViewState extends State<EventDetailView> {
                           color: Color(0xFF64748B),
                         ),
                         const SizedBox(width: 10),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              event.location,
-                              style: const TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1E1E1E),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                event.location,
+                                style: const TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1E1E1E),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -604,12 +616,14 @@ class _EventDetailViewState extends State<EventDetailView> {
                           color: Color(0xFF64748B),
                         ),
                         const SizedBox(width: 10),
-                        Text(
-                          event.organizer,
-                          style: const TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1E1E1E),
+                        Expanded(
+                          child: Text(
+                            event.organizer,
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1E1E1E),
+                            ),
                           ),
                         ),
                       ],
@@ -624,12 +638,14 @@ class _EventDetailViewState extends State<EventDetailView> {
                           color: Color(0xFF64748B),
                         ),
                         SizedBox(width: 10),
-                        Text(
-                          'Free Community Admission',
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF16A34A),
+                        Expanded(
+                          child: Text(
+                            'Free Community Admission',
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF16A34A),
+                            ),
                           ),
                         ),
                       ],
@@ -693,8 +709,10 @@ class _EventDetailViewState extends State<EventDetailView> {
                     const SizedBox(height: 14),
 
                     // Quick Stats Chips Row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 12,
+                      runSpacing: 6,
                       children: [
                         Text(
                           '👥 ${featuredArtists.length} Artists',
@@ -704,7 +722,6 @@ class _EventDetailViewState extends State<EventDetailView> {
                             color: Color(0xFF334155),
                           ),
                         ),
-                        const SizedBox(width: 14),
                         const Text(
                           '✨ Multiple Disciplines',
                           style: TextStyle(
@@ -713,7 +730,6 @@ class _EventDetailViewState extends State<EventDetailView> {
                             color: Color(0xFF334155),
                           ),
                         ),
-                        const SizedBox(width: 14),
                         const Text(
                           '📍 UAE-based',
                           style: TextStyle(
@@ -1862,13 +1878,6 @@ class _EventDetailViewState extends State<EventDetailView> {
                                       isUploading = true;
                                     });
 
-                                    const stockDefaults = [
-                                      'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80',
-                                      'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
-                                      'https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=800&q=80',
-                                      'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&fit=crop&w=1200&q=80',
-                                    ];
-
                                     List<String> finalUploadedUrls = [];
 
                                     if (modalImages.isNotEmpty) {
@@ -1889,7 +1898,18 @@ class _EventDetailViewState extends State<EventDetailView> {
                                     }
 
                                     if (finalUploadedUrls.isEmpty) {
-                                      finalUploadedUrls = List<String>.from(stockDefaults);
+                                      setModalState(() {
+                                        isUploading = false;
+                                      });
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Please select at least one photo to upload.'),
+                                            backgroundColor: Color(0xFFDC2626),
+                                          ),
+                                        );
+                                      }
+                                      return;
                                     }
 
                                     final coverUrl = finalUploadedUrls.first;

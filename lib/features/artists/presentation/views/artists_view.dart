@@ -122,7 +122,7 @@ class _ArtistsViewState extends State<ArtistsView> {
     super.initState();
     _fetchData();
     _artistsSub = sl<LiveSyncService>().artistsStream.listen((artists) {
-      if (mounted && artists.isNotEmpty) {
+      if (mounted) {
         setState(() {
           _allArtists = artists;
         });
@@ -138,12 +138,22 @@ class _ArtistsViewState extends State<ArtistsView> {
         });
       }
     });
+    _catSub = sl<LiveSyncService>().categoriesStream.listen((cats) {
+      if (mounted && cats.isNotEmpty) {
+        setState(() {
+          _categories = cats;
+        });
+      }
+    });
   }
+
+  StreamSubscription<List<CategoryInfo>>? _catSub;
 
   @override
   void dispose() {
     _artistsSub?.cancel();
     _favSub?.cancel();
+    _catSub?.cancel();
     _hideCategoryOverlay();
     super.dispose();
   }
@@ -187,7 +197,7 @@ class _ArtistsViewState extends State<ArtistsView> {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveArtists = _isLoggedIn ? _allArtists : <ArtistModel>[];
+    final effectiveArtists = _allArtists;
     final filteredArtists =
         _selectedCategory == null
             ? effectiveArtists
@@ -205,7 +215,7 @@ class _ArtistsViewState extends State<ArtistsView> {
           color: const Color(0xFF5E227A),
           onRefresh: _fetchData,
           child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
+            physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -525,18 +535,30 @@ class _ArtistsViewState extends State<ArtistsView> {
   }
 
   Widget _buildArtistCard(ArtistModel artist) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ArtistDetailView(artist: artist),
+            ),
+          );
+        },
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.black.withValues(alpha: 0.15),
-          width: 1.0,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.black.withValues(alpha: 0.15),
+              width: 1.0,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           // Banner Image with Share & Favorite Buttons
           Stack(
             children: [
@@ -760,6 +782,8 @@ class _ArtistsViewState extends State<ArtistsView> {
           ),
         ],
       ),
+    ),
+    ),
     );
   }
 }

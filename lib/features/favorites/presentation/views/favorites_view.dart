@@ -35,7 +35,7 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
     _tabController = TabController(length: 3, vsync: this);
     _fetchFavorites();
     _favSub = sl<LiveSyncService>().favoritesStream.listen((data) {
-      if (mounted && data.isNotEmpty) {
+      if (mounted) {
         setState(() {
           _favoritedArtists = data['artists'] as List<ArtistModel>? ?? [];
           _favoritedEvents = data['events'] as List<ArtEventModel>? ?? [];
@@ -46,11 +46,11 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
     });
   }
 
-  Future<void> _fetchFavorites() async {
+  Future<void> _fetchFavorites({bool forceRefresh = false}) async {
     setState(() => _isLoading = _favoritedArtists.isEmpty && _favoritedEvents.isEmpty && _favoritedArtworks.isEmpty);
     try {
       final userEmail = sl<StorageService>().getString('user_email');
-      final data = await sl<ApiService>().getFavorites(email: userEmail, forceRefresh: true);
+      final data = await sl<ApiService>().getFavorites(email: userEmail, forceRefresh: forceRefresh);
       if (mounted) {
         setState(() {
           _favoritedArtists = data['artists'] as List<ArtistModel>? ?? [];
@@ -447,7 +447,7 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
         final year = item['year']?.toString() ?? '2025';
         final medium = item['medium']?.toString() ?? item['details']?.toString() ?? 'Mixed Media';
         final dimensions = item['dimensions']?.toString() ?? '120 x 80 cm';
-        final image = item['image_url']?.toString() ?? item['image']?.toString() ?? 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1200&auto=format&fit=crop';
+        final image = item['image_url']?.toString() ?? item['image']?.toString() ?? '';
 
         return Container(
           margin: const EdgeInsets.only(bottom: 14),

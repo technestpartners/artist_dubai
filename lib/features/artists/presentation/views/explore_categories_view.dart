@@ -29,10 +29,10 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
     super.initState();
     _fetchCategoriesFromApi();
     _catSub = sl<LiveSyncService>().categoriesStream.listen((cats) {
-      if (mounted && cats.isNotEmpty) setState(() => _categories = cats);
+      if (mounted) setState(() => _categories = cats);
     });
     _artistSub = sl<LiveSyncService>().artistsStream.listen((artists) {
-      if (mounted && artists.isNotEmpty) setState(() => _allArtists = artists);
+      if (mounted) setState(() => _allArtists = artists);
     });
   }
 
@@ -43,10 +43,10 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
     super.dispose();
   }
 
-  Future<void> _fetchCategoriesFromApi() async {
+  Future<void> _fetchCategoriesFromApi({bool forceRefresh = false}) async {
     try {
-      final categories = await sl<ApiService>().getCategories(forceRefresh: true);
-      final artists = await sl<ApiService>().getArtists(forceRefresh: true);
+      final categories = await sl<ApiService>().getCategories(forceRefresh: forceRefresh);
+      final artists = await sl<ApiService>().getArtists(forceRefresh: forceRefresh);
       if (mounted) {
         setState(() {
           _categories = categories;
@@ -117,14 +117,18 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
             ),
 
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 16.0,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              child: RefreshIndicator(
+                color: const Color(0xFF6A2777),
+                onRefresh: () => _fetchCategoriesFromApi(forceRefresh: true),
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 16.0,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                     // Explore Categories Header Section
                     Row(
                       children: [
@@ -142,26 +146,28 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
                           ),
                         ),
                         const SizedBox(width: 14),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
-                              'Explore Categories',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1E1E1E),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text(
+                                'Explore Categories',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1E1E1E),
+                                ),
                               ),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              'Discover talented artists',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF64748B),
+                              SizedBox(height: 2),
+                              Text(
+                                'Discover talented artists',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF64748B),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -287,9 +293,10 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
+    ),
       bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
     );
   }

@@ -273,7 +273,16 @@ class DatabaseManager {
             "ALTER TABLE government_entities ADD COLUMN base_rating DECIMAL(3,1) DEFAULT 4.5",
             "ALTER TABLE government_entities ADD COLUMN base_review_count INT DEFAULT 100",
             "ALTER TABLE government_entities ADD COLUMN rating DECIMAL(3,1) DEFAULT 4.5",
-            "ALTER TABLE government_entities ADD COLUMN review_count INT DEFAULT 100"
+            "ALTER TABLE government_entities ADD COLUMN review_count INT DEFAULT 100",
+            "ALTER TABLE artists ADD INDEX idx_artist_cat (category)",
+            "ALTER TABLE artists ADD INDEX idx_artist_email (email)",
+            "ALTER TABLE events ADD INDEX idx_event_cat (category)",
+            "ALTER TABLE events ADD INDEX idx_event_contact (contact_email)",
+            "ALTER TABLE bookings ADD INDEX idx_booking_email (email)",
+            "ALTER TABLE bookings ADD INDEX idx_booking_status (status)",
+            "ALTER TABLE artworks ADD INDEX idx_artworks_artist (artist_id)",
+            "ALTER TABLE galleries ADD INDEX idx_gallery_cat (category)",
+            "ALTER TABLE events ADD COLUMN galleries_json LONGTEXT NULL"
         ];
         foreach ($migrations as $m) {
             try { $this->pdo->exec($m); } catch (\Throwable $t) {}
@@ -809,8 +818,8 @@ class ArtistController {
         $instagram = InputSanitizer::cleanString($input['instagram'] ?? '');
         $experience_level = InputSanitizer::cleanString($input['experience_level'] ?? $input['experience'] ?? '');
         $booking_rate = InputSanitizer::cleanString($input['booking_rate'] ?? $input['price'] ?? 'AED 1500+');
-        $avatar_url = InputSanitizer::cleanString($input['avatar_url'] ?? $input['avatar'] ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80');
-        $banner_url = InputSanitizer::cleanString($input['banner_url'] ?? $input['banner'] ?? 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80');
+        $avatar_url = InputSanitizer::cleanString($input['avatar_url'] ?? $input['avatar'] ?? '');
+        $banner_url = InputSanitizer::cleanString($input['banner_url'] ?? $input['banner'] ?? '');
 
         if (empty($name)) {
             ApiResponse::error('Artist name is required.');
@@ -1001,8 +1010,17 @@ class EventController {
             $stmt = $this->db->prepare('SELECT * FROM events WHERE id = ?');
             $stmt->execute([$id]);
             $event = $stmt->fetch();
-            if ($event) ApiResponse::success($event, 'Event details fetched from MySQL');
-            else ApiResponse::error('Event not found', 404);
+            if ($event) {
+                if (!empty($event['galleries_json'])) {
+                    $event['galleries'] = json_decode($event['galleries_json'], true);
+                } else {
+                    $event['galleries'] = [];
+                }
+                ApiResponse::success($event, 'Event details fetched from MySQL');
+            } else {
+                ApiResponse::error('Event not found', 404);
+            }
+            return;
         }
 
         $sql = 'SELECT * FROM events WHERE 1=1';
@@ -1048,22 +1066,13 @@ class EventController {
         $stmt->execute($params);
         $events = $stmt->fetchAll();
 
-        // Dynamically attach event photo galleries
+        // Attach event photo galleries if stored in MySQL
         foreach ($events as &$ev) {
-            $ev['galleries'] = [
-                [
-                    'title' => 'Event Gallery: ' . $ev['title'],
-                    'subtitle' => 'Live artwork & event highlights',
-                    'photo_count' => 3,
-                    'date' => $ev['event_date'] ?? '15 Oct 2026',
-                    'image_url' => 'https://picsum.photos/id/1015/800/600',
-                    'images' => [
-                        ['title' => 'Artwork Showcase 1', 'image_url' => 'https://picsum.photos/id/1015/600/400', 'caption' => 'Exhibition highlight'],
-                        ['title' => 'Artwork Showcase 2', 'image_url' => 'https://picsum.photos/id/1018/600/400', 'caption' => 'Artist live installation'],
-                        ['title' => 'Artwork Showcase 3', 'image_url' => 'https://picsum.photos/id/1025/600/400', 'caption' => 'Gallery visitors']
-                    ]
-                ]
-            ];
+            if (!empty($ev['galleries_json'])) {
+                $ev['galleries'] = json_decode($ev['galleries_json'], true);
+            } else {
+                $ev['galleries'] = [];
+            }
         }
 
         $pagination = [
@@ -1091,16 +1100,22 @@ class EventController {
         $contactEmail = InputSanitizer::cleanEmail($input['contact_email'] ?? '');
         $contactPhone = InputSanitizer::cleanString($input['contact_phone'] ?? '');
         $tags = InputSanitizer::cleanString($input['tags'] ?? '');
-        $imageUrl = InputSanitizer::cleanString($input['image_url'] ?? $input['image'] ?? 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80');
+        $imageUrl = InputSanitizer::cleanString($input['image_url'] ?? $input['image'] ?? '');
 
         if (empty($title)) {
             ApiResponse::error('Event title is required.');
         }
 
         $maxAttendees = isset($input['max_attendees']) ? (int)$input['max_attendees'] : 100;
+        $galleriesJson = null;
+        if (isset($input['galleries'])) {
+            $galleriesJson = is_array($input['galleries']) ? json_encode($input['galleries']) : (string)$input['galleries'];
+        } elseif (isset($input['galleries_json'])) {
+            $galleriesJson = (string)$input['galleries_json'];
+        }
 
-        $stmt = $this->db->prepare('INSERT INTO events (title, description, category, price, event_date, end_date, location, venue, is_free, organizer_name, contact_email, contact_phone, tags, image_url, max_attendees, attendees_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)');
-        $stmt->execute([$title, $description, $category, $price, $eventDate, $endDate, $location, $venue, $isFree, $organizer, $contactEmail, $contactPhone, $tags, $imageUrl, $maxAttendees]);
+        $stmt = $this->db->prepare('INSERT INTO events (title, description, category, price, event_date, end_date, location, venue, is_free, organizer_name, contact_email, contact_phone, tags, image_url, max_attendees, attendees_count, galleries_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)');
+        $stmt->execute([$title, $description, $category, $price, $eventDate, $endDate, $location, $venue, $isFree, $organizer, $contactEmail, $contactPhone, $tags, $imageUrl, $maxAttendees, $galleriesJson]);
 
         $newEventId = (int)$this->db->lastInsertId();
 
@@ -1135,6 +1150,14 @@ class EventController {
         if (!empty($description)) { $fields[] = 'description = ?'; $params[] = $description; }
         if (!empty($category)) { $fields[] = 'category = ?'; $params[] = $category; }
         if (!empty($location)) { $fields[] = 'location = ?'; $params[] = $location; }
+        if (isset($input['image_url'])) { $fields[] = 'image_url = ?'; $params[] = InputSanitizer::cleanString($input['image_url']); }
+        if (isset($input['galleries'])) {
+            $fields[] = 'galleries_json = ?';
+            $params[] = is_array($input['galleries']) ? json_encode($input['galleries']) : (string)$input['galleries'];
+        } elseif (isset($input['galleries_json'])) {
+            $fields[] = 'galleries_json = ?';
+            $params[] = (string)$input['galleries_json'];
+        }
         if (!empty($price)) { 
             $fields[] = 'price = ?'; 
             $params[] = $price; 
@@ -1426,8 +1449,8 @@ class GalleryController {
             $galleries = $stmt->fetchAll();
             foreach ($galleries as &$g) {
                 $g['title'] = $g['name'];
-                $g['subtitle'] = !empty($g['description']) ? $g['description'] : 'Curated collection by Artist';
-                $g['image'] = !empty($g['image_url']) ? $g['image_url'] : 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200&auto=format&fit=crop';
+                $g['subtitle'] = !empty($g['description']) ? $g['description'] : '';
+                $g['image'] = !empty($g['image_url']) ? $g['image_url'] : '';
                 $g['count'] = ($g['photo_count'] ?? 1) . ' photos';
                 if (!empty($g['images_json'])) { $g['images'] = json_decode($g['images_json'], true); }
             }
@@ -1456,8 +1479,8 @@ class GalleryController {
 
         foreach ($galleries as &$g) {
             $g['title'] = $g['name'];
-            $g['subtitle'] = !empty($g['description']) ? $g['description'] : 'Curated collection by Artist';
-            $g['image'] = !empty($g['image_url']) ? $g['image_url'] : 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200&auto=format&fit=crop';
+            $g['subtitle'] = !empty($g['description']) ? $g['description'] : '';
+            $g['image'] = !empty($g['image_url']) ? $g['image_url'] : '';
             $g['count'] = ($g['photo_count'] ?? 1) . ' photos';
             if (!empty($g['images_json'])) { $g['images'] = json_decode($g['images_json'], true); }
         }
@@ -1476,7 +1499,7 @@ class GalleryController {
 
     public function createGallery(array $input): void {
         $name = InputSanitizer::cleanString($input['name'] ?? $input['title'] ?? '');
-        $description = InputSanitizer::cleanString($input['description'] ?? $input['about'] ?? $input['subtitle'] ?? 'Curated gallery and art space in Dubai');
+        $description = InputSanitizer::cleanString($input['description'] ?? $input['about'] ?? $input['subtitle'] ?? '');
         $category = InputSanitizer::cleanString($input['category'] ?? $input['type'] ?? 'Art Gallery');
         $location = InputSanitizer::cleanString($input['location'] ?? $input['address'] ?? 'Dubai, UAE');
         $website = InputSanitizer::cleanString($input['website'] ?? '');
@@ -1487,7 +1510,7 @@ class GalleryController {
         $artistId = InputSanitizer::cleanString($input['artist_id'] ?? '');
         $artistName = InputSanitizer::cleanString($input['artist_name'] ?? '');
         $photoCount = isset($input['photo_count']) ? (int)$input['photo_count'] : (isset($input['images']) && is_array($input['images']) ? count($input['images']) : 1);
-        $imageUrl = InputSanitizer::cleanString($input['image_url'] ?? $input['image'] ?? 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80');
+        $imageUrl = InputSanitizer::cleanString($input['image_url'] ?? $input['image'] ?? '');
         $imagesJson = isset($input['images']) && is_array($input['images']) ? json_encode($input['images']) : null;
 
         if (empty($name)) {
@@ -2313,17 +2336,26 @@ class NotificationController {
 class UploadController {
     public function serveFile(string $filename): void {
         $cleanName = basename($filename);
-        $uploadDir = realpath(__DIR__ . '/../../uploads');
-        if (!$uploadDir) {
-            $uploadDir = __DIR__ . '/../../uploads';
+        $possibleDirs = [
+            __DIR__ . '/uploads',
+            __DIR__ . '/../../uploads',
+            __DIR__,
+        ];
+        $filePath = null;
+        foreach ($possibleDirs as $dir) {
+            if (file_exists($dir . '/' . $cleanName)) {
+                $filePath = $dir . '/' . $cleanName;
+                break;
+            }
         }
-        $filePath = $uploadDir . '/' . $cleanName;
+
+        if (ob_get_length()) ob_clean();
 
         header('Access-Control-Allow-Origin: *');
         header('Access-Control-Allow-Methods: GET, OPTIONS');
         header('Access-Control-Allow-Headers: *');
 
-        if (empty($cleanName) || !file_exists($filePath)) {
+        if (empty($cleanName) || !$filePath || !file_exists($filePath)) {
             http_response_code(404);
             header('Content-Type: application/json');
             echo json_encode(['status' => 'error', 'message' => 'Image not found: ' . $cleanName]);
@@ -2349,47 +2381,100 @@ class UploadController {
     }
 
     public function handleUpload(array $input): void {
-        $uploadDir = __DIR__ . '/../../uploads';
+        $uploadDir = __DIR__ . '/uploads';
         if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
+            @mkdir($uploadDir, 0777, true);
+        }
+        $htaccess = $uploadDir . '/.htaccess';
+        if (!file_exists($htaccess)) {
+            @file_put_contents($htaccess, "<IfModule mod_authz_core.c>\nRequire all granted\n</IfModule>\n<IfModule !mod_authz_core.c>\nOrder allow,deny\nAllow from all\n</IfModule>\n");
         }
 
-        // Handle multipart $_FILES
-        if (!empty($_FILES['file'])) {
-            $file = $_FILES['file'];
+        $isLive = (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'technestpartners.com') !== false)
+               || (isset($_SERVER['SERVER_NAME']) && strpos($_SERVER['SERVER_NAME'], 'technestpartners.com') !== false)
+               || (getenv('APP_ENV') === 'production');
+
+        $protocol = 'https://';
+        $host = $_SERVER['HTTP_HOST'] ?? 'technestpartners.com';
+        $baseUrl = $isLive ? 'https://technestpartners.com/api/' : ($protocol . $host . '/');
+
+        // 1. Handle multipart $_FILES
+        if (!empty($_FILES['file']) || !empty($_FILES['image'])) {
+            $file = $_FILES['file'] ?? $_FILES['image'];
             $ext = pathinfo($file['name'] ?? '', PATHINFO_EXTENSION);
             if (empty($ext)) $ext = 'jpg';
-            $filename = 'gallery_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . strtolower($ext);
+            $filename = 'art_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . strtolower($ext);
             $targetPath = $uploadDir . '/' . $filename;
-            if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-                $host = $_SERVER['HTTP_HOST'] ?? '127.0.0.1:8000';
-                $url = 'http://' . $host . '/api.php?resource=uploads&file=' . $filename;
-                ApiResponse::success(['url' => $url, 'filename' => $filename], 'File uploaded successfully', 201);
+            if (@move_uploaded_file($file['tmp_name'], $targetPath)) {
+                $url = $baseUrl . 'api.php?resource=uploads&file=' . $filename;
+                ApiResponse::success(['url' => $url, 'filename' => $filename, 'success' => true], 'File uploaded successfully', 201);
                 return;
             }
         }
 
-        // Handle base64 encoded data
-        if (!empty($input['base64'])) {
-            $data = $input['base64'];
-            $ext = 'jpg';
-            if (preg_match('/^data:image\/(\w+);base64,/', $data, $type)) {
-                $data = substr($data, strpos($data, ',') + 1);
+        // 2. Handle base64 encoded data
+        $base64Data = $input['base64'] ?? $input['image'] ?? $input['data'] ?? '';
+        if (!empty($base64Data)) {
+            $ext = $input['ext'] ?? 'jpg';
+            if (preg_match('/^data:image\/(\w+);base64,/', $base64Data, $type)) {
+                $base64Data = substr($base64Data, strpos($base64Data, ',') + 1);
                 $ext = strtolower($type[1]);
             }
-            $decoded = base64_decode($data);
+            $decoded = base64_decode($base64Data);
             if ($decoded !== false && strlen($decoded) > 0) {
-                $filename = 'gallery_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+                $filename = 'art_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . strtolower($ext);
                 $targetPath = $uploadDir . '/' . $filename;
-                file_put_contents($targetPath, $decoded);
-                $host = $_SERVER['HTTP_HOST'] ?? '127.0.0.1:8000';
-                $url = 'http://' . $host . '/api.php?resource=uploads&file=' . $filename;
-                ApiResponse::success(['url' => $url, 'filename' => $filename], 'Base64 image uploaded successfully', 201);
-                return;
+                $saved = @file_put_contents($targetPath, $decoded);
+                if ($saved !== false) {
+                    $url = $baseUrl . 'api.php?resource=uploads&file=' . $filename;
+                    ApiResponse::success(['url' => $url, 'filename' => $filename, 'success' => true], 'Image uploaded successfully', 201);
+                    return;
+                }
             }
         }
 
-        ApiResponse::error('No valid file or base64 data received for upload', 400);
+        ApiResponse::error('No valid image file or base64 data received for upload', 400);
+    }
+}
+
+// -----------------------------------------------------------------------------
+// 4i. About Controller
+// -----------------------------------------------------------------------------
+class AboutController {
+    private PDO $db;
+
+    public function __construct() {
+        $this->db = DatabaseManager::getInstance()->getConnection();
+    }
+
+    public function getAboutInfo(): void {
+        try {
+            $artistsCount = (int)$this->db->query("SELECT COUNT(*) FROM artists")->fetchColumn();
+            $eventsCount = (int)$this->db->query("SELECT COUNT(*) FROM events")->fetchColumn();
+            $galleriesCount = (int)$this->db->query("SELECT COUNT(*) FROM galleries")->fetchColumn();
+            $categoriesCount = (int)$this->db->query("SELECT COUNT(*) FROM categories")->fetchColumn();
+            $bookingsCount = (int)$this->db->query("SELECT COUNT(*) FROM bookings")->fetchColumn();
+            $entitiesCount = (int)$this->db->query("SELECT COUNT(*) FROM government_entities")->fetchColumn();
+
+            ApiResponse::success([
+                'title' => 'Artist Dubai',
+                'description' => 'The Premier UAE Creative & Cultural Ecosystem Platform',
+                'version' => '6.3.0',
+                'database' => 'MySQL',
+                'status' => 'online',
+                'counts' => [
+                    'artists' => $artistsCount,
+                    'events' => $eventsCount,
+                    'galleries' => $galleriesCount,
+                    'categories' => $categoriesCount,
+                    'bookings' => $bookingsCount,
+                    'cultural_entities' => $entitiesCount,
+                ],
+                'mission' => 'Empowering Emirati and UAE-based creative visionaries with digital exposure, seamless event booking, and government cultural integration.',
+            ], 'Platform information retrieved successfully');
+        } catch (\Throwable $t) {
+            ApiResponse::error('Failed to retrieve platform info: ' . $t->getMessage(), 500);
+        }
     }
 }
 
@@ -2398,7 +2483,16 @@ class UploadController {
 // -----------------------------------------------------------------------------
 class UnifiedMySqlApiRouter {
     public static function execute(): void {
+        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+
         $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+        if ($method === 'OPTIONS') {
+            http_response_code(200);
+            exit;
+        }
+
         $rawJson = @file_get_contents('php://input');
         $input = $GLOBALS['TEST_INPUT'] ?? (json_decode($rawJson, true) ?: $_POST);
         if (!is_array($input)) $input = [];
@@ -2425,8 +2519,12 @@ class UnifiedMySqlApiRouter {
             case 'uploads':
             case 'upload':
                 $uploadCtrl = new UploadController();
-                if ($method === 'GET' || !empty($_GET['file']) || !empty($_GET['name'])) {
-                    $uploadCtrl->serveFile($_GET['file'] ?? $_GET['name'] ?? '');
+                $reqFile = $_GET['file'] ?? $_GET['name'] ?? '';
+                if (empty($reqFile) && preg_match('/uploads?\/([^\/\?]+)/', $uri, $m)) {
+                    $reqFile = $m[1];
+                }
+                if ($method === 'GET' || !empty($reqFile)) {
+                    $uploadCtrl->serveFile($reqFile);
                 } else {
                     $uploadCtrl->handleUpload($input);
                 }
@@ -2572,6 +2670,11 @@ class UnifiedMySqlApiRouter {
                 } else {
                     $notifCtrl->getNotifications($_GET);
                 }
+                break;
+
+            case 'about':
+                $aboutCtrl = new AboutController();
+                $aboutCtrl->getAboutInfo();
                 break;
 
             case 'reviews':
