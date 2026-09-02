@@ -31,7 +31,13 @@ class _GalleriesViewState extends State<GalleriesView> {
     _galleriesSub = sl<LiveSyncService>().galleriesStream.listen((galleries) {
       if (mounted) {
         setState(() {
-          _registeredGalleries = galleries;
+          _registeredGalleries = galleries.where((g) =>
+            g['status'] == 'approved' ||
+            g['status'] == 'active' ||
+            g['status'] == 'Open' ||
+            g['is_approved'] == 1 ||
+            (g['is_public'] == 1 && g['status'] != 'pending')
+          ).toList();
         });
       }
     });
@@ -45,10 +51,16 @@ class _GalleriesViewState extends State<GalleriesView> {
 
   Future<void> _fetchGalleries() async {
     try {
-      final galleries = await sl<ApiService>().getGalleries();
+      final galleries = await sl<ApiService>().getGalleries(status: 'approved');
       if (mounted) {
         setState(() {
-          _registeredGalleries = galleries;
+          _registeredGalleries = galleries.where((g) =>
+            g['status'] == 'approved' ||
+            g['status'] == 'active' ||
+            g['status'] == 'Open' ||
+            g['is_approved'] == 1 ||
+            (g['is_public'] == 1 && g['status'] != 'pending')
+          ).toList();
         });
       }
     } catch (_) {}

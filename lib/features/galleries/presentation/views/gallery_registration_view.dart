@@ -62,6 +62,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
         'email': _emailController.text.trim(),
         'phone': _phoneController.text.trim(),
         'about': _aboutController.text.trim(),
+        'status': 'pending',
+        'is_public': 0,
+        'is_approved': 0,
       });
 
       if (mounted) {

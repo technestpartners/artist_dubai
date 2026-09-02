@@ -270,6 +270,9 @@ class DatabaseManager {
             "ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'user'",
             "ALTER TABLE galleries ADD COLUMN phone VARCHAR(100) NULL",
             "ALTER TABLE galleries ADD COLUMN about TEXT NULL",
+            "ALTER TABLE galleries ADD COLUMN status VARCHAR(50) DEFAULT 'approved'",
+            "ALTER TABLE galleries ADD COLUMN is_public TINYINT(1) DEFAULT 1",
+            "ALTER TABLE galleries ADD COLUMN is_approved TINYINT(1) DEFAULT 1",
             "ALTER TABLE government_entities ADD COLUMN base_rating DECIMAL(3,1) DEFAULT 4.5",
             "ALTER TABLE government_entities ADD COLUMN base_review_count INT DEFAULT 100",
             "ALTER TABLE government_entities ADD COLUMN rating DECIMAL(3,1) DEFAULT 4.5",
@@ -282,6 +285,7 @@ class DatabaseManager {
             "ALTER TABLE bookings ADD INDEX idx_booking_status (status)",
             "ALTER TABLE artworks ADD INDEX idx_artworks_artist (artist_id)",
             "ALTER TABLE galleries ADD INDEX idx_gallery_cat (category)",
+            "ALTER TABLE galleries ADD INDEX idx_gallery_status (status)",
             "ALTER TABLE events ADD COLUMN galleries_json LONGTEXT NULL"
         ];
         foreach ($migrations as $m) {
@@ -1457,6 +1461,9 @@ class GalleryController {
             ApiResponse::success($galleries, 'Galleries retrieved successfully from MySQL');
         }
 
+        $status = InputSanitizer::cleanString($query['status'] ?? '');
+        $isAdmin = isset($query['admin']) && ($query['admin'] == '1' || $query['admin'] == 'true');
+
         // Paginated full listing
         $sql = 'SELECT * FROM galleries WHERE 1=1';
         $params = [];
@@ -1465,6 +1472,15 @@ class GalleryController {
             $params[] = "%$search%";
             $params[] = "%$search%";
             $params[] = "%$search%";
+        }
+
+        if (!$isAdmin && $status !== 'all') {
+            if (!empty($status)) {
+                $sql .= ' AND status = ?';
+                $params[] = $status;
+            } else {
+                $sql .= " AND (status = 'approved' OR status = 'active' OR status = 'Open' OR (status IS NULL AND is_public = 1))";
+            }
         }
 
         $countSql = str_replace('SELECT * FROM galleries', 'SELECT COUNT(*) FROM galleries', $sql);
@@ -1512,14 +1528,17 @@ class GalleryController {
         $photoCount = isset($input['photo_count']) ? (int)$input['photo_count'] : (isset($input['images']) && is_array($input['images']) ? count($input['images']) : 1);
         $imageUrl = InputSanitizer::cleanString($input['image_url'] ?? $input['image'] ?? '');
         $imagesJson = isset($input['images']) && is_array($input['images']) ? json_encode($input['images']) : null;
+        $status = InputSanitizer::cleanString($input['status'] ?? 'pending');
+        $isPublic = isset($input['is_public']) ? (int)$input['is_public'] : ($status === 'approved' ? 1 : 0);
+        $isApproved = isset($input['is_approved']) ? (int)$input['is_approved'] : ($status === 'approved' ? 1 : 0);
 
         if (empty($name)) {
             ApiResponse::error('Gallery / center name is required.');
             return;
         }
 
-        $stmt = $this->db->prepare('INSERT INTO galleries (name, category, location, website, contact_person, email, phone, about, image_url, artist_id, artist_name, description, photo_count, images_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        $stmt->execute([$name, $category, $location, $website, $contactPerson, $email, $phone, $about, $imageUrl, $artistId, $artistName, $description, $photoCount, $imagesJson]);
+        $stmt = $this->db->prepare('INSERT INTO galleries (name, category, location, website, contact_person, email, phone, about, image_url, artist_id, artist_name, description, photo_count, images_json, status, is_public, is_approved) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$name, $category, $location, $website, $contactPerson, $email, $phone, $about, $imageUrl, $artistId, $artistName, $description, $photoCount, $imagesJson, $status, $isPublic, $isApproved]);
 
         $newId = (int)$this->db->lastInsertId();
 
@@ -1543,7 +1562,10 @@ class GalleryController {
             'image_url' => $imageUrl,
             'image' => $imageUrl,
             'artist_id' => $artistId,
-            'artist_name' => $artistName
+            'artist_name' => $artistName,
+            'status' => $status,
+            'is_public' => $isPublic,
+            'is_approved' => $isApproved
         ], 'Gallery registered successfully in MySQL', 201);
     }
 
@@ -1552,7 +1574,7 @@ class GalleryController {
         if ($id <= 0) { ApiResponse::error('Gallery ID is required.'); return; }
         $fields = [];
         $params = [];
-        $allowed = ['name','description','category','location','image_url'];
+        $allowed = ['name','description','category','location','image_url','status','is_public','is_approved','about','website','timing'];
         foreach ($allowed as $f) {
             if (isset($input[$f])) { $fields[] = "$f = ?"; $params[] = InputSanitizer::cleanString((string)$input[$f]); }
         }

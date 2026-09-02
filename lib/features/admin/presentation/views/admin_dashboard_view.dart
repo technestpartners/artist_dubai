@@ -116,7 +116,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       final results = await Future.wait([
         sl<ApiService>().getArtists(forceRefresh: true).catchError((_) => <ArtistModel>[]),
         sl<ApiService>().getEvents(forceRefresh: true).catchError((_) => <ArtEventModel>[]),
-        sl<ApiService>().getGalleries(forceRefresh: true).catchError((_) => <Map<String, dynamic>>[]),
+        sl<ApiService>().getGalleries(forceRefresh: true, isAdmin: true).catchError((_) => <Map<String, dynamic>>[]),
         sl<ApiService>().getBookings(forceRefresh: true).catchError((_) => <Map<String, dynamic>>[]),
         sl<ApiService>().getGovernmentEntities(forceRefresh: true).catchError((_) => <GovernmentEntity>[]),
       ]);
@@ -1333,11 +1333,14 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               final gal = _galleries[index];
               final name = gal['name'] as String? ?? 'Gallery';
               final id = gal['id'];
+              final isPending = (gal['status'] ?? '').toString().toLowerCase() == 'pending' || gal['is_approved'] == 0 || gal['is_public'] == 0;
               return _buildListItemCard(
                 title: name,
-                subtitle: 'Artist gallery',
-                badgeText: 'Public',
-                isPurpleBadge: true,
+                subtitle: (gal['category'] ?? gal['location'] ?? 'Artist gallery').toString(),
+                badgeText: isPending ? 'Pending' : 'Approved',
+                isPurpleBadge: !isPending,
+                isAmberBadge: isPending,
+                onApprove: isPending ? () => _approveGallery(gal, index) : null,
                 onEdit: () => _showCreateGalleryDialog(existing: gal, index: index),
                 onDelete: () {
                   _confirmDelete(
@@ -1466,11 +1469,14 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               final name = (center['name'] ?? center['title'] ?? 'Art Center').toString();
               final subtitle = (center['category'] ?? center['location'] ?? center['address'] ?? 'Dubai, UAE').toString();
               final isCurrentlyOpen = center['currently_open'] == 1 || center['currently_open'] == true;
+              final isPending = (center['status'] ?? '').toString().toLowerCase() == 'pending' || center['is_approved'] == 0 || center['is_public'] == 0;
               return _buildListItemCard(
                 title: name,
                 subtitle: subtitle,
-                badgeText: isCurrentlyOpen ? 'Open' : 'Active',
-                isPurpleBadge: true,
+                badgeText: isPending ? 'Pending' : (isCurrentlyOpen ? 'Open' : 'Active'),
+                isPurpleBadge: !isPending,
+                isAmberBadge: isPending,
+                onApprove: isPending ? () => _approveGallery(center, index) : null,
                 onEdit: () => _showArtCenterDialog(existing: center, index: index),
                 onDelete: () {
                   _confirmDelete(
@@ -1487,6 +1493,39 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           ),
       ],
     );
+  }
+
+  Future<void> _approveGallery(Map<String, dynamic> item, int index) async {
+    final name = (item['name'] ?? item['title'] ?? 'Art Space').toString();
+    final id = item['id'];
+    final updated = Map<String, dynamic>.from(item);
+    updated['status'] = 'approved';
+    updated['is_public'] = 1;
+    updated['is_approved'] = 1;
+
+    setState(() {
+      final gIndex = _galleries.indexWhere((g) => g['id'] == id);
+      if (gIndex != -1) _galleries[gIndex] = updated;
+      final aIndex = _artCenters.indexWhere((c) => c['id'] == id);
+      if (aIndex != -1) _artCenters[aIndex] = updated;
+    });
+
+    await sl<ApiService>().updateArtCenter({
+      'id': id,
+      'status': 'approved',
+      'is_public': 1,
+      'is_approved': 1,
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('"$name" request accepted and published to app!'),
+          backgroundColor: const Color(0xFF16A34A),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   // --- 7. Government Tab (Screenshots 2, 3, 4) ---
@@ -1677,6 +1716,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     String? badgeText,
     bool isStatusBadge = false,
     bool isPurpleBadge = false,
+    bool isAmberBadge = false,
+    VoidCallback? onApprove,
     VoidCallback? onEdit,
     VoidCallback? onDelete,
   }) {
@@ -1726,24 +1767,46 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: isPurpleBadge
-                    ? const Color(0xFF6A2777)
-                    : (isStatusBadge ? const Color(0xFFF1F5F9) : const Color(0xFFF8FAFC)),
+                color: isAmberBadge
+                    ? const Color(0xFFFEF3C7)
+                    : (isPurpleBadge
+                        ? const Color(0xFF6A2777)
+                        : (isStatusBadge ? const Color(0xFFF1F5F9) : const Color(0xFFF8FAFC))),
                 borderRadius: BorderRadius.circular(12),
                 border: isPurpleBadge
                     ? null
-                    : Border.all(color: const Color(0xFFCBD5E1), width: 0.8),
+                    : Border.all(
+                        color: isAmberBadge ? const Color(0xFFFDE68A) : const Color(0xFFCBD5E1),
+                        width: 0.8,
+                      ),
               ),
               child: Text(
                 badgeText,
                 style: TextStyle(
                   fontSize: 10.5,
                   fontWeight: FontWeight.w600,
-                  color: isPurpleBadge ? Colors.white : const Color(0xFF334155),
+                  color: isAmberBadge
+                      ? const Color(0xFFD97706)
+                      : (isPurpleBadge ? Colors.white : const Color(0xFF334155)),
                 ),
               ),
             ),
             const SizedBox(width: 8),
+          ],
+          if (onApprove != null) ...[
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF16A34A),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                minimumSize: const Size(58, 28),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              ),
+              onPressed: onApprove,
+              child: const Text('Accept', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(width: 6),
           ],
           if (onEdit != null)
             IconButton(

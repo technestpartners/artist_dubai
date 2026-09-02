@@ -519,11 +519,13 @@ class ApiService {
     String? artistId,
     String? artistName,
     String? search,
+    String? status,
+    bool isAdmin = false,
     int page = 1,
     int limit = 50,
     bool forceRefresh = false,
   }) async {
-    final isFullFetch = (artistId == null || artistId.isEmpty) && (artistName == null || artistName.isEmpty);
+    final isFullFetch = (artistId == null || artistId.isEmpty) && (artistName == null || artistName.isEmpty) && !isAdmin && status == null;
 
     if (!forceRefresh && isFullFetch && page == 1 && _cachedGalleries != null && _cachedGalleries!.isNotEmpty) {
       return _cachedGalleries!;
@@ -541,6 +543,8 @@ class ApiService {
         queryParams['limit'] = limit;
       }
       if (search != null && search.isNotEmpty) queryParams['search'] = search;
+      if (status != null && status.isNotEmpty) queryParams['status'] = status;
+      if (isAdmin) queryParams['admin'] = 1;
 
       final res = await _client.get(
         ApiEndpoints.galleries,
