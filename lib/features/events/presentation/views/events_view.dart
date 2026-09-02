@@ -10,7 +10,6 @@ import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../domain/models/art_event_model.dart';
-import 'event_detail_view.dart';
 
 class EventsView extends StatefulWidget {
   const EventsView({super.key});
@@ -196,10 +195,7 @@ class _EventsViewState extends State<EventsView> {
   }
 
   void _showEventDetails(ArtEventModel event) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => EventDetailView(event: event)),
-    );
+    context.push(RouteNames.eventDetail, extra: event);
   }
 
   @override
