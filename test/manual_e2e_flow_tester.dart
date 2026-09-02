@@ -169,8 +169,17 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('GALLERIES | ART CENTERS'), findsOneWidget);
-      expect(find.text('Registration received'), findsOneWidget);
-      expect(find.text('Back to home'), findsOneWidget);
+      expect(find.text('Submit registration'), findsOneWidget);
+
+      final textFields = find.byType(TextFormField);
+      expect(textFields, findsAtLeastNWidgets(4));
+
+      await tester.enterText(textFields.at(0), 'Lumina Art House');
+      await tester.enterText(textFields.at(1), 'Contemporary Gallery');
+      await tester.enterText(textFields.at(2), 'Alserkal Avenue, Warehouse 12');
+      await tester.pump();
+
+      expect(find.text('Lumina Art House'), findsOneWidget);
     });
 
     testWidgets('Step 09: Book Artist manual inquiry entry', (tester) async {

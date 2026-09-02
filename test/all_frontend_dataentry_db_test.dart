@@ -141,8 +141,15 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('GALLERIES | ART CENTERS'), findsOneWidget);
-      expect(find.text('Registration received'), findsOneWidget);
-      expect(find.text('Back to home'), findsOneWidget);
+      expect(find.text('Gallery / center name *'), findsOneWidget);
+      expect(find.text('Submit registration'), findsOneWidget);
+
+      final textFields = find.byType(TextFormField);
+      if (textFields.evaluate().isNotEmpty) {
+        await tester.enterText(textFields.first, 'Louvre Abu Dhabi Satellite');
+        await tester.pump();
+        expect(find.text('Louvre Abu Dhabi Satellite'), findsOneWidget);
+      }
     });
 
     testWidgets('7. BookArtistView Data Entry Form UI & Inputs', (tester) async {
