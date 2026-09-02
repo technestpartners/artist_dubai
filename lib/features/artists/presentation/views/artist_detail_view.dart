@@ -58,7 +58,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         if (match != null) {
           setState(() {
             _likesCount = match.likesCount;
+            if (_isArtistFavorited && _likesCount == 0) _likesCount = 1;
             _followersCount = match.followersCount;
+            if (_isFollowing && _followersCount == 0) _followersCount = 1;
             if (match.worksCount > 0 || _artworksList.isEmpty) {
               _worksCount = match.worksCount;
             }
@@ -73,6 +75,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         final isFav = favArtists.any((a) => a.id == widget.artist!.id);
         setState(() {
           _isArtistFavorited = isFav;
+          if (_isArtistFavorited && _likesCount == 0) _likesCount = 1;
         });
       }
     });
@@ -153,14 +156,23 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
             if (status['likes_count'] != null) {
               _likesCount = (status['likes_count'] as num).toInt();
             }
+            if (_isArtistFavorited && _likesCount == 0) {
+              _likesCount = 1;
+            }
             if (status['followers_count'] != null) {
               _followersCount = (status['followers_count'] as num).toInt();
+            }
+            if (_isFollowing && _followersCount == 0) {
+              _followersCount = 1;
             }
             if (status['works_count'] != null && _artworksList.isEmpty) {
               _worksCount = (status['works_count'] as num).toInt();
             }
           } else {
             _isArtistFavorited = isFavInBackend;
+            if (_isArtistFavorited && _likesCount == 0) {
+              _likesCount = 1;
+            }
           }
         });
       }
@@ -185,13 +197,13 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'Profile link for $name copied to clipboard!',
-                style: const TextStyle(fontWeight: FontWeight.w500),
+                'Link to $name copied to clipboard!',
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
           ],
         ),
-        backgroundColor: const Color(0xFF6A2777),
+        backgroundColor: const Color(0xFF1E1E1E),
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
       ),
@@ -225,6 +237,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         }
         if (res['is_liked'] != null) {
           _isArtistFavorited = res['is_liked'] == true;
+        }
+        if (_isArtistFavorited && _likesCount == 0) {
+          _likesCount = 1;
         }
       });
     }
@@ -273,6 +288,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         }
         if (res['is_following'] != null) {
           _isFollowing = res['is_following'] == true;
+        }
+        if (_isFollowing && _followersCount == 0) {
+          _followersCount = 1;
         }
       });
     }
