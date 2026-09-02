@@ -362,6 +362,7 @@ class AppRouter {
       GoRoute(
         path: RouteNames.eventDetail,
         name: 'eventDetail',
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => _buildSlidePage(
           context: context,
           state: state,
