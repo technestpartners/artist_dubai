@@ -100,5 +100,18 @@ class ArtistModel {
     CategoryInfo(name: 'Ceramics & Pottery', emoji: '🏺'),
   ];
 
-  static List<ArtistModel> get mockArtists => const [];
+  static final ArtistModel sampleArtist = ArtistModel(
+    id: '1',
+    name: 'Fatima Al-Hashimi',
+    category: 'Calligraphy & Typography',
+    bio: 'Renowned Emirati contemporary calligrapher merging classical Thuluth script with modern architectural abstraction.',
+    location: 'Dubai Design District (d3), Dubai',
+    bannerUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb',
+    worksCount: 18,
+    followersCount: 1240,
+    likesCount: 890,
+  );
+
+  static List<ArtistModel> get mockArtists => [sampleArtist];
 }

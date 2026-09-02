@@ -188,5 +188,37 @@ class GovernmentEntity {
     return '$h:$m';
   }
 
-  static const List<GovernmentEntity> entities = [];
+  static const List<GovernmentEntity> entities = [
+    GovernmentEntity(
+      name: 'Dubai Culture & Arts Authority',
+      defaultIsOpen: true,
+      rating: 4.8,
+      reviewCount: 420,
+      category: 'Government Department',
+      location: 'Dubai Design District, Building 1',
+      defaultTiming: '07:30 AM - 03:30 PM',
+      websiteUrl: 'https://dubaiculture.gov.ae',
+      directionsUrl: 'https://maps.google.com/?q=Dubai+Culture+and+Arts+Authority',
+      openHour: 7,
+      openMinute: 30,
+      closeHour: 15,
+      closeMinute: 30,
+      closedDays: [5, 6],
+    ),
+    GovernmentEntity(
+      name: 'Dubai Design District (d3)',
+      defaultIsOpen: true,
+      rating: 4.7,
+      reviewCount: 310,
+      category: 'Creative Free Zone',
+      location: 'Ras Al Khor Road, Dubai',
+      defaultTiming: '08:00 AM - 06:00 PM',
+      websiteUrl: 'https://dubaidesigndistrict.com',
+      directionsUrl: 'https://maps.google.com/?q=Dubai+Design+District',
+      openHour: 8,
+      openMinute: 0,
+      closeHour: 18,
+      closeMinute: 0,
+    ),
+  ];
 }

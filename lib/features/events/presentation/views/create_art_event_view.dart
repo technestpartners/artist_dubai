@@ -887,7 +887,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     final validValue = (value != null && uniqueItems.contains(value)) ? value : null;
 
     return DropdownButtonFormField<String>(
-      initialValue: validValue,
+      value: validValue,
       isExpanded: true,
       dropdownColor: Colors.white,
       borderRadius: BorderRadius.circular(12),

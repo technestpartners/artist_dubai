@@ -17,7 +17,7 @@ class GovernmentPortalView extends StatefulWidget {
   State<GovernmentPortalView> createState() => _GovernmentPortalViewState();
 }
 class _GovernmentPortalViewState extends State<GovernmentPortalView> {
-  List<GovernmentEntity> _entities = [];
+  List<GovernmentEntity> _entities = GovernmentEntity.entities;
   StreamSubscription<List<GovernmentEntity>>? _govSub;
 
   @override

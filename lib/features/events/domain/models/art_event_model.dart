@@ -149,5 +149,22 @@ class ArtEventModel {
     'Community Art Project',
   ];
 
-  static List<ArtEventModel> get mockEvents => const [];
+  static final ArtEventModel sampleEvent = ArtEventModel(
+    id: '1',
+    title: 'Dubai Modern Art Exhibition',
+    category: 'Art Exhibition',
+    price: 'Free',
+    description: 'A celebration of contemporary Middle Eastern and global art.',
+    dateTime: '2026-10-15',
+    formattedDate: 'Oct 15, 2026',
+    timeRange: '10:00 AM - 08:00 PM',
+    location: 'Alserkal Avenue, Dubai',
+    locationCity: 'Dubai',
+    attendeesCount: 25,
+    maxAttendees: 100,
+    organizer: 'Dubai Culture',
+    tags: const ['Exhibition', 'Contemporary', 'Dubai'],
+  );
+
+  static List<ArtEventModel> get mockEvents => [sampleEvent];
 }
