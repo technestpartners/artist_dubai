@@ -1,0 +1,136 @@
+name: Deploy to TestFlight
+
+on:
+  push:
+    tags:
+      - 'v*.*.*' # Trigger when creating release tags like v1.0.1
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: 'Build number override (optional, defaults to GitHub Run Number)'
+        required: false
+        default: ''
+      changelog:
+        description: 'TestFlight changelog / What to test'
+        required: false
+        default: 'New build with latest updates and stability improvements.'
+      skip_waiting:
+        description: 'Skip waiting for TestFlight build processing (faster CI completion)'
+        type: boolean
+        required: false
+        default: true
+
+jobs:
+  build_and_upload:
+    name: Build & Upload iOS to TestFlight
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Set up Ruby & Bundler
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: 'ios'
+
+      - name: Determine Build Number
+        id: build_info
+        run: |
+          if [ -n "${{ github.event.inputs.build_number }}" ]; then
+            BUILD_NUM="${{ github.event.inputs.build_number }}"
+          else
+            BUILD_NUM="${{ github.run_number }}"
+          fi
+          echo "BUILD_NUMBER=$BUILD_NUM" >> $GITHUB_OUTPUT
+          echo "Using Build Number: $BUILD_NUM"
+
+      - name: Install Apple Certificate & Provisioning Profile
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD || 'temporary_keychain_password' }}
+        run: |
+          if [ -z "$BUILD_CERTIFICATE_BASE64" ] || [ -z "$BUILD_PROVISION_PROFILE_BASE64" ]; then
+            echo "::warning ::Apple certificate or provisioning profile secrets not set. Skipping keychain setup."
+            exit 0
+          fi
+
+          # Create variables
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+          # Decode base64 secrets to files
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
+          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o "$PP_PATH"
+
+          # Create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Import certificate to keychain
+          security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | sed -e 's/^[ \t]*//' | tr -d '"')
+
+          # Apply provisioning profile
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp "$PP_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/
+
+      - name: Install Flutter Dependencies
+        run: flutter pub get
+
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install --repo-update
+
+      - name: Build Flutter iOS IPA
+        run: |
+          flutter build ipa --release \
+            --export-options-plist=ios/ExportOptions.plist \
+            --build-number=${{ steps.build_info.outputs.BUILD_NUMBER }}
+
+      - name: Upload IPA to TestFlight via Fastlane
+        env:
+          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+        run: |
+          cd ios
+          bundle exec fastlane beta \
+            skip_waiting:${{ github.event.inputs.skip_waiting || 'true' }} \
+            changelog:"${{ github.event.inputs.changelog || 'Automated build uploaded via GitHub Actions' }}"
+
+      - name: Upload IPA Artifact to GitHub
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-ipa
+          path: build/ios/ipa/*.ipa
+          retention-days: 14
+
+      - name: Clean up Keychain
+        if: always()
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          if [ -f "$KEYCHAIN_PATH" ]; then
+            security delete-keychain "$KEYCHAIN_PATH"
+          fi

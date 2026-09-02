@@ -1,0 +1,5 @@
+app_identifier("com.imbu.Dubai-Artists") # The bundle identifier of your app
+team_id("VDL4YWPJJ2") # Developer Portal Team ID
+
+# For more information about the Appfile, see:
+#     https://docs.fastlane.tools/advanced/#appfile
