@@ -40,6 +40,8 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
   late int _worksCount;
   StreamSubscription<List<ArtistModel>>? _artistLiveSub;
   StreamSubscription<Map<String, dynamic>>? _favLiveSub;
+  DateTime? _lastUserFavoriteActionTime;
+  DateTime? _lastUserFollowActionTime;
 
   List<Map<String, dynamic>> _photoGalleries = [];
 
@@ -59,7 +61,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
           setState(() {
             _likesCount = match.likesCount;
             if (_isArtistFavorited && _likesCount == 0) _likesCount = 1;
-            _followersCount = match.followersCount;
+            if (_lastUserFollowActionTime == null || DateTime.now().difference(_lastUserFollowActionTime!).inSeconds >= 3) {
+              _followersCount = match.followersCount;
+            }
             if (_isFollowing && _followersCount == 0) _followersCount = 1;
             if (match.worksCount > 0 || _artworksList.isEmpty) {
               _worksCount = match.worksCount;
@@ -71,6 +75,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
 
     _favLiveSub = sl<LiveSyncService>().favoritesStream.listen((favData) {
       if (mounted && widget.artist != null) {
+        if (_lastUserFavoriteActionTime != null && DateTime.now().difference(_lastUserFavoriteActionTime!).inSeconds < 3) {
+          return;
+        }
         final favArtists = (favData['artists'] as List<ArtistModel>?) ?? [];
         final isFav = favArtists.any((a) => a.id == widget.artist!.id);
         setState(() {
@@ -215,6 +222,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
     if (artist == null) return;
     final userEmail = _getEffectiveEmail();
     final wasFav = _isArtistFavorited;
+    _lastUserFavoriteActionTime = DateTime.now();
 
     setState(() {
       _isArtistFavorited = !wasFav;
@@ -266,6 +274,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
     if (artist == null) return;
     final userEmail = _getEffectiveEmail();
     final wasFollowing = _isFollowing;
+    _lastUserFollowActionTime = DateTime.now();
 
     setState(() {
       _isFollowing = !wasFollowing;
