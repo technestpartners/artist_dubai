@@ -469,7 +469,7 @@ class ApiService {
       }
     } catch (_) {}
 
-    return _cachedGovEntities ?? [];
+    return _cachedGovEntities ?? GovernmentEntity.entities;
   }
 
   // 6b. Reviews (Dynamic MySQL Backend)

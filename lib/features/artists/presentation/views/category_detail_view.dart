@@ -31,8 +31,20 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
 
   late final String _title;
   late final String _categoryEmoji;
-  List<ArtistModel> _categoryArtists = [];
-  List<Map<String, dynamic>> _categoryArtworks = [];
+  List<ArtistModel> _categoryArtists = ArtistModel.mockArtists;
+  List<Map<String, dynamic>> _categoryArtworks = [
+    {
+      'id': '1',
+      'title': 'Sacred Verses',
+      'artist_name': 'Fatima Al-Hashimi',
+      'category': 'Calligraphy & Typography',
+      'medium': 'Gold leaf & ink on handmade linen',
+      'dimensions': '120 x 80 cm',
+      'price': 'AED 18,500',
+      'image_url': 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675',
+      'likes_count': 142,
+    }
+  ];
   final Set<String> _likedArtistIds = {};
   StreamSubscription<List<ArtistModel>>? _artistSub;
   StreamSubscription<Map<String, dynamic>>? _favSub;
@@ -282,34 +294,46 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                 ),
                               ),
                               const SizedBox(height: 10),
-                              Row(
+                              Wrap(
+                                spacing: 14,
+                                runSpacing: 6,
+                                crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
-                                  const Icon(
-                                    Icons.group_outlined,
-                                    size: 16,
-                                    color: Color(0xFF64748B),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.group_outlined,
+                                        size: 16,
+                                        color: Color(0xFF64748B),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '${activeArtists.length} Artists',
+                                        style: const TextStyle(
+                                          fontSize: 12.5,
+                                          color: Color(0xFF64748B),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    '${activeArtists.length} Artists',
-                                    style: const TextStyle(
-                                      fontSize: 12.5,
-                                      color: Color(0xFF64748B),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  const Icon(
-                                    Icons.image_outlined,
-                                    size: 16,
-                                    color: Color(0xFF64748B),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  const Text(
-                                    '1 Artworks',
-                                    style: TextStyle(
-                                      fontSize: 12.5,
-                                      color: Color(0xFF64748B),
-                                    ),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.image_outlined,
+                                        size: 16,
+                                        color: Color(0xFF64748B),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '${_categoryArtworks.length} Artworks',
+                                        style: const TextStyle(
+                                          fontSize: 12.5,
+                                          color: Color(0xFF64748B),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
@@ -678,18 +702,22 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                               : const Color(0xFF64748B),
                                     ),
                                     const SizedBox(width: 6),
-                                    Text(
-                                      'Artists (${activeArtists.length})',
-                                      style: TextStyle(
-                                        fontSize: 13.5,
-                                        fontWeight:
-                                            _selectedTabIndex == 0
-                                                ? FontWeight.bold
-                                                : FontWeight.w500,
-                                        color:
-                                            _selectedTabIndex == 0
-                                                ? const Color(0xFF1E1E1E)
-                                                : const Color(0xFF64748B),
+                                    Flexible(
+                                      child: Text(
+                                        'Artists (${activeArtists.length})',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 13.5,
+                                          fontWeight:
+                                              _selectedTabIndex == 0
+                                                  ? FontWeight.bold
+                                                  : FontWeight.w500,
+                                          color:
+                                              _selectedTabIndex == 0
+                                                  ? const Color(0xFF1E1E1E)
+                                                  : const Color(0xFF64748B),
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -739,18 +767,22 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                               : const Color(0xFF64748B),
                                     ),
                                     const SizedBox(width: 6),
-                                    Text(
-                                      'Artworks (${_categoryArtworks.length})',
-                                      style: TextStyle(
-                                        fontSize: 13.5,
-                                        fontWeight:
-                                            _selectedTabIndex == 1
-                                                ? FontWeight.bold
-                                                : FontWeight.w500,
-                                        color:
-                                            _selectedTabIndex == 1
-                                                ? const Color(0xFF1E1E1E)
-                                                : const Color(0xFF64748B),
+                                    Flexible(
+                                      child: Text(
+                                        'Artworks (${_categoryArtworks.length})',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 13.5,
+                                          fontWeight:
+                                              _selectedTabIndex == 1
+                                                  ? FontWeight.bold
+                                                  : FontWeight.w500,
+                                          color:
+                                              _selectedTabIndex == 1
+                                                  ? const Color(0xFF1E1E1E)
+                                                  : const Color(0xFF64748B),
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -857,13 +889,17 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                           color: Color(0xFF64748B),
                         ),
                         const SizedBox(width: 4),
-                        Text(
-                          artist.location.isEmpty
-                              ? 'Dubai, UAE'
-                              : artist.location,
-                          style: const TextStyle(
-                            fontSize: 12.5,
-                            color: Color(0xFF64748B),
+                        Expanded(
+                          child: Text(
+                            artist.location.isEmpty
+                                ? 'Dubai, UAE'
+                                : artist.location,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              color: Color(0xFF64748B),
+                            ),
                           ),
                         ),
                       ],
