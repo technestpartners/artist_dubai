@@ -41,7 +41,7 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
 
   Future<void> _fetchEntities() async {
     try {
-      final entities = await sl<ApiService>().getGovernmentEntities();
+      final entities = await sl<ApiService>().getGovernmentEntities(forceRefresh: true);
       if (mounted) {
         setState(() {
           _entities = entities;

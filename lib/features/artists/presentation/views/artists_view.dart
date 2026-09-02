@@ -193,20 +193,17 @@ class _ArtistsViewState extends State<ArtistsView> {
       final userEmail = _getEffectiveEmail();
 
       // ── Stale-While-Revalidate: serve cache instantly, refresh in background ──
-      // Artists from cache
-      final cachedArtists = sl<ApiService>().cachedArtists;
-      if (cachedArtists != null && cachedArtists.isNotEmpty && !mounted) return;
-      if (cachedArtists != null && cachedArtists.isNotEmpty && silent) {
-        // Already showing data — fire background refresh only
+      // If we already have artists on screen, refresh silently in background
+      if (_allArtists.isNotEmpty) {
         _silentRefresh(userEmail);
         return;
       }
 
-      // First load — fetch all in parallel
+      // First load — force fresh from DB in parallel
       final results = await Future.wait([
-        sl<ApiService>().getCategories(),
-        sl<ApiService>().getArtists(),
-        sl<ApiService>().getUserInteractions(userEmail: userEmail),
+        sl<ApiService>().getCategories(forceRefresh: true),
+        sl<ApiService>().getArtists(forceRefresh: true),
+        sl<ApiService>().getUserInteractions(userEmail: userEmail, forceRefresh: true),
       ]);
 
       if (!mounted) return;

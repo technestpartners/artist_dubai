@@ -106,12 +106,12 @@ class GovernmentEntity {
     final defaultMapsUrl = 'https://www.google.com/maps/search/?api=1&query=$locationName+Dubai';
 
     return GovernmentEntity(
-      name: json['name'] as String,
-      defaultIsOpen: json['default_is_open'] as bool? ?? true,
+      name: json['name'] as String? ?? 'Entity',
+      defaultIsOpen: json['default_is_open'] == 1 || json['default_is_open'] == true || json['is_open'] == true,
       rating: double.tryParse(json['rating']?.toString() ?? '4.5') ?? 4.5,
       reviewCount: (json['review_count'] as num?)?.toInt() ?? 0,
-      category: json['category'] as String,
-      location: json['location'] as String,
+      category: json['category'] as String? ?? 'Government',
+      location: json['location'] as String? ?? 'Dubai, UAE',
       defaultTiming: json['default_timing'] as String? ?? 'Open · Closes at 20:00',
       websiteUrl: json['website_url'] as String? ?? 'https://dubaiculture.gov.ae/',
       directionsUrl: json['directions_url'] as String? ?? defaultMapsUrl,
@@ -132,31 +132,19 @@ class GovernmentEntity {
     );
   }
 
-  /// Computes live Open/Closed state based on Dubai GST Time (UTC+4)
+  /// Returns open state based on seasonal notice or defaultIsOpen
   bool get isCurrentlyOpen {
     if (seasonalNotice != null) return false;
-    if (openHour == null || closeHour == null) return defaultIsOpen;
-
-    final nowUtc = DateTime.now().toUtc();
-    final dubaiTime = nowUtc.add(
-      const Duration(hours: 4),
-    ); // Gulf Standard Time (GST)
-
-    if (closedDays != null && closedDays!.contains(dubaiTime.weekday)) {
-      return false;
-    }
-
-    final currentMinutes = dubaiTime.hour * 60 + dubaiTime.minute;
-    final openMinutes = (openHour ?? 0) * 60 + (openMinute ?? 0);
-    final closeMinutes = (closeHour ?? 0) * 60 + (closeMinute ?? 0);
-
-    return currentMinutes >= openMinutes && currentMinutes < closeMinutes;
+    return defaultIsOpen;
   }
 
-  /// Formats live timing string based on current Dubai time
+  /// Returns exact formatted timing text as configured in database
   String get liveTimingText {
     if (seasonalNotice != null) {
       return seasonalNotice!;
+    }
+    if (defaultTiming.isNotEmpty) {
+      return defaultTiming;
     }
     if (openHour == null || closeHour == null) {
       return defaultTiming;
@@ -192,32 +180,100 @@ class GovernmentEntity {
     GovernmentEntity(
       name: 'Dubai Culture & Arts Authority',
       defaultIsOpen: true,
-      rating: 4.8,
-      reviewCount: 420,
-      category: 'Government Department',
-      location: 'Dubai Design District, Building 1',
-      defaultTiming: '07:30 AM - 03:30 PM',
-      websiteUrl: 'https://dubaiculture.gov.ae',
-      directionsUrl: 'https://maps.google.com/?q=Dubai+Culture+and+Arts+Authority',
+      rating: 4.5,
+      reviewCount: 120,
+      category: 'Government · Cultural Authority',
+      location: 'Al Shindagha, Dubai',
+      defaultTiming: 'Open · Closes at 15:00',
+      websiteUrl: 'https://dubaiculture.gov.ae/en',
+      directionsUrl: 'https://maps.google.com/?q=Dubai+Culture+and+Arts+Authority+Al+Shindagha+Dubai',
+      googleMapsReviewsUrl: 'https://www.google.com/maps/search/?api=1&query=Dubai+Culture+and+Arts+Authority+Al+Shindagha+Dubai',
       openHour: 7,
       openMinute: 30,
       closeHour: 15,
+      closeMinute: 0,
+      closedDays: [6, 7],
+    ),
+    GovernmentEntity(
+      name: 'Ministry of Culture & Youth',
+      defaultIsOpen: true,
+      rating: 4.2,
+      reviewCount: 98,
+      category: 'Government · Federal Ministry',
+      location: 'Abu Dhabi, UAE',
+      defaultTiming: 'Open · Closes at 14:30',
+      websiteUrl: 'https://www.mcy.gov.ae/',
+      directionsUrl: 'https://maps.google.com/?q=Ministry+of+Culture+and+Youth+Abu+Dhabi',
+      googleMapsReviewsUrl: 'https://www.google.com/maps/search/?api=1&query=Ministry+of+Culture+and+Youth+Abu+Dhabi',
+      openHour: 7,
+      openMinute: 30,
+      closeHour: 14,
       closeMinute: 30,
-      closedDays: [5, 6],
+      closedDays: [6, 7],
     ),
     GovernmentEntity(
       name: 'Dubai Design District (d3)',
       defaultIsOpen: true,
       rating: 4.7,
-      reviewCount: 310,
-      category: 'Creative Free Zone',
-      location: 'Ras Al Khor Road, Dubai',
-      defaultTiming: '08:00 AM - 06:00 PM',
-      websiteUrl: 'https://dubaidesigndistrict.com',
-      directionsUrl: 'https://maps.google.com/?q=Dubai+Design+District',
+      reviewCount: 215,
+      category: 'Creative Hub · Design District',
+      location: 'Dubai Design District, Dubai',
+      defaultTiming: 'Open · Closes at 22:00',
+      websiteUrl: 'https://dubaidesigndistrict.com/',
+      directionsUrl: 'https://maps.google.com/?q=Dubai+Design+District+Dubai',
+      googleMapsReviewsUrl: 'https://www.google.com/maps/search/?api=1&query=Dubai+Design+District+Dubai',
       openHour: 8,
       openMinute: 0,
-      closeHour: 18,
+      closeHour: 22,
+      closeMinute: 0,
+    ),
+    GovernmentEntity(
+      name: 'Art Dubai',
+      defaultIsOpen: false,
+      rating: 4.6,
+      reviewCount: 180,
+      category: 'Art Fair · Cultural Event',
+      location: 'Madinat Jumeirah, Dubai',
+      defaultTiming: 'Closed · Opens Mar 2026',
+      websiteUrl: 'https://www.artdubai.ae/',
+      directionsUrl: 'https://maps.google.com/?q=Madinat+Jumeirah+Dubai',
+      googleMapsReviewsUrl: 'https://www.google.com/maps/search/?api=1&query=Madinat+Jumeirah+Dubai',
+      openHour: 10,
+      openMinute: 0,
+      closeHour: 20,
+      closeMinute: 0,
+      seasonalNotice: 'Closed · Opens Mar 2026',
+    ),
+    GovernmentEntity(
+      name: 'Alserkal Avenue',
+      defaultIsOpen: true,
+      rating: 4.8,
+      reviewCount: 310,
+      category: 'Arts District · Gallery Hub',
+      location: 'Al Quoz, Dubai',
+      defaultTiming: 'Open · Closes at 20:00',
+      websiteUrl: 'https://alserkal.online/',
+      directionsUrl: 'https://maps.google.com/?q=Alserkal+Avenue+Al+Quoz+Dubai',
+      googleMapsReviewsUrl: 'https://www.google.com/maps/search/?api=1&query=Alserkal+Avenue+Al+Quoz+Dubai',
+      openHour: 10,
+      openMinute: 0,
+      closeHour: 20,
+      closeMinute: 0,
+    ),
+    GovernmentEntity(
+      name: 'Dubai Opera',
+      defaultIsOpen: true,
+      rating: 4.9,
+      reviewCount: 450,
+      category: 'Performing Arts · Venue',
+      location: 'Downtown Dubai',
+      defaultTiming: 'Open · Next show at 19:30',
+      websiteUrl: 'https://www.dubaiopera.com/en',
+      directionsUrl: 'https://maps.google.com/?q=Dubai+Opera+Downtown+Dubai',
+      googleMapsReviewsUrl: 'https://www.google.com/maps/search/?api=1&query=Dubai+Opera+Downtown+Dubai',
+      openHour: 10,
+      openMinute: 0,
+      closeHour: 23,
       closeMinute: 0,
     ),
   ];

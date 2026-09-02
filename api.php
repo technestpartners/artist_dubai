@@ -387,10 +387,12 @@ class DatabaseManager {
             $govCount = (int)$this->pdo->query("SELECT COUNT(*) FROM `government_entities`")->fetchColumn();
             if ($govCount === 0) {
                 $govEntities = [
-                    ['Dubai Culture & Arts Authority', 'Government Authority · Cultural Council', 'Al Shindagha Historic District, Bur Dubai, Dubai', 4.8, 1420, 'Daily: 07:30 AM - 10:00 PM', 1, 'https://dubaiculture.gov.ae', 'https://maps.google.com/?q=Dubai+Culture+and+Arts+Authority', 'https://www.google.com/maps/search/?api=1&query=Dubai+Culture+and+Arts+Authority', 7, 30, 22, 0, '', null],
-                    ['Dubai Design District (d3)', 'Creative Hub & Freezone Authority', 'Ras Al Khor Road, Dubai Design District, Dubai', 4.7, 980, 'Daily: 08:00 AM - 11:00 PM', 1, 'https://dubaidesigndistrict.com', 'https://maps.google.com/?q=Dubai+Design+District', 'https://www.google.com/maps/search/?api=1&query=Dubai+Design+District', 8, 0, 23, 0, '', null],
-                    ['Alserkal Avenue Cultural District', 'Art & Cultural Foundation', '17th St, Al Quoz Industrial 1, Dubai', 4.9, 2150, 'Daily: 10:00 AM - 07:00 PM', 1, 'https://alserkal.online', 'https://maps.google.com/?q=Alserkal+Avenue', 'https://www.google.com/maps/search/?api=1&query=Alserkal+Avenue', 10, 0, 19, 0, '', null],
-                    ['Jameel Arts Centre', 'Contemporary Art Institution', 'Jaddaf Waterfront, Dubai', 4.8, 1120, 'Wed - Mon: 10:00 AM - 08:00 PM', 1, 'https://jameelartscentre.org', 'https://maps.google.com/?q=Jameel+Arts+Centre', 'https://www.google.com/maps/search/?api=1&query=Jameel+Arts+Centre', 10, 0, 20, 0, '2', null],
+                    ['Dubai Culture & Arts Authority', 'Government · Cultural Authority', 'Al Shindagha, Dubai', 4.5, 120, 'Open · Closes at 15:00', 1, 'https://dubaiculture.gov.ae/en', 'https://maps.google.com/?q=Dubai+Culture+and+Arts+Authority+Al+Shindagha+Dubai', 'https://www.google.com/maps/search/?api=1&query=Dubai+Culture+and+Arts+Authority+Al+Shindagha+Dubai', 7, 30, 15, 0, '6,7', null],
+                    ['Ministry of Culture & Youth', 'Government · Federal Ministry', 'Abu Dhabi, UAE', 4.2, 98, 'Open · Closes at 14:30', 1, 'https://www.mcy.gov.ae/', 'https://maps.google.com/?q=Ministry+of+Culture+and+Youth+Abu+Dhabi', 'https://www.google.com/maps/search/?api=1&query=Ministry+of+Culture+and+Youth+Abu+Dhabi', 7, 30, 14, 30, '6,7', null],
+                    ['Dubai Design District (d3)', 'Creative Hub · Design District', 'Dubai Design District, Dubai', 4.7, 215, 'Open · Closes at 22:00', 1, 'https://dubaidesigndistrict.com/', 'https://maps.google.com/?q=Dubai+Design+District+Dubai', 'https://www.google.com/maps/search/?api=1&query=Dubai+Design+District+Dubai', 8, 0, 22, 0, '', null],
+                    ['Art Dubai', 'Art Fair · Cultural Event', 'Madinat Jumeirah, Dubai', 4.6, 180, 'Closed · Opens Mar 2026', 0, 'https://www.artdubai.ae/', 'https://maps.google.com/?q=Madinat+Jumeirah+Dubai', 'https://www.google.com/maps/search/?api=1&query=Madinat+Jumeirah+Dubai', 10, 0, 20, 0, '', 'Closed · Opens Mar 2026'],
+                    ['Alserkal Avenue', 'Arts District · Gallery Hub', 'Al Quoz, Dubai', 4.8, 310, 'Open · Closes at 20:00', 1, 'https://alserkal.online/', 'https://maps.google.com/?q=Alserkal+Avenue+Al+Quoz+Dubai', 'https://www.google.com/maps/search/?api=1&query=Alserkal+Avenue+Al+Quoz+Dubai', 10, 0, 20, 0, '', null],
+                    ['Dubai Opera', 'Performing Arts · Venue', 'Downtown Dubai', 4.9, 450, 'Open · Next show at 19:30', 1, 'https://www.dubaiopera.com/en', 'https://maps.google.com/?q=Dubai+Opera+Downtown+Dubai', 'https://www.google.com/maps/search/?api=1&query=Dubai+Opera+Downtown+Dubai', 10, 0, 23, 0, '', null],
                 ];
                 $govStmt = $this->pdo->prepare("INSERT INTO government_entities (name, category, location, base_rating, base_review_count, default_timing, default_is_open, website_url, directions_url, google_maps_reviews_url, open_hour, open_minute, close_hour, close_minute, closed_days, seasonal_notice) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 foreach ($govEntities as $ge) { $govStmt->execute($ge); }
@@ -1726,13 +1728,14 @@ class GovernmentController {
                 'location' => 'Al Shindagha, Dubai',
                 'default_timing' => 'Open · Closes at 15:00',
                 'website_url' => 'https://www.dubaiculture.gov.ae/',
-                'directions_url' => 'https://maps.google.com/?q=Dubai+Culture+and+Arts+Authority+Al+Shindagha',
-                'google_maps_reviews_url' => 'https://maps.google.com/?q=Dubai+Culture+and+Arts+Authority+Al+Shindagha',
+                'directions_url' => 'https://maps.google.com/?q=Dubai+Culture+and+Arts+Authority+Al+Shindagha+Dubai',
+                'google_maps_reviews_url' => 'https://www.google.com/maps/search/?api=1&query=Dubai+Culture+and+Arts+Authority+Al+Shindagha+Dubai',
                 'open_hour' => 7,
                 'open_minute' => 30,
                 'close_hour' => 15,
                 'close_minute' => 0,
-                'closed_days' => '6,7'
+                'closed_days' => '6,7',
+                'seasonal_notice' => null
             ],
             [
                 'name' => 'Ministry of Culture & Youth',
@@ -1742,14 +1745,15 @@ class GovernmentController {
                 'category' => 'Government · Federal Ministry',
                 'location' => 'Abu Dhabi, UAE',
                 'default_timing' => 'Open · Closes at 14:30',
-                'website_url' => 'https://www.moccae.gov.ae/',
-                'directions_url' => 'https://maps.google.com/?q=Ministry+of+Climate+Change+and+Environment+Abu+Dhabi',
-                'google_maps_reviews_url' => 'https://maps.google.com/?q=Ministry+of+Climate+Change+and+Environment+Abu+Dhabi',
+                'website_url' => 'https://www.mcy.gov.ae/',
+                'directions_url' => 'https://maps.google.com/?q=Ministry+of+Culture+and+Youth+Abu+Dhabi',
+                'google_maps_reviews_url' => 'https://www.google.com/maps/search/?api=1&query=Ministry+of+Culture+and+Youth+Abu+Dhabi',
                 'open_hour' => 7,
                 'open_minute' => 30,
                 'close_hour' => 14,
                 'close_minute' => 30,
-                'closed_days' => '6,7'
+                'closed_days' => '6,7',
+                'seasonal_notice' => null
             ],
             [
                 'name' => 'Dubai Design District (d3)',
@@ -1760,13 +1764,14 @@ class GovernmentController {
                 'location' => 'Dubai Design District, Dubai',
                 'default_timing' => 'Open · Closes at 22:00',
                 'website_url' => 'https://dubaidesigndistrict.com/',
-                'directions_url' => 'https://maps.google.com/?q=Dubai+Design+District',
-                'google_maps_reviews_url' => 'https://maps.google.com/?q=Dubai+Design+District',
+                'directions_url' => 'https://maps.google.com/?q=Dubai+Design+District+Dubai',
+                'google_maps_reviews_url' => 'https://www.google.com/maps/search/?api=1&query=Dubai+Design+District+Dubai',
                 'open_hour' => 8,
                 'open_minute' => 0,
                 'close_hour' => 22,
                 'close_minute' => 0,
-                'closed_days' => ''
+                'closed_days' => '',
+                'seasonal_notice' => null
             ],
             [
                 'name' => 'Art Dubai',
@@ -1778,7 +1783,7 @@ class GovernmentController {
                 'default_timing' => 'Closed · Opens Mar 2026',
                 'website_url' => 'https://www.artdubai.ae/',
                 'directions_url' => 'https://maps.google.com/?q=Madinat+Jumeirah+Dubai',
-                'google_maps_reviews_url' => 'https://maps.google.com/?q=Madinat+Jumeirah+Dubai',
+                'google_maps_reviews_url' => 'https://www.google.com/maps/search/?api=1&query=Madinat+Jumeirah+Dubai',
                 'open_hour' => 10,
                 'open_minute' => 0,
                 'close_hour' => 20,
@@ -1795,13 +1800,14 @@ class GovernmentController {
                 'location' => 'Al Quoz, Dubai',
                 'default_timing' => 'Open · Closes at 20:00',
                 'website_url' => 'https://alserkal.online/',
-                'directions_url' => 'https://maps.google.com/?q=Alserkal+Avenue+Al+Quoz',
-                'google_maps_reviews_url' => 'https://maps.google.com/?q=Alserkal+Avenue+Al+Quoz',
+                'directions_url' => 'https://maps.google.com/?q=Alserkal+Avenue+Al+Quoz+Dubai',
+                'google_maps_reviews_url' => 'https://www.google.com/maps/search/?api=1&query=Alserkal+Avenue+Al+Quoz+Dubai',
                 'open_hour' => 10,
                 'open_minute' => 0,
                 'close_hour' => 20,
                 'close_minute' => 0,
-                'closed_days' => ''
+                'closed_days' => '',
+                'seasonal_notice' => null
             ],
             [
                 'name' => 'Dubai Opera',
@@ -1812,67 +1818,132 @@ class GovernmentController {
                 'location' => 'Downtown Dubai',
                 'default_timing' => 'Open · Next show at 19:30',
                 'website_url' => 'https://www.dubaiopera.com/en',
-                'directions_url' => 'https://maps.google.com/?q=Dubai+Opera+Downtown',
-                'google_maps_reviews_url' => 'https://maps.google.com/?q=Dubai+Opera+Downtown',
+                'directions_url' => 'https://maps.google.com/?q=Dubai+Opera+Downtown+Dubai',
+                'google_maps_reviews_url' => 'https://www.google.com/maps/search/?api=1&query=Dubai+Opera+Downtown+Dubai',
                 'open_hour' => 10,
                 'open_minute' => 0,
                 'close_hour' => 23,
                 'close_minute' => 0,
-                'closed_days' => ''
+                'closed_days' => '',
+                'seasonal_notice' => null
             ]
         ];
 
         try {
-            $count = (int)$this->db->query("SELECT COUNT(*) FROM government_entities")->fetchColumn();
-            if ($count === 0) {
-                try {
-                    $ins = $this->db->prepare("INSERT INTO government_entities (name, category, location, base_rating, base_review_count, default_timing, default_is_open, website_url, directions_url, google_maps_reviews_url, open_hour, open_minute, close_hour, close_minute, closed_days, seasonal_notice) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                    foreach ($baseEntities as $be) {
-                        $ins->execute([
-                            $be['name'],
-                            $be['category'],
-                            $be['location'],
-                            $be['base_rating'],
-                            $be['base_review_count'],
-                            $be['default_timing'],
-                            $be['default_is_open'],
-                            $be['website_url'],
-                            $be['directions_url'],
-                            $be['google_maps_reviews_url'],
-                            $be['open_hour'] ?? 8,
-                            $be['open_minute'] ?? 0,
-                            $be['close_hour'] ?? 18,
-                            $be['close_minute'] ?? 0,
-                            is_array($be['closed_days'] ?? null) ? implode(',', $be['closed_days']) : ($be['closed_days'] ?? ''),
-                            $be['seasonal_notice'] ?? null
-                        ]);
-                    }
-                } catch (\Throwable $t) {
-                    $insFallback = $this->db->prepare("INSERT INTO government_entities (name, category, location, rating, review_count, default_timing, default_is_open, website_url, directions_url, google_maps_reviews_url, open_hour, open_minute, close_hour, close_minute, closed_days, seasonal_notice) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                    foreach ($baseEntities as $be) {
-                        $insFallback->execute([
-                            $be['name'],
-                            $be['category'],
-                            $be['location'],
-                            $be['base_rating'],
-                            $be['base_review_count'],
-                            $be['default_timing'],
-                            $be['default_is_open'],
-                            $be['website_url'],
-                            $be['directions_url'],
-                            $be['google_maps_reviews_url'],
-                            $be['open_hour'] ?? 8,
-                            $be['open_minute'] ?? 0,
-                            $be['close_hour'] ?? 18,
-                            $be['close_minute'] ?? 0,
-                            is_array($be['closed_days'] ?? null) ? implode(',', $be['closed_days']) : ($be['closed_days'] ?? ''),
-                            $be['seasonal_notice'] ?? null
-                        ]);
-                    }
+            // Check and sync database records with exact fields
+            $checkStmt = $this->db->prepare("SELECT id FROM government_entities WHERE name = ?");
+            $updStmt = $this->db->prepare("UPDATE government_entities SET category = ?, location = ?, base_rating = ?, base_review_count = ?, rating = ?, review_count = ?, default_timing = ?, default_is_open = ?, website_url = ?, directions_url = ?, google_maps_reviews_url = ?, open_hour = ?, open_minute = ?, close_hour = ?, close_minute = ?, closed_days = ?, seasonal_notice = ? WHERE id = ?");
+            $insStmt = $this->db->prepare("INSERT INTO government_entities (name, category, location, base_rating, base_review_count, rating, review_count, default_timing, default_is_open, website_url, directions_url, google_maps_reviews_url, open_hour, open_minute, close_hour, close_minute, closed_days, seasonal_notice) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+            foreach ($baseEntities as $be) {
+                $checkStmt->execute([$be['name']]);
+                $existingId = $checkStmt->fetchColumn();
+                $closedDaysStr = is_array($be['closed_days'] ?? null) ? implode(',', $be['closed_days']) : ($be['closed_days'] ?? '');
+                if ($existingId) {
+                    $updStmt->execute([
+                        $be['category'],
+                        $be['location'],
+                        $be['base_rating'],
+                        $be['base_review_count'],
+                        $be['base_rating'],
+                        $be['base_review_count'],
+                        $be['default_timing'],
+                        $be['default_is_open'],
+                        $be['website_url'],
+                        $be['directions_url'],
+                        $be['google_maps_reviews_url'],
+                        $be['open_hour'] ?? 8,
+                        $be['open_minute'] ?? 0,
+                        $be['close_hour'] ?? 18,
+                        $be['close_minute'] ?? 0,
+                        $closedDaysStr,
+                        $be['seasonal_notice'] ?? null,
+                        $existingId
+                    ]);
+                } else {
+                    $insStmt->execute([
+                        $be['name'],
+                        $be['category'],
+                        $be['location'],
+                        $be['base_rating'],
+                        $be['base_review_count'],
+                        $be['base_rating'],
+                        $be['base_review_count'],
+                        $be['default_timing'],
+                        $be['default_is_open'],
+                        $be['website_url'],
+                        $be['directions_url'],
+                        $be['google_maps_reviews_url'],
+                        $be['open_hour'] ?? 8,
+                        $be['open_minute'] ?? 0,
+                        $be['close_hour'] ?? 18,
+                        $be['close_minute'] ?? 0,
+                        $closedDaysStr,
+                        $be['seasonal_notice'] ?? null
+                    ]);
                 }
             }
 
-            $stmtGov = $this->db->query("SELECT * FROM government_entities ORDER BY id ASC");
+            // Remove any outdated entities that are not among the 6 exact portals
+            $validNames = array_column($baseEntities, 'name');
+            $inClause = implode(',', array_fill(0, count($validNames), '?'));
+            $delStmt = $this->db->prepare("DELETE FROM government_entities WHERE name NOT IN ($inClause)");
+            $delStmt->execute($validNames);
+
+            // Ensure reviews table exists and seed reviews for each entity if empty
+            $this->db->exec("CREATE TABLE IF NOT EXISTS reviews (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                entity_name VARCHAR(191) NOT NULL,
+                author_name VARCHAR(191) NOT NULL,
+                author_photo VARCHAR(255) DEFAULT NULL,
+                rating DECIMAL(3,1) NOT NULL,
+                text TEXT NOT NULL,
+                relative_time VARCHAR(100) DEFAULT 'Just now',
+                is_local_guide TINYINT(1) DEFAULT 1,
+                likes_count INT DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+            $revCount = (int)$this->db->query("SELECT COUNT(*) FROM reviews")->fetchColumn();
+            if ($revCount === 0) {
+                $seedReviews = [
+                    ['Dubai Culture & Arts Authority', 'Sultan Al-Marzooqi', null, 5.0, 'Fantastic support for traditional and contemporary Emirati artists. Their Al Shindagha facilities are world-class.', '1d ago', 1, 14],
+                    ['Dubai Culture & Arts Authority', 'Elena Rostova', null, 4.5, 'Very professional cultural foundation. Great licensing process and artist residency initiatives in Dubai.', '3d ago', 1, 8],
+                    ['Dubai Culture & Arts Authority', 'Mariam Al-Hashemi', null, 4.0, 'Beautiful heritage location in Al Shindagha and excellent community workshops.', '1w ago', 0, 5],
+
+                    ['Ministry of Culture & Youth', 'Rashid Al-Nuaimi', null, 4.5, 'Great federal grants and cultural funding initiatives for young UAE creators.', '2d ago', 1, 11],
+                    ['Ministry of Culture & Youth', 'Sarah Jenkins', null, 4.0, 'Helpful staff and swift cultural permits processing for international exhibitions.', '5d ago', 0, 4],
+                    ['Ministry of Culture & Youth', 'Khalid bin Thani', null, 4.0, 'Pioneering work in safeguarding national identity and advancing youth creative talent.', '2w ago', 1, 7],
+
+                    ['Dubai Design District (d3)', 'Marcus Vance', null, 5.0, 'The heartbeat of Dubai design scene. Amazing galleries, showrooms, and coffee shops.', '4h ago', 1, 23],
+                    ['Dubai Design District (d3)', 'Noor Al-Sabah', null, 4.5, 'Incredible space for modern artists and annual design week events. Always inspiring.', '2d ago', 1, 16],
+                    ['Dubai Design District (d3)', 'Priya Sharma', null, 5.0, 'Vibrant creative atmosphere with top design agencies and contemporary installations.', '1w ago', 0, 9],
+
+                    ['Art Dubai', 'David Chen', null, 5.0, 'The leading international art fair in the Middle East. Madinat Jumeirah is the perfect setting.', '1d ago', 1, 31],
+                    ['Art Dubai', 'Amira Khalfan', null, 4.5, 'Spectacular curations from Global South and MENA artists every spring.', '4d ago', 1, 18],
+                    ['Art Dubai', 'Jean-Luc Moreau', null, 4.5, 'Outstanding gallery selections and thought-provoking Global Art Forum talks.', '2w ago', 0, 12],
+
+                    ['Alserkal Avenue', 'Tariq Mansoor', null, 5.0, 'Industrial warehouse aesthetic with world-class contemporary art galleries and independent cinema.', '6h ago', 1, 29],
+                    ['Alserkal Avenue', 'Chloe Dubois', null, 4.8, 'A must-visit for any art collector in Dubai. Great exhibitions and gallery nights all year.', '2d ago', 1, 19],
+                    ['Alserkal Avenue', 'Zayed Al-Maktoum', null, 5.0, 'A thriving cultural district that redefined the Dubai contemporary arts movement.', '1w ago', 1, 15],
+
+                    ['Dubai Opera', 'Ahmed Al-Zahra', null, 5.0, 'Architectural masterpiece in Downtown. The acoustics and stage productions are phenomenal.', '3h ago', 1, 42],
+                    ['Dubai Opera', 'Liam Gallagher', null, 4.8, 'Breathtaking venue with stellar performances right beside Burj Khalifa.', '1d ago', 1, 27],
+                    ['Dubai Opera', 'Fatima Noor', null, 5.0, 'World-class ballet and orchestral concerts with flawless hospitality.', '3d ago', 1, 20],
+                ];
+                $revStmt = $this->db->prepare("INSERT INTO reviews (entity_name, author_name, author_photo, rating, text, relative_time, is_local_guide, likes_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                foreach ($seedReviews as $sr) {
+                    $revStmt->execute($sr);
+                }
+            }
+
+            // Fetch records in exact requested order
+            $orderCases = [];
+            foreach ($validNames as $idx => $vName) {
+                $orderCases[] = "WHEN name = " . $this->db->quote($vName) . " THEN " . ($idx + 1);
+            }
+            $orderSql = "CASE " . implode(' ', $orderCases) . " ELSE 99 END ASC";
+            $stmtGov = $this->db->query("SELECT * FROM government_entities ORDER BY $orderSql");
             $dbEntities = $stmtGov->fetchAll();
             if (empty($dbEntities)) {
                 $dbEntities = $baseEntities;
@@ -1900,15 +1971,8 @@ class GovernmentController {
             
             $baseCount = (int)($ent['base_review_count'] ?? 100);
             $baseRat = (float)($ent['base_rating'] ?? 4.5);
-            $computedReviewCount = $baseCount + count($entReviews);
+            $computedReviewCount = $baseCount;
             $computedRating = $baseRat;
-            if (!empty($entReviews)) {
-                $sum = $baseRat * 10;
-                foreach ($entReviews as $er) {
-                    $sum += (float)$er['rating'];
-                }
-                $computedRating = round($sum / (10 + count($entReviews)), 1);
-            }
 
             if (!empty($ent['closed_days']) && is_string($ent['closed_days'])) {
                 $ent['closed_days'] = array_map('intval', explode(',', $ent['closed_days']));
@@ -1916,19 +1980,8 @@ class GovernmentController {
                 $ent['closed_days'] = [];
             }
 
-            // Calculate live Dubai GST (UTC+4) open/closed status
-            $nowGst = new DateTime('now', new DateTimeZone('Asia/Dubai'));
-            $currentDayOfWeek = (int)$nowGst->format('N'); // 1 (Mon) to 7 (Sun)
-            $currentMinutes = ((int)$nowGst->format('G') * 60) + (int)$nowGst->format('i');
-            $openMinutes = ((int)($ent['open_hour'] ?? 8) * 60) + (int)($ent['open_minute'] ?? 0);
-            $closeMinutes = ((int)($ent['close_hour'] ?? 18) * 60) + (int)($ent['close_minute'] ?? 0);
-            $closedDays = $ent['closed_days'];
-            $isClosedToday = in_array($currentDayOfWeek, $closedDays, true);
-
-            $isCurrentlyOpen = !$isClosedToday && ($currentMinutes >= $openMinutes && $currentMinutes < $closeMinutes);
-
-            $ent['is_currently_open'] = $isCurrentlyOpen;
-            $ent['is_open'] = $isCurrentlyOpen;
+            $ent['is_currently_open'] = (bool)($ent['default_is_open'] ?? true);
+            $ent['is_open'] = (bool)($ent['default_is_open'] ?? true);
             $ent['rating'] = $computedRating;
             $ent['review_count'] = $computedReviewCount;
             $ent['reviews'] = $entReviews;
