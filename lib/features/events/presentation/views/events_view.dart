@@ -672,60 +672,62 @@ class _EventsViewState extends State<EventsView> {
                 ),
               ),
               const Spacer(),
-              // Share button
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => _shareEvent(event),
-                  borderRadius: BorderRadius.circular(6),
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Icon(
-                      Icons.share_outlined,
-                      size: 16,
-                      color: Color(0xFF64748B),
+              if (_isLoggedIn) ...[
+                // Share button
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _shareEvent(event),
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(
+                        Icons.share_outlined,
+                        size: 16,
+                        color: Color(0xFF64748B),
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              // Like/Favorite ❤️ button
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => _toggleEventLike(event),
-                  borderRadius: BorderRadius.circular(6),
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: _likedEventIds.contains(event.id)
-                          ? const Color(0xFFE11D48).withValues(alpha: 0.1)
-                          : Colors.transparent,
-                      border: Border.all(
+                const SizedBox(width: 8),
+                // Like/Favorite ❤️ button
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _toggleEventLike(event),
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: _likedEventIds.contains(event.id)
+                            ? const Color(0xFFE11D48).withValues(alpha: 0.1)
+                            : Colors.transparent,
+                        border: Border.all(
+                          color: _likedEventIds.contains(event.id)
+                              ? const Color(0xFFE11D48)
+                              : const Color(0xFFE2E8F0),
+                        ),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        _likedEventIds.contains(event.id)
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        size: 16,
                         color: _likedEventIds.contains(event.id)
                             ? const Color(0xFFE11D48)
-                            : const Color(0xFFE2E8F0),
+                            : const Color(0xFF64748B),
                       ),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Icon(
-                      _likedEventIds.contains(event.id)
-                          ? Icons.favorite
-                          : Icons.favorite_border,
-                      size: 16,
-                      color: _likedEventIds.contains(event.id)
-                          ? const Color(0xFFE11D48)
-                          : const Color(0xFF64748B),
                     ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
           const SizedBox(height: 12),

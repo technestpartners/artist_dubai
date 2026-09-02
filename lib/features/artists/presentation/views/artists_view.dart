@@ -641,6 +641,7 @@ class _ArtistsViewState extends State<ArtistsView> {
                   fit: BoxFit.cover,
                 ),
               ),
+              if (_isLoggedIn)
               Positioned(
                 top: 10,
                 right: 10,
