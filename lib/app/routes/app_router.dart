@@ -167,6 +167,15 @@ class AppRouter {
         pageBuilder: (context, state) => _buildFadePage(
           context: context,
           state: state,
+          child: const EventsCompetitionView(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.artEvents,
+        name: 'artEvents',
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
           child: const EventsView(),
         ),
       ),
