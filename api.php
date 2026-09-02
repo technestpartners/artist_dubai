@@ -759,16 +759,20 @@ class ArtistController {
             else ApiResponse::error('Artist not found', 404);
         }
 
-        $sql = 'SELECT * FROM artists WHERE 1=1';
+        $sql = 'SELECT a.*, 
+                (SELECT COUNT(*) FROM favorites WHERE item_type = "artist" AND item_id = CAST(a.id AS CHAR)) AS likes_count,
+                (SELECT COUNT(*) FROM follows WHERE artist_id = CAST(a.id AS CHAR)) AS followers_count,
+                (SELECT COUNT(*) FROM artworks WHERE artist_id = CAST(a.id AS CHAR) OR (artist_name IS NOT NULL AND LOWER(artist_name) = LOWER(a.name))) AS works_count
+                FROM artists a WHERE 1=1';
         $params = [];
 
         if (!empty($category) && $category !== 'All Categories' && $category !== 'All') {
-            $sql .= ' AND category LIKE ?';
+            $sql .= ' AND a.category LIKE ?';
             $params[] = "%$category%";
         }
 
         if (!empty($search)) {
-            $sql .= ' AND (name LIKE ? OR bio LIKE ? OR location LIKE ?)';
+            $sql .= ' AND (a.name LIKE ? OR a.bio LIKE ? OR a.location LIKE ?)';
             $params[] = "%$search%";
             $params[] = "%$search%";
             $params[] = "%$search%";
@@ -779,14 +783,14 @@ class ArtistController {
         $offset = ($page - 1) * $limit;
 
         // Count total matching records for instant pagination calculation
-        $countSql = 'SELECT COUNT(*) FROM artists WHERE 1=1';
+        $countSql = 'SELECT COUNT(*) FROM artists a WHERE 1=1';
         $countParams = [];
         if (!empty($category) && $category !== 'All Categories' && $category !== 'All') {
-            $countSql .= ' AND category LIKE ?';
+            $countSql .= ' AND a.category LIKE ?';
             $countParams[] = "%$category%";
         }
         if (!empty($search)) {
-            $countSql .= ' AND (name LIKE ? OR bio LIKE ? OR location LIKE ?)';
+            $countSql .= ' AND (a.name LIKE ? OR a.bio LIKE ? OR a.location LIKE ?)';
             $countParams[] = "%$search%";
             $countParams[] = "%$search%";
             $countParams[] = "%$search%";
@@ -854,7 +858,7 @@ class ArtistController {
             return;
         }
 
-        $isLiked = true;
+        $isLiked = false;
         if (!empty($email)) {
             $favCheck = $this->db->prepare('SELECT id FROM favorites WHERE user_email = ? AND item_type = "artist" AND item_id = ?');
             $favCheck->execute([$email, (string)$id]);
@@ -864,20 +868,20 @@ class ArtistController {
                 $del = $this->db->prepare('DELETE FROM favorites WHERE id = ?');
                 $del->execute([$existing['id']]);
                 $isLiked = false;
-                $this->db->prepare('UPDATE artists SET likes_count = GREATEST(0, likes_count - 1) WHERE id = ?')->execute([$id]);
             } elseif (!$existing && ($action === 'toggle' || $action === 'like')) {
                 $ins = $this->db->prepare('INSERT INTO favorites (user_email, item_type, item_id) VALUES (?, "artist", ?)');
                 $ins->execute([$email, (string)$id]);
                 $isLiked = true;
-                $this->db->prepare('UPDATE artists SET likes_count = likes_count + 1 WHERE id = ?')->execute([$id]);
+            } else {
+                $isLiked = (bool)$existing;
             }
-        } else {
-            $this->db->prepare('UPDATE artists SET likes_count = likes_count + 1 WHERE id = ?')->execute([$id]);
         }
 
-        $stmt = $this->db->prepare('SELECT likes_count FROM artists WHERE id = ?');
-        $stmt->execute([$id]);
-        $likes = (int)($stmt->fetchColumn() ?? 0);
+        $cntStmt = $this->db->prepare('SELECT COUNT(*) FROM favorites WHERE item_type = "artist" AND item_id = ?');
+        $cntStmt->execute([(string)$id]);
+        $likes = (int)$cntStmt->fetchColumn();
+
+        $this->db->prepare('UPDATE artists SET likes_count = ? WHERE id = ?')->execute([$likes, $id]);
 
         ApiResponse::success([
             'artist_id' => $id,
@@ -896,7 +900,7 @@ class ArtistController {
             return;
         }
 
-        $isFollowing = true;
+        $isFollowing = false;
         if (!empty($email)) {
             $folCheck = $this->db->prepare('SELECT id FROM follows WHERE user_email = ? AND artist_id = ?');
             $folCheck->execute([$email, (string)$id]);
@@ -906,20 +910,20 @@ class ArtistController {
                 $del = $this->db->prepare('DELETE FROM follows WHERE id = ?');
                 $del->execute([$existing['id']]);
                 $isFollowing = false;
-                $this->db->prepare('UPDATE artists SET followers_count = GREATEST(0, followers_count - 1) WHERE id = ?')->execute([$id]);
             } elseif (!$existing && ($action === 'toggle' || $action === 'follow')) {
                 $ins = $this->db->prepare('INSERT INTO follows (user_email, artist_id) VALUES (?, ?)');
                 $ins->execute([$email, (string)$id]);
                 $isFollowing = true;
-                $this->db->prepare('UPDATE artists SET followers_count = followers_count + 1 WHERE id = ?')->execute([$id]);
+            } else {
+                $isFollowing = (bool)$existing;
             }
-        } else {
-            $this->db->prepare('UPDATE artists SET followers_count = followers_count + 1 WHERE id = ?')->execute([$id]);
         }
 
-        $stmt = $this->db->prepare('SELECT followers_count FROM artists WHERE id = ?');
-        $stmt->execute([$id]);
-        $followers = (int)($stmt->fetchColumn() ?? 0);
+        $cntStmt = $this->db->prepare('SELECT COUNT(*) FROM follows WHERE artist_id = ?');
+        $cntStmt->execute([(string)$id]);
+        $followers = (int)$cntStmt->fetchColumn();
+
+        $this->db->prepare('UPDATE artists SET followers_count = ? WHERE id = ?')->execute([$followers, $id]);
 
         ApiResponse::success([
             'artist_id' => $id,
@@ -937,13 +941,21 @@ class ArtistController {
             return;
         }
 
-        $stmt = $this->db->prepare('SELECT likes_count, followers_count, works_count FROM artists WHERE id = ?');
-        $stmt->execute([$id]);
-        $artist = $stmt->fetch();
+        // Count actual likes, followers, artworks from relational tables
+        $cntLikes = $this->db->prepare('SELECT COUNT(*) FROM favorites WHERE item_type = "artist" AND item_id = ?');
+        $cntLikes->execute([(string)$id]);
+        $likes = (int)$cntLikes->fetchColumn();
 
-        $likes = $artist ? (int)$artist['likes_count'] : 0;
-        $followers = $artist ? (int)$artist['followers_count'] : 0;
-        $works = $artist ? (int)$artist['works_count'] : 0;
+        $cntFollowers = $this->db->prepare('SELECT COUNT(*) FROM follows WHERE artist_id = ?');
+        $cntFollowers->execute([(string)$id]);
+        $followers = (int)$cntFollowers->fetchColumn();
+
+        $cntWorks = $this->db->prepare('SELECT COUNT(*) FROM artworks WHERE artist_id = ? OR (artist_name IS NOT NULL AND LOWER(artist_name) = (SELECT LOWER(name) FROM artists WHERE id = ? LIMIT 1))');
+        $cntWorks->execute([(string)$id, $id]);
+        $works = (int)$cntWorks->fetchColumn();
+
+        $this->db->prepare('UPDATE artists SET likes_count = ?, followers_count = ?, works_count = ? WHERE id = ?')
+                 ->execute([$likes, $followers, $works, $id]);
 
         $isLiked = false;
         $isFollowing = false;

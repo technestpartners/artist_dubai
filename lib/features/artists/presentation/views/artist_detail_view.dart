@@ -59,7 +59,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
           setState(() {
             _likesCount = match.likesCount;
             _followersCount = match.followersCount;
-            _worksCount = match.worksCount;
+            if (match.worksCount > 0 || _artworksList.isEmpty) {
+              _worksCount = match.worksCount;
+            }
           });
         }
       }
@@ -146,13 +148,16 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
             _worksCount = artworks.length;
           }
           if (status != null) {
-            _isArtistFavorited = (status['is_liked'] == true) || isFavInBackend;
+            _isArtistFavorited = status['is_liked'] == true;
             _isFollowing = status['is_following'] == true;
             if (status['likes_count'] != null) {
               _likesCount = (status['likes_count'] as num).toInt();
             }
             if (status['followers_count'] != null) {
               _followersCount = (status['followers_count'] as num).toInt();
+            }
+            if (status['works_count'] != null && _artworksList.isEmpty) {
+              _worksCount = (status['works_count'] as num).toInt();
             }
           } else {
             _isArtistFavorited = isFavInBackend;
@@ -213,9 +218,14 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
       userEmail: userEmail,
       action: wasFav ? 'unlike' : 'like',
     );
-    if (res != null && res['likes_count'] != null && mounted) {
+    if (res != null && mounted) {
       setState(() {
-        _likesCount = (res['likes_count'] as num).toInt();
+        if (res['likes_count'] != null) {
+          _likesCount = (res['likes_count'] as num).toInt();
+        }
+        if (res['is_liked'] != null) {
+          _isArtistFavorited = res['is_liked'] == true;
+        }
       });
     }
 
