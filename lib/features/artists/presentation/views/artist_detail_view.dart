@@ -246,6 +246,8 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         if (_likesCount > 0) _likesCount -= 1;
       }
     });
+    // Patch in-memory cache instantly so directory cards reflect immediately
+    sl<ApiService>().patchInteractionsCache(artistId: artist.id, isLiked: !wasFav);
 
     final res = await sl<ApiService>().likeArtist(
       artistId: artist.id,
@@ -253,11 +255,13 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
       action: wasFav ? 'unlike' : 'like',
     );
     if (res != null && mounted) {
+      final confirmed = res['is_liked'] == true;
+      sl<ApiService>().patchInteractionsCache(artistId: artist.id, isLiked: confirmed);
       setState(() {
         if (res['likes_count'] != null) {
           _likesCount = (res['likes_count'] as num).toInt();
         }
-        _isArtistFavorited = res['is_liked'] == true;
+        _isArtistFavorited = confirmed;
         if (_isArtistFavorited && _likesCount == 0) _likesCount = 1;
       });
     }
@@ -294,6 +298,8 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         if (_followersCount > 0) _followersCount -= 1;
       }
     });
+    // Patch in-memory cache so ArtistsView directory reflects this immediately on return
+    sl<ApiService>().patchInteractionsCache(artistId: artist.id, isFollowing: !wasFollowing);
 
     final res = await sl<ApiService>().followArtist(
       artistId: artist.id,
@@ -301,11 +307,13 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
       action: wasFollowing ? 'unfollow' : 'follow',
     );
     if (res != null && mounted) {
+      final confirmed = res['is_following'] == true;
+      sl<ApiService>().patchInteractionsCache(artistId: artist.id, isFollowing: confirmed);
       setState(() {
         if (res['followers_count'] != null) {
           _followersCount = (res['followers_count'] as num).toInt();
         }
-        _isFollowing = res['is_following'] == true;
+        _isFollowing = confirmed;
         if (_isFollowing && _followersCount == 0) _followersCount = 1;
       });
     }

@@ -58,8 +58,12 @@ class ApiService {
   List<Map<String, dynamic>>? _cachedGalleries;
   Map<String, dynamic>? _cachedAbout;
   List<Map<String, dynamic>>? _cachedCompetitions;
+  Map<String, Set<String>>? _cachedInteractions; // liked/followed artist IDs per session
 
   ApiService(this._client);
+
+  /// Public read-only access to in-memory artist cache for stale-while-revalidate
+  List<ArtistModel>? get cachedArtists => _cachedArtists;
 
   bool _isSuccess(dynamic res) =>
       res is Map<String, dynamic> && (res['status'] == 'success' || res['success'] == true);
@@ -1227,8 +1231,27 @@ class ApiService {
     return null;
   }
 
-  // 19d. Get All User Interactions — liked & followed artist IDs in one call (MySQL Backend)
-  Future<Map<String, Set<String>>> getUserInteractions({required String userEmail}) async {
+  // 19d. Get All User Interactions — liked & followed artist IDs (stale-while-revalidate)
+  Future<Map<String, Set<String>>> getUserInteractions({
+    required String userEmail,
+    bool forceRefresh = false,
+  }) async {
+    // Return cache instantly if available
+    if (!forceRefresh && _cachedInteractions != null) {
+      // Refresh in background silently
+      _refreshInteractionsBackground(userEmail);
+      return _cachedInteractions!;
+    }
+    return _fetchInteractionsFromDb(userEmail);
+  }
+
+  void _refreshInteractionsBackground(String userEmail) {
+    _fetchInteractionsFromDb(userEmail).then((fresh) {
+      _cachedInteractions = fresh;
+    });
+  }
+
+  Future<Map<String, Set<String>>> _fetchInteractionsFromDb(String userEmail) async {
     try {
       final res = await _client.get(
         '${ApiEndpoints.artists}&action=interactions',
@@ -1236,15 +1259,41 @@ class ApiService {
       );
       if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
         final data = res['data'] as Map<String, dynamic>;
-        final likedRaw   = (data['liked_artist_ids']   as List<dynamic>?) ?? [];
+        final likedRaw    = (data['liked_artist_ids']    as List<dynamic>?) ?? [];
         final followedRaw = (data['followed_artist_ids'] as List<dynamic>?) ?? [];
-        return {
+        final result = {
           'liked':    likedRaw.map((e) => e.toString()).toSet(),
           'followed': followedRaw.map((e) => e.toString()).toSet(),
         };
+        _cachedInteractions = result;
+        return result;
       }
     } catch (_) {}
-    return {'liked': {}, 'followed': {}};
+    return _cachedInteractions ?? {'liked': <String>{}, 'followed': <String>{}};
+  }
+
+  /// Called after like/follow toggle — updates local cache instantly without a network call
+  void patchInteractionsCache({
+    required String artistId,
+    bool? isLiked,
+    bool? isFollowing,
+  }) {
+    final cache = _cachedInteractions;
+    if (cache == null) return;
+    if (isLiked != null) {
+      if (isLiked) {
+        cache['liked']!.add(artistId);
+      } else {
+        cache['liked']!.remove(artistId);
+      }
+    }
+    if (isFollowing != null) {
+      if (isFollowing) {
+        cache['followed']!.add(artistId);
+      } else {
+        cache['followed']!.remove(artistId);
+      }
+    }
   }
 
   // 20. Update Event (MySQL Backend)

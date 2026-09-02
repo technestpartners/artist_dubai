@@ -83,13 +83,13 @@ class _ArtistsViewState extends State<ArtistsView> {
     final wasFav = _favoritedArtistIds.contains(artist.id);
     _lastUserToggleTime = DateTime.now();
 
+    // Optimistic UI + patch in-memory cache instantly
     setState(() {
       if (wasFav) {
         _favoritedArtistIds.remove(artist.id);
       } else {
         _favoritedArtistIds.add(artist.id);
       }
-
       final updatedIndex = _allArtists.indexWhere((a) => a.id == artist.id);
       if (updatedIndex != -1) {
         final old = _allArtists[updatedIndex];
@@ -99,6 +99,7 @@ class _ArtistsViewState extends State<ArtistsView> {
         _allArtists[updatedIndex] = old.copyWith(likesCount: newLikes);
       }
     });
+    sl<ApiService>().patchInteractionsCache(artistId: artist.id, isLiked: !wasFav);
 
     final res = await sl<ApiService>().likeArtist(
       artistId: artist.id,
@@ -107,13 +108,13 @@ class _ArtistsViewState extends State<ArtistsView> {
     );
 
     if (res != null && mounted) {
+      final confirmedLiked = res['is_liked'] == true;
+      sl<ApiService>().patchInteractionsCache(artistId: artist.id, isLiked: confirmedLiked);
       setState(() {
-        if (res['is_liked'] != null) {
-          if (res['is_liked'] == true) {
-            _favoritedArtistIds.add(artist.id);
-          } else {
-            _favoritedArtistIds.remove(artist.id);
-          }
+        if (confirmedLiked) {
+          _favoritedArtistIds.add(artist.id);
+        } else {
+          _favoritedArtistIds.remove(artist.id);
         }
         final updatedIndex = _allArtists.indexWhere((a) => a.id == artist.id);
         if (updatedIndex != -1 && res['likes_count'] != null) {
@@ -187,32 +188,63 @@ class _ArtistsViewState extends State<ArtistsView> {
     super.dispose();
   }
 
-  Future<void> _fetchData() async {
+  Future<void> _fetchData({bool silent = false}) async {
     try {
       final userEmail = _getEffectiveEmail();
+
+      // ── Stale-While-Revalidate: serve cache instantly, refresh in background ──
+      // Artists from cache
+      final cachedArtists = sl<ApiService>().cachedArtists;
+      if (cachedArtists != null && cachedArtists.isNotEmpty && !mounted) return;
+      if (cachedArtists != null && cachedArtists.isNotEmpty && silent) {
+        // Already showing data — fire background refresh only
+        _silentRefresh(userEmail);
+        return;
+      }
+
+      // First load — fetch all in parallel
       final results = await Future.wait([
-        sl<ApiService>().getCategories(forceRefresh: true),
-        sl<ApiService>().getArtists(forceRefresh: true),
+        sl<ApiService>().getCategories(),
+        sl<ApiService>().getArtists(),
         sl<ApiService>().getUserInteractions(userEmail: userEmail),
       ]);
 
+      if (!mounted) return;
       final categories   = results[0] as List<CategoryInfo>;
       final artists      = results[1] as List<ArtistModel>;
       final interactions = results[2] as Map<String, Set<String>>;
 
-      if (mounted) {
-        setState(() {
-          _categories = categories;
-          _allArtists = artists;
-          _favoritedArtistIds
-            ..clear()
-            ..addAll(interactions['liked']!);
-          _followedArtistIds
-            ..clear()
-            ..addAll(interactions['followed']!);
-        });
-      }
+      setState(() {
+        _categories = categories;
+        _allArtists = artists;
+        _favoritedArtistIds
+          ..clear()
+          ..addAll(interactions['liked']!);
+        _followedArtistIds
+          ..clear()
+          ..addAll(interactions['followed']!);
+      });
     } catch (_) {}
+  }
+
+  void _silentRefresh(String userEmail) {
+    Future.wait([
+      sl<ApiService>().getArtists(forceRefresh: true),
+      sl<ApiService>().getUserInteractions(userEmail: userEmail, forceRefresh: true),
+    ]).then((results) {
+      if (!mounted) return;
+      final artists      = results[0] as List<ArtistModel>;
+      final interactions = results[1] as Map<String, Set<String>>;
+      setState(() {
+        _allArtists = artists;
+        _favoritedArtistIds
+          ..clear()
+          ..addAll(interactions['liked']!);
+        _followedArtistIds
+          ..clear()
+          ..addAll(interactions['followed']!);
+      });
+    });
   }
 
   void _openArtistDetail(ArtistModel artist) async {
@@ -226,8 +258,8 @@ class _ArtistsViewState extends State<ArtistsView> {
         ),
       ),
     );
-    // Re-fetch from DB on return — source of truth is always MySQL
-    if (mounted) await _fetchData();
+    // On return — silently refresh from DB in background, no loading flash
+    if (mounted) _silentRefresh(_getEffectiveEmail());
   }
 
   bool get _isLoggedIn {
