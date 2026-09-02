@@ -292,144 +292,79 @@ class _ArtistsViewState extends State<ArtistsView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 1. Featured Artists — login-gated section
-                if (_isLoggedIn) ...[ 
-                  // Header
+                // 1. Featured Artists Header
+                Center(
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Featured Artists',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1E1E1E),
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        filteredArtists.isEmpty
+                            ? 'No artist profiles available yet'
+                            : 'Discover ${filteredArtists.length} talented artists in Dubai',
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // 2. Artists List OR Empty State
+                if (filteredArtists.isEmpty) ...[
                   Center(
                     child: Column(
                       children: [
                         const Text(
-                          'Featured Artists',
+                          'No Artists Yet',
                           style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
                             color: Color(0xFF1E1E1E),
-                            letterSpacing: -0.3,
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          filteredArtists.isEmpty
-                              ? 'No artist profiles available yet'
-                              : 'Discover ${filteredArtists.length} talented artists in Dubai',
-                          style: const TextStyle(
-                            fontSize: 13.5,
-                            color: Color(0xFF64748B),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // 2. Artists List OR Empty State
-                  if (filteredArtists.isEmpty) ...[ 
-                    Center(
-                      child: Column(
-                        children: [
-                          const Text(
-                            'No Artists Yet',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1E1E1E),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          const Text(
-                            'Be the first to create an artist profile!',
-                            style: TextStyle(fontSize: 13.5, color: Color(0xFF616161)),
-                          ),
-                          const SizedBox(height: 14),
-                          SizedBox(
-                            height: 40,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF5E227A),
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 8,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              onPressed: () => context.push(RouteNames.artistRegistration),
-                              child: const Text(
-                                'Create Artist Profile',
-                                style: TextStyle(
-                                  fontSize: 14.5,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                  ] else ...[
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: filteredArtists.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 14),
-                      itemBuilder: (context, index) {
-                        final artist = filteredArtists[index];
-                        return _buildArtistCard(artist);
-                      },
-                    ),
-                    const SizedBox(height: 18),
-                  ],
-                ] else ...[ 
-                  // Guest login prompt
-                  const SizedBox(height: 40),
-                  Center(
-                    child: Column(
-                      children: [
-                        const Icon(
-                          Icons.lock_outline_rounded,
-                          size: 56,
-                          color: Color(0xFF5E227A),
-                        ),
-                        const SizedBox(height: 16),
                         const Text(
-                          'Featured Artists',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF1E1E1E),
-                          ),
+                          'Be the first to create an artist profile!',
+                          style: TextStyle(fontSize: 13.5, color: Color(0xFF616161)),
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Log in to discover talented artists in Dubai',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF64748B),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 14),
                         SizedBox(
-                          height: 44,
+                          height: 40,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF5E227A),
                               foregroundColor: Colors.white,
                               elevation: 0,
-                              padding: const EdgeInsets.symmetric(horizontal: 32),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 8,
+                              ),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            onPressed: () => context.push(RouteNames.login),
+                            onPressed: () {
+                              if (_isLoggedIn) {
+                                context.push(RouteNames.artistRegistration);
+                              } else {
+                                context.push(RouteNames.login);
+                              }
+                            },
                             child: const Text(
-                              'Log In',
+                              'Create Artist Profile',
                               style: TextStyle(
-                                fontSize: 15,
+                                fontSize: 14.5,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -438,7 +373,19 @@ class _ArtistsViewState extends State<ArtistsView> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 20),
+                ] else ...[
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: filteredArtists.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 14),
+                    itemBuilder: (context, index) {
+                      final artist = filteredArtists[index];
+                      return _buildArtistCard(artist);
+                    },
+                  ),
+                  const SizedBox(height: 18),
                 ],
 
                 // 3. Select a Category Input Box (Floating Dropdown)
