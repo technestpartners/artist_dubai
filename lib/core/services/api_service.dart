@@ -476,61 +476,6 @@ class ApiService {
     return _cachedGovEntities ?? GovernmentEntity.entities;
   }
 
-  // 6b. Reviews (Dynamic MySQL Backend)
-  Future<List<ReviewModel>> getReviews({required String entityName}) async {
-    try {
-      final res = await _client.get(
-        ApiEndpoints.reviews,
-        queryParameters: {'entity_name': entityName},
-      );
-      if (_isSuccess(res)) {
-        final list = res['data'] as List<dynamic>;
-        return list.map((e) => ReviewModel.fromJson(e as Map<String, dynamic>)).toList();
-      }
-    } catch (_) {}
-    return [];
-  }
-
-  Future<bool> addReview({
-    required String entityName,
-    required String authorName,
-    required double rating,
-    required String text,
-  }) async {
-    try {
-      final res = await _client.post(
-        ApiEndpoints.reviews,
-        data: {
-          'entity_name': entityName,
-          'author_name': authorName,
-          'rating': rating,
-          'text': text,
-        },
-      );
-      if (_isSuccess(res)) {
-        _cachedGovEntities = null; // Invalidate cache so ratings refresh
-        try {
-          sl<LiveSyncService>().notifyGovernmentChanged();
-        } catch (_) {}
-        return true;
-      }
-    } catch (_) {}
-    return false;
-  }
-
-  Future<int?> likeReview({required int reviewId}) async {
-    try {
-      final res = await _client.post(
-        '${ApiEndpoints.reviews}&action=helpful',
-        data: {'review_id': reviewId},
-      );
-      if (_isSuccess(res)) {
-        return (res['data']?['likes_count'] as num?)?.toInt();
-      }
-    } catch (_) {}
-    return null;
-  }
-
   // 7. Galleries (Instant Cache-First with artist filtering)
   Future<List<Map<String, dynamic>>> getGalleries({
     String? artistId,

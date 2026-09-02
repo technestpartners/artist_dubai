@@ -168,15 +168,9 @@ void main() {
       expect(regGallery, isTrue);
     });
 
-    test('7. Government Cultural Entity Form Submission & Review Submission', () async {
-      // Add Review
-      final reviewAdded = await apiService.addReview(
-        entityName: 'Dubai Culture & Arts Authority',
-        authorName: 'Art Enthusiast',
-        rating: 5.0,
-        text: 'Outstanding cultural initiatives and museum preservations across the UAE.',
-      );
-      expect(reviewAdded, isTrue);
+    test('7. Government Cultural Entity Fetching & Verification', () async {
+      final entities = await apiService.getGovernmentEntities(forceRefresh: true);
+      expect(entities.isNotEmpty, isTrue);
     });
 
     test('8. User Account Settings: Update Profile Name, Change Password & Delete Account', () async {

@@ -35,9 +35,6 @@ class ApiEndpoints {
   // Government & Cultural Hubs (MySQL Backend)
   static const String government = 'api.php?resource=government';
 
-  // Reviews (MySQL Backend)
-  static const String reviews = 'api.php?resource=reviews';
-
   // Galleries & Art Centers (MySQL Backend)
   static const String galleries = 'api.php?resource=galleries';
   static const String galleryRegister = 'api.php?resource=galleries';
