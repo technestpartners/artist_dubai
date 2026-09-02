@@ -71,9 +71,23 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
     super.dispose();
   }
 
+  String _getEffectiveEmail() {
+    try {
+      String? email = sl<StorageService>().getString('user_email');
+      if (email != null && email.isNotEmpty) return email;
+      email = sl<StorageService>().getString('device_guest_id');
+      if (email != null && email.isNotEmpty) return email;
+      final newId = 'guest_${DateTime.now().millisecondsSinceEpoch}@artistdubai.com';
+      sl<StorageService>().setString('device_guest_id', newId);
+      return newId;
+    } catch (_) {
+      return 'user@artistdubai.com';
+    }
+  }
+
   Future<void> _loadAllData() async {
     final artist = widget.artist;
-    final userEmail = sl<StorageService>().getString('user_email') ?? '';
+    final userEmail = _getEffectiveEmail();
     try {
       final results = await Future.wait([
         sl<ApiService>().getGalleries(
@@ -164,7 +178,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
   void _toggleArtistFavorite() async {
     final artist = widget.artist;
     if (artist == null) return;
-    final userEmail = sl<StorageService>().getString('user_email') ?? '';
+    final userEmail = _getEffectiveEmail();
     final wasFav = _isArtistFavorited;
 
     setState(() {
@@ -176,16 +190,15 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
       }
     });
 
-    if (userEmail.isNotEmpty) {
-      final res = await sl<ApiService>().likeArtist(
-        artistId: artist.id,
-        userEmail: userEmail,
-      );
-      if (res != null && res['likes_count'] != null && mounted) {
-        setState(() {
-          _likesCount = (res['likes_count'] as num).toInt();
-        });
-      }
+    final res = await sl<ApiService>().likeArtist(
+      artistId: artist.id,
+      userEmail: userEmail,
+      action: wasFav ? 'unlike' : 'like',
+    );
+    if (res != null && res['likes_count'] != null && mounted) {
+      setState(() {
+        _likesCount = (res['likes_count'] as num).toInt();
+      });
     }
 
     if (mounted) {
@@ -197,7 +210,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                 ? 'Unliked ${artist.name}\'s profile'
                 : 'Liked ${artist.name}\'s profile ❤️',
           ),
-          backgroundColor: wasFav ? null : const Color(0xFFE11D48),
+          backgroundColor: wasFav ? const Color(0xFF475569) : const Color(0xFFE11D48),
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
         ),

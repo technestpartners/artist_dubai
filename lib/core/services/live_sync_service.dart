@@ -79,17 +79,29 @@ class LiveSyncService {
     }
   }
 
+  String _getEffectiveEmail() {
+    try {
+      String? email = sl<StorageService>().getString('user_email');
+      if (email != null && email.isNotEmpty) return email;
+      email = sl<StorageService>().getString('device_guest_id');
+      if (email != null && email.isNotEmpty) return email;
+      final newId = 'guest_${DateTime.now().millisecondsSinceEpoch}@artistdubai.com';
+      sl<StorageService>().setString('device_guest_id', newId);
+      return newId;
+    } catch (_) {
+      return 'user@artistdubai.com';
+    }
+  }
+
   /// Trigger sync for favorites when an Add / Update / Delete / View occurs
   Future<void> notifyFavoritesChanged([Map<String, dynamic>? updatedFavorites]) async {
     if (updatedFavorites != null && !_favoritesController.isClosed) {
       _favoritesController.add(updatedFavorites);
     } else {
       try {
-        String? userEmail = sl<StorageService>().getString('user_email');
-        if (userEmail != null && userEmail.isNotEmpty) {
-          final fresh = await _apiService.getFavorites(email: userEmail, forceRefresh: true);
-          if (!_favoritesController.isClosed) _favoritesController.add(fresh);
-        }
+        final email = _getEffectiveEmail();
+        final fresh = await _apiService.getFavorites(email: email, forceRefresh: true);
+        if (!_favoritesController.isClosed) _favoritesController.add(fresh);
       } catch (_) {}
     }
   }
@@ -151,6 +163,8 @@ class LiveSyncService {
         userEmail = sl<StorageService>().getString('user_email');
       } catch (_) {}
 
+      final effectiveEmail = _getEffectiveEmail();
+
       // Phase 1: High-priority core streams (Artists, Events, Categories)
       final coreBatch = await Future.wait([
         _apiService.getArtists(forceRefresh: forceRefresh).catchError((_) => <ArtistModel>[]),
@@ -174,10 +188,7 @@ class LiveSyncService {
           _apiService.getBookings(email: userEmail, forceRefresh: forceRefresh).catchError((_) => <Map<String, dynamic>>[])
         else
           Future.value(<Map<String, dynamic>>[]),
-        if (userEmail != null && userEmail.isNotEmpty)
-          _apiService.getFavorites(email: userEmail, forceRefresh: forceRefresh).catchError((_) => <String, dynamic>{})
-        else
-          Future.value(<String, dynamic>{}),
+        _apiService.getFavorites(email: effectiveEmail, forceRefresh: forceRefresh).catchError((_) => <String, dynamic>{}),
       ]);
 
       final galleries = secondaryBatch[0] as List<Map<String, dynamic>>;

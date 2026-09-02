@@ -30,6 +30,7 @@ class _ArtistsViewState extends State<ArtistsView> {
   final Set<String> _favoritedArtistIds = {};
   StreamSubscription<List<ArtistModel>>? _artistsSub;
   StreamSubscription<Map<String, dynamic>>? _favSub;
+  StreamSubscription<List<CategoryInfo>>? _catSub;
 
   void _shareArtist(ArtistModel artist) {
     Clipboard.setData(
@@ -60,8 +61,22 @@ class _ArtistsViewState extends State<ArtistsView> {
     );
   }
 
+  String _getEffectiveEmail() {
+    try {
+      String? email = sl<StorageService>().getString('user_email');
+      if (email != null && email.isNotEmpty) return email;
+      email = sl<StorageService>().getString('device_guest_id');
+      if (email != null && email.isNotEmpty) return email;
+      final newId = 'guest_${DateTime.now().millisecondsSinceEpoch}@artistdubai.com';
+      sl<StorageService>().setString('device_guest_id', newId);
+      return newId;
+    } catch (_) {
+      return 'user@artistdubai.com';
+    }
+  }
+
   void _toggleFavorite(ArtistModel artist) async {
-    final userEmail = sl<StorageService>().getString('user_email') ?? '';
+    final userEmail = _getEffectiveEmail();
     final wasFav = _favoritedArtistIds.contains(artist.id);
 
     setState(() {
@@ -93,19 +108,11 @@ class _ArtistsViewState extends State<ArtistsView> {
       }
     });
 
-    if (userEmail.isNotEmpty) {
-      await Future.wait([
-        sl<ApiService>().likeArtist(
-          artistId: artist.id,
-          userEmail: userEmail,
-        ),
-        sl<ApiService>().toggleFavorite(
-          email: userEmail,
-          itemType: 'artist',
-          itemId: artist.id,
-        ),
-      ]);
-    }
+    await sl<ApiService>().likeArtist(
+      artistId: artist.id,
+      userEmail: userEmail,
+      action: wasFav ? 'unlike' : 'like',
+    );
 
     if (mounted) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -128,6 +135,7 @@ class _ArtistsViewState extends State<ArtistsView> {
   void initState() {
     super.initState();
     _fetchData();
+
     _artistsSub = sl<LiveSyncService>().artistsStream.listen((artists) {
       if (mounted) {
         setState(() {
@@ -135,8 +143,9 @@ class _ArtistsViewState extends State<ArtistsView> {
         });
       }
     });
+
     _favSub = sl<LiveSyncService>().favoritesStream.listen((favData) {
-      if (mounted && favData.isNotEmpty) {
+      if (mounted) {
         final favArtists = (favData['artists'] as List<ArtistModel>?) ?? [];
         final favIds = favArtists.map((a) => a.id).toSet();
         setState(() {
@@ -145,16 +154,15 @@ class _ArtistsViewState extends State<ArtistsView> {
         });
       }
     });
+
     _catSub = sl<LiveSyncService>().categoriesStream.listen((cats) {
-      if (mounted && cats.isNotEmpty) {
+      if (mounted) {
         setState(() {
           _categories = cats;
         });
       }
     });
   }
-
-  StreamSubscription<List<CategoryInfo>>? _catSub;
 
   @override
   void dispose() {
@@ -167,14 +175,11 @@ class _ArtistsViewState extends State<ArtistsView> {
 
   Future<void> _fetchData() async {
     try {
-      final userEmail = sl<StorageService>().getString('user_email');
+      final userEmail = _getEffectiveEmail();
       final results = await Future.wait([
         sl<ApiService>().getCategories(),
         sl<ApiService>().getArtists(),
-        if (userEmail != null && userEmail.isNotEmpty)
-          sl<ApiService>().getFavorites(email: userEmail)
-        else
-          Future.value(<String, dynamic>{'artists': <ArtistModel>[]}),
+        sl<ApiService>().getFavorites(email: userEmail),
       ]);
 
       final categories = results[0] as List<CategoryInfo>;

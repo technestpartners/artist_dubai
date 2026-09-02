@@ -1158,6 +1158,7 @@ class ApiService {
   Future<Map<String, dynamic>?> likeArtist({
     required String artistId,
     required String userEmail,
+    String action = 'toggle',
   }) async {
     try {
       final res = await _client.post(
@@ -1165,7 +1166,7 @@ class ApiService {
         data: {
           'artist_id': artistId,
           'user_email': userEmail,
-          'action': 'toggle',
+          'action': action,
         },
       );
       if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
