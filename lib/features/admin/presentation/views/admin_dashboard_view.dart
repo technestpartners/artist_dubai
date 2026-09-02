@@ -40,7 +40,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
 
   StreamSubscription<List<ArtistModel>>? _artistsSub;
   StreamSubscription<List<ArtEventModel>>? _eventsSub;
-  StreamSubscription<List<Map<String, dynamic>>>? _galleriesSub;
   StreamSubscription<List<Map<String, dynamic>>>? _bookingsSub;
   StreamSubscription<List<GovernmentEntity>>? _govSub;
 
@@ -81,14 +80,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         setState(() => _events = list);
       }
     });
-    _galleriesSub = liveSync.galleriesStream.listen((list) {
-      if (mounted) {
-        setState(() {
-          _galleries = list;
-          _artCenters = list;
-        });
-      }
-    });
     _bookingsSub = liveSync.bookingsStream.listen((list) {
       if (mounted) {
         setState(() => _bookings = list);
@@ -105,7 +96,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   void dispose() {
     _artistsSub?.cancel();
     _eventsSub?.cancel();
-    _galleriesSub?.cancel();
     _bookingsSub?.cancel();
     _govSub?.cancel();
     super.dispose();
