@@ -26,38 +26,47 @@ class AppBottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 58,
       color: _barBg,
       child: SafeArea(
         top: false,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            IconButton(
-              icon: Icon(
-                currentIndex == 0 ? Icons.home_rounded : Icons.home_outlined,
-                color: currentIndex == 0 ? Colors.white : Colors.white70,
-                size: 24,
+        child: SizedBox(
+          height: 56,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                icon: Icon(
+                  currentIndex == 0 ? Icons.home_rounded : Icons.home_outlined,
+                  color: currentIndex == 0 ? Colors.white : Colors.white70,
+                  size: 24,
+                ),
+                onPressed: () => _onTabSelected(context, 0),
               ),
-              onPressed: () => _onTabSelected(context, 0),
-            ),
-            IconButton(
-              icon: Icon(
-                currentIndex == 1 ? Icons.people_rounded : Icons.people_outline_rounded,
-                color: currentIndex == 1 ? Colors.white : Colors.white70,
-                size: 24,
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                icon: Icon(
+                  currentIndex == 1 ? Icons.people_rounded : Icons.people_outline_rounded,
+                  color: currentIndex == 1 ? Colors.white : Colors.white70,
+                  size: 24,
+                ),
+                onPressed: () => _onTabSelected(context, 1),
               ),
-              onPressed: () => _onTabSelected(context, 1),
-            ),
-            IconButton(
-              icon: Icon(
-                currentIndex == 2 ? Icons.calendar_month_rounded : Icons.calendar_today_outlined,
-                color: currentIndex == 2 ? Colors.white : Colors.white70,
-                size: 22,
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                icon: Icon(
+                  currentIndex == 2 ? Icons.calendar_month_rounded : Icons.calendar_today_outlined,
+                  color: currentIndex == 2 ? Colors.white : Colors.white70,
+                  size: 22,
+                ),
+                onPressed: () => _onTabSelected(context, 2),
               ),
-              onPressed: () => _onTabSelected(context, 2),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
