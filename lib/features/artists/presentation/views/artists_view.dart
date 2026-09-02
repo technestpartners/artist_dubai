@@ -26,6 +26,7 @@ class _ArtistsViewState extends State<ArtistsView> {
   OverlayEntry? _categoryOverlayEntry;
   final GlobalKey _selectorKey = GlobalKey();
   List<ArtistModel> _allArtists = [];
+  bool _isLoading = true;
   List<CategoryInfo> _categories = ArtistModel.categoryList;
   final Set<String> _favoritedArtistIds = {};
   final Set<String> _followedArtistIds = {};
@@ -146,12 +147,20 @@ class _ArtistsViewState extends State<ArtistsView> {
   @override
   void initState() {
     super.initState();
+    final cached = sl<ApiService>().cachedArtists;
+    if (cached != null && cached.isNotEmpty) {
+      _allArtists = List.from(cached);
+      _isLoading = false;
+    } else {
+      _isLoading = true;
+    }
     _fetchData();
 
     _artistsSub = sl<LiveSyncService>().artistsStream.listen((artists) {
       if (mounted) {
         setState(() {
           _allArtists = artists;
+          _isLoading = false;
         });
       }
     });
@@ -189,59 +198,67 @@ class _ArtistsViewState extends State<ArtistsView> {
   }
 
   Future<void> _fetchData({bool silent = false}) async {
+    if (!silent && _allArtists.isEmpty) {
+      setState(() => _isLoading = true);
+    }
+    final userEmail = _getEffectiveEmail();
+
+    // Fetch artists directly and independently so list renders immediately
     try {
-      final userEmail = _getEffectiveEmail();
-
-      // ── Stale-While-Revalidate: serve cache instantly, refresh in background ──
-      // If we already have artists on screen, refresh silently in background
-      if (_allArtists.isNotEmpty) {
-        _silentRefresh(userEmail);
-        return;
+      final artists = await sl<ApiService>().getArtists(forceRefresh: true);
+      if (mounted) {
+        setState(() {
+          _allArtists = artists;
+          _isLoading = false;
+        });
       }
+    } catch (_) {
+      if (mounted && _allArtists.isEmpty) {
+        setState(() => _isLoading = false);
+      }
+    }
 
-      // First load — force fresh from DB in parallel
-      final results = await Future.wait([
-        sl<ApiService>().getCategories(forceRefresh: true),
-        sl<ApiService>().getArtists(forceRefresh: true),
-        sl<ApiService>().getUserInteractions(userEmail: userEmail, forceRefresh: true),
-      ]);
+    // Refresh categories in background
+    sl<ApiService>().getCategories(forceRefresh: true).then((cats) {
+      if (mounted && cats.isNotEmpty) {
+        setState(() => _categories = cats);
+      }
+    }).catchError((_) {});
 
-      if (!mounted) return;
-      final categories   = results[0] as List<CategoryInfo>;
-      final artists      = results[1] as List<ArtistModel>;
-      final interactions = results[2] as Map<String, Set<String>>;
-
-      setState(() {
-        _categories = categories;
-        _allArtists = artists;
-        _favoritedArtistIds
-          ..clear()
-          ..addAll(interactions['liked']!);
-        _followedArtistIds
-          ..clear()
-          ..addAll(interactions['followed']!);
-      });
-    } catch (_) {}
+    // Refresh user interactions in background
+    sl<ApiService>().getUserInteractions(userEmail: userEmail, forceRefresh: true).then((interactions) {
+      if (mounted) {
+        setState(() {
+          _favoritedArtistIds
+            ..clear()
+            ..addAll(interactions['liked'] ?? {});
+          _followedArtistIds
+            ..clear()
+            ..addAll(interactions['followed'] ?? {});
+        });
+      }
+    }).catchError((_) {});
   }
 
   void _silentRefresh(String userEmail) {
-    Future.wait([
-      sl<ApiService>().getArtists(forceRefresh: true),
-      sl<ApiService>().getUserInteractions(userEmail: userEmail, forceRefresh: true),
-    ]).then((results) {
-      if (!mounted) return;
-      final artists      = results[0] as List<ArtistModel>;
-      final interactions = results[1] as Map<String, Set<String>>;
-      setState(() {
-        _allArtists = artists;
-        _favoritedArtistIds
-          ..clear()
-          ..addAll(interactions['liked']!);
-        _followedArtistIds
-          ..clear()
-          ..addAll(interactions['followed']!);
-      });
-    });
+    sl<ApiService>().getArtists(forceRefresh: true).then((artists) {
+      if (mounted && artists.isNotEmpty) {
+        setState(() => _allArtists = artists);
+      }
+    }).catchError((_) {});
+
+    sl<ApiService>().getUserInteractions(userEmail: userEmail, forceRefresh: true).then((interactions) {
+      if (mounted) {
+        setState(() {
+          _favoritedArtistIds
+            ..clear()
+            ..addAll(interactions['liked'] ?? {});
+          _followedArtistIds
+            ..clear()
+            ..addAll(interactions['followed'] ?? {});
+        });
+      }
+    }).catchError((_) {});
   }
 
   void _openArtistDetail(ArtistModel artist) async {
@@ -307,9 +324,11 @@ class _ArtistsViewState extends State<ArtistsView> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        filteredArtists.isEmpty
-                            ? 'No artist profiles available yet'
-                            : 'Discover ${filteredArtists.length} talented artists in Dubai',
+                        _isLoading && filteredArtists.isEmpty
+                            ? 'Loading artists...'
+                            : filteredArtists.isEmpty
+                                ? 'No artist profiles available yet'
+                                : 'Discover ${filteredArtists.length} talented artists in Dubai',
                         style: const TextStyle(
                           fontSize: 13.5,
                           color: Color(0xFF64748B),
@@ -320,8 +339,18 @@ class _ArtistsViewState extends State<ArtistsView> {
                 ),
                 const SizedBox(height: 16),
 
-                // 2. Artists List OR Empty State
-                if (filteredArtists.isEmpty) ...[
+                // 2. Artists List OR Loading State OR Empty State
+                if (_isLoading && filteredArtists.isEmpty) ...[
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 48.0),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF5E227A),
+                        strokeWidth: 2.5,
+                      ),
+                    ),
+                  ),
+                ] else if (filteredArtists.isEmpty) ...[
                   Center(
                     child: Column(
                       children: [
