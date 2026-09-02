@@ -39,8 +39,6 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
   late int _followersCount;
   late int _worksCount;
   StreamSubscription<List<ArtistModel>>? _artistLiveSub;
-  StreamSubscription<List<Map<String, dynamic>>>? _galleryLiveSub;
-  StreamSubscription<Map<String, dynamic>>? _favLiveSub;
 
   List<Map<String, dynamic>> _photoGalleries = [];
 
@@ -65,19 +63,11 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         }
       }
     });
-    _galleryLiveSub = sl<LiveSyncService>().galleriesStream.listen((_) {
-      if (mounted) _loadAllData();
-    });
-    _favLiveSub = sl<LiveSyncService>().favoritesStream.listen((_) {
-      if (mounted) _loadAllData();
-    });
   }
 
   @override
   void dispose() {
     _artistLiveSub?.cancel();
-    _galleryLiveSub?.cancel();
-    _favLiveSub?.cancel();
     super.dispose();
   }
 
@@ -787,7 +777,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
 
                                         final coverUrl = finalUploadedUrls.first;
 
-                                        await sl<ApiService>().createGallery(
+                                        final created = await sl<ApiService>().createGallery(
                                           title: title,
                                           description: desc.isNotEmpty ? desc : 'Curated collection by Artist',
                                           artistId: artist?.id,
@@ -808,7 +798,23 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                           );
                                         }
 
-                                         _loadAllData();
+                                        if (mounted) {
+                                          final newGalleryItem = created ?? {
+                                            'title': title,
+                                            'name': title,
+                                            'description': desc,
+                                            'image_url': coverUrl,
+                                            'image': coverUrl,
+                                            'images': finalUploadedUrls,
+                                            'photo_count': finalUploadedUrls.length,
+                                            'artist_id': artist?.id,
+                                            'artist_name': artist?.name,
+                                            'category': 'Artist gallery',
+                                          };
+                                          setState(() {
+                                            _photoGalleries.insert(0, newGalleryItem);
+                                          });
+                                        }
                                       },
                                 child: isUploading
                                     ? const SizedBox(
