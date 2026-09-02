@@ -1,12 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
+import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../domain/models/art_event_model.dart';
 
 class EventsCompetitionView extends StatefulWidget {
@@ -22,7 +21,6 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
 
   static const Color _screenBg = Color(0xFF651B8A);
   static const Color _cardBg = Color(0xFF551478);
-  static const Color _bottomBarBg = Color(0xFF531666);
   static const Color _openBadge = Color(0xFF22C55E);
   static const Color _closedBadge = Color(0xFFEF4444);
   static const Color _upcomingBadge = Color(0xFFF59E0B);
@@ -160,27 +158,7 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
           ),
         ),
       ),
-      bottomNavigationBar: Container(
-        height: 58,
-        color: _bottomBarBg,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.home_outlined, color: Colors.white70, size: 24),
-              onPressed: () => context.go(RouteNames.home),
-            ),
-            IconButton(
-              icon: const Icon(Icons.people_outline_rounded, color: Colors.white70, size: 24),
-              onPressed: () => context.go(RouteNames.artists),
-            ),
-            IconButton(
-              icon: const Icon(Icons.calendar_today_outlined, color: Colors.white70, size: 22),
-              onPressed: () => context.go(RouteNames.events),
-            ),
-          ],
-        ),
-      ),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
     );
   }
 
