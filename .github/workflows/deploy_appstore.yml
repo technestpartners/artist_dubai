@@ -11,13 +11,13 @@ on:
           - 'Promote Existing TestFlight Build'
         default: 'Build & Submit New Binary'
       app_version:
-        description: 'App Version (e.g. 1.0.0) [Required if promoting TestFlight build]'
+        description: 'App Version (e.g. 3.2.4) [Required if promoting TestFlight build]'
         required: false
-        default: '1.0.0'
+        default: '3.2.4'
       build_number:
-        description: 'Build Number (e.g. 1) [Required if promoting TestFlight build, or override for build]'
+        description: 'Build Number (e.g. 4) [Required if promoting TestFlight build, or override for build]'
         required: false
-        default: ''
+        default: '4'
       submit_for_review:
         description: 'Automatically submit for Apple App Review?'
         type: boolean
