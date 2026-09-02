@@ -1384,12 +1384,15 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       'is_public': targetFlag,
       'is_approved': targetFlag,
     });
+    try {
+      sl<LiveSyncService>().notifyGalleriesChanged();
+    } catch (_) {}
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(isCurrentlyPending
-              ? '"$name" request accepted and published to app!'
+              ? '"$name" activated and published to app!'
               : '"$name" set to pending (hidden from public).'),
           backgroundColor: isCurrentlyPending ? const Color(0xFF16A34A) : const Color(0xFFD97706),
           behavior: SnackBarBehavior.floating,
@@ -1639,6 +1642,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       'is_public': 1,
       'is_approved': 1,
     });
+    try {
+      sl<LiveSyncService>().notifyGalleriesChanged();
+    } catch (_) {}
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

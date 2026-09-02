@@ -1574,7 +1574,7 @@ class GalleryController {
         if ($id <= 0) { ApiResponse::error('Gallery ID is required.'); return; }
         $fields = [];
         $params = [];
-        $allowed = ['name','description','category','location','image_url','status','is_public','is_approved','about','website','timing'];
+        $allowed = ['name','title','description','category','location','image_url','cover_url','status','is_public','is_approved','about','website','timing','currently_open','display_order','event_name'];
         foreach ($allowed as $f) {
             if (isset($input[$f])) { $fields[] = "$f = ?"; $params[] = InputSanitizer::cleanString((string)$input[$f]); }
         }
