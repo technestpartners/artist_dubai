@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/widgets/app_top_bar.dart';
-import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../domain/models/art_event_model.dart';
 
@@ -15,28 +16,21 @@ class EventsCompetitionView extends StatefulWidget {
   State<EventsCompetitionView> createState() => _EventsCompetitionViewState();
 }
 
-class _EventsCompetitionViewState extends State<EventsCompetitionView>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  List<Map<String, dynamic>> _competitions = List.from(ApiService.mockCompetitions);
-  bool _isLoading = false;
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
+class _EventsCompetitionViewState extends State<EventsCompetitionView> {
+  List<Map<String, dynamic>> _competitions = [];
   StreamSubscription<List<ArtEventModel>>? _compSub;
 
-  static const Color _purple = Color(0xFF5E227A);
-  static const Color _purpleLight = Color(0xFF7B3FA0);
-  static const Color _bgGradientTop = Color(0xFF6B1C9B);
-  static const Color _bgGradientBot = Color(0xFF4D249E);
-  static const Color _cardBg = Color(0xFF301B92);
+  static const Color _screenBg = Color(0xFF651B8A);
+  static const Color _cardBg = Color(0xFF551478);
+  static const Color _bottomBarBg = Color(0xFF531666);
   static const Color _openBadge = Color(0xFF22C55E);
   static const Color _closedBadge = Color(0xFFEF4444);
   static const Color _upcomingBadge = Color(0xFFF59E0B);
+  static const Color _purpleLight = Color(0xFF7B3FA0);
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
     _fetchCompetitions();
     _compSub = sl<LiveSyncService>().eventsStream.listen((_) {
       _fetchCompetitions(forceRefresh: true);
@@ -46,8 +40,6 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView>
   @override
   void dispose() {
     _compSub?.cancel();
-    _tabController.dispose();
-    _searchController.dispose();
     super.dispose();
   }
 
@@ -57,236 +49,142 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView>
       final data = await sl<ApiService>().getCompetitions(forceRefresh: forceRefresh);
       if (mounted) {
         setState(() {
-          _competitions = data.isNotEmpty ? data : List.from(ApiService.mockCompetitions);
-          _isLoading = false;
+          _competitions = data;
         });
       }
-    } catch (_) {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  List<Map<String, dynamic>> _filtered(String? status) {
-    var list = _competitions;
-    if (status != null && status.isNotEmpty) {
-      list = list.where((c) => c['status'] == status).toList();
-    }
-    if (_searchQuery.isNotEmpty) {
-      final q = _searchQuery.toLowerCase();
-      list = list.where((c) {
-        final title = (c['title'] as String? ?? '').toLowerCase();
-        final theme = (c['theme'] as String? ?? '').toLowerCase();
-        final organizer = (c['organizer'] as String? ?? '').toLowerCase();
-        final category = (c['category'] as String? ?? '').toLowerCase();
-        return title.contains(q) || theme.contains(q) || organizer.contains(q) || category.contains(q);
-      }).toList();
-    }
-    return list;
+    } catch (_) {}
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF6B1C9B),
+      backgroundColor: _screenBg,
       appBar: const AppTopBar(),
-      body: Column(
-        children: [
-          // Hero header with gradient
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [_bgGradientTop, _bgGradientBot],
-              ),
-            ),
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Title row with trophy
-                Row(
-                  children: [
-                    const Icon(Icons.emoji_events, color: Colors.amber, size: 32),
-                    const SizedBox(width: 10),
-                    const Expanded(
-                      child: Text(
-                        'EVENTS COMPETITION',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.4,
-                        ),
-                      ),
-                    ),
-                  ],
+                // 1. Header Title & Subtitle
+                const Text(
+                  'EVENTS COMPETITION',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.3,
+                  ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 const Text(
                   'Open calls and art competitions in Dubai',
                   style: TextStyle(
                     color: Colors.white70,
-                    fontSize: 13.5,
+                    fontSize: 14.5,
                     fontWeight: FontWeight.w400,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
 
-                // Search bar
-                Container(
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.white24),
-                  ),
-                  child: TextField(
-                    controller: _searchController,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
-                    cursorColor: Colors.white,
-                    decoration: InputDecoration(
-                      hintText: 'Search competitions...',
-                      hintStyle: const TextStyle(color: Colors.white54, fontSize: 14),
-                      prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 20),
-                      suffixIcon: _searchQuery.isNotEmpty
-                          ? GestureDetector(
-                              onTap: () {
-                                _searchController.clear();
-                                setState(() => _searchQuery = '');
-                              },
-                              child: const Icon(Icons.close, color: Colors.white54, size: 18),
-                            )
-                          : null,
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                // 2. Main Announcement Card / List
+                if (_competitions.isEmpty) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+                    decoration: BoxDecoration(
+                      color: _cardBg,
+                      borderRadius: BorderRadius.circular(18),
                     ),
-                    onChanged: (v) => setState(() => _searchQuery = v),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.emoji_events_outlined,
+                          color: Colors.white,
+                          size: 46,
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'No competitions announced yet',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 17.5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'New competitions will appear here as soon as they are published.',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13.5,
+                            height: 1.4,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 14),
-
-                // Tab bar
-                TabBar(
-                  controller: _tabController,
-                  isScrollable: true,
-                  tabAlignment: TabAlignment.start,
-                  indicatorColor: Colors.white,
-                  indicatorWeight: 2.5,
-                  labelColor: Colors.white,
-                  unselectedLabelColor: Colors.white54,
-                  labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                  unselectedLabelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-                  tabs: [
-                    Tab(text: 'All (${_competitions.length})'),
-                    Tab(text: 'Open (${_filtered('open').length})'),
-                    Tab(text: 'Upcoming (${_filtered('upcoming').length})'),
-                    Tab(text: 'Closed (${_filtered('closed').length})'),
-                  ],
-                ),
+                  const SizedBox(height: 36),
+                  const Center(
+                    child: Text(
+                      'Hosted by Nizar Fahem',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ] else ...[
+                  ..._competitions.map((c) => _buildCard(c)),
+                  const SizedBox(height: 24),
+                  const Center(
+                    child: Text(
+                      'Hosted by Nizar Fahem',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
-
-          // Tab content
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildList(null),
-                _buildList('open'),
-                _buildList('upcoming'),
-                _buildList('closed'),
-              ],
-            ),
-          ),
-
-          // Hosted by footer
-          Container(
-            width: double.infinity,
-            color: _bgGradientBot,
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: const Text(
-              'Hosted by Nizar Fahem',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white60, fontSize: 13, fontWeight: FontWeight.w500),
-            ),
-          ),
-        ],
+        ),
       ),
-      bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
-    );
-  }
-
-  Widget _buildList(String? status) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Colors.white));
-    }
-
-    final items = _filtered(status);
-
-    if (items.isEmpty) {
-      return _buildEmpty(status);
-    }
-
-    return RefreshIndicator(
-      color: _purple,
-      onRefresh: () => _fetchCompetitions(forceRefresh: true),
-      child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-        itemCount: items.length,
-        itemBuilder: (context, index) => _buildCard(items[index]),
+      bottomNavigationBar: Container(
+        height: 58,
+        color: _bottomBarBg,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.home_outlined, color: Colors.white70, size: 24),
+              onPressed: () => context.go(RouteNames.home),
+            ),
+            IconButton(
+              icon: const Icon(Icons.people_outline_rounded, color: Colors.white70, size: 24),
+              onPressed: () => context.go(RouteNames.artists),
+            ),
+            IconButton(
+              icon: const Icon(Icons.calendar_today_outlined, color: Colors.white70, size: 22),
+              onPressed: () => context.go(RouteNames.events),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildEmpty(String? status) {
-    final label = status == null ? 'competitions' : '$status competitions';
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 90,
-            height: 90,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(Icons.emoji_events_outlined, size: 48, color: Colors.white38),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'No $label announced yet',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'New competitions will appear\nhere as soon as they are published.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white60, fontSize: 13.5),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () => _fetchCompetitions(forceRefresh: true),
-            icon: const Icon(Icons.refresh, size: 18),
-            label: const Text('Refresh'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white.withValues(alpha: 0.18),
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildCard(Map<String, dynamic> c) {
     final status = c['status']?.toString() ?? 'open';
