@@ -94,10 +94,17 @@ class _ArtistsViewState extends State<ArtistsView> {
     });
 
     if (userEmail.isNotEmpty) {
-      await sl<ApiService>().likeArtist(
-        artistId: artist.id,
-        userEmail: userEmail,
-      );
+      await Future.wait([
+        sl<ApiService>().likeArtist(
+          artistId: artist.id,
+          userEmail: userEmail,
+        ),
+        sl<ApiService>().toggleFavorite(
+          email: userEmail,
+          itemType: 'artist',
+          itemId: artist.id,
+        ),
+      ]);
     }
 
     if (mounted) {
@@ -106,10 +113,10 @@ class _ArtistsViewState extends State<ArtistsView> {
         SnackBar(
           content: Text(
             wasFav
-                ? 'Unliked ${artist.name}'
-                : 'Liked ${artist.name}\'s profile! ❤️',
+                ? 'Removed ${artist.name} from favorites'
+                : 'Added ${artist.name} to favorites! ❤️',
           ),
-          backgroundColor: wasFav ? null : const Color(0xFF6A2777),
+          backgroundColor: wasFav ? const Color(0xFF475569) : const Color(0xFF6A2777),
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
         ),
