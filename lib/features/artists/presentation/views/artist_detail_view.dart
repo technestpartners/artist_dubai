@@ -239,7 +239,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
   void _toggleFollowArtist() async {
     final artist = widget.artist;
     if (artist == null) return;
-    final userEmail = sl<StorageService>().getString('user_email') ?? '';
+    final userEmail = _getEffectiveEmail();
     final wasFollowing = _isFollowing;
 
     setState(() {
@@ -251,16 +251,20 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
       }
     });
 
-    if (userEmail.isNotEmpty) {
-      final res = await sl<ApiService>().followArtist(
-        artistId: artist.id,
-        userEmail: userEmail,
-      );
-      if (res != null && res['followers_count'] != null && mounted) {
-        setState(() {
+    final res = await sl<ApiService>().followArtist(
+      artistId: artist.id,
+      userEmail: userEmail,
+      action: wasFollowing ? 'unfollow' : 'follow',
+    );
+    if (res != null && mounted) {
+      setState(() {
+        if (res['followers_count'] != null) {
           _followersCount = (res['followers_count'] as num).toInt();
-        });
-      }
+        }
+        if (res['is_following'] != null) {
+          _isFollowing = res['is_following'] == true;
+        }
+      });
     }
 
     if (mounted) {
@@ -272,7 +276,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                 ? 'Unfollowed ${artist.name}'
                 : 'Now following ${artist.name} 🎉',
           ),
-          backgroundColor: const Color(0xFF6A2777),
+          backgroundColor: wasFollowing ? const Color(0xFF475569) : const Color(0xFF6A2777),
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
         ),
