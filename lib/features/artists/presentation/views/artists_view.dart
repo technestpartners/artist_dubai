@@ -324,11 +324,13 @@ class _ArtistsViewState extends State<ArtistsView> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _isLoading && filteredArtists.isEmpty
-                            ? 'Loading artists...'
-                            : filteredArtists.isEmpty
-                                ? 'No artist profiles available yet'
-                                : 'Discover ${filteredArtists.length} talented artists in Dubai',
+                        !_isLoggedIn
+                            ? 'No artist profiles available yet'
+                            : _isLoading && filteredArtists.isEmpty
+                                ? 'Loading artists...'
+                                : filteredArtists.isEmpty
+                                    ? 'No artist profiles available yet'
+                                    : 'Discover ${filteredArtists.length} talented artists in Dubai',
                         style: const TextStyle(
                           fontSize: 13.5,
                           color: Color(0xFF64748B),
@@ -339,8 +341,56 @@ class _ArtistsViewState extends State<ArtistsView> {
                 ),
                 const SizedBox(height: 16),
 
-                // 2. Artists List OR Loading State OR Empty State
-                if (_isLoading && filteredArtists.isEmpty) ...[
+                // 2. Artists List OR Without Login State OR Empty State
+                if (!_isLoggedIn) ...[
+                  // Without login state: exact match to media_1788359809419.png
+                  Center(
+                    child: Column(
+                      children: [
+                        const Text(
+                          'No Artists Yet',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1E1E1E),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Be the first to create an artist profile!',
+                          style: TextStyle(fontSize: 13.5, color: Color(0xFF616161)),
+                        ),
+                        const SizedBox(height: 14),
+                        SizedBox(
+                          height: 40,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF5E227A),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 8,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            onPressed: () => context.push(RouteNames.login),
+                            child: const Text(
+                              'Create Artist Profile',
+                              style: TextStyle(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ] else if (_isLoading && filteredArtists.isEmpty) ...[
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 48.0),
                     child: Center(
@@ -383,13 +433,7 @@ class _ArtistsViewState extends State<ArtistsView> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            onPressed: () {
-                              if (_isLoggedIn) {
-                                context.push(RouteNames.artistRegistration);
-                              } else {
-                                context.push(RouteNames.login);
-                              }
-                            },
+                            onPressed: () => context.push(RouteNames.artistRegistration),
                             child: const Text(
                               'Create Artist Profile',
                               style: TextStyle(
