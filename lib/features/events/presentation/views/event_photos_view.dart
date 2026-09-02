@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -58,10 +59,25 @@ class _EventPhotosViewState extends State<EventPhotosView> {
 
       // 1. Convert registered photo galleries from MySQL
       for (final g in rawGalleries) {
-        final title = g['name'] as String? ?? g['title'] as String? ?? 'Photo Gallery';
-        final subtitle = g['description'] as String? ?? g['subtitle'] as String? ?? g['about'] as String?;
-        final coverImage = g['image_url'] as String? ?? g['image'] as String? ?? '';
-        final rawImgs = g['images'] as List<dynamic>? ?? [];
+        final title = g['name']?.toString() ?? g['title']?.toString() ?? 'Photo Gallery';
+        final subtitle = g['description']?.toString() ?? g['subtitle']?.toString() ?? g['about']?.toString();
+        final coverImage = g['image_url']?.toString() ?? g['image']?.toString() ?? '';
+        
+        List<dynamic> rawImgs = [];
+        if (g['images'] is List) {
+          rawImgs = g['images'] as List<dynamic>;
+        } else if (g['images'] is String && (g['images'] as String).isNotEmpty) {
+          try {
+            final decoded = jsonDecode(g['images'] as String);
+            if (decoded is List) {
+              rawImgs = decoded;
+            } else {
+              rawImgs = (g['images'] as String).split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+            }
+          } catch (_) {
+            rawImgs = (g['images'] as String).split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+          }
+        }
 
         final List<GalleryImageItem> imagesList = [];
         for (var idx = 0; idx < rawImgs.length; idx++) {

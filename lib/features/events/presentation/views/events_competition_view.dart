@@ -290,11 +290,21 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView>
   }
 
   Widget _buildCard(Map<String, dynamic> c) {
-    final status = c['status'] as String? ?? 'open';
-    final entriesCount = c['entries_count'] as int? ?? 0;
-    final maxEntries = c['max_entries'] as int? ?? 500;
+    final status = c['status']?.toString() ?? 'open';
+    final entriesCount = (c['entries_count'] is num)
+        ? (c['entries_count'] as num).toInt()
+        : int.tryParse(c['entries_count']?.toString() ?? '') ?? 0;
+    final maxEntries = (c['max_entries'] is num)
+        ? (c['max_entries'] as num).toInt()
+        : int.tryParse(c['max_entries']?.toString() ?? '') ?? 500;
     final fillRatio = maxEntries > 0 ? entriesCount / maxEntries : 0.0;
-    final tags = (c['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+
+    List<String> tags = [];
+    if (c['tags'] is List) {
+      tags = (c['tags'] as List).map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList();
+    } else if (c['tags'] is String && (c['tags'] as String).isNotEmpty) {
+      tags = (c['tags'] as String).split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    }
 
     Color badgeColor;
     String badgeLabel;
@@ -311,6 +321,15 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView>
         badgeColor = _upcomingBadge;
         badgeLabel = 'Upcoming';
     }
+
+    final imageUrl = c['image_url']?.toString() ?? '';
+    final prize = c['prize']?.toString() ?? '';
+    final title = c['title']?.toString() ?? '';
+    final theme = c['theme']?.toString() ?? '';
+    final organizer = c['organizer']?.toString() ?? '';
+    final deadline = c['deadline']?.toString() ?? 'TBD';
+    final location = c['location']?.toString() ?? 'Dubai, UAE';
+    final entryFee = c['entry_fee']?.toString() ?? 'Free';
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -333,11 +352,11 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Image
-            if (c['image_url'] != null && (c['image_url'] as String).isNotEmpty)
+            if (imageUrl.isNotEmpty)
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
                 child: AppCachedImage(
-                  imageUrl: c['image_url'] as String,
+                  imageUrl: imageUrl,
                   height: 160,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -369,11 +388,11 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView>
                         ),
                       ),
                       const Spacer(),
-                      if (c['prize'] != null) ...[
+                      if (prize.isNotEmpty) ...[
                         const Icon(Icons.emoji_events, color: Colors.amber, size: 16),
                         const SizedBox(width: 4),
                         Text(
-                          c['prize'] as String,
+                          prize,
                           style: const TextStyle(
                             color: Colors.amber,
                             fontSize: 13,
@@ -387,7 +406,7 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView>
 
                   // Title
                   Text(
-                    c['title'] as String? ?? '',
+                    title,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 15.5,
@@ -395,10 +414,10 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView>
                     ),
                   ),
 
-                  if (c['theme'] != null && (c['theme'] as String).isNotEmpty) ...[
+                  if (theme.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
-                      'Theme: ${c['theme']}',
+                      'Theme: $theme',
                       style: const TextStyle(color: Colors.white70, fontSize: 12.5, fontStyle: FontStyle.italic),
                     ),
                   ],
@@ -412,7 +431,7 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView>
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          c['organizer'] as String? ?? '',
+                          organizer,
                           style: const TextStyle(color: Colors.white60, fontSize: 12.5),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -420,7 +439,7 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView>
                       const Icon(Icons.schedule, size: 14, color: Colors.white54),
                       const SizedBox(width: 4),
                       Text(
-                        'Due: ${c['deadline'] ?? 'TBD'}',
+                        'Due: $deadline',
                         style: const TextStyle(color: Colors.white60, fontSize: 12.5),
                       ),
                     ],
@@ -435,7 +454,7 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView>
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          c['location'] as String? ?? 'Dubai, UAE',
+                          location,
                           style: const TextStyle(color: Colors.white60, fontSize: 12.5),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -447,7 +466,7 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView>
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          c['entry_fee'] as String? ?? 'Free',
+                          entryFee,
                           style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 11.5, fontWeight: FontWeight.w600),
                         ),
                       ),
@@ -551,69 +570,71 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView>
         initialChildSize: 0.88,
         minChildSize: 0.5,
         maxChildSize: 0.95,
-        builder: (_, controller) => Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF4A1A7A), Color(0xFF2A1570)],
-            ),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              const SizedBox(height: 10),
-              Container(
-                width: 40, height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+        builder: (_, controller) {
+          final modalImageUrl = c['image_url']?.toString() ?? '';
+          return Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF4A1A7A), Color(0xFF2A1570)],
               ),
-              Expanded(
-                child: ListView(
-                  controller: controller,
-                  padding: const EdgeInsets.all(20),
-                  children: [
-                    if (c['image_url'] != null && (c['image_url'] as String).isNotEmpty)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: AppCachedImage(
-                          imageUrl: c['image_url'] as String,
-                          height: 200,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 10),
+                Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Expanded(
+                  child: ListView(
+                    controller: controller,
+                    padding: const EdgeInsets.all(20),
+                    children: [
+                      if (modalImageUrl.isNotEmpty)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: AppCachedImage(
+                            imageUrl: modalImageUrl,
+                            height: 200,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
                         ),
-                      ),
                     const SizedBox(height: 16),
                     Text(
-                      c['title'] as String? ?? '',
+                      c['title']?.toString() ?? '',
                       style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900),
                     ),
-                    if (c['theme'] != null) ...[
+                    if (c['theme'] != null && c['theme'].toString().isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text('Theme: ${c['theme']}', style: const TextStyle(color: Colors.amber, fontSize: 13, fontStyle: FontStyle.italic)),
                     ],
                     const SizedBox(height: 12),
-                    _detailRow(Icons.emoji_events, 'Prize', c['prize'] as String? ?? 'N/A', Colors.amber),
-                    _detailRow(Icons.schedule, 'Deadline', c['deadline'] as String? ?? 'TBD', Colors.white),
-                    _detailRow(Icons.person_outline, 'Organizer', c['organizer'] as String? ?? '', Colors.white),
-                    _detailRow(Icons.location_on_outlined, 'Location', c['location'] as String? ?? '', Colors.white),
-                    _detailRow(Icons.sell_outlined, 'Entry Fee', c['entry_fee'] as String? ?? 'Free', Colors.white),
+                    _detailRow(Icons.emoji_events, 'Prize', c['prize']?.toString() ?? 'N/A', Colors.amber),
+                    _detailRow(Icons.schedule, 'Deadline', c['deadline']?.toString() ?? 'TBD', Colors.white),
+                    _detailRow(Icons.person_outline, 'Organizer', c['organizer']?.toString() ?? '', Colors.white),
+                    _detailRow(Icons.location_on_outlined, 'Location', c['location']?.toString() ?? '', Colors.white),
+                    _detailRow(Icons.sell_outlined, 'Entry Fee', c['entry_fee']?.toString() ?? 'Free', Colors.white),
                     const SizedBox(height: 16),
-                    if (c['description'] != null && (c['description'] as String).isNotEmpty) ...[
+                    if (c['description'] != null && c['description'].toString().isNotEmpty) ...[
                       _sectionTitle('About This Competition'),
-                      Text(c['description'] as String, style: const TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.6)),
+                      Text(c['description'].toString(), style: const TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.6)),
                       const SizedBox(height: 16),
                     ],
-                    if (c['eligibility'] != null && (c['eligibility'] as String).isNotEmpty) ...[
+                    if (c['eligibility'] != null && c['eligibility'].toString().isNotEmpty) ...[
                       _sectionTitle('Eligibility'),
-                      Text(c['eligibility'] as String, style: const TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.6)),
+                      Text(c['eligibility'].toString(), style: const TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.6)),
                       const SizedBox(height: 16),
                     ],
-                    if (c['rules'] != null && (c['rules'] as String).isNotEmpty) ...[
+                    if (c['rules'] != null && c['rules'].toString().isNotEmpty) ...[
                       _sectionTitle('Rules & Submission'),
-                      Text(c['rules'] as String, style: const TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.6)),
+                      Text(c['rules'].toString(), style: const TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.6)),
                       const SizedBox(height: 24),
                     ],
                     if (c['status'] != 'closed')
@@ -646,10 +667,11 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView>
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
+        );
+      },
+    ),
+  );
+}
 
   Widget _detailRow(IconData icon, String label, String value, Color iconColor) {
     return Padding(
