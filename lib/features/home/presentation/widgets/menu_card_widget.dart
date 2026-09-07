@@ -15,12 +15,12 @@ class MenuCardWidget extends StatelessWidget {
         final cardWidth = constraints.maxWidth;
 
         // Auto-scale dimensions flexibly for all screen heights
-        final iconSize = (cardHeight * 0.46).clamp(52.0, 78.0);
+        final iconSize = (cardHeight * 0.42).clamp(46.0, 72.0);
         final titleFontSize =
             item.isLongTitle
                 ? (cardHeight * 0.110).clamp(11.5, 14.5)
-                : (cardHeight * 0.125).clamp(13.5, 17.0);
-        final subtitleFontSize = (cardHeight * 0.095).clamp(10.5, 13.0);
+                : (cardHeight * 0.125).clamp(13.0, 16.5);
+        final subtitleFontSize = (cardHeight * 0.095).clamp(10.5, 12.5);
         final cornerRadius = (cardWidth * 0.14).clamp(16.0, 24.0);
 
         return Material(
@@ -44,19 +44,21 @@ class MenuCardWidget extends StatelessWidget {
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 8.0,
-                  vertical: 6.0,
+                  horizontal: 6.0,
+                  vertical: 3.0,
                 ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // 1. Direct Image from assets/images/
-                      SizedBox(
-                        width: iconSize,
-                        height: iconSize,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // 1. Flexible Image — shrinks when space is tight
+                    Flexible(
+                      flex: 3,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: iconSize,
+                          maxHeight: iconSize,
+                        ),
                         child: ClipOval(
                           child: Image.asset(
                             item.imagePath,
@@ -65,54 +67,61 @@ class MenuCardWidget extends StatelessWidget {
                               return Icon(
                                 Icons.image,
                                 color: Colors.white,
-                                size: (iconSize * 0.55).clamp(30.0, 44.0),
+                                size: (iconSize * 0.55).clamp(28.0, 42.0),
                               );
                             },
                           ),
                         ),
                       ),
-                      const SizedBox(height: 6),
+                    ),
+                    const SizedBox(height: 3),
 
-                      // 2. Flexible Text Container
-                      Flexible(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              item.title,
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: titleFontSize,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.2,
-                                height: 1.1,
-                              ),
-                            ),
-                            if (item.subtitle != null) ...[
-                              const SizedBox(height: 3),
-                              Text(
-                                item.subtitle!,
+                    // 2. Flexible Text Container
+                    Flexible(
+                      flex: 2,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                item.title,
                                 textAlign: TextAlign.center,
                                 maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  color: const Color(0xFFD6C8F2),
-                                  fontSize: subtitleFontSize,
-                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                  fontSize: titleFontSize,
+                                  fontWeight: FontWeight.w700,
                                   letterSpacing: 0.2,
-                                  height: 1.05,
+                                  height: 1.1,
                                 ),
                               ),
-                            ],
-                          ],
-                        ),
+                            ),
+                          ),
+                          if (item.subtitle != null)
+                            Flexible(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  item.subtitle!,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  style: TextStyle(
+                                    color: const Color(0xFFD6C8F2),
+                                    fontSize: subtitleFontSize,
+                                    fontWeight: FontWeight.w500,
+                                    letterSpacing: 0.2,
+                                    height: 1.05,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),

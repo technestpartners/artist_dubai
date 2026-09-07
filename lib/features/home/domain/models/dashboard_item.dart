@@ -61,7 +61,7 @@ class DashboardItem {
       route: '/events-photos',
     ),
     DashboardItem(
-      title: 'GALLERIES | ART CENTERS',
+      title: 'ART VENUE',
       subtitle: 'REGISTRATION',
       iconPath: 'assets/icons/dashboard/galleries_registration.png',
       imagePath: 'assets/images/gallery-registration-DU8u0zfk.jpg',

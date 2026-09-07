@@ -61,7 +61,7 @@ class MenuCardItem {
       routeName: '/events-photos',
     ),
     MenuCardItem(
-      title: 'GALLERIES | ART CENTERS',
+      title: 'ART VENUE',
       subtitle: 'REGISTRATION',
       imagePath: 'assets/images/gallery-registration-DU8u0zfk.jpg',
       routeName: '/gallery-registration',

@@ -527,15 +527,18 @@ class _EventDetailViewState extends State<EventDetailView> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const Text(
-                          'Event Photos',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1E1E1E),
+                        const Expanded(
+                          child: Text(
+                            'Event Photos',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1E1E1E),
+                            ),
                           ),
                         ),
-                        if (_isLoggedIn)
+                        if (_isLoggedIn) ...[
+                          const SizedBox(width: 8),
                           ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF6A2777),
@@ -562,6 +565,7 @@ class _EventDetailViewState extends State<EventDetailView> {
                               ),
                             ),
                           ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 14),                    // 5. Event Photos / Galleries (Live Synced with Admin)
@@ -1168,11 +1172,14 @@ class _EventDetailViewState extends State<EventDetailView> {
               Positioned(
                 bottom: 10,
                 left: 12,
+                right: 12,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       artist.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
@@ -1181,6 +1188,8 @@ class _EventDetailViewState extends State<EventDetailView> {
                     ),
                     Text(
                       '${artist.category} • ${artist.location}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 12,
                         color: Colors.white70,
