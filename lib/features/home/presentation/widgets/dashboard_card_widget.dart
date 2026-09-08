@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../domain/models/dashboard_item.dart';
+import '../../../../core/utils/responsive_helper.dart';
 
 class DashboardCardWidget extends StatelessWidget {
   final DashboardItem item;
@@ -13,6 +14,11 @@ class DashboardCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final rh = ResponsiveHelper.of(context);
+    final iconSize = rh.scale(56).clamp(48.0, 80.0);
+    final titleFontSize = rh.adaptiveFont(item.title.contains('|') ? 12.0 : 14.5);
+    final subFontSize = rh.adaptiveFont(item.title.contains('|') ? 10.5 : 11.5);
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -36,10 +42,10 @@ class DashboardCardWidget extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Solid Circular Icon
+                // Solid Circular Icon — scales with screen class
                 SizedBox(
-                  width: 56,
-                  height: 56,
+                  width: iconSize,
+                  height: iconSize,
                   child: Image.asset(item.iconPath, fit: BoxFit.contain),
                 ),
                 const SizedBox(height: 6),
@@ -53,7 +59,7 @@ class DashboardCardWidget extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: item.title.contains('|') ? 12.0 : 14.5,
+                      fontSize: titleFontSize,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.2,
                       height: 1.1,
@@ -72,7 +78,7 @@ class DashboardCardWidget extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: const Color(0xFFD6C8F2),
-                        fontSize: item.title.contains('|') ? 10.5 : 11.5,
+                        fontSize: subFontSize,
                         fontWeight: FontWeight.w400,
                         letterSpacing: 0.2,
                       ),

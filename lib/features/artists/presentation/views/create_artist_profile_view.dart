@@ -698,7 +698,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                               // 2 Action Buttons: Choose Files & Camera
                               Wrap(
                                 alignment: WrapAlignment.center,
-                                spacing: 10,
+                                spacing: 8,
                                 runSpacing: 8,
                                 children: [
                                   OutlinedButton.icon(
@@ -711,7 +711,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
+                                        horizontal: 10,
                                         vertical: 8,
                                       ),
                                     ),
@@ -740,7 +740,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
+                                        horizontal: 10,
                                         vertical: 8,
                                       ),
                                     ),
@@ -815,186 +815,151 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(color: const Color(0xFFCBD5E1)),
                               ),
-                              child: Row(
+                              child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Artwork Preview Image
-                                  Stack(
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: kIsWeb
-                                            ? Image.network(
-                                                artItem.file.path,
-                                                width: 80,
-                                                height: 80,
-                                                fit: BoxFit.cover,
-                                              )
-                                            : Image.file(
-                                                File(artItem.file.path),
-                                                width: 80,
-                                                height: 80,
-                                                fit: BoxFit.cover,
-                                              ),
-                                      ),
-                                      Positioned(
-                                        bottom: 2,
-                                        left: 2,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                          decoration: BoxDecoration(
-                                            color: Colors.black.withValues(alpha: 0.6),
-                                            borderRadius: BorderRadius.circular(4),
+                                      // Artwork Preview Image
+                                      Stack(
+                                        children: [
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(8),
+                                            child: kIsWeb
+                                                ? Image.network(
+                                                    artItem.file.path,
+                                                    width: 80,
+                                                    height: 80,
+                                                    fit: BoxFit.cover,
+                                                  )
+                                                : Image.file(
+                                                    File(artItem.file.path),
+                                                    width: 80,
+                                                    height: 80,
+                                                    fit: BoxFit.cover,
+                                                  ),
                                           ),
-                                          child: Text(
-                                            '#${index + 1}',
-                                            style: const TextStyle(
-                                              fontSize: 10,
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
+                                          Positioned(
+                                            bottom: 2,
+                                            left: 2,
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black.withValues(alpha: 0.6),
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              child: Text(
+                                                '#${index + 1}',
+                                                style: const TextStyle(
+                                                  fontSize: 10,
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
                                             ),
                                           ),
+                                        ],
+                                      ),
+                                      const SizedBox(width: 12),
+
+                                      // Title & Medium beside image
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: TextField(
+                                                    controller: artItem.titleController,
+                                                    style: const TextStyle(
+                                                      fontSize: 13.5,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: Color(0xFF0F172A),
+                                                    ),
+                                                    decoration: const InputDecoration(
+                                                      hintText: 'Artwork Title',
+                                                      hintStyle: TextStyle(
+                                                        fontSize: 12.5,
+                                                        color: Color(0xFF94A3B8),
+                                                      ),
+                                                      isDense: true,
+                                                      filled: true,
+                                                      fillColor: Colors.white,
+                                                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                                      border: OutlineInputBorder(
+                                                        borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                        borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+                                                      ),
+                                                      enabledBorder: OutlineInputBorder(
+                                                        borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                        borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+                                                      ),
+                                                      focusedBorder: OutlineInputBorder(
+                                                        borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                        borderSide: BorderSide(color: Color(0xFF6A2777), width: 1.5),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 6),
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons.delete_outline,
+                                                    size: 20,
+                                                    color: Color(0xFFDC2626),
+                                                  ),
+                                                  onPressed: () => _removeImage(index),
+                                                  padding: EdgeInsets.zero,
+                                                  constraints: const BoxConstraints(),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 8),
+                                            TextField(
+                                              controller: artItem.mediumController,
+                                              style: const TextStyle(
+                                                fontSize: 12.5,
+                                                color: Color(0xFF334155),
+                                              ),
+                                              decoration: const InputDecoration(
+                                                hintText: 'Medium (e.g. Oil on Canvas)',
+                                                hintStyle: TextStyle(
+                                                  fontSize: 11.5,
+                                                  color: Color(0xFF94A3B8),
+                                                ),
+                                                isDense: true,
+                                                filled: true,
+                                                fillColor: Colors.white,
+                                                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                                border: OutlineInputBorder(
+                                                  borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                  borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+                                                ),
+                                                enabledBorder: OutlineInputBorder(
+                                                  borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                  borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+                                                ),
+                                                focusedBorder: OutlineInputBorder(
+                                                  borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                  borderSide: BorderSide(color: Color(0xFF6A2777), width: 1.5),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(width: 12),
+                                  const SizedBox(height: 8),
 
-                                  // Editable Artwork Details
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: TextField(
-                                                controller: artItem.titleController,
-                                                style: const TextStyle(
-                                                  fontSize: 13.5,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Color(0xFF0F172A),
-                                                ),
-                                                decoration: const InputDecoration(
-                                                  hintText: 'Artwork Title',
-                                                  hintStyle: TextStyle(
-                                                    fontSize: 12.5,
-                                                    color: Color(0xFF94A3B8),
-                                                  ),
-                                                  isDense: true,
-                                                  filled: true,
-                                                  fillColor: Colors.white,
-                                                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                                  border: OutlineInputBorder(
-                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
-                                                    borderSide: BorderSide(color: Color(0xFFCBD5E1)),
-                                                  ),
-                                                  enabledBorder: OutlineInputBorder(
-                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
-                                                    borderSide: BorderSide(color: Color(0xFFCBD5E1)),
-                                                  ),
-                                                  focusedBorder: OutlineInputBorder(
-                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
-                                                    borderSide: BorderSide(color: Color(0xFF6A2777), width: 1.5),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 6),
-                                            IconButton(
-                                              icon: const Icon(
-                                                Icons.delete_outline,
-                                                size: 20,
-                                                color: Color(0xFFDC2626),
-                                              ),
-                                              onPressed: () => _removeImage(index),
-                                              padding: EdgeInsets.zero,
-                                              constraints: const BoxConstraints(),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: TextField(
-                                                controller: artItem.mediumController,
-                                                style: const TextStyle(
-                                                  fontSize: 12.5,
-                                                  color: Color(0xFF334155),
-                                                ),
-                                                decoration: const InputDecoration(
-                                                  hintText: 'Medium (e.g. Oil on Canvas)',
-                                                  hintStyle: TextStyle(
-                                                    fontSize: 11.5,
-                                                    color: Color(0xFF94A3B8),
-                                                  ),
-                                                  isDense: true,
-                                                  filled: true,
-                                                  fillColor: Colors.white,
-                                                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                                  border: OutlineInputBorder(
-                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
-                                                    borderSide: BorderSide(color: Color(0xFFCBD5E1)),
-                                                  ),
-                                                  enabledBorder: OutlineInputBorder(
-                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
-                                                    borderSide: BorderSide(color: Color(0xFFCBD5E1)),
-                                                  ),
-                                                  focusedBorder: OutlineInputBorder(
-                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
-                                                    borderSide: BorderSide(color: Color(0xFF6A2777), width: 1.5),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: TextField(
-                                                controller: artItem.yearController,
-                                                readOnly: true,
-                                                onTap: () => _pickYear(artItem.yearController),
-                                                style: const TextStyle(
-                                                  fontSize: 12.5,
-                                                  color: Color(0xFF334155),
-                                                ),
-                                                decoration: InputDecoration(
-                                                  hintText: 'Year (e.g. 2026)',
-                                                  hintStyle: const TextStyle(
-                                                    fontSize: 11.5,
-                                                    color: Color(0xFF94A3B8),
-                                                  ),
-                                                  suffixIcon: GestureDetector(
-                                                    onTap: () => _pickYear(artItem.yearController),
-                                                    child: const Icon(
-                                                      Icons.calendar_today_outlined,
-                                                      size: 14,
-                                                      color: Color(0xFF64748B),
-                                                    ),
-                                                  ),
-                                                  isDense: true,
-                                                  filled: true,
-                                                  fillColor: Colors.white,
-                                                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                                  border: OutlineInputBorder(
-                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
-                                                    borderSide: BorderSide(color: Color(0xFFCBD5E1)),
-                                                  ),
-                                                  enabledBorder: OutlineInputBorder(
-                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
-                                                    borderSide: BorderSide(color: Color(0xFFCBD5E1)),
-                                                  ),
-                                                  focusedBorder: OutlineInputBorder(
-                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
-                                                    borderSide: BorderSide(color: Color(0xFF6A2777), width: 1.5),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 8),
-                                        TextField(
+                                  // Full-width row for Dimensions & Year
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        flex: 3,
+                                        child: TextField(
                                           controller: artItem.dimensionsController,
                                           style: const TextStyle(
                                             fontSize: 12.5,
@@ -1009,7 +974,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                             isDense: true,
                                             filled: true,
                                             fillColor: Colors.white,
-                                            contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                            contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                                             border: OutlineInputBorder(
                                               borderRadius: BorderRadius.all(Radius.circular(6)),
                                               borderSide: BorderSide(color: Color(0xFFCBD5E1)),
@@ -1024,37 +989,86 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(height: 8),
-                                        InkWell(
-                                          onTap: () {
-                                            setState(() {
-                                              artItem.isFeatured = !artItem.isFeatured;
-                                            });
-                                          },
-                                          borderRadius: BorderRadius.circular(6),
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(vertical: 2.0),
-                                            child: Row(
-                                              children: [
-                                                Icon(
-                                                  artItem.isFeatured ? Icons.check_box : Icons.check_box_outline_blank,
-                                                  size: 18,
-                                                  color: artItem.isFeatured ? const Color(0xFF6A2777) : const Color(0xFF94A3B8),
-                                                ),
-                                                const SizedBox(width: 6),
-                                                const Text(
-                                                  'Mark as Featured Artwork (show "Featured" badge)',
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: Color(0xFF334155),
-                                                  ),
-                                                ),
-                                              ],
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        flex: 2,
+                                        child: TextField(
+                                          controller: artItem.yearController,
+                                          readOnly: true,
+                                          onTap: () => _pickYear(artItem.yearController),
+                                          style: const TextStyle(
+                                            fontSize: 12.5,
+                                            color: Color(0xFF334155),
+                                          ),
+                                          decoration: InputDecoration(
+                                            hintText: 'Year (2026)',
+                                            hintStyle: const TextStyle(
+                                              fontSize: 11.5,
+                                              color: Color(0xFF94A3B8),
+                                            ),
+                                            suffixIcon: GestureDetector(
+                                              onTap: () => _pickYear(artItem.yearController),
+                                              child: const Icon(
+                                                Icons.calendar_today_outlined,
+                                                size: 14,
+                                                color: Color(0xFF64748B),
+                                              ),
+                                            ),
+                                            isDense: true,
+                                            filled: true,
+                                            fillColor: Colors.white,
+                                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                            border: const OutlineInputBorder(
+                                              borderRadius: BorderRadius.all(Radius.circular(6)),
+                                              borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+                                            ),
+                                            enabledBorder: const OutlineInputBorder(
+                                              borderRadius: BorderRadius.all(Radius.circular(6)),
+                                              borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+                                            ),
+                                            focusedBorder: const OutlineInputBorder(
+                                              borderRadius: BorderRadius.all(Radius.circular(6)),
+                                              borderSide: BorderSide(color: Color(0xFF6A2777), width: 1.5),
                                             ),
                                           ),
                                         ),
-                                      ],
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+
+                                  // Featured checkbox across full width
+                                  InkWell(
+                                    onTap: () {
+                                      setState(() {
+                                        artItem.isFeatured = !artItem.isFeatured;
+                                      });
+                                    },
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 2.0),
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            artItem.isFeatured ? Icons.check_box : Icons.check_box_outline_blank,
+                                            size: 18,
+                                            color: artItem.isFeatured ? const Color(0xFF6A2777) : const Color(0xFF94A3B8),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          const Expanded(
+                                            child: Text(
+                                              'Mark as Featured Artwork (show "Featured" badge)',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                                color: Color(0xFF334155),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -1145,9 +1159,10 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                         children: [
                           Expanded(
                             child: SizedBox(
-                              height: 46,
+                              height: 48,
                               child: OutlinedButton(
                                 style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
                                   side: const BorderSide(
                                     color: Color(0xFF1E1E1E),
                                     width: 1.0,
@@ -1157,12 +1172,16 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                   ),
                                 ),
                                 onPressed: () => context.pop(),
-                                child: const Text(
-                                  'Cancel',
-                                  style: TextStyle(
-                                    fontSize: 14.5,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1E1E1E),
+                                child: const FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    'Cancel',
+                                    maxLines: 1,
+                                    style: TextStyle(
+                                      fontSize: 14.5,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF1E1E1E),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -1171,9 +1190,10 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: SizedBox(
-                              height: 46,
+                              height: 48,
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
                                   backgroundColor: const Color(0xFF9E68B4),
                                   foregroundColor: Colors.white,
                                   elevation: 0,
@@ -1193,11 +1213,15 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                             strokeWidth: 2,
                                           ),
                                         )
-                                        : const Text(
-                                          'Create Profile',
-                                          style: TextStyle(
-                                            fontSize: 14.5,
-                                            fontWeight: FontWeight.bold,
+                                        : const FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            'Create Profile',
+                                            maxLines: 1,
+                                            style: TextStyle(
+                                              fontSize: 14.5,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
                                         ),
                               ),

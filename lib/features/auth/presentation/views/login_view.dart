@@ -6,6 +6,7 @@ import '../../../../core/errors/exceptions.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
+import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 
@@ -253,20 +254,26 @@ class _LoginViewState extends State<LoginView> {
 
   @override
   Widget build(BuildContext context) {
+    final rh = ResponsiveHelper.of(context);
+    final hPad = rh.isWide ? rh.horizontalPadding : 16.0;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF6F7F9),
       appBar: const AppTopBar(),
       body: SafeArea(
         child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Top Action Row (Back Arrow and Home button)
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 12.0,
-                ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: rh.isWide ? 520.0 : double.infinity),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Top Action Row (Back Arrow and Home button)
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: hPad,
+                      vertical: 12.0,
+                    ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -385,6 +392,7 @@ class _LoginViewState extends State<LoginView> {
                           color: Colors.black,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
+                          fontFamilyFallback: ['Outfit', 'Roboto', 'Arial', 'sans-serif'],
                         ),
                         decoration: _buildInputDecoration(
                           hintText: 'name@example.com',
@@ -417,6 +425,7 @@ class _LoginViewState extends State<LoginView> {
                           color: Colors.black,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
+                          fontFamilyFallback: ['Outfit', 'Roboto', 'Arial', 'sans-serif'],
                         ),
                         decoration: _buildInputDecoration(
                           hintText: 'Enter your password',
@@ -515,6 +524,8 @@ class _LoginViewState extends State<LoginView> {
             ],
           ),
         ),
+        ),
+      ),
       ),
       bottomNavigationBar: const AppBottomNavBar(),
     );

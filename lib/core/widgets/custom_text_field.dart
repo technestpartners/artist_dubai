@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
+import '../utils/responsive_helper.dart';
 
 class CustomTextField extends StatefulWidget {
   final String label;
@@ -41,6 +42,11 @@ class _CustomTextFieldState extends State<CustomTextField> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final rh = ResponsiveHelper.of(context);
+    final labelFontSize = rh.adaptiveFont(14);
+    final inputFontSize = rh.adaptiveFont(15);
+    final hintFontSize = rh.adaptiveFont(14);
+    final vertPad = rh.isWide ? 18.0 : 16.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,7 +54,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
         Text(
           widget.label,
           style: TextStyle(
-            fontSize: 14,
+            fontSize: labelFontSize,
             fontWeight: FontWeight.w600,
             color:
                 isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
@@ -66,21 +72,21 @@ class _CustomTextFieldState extends State<CustomTextField> {
           maxLines: widget.isPassword ? 1 : widget.maxLines,
           style: TextStyle(
             color: isDark ? Colors.white : Colors.black,
-            fontSize: 15,
+            fontSize: inputFontSize,
             fontWeight: FontWeight.w500,
           ),
           decoration: InputDecoration(
             hintText: widget.hintText,
             hintStyle: TextStyle(
               color: isDark ? Colors.white60 : const Color(0xFF64748B),
-              fontSize: 14,
+              fontSize: hintFontSize,
               fontWeight: FontWeight.normal,
             ),
             filled: true,
             fillColor: isDark ? AppColors.darkCard : AppColors.lightCard,
-            contentPadding: const EdgeInsets.symmetric(
+            contentPadding: EdgeInsets.symmetric(
               horizontal: 16,
-              vertical: 16,
+              vertical: vertPad,
             ),
             prefixIcon: widget.prefixIcon,
             suffixIcon:

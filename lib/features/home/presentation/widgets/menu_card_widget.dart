@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/responsive_helper.dart';
 import '../../domain/models/menu_card_item.dart';
 
 class MenuCardWidget extends StatelessWidget {
@@ -9,19 +10,23 @@ class MenuCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final rh = ResponsiveHelper.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         final cardHeight = constraints.maxHeight;
         final cardWidth = constraints.maxWidth;
 
-        // Auto-scale dimensions flexibly for all screen heights
-        final iconSize = (cardHeight * 0.42).clamp(46.0, 72.0);
-        final titleFontSize =
-            item.isLongTitle
-                ? (cardHeight * 0.110).clamp(11.5, 14.5)
-                : (cardHeight * 0.125).clamp(13.0, 16.5);
-        final subtitleFontSize = (cardHeight * 0.095).clamp(10.5, 12.5);
-        final cornerRadius = (cardWidth * 0.14).clamp(16.0, 24.0);
+        // Widen clamp maximums on tablet / desktop
+        final maxIconSize = rh.isDesktop ? 96.0 : rh.isTablet ? 84.0 : 72.0;
+        final maxTitleFont = rh.isDesktop ? 18.0 : rh.isTablet ? 16.5 : 16.5;
+        final maxSubFont = rh.isDesktop ? 14.0 : rh.isTablet ? 13.0 : 12.5;
+
+        final iconSize = (cardHeight * 0.42).clamp(46.0, maxIconSize);
+        final titleFontSize = item.isLongTitle
+            ? (cardHeight * 0.110).clamp(11.5, maxTitleFont - 2)
+            : (cardHeight * 0.125).clamp(13.0, maxTitleFont);
+        final subtitleFontSize = (cardHeight * 0.095).clamp(10.5, maxSubFont);
+        final cornerRadius = (cardWidth * 0.14).clamp(16.0, 28.0);
 
         return Material(
           color: Colors.transparent,

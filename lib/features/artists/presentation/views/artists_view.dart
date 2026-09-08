@@ -7,6 +7,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
+import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
@@ -312,6 +313,9 @@ class _ArtistsViewState extends State<ArtistsView> {
                     _selectedCategory!.toLowerCase().contains(a.category.toLowerCase()))
                 .toList();
 
+    final rh = ResponsiveHelper.of(context);
+    final hPad = rh.horizontalPadding;
+
     return Scaffold(
       backgroundColor: const Color(0xFFFBFBFD),
       appBar: const AppTopBar(),
@@ -321,10 +325,13 @@ class _ArtistsViewState extends State<ArtistsView> {
           onRefresh: _fetchData,
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 16.0),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                 // 1. Featured Artists Header
                 Center(
                   child: Column(
@@ -471,7 +478,8 @@ class _ArtistsViewState extends State<ArtistsView> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                ] else ...[
+                ] else ...[  // Wide layout: 2-column GridView
+                  if (rh.isMobile)
                   ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -480,6 +488,21 @@ class _ArtistsViewState extends State<ArtistsView> {
                     itemBuilder: (context, index) {
                       final artist = filteredArtists[index];
                       return _buildArtistCard(artist);
+                    },
+                  )
+                  else
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: rh.gridCrossAxisCount,
+                      crossAxisSpacing: 14,
+                      mainAxisSpacing: 14,
+                      childAspectRatio: 0.72,
+                    ),
+                    itemCount: filteredArtists.length,
+                    itemBuilder: (context, index) {
+                      return _buildArtistCard(filteredArtists[index]);
                     },
                   ),
                   const SizedBox(height: 18),
@@ -493,8 +516,10 @@ class _ArtistsViewState extends State<ArtistsView> {
           ),
         ),
       ),
-      bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
-    );
+    ),
+  ),
+  bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
+);
   }
 
   // Select a Category Field
@@ -704,6 +729,8 @@ class _ArtistsViewState extends State<ArtistsView> {
   }
 
   Widget _buildArtistCard(ArtistModel artist) {
+    final rh = ResponsiveHelper.of(context);
+    final bannerHeight = rh.cardBannerHeight;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -730,7 +757,7 @@ class _ArtistsViewState extends State<ArtistsView> {
                 ),
                 child: AppCachedImage(
                   imageUrl: artist.bannerUrl,
-                  height: 165,
+                  height: bannerHeight,
                   width: double.infinity,
                   fit: BoxFit.cover,
                 ),

@@ -7,6 +7,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
+import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_top_bar.dart';
@@ -225,6 +226,9 @@ class _EventsViewState extends State<EventsView> {
           return matchesCategory && matchesQuery;
         }).toList();
 
+    final rh = ResponsiveHelper.of(context);
+    final hPad = rh.horizontalPadding;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: const AppTopBar(),
@@ -234,10 +238,13 @@ class _EventsViewState extends State<EventsView> {
           onRefresh: () => _fetchEvents(forceRefresh: true),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 12.0),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
               // Header Row (Back Arrow and Title matching reference)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -446,10 +453,12 @@ class _EventsViewState extends State<EventsView> {
                   },
                 ),
               const SizedBox(height: 24),
-            ],
+              ],
+            ),
+            ),
+            ),
           ),
         ),
-      ),
       ),
       bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
     );
@@ -664,7 +673,7 @@ class _EventsViewState extends State<EventsView> {
                   borderRadius: BorderRadius.circular(10),
                   child: AppCachedImage(
                     imageUrl: event.imageUrl!,
-                    height: 160,
+                    height: ResponsiveHelper.of(context).cardBannerHeight,
                     width: double.infinity,
                     fit: BoxFit.cover,
                   ),

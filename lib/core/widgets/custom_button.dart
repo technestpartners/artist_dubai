@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
+import '../utils/responsive_helper.dart';
 
 class CustomButton extends StatelessWidget {
   final String text;
@@ -59,6 +60,9 @@ class CustomButton extends StatelessWidget {
   }
 
   Widget _buildChild(BuildContext context, Color textColor) {
+    final rh = ResponsiveHelper.of(context);
+    final fontSize = rh.adaptiveFont(16);
+
     if (isLoading) {
       return SizedBox(
         height: 22,
@@ -79,7 +83,7 @@ class CustomButton extends StatelessWidget {
           Text(
             text,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: fontSize,
               fontWeight: FontWeight.w600,
               color: textColor,
             ),
@@ -91,7 +95,7 @@ class CustomButton extends StatelessWidget {
     return Text(
       text,
       style: TextStyle(
-        fontSize: 16,
+        fontSize: fontSize,
         fontWeight: FontWeight.w600,
         color: textColor,
       ),

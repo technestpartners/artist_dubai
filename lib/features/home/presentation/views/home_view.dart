@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/utils/responsive_helper.dart';
 import '../../domain/models/menu_card_item.dart';
 import '../widgets/home_footer_widget.dart';
 import '../widgets/home_header_widget.dart';
@@ -16,6 +17,8 @@ class HomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final rh = ResponsiveHelper.of(context);
+
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -35,119 +38,34 @@ class HomeView extends StatelessWidget {
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final horizontalPadding = (constraints.maxWidth * 0.04).clamp(
-                12.0,
-                20.0,
-              );
-              final gap = (constraints.maxHeight * 0.014).clamp(8.0, 14.0);
+              final horizontalPadding = rh.horizontalPadding;
+              final gap = (constraints.maxHeight * 0.014).clamp(8.0, 16.0);
+
+              // Tablet/Desktop: 2 rows × 4 cols  |  Mobile: 4 rows × 2 cols
+              final rowCount = rh.isWide ? 2 : 4;
+              final colCount = rh.isWide ? 4 : 2;
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // 1. Auto-scaling Top Header
+                  // 1. Top Header
                   const HomeHeaderWidget(),
                   SizedBox(height: gap * 0.5),
 
-                  // 2. Auto-fitting 4-Row Grid (Takes exactly available height with 0 scroll)
+                  // 2. Adaptive Grid — centred on wide screens
                   Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: horizontalPadding,
-                      ),
-                      child: Column(
-                        children: [
-                          // Row 1: About Us, Artists
-                          Expanded(
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: MenuCardWidget(
-                                    item: _items[0],
-                                    onTap: () => _onCardTap(context, _items[0]),
-                                  ),
-                                ),
-                                SizedBox(width: gap),
-                                Expanded(
-                                  child: MenuCardWidget(
-                                    item: _items[1],
-                                    onTap: () => _onCardTap(context, _items[1]),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(height: gap),
-
-                          // Row 2: Government, Artist Registration
-                          Expanded(
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: MenuCardWidget(
-                                    item: _items[2],
-                                    onTap: () => _onCardTap(context, _items[2]),
-                                  ),
-                                ),
-                                SizedBox(width: gap),
-                                Expanded(
-                                  child: MenuCardWidget(
-                                    item: _items[3],
-                                    onTap: () => _onCardTap(context, _items[3]),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(height: gap),
-
-                          // Row 3: Events Competition, Galleries Art Center
-                          Expanded(
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: MenuCardWidget(
-                                    item: _items[4],
-                                    onTap: () => _onCardTap(context, _items[4]),
-                                  ),
-                                ),
-                                SizedBox(width: gap),
-                                Expanded(
-                                  child: MenuCardWidget(
-                                    item: _items[5],
-                                    onTap: () => _onCardTap(context, _items[5]),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(height: gap),
-
-                          // Row 4: Events Photos, Galleries Registration
-                          Expanded(
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: MenuCardWidget(
-                                    item: _items[6],
-                                    onTap: () => _onCardTap(context, _items[6]),
-                                  ),
-                                ),
-                                SizedBox(width: gap),
-                                Expanded(
-                                  child: MenuCardWidget(
-                                    item: _items[7],
-                                    onTap: () => _onCardTap(context, _items[7]),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                          child: _buildGrid(context, rowCount, colCount, gap),
+                        ),
                       ),
                     ),
                   ),
 
-                  // 3. Auto-scaling Bottom Footer
+                  // 3. Bottom Footer
                   const HomeFooterWidget(),
                 ],
               );
@@ -155,6 +73,41 @@ class HomeView extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildGrid(
+    BuildContext context,
+    int rowCount,
+    int colCount,
+    double gap,
+  ) {
+    return Column(
+      children: [
+        for (int row = 0; row < rowCount; row++) ...[
+          Expanded(
+            child: Row(
+              children: [
+                for (int col = 0; col < colCount; col++) ...[
+                  if (col > 0) SizedBox(width: gap),
+                  Expanded(
+                    child: _buildCard(context, row * colCount + col),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (row < rowCount - 1) SizedBox(height: gap),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildCard(BuildContext context, int idx) {
+    if (idx >= _items.length) return const SizedBox.expand();
+    return MenuCardWidget(
+      item: _items[idx],
+      onTap: () => _onCardTap(context, _items[idx]),
     );
   }
 }

@@ -5,6 +5,7 @@ import '../di/injection_container.dart';
 import '../services/live_sync_service.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
+import '../utils/responsive_helper.dart';
 import 'notifications_panel.dart';
 
 enum TopBarMenuItem {
@@ -112,6 +113,11 @@ class _AppTopBarState extends State<AppTopBar> {
       }
     } catch (_) {}
 
+    final rh = ResponsiveHelper.of(context);
+    final logoSize = rh.appBarLogoSize;
+    final brandFontSize = rh.isWide ? 16.0 : 14.0;
+    final avatarSize = rh.appBarAvatarSize;
+
     return AppBar(
       backgroundColor: widget.backgroundColor,
       elevation: 0,
@@ -119,7 +125,7 @@ class _AppTopBarState extends State<AppTopBar> {
       surfaceTintColor: Colors.transparent,
       automaticallyImplyLeading: false,
       centerTitle: false,
-      titleSpacing: 12.0,
+      titleSpacing: rh.isWide ? 20.0 : 12.0,
       title: InkWell(
         onTap: () => context.go(RouteNames.home),
         borderRadius: BorderRadius.circular(8),
@@ -127,10 +133,10 @@ class _AppTopBarState extends State<AppTopBar> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Circular Logo Badge
+            // Circular Logo Badge — scales with screen class
             Container(
-              width: 36,
-              height: 36,
+              width: logoSize,
+              height: logoSize,
               decoration: const BoxDecoration(shape: BoxShape.circle),
               child: ClipOval(
                 child: Image.asset(
@@ -148,7 +154,7 @@ class _AppTopBarState extends State<AppTopBar> {
             const SizedBox(width: 8),
 
             // Brand Titles
-            const Column(
+            Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -156,8 +162,8 @@ class _AppTopBarState extends State<AppTopBar> {
                 Text(
                   'Artist',
                   style: TextStyle(
-                    color: Color(0xFF1E1E1E),
-                    fontSize: 14,
+                    color: const Color(0xFF1E1E1E),
+                    fontSize: brandFontSize,
                     fontWeight: FontWeight.w700,
                     height: 1.15,
                   ),
@@ -165,8 +171,8 @@ class _AppTopBarState extends State<AppTopBar> {
                 Text(
                   'Dubai',
                   style: TextStyle(
-                    color: Color(0xFF1E1E1E),
-                    fontSize: 14,
+                    color: const Color(0xFF1E1E1E),
+                    fontSize: brandFontSize,
                     fontWeight: FontWeight.w700,
                     height: 1.15,
                   ),
@@ -249,8 +255,8 @@ class _AppTopBarState extends State<AppTopBar> {
               child: Tooltip(
                 message: 'Account Settings',
                 child: Container(
-                  width: 30,
-                  height: 30,
+                  width: avatarSize,
+                  height: avatarSize,
                   decoration: const BoxDecoration(
                     color: Color(0xFF5E227A),
                     shape: BoxShape.circle,
@@ -258,9 +264,9 @@ class _AppTopBarState extends State<AppTopBar> {
                   child: Center(
                     child: Text(
                       avatarLetter,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 14,
+                        fontSize: rh.isWide ? 16.0 : 14.0,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/responsive_helper.dart';
 
 class DashboardHeaderWidget extends StatelessWidget {
   const DashboardHeaderWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final rh = ResponsiveHelper.of(context);
+    final logoSize = rh.isDesktop ? 80.0 : rh.isTablet ? 72.0 : 64.0;
+    final titleFontSize = rh.adaptiveFont(19);
+    final subtitleFontSize = rh.adaptiveFont(10);
+    final spacing = rh.isWide ? 18.0 : 14.0;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2.0),
+      padding: EdgeInsets.symmetric(horizontal: rh.isWide ? 4.0 : 2.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Compact Circular Logo
           Container(
-            width: 64,
-            height: 64,
+            width: logoSize,
+            height: logoSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               boxShadow: [
@@ -31,7 +38,7 @@ class DashboardHeaderWidget extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: spacing),
 
           // Title & Tagline
           Expanded(
@@ -39,11 +46,11 @@ class DashboardHeaderWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
+                Text(
                   'ARTIST DUBAI',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 19,
+                    fontSize: titleFontSize,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
                     height: 1.15,
@@ -54,7 +61,7 @@ class DashboardHeaderWidget extends StatelessWidget {
                   'COMMUNITY PLATFORM',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.85),
-                    fontSize: 10,
+                    fontSize: subtitleFontSize,
                     fontWeight: FontWeight.w400,
                     letterSpacing: 2.2,
                   ),

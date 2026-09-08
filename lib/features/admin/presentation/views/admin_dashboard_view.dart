@@ -6,6 +6,7 @@ import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
+import '../../../../core/utils/responsive_helper.dart';
 import '../../../artists/domain/models/artist_model.dart';
 import '../../../events/domain/models/art_event_model.dart';
 import '../../../government/domain/models/government_entity.dart';
@@ -1202,35 +1203,47 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   }
 
   Widget _buildTabSelector() {
+    final rh = ResponsiveHelper.of(context);
     return Container(
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         color: const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Column(
-        children: [
-          // Row 1
-          Row(
-            children: [
-              _buildTabButton(AdminTab.artists, 'Artists'),
-              _buildTabButton(AdminTab.events, 'Events'),
-              _buildTabButton(AdminTab.calendar, 'Calendar'),
-              _buildTabButton(AdminTab.galleries, 'Galleries'),
-              _buildTabButton(AdminTab.bookings, 'Bookings'),
-            ],
-          ),
-          const SizedBox(height: 4),
-          // Row 2
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildTabButton(AdminTab.artCenters, 'Art Centers'),
-              _buildTabButton(AdminTab.government, 'Government'),
-            ],
-          ),
-        ],
-      ),
+      child: rh.isWide
+          ? Row(
+              children: [
+                _buildTabButton(AdminTab.artists, 'Artists'),
+                _buildTabButton(AdminTab.events, 'Events'),
+                _buildTabButton(AdminTab.calendar, 'Calendar'),
+                _buildTabButton(AdminTab.galleries, 'Galleries'),
+                _buildTabButton(AdminTab.bookings, 'Bookings'),
+                _buildTabButton(AdminTab.artCenters, 'Art Centers'),
+                _buildTabButton(AdminTab.government, 'Government'),
+              ],
+            )
+          : Column(
+              children: [
+                // Row 1 (4 tabs)
+                Row(
+                  children: [
+                    _buildTabButton(AdminTab.artists, 'Artists'),
+                    _buildTabButton(AdminTab.events, 'Events'),
+                    _buildTabButton(AdminTab.calendar, 'Calendar'),
+                    _buildTabButton(AdminTab.galleries, 'Galleries'),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                // Row 2 (3 tabs)
+                Row(
+                  children: [
+                    _buildTabButton(AdminTab.bookings, 'Bookings'),
+                    _buildTabButton(AdminTab.artCenters, 'Art Centers'),
+                    _buildTabButton(AdminTab.government, 'Government'),
+                  ],
+                ),
+              ],
+            ),
     );
   }
 
@@ -1241,7 +1254,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         onTap: () => setState(() => _selectedTab = tab),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
           margin: const EdgeInsets.symmetric(horizontal: 2),
           decoration: BoxDecoration(
             color: isSelected ? Colors.white : Colors.transparent,
@@ -1257,13 +1270,18 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 : null,
           ),
           child: Center(
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? const Color(0xFF0F172A) : const Color(0xFF64748B),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                softWrap: false,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? const Color(0xFF0F172A) : const Color(0xFF64748B),
+                ),
               ),
             ),
           ),

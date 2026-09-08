@@ -5,12 +5,27 @@ import '../core/constants/app_colors.dart';
 class AppTheme {
   AppTheme._();
 
+  static const List<String> _fontFallback = [
+    'Outfit',
+    'Roboto',
+    'Arial',
+    'sans-serif',
+  ];
+
+  static TextTheme _buildTextTheme(TextTheme base) {
+    return GoogleFonts.outfitTextTheme(base).apply(
+      fontFamilyFallback: _fontFallback,
+    );
+  }
+
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       primaryColor: AppColors.primary,
       scaffoldBackgroundColor: AppColors.darkBackground,
+      fontFamily: GoogleFonts.outfit().fontFamily,
+      fontFamilyFallback: _fontFallback,
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primary,
         onPrimary: Colors.black,
@@ -18,7 +33,7 @@ class AppTheme {
         surface: AppColors.darkSurface,
         error: AppColors.error,
       ),
-      textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
+      textTheme: _buildTextTheme(ThemeData.dark().textTheme),
       textSelectionTheme: const TextSelectionThemeData(
         cursorColor: Color(0xFF6A2777),
         selectionColor: Color(0xFFE9D5FF),
@@ -51,6 +66,8 @@ class AppTheme {
       brightness: Brightness.light,
       primaryColor: AppColors.primary,
       scaffoldBackgroundColor: AppColors.lightBackground,
+      fontFamily: GoogleFonts.outfit().fontFamily,
+      fontFamilyFallback: _fontFallback,
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         onPrimary: Colors.white,
@@ -58,7 +75,12 @@ class AppTheme {
         surface: AppColors.lightSurface,
         error: AppColors.error,
       ),
-      textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme),
+      textTheme: _buildTextTheme(ThemeData.light().textTheme),
+      textSelectionTheme: const TextSelectionThemeData(
+        cursorColor: Color(0xFF6A2777),
+        selectionColor: Color(0xFFE9D5FF),
+        selectionHandleColor: Color(0xFF6A2777),
+      ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: const Color(0xFF6A2777),
         contentTextStyle: GoogleFonts.outfit(
