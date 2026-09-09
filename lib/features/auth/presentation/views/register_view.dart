@@ -379,136 +379,10 @@ class _RegisterViewState extends State<RegisterView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Role Selector Switcher (Normal User vs Artist)
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 20),
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _selectedRole = 'user';
-                                  });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
-                                  decoration: BoxDecoration(
-                                    color: _selectedRole == 'user'
-                                        ? Colors.white
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(8),
-                                    boxShadow: _selectedRole == 'user'
-                                        ? [
-                                            BoxShadow(
-                                              color: Colors.black.withValues(alpha: 0.06),
-                                              blurRadius: 4,
-                                              offset: const Offset(0, 1),
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.person_outline_rounded,
-                                        size: 17,
-                                        color: _selectedRole == 'user'
-                                            ? const Color(0xFF6A2777)
-                                            : const Color(0xFF64748B),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Flexible(
-                                        child: Text(
-                                          'Art Lover',
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            fontSize: 12.5,
-                                            fontWeight: _selectedRole == 'user'
-                                                ? FontWeight.w700
-                                                : FontWeight.w500,
-                                            color: _selectedRole == 'user'
-                                                ? const Color(0xFF6A2777)
-                                                : const Color(0xFF64748B),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _selectedRole = 'artist';
-                                  });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
-                                  decoration: BoxDecoration(
-                                    color: _selectedRole == 'artist'
-                                        ? Colors.white
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(8),
-                                    boxShadow: _selectedRole == 'artist'
-                                        ? [
-                                            BoxShadow(
-                                              color: Colors.black.withValues(alpha: 0.06),
-                                              blurRadius: 4,
-                                              offset: const Offset(0, 1),
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.palette_outlined,
-                                        size: 17,
-                                        color: _selectedRole == 'artist'
-                                            ? const Color(0xFF6A2777)
-                                            : const Color(0xFF64748B),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Flexible(
-                                        child: Text(
-                                          'Artist / Creator',
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            fontSize: 12.5,
-                                            fontWeight: _selectedRole == 'artist'
-                                                ? FontWeight.w700
-                                                : FontWeight.w500,
-                                            color: _selectedRole == 'artist'
-                                                ? const Color(0xFF6A2777)
-                                                : const Color(0xFF64748B),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      Text(
-                        _selectedRole == 'user'
-                            ? 'Sign Up as Art Lover'
-                            : "Join Dubai's Artist Community",
+                      const Text(
+                        "Join Dubai's Artist Community",
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Color(0xFF111827),
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
@@ -516,12 +390,10 @@ class _RegisterViewState extends State<RegisterView> {
                         ),
                       ),
                       const SizedBox(height: 6),
-                      Text(
-                        _selectedRole == 'user'
-                            ? 'Free access to explore Dubai art events, exhibitions & galleries.'
-                            : 'Create your artist profile and showcase your artwork.',
+                      const Text(
+                        'Free access to explore Dubai art events, exhibitions & galleries.',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Color(0xFF6B7280),
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
@@ -791,11 +663,9 @@ class _RegisterViewState extends State<RegisterView> {
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : Text(
-                                  _selectedRole == 'user'
-                                      ? 'Sign Up & Access Events'
-                                      : 'Create Artist Account',
-                                  style: const TextStyle(
+                              : const Text(
+                                  'Sign Up & Access Events',
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                   ),

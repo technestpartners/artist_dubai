@@ -17,8 +17,8 @@ class AppBottomNavBar extends StatefulWidget {
 }
 
 class _AppBottomNavBarState extends State<AppBottomNavBar> {
-  // Rich deep royal purple for the floating capsule with clear border separation
-  static const Color _barBg = Color(0xFF4E106D);
+  // Deep rich royal purple for floating capsule
+  static const Color _barBg = Color(0xFF52116E);
   StreamSubscription<bool>? _authSub;
 
   bool get _isLoggedIn {
@@ -69,51 +69,53 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
     required VoidCallback onTap,
   }) {
     final isSelected = widget.currentIndex == index;
-    final color = isSelected ? Colors.white : Colors.white.withValues(alpha: 0.85);
+    final color = isSelected ? Colors.white : Colors.white.withValues(alpha: 0.75);
 
     return Expanded(
-      child: Tooltip(
-        message: label,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(16),
-            splashColor: Colors.white.withValues(alpha: 0.15),
-            highlightColor: Colors.transparent,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOut,
-              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Colors.white.withValues(alpha: 0.22)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    isSelected ? selectedIcon : unselectedIcon,
-                    color: color,
-                    size: 22,
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
+      child: Center(
+        child: Tooltip(
+          message: label,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(20),
+              splashColor: Colors.white.withValues(alpha: 0.15),
+              highlightColor: Colors.transparent,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Colors.white.withValues(alpha: 0.20)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      isSelected ? selectedIcon : unselectedIcon,
                       color: color,
-                      fontSize: 11.5,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                      letterSpacing: 0.1,
+                      size: 21,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 2),
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 11,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        letterSpacing: 0.1,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -130,34 +132,40 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
     return SafeArea(
       top: false,
       child: Container(
-        height: 76,
+        height: 88,
         padding: const EdgeInsets.only(
-          left: 16.0,
-          right: 16.0,
-          bottom: 12.0,
-          top: 2.0,
+          left: 20.0,
+          right: 20.0,
+          bottom: 18.0,
+          top: 4.0,
         ),
         child: Center(
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxWidth: rh.isWide ? 520.0 : double.infinity,
+              maxWidth: rh.isWide ? 500.0 : double.infinity,
             ),
             child: Container(
-              height: 62,
-              padding: const EdgeInsets.symmetric(horizontal: 6),
+              height: 64,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: _barBg,
-                borderRadius: BorderRadius.circular(31),
+                borderRadius: BorderRadius.circular(32),
                 border: Border.all(
                   color: Colors.white.withValues(alpha: 0.18),
-                  width: 1.0,
+                  width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.35),
-                    offset: const Offset(0, 4),
-                    blurRadius: 18,
-                    spreadRadius: 1,
+                    color: Colors.black.withValues(alpha: 0.38),
+                    offset: const Offset(0, 6),
+                    blurRadius: 20,
+                    spreadRadius: 0,
+                  ),
+                  BoxShadow(
+                    color: const Color(0xFF6B1C9B).withValues(alpha: 0.25),
+                    offset: const Offset(0, 2),
+                    blurRadius: 10,
+                    spreadRadius: -1,
                   ),
                 ],
               ),

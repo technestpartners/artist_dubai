@@ -21,7 +21,7 @@ void main() {
   });
 
   group('User Sign Up & Auth Gate Tests', () {
-    testWidgets('RegisterView renders Art Lover tab by default and switches roles', (tester) async {
+    testWidgets('RegisterView renders clean account registration form without role switcher', (tester) async {
       SharedPreferences.setMockInitialValues({'is_logged_in': false});
       await sl.reset();
       await initDependencyInjection();
@@ -32,23 +32,17 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
-          home: RegisterView(initialRole: 'user'),
+          home: RegisterView(),
         ),
       );
       await tester.pump();
 
-      // Verify Art Lover mode is active
-      expect(find.text('Art Lover'), findsOneWidget);
-      expect(find.text('Artist / Creator'), findsOneWidget);
-      expect(find.text('Sign Up as Art Lover'), findsOneWidget);
-      expect(find.text('Sign Up & Access Events'), findsOneWidget);
-
-      // Tap on Artist / Creator
-      await tester.tap(find.text('Artist / Creator'));
-      await tester.pump();
-
+      // Verify clean registration form
       expect(find.text("Join Dubai's Artist Community"), findsOneWidget);
-      expect(find.text('Create Artist Account'), findsOneWidget);
+      expect(find.text('Free access to explore Dubai art events, exhibitions & galleries.'), findsOneWidget);
+      expect(find.text('Sign Up & Access Events'), findsOneWidget);
+      expect(find.text('Art Lover'), findsNothing);
+      expect(find.text('Artist / Creator'), findsNothing);
     });
 
     testWidgets('EventsView shows auth gate when user is not logged in', (tester) async {
