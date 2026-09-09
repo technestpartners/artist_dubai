@@ -1,8 +1,11 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:artist_dubai/core/di/injection_container.dart';
+import 'package:artist_dubai/core/widgets/app_bottom_nav_bar.dart';
+import 'package:artist_dubai/core/services/storage_service.dart';
+import 'package:artist_dubai/core/services/live_sync_service.dart';
 import 'package:artist_dubai/features/auth/presentation/views/register_view.dart';
 import 'package:artist_dubai/features/events/presentation/views/events_view.dart';
 import 'package:artist_dubai/features/galleries/presentation/views/galleries_view.dart';
@@ -86,6 +89,35 @@ void main() {
       expect(find.text('Explore Dubai Galleries'), findsOneWidget);
       expect(find.text('Sign Up as Art Lover (Free Access)'), findsOneWidget);
       expect(find.text('Already have an account? Sign In'), findsOneWidget);
+    });
+
+    testWidgets('AppBottomNavBar shows Login icon when logged out and Calendar when logged in', (tester) async {
+      SharedPreferences.setMockInitialValues({'is_logged_in': false});
+      await sl.reset();
+      await initDependencyInjection();
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            bottomNavigationBar: AppBottomNavBar(currentIndex: 0),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Logged out: should find login icon
+      expect(find.byIcon(Icons.login), findsOneWidget);
+      expect(find.byIcon(Icons.calendar_today_outlined), findsNothing);
+
+      // Now simulate logged in
+      final storage = sl<StorageService>();
+      await storage.setBool('is_logged_in', true);
+      sl<LiveSyncService>().notifyAuthChanged(true);
+      await tester.pumpAndSettle();
+
+      // Logged in: should find calendar icon
+      expect(find.byIcon(Icons.calendar_today_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.login), findsNothing);
     });
   });
 }
