@@ -53,6 +53,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
   bool _isUploadingImage = false;
 
   String? _selectedCategory;
+  String? _selectedLocation = 'Dubai, UAE';
   bool _isSubmitting = false;
 
   List<String> _categories = [
@@ -66,6 +67,27 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     'Cultural Festival',
     'Art Competition',
     'Community Art Project',
+  ];
+
+  List<String> _locations = [
+    'Dubai, UAE',
+    'Dubai Design District (d3), Dubai',
+    'Alserkal Avenue, Al Quoz, Dubai',
+    'Downtown Dubai, UAE',
+    'DIFC, Dubai',
+    'Al Shindagha Historic District, Dubai',
+    'Jaddaf Waterfront, Dubai',
+    'Madinat Jumeirah, Dubai',
+    'Dubai Marina, UAE',
+    'Palm Jumeirah, Dubai',
+    'Jumeirah, Dubai',
+    'Business Bay, Dubai',
+    'Abu Dhabi, UAE',
+    'Sharjah, UAE',
+    'Ajman, UAE',
+    'Ras Al Khaimah, UAE',
+    'Fujairah, UAE',
+    'Umm Al Quwain, UAE',
   ];
 
   @override
@@ -106,6 +128,10 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
         text: ev.maxAttendees.toString(),
       );
       _selectedCategory = ev.category.isNotEmpty ? ev.category : null;
+      _selectedLocation = ev.location.isNotEmpty ? ev.location : 'Dubai, UAE';
+      if (_selectedLocation != null && !_locations.contains(_selectedLocation)) {
+        _locations.insert(0, _selectedLocation!);
+      }
       _uploadedImageUrl = ev.imageUrl;
       if (_selectedCategory != null && !_categories.contains(_selectedCategory)) {
         _categories.insert(0, _selectedCategory!);
@@ -115,6 +141,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       _descriptionController = TextEditingController();
       _eventDateController = TextEditingController();
       _endDateController = TextEditingController();
+      _selectedLocation = 'Dubai, UAE';
       _locationController = TextEditingController(text: 'Dubai, UAE');
       _venueController = TextEditingController();
       _organizerNameController = TextEditingController(text: prefilledOrganizer);
@@ -125,6 +152,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       _maxTicketsController = TextEditingController(text: '100');
     }
     _loadDynamicCategories();
+    _loadDynamicLocations();
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -350,6 +378,18 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     } catch (_) {}
   }
 
+  Future<void> _loadDynamicLocations() async {
+    try {
+      final fetched = await sl<ApiService>().getLocations();
+      final names = fetched.map((l) => l.name).where((n) => n.trim().isNotEmpty).toList();
+      if (mounted && names.isNotEmpty) {
+        setState(() {
+          _locations = <String>{..._locations, ...names}.toList();
+        });
+      }
+    } catch (_) {}
+  }
+
   Future<void> _pickDateTime(TextEditingController controller) async {
     final now = DateTime.now();
     final pickedDate = await showDatePicker(
@@ -450,6 +490,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     try {
       final isEdit = widget.event != null;
       final parsedCapacity = int.tryParse(_maxTicketsController.text.trim()) ?? 100;
+      final selectedLoc = (_selectedLocation != null && _selectedLocation!.trim().isNotEmpty)
+          ? _selectedLocation!.trim()
+          : (_locationController.text.trim().isEmpty ? 'Dubai, UAE' : _locationController.text.trim());
       bool success = false;
 
       if (isEdit) {
@@ -460,7 +503,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           'category': _selectedCategory ?? (_categories.isNotEmpty ? _categories.first : 'Art Exhibition'),
           'event_date': eventDate,
           'end_date': _endDateController.text.trim(),
-          'location': _locationController.text.trim().isEmpty ? 'Dubai, UAE' : _locationController.text.trim(),
+          'location': selectedLoc,
           'venue': _venueController.text.trim(),
           'price': 'Free Entry',
           'max_attendees': parsedCapacity,
@@ -474,7 +517,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           category: _selectedCategory ?? (_categories.isNotEmpty ? _categories.first : 'Art Exhibition'),
           eventDate: eventDate,
           endDate: _endDateController.text.trim(),
-          location: _locationController.text.trim().isEmpty ? 'Dubai, UAE' : _locationController.text.trim(),
+          location: selectedLoc,
           venue: _venueController.text.trim(),
           isFree: true,
           price: 'Free Entry',
@@ -832,9 +875,18 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                             ),
                             const SizedBox(height: 12),
                             _buildLabel('Address/Location'),
-                            _buildTextField(
-                              controller: _locationController,
-                              hintText: 'UAE',
+                            _buildDropdownField(
+                              value: _selectedLocation ?? 'Dubai, UAE',
+                              hintText: 'Select location',
+                              items: _locations,
+                              onChanged: (val) {
+                                setState(() {
+                                  _selectedLocation = val;
+                                  if (val != null) {
+                                    _locationController.text = val;
+                                  }
+                                });
+                              },
                             ),
                           ],
                         ),
