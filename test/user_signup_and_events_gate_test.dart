@@ -154,6 +154,10 @@ void main() {
       expect(find.byIcon(Icons.people_outline_rounded), findsOneWidget);
       expect(find.byIcon(Icons.calendar_today_outlined), findsOneWidget);
       expect(find.byIcon(Icons.login), findsOneWidget);
+      expect(find.text('Home'), findsOneWidget);
+      expect(find.text('Artists'), findsOneWidget);
+      expect(find.text('Events'), findsOneWidget);
+      expect(find.text('Login'), findsOneWidget);
 
       // Now simulate logged in
       final storage = sl<StorageService>();
@@ -165,6 +169,10 @@ void main() {
       expect(find.byIcon(Icons.home_rounded), findsOneWidget);
       expect(find.byIcon(Icons.people_outline_rounded), findsOneWidget);
       expect(find.byIcon(Icons.calendar_today_outlined), findsOneWidget);
+      expect(find.text('Home'), findsOneWidget);
+      expect(find.text('Artists'), findsOneWidget);
+      expect(find.text('Events'), findsOneWidget);
+      expect(find.text('Login'), findsNothing);
       expect(find.byIcon(Icons.login), findsNothing);
     });
   });
