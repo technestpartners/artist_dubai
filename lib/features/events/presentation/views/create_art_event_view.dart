@@ -875,19 +875,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                             ),
                             const SizedBox(height: 12),
                             _buildLabel('Address/Location'),
-                            _buildDropdownField(
-                              value: _selectedLocation ?? 'Dubai, UAE',
-                              hintText: 'Select location',
-                              items: _locations,
-                              onChanged: (val) {
-                                setState(() {
-                                  _selectedLocation = val;
-                                  if (val != null) {
-                                    _locationController.text = val;
-                                  }
-                                });
-                              },
-                            ),
+                            _buildSearchableLocationField(),
                           ],
                         ),
                       ),
@@ -1233,6 +1221,169 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
         );
       }).toList(),
       onChanged: onChanged,
+    );
+  }
+
+  Widget _buildSearchableLocationField() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Autocomplete<String>(
+          optionsBuilder: (TextEditingValue textEditingValue) {
+            if (textEditingValue.text.isEmpty) {
+              return _locations;
+            }
+            return _locations.where((loc) =>
+                loc.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+          },
+          initialValue: TextEditingValue(text: _selectedLocation ?? 'Dubai, UAE'),
+          onSelected: (String selection) {
+            setState(() {
+              _selectedLocation = selection;
+              _locationController.text = selection;
+            });
+          },
+          optionsMaxHeight: 250,
+          optionsViewOpenDirection: OptionsViewOpenDirection.down,
+          fieldViewBuilder: (
+            BuildContext context,
+            TextEditingController fieldTextEditingController,
+            FocusNode fieldFocusNode,
+            VoidCallback onFieldSubmitted,
+          ) {
+            return TextFormField(
+              controller: fieldTextEditingController,
+              focusNode: fieldFocusNode,
+              style: const TextStyle(
+                fontSize: 14.5,
+                color: Color(0xFF0F172A),
+                fontWeight: FontWeight.w500,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Search or select location (e.g. Dubai, UAE)',
+                hintStyle: const TextStyle(
+                  fontSize: 13.5,
+                  color: Color(0xFF64748B),
+                  fontWeight: FontWeight.normal,
+                ),
+                suffixIcon: const Icon(
+                  Icons.search_rounded,
+                  color: Color(0xFF6A2777),
+                  size: 20,
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5),
+                ),
+              ),
+              onChanged: (val) {
+                _selectedLocation = val;
+                _locationController.text = val;
+              },
+            );
+          },
+          optionsViewBuilder: (
+            BuildContext context,
+            AutocompleteOnSelected<String> onSelected,
+            Iterable<String> options,
+          ) {
+            return Align(
+              alignment: Alignment.topLeft,
+              child: Material(
+                elevation: 6,
+                borderRadius: BorderRadius.circular(10),
+                color: Colors.white,
+                shadowColor: Colors.black.withValues(alpha: 0.25),
+                child: Container(
+                  width: constraints.maxWidth,
+                  constraints: const BoxConstraints(maxHeight: 250),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    shrinkWrap: true,
+                    itemCount: options.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      final option = options.elementAt(index);
+                      final isSelected = option == _selectedLocation;
+                      return InkWell(
+                        onTap: () => onSelected(option),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 11,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? const Color(0xFFF5EBF7)
+                                : Colors.transparent,
+                            border: index < options.length - 1
+                                ? const Border(
+                                    bottom: BorderSide(
+                                      color: Color(0xFFF1F5F9),
+                                      width: 1,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.location_on_outlined,
+                                size: 16,
+                                color: isSelected
+                                    ? const Color(0xFF6A2777)
+                                    : const Color(0xFF64748B),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  option,
+                                  style: TextStyle(
+                                    fontSize: 13.5,
+                                    color: isSelected
+                                        ? const Color(0xFF6A2777)
+                                        : const Color(0xFF1E293B),
+                                    fontWeight: isSelected
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              if (isSelected)
+                                const Icon(
+                                  Icons.check_rounded,
+                                  size: 16,
+                                  color: Color(0xFF6A2777),
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
