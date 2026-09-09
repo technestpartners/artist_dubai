@@ -49,6 +49,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   StreamSubscription<List<CategoryInfo>>? _categoriesSub;
   StreamSubscription<List<ExperienceLevelModel>>? _experienceLevelsSub;
   StreamSubscription<List<LocationModel>>? _locationsSub;
+  final Set<String> _togglingEventIds = {};
+  Timer? _periodicSyncTimer;
   int _masterSubTab = 0; // 0 = Categories, 1 = Experience Levels, 2 = Locations
 
   Future<void> _pickAndUploadImageForField(TextEditingController controller, StateSetter setModalState) async {
@@ -74,7 +76,17 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     super.initState();
     _loadAllData();
     _subscribeLiveStreams();
+    if (!_isTesting) {
+      _periodicSyncTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+        if (mounted && _togglingEventIds.isEmpty) {
+          _loadAllData();
+        }
+      });
+    }
   }
+
+  bool get _isTesting =>
+      WidgetsBinding.instance.runtimeType.toString().contains('Test');
 
   void _subscribeLiveStreams() {
     final liveSync = sl<LiveSyncService>();
@@ -117,6 +129,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
 
   @override
   void dispose() {
+    _periodicSyncTimer?.cancel();
     _artistsSub?.cancel();
     _eventsSub?.cancel();
     _bookingsSub?.cancel();
@@ -1532,7 +1545,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (context, index) {
               final ev = _events[index];
-              final isActive = ev.isActive;
+              final isActive = ev.isActive && ev.status.toLowerCase().trim() != 'cancelled' && ev.status.toLowerCase().trim() != 'inactive';
               return _buildListItemCard(
                 title: ev.title,
                 subtitle: '${ev.formattedDate.isNotEmpty ? ev.formattedDate : ev.dateTime} - ${ev.location}',
@@ -1564,7 +1577,11 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   }
 
   Future<void> _toggleEventStatus(ArtEventModel ev, int index) async {
-    final newActive = !ev.isActive;
+    if (_togglingEventIds.contains(ev.id)) return;
+    _togglingEventIds.add(ev.id);
+
+    final isCurrentlyActive = ev.isActive && ev.status.toLowerCase().trim() != 'cancelled' && ev.status.toLowerCase().trim() != 'inactive';
+    final newActive = !isCurrentlyActive;
     final newStatus = newActive ? 'active' : 'inactive';
     final updated = ev.copyWith(isActive: newActive, status: newStatus);
 
@@ -1572,11 +1589,31 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       _events[index] = updated;
     });
 
-    await sl<ApiService>().updateEvent({
+    sl<LiveSyncService>().notifyEventsChanged(_events);
+
+    final success = await sl<ApiService>().updateEvent({
       'id': int.tryParse(ev.id) ?? ev.id,
       'status': newStatus,
       'is_active': newActive ? 1 : 0,
     });
+
+    _togglingEventIds.remove(ev.id);
+
+    if (!success && mounted) {
+      setState(() {
+        _events[index] = ev;
+      });
+      sl<LiveSyncService>().notifyEventsChanged(_events);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update "${ev.title}". Please try again.'),
+          backgroundColor: const Color(0xFFDC2626),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1644,7 +1681,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (context, index) {
               final ev = _events[index];
-              final isActive = ev.isActive;
+              final isActive = ev.isActive && ev.status.toLowerCase().trim() != 'cancelled' && ev.status.toLowerCase().trim() != 'inactive';
               return _buildListItemCard(
                 title: ev.title,
                 subtitle: '${ev.formattedDate.isNotEmpty ? ev.formattedDate : ev.dateTime} - ${ev.locationCity ?? ev.location}',
@@ -1683,7 +1720,11 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   }
 
   Future<void> _toggleCalendarEventStatus(ArtEventModel ev, int index) async {
-    final newActive = !ev.isActive;
+    if (_togglingEventIds.contains(ev.id)) return;
+    _togglingEventIds.add(ev.id);
+
+    final isCurrentlyActive = ev.isActive && ev.status.toLowerCase().trim() != 'cancelled' && ev.status.toLowerCase().trim() != 'inactive';
+    final newActive = !isCurrentlyActive;
     final newStatus = newActive ? 'active' : 'cancelled';
     final updated = ev.copyWith(isActive: newActive, status: newStatus);
 
@@ -1691,11 +1732,32 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       _events[index] = updated;
     });
 
-    await sl<ApiService>().updateEvent({
+    // Notify live streams optimistically so all tabs and screens reflect immediately
+    sl<LiveSyncService>().notifyEventsChanged(_events);
+
+    final success = await sl<ApiService>().updateEvent({
       'id': int.tryParse(ev.id) ?? ev.id,
       'status': newStatus,
       'is_active': newActive ? 1 : 0,
     });
+
+    _togglingEventIds.remove(ev.id);
+
+    if (!success && mounted) {
+      setState(() {
+        _events[index] = ev;
+      });
+      sl<LiveSyncService>().notifyEventsChanged(_events);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update "${ev.title}". Please try again.'),
+          backgroundColor: const Color(0xFFDC2626),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

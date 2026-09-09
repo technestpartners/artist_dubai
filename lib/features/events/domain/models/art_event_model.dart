@@ -115,7 +115,10 @@ class ArtEventModel {
       imageUrl: imageUrl ?? this.imageUrl,
       galleries: galleries ?? this.galleries,
       status: status ?? this.status,
-      isActive: isActive ?? this.isActive,
+      isActive: isActive ??
+          (status != null
+              ? (status.trim().toLowerCase() == 'active' || status.trim().toLowerCase() == 'scheduled')
+              : this.isActive),
     );
   }
 
@@ -179,8 +182,25 @@ class ArtEventModel {
       tags: parsedTags,
       imageUrl: json['image_url'] as String? ?? json['imageUrl'] as String?,
       galleries: parsedGalleries,
-      status: json['status'] as String? ?? 'active',
-      isActive: json['is_active'] == 1 || json['is_active'] == true || json['is_active'] == '1' || json['status'] == 'active' || json['status'] == null,
+      status: (json['status'] as String? ?? 'active').trim().toLowerCase(),
+      isActive: () {
+        final rawStatus = (json['status'] ?? '').toString().trim().toLowerCase();
+        final rawActive = json['is_active'];
+        final isExplicitlyInactive = rawActive == 0 ||
+            rawActive == false ||
+            rawActive == '0' ||
+            rawStatus == 'cancelled' ||
+            rawStatus == 'inactive' ||
+            rawStatus == 'draft' ||
+            rawStatus == 'deleted';
+        if (isExplicitlyInactive) return false;
+        return rawActive == 1 ||
+            rawActive == true ||
+            rawActive == '1' ||
+            rawStatus == 'active' ||
+            rawStatus == 'scheduled' ||
+            rawStatus.isEmpty;
+      }(),
     );
   }
 

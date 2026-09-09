@@ -22,7 +22,7 @@ class EventsView extends StatefulWidget {
   State<EventsView> createState() => _EventsViewState();
 }
 
-class _EventsViewState extends State<EventsView> {
+class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
   late int _selectedTabIndex;
   final TextEditingController _searchController = TextEditingController();
   String _selectedCategory = 'All Categories';
@@ -36,13 +36,22 @@ class _EventsViewState extends State<EventsView> {
   StreamSubscription<Map<String, dynamic>>? _favSub;
   StreamSubscription<List<CategoryInfo>>? _catSub;
   StreamSubscription<bool>? _authSub;
+  Timer? _periodicSyncTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _selectedTabIndex = widget.initialTabIndex;
     _fetchEvents();
     _fetchCategories();
+    if (!_isTesting) {
+      _periodicSyncTimer = Timer.periodic(const Duration(seconds: 8), (_) {
+        if (mounted) {
+          _fetchEvents(forceRefresh: true);
+        }
+      });
+    }
     _authSub = sl<LiveSyncService>().authStream.listen((isLoggedIn) {
       if (mounted) {
         setState(() {});
@@ -75,6 +84,13 @@ class _EventsViewState extends State<EventsView> {
         });
       }
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      _fetchEvents(forceRefresh: true);
+    }
   }
 
   void _hideCategoryOverlay() {
@@ -189,13 +205,20 @@ class _EventsViewState extends State<EventsView> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _periodicSyncTimer?.cancel();
     _authSub?.cancel();
     _eventsSub?.cancel();
     _favSub?.cancel();
     _catSub?.cancel();
     _searchController.dispose();
+    _categoryOverlayEntry?.remove();
+    _categoryOverlayEntry = null;
     super.dispose();
   }
+
+  bool get _isTesting =>
+      WidgetsBinding.instance.runtimeType.toString().contains('Test');
 
   bool get _isLoggedIn {
     try {
