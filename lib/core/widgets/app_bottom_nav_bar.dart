@@ -17,8 +17,6 @@ class AppBottomNavBar extends StatefulWidget {
 }
 
 class _AppBottomNavBarState extends State<AppBottomNavBar> {
-  // Deep rich royal purple for floating capsule
-  static const Color _barBg = Color(0xFF52116E);
   StreamSubscription<bool>? _authSub;
 
   bool get _isLoggedIn {
@@ -44,6 +42,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
   }
 
   void _onTabSelected(BuildContext context, int index) {
+    if (widget.currentIndex == index) return;
     switch (index) {
       case 0:
         context.go(RouteNames.home);
@@ -69,7 +68,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
     required VoidCallback onTap,
   }) {
     final isSelected = widget.currentIndex == index;
-    final color = isSelected ? Colors.white : Colors.white.withValues(alpha: 0.75);
+    final color = isSelected ? Colors.white : Colors.white.withValues(alpha: 0.72);
 
     return Expanded(
       child: Center(
@@ -79,18 +78,30 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
             color: Colors.transparent,
             child: InkWell(
               onTap: onTap,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(16),
               splashColor: Colors.white.withValues(alpha: 0.15),
               highlightColor: Colors.transparent,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeInOut,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                constraints: const BoxConstraints(
+                  minWidth: 50,
+                  maxWidth: 68,
+                  minHeight: 46,
+                  maxHeight: 48,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? Colors.white.withValues(alpha: 0.20)
                       : Colors.transparent,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(16),
+                  border: isSelected
+                      ? Border.all(
+                          color: Colors.white.withValues(alpha: 0.28),
+                          width: 1.0,
+                        )
+                      : null,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -99,7 +110,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                     Icon(
                       isSelected ? selectedIcon : unselectedIcon,
                       color: color,
-                      size: 21,
+                      size: 20,
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -109,7 +120,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: color,
-                        fontSize: 11,
+                        fontSize: 10.5,
                         fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                         letterSpacing: 0.1,
                       ),
@@ -132,37 +143,44 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
     return SafeArea(
       top: false,
       child: Container(
-        height: 88,
+        height: 90,
         padding: const EdgeInsets.only(
           left: 20.0,
           right: 20.0,
-          bottom: 18.0,
-          top: 4.0,
+          bottom: 20.0,
+          top: 6.0,
         ),
         child: Center(
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxWidth: rh.isWide ? 500.0 : double.infinity,
+              maxWidth: rh.isWide ? 480.0 : double.infinity,
             ),
             child: Container(
               height: 64,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
-                color: _barBg,
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF3E0A58),
+                    Color(0xFF240436),
+                  ],
+                ),
                 borderRadius: BorderRadius.circular(32),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.18),
+                  color: Colors.white.withValues(alpha: 0.26),
                   width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.38),
-                    offset: const Offset(0, 6),
-                    blurRadius: 20,
+                    color: Colors.black.withValues(alpha: 0.50),
+                    offset: const Offset(0, 8),
+                    blurRadius: 24,
                     spreadRadius: 0,
                   ),
                   BoxShadow(
-                    color: const Color(0xFF6B1C9B).withValues(alpha: 0.25),
+                    color: const Color(0xFF7B1FA2).withValues(alpha: 0.25),
                     offset: const Offset(0, 2),
                     blurRadius: 10,
                     spreadRadius: -1,

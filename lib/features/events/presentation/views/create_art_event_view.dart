@@ -841,47 +841,6 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                       ),
                       const SizedBox(height: 14),
 
-                      // Pricing & Capacity Card
-                      _buildCardSection(
-                        title: 'Pricing & Capacity',
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: Checkbox(
-                                    value: true,
-                                    activeColor: const Color(0xFF2563EB),
-                                    onChanged: (val) {},
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                const Expanded(
-                                  child: Text(
-                                    'This is a free event',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF1E293B),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            _buildLabel('Max Attendees (Optional)'),
-                            _buildTextField(
-                              controller: _maxTicketsController,
-                              hintText: 'Leave empty for unlimited',
-                              keyboardType: TextInputType.number,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
 
                       // Additional Details Card
                       _buildCardSection(
