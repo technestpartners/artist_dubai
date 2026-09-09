@@ -365,7 +365,7 @@ class _SettingsViewState extends State<SettingsView> {
                       Text('Your artist profile (if any)', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
                       Text('All your artwork images', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
                       Text('Your account information', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
-                      Text('All your bookings and event history', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
+                      Text('All your activity and event history', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
                       Text('Any saved preferences', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
                       Text('Your liked artists and galleries', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
                     ],
@@ -727,7 +727,7 @@ class _SettingsViewState extends State<SettingsView> {
                                     const Padding(
                                       padding: EdgeInsets.symmetric(horizontal: 16),
                                       child: Text(
-                                        'Create your artist profile to be discoverable on the platform and receive booking requests.',
+                                        'Create your artist profile to be discoverable on the platform and showcase your portfolio.',
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
                                           fontSize: 13,

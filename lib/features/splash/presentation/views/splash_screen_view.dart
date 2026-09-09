@@ -37,7 +37,8 @@ class _SplashScreenViewState extends State<SplashScreenView>
 
     // Pre-warm data caches in background during splash animation for instant 0ms loads
     try {
-      sl<LiveSyncService>().syncAllSilently();
+      sl<LiveSyncService>().syncAllSilently(forceRefresh: true);
+      sl<LiveSyncService>().startMultiDeviceSync();
     } catch (_) {}
 
     // Main entrance sequence (2.2 seconds)

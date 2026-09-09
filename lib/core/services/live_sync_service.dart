@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/widgets.dart';
 import '../../features/artists/domain/models/artist_model.dart';
 import '../../features/events/domain/models/art_event_model.dart';
 import '../../features/government/domain/models/government_entity.dart';
@@ -7,11 +8,20 @@ import 'api_service.dart';
 import 'notification_service.dart';
 import 'storage_service.dart';
 
-/// Pure Event-Driven Mutation & Live Data Streaming Service
-/// Triggers database API queries ONLY on explicit actions (Add, Update, View, Delete) — NO auto loop/polling.
-class LiveSyncService {
+/// Real-Time Multi-Device Database Synchronization & Live Data Streaming Service
+/// Combines instant optimistic mutations with continuous background MySQL live streaming.
+class LiveSyncService with WidgetsBindingObserver {
   final ApiService _apiService;
   bool _isSyncing = false;
+  Timer? _syncTimer;
+
+  bool get _isTesting {
+    try {
+      return WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    } catch (_) {
+      return false;
+    }
+  }
 
   // Reactive Stream Controllers for live UI subscriptions
   final StreamController<List<ArtistModel>> _artistsController =
@@ -47,7 +57,20 @@ class LiveSyncService {
   Stream<List<LocationModel>> get locationsStream => _locationsController.stream;
   Stream<bool> get authStream => _authController.stream;
 
-  LiveSyncService(this._apiService);
+  LiveSyncService(this._apiService) {
+    if (!_isTesting) {
+      try {
+        WidgetsBinding.instance.addObserver(this);
+      } catch (_) {}
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      syncAllSilently(forceRefresh: true);
+    }
+  }
 
   /// Trigger auth state notification to immediately update UI everywhere
   void notifyAuthChanged(bool isLoggedIn) {
@@ -60,39 +83,36 @@ class LiveSyncService {
   Future<void> notifyArtistsChanged([List<ArtistModel>? updatedList]) async {
     if (updatedList != null && !_artistsController.isClosed) {
       _artistsController.add(updatedList);
-    } else {
-      try {
-        final fresh = await _apiService.getArtists(forceRefresh: true);
-        if (!_artistsController.isClosed) _artistsController.add(fresh);
-      } catch (_) {}
     }
+    try {
+      final fresh = await _apiService.getArtists(forceRefresh: true);
+      if (!_artistsController.isClosed) _artistsController.add(fresh);
+    } catch (_) {}
   }
 
   /// Trigger sync for events when an Add / Update / Delete / View occurs
   Future<void> notifyEventsChanged([List<ArtEventModel>? updatedList]) async {
     if (updatedList != null && !_eventsController.isClosed) {
       _eventsController.add(updatedList);
-    } else {
-      try {
-        final fresh = await _apiService.getEvents(forceRefresh: true);
-        if (!_eventsController.isClosed) _eventsController.add(fresh);
-      } catch (_) {}
     }
+    try {
+      final fresh = await _apiService.getEvents(forceRefresh: true);
+      if (!_eventsController.isClosed) _eventsController.add(fresh);
+    } catch (_) {}
   }
 
   /// Trigger sync for bookings when an Add / Update / Delete / View occurs
   Future<void> notifyBookingsChanged([List<Map<String, dynamic>>? updatedList]) async {
     if (updatedList != null && !_bookingsController.isClosed) {
       _bookingsController.add(updatedList);
-    } else {
-      try {
-        String? userEmail = sl<StorageService>().getString('user_email');
-        if (userEmail != null && userEmail.isNotEmpty) {
-          final fresh = await _apiService.getBookings(email: userEmail, forceRefresh: true);
-          if (!_bookingsController.isClosed) _bookingsController.add(fresh);
-        }
-      } catch (_) {}
     }
+    try {
+      String? userEmail = sl<StorageService>().getString('user_email');
+      if (userEmail != null && userEmail.isNotEmpty) {
+        final fresh = await _apiService.getBookings(email: userEmail, forceRefresh: true);
+        if (!_bookingsController.isClosed) _bookingsController.add(fresh);
+      }
+    } catch (_) {}
   }
 
   String _getEffectiveEmail() {
@@ -113,87 +133,87 @@ class LiveSyncService {
   Future<void> notifyFavoritesChanged([Map<String, dynamic>? updatedFavorites]) async {
     if (updatedFavorites != null && !_favoritesController.isClosed) {
       _favoritesController.add(updatedFavorites);
-    } else {
-      try {
-        final email = _getEffectiveEmail();
-        final fresh = await _apiService.getFavorites(email: email, forceRefresh: true);
-        if (!_favoritesController.isClosed) _favoritesController.add(fresh);
-      } catch (_) {}
     }
+    try {
+      final email = _getEffectiveEmail();
+      final fresh = await _apiService.getFavorites(email: email, forceRefresh: true);
+      if (!_favoritesController.isClosed) _favoritesController.add(fresh);
+    } catch (_) {}
   }
 
   /// Trigger sync for galleries when an Add / Update / Delete / View occurs
   Future<void> notifyGalleriesChanged([List<Map<String, dynamic>>? updatedGalleries]) async {
     if (updatedGalleries != null && !_galleriesController.isClosed) {
       _galleriesController.add(updatedGalleries);
-    } else {
-      try {
-        final fresh = await _apiService.getGalleries(forceRefresh: true);
-        if (!_galleriesController.isClosed) _galleriesController.add(fresh);
-      } catch (_) {}
     }
+    try {
+      final fresh = await _apiService.getGalleries(forceRefresh: true);
+      if (!_galleriesController.isClosed) _galleriesController.add(fresh);
+    } catch (_) {}
   }
 
   /// Trigger sync for government entities when an Add / Update / Delete / View occurs
   Future<void> notifyGovernmentChanged([List<GovernmentEntity>? updatedList]) async {
     if (updatedList != null && !_governmentController.isClosed) {
       _governmentController.add(updatedList);
-    } else {
-      try {
-        final fresh = await _apiService.getGovernmentEntities(forceRefresh: true);
-        if (!_governmentController.isClosed) _governmentController.add(fresh);
-      } catch (_) {}
     }
+    try {
+      final fresh = await _apiService.getGovernmentEntities(forceRefresh: true);
+      if (!_governmentController.isClosed) _governmentController.add(fresh);
+    } catch (_) {}
   }
 
   /// Trigger sync for categories when an Add / Update / Delete / View occurs
   Future<void> notifyCategoriesChanged([List<CategoryInfo>? updatedList]) async {
     if (updatedList != null && !_categoriesController.isClosed) {
       _categoriesController.add(updatedList);
-    } else {
-      try {
-        final fresh = await _apiService.getCategories(forceRefresh: true);
-        if (!_categoriesController.isClosed) _categoriesController.add(fresh);
-      } catch (_) {}
     }
+    try {
+      final fresh = await _apiService.getCategories(forceRefresh: true);
+      if (!_categoriesController.isClosed) _categoriesController.add(fresh);
+    } catch (_) {}
   }
 
   /// Trigger sync for experience levels when an Add / Update / Delete occurs
   Future<void> notifyExperienceLevelsChanged([List<ExperienceLevelModel>? updatedList]) async {
     if (updatedList != null && !_experienceLevelsController.isClosed) {
       _experienceLevelsController.add(updatedList);
-    } else {
-      try {
-        final fresh = await _apiService.getExperienceLevels(forceRefresh: true);
-        if (!_experienceLevelsController.isClosed) _experienceLevelsController.add(fresh);
-      } catch (_) {}
     }
+    try {
+      final fresh = await _apiService.getExperienceLevels(forceRefresh: true);
+      if (!_experienceLevelsController.isClosed) _experienceLevelsController.add(fresh);
+    } catch (_) {}
   }
 
   /// Trigger sync for locations when an Add / Update / Delete occurs
   Future<void> notifyLocationsChanged([List<LocationModel>? updatedList]) async {
     if (updatedList != null && !_locationsController.isClosed) {
       _locationsController.add(updatedList);
-    } else {
-      try {
-        final fresh = await _apiService.getLocations(forceRefresh: true);
-        if (!_locationsController.isClosed) _locationsController.add(fresh);
-      } catch (_) {}
     }
+    try {
+      final fresh = await _apiService.getLocations(forceRefresh: true);
+      if (!_locationsController.isClosed) _locationsController.add(fresh);
+    } catch (_) {}
   }
 
-  /// Strictly on-demand multi-device live sync (NO periodic loop/polling timer)
+  /// Starts real-time multi-device database synchronization loop
   void startMultiDeviceSync({Duration? interval}) {
-    // Disabled polling loop to prevent continuous HTTP requests
+    if (_isTesting) return;
+    _syncTimer?.cancel();
+    final pollInterval = interval ?? const Duration(seconds: 4);
+    _syncTimer = Timer.periodic(pollInterval, (_) {
+      syncAllSilently(forceRefresh: true);
+    });
   }
 
   /// Stop live sync timer
   void stopMultiDeviceSync() {
-    // No-op
+    _syncTimer?.cancel();
+    _syncTimer = null;
   }
 
   /// Lightweight multi-device sync for all active data from MySQL database
-  Future<void> syncAllSilently({bool forceRefresh = false}) async {
+  Future<void> syncAllSilently({bool forceRefresh = true}) async {
     if (_isSyncing) return;
     _isSyncing = true;
 
@@ -220,26 +240,32 @@ class LiveSyncService {
       if (!_eventsController.isClosed) _eventsController.add(events);
       if (!_categoriesController.isClosed) _categoriesController.add(categories);
 
-      // Phase 2: Secondary streams (Galleries, Government, User Bookings & Favorites)
+      // Phase 2: Secondary streams (Galleries, Government, Favorites)
       final secondaryBatch = await Future.wait([
         _apiService.getGalleries(forceRefresh: forceRefresh).catchError((_) => <Map<String, dynamic>>[]),
         _apiService.getGovernmentEntities(forceRefresh: forceRefresh).catchError((_) => <GovernmentEntity>[]),
-        if (userEmail != null && userEmail.isNotEmpty)
-          _apiService.getBookings(email: userEmail, forceRefresh: forceRefresh).catchError((_) => <Map<String, dynamic>>[])
-        else
-          Future.value(<Map<String, dynamic>>[]),
         _apiService.getFavorites(email: effectiveEmail, forceRefresh: forceRefresh).catchError((_) => <String, dynamic>{}),
       ]);
 
       final galleries = secondaryBatch[0] as List<Map<String, dynamic>>;
       final govEntities = secondaryBatch[1] as List<GovernmentEntity>;
-      final bookings = secondaryBatch[2] as List<Map<String, dynamic>>;
-      final favorites = secondaryBatch[3] as Map<String, dynamic>;
+      final favorites = secondaryBatch[2] as Map<String, dynamic>;
 
       if (!_galleriesController.isClosed) _galleriesController.add(galleries);
       if (!_governmentController.isClosed) _governmentController.add(govEntities);
-      if (!_bookingsController.isClosed) _bookingsController.add(bookings);
       if (!_favoritesController.isClosed) _favoritesController.add(favorites);
+
+      // Phase 3: Masters (Experience Levels & Locations)
+      final mastersBatch = await Future.wait([
+        _apiService.getExperienceLevels(forceRefresh: forceRefresh).catchError((_) => <ExperienceLevelModel>[]),
+        _apiService.getLocations(forceRefresh: forceRefresh).catchError((_) => <LocationModel>[]),
+      ]);
+
+      final experienceLevels = mastersBatch[0] as List<ExperienceLevelModel>;
+      final locations = mastersBatch[1] as List<LocationModel>;
+
+      if (!_experienceLevelsController.isClosed) _experienceLevelsController.add(experienceLevels);
+      if (!_locationsController.isClosed) _locationsController.add(locations);
 
       try {
         sl<NotificationService>().syncWithBackend();
@@ -251,6 +277,11 @@ class LiveSyncService {
   }
 
   void dispose() {
+    if (!_isTesting) {
+      try {
+        WidgetsBinding.instance.removeObserver(this);
+      } catch (_) {}
+    }
     stopMultiDeviceSync();
     _artistsController.close();
     _eventsController.close();

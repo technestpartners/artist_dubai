@@ -1,7 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'app/app.dart';
 import 'core/di/injection_container.dart';
+import 'core/services/live_sync_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +23,9 @@ void main() async {
 
   // Initialize Dependency Injection
   await initDependencyInjection();
+
+  // Start Real-Time Multi-Device Database Live Sync
+  sl<LiveSyncService>().startMultiDeviceSync();
 
   // Run Root Application
   runApp(const ArtistDubaiApp());
