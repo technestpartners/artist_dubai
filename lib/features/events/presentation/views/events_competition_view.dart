@@ -5,6 +5,7 @@ import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
+import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
@@ -20,6 +21,7 @@ class EventsCompetitionView extends StatefulWidget {
 class _EventsCompetitionViewState extends State<EventsCompetitionView> {
   List<Map<String, dynamic>> _competitions = [];
   StreamSubscription<List<ArtEventModel>>? _compSub;
+  StreamSubscription<bool>? _authSub;
   bool _isLoading = true;
 
   static const Color _screenBg = Color(0xFF651B8A);
@@ -28,6 +30,14 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
   static const Color _closedBadge = Color(0xFFEF4444);
   static const Color _upcomingBadge = Color(0xFFF59E0B);
   static const Color _purpleLight = Color(0xFF7B3FA0);
+
+  bool get _isLoggedIn {
+    try {
+      return sl<StorageService>().getBool('is_logged_in') ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
 
   @override
   void initState() {
@@ -38,6 +48,14 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
       _isLoading = false;
     }
     _fetchCompetitions();
+    _authSub = sl<LiveSyncService>().authStream.listen((isLoggedIn) {
+      if (mounted) {
+        setState(() {});
+        if (isLoggedIn) {
+          _fetchCompetitions(forceRefresh: true);
+        }
+      }
+    });
     _compSub = sl<LiveSyncService>().eventsStream.listen((_) {
       _fetchCompetitions(forceRefresh: true);
     });
@@ -45,6 +63,7 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
 
   @override
   void dispose() {
+    _authSub?.cancel();
     _compSub?.cancel();
     super.dispose();
   }
@@ -178,8 +197,10 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                   ),
                 ),
 
-                // 2. Loading State OR Empty State OR Main Announcement List
-                if (_isLoading && _competitions.isEmpty) ...[
+                // 2. Auth Gate OR Loading State OR Empty State OR Main Announcement List
+                if (!_isLoggedIn) ...[
+                  _buildAuthGate(context),
+                ] else if (_isLoading && _competitions.isEmpty) ...[
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 48.0),
                     child: Center(
@@ -672,6 +693,158 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
       child: Text(
         title,
         style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+
+  Widget _buildAuthGate(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(top: 8, bottom: 30),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 68,
+            height: 68,
+            decoration: BoxDecoration(
+              color: const Color(0xFF651B8A).withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.emoji_events_rounded,
+                size: 34,
+                color: Color(0xFF651B8A),
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          const Text(
+            'Explore Art Competitions',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF1E293B),
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Log in or sign up with your email to discover open calls, art competitions, grants, and opportunities across Dubai.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13.5,
+              height: 1.45,
+              color: Color(0xFF64748B),
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF651B8A),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () async {
+                final loggedIn = await context.push(RouteNames.register, extra: 'user');
+                if (loggedIn == true || _isLoggedIn) {
+                  if (mounted) setState(() {});
+                }
+              },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.person_add_outlined, size: 18),
+                  SizedBox(width: 8),
+                  Text(
+                    'Sign Up as Art Lover (Free Access)',
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF651B8A),
+                side: const BorderSide(color: Color(0xFF651B8A), width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () async {
+                final loggedIn = await context.push(RouteNames.login);
+                if (loggedIn == true || _isLoggedIn) {
+                  if (mounted) setState(() {});
+                }
+              },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.login_rounded, size: 18),
+                  SizedBox(width: 8),
+                  Text(
+                    'Already have an account? Sign In',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.lock_outline_rounded, size: 16, color: Color(0xFF94A3B8)),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Access is free. Simply sign in so we can provide you with exhibition and competition updates.',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

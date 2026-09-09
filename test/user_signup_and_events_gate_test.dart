@@ -8,6 +8,8 @@ import 'package:artist_dubai/core/services/storage_service.dart';
 import 'package:artist_dubai/core/services/live_sync_service.dart';
 import 'package:artist_dubai/features/auth/presentation/views/register_view.dart';
 import 'package:artist_dubai/features/events/presentation/views/events_view.dart';
+import 'package:artist_dubai/features/events/presentation/views/event_photos_view.dart';
+import 'package:artist_dubai/features/events/presentation/views/events_competition_view.dart';
 import 'package:artist_dubai/features/galleries/presentation/views/galleries_view.dart';
 
 class _TestHttpOverrides extends HttpOverrides {}
@@ -87,6 +89,48 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Explore Dubai Galleries'), findsOneWidget);
+      expect(find.text('Sign Up as Art Lover (Free Access)'), findsOneWidget);
+      expect(find.text('Already have an account? Sign In'), findsOneWidget);
+    });
+
+    testWidgets('EventPhotosView shows auth gate when user is not logged in', (tester) async {
+      SharedPreferences.setMockInitialValues({'is_logged_in': false});
+      await sl.reset();
+      await initDependencyInjection();
+
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: EventPhotosView(),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Explore Dubai Event Photos'), findsOneWidget);
+      expect(find.text('Sign Up as Art Lover (Free Access)'), findsOneWidget);
+      expect(find.text('Already have an account? Sign In'), findsOneWidget);
+    });
+
+    testWidgets('EventsCompetitionView shows auth gate when user is not logged in', (tester) async {
+      SharedPreferences.setMockInitialValues({'is_logged_in': false});
+      await sl.reset();
+      await initDependencyInjection();
+
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: EventsCompetitionView(),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Explore Art Competitions'), findsOneWidget);
       expect(find.text('Sign Up as Art Lover (Free Access)'), findsOneWidget);
       expect(find.text('Already have an account? Sign In'), findsOneWidget);
     });

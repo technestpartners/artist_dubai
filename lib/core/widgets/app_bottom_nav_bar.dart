@@ -17,7 +17,7 @@ class AppBottomNavBar extends StatefulWidget {
 }
 
 class _AppBottomNavBarState extends State<AppBottomNavBar> {
-  static const Color _barBg = Color(0xFF531666);
+  static const Color _barBg = Color(0xFF5E127E);
   StreamSubscription<bool>? _authSub;
 
   bool get _isLoggedIn {
@@ -61,84 +61,138 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
     }
   }
 
+  Widget _buildNavItem({
+    required BuildContext context,
+    required int index,
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    String? tooltip,
+  }) {
+    final isSelected = widget.currentIndex == index;
+    final color = isSelected ? Colors.white : Colors.white.withValues(alpha: 0.72);
+
+    return Tooltip(
+      message: tooltip ?? label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          splashColor: Colors.white.withValues(alpha: 0.15),
+          highlightColor: Colors.transparent,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? Colors.white.withValues(alpha: 0.20)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  color: color,
+                  size: 22,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 11.5,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    letterSpacing: 0.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final rh = ResponsiveHelper.of(context);
-    final barHeight = rh.bottomNavHeight;
-    final iconSize = rh.bottomNavIconSize;
-    final eventsIconSize = rh.isWide ? iconSize - 1 : 24.0;
-    final minConstraint = rh.isWide ? 60.0 : 54.0;
     final loggedIn = _isLoggedIn;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: _barBg,
-        border: Border(
-          top: BorderSide(
-            color: Colors.white.withValues(alpha: 0.18),
-            width: 1.0,
+    return SafeArea(
+      top: false,
+      child: SizedBox(
+        height: 76,
+        child: Padding(
+          padding: const EdgeInsets.only(
+            left: 16.0,
+            right: 16.0,
+            bottom: 8.0,
+            top: 4.0,
           ),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            offset: const Offset(0, -2),
-            blurRadius: 8,
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: barHeight,
           child: Center(
             child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
+              constraints: BoxConstraints(
+                maxWidth: rh.isWide ? 520.0 : double.infinity,
+              ),
+              child: Container(
+                height: 64,
+              decoration: BoxDecoration(
+                color: _barBg,
+                borderRadius: BorderRadius.circular(32),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.25),
+                    offset: const Offset(0, 4),
+                    blurRadius: 16,
+                  ),
+                ],
+              ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: BoxConstraints(minWidth: minConstraint, minHeight: minConstraint),
-                    icon: Icon(
-                      widget.currentIndex == 0 ? Icons.home_rounded : Icons.home_outlined,
-                      color: widget.currentIndex == 0 ? Colors.white : Colors.white70,
-                      size: iconSize,
-                    ),
-                    onPressed: () => _onTabSelected(context, 0),
+                  _buildNavItem(
+                    context: context,
+                    index: 0,
+                    icon: widget.currentIndex == 0
+                        ? Icons.home_rounded
+                        : Icons.home_outlined,
+                    label: 'Home',
+                    onTap: () => _onTabSelected(context, 0),
                   ),
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: BoxConstraints(minWidth: minConstraint, minHeight: minConstraint),
-                    icon: Icon(
-                      widget.currentIndex == 1 ? Icons.people_rounded : Icons.people_outline_rounded,
-                      color: widget.currentIndex == 1 ? Colors.white : Colors.white70,
-                      size: iconSize,
-                    ),
-                    onPressed: () => _onTabSelected(context, 1),
+                  _buildNavItem(
+                    context: context,
+                    index: 1,
+                    icon: widget.currentIndex == 1
+                        ? Icons.people_rounded
+                        : Icons.people_outline_rounded,
+                    label: 'Artists',
+                    onTap: () => _onTabSelected(context, 1),
                   ),
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: BoxConstraints(minWidth: minConstraint, minHeight: minConstraint),
-                    icon: Icon(
-                      widget.currentIndex == 2 ? Icons.calendar_month_rounded : Icons.calendar_today_outlined,
-                      color: widget.currentIndex == 2 ? Colors.white : Colors.white70,
-                      size: eventsIconSize,
-                    ),
-                    onPressed: () => _onTabSelected(context, 2),
+                  _buildNavItem(
+                    context: context,
+                    index: 2,
+                    icon: widget.currentIndex == 2
+                        ? Icons.calendar_month_rounded
+                        : Icons.calendar_today_outlined,
+                    label: 'Events',
+                    onTap: () => _onTabSelected(context, 2),
                   ),
                   if (!loggedIn)
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: BoxConstraints(minWidth: minConstraint, minHeight: minConstraint),
-                      icon: Icon(
-                        widget.currentIndex == 3 ? Icons.login_rounded : Icons.login,
-                        color: widget.currentIndex == 3 ? Colors.white : Colors.white70,
-                        size: iconSize,
-                      ),
+                    _buildNavItem(
+                      context: context,
+                      index: 3,
+                      icon: widget.currentIndex == 3
+                          ? Icons.login_rounded
+                          : Icons.login,
+                      label: 'Login',
                       tooltip: 'Log In / Sign Up',
-                      onPressed: () => _onTabSelected(context, 3),
+                      onTap: () => _onTabSelected(context, 3),
                     ),
                 ],
               ),
@@ -146,6 +200,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

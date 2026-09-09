@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
+import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
@@ -20,8 +23,17 @@ class EventPhotosView extends StatefulWidget {
 class _EventPhotosViewState extends State<EventPhotosView> {
   List<ArtEventModel> _eventsWithGalleries = [];
   bool _isLoading = true;
+  StreamSubscription<bool>? _authSub;
   StreamSubscription<List<ArtEventModel>>? _eventsSub;
   StreamSubscription<List<Map<String, dynamic>>>? _galleriesSub;
+
+  bool get _isLoggedIn {
+    try {
+      return sl<StorageService>().getBool('is_logged_in') ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
 
   @override
   void initState() {
@@ -32,6 +44,14 @@ class _EventPhotosViewState extends State<EventPhotosView> {
       _isLoading = false;
     }
     _fetchEventPhotos();
+    _authSub = sl<LiveSyncService>().authStream.listen((isLoggedIn) {
+      if (mounted) {
+        setState(() {});
+        if (isLoggedIn) {
+          _fetchEventPhotos(forceRefresh: true);
+        }
+      }
+    });
     _eventsSub = sl<LiveSyncService>().eventsStream.listen((_) {
       _fetchEventPhotos(forceRefresh: true);
     });
@@ -42,6 +62,7 @@ class _EventPhotosViewState extends State<EventPhotosView> {
 
   @override
   void dispose() {
+    _authSub?.cancel();
     _eventsSub?.cancel();
     _galleriesSub?.cancel();
     super.dispose();
@@ -234,8 +255,10 @@ class _EventPhotosViewState extends State<EventPhotosView> {
                 ),
               ),
 
-              // 2. Galleries Card List
-              if (_isLoading)
+              // 2. Galleries Card List or Auth Gate
+              if (!_isLoggedIn) ...[
+                _buildAuthGate(context),
+              ] else if (_isLoading)
                 const Center(
                   child: Padding(
                     padding: EdgeInsets.all(32.0),
@@ -340,6 +363,158 @@ class _EventPhotosViewState extends State<EventPhotosView> {
       ),
     ),
     bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
+    );
+  }
+
+  Widget _buildAuthGate(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(top: 8, bottom: 30),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 68,
+            height: 68,
+            decoration: BoxDecoration(
+              color: const Color(0xFF6B1C9B).withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.photo_library_rounded,
+                size: 34,
+                color: Color(0xFF6B1C9B),
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          const Text(
+            'Explore Dubai Event Photos',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF1E293B),
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Log in or sign up with your email to view high-resolution photo galleries, event highlights, and exhibition moments across Dubai.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13.5,
+              height: 1.45,
+              color: Color(0xFF64748B),
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6B1C9B),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () async {
+                final loggedIn = await context.push(RouteNames.register, extra: 'user');
+                if (loggedIn == true || _isLoggedIn) {
+                  if (mounted) setState(() {});
+                }
+              },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.person_add_outlined, size: 18),
+                  SizedBox(width: 8),
+                  Text(
+                    'Sign Up as Art Lover (Free Access)',
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF6B1C9B),
+                side: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () async {
+                final loggedIn = await context.push(RouteNames.login);
+                if (loggedIn == true || _isLoggedIn) {
+                  if (mounted) setState(() {});
+                }
+              },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.login_rounded, size: 18),
+                  SizedBox(width: 8),
+                  Text(
+                    'Already have an account? Sign In',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.lock_outline_rounded, size: 16, color: Color(0xFF94A3B8)),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Access is free. Simply sign in so we can provide you with gallery opening and exhibition updates.',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
