@@ -14,9 +14,6 @@ import 'package:artist_dubai/features/artists/presentation/views/create_category
 import 'package:artist_dubai/features/artists/presentation/views/explore_categories_view.dart';
 import 'package:artist_dubai/features/auth/presentation/views/login_view.dart';
 import 'package:artist_dubai/features/auth/presentation/views/register_view.dart';
-import 'package:artist_dubai/features/bookings/presentation/views/book_artist_view.dart';
-import 'package:artist_dubai/features/bookings/presentation/views/booking_requests_view.dart';
-import 'package:artist_dubai/features/bookings/presentation/views/bookings_view.dart';
 import 'package:artist_dubai/features/events/domain/models/art_event_model.dart';
 import 'package:artist_dubai/features/events/presentation/views/create_art_event_view.dart';
 import 'package:artist_dubai/features/events/presentation/views/event_detail_view.dart';
@@ -292,42 +289,6 @@ void main() {
 
           expect(tester.takeException(), isNull);
           expect(find.byType(GovernmentPortalView), findsOneWidget);
-        });
-
-        testWidgets('19. Book Artist Form View ($screenName)', (tester) async {
-          tester.view.physicalSize = screenSize;
-          tester.view.devicePixelRatio = 1.0;
-          addTearDown(tester.view.resetPhysicalSize);
-
-          await tester.pumpWidget(buildTestHost(const BookArtistView(artistName: 'Fatima Al Qasimi')));
-          await tester.pump(const Duration(milliseconds: 100));
-
-          expect(tester.takeException(), isNull);
-          expect(find.byType(BookArtistView), findsOneWidget);
-        });
-
-        testWidgets('20. My Bookings & Tickets View ($screenName)', (tester) async {
-          tester.view.physicalSize = screenSize;
-          tester.view.devicePixelRatio = 1.0;
-          addTearDown(tester.view.resetPhysicalSize);
-
-          await tester.pumpWidget(buildTestHost(const BookingsView()));
-          await tester.pump(const Duration(milliseconds: 100));
-
-          expect(tester.takeException(), isNull);
-          expect(find.byType(BookingsView), findsOneWidget);
-        });
-
-        testWidgets('21. Booking Requests & Attendees View ($screenName)', (tester) async {
-          tester.view.physicalSize = screenSize;
-          tester.view.devicePixelRatio = 1.0;
-          addTearDown(tester.view.resetPhysicalSize);
-
-          await tester.pumpWidget(buildTestHost(const BookingRequestsView()));
-          await tester.pump(const Duration(milliseconds: 100));
-
-          expect(tester.takeException(), isNull);
-          expect(find.byType(BookingRequestsView), findsOneWidget);
         });
 
         testWidgets('22. Favorites & Bookmarks Catalog ($screenName)', (tester) async {

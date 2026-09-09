@@ -218,11 +218,6 @@ class LiveSyncService with WidgetsBindingObserver {
     _isSyncing = true;
 
     try {
-      String? userEmail;
-      try {
-        userEmail = sl<StorageService>().getString('user_email');
-      } catch (_) {}
-
       final effectiveEmail = _getEffectiveEmail();
 
       // Phase 1: High-priority core streams (Artists, Events, Categories)

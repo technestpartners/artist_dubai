@@ -310,13 +310,15 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     String prefilledWebsite = widget.artist?.website ?? '';
     String prefilledInstagram = widget.artist?.instagram ?? '';
 
-    if (!_isEditMode) {
-      try {
-        final storage = sl<StorageService>();
-        if (prefilledName.isEmpty) prefilledName = storage.getString('user_name') ?? '';
-        if (prefilledEmail.isEmpty) prefilledEmail = storage.getString('user_email') ?? '';
-      } catch (_) {}
-    }
+    try {
+      final storage = sl<StorageService>();
+      final currentEmail = (storage.getString('user_email') ?? '').trim();
+      final currentName = (storage.getString('user_name') ?? '').trim();
+      if (!widget.fromAdmin && (prefilledEmail.isEmpty || prefilledEmail.toLowerCase() != currentEmail.toLowerCase())) {
+        if (currentName.isNotEmpty) prefilledName = currentName;
+        if (currentEmail.isNotEmpty) prefilledEmail = currentEmail;
+      }
+    } catch (_) {}
 
     _fullNameController = TextEditingController(text: prefilledName);
     _emailController = TextEditingController(text: prefilledEmail);
@@ -350,6 +352,22 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
 
   void _populateFromArtist(ArtistModel artist) {
     if (!mounted) return;
+    final storage = sl<StorageService>();
+    final currentEmail = (storage.getString('user_email') ?? '').trim().toLowerCase();
+
+    // Safety check: unless in admin mode, do not populate another user's artist profile
+    if (!widget.fromAdmin && currentEmail.isNotEmpty && artist.email.trim().toLowerCase() != currentEmail) {
+      setState(() {
+        _isEditMode = false;
+        _editingArtistId = null;
+        _existingAvatarUrl = null;
+        final currentName = storage.getString('user_name') ?? '';
+        if (currentName.isNotEmpty) _fullNameController.text = currentName;
+        if (currentEmail.isNotEmpty) _emailController.text = currentEmail;
+      });
+      return;
+    }
+
     setState(() {
       _isEditMode = true;
       _editingArtistId = artist.id;
@@ -404,15 +422,22 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
   }
 
   Future<void> _initEditProfile() async {
+    final storage = sl<StorageService>();
+    final currentEmail = (storage.getString('user_email') ?? '').trim().toLowerCase();
+
     if (widget.artist != null) {
-      _populateFromArtist(widget.artist!);
-      return;
+      if (widget.fromAdmin || currentEmail.isEmpty || widget.artist!.email.trim().toLowerCase() == currentEmail) {
+        _populateFromArtist(widget.artist!);
+        return;
+      }
     }
     if (widget.artistId != null && widget.artistId!.isNotEmpty) {
       try {
         final artist = await sl<ApiService>().getArtistDetails(widget.artistId!);
-        _populateFromArtist(artist);
-        return;
+        if (widget.fromAdmin || currentEmail.isEmpty || artist.email.trim().toLowerCase() == currentEmail) {
+          _populateFromArtist(artist);
+          return;
+        }
       } catch (_) {}
     }
 
@@ -421,8 +446,26 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
       final myArtist = await sl<ApiService>().getMyArtistProfile();
       if (myArtist != null && mounted) {
         _populateFromArtist(myArtist);
+        return;
       }
     } catch (_) {}
+
+    // Fallback: If user has no artist profile, ensure clean creation state
+    if (mounted && !widget.fromAdmin) {
+      setState(() {
+        _isEditMode = false;
+        _editingArtistId = null;
+        _existingAvatarUrl = null;
+        final currentName = storage.getString('user_name') ?? '';
+        final currentEmail = storage.getString('user_email') ?? '';
+        if (currentName.isNotEmpty && _fullNameController.text.isEmpty) {
+          _fullNameController.text = currentName;
+        }
+        if (currentEmail.isNotEmpty && _emailController.text.isEmpty) {
+          _emailController.text = currentEmail;
+        }
+      });
+    }
   }
 
   Future<void> _loadDynamicData() async {
@@ -1513,7 +1556,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: const Color(0xFFCBD5E1)),
                         ),
@@ -1567,8 +1610,8 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                       text: TextSpan(
                                         style: const TextStyle(
                                           fontSize: 13,
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF1E293B),
+                                          fontWeight: FontWeight.w600,
                                         ),
                                         children: [
                                           TextSpan(
@@ -1584,9 +1627,11 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                           TextSpan(
                                             text: 'Privacy Policy',
                                             style: const TextStyle(
-                                              color: Color(0xFFF3E8FF),
+                                              color: Color(0xFF6B1C9B),
+                                              fontWeight: FontWeight.bold,
                                               decoration:
                                                   TextDecoration.underline,
+                                              decorationColor: Color(0xFF6B1C9B),
                                             ),
                                             recognizer: TapGestureRecognizer()
                                               ..onTap = () {
@@ -1607,9 +1652,11 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                           TextSpan(
                                             text: 'Terms & Conditions',
                                             style: const TextStyle(
-                                              color: Color(0xFFF3E8FF),
+                                              color: Color(0xFF6B1C9B),
+                                              fontWeight: FontWeight.bold,
                                               decoration:
                                                   TextDecoration.underline,
+                                              decorationColor: Color(0xFF6B1C9B),
                                             ),
                                             recognizer: TapGestureRecognizer()
                                               ..onTap = () {
@@ -1629,7 +1676,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                               'By checking this box, you consent to the collection, processing, and storage of your personal data as described in our privacy policy. This includes your profile information, artwork images, and contact details which will be used to showcase your work on the Dubai Artist platform.',
                               style: TextStyle(
                                 fontSize: 11.5,
-                                color: Color(0xFFE2D6F5),
+                                color: Color(0xFF64748B),
                                 height: 1.4,
                               ),
                             ),

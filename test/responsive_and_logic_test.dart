@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:artist_dubai/app/app.dart';
 import 'package:artist_dubai/core/di/injection_container.dart';
 import 'package:artist_dubai/features/artists/presentation/views/explore_categories_view.dart';
-import 'package:artist_dubai/features/bookings/presentation/views/book_artist_view.dart';
 import 'package:artist_dubai/features/events/domain/models/art_event_model.dart';
 import 'package:artist_dubai/features/events/presentation/views/event_detail_view.dart';
 import 'package:artist_dubai/features/government/presentation/views/government_portal_view.dart';
@@ -88,21 +87,20 @@ void main() {
       expect(find.text('Dubai Culture & Arts Authority'), findsOneWidget);
     });
 
-    testWidgets('5. Book Artist View Form Input & Budget Dropdown Logic Test', (
-      WidgetTester tester,
-    ) async {
-      tester.view.physicalSize = const Size(800, 1600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      '5. ExploreCategoriesView renders search and categories',
+      (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(800, 1600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(
-        const MaterialApp(home: BookArtistView(artistName: 'Fatima Al Qasimi')),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          const MaterialApp(home: ExploreCategoriesView()),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Book an Artist'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
-      expect(find.text('Submit Booking Request'), findsOneWidget);
-    });
+        expect(find.text('Explore Categories'), findsOneWidget);
+      },
+    );
   });
 }

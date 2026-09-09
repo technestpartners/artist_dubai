@@ -16,7 +16,6 @@ enum AdminTab {
   events,
   calendar,
   galleries,
-  bookings,
   artCenters,
   government,
   masters,
@@ -36,7 +35,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   List<ArtEventModel> _events = [];
   List<Map<String, dynamic>> _galleries = [];
   List<Map<String, dynamic>> _artCenters = [];
-  List<Map<String, dynamic>> _bookings = [];
   List<GovernmentEntity> _govEntities = [];
   List<CategoryInfo> _categories = [];
   List<ExperienceLevelModel> _experienceLevels = [];
@@ -44,7 +42,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
 
   StreamSubscription<List<ArtistModel>>? _artistsSub;
   StreamSubscription<List<ArtEventModel>>? _eventsSub;
-  StreamSubscription<List<Map<String, dynamic>>>? _bookingsSub;
   StreamSubscription<List<GovernmentEntity>>? _govSub;
   StreamSubscription<List<CategoryInfo>>? _categoriesSub;
   StreamSubscription<List<ExperienceLevelModel>>? _experienceLevelsSub;
@@ -100,11 +97,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         setState(() => _events = list);
       }
     });
-    _bookingsSub = liveSync.bookingsStream.listen((list) {
-      if (mounted) {
-        setState(() => _bookings = list);
-      }
-    });
     _govSub = liveSync.governmentStream.listen((list) {
       if (mounted) {
         setState(() => _govEntities = list);
@@ -132,7 +124,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     _periodicSyncTimer?.cancel();
     _artistsSub?.cancel();
     _eventsSub?.cancel();
-    _bookingsSub?.cancel();
     _govSub?.cancel();
     _categoriesSub?.cancel();
     _experienceLevelsSub?.cancel();
@@ -146,7 +137,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         sl<ApiService>().getArtists(forceRefresh: true).catchError((_) => <ArtistModel>[]),
         sl<ApiService>().getEvents(forceRefresh: true).catchError((_) => <ArtEventModel>[]),
         sl<ApiService>().getGalleries(forceRefresh: true, isAdmin: true).catchError((_) => <Map<String, dynamic>>[]),
-        sl<ApiService>().getBookings(forceRefresh: true).catchError((_) => <Map<String, dynamic>>[]),
         sl<ApiService>().getGovernmentEntities(forceRefresh: true).catchError((_) => <GovernmentEntity>[]),
         sl<ApiService>().getCategories(type: 'all', forceRefresh: true).catchError((_) => <CategoryInfo>[]),
         sl<ApiService>().getExperienceLevels(forceRefresh: true).catchError((_) => <ExperienceLevelModel>[]),
@@ -212,11 +202,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           _events = results[1] as List<ArtEventModel>;
           _galleries = finalPhotoGalleries;
           _artCenters = artCenters;
-          _bookings = results[3] as List<Map<String, dynamic>>;
-          _govEntities = results[4] as List<GovernmentEntity>;
-          _categories = results[5] as List<CategoryInfo>;
-          _experienceLevels = results[6] as List<ExperienceLevelModel>;
-          _locations = results[7] as List<LocationModel>;
+          _govEntities = results[3] as List<GovernmentEntity>;
+          _categories = results[4] as List<CategoryInfo>;
+          _experienceLevels = results[5] as List<ExperienceLevelModel>;
+          _locations = results[6] as List<LocationModel>;
         });
       }
     } catch (_) {}
@@ -1160,11 +1149,11 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             const SizedBox(width: 12),
             Expanded(
               child: _buildMetricCard(
-                icon: Icons.confirmation_number_outlined,
-                count: '${_bookings.length}',
-                label: 'Bookings',
-                isSelected: _selectedTab == AdminTab.bookings,
-                onTap: () => setState(() => _selectedTab = AdminTab.bookings),
+                icon: Icons.business_outlined,
+                count: '${_artCenters.length}',
+                label: 'Art Centers',
+                isSelected: _selectedTab == AdminTab.artCenters,
+                onTap: () => setState(() => _selectedTab = AdminTab.artCenters),
               ),
             ),
           ],
@@ -1286,7 +1275,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 _buildTabButton(AdminTab.events, 'Events'),
                 _buildTabButton(AdminTab.calendar, 'Calendar'),
                 _buildTabButton(AdminTab.galleries, 'Galleries'),
-                _buildTabButton(AdminTab.bookings, 'Bookings'),
                 _buildTabButton(AdminTab.artCenters, 'Art Centers'),
                 _buildTabButton(AdminTab.government, 'Government'),
                 _buildTabButton(AdminTab.masters, 'Masters'),
@@ -1304,10 +1292,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   ],
                 ),
                 const SizedBox(height: 6),
-                // Row 2 (4 tabs)
+                // Row 2 (3 tabs)
                 Row(
                   children: [
-                    _buildTabButton(AdminTab.bookings, 'Bookings'),
                     _buildTabButton(AdminTab.artCenters, 'Art Centers'),
                     _buildTabButton(AdminTab.government, 'Government'),
                     _buildTabButton(AdminTab.masters, 'Masters'),
@@ -1371,8 +1358,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         return _buildCalendarTab();
       case AdminTab.galleries:
         return _buildGalleriesTab();
-      case AdminTab.bookings:
-        return _buildBookingsTab();
       case AdminTab.artCenters:
         return _buildArtCentersTab();
       case AdminTab.government:
@@ -1919,360 +1904,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     );
   }
 
-  // --- 5. Bookings Tab ---
-  Widget _buildBookingsTab() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              '${_bookings.length} bookings',
-              style: const TextStyle(
-                fontSize: 13.5,
-                color: Color(0xFF64748B),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6A2777),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              icon: const Icon(Icons.add, size: 14, color: Colors.white),
-              label: const Text('New booking', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
-              onPressed: _showCreateBookingDialog,
-            ),
-          ],
-        ),
-        const SizedBox(height: 14),
-        if (_bookings.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 32),
-            child: Center(
-              child: Text(
-                'No bookings registered yet.',
-                style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
-              ),
-            ),
-          )
-        else
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _bookings.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (context, index) {
-              final b = _bookings[index];
-              final eventTitle = (b['event_title'] ?? '').toString();
-              final userName = (b['full_name'] ?? b['artist_name'] ?? '').toString();
-              final status = (b['status'] ?? 'Confirmed').toString().trim();
-              final date = (b['event_date'] ?? b['created_at'] ?? '').toString();
-
-              final isPending = status.toLowerCase() == 'pending';
-              final isConfirmed = status.toLowerCase() == 'confirmed';
-              final isCompleted = status.toLowerCase() == 'completed';
-              final isCancelled = status.toLowerCase() == 'cancelled';
-
-              final title = eventTitle.isNotEmpty
-                  ? eventTitle
-                  : (userName.isNotEmpty ? userName : 'Booking #${b['id'] ?? (index + 1)}');
-              final subtitle = userName.isNotEmpty && eventTitle.isNotEmpty
-                  ? '$userName • $date'
-                  : (date.isNotEmpty ? date : 'Dubai, UAE');
-
-              return _buildListItemCard(
-                title: title,
-                subtitle: subtitle,
-                badgeText: status,
-                isPurpleBadge: isConfirmed,
-                isAmberBadge: isPending,
-                isGreenBadge: isCompleted,
-                isRedBadge: isCancelled,
-                onApprove: isPending ? () => _acceptBooking(b, index) : null,
-                onToggleStatus: () => _toggleBookingStatus(b, index),
-                onDelete: () {
-                  _confirmDelete(
-                    title: 'Delete Booking',
-                    message: 'Are you sure you want to delete this booking?',
-                    onConfirm: () async {
-                      final id = b['id'];
-                      setState(() => _bookings.removeAt(index));
-                      if (id != null) {
-                        await sl<ApiService>().deleteBooking(id);
-                      }
-                    },
-                  );
-                },
-              );
-            },
-          ),
-      ],
-    );
-  }
-
-  Future<void> _pickBookingDateTime(
-    BuildContext ctx,
-    TextEditingController controller,
-    StateSetter setModalState,
-  ) async {
-    final now = DateTime.now();
-    final pickedDate = await showDatePicker(
-      context: ctx,
-      initialDate: now,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(now.year + 5),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF6A2777),
-              onPrimary: Colors.white,
-              onSurface: Color(0xFF1E1E1E),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (pickedDate == null) return;
-    if (!ctx.mounted) return;
-
-    final pickedTime = await showTimePicker(
-      context: ctx,
-      initialTime: const TimeOfDay(hour: 18, minute: 0),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF6A2777),
-              onPrimary: Colors.white,
-              onSurface: Color(0xFF1E1E1E),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    final datePart =
-        '${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}';
-    final formatted = pickedTime != null
-        ? '$datePart ${pickedTime.hour.toString().padLeft(2, '0')}:${pickedTime.minute.toString().padLeft(2, '0')}'
-        : datePart;
-
-    setModalState(() {
-      controller.text = formatted;
-    });
-  }
-
-  void _showCreateBookingDialog() {
-    final nameCtrl = TextEditingController();
-    final emailCtrl = TextEditingController();
-    final phoneCtrl = TextEditingController();
-    final eventTitleCtrl = TextEditingController();
-    final dateCtrl = TextEditingController(text: DateTime.now().toString().split(' ')[0]);
-    String selectedStatus = 'Confirmed';
-
-    final messenger = ScaffoldMessenger.of(context);
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setModalState) {
-          return Dialog(
-            backgroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'New booking',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Color(0xFF64748B), size: 20),
-                        onPressed: () => Navigator.pop(ctx),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildFormField(label: 'Guest / Artist Name', controller: nameCtrl, isFocused: true),
-                  const SizedBox(height: 12),
-                  _buildFormField(label: 'Email', controller: emailCtrl, keyboardType: TextInputType.emailAddress, hint: 'guest@example.com'),
-                  const SizedBox(height: 12),
-                  _buildFormField(label: 'Phone', controller: phoneCtrl, keyboardType: TextInputType.phone, hint: '+971 50 123 4567'),
-                  const SizedBox(height: 12),
-                  _buildFormField(label: 'Event / Booking Title', controller: eventTitleCtrl, hint: 'Exhibition entry / Art workshop'),
-                  const SizedBox(height: 12),
-                  _buildFormField(
-                    label: 'Date & Time',
-                    controller: dateCtrl,
-                    hint: 'Select event date & time',
-                    readOnly: true,
-                    suffixIcon: Icons.calendar_today_outlined,
-                    onTap: () => _pickBookingDateTime(ctx, dateCtrl, setModalState),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      const Text('Status: ', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF334155))),
-                      const SizedBox(width: 8),
-                      DropdownButton<String>(
-                        value: selectedStatus,
-                        underline: const SizedBox(),
-                        items: ['Confirmed', 'Pending', 'Completed', 'Cancelled']
-                            .map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 13))))
-                            .toList(),
-                        onChanged: (v) {
-                          if (v != null) setModalState(() => selectedStatus = v);
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6A2777),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    onPressed: () async {
-                      final name = nameCtrl.text.trim();
-                      if (name.isEmpty) return;
-                      final payload = {
-                        'full_name': name,
-                        'email': emailCtrl.text.trim().isNotEmpty ? emailCtrl.text.trim() : 'admin@technestpartners.com',
-                        'phone': phoneCtrl.text.trim(),
-                        'event_title': eventTitleCtrl.text.trim().isNotEmpty ? eventTitleCtrl.text.trim() : 'Art Event Booking',
-                        'event_date': dateCtrl.text.trim(),
-                        'status': selectedStatus,
-                      };
-                      Navigator.pop(ctx);
-                      setState(() {
-                        _bookings.insert(0, payload);
-                      });
-                      await sl<ApiService>().createBooking(payload);
-                      if (mounted) {
-                        messenger.showSnackBar(
-                          SnackBar(
-                            content: Text('Booking for "$name" created successfully!'),
-                            backgroundColor: const Color(0xFF16A34A),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      }
-                    },
-                    child: const Text('Save booking', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  ),
-                  const SizedBox(height: 8),
-                  Center(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Future<void> _toggleBookingStatus(Map<String, dynamic> b, int index) async {
-    final currentStatus = (b['status'] ?? 'pending').toString().toLowerCase();
-    String newStatus;
-    if (currentStatus == 'pending') {
-      newStatus = 'confirmed';
-    } else if (currentStatus == 'confirmed') {
-      newStatus = 'completed';
-    } else if (currentStatus == 'completed') {
-      newStatus = 'cancelled';
-    } else {
-      newStatus = 'confirmed';
-    }
-
-    final id = b['id'];
-    final updated = Map<String, dynamic>.from(b);
-    updated['status'] = newStatus[0].toUpperCase() + newStatus.substring(1);
-
-    setState(() {
-      _bookings[index] = updated;
-    });
-
-    if (id != null) {
-      await sl<ApiService>().updateBookingStatus(bookingId: id, status: newStatus);
-    }
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Booking status updated to ${updated['status']}'),
-          backgroundColor: const Color(0xFF6A2777),
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
-    await _refreshBookings();
-  }
-
-  Future<void> _acceptBooking(Map<String, dynamic> b, int index) async {
-    final id = b['id'];
-    final updated = Map<String, dynamic>.from(b);
-    updated['status'] = 'Confirmed';
-
-    setState(() {
-      _bookings[index] = updated;
-    });
-
-    if (id != null) {
-      await sl<ApiService>().updateBookingStatus(bookingId: id, status: 'confirmed');
-    }
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Booking accepted and confirmed!'),
-          backgroundColor: const Color(0xFF16A34A),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
-    await _refreshBookings();
-  }
-
-  /// Force-refresh all bookings from MySQL (admin: no email filter)
-  Future<void> _refreshBookings() async {
-    try {
-      final fresh = await sl<ApiService>().getBookings(forceRefresh: true);
-      if (mounted) {
-        setState(() => _bookings = fresh);
-      }
-    } catch (_) {}
-  }
-
-  // --- 6. Art Centers Tab (Screenshot 1 & Screenshot 5) ---
+  // --- 5. Art Centers Tab (Screenshot 1 & Screenshot 5) ---
   Widget _buildArtCentersTab() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

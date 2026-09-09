@@ -73,7 +73,7 @@ class NotificationService extends ChangeNotifier {
           Color iconColor;
           Color iconBg;
 
-          if (type.contains('booking') || type.contains('request')) {
+          if (type.contains('rsvp') || type.contains('request')) {
             icon = Icons.calendar_month_outlined;
             iconColor = const Color(0xFF6A2777);
             iconBg = const Color(0xFFEDE9FE);

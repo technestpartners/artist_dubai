@@ -1010,45 +1010,65 @@ class ApiService {
   }
 
   // 15a-2. Helper to fetch the logged-in user's artist profile
-  Future<ArtistModel?> getMyArtistProfile() async {
+  Future<ArtistModel?> getMyArtistProfile({bool forceRefresh = false}) async {
     try {
       final storage = sl<StorageService>();
       final email = (storage.getString('user_email') ?? '').trim();
-      final name = (storage.getString('user_name') ?? '').trim();
-      final savedId = storage.getString('artist_profile_id');
+      final isLoggedIn = storage.getBool('is_logged_in') ?? false;
 
-      if (savedId != null && savedId.isNotEmpty) {
+      if (!isLoggedIn || email.isEmpty) {
+        await storage.setBool('has_artist_profile', false);
+        await storage.remove('artist_profile_id');
+        await storage.remove('artist_profile_name');
+        return null;
+      }
+
+      // If we have a cached ID, verify that it actually belongs to THIS logged-in user's email
+      final savedId = storage.getString('artist_profile_id');
+      if (!forceRefresh && savedId != null && savedId.isNotEmpty) {
         try {
-          return await getArtistDetails(savedId);
+          final candidate = await getArtistDetails(savedId);
+          if (candidate.email.trim().toLowerCase() == email.toLowerCase()) {
+            return candidate;
+          }
+          // ID belonged to a different user session! Remove it immediately.
+          await storage.remove('artist_profile_id');
+          await storage.remove('artist_profile_name');
         } catch (_) {}
       }
 
-      if (email.isNotEmpty) {
-        final profile = await getUserProfile(email);
-        if (profile != null && profile['artist_profile'] is Map<String, dynamic>) {
-          final artistMap = profile['artist_profile'] as Map<String, dynamic>;
-          final artist = ArtistModel.fromJson(artistMap);
-          await storage.setBool('has_artist_profile', true);
-          await storage.setString('artist_profile_id', artist.id);
-          await storage.setString('artist_profile_name', artist.name);
-          return artist;
-        }
-
-        // Fallback: search live artists
-        final allArtists = await getArtists();
-        final match = allArtists.where((a) {
-          if (email.isNotEmpty && a.email.trim().toLowerCase() == email.toLowerCase()) return true;
-          if (name.isNotEmpty && name.toLowerCase() != 'user' && name.toLowerCase() != 'admin' && a.name.trim().toLowerCase() == name.toLowerCase()) return true;
-          return false;
-        }).firstOrNull;
-
-        if (match != null) {
-          await storage.setBool('has_artist_profile', true);
-          await storage.setString('artist_profile_id', match.id);
-          await storage.setString('artist_profile_name', match.name);
-          return match;
-        }
+      // 1. Fetch user profile from MySQL backend
+      final profile = await getUserProfile(email);
+      if (profile != null && profile['artist_profile'] is Map<String, dynamic>) {
+        final artistMap = profile['artist_profile'] as Map<String, dynamic>;
+        final artist = ArtistModel.fromJson(artistMap);
+        await storage.setBool('has_artist_profile', true);
+        await storage.setString('artist_profile_id', artist.id);
+        await storage.setString('artist_profile_name', artist.name);
+        return artist;
       }
+
+      // 2. Cross-check against all artists in MySQL by matching email strictly
+      final allArtists = await getArtists(forceRefresh: forceRefresh);
+      final match = allArtists.where((a) {
+        if (a.email.trim().isNotEmpty && a.email.trim().toLowerCase() == email.toLowerCase()) {
+          return true;
+        }
+        return false;
+      }).firstOrNull;
+
+      if (match != null) {
+        await storage.setBool('has_artist_profile', true);
+        await storage.setString('artist_profile_id', match.id);
+        await storage.setString('artist_profile_name', match.name);
+        return match;
+      }
+
+      // 3. User does NOT have an artist profile
+      await storage.setBool('has_artist_profile', false);
+      await storage.remove('artist_profile_id');
+      await storage.remove('artist_profile_name');
+      return null;
     } catch (_) {}
     return null;
   }

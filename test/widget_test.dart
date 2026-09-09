@@ -159,7 +159,7 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('7. Bookings View & Ticket Actions Test', (
+    testWidgets('7. Events & Activities View Test', (
       WidgetTester tester,
     ) async {
       tester.view.physicalSize = const Size(800, 1600);
@@ -169,7 +169,6 @@ void main() {
       await tester.pumpWidget(const ArtistDubaiApp());
       await tester.pumpAndSettle();
 
-      // Navigate to My Bookings
       sl<ApiService>();
       expect(find.byType(ArtistDubaiApp), findsOneWidget);
     });

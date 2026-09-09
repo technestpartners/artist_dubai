@@ -89,11 +89,7 @@ class _SettingsViewState extends State<SettingsView> {
   void _onSignOut() async {
     try {
       final storage = sl<StorageService>();
-      await storage.setBool('is_logged_in', false);
-      await storage.setString('user_email', '');
-      await storage.setString('user_name', '');
-      await storage.setString('user_created_at', '');
-      await storage.setString('auth_token', '');
+      await storage.clearAuthSession();
       sl<LiveSyncService>().notifyAuthChanged(false);
     } catch (_) {}
     if (mounted) {

@@ -8,6 +8,7 @@ abstract class StorageService {
   bool? getBool(String key);
   Future<void> remove(String key);
   Future<void> clear();
+  Future<void> clearAuthSession();
 
   // Secure Storage
   Future<void> writeSecure(String key, String value);
@@ -43,6 +44,22 @@ class StorageServiceImpl implements StorageService {
 
   @override
   Future<void> clear() => prefs.clear();
+
+  @override
+  Future<void> clearAuthSession() async {
+    await prefs.setBool('is_logged_in', false);
+    await prefs.setBool('is_admin', false);
+    await prefs.remove('user_role');
+    await prefs.remove('user_name');
+    await prefs.remove('user_email');
+    await prefs.remove('user_created_at');
+    await prefs.remove('auth_token');
+    await prefs.setBool('has_artist_profile', false);
+    await prefs.remove('artist_profile_id');
+    await prefs.remove('artist_profile_name');
+    await secureStorage.delete(key: keyAuthToken);
+    await secureStorage.delete(key: keyRefreshToken);
+  }
 
   @override
   Future<void> writeSecure(String key, String value) =>

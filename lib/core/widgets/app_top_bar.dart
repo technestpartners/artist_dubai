@@ -15,8 +15,6 @@ enum TopBarMenuItem {
   accountSettings,
   createArtistProfile,
   editArtistProfile,
-  myBookings,
-  bookingRequests,
   myFavorites,
   myEvents,
   privacyPolicy,
@@ -67,16 +65,17 @@ class _AppTopBarState extends State<AppTopBar> {
   void _loadArtistProfile() async {
     try {
       final storage = sl<StorageService>();
+      final email = (storage.getString('user_email') ?? '').trim();
       final cachedHas = storage.getBool('has_artist_profile') ?? false;
       final cachedId = storage.getString('artist_profile_id');
       if (mounted) {
         setState(() {
-          _hasArtistProfile = cachedHas && (cachedId != null && cachedId.isNotEmpty);
-          _myArtistId = cachedId;
+          _hasArtistProfile = _isLoggedIn && email.isNotEmpty && cachedHas && (cachedId != null && cachedId.isNotEmpty);
+          _myArtistId = _hasArtistProfile ? cachedId : null;
         });
       }
 
-      if (_isLoggedIn) {
+      if (_isLoggedIn && email.isNotEmpty) {
         final artist = await sl<ApiService>().getMyArtistProfile();
         if (mounted) {
           setState(() {
@@ -84,6 +83,11 @@ class _AppTopBarState extends State<AppTopBar> {
             _myArtistId = artist?.id;
           });
         }
+      } else if (mounted) {
+        setState(() {
+          _hasArtistProfile = false;
+          _myArtistId = null;
+        });
       }
     } catch (_) {}
   }
@@ -116,12 +120,6 @@ class _AppTopBarState extends State<AppTopBar> {
           },
         );
         break;
-      case TopBarMenuItem.myBookings:
-        context.push(RouteNames.bookings);
-        break;
-      case TopBarMenuItem.bookingRequests:
-        context.push(RouteNames.bookingRequests);
-        break;
       case TopBarMenuItem.myFavorites:
         context.push(RouteNames.favorites);
         break;
@@ -140,7 +138,7 @@ class _AppTopBarState extends State<AppTopBar> {
       case TopBarMenuItem.signOut:
         try {
           final storage = sl<StorageService>();
-          await storage.setBool('is_logged_in', false);
+          await storage.clearAuthSession();
           sl<LiveSyncService>().notifyAuthChanged(false);
         } catch (_) {}
         if (context.mounted) {

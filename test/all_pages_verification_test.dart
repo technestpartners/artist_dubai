@@ -15,9 +15,6 @@ import 'package:artist_dubai/features/artists/presentation/views/create_category
 import 'package:artist_dubai/features/artists/presentation/views/explore_categories_view.dart';
 import 'package:artist_dubai/features/auth/presentation/views/login_view.dart';
 import 'package:artist_dubai/features/auth/presentation/views/register_view.dart';
-import 'package:artist_dubai/features/bookings/presentation/views/book_artist_view.dart';
-import 'package:artist_dubai/features/bookings/presentation/views/booking_requests_view.dart';
-import 'package:artist_dubai/features/bookings/presentation/views/bookings_view.dart';
 import 'package:artist_dubai/features/events/domain/models/art_event_model.dart';
 import 'package:artist_dubai/features/events/presentation/views/create_art_event_view.dart';
 import 'package:artist_dubai/features/events/presentation/views/event_detail_view.dart';
@@ -186,7 +183,7 @@ void main() {
       expect(find.text('Art Events'), findsOneWidget);
     });
 
-    testWidgets('11. EventDetailView renders details and booking action', (tester) async {
+    testWidgets('11. EventDetailView renders details and RSVP action', (tester) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -264,42 +261,6 @@ void main() {
 
       expect(find.text('GALLERIES | ART CENTERS'), findsOneWidget);
       expect(find.text('Submit registration'), findsOneWidget);
-    });
-
-    testWidgets('18. BookingsView renders user bookings & tickets', (tester) async {
-      tester.view.physicalSize = const Size(800, 1400);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-
-      await tester.pumpWidget(testApp(const BookingsView()));
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.text('My Bookings'), findsOneWidget);
-    });
-
-    testWidgets('19. BookArtistView renders booking inquiry form', (tester) async {
-      tester.view.physicalSize = const Size(800, 1400);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-
-      await tester.pumpWidget(testApp(const BookArtistView()));
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.text('Book an Artist'), findsOneWidget);
-      expect(find.text('Submit Booking Request'), findsOneWidget);
-    });
-
-    testWidgets('20. BookingRequestsView renders requests & attendees tabs', (tester) async {
-      tester.view.physicalSize = const Size(800, 1400);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-
-      await tester.pumpWidget(testApp(const BookingRequestsView()));
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.text('Booking Requests'), findsOneWidget);
-      expect(find.textContaining('Requests ('), findsOneWidget);
-      expect(find.textContaining('Attendees ('), findsOneWidget);
     });
 
     testWidgets('21. FavoritesView renders saved profiles & artworks', (tester) async {
@@ -419,7 +380,7 @@ void main() {
       expect(find.text('Artists'), findsWidgets);
       expect(find.text('Events'), findsWidgets);
       expect(find.text('Galleries'), findsWidgets);
-      expect(find.text('Bookings'), findsWidgets);
+      expect(find.text('Art Centers'), findsWidgets);
     });
 
     testWidgets('31. SplashScreenView renders animated intro and brand assets', (tester) async {

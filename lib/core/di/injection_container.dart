@@ -70,5 +70,5 @@ Future<void> initDependencyInjection() async {
     () => NotificationService(),
   );
 
-  //! 3. Features (Auth, Home, Artists, Bookings, Profile)
+  //! 3. Features (Auth, Home, Artists, Events, Profile)
 }

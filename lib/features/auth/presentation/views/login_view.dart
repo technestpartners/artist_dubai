@@ -101,6 +101,14 @@ class _LoginViewState extends State<LoginView> {
           await storage.setString('auth_token', userData['token'].toString());
         }
 
+        // Reset stale artist profile cache and sync live artist profile for this user
+        await storage.setBool('has_artist_profile', false);
+        await storage.remove('artist_profile_id');
+        await storage.remove('artist_profile_name');
+        try {
+          await sl<ApiService>().getMyArtistProfile(forceRefresh: true);
+        } catch (_) {}
+
         try {
           sl<LiveSyncService>().notifyAuthChanged(true);
         } catch (_) {}

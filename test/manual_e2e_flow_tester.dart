@@ -9,10 +9,10 @@ import 'package:artist_dubai/features/artists/presentation/views/create_category
 import 'package:artist_dubai/features/artists/presentation/views/explore_categories_view.dart';
 import 'package:artist_dubai/features/auth/presentation/views/login_view.dart';
 import 'package:artist_dubai/features/auth/presentation/views/register_view.dart';
-import 'package:artist_dubai/features/bookings/presentation/views/book_artist_view.dart';
 import 'package:artist_dubai/features/events/domain/models/art_event_model.dart';
 import 'package:artist_dubai/features/events/presentation/views/create_art_event_view.dart';
 import 'package:artist_dubai/features/events/presentation/views/event_detail_view.dart';
+import 'package:artist_dubai/features/events/presentation/views/my_events_view.dart';
 import 'package:artist_dubai/features/galleries/presentation/views/gallery_registration_view.dart';
 import 'package:artist_dubai/features/government/presentation/views/government_portal_view.dart';
 import 'package:artist_dubai/features/home/presentation/views/home_view.dart';
@@ -182,21 +182,15 @@ void main() {
       expect(find.text('Lumina Art House'), findsOneWidget);
     });
 
-    testWidgets('Step 09: Book Artist manual inquiry entry', (tester) async {
+    testWidgets('Step 09: My Events created overview', (tester) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(wrapTestApp(const BookArtistView()));
+      await tester.pumpWidget(wrapTestApp(const MyEventsView()));
       await tester.pump(const Duration(milliseconds: 100));
 
-      final textFields = find.byType(TextField);
-      expect(textFields, findsAtLeastNWidgets(2));
-
-      await tester.enterText(textFields.at(0), 'Private Portrait Showcase Commission');
-      await tester.pump();
-
-      expect(find.text('Private Portrait Showcase Commission'), findsOneWidget);
+      expect(find.text('MY CREATED EVENTS'), findsOneWidget);
     });
 
     testWidgets('Step 10: Government Portal live entities & directions verification', (tester) async {
@@ -224,7 +218,7 @@ void main() {
       expect(find.text('Explore Categories'), findsOneWidget);
     });
 
-    testWidgets('Step 12: Event Detail & Booking Actions', (tester) async {
+    testWidgets('Step 12: Event Detail & RSVP Actions', (tester) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);

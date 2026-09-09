@@ -4,9 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../../app/routes/route_names.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
@@ -851,7 +849,7 @@ class _EventDetailViewState extends State<EventDetailView> {
                           ),
                         ),
                         onPressed: () {
-                          _showBookTicketsModal(context, event);
+                          _showRsvpModal(context, event);
                         },
                         child: const Text(
                           'RSVP for Event',
@@ -1253,7 +1251,7 @@ class _EventDetailViewState extends State<EventDetailView> {
     );
   }
 
-  void _showBookTicketsModal(BuildContext context, ArtEventModel event) {
+  void _showRsvpModal(BuildContext context, ArtEventModel event) {
     String prefilledName = '';
     String prefilledEmail = '';
     try {
@@ -1293,7 +1291,7 @@ class _EventDetailViewState extends State<EventDetailView> {
                     children: [
                       Expanded(
                         child: Text(
-                          'Book tickets: ${event.title}',
+                          'RSVP: ${event.title}',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -1315,7 +1313,7 @@ class _EventDetailViewState extends State<EventDetailView> {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'Please provide your details to confirm your booking.',
+                    'Please provide your details to confirm your attendance.',
                     style: TextStyle(fontSize: 13.5, color: Color(0xFF64748B)),
                   ),
                   const SizedBox(height: 18),
@@ -1541,7 +1539,7 @@ class _EventDetailViewState extends State<EventDetailView> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Action Buttons: Cancel & Confirm Booking
+                  // Action Buttons: Cancel & Confirm RSVP
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -1593,50 +1591,26 @@ class _EventDetailViewState extends State<EventDetailView> {
 
                           Navigator.pop(context);
 
-                          final ticketNum = int.tryParse(ticketsController.text.trim()) ?? 1;
-
-                          await sl<ApiService>().createBooking({
-                            'full_name': name,
-                            'email': email,
-                            'phone': phoneController.text.trim(),
-                            'event_id': event.id,
-                            'event_title': event.title,
-                            'booking_type': 'Event Booking',
-                            'event_date': event.formattedDate,
-                            'location': event.location,
-                            'tickets_count': ticketNum,
-                            'total_price': event.price,
-                            'status': 'Confirmed',
-                          });
-
                           sl<NotificationService>().addNotification(
-                            title: 'Booking Confirmed!',
-                            body: 'Your booking for ${event.title} is confirmed.',
-                            icon: Icons.confirmation_number_outlined,
-                            route: RouteNames.myBookings,
+                            title: 'RSVP Confirmed!',
+                            body: 'Your attendance for ${event.title} is confirmed.',
+                            icon: Icons.event_available_outlined,
                           );
 
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  'Booking confirmed for ${event.title}!',
+                                  'RSVP confirmed for ${event.title}!',
                                 ),
                                 backgroundColor: const Color(0xFF6A2777),
                                 behavior: SnackBarBehavior.floating,
-                                action: SnackBarAction(
-                                  label: 'View Bookings',
-                                  textColor: Colors.white,
-                                  onPressed: () {
-                                    context.push(RouteNames.myBookings);
-                                  },
-                                ),
                               ),
                             );
                           }
                         },
                         child: const Text(
-                          'Confirm Booking',
+                          'Confirm RSVP',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),

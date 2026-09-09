@@ -11,9 +11,6 @@ import '../../features/artists/presentation/views/create_category_view.dart';
 import '../../features/artists/presentation/views/explore_categories_view.dart';
 import '../../features/auth/presentation/views/login_view.dart';
 import '../../features/auth/presentation/views/register_view.dart';
-import '../../features/bookings/presentation/views/book_artist_view.dart';
-import '../../features/bookings/presentation/views/bookings_view.dart';
-import '../../features/bookings/presentation/views/booking_requests_view.dart';
 import '../../features/events/domain/models/art_event_model.dart';
 import '../../features/events/presentation/views/create_art_event_view.dart';
 import '../../features/events/presentation/views/event_detail_view.dart';
@@ -221,33 +218,6 @@ class AppRouter {
           context: context,
           state: state,
           child: const GalleryRegistrationView(),
-        ),
-      ),
-      GoRoute(
-        path: RouteNames.bookings,
-        name: 'bookings',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const BookingsView(),
-        ),
-      ),
-      GoRoute(
-        path: RouteNames.bookingRequests,
-        name: 'bookingRequests',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const BookingRequestsView(),
-        ),
-      ),
-      GoRoute(
-        path: RouteNames.bookArtist,
-        name: 'bookArtist',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: BookArtistView(artistName: state.extra as String?),
         ),
       ),
       GoRoute(

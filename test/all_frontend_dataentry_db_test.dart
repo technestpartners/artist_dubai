@@ -9,7 +9,7 @@ import 'package:artist_dubai/features/artists/presentation/views/create_artist_p
 import 'package:artist_dubai/features/events/presentation/views/create_art_event_view.dart';
 import 'package:artist_dubai/features/artists/presentation/views/create_category_view.dart';
 import 'package:artist_dubai/features/galleries/presentation/views/gallery_registration_view.dart';
-import 'package:artist_dubai/features/bookings/presentation/views/book_artist_view.dart';
+import 'package:artist_dubai/features/events/presentation/views/my_events_view.dart';
 import 'package:artist_dubai/features/profile/presentation/views/profile_view.dart';
 
 class _TestHttpOverrides extends HttpOverrides {}
@@ -153,23 +153,15 @@ void main() {
       }
     });
 
-    testWidgets('7. BookArtistView Data Entry Form UI & Inputs', (tester) async {
+    testWidgets('7. MyEventsView Data Entry & Created Events UI', (tester) async {
       tester.view.physicalSize = const Size(800, 1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(createTestWidget(const BookArtistView()));
+      await tester.pumpWidget(createTestWidget(const MyEventsView()));
       await tester.pumpAndSettle();
 
-      expect(find.text('Book an Artist'), findsOneWidget);
-      expect(find.text('Full Name'), findsOneWidget);
-
-      final textFields = find.byType(TextField);
-      if (textFields.evaluate().isNotEmpty) {
-        await tester.enterText(textFields.first, 'Sheikh Zayed Cultural Group');
-        await tester.pump();
-        expect(find.text('Sheikh Zayed Cultural Group'), findsOneWidget);
-      }
+      expect(find.text('MY CREATED EVENTS'), findsOneWidget);
     });
 
     testWidgets('8. ProfileView Account Settings & Edit Profile UI', (tester) async {
