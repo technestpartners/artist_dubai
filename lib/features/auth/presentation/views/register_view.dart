@@ -831,7 +831,7 @@ class _RegisterViewState extends State<RegisterView> {
           ),
         ),
       ),
-      bottomNavigationBar: const AppBottomNavBar(),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 3),
     );
   }
 }

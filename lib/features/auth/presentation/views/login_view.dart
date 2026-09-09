@@ -528,7 +528,7 @@ class _LoginViewState extends State<LoginView> {
         ),
       ),
       ),
-      bottomNavigationBar: const AppBottomNavBar(),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 3),
     );
   }
 }
