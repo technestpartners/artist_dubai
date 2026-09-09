@@ -24,8 +24,10 @@ class ApiEndpoints {
   static const String artistDetails = 'api.php?resource=artists';
   static const String artistRegister = 'api.php?resource=artists';
 
-  // Categories (MySQL Backend)
+  // Categories & Masters (MySQL Backend)
   static const String categories = 'api.php?resource=categories';
+  static const String experienceLevels = 'api.php?resource=experience_levels';
+  static const String locations = 'api.php?resource=locations';
 
   // Events (MySQL Backend)
   static const String events = 'api.php?resource=events';

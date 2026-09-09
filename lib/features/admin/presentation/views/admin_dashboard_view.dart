@@ -19,6 +19,7 @@ enum AdminTab {
   bookings,
   artCenters,
   government,
+  masters,
 }
 
 class AdminDashboardView extends StatefulWidget {
@@ -37,11 +38,18 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   List<Map<String, dynamic>> _artCenters = [];
   List<Map<String, dynamic>> _bookings = [];
   List<GovernmentEntity> _govEntities = [];
+  List<CategoryInfo> _categories = [];
+  List<ExperienceLevelModel> _experienceLevels = [];
+  List<LocationModel> _locations = [];
 
   StreamSubscription<List<ArtistModel>>? _artistsSub;
   StreamSubscription<List<ArtEventModel>>? _eventsSub;
   StreamSubscription<List<Map<String, dynamic>>>? _bookingsSub;
   StreamSubscription<List<GovernmentEntity>>? _govSub;
+  StreamSubscription<List<CategoryInfo>>? _categoriesSub;
+  StreamSubscription<List<ExperienceLevelModel>>? _experienceLevelsSub;
+  StreamSubscription<List<LocationModel>>? _locationsSub;
+  int _masterSubTab = 0; // 0 = Categories, 1 = Experience Levels, 2 = Locations
 
   Future<void> _pickAndUploadImageForField(TextEditingController controller, StateSetter setModalState) async {
     try {
@@ -90,6 +98,21 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         setState(() => _govEntities = list);
       }
     });
+    _categoriesSub = liveSync.categoriesStream.listen((list) {
+      if (mounted) {
+        setState(() => _categories = list);
+      }
+    });
+    _experienceLevelsSub = liveSync.experienceLevelsStream.listen((list) {
+      if (mounted) {
+        setState(() => _experienceLevels = list);
+      }
+    });
+    _locationsSub = liveSync.locationsStream.listen((list) {
+      if (mounted) {
+        setState(() => _locations = list);
+      }
+    });
   }
 
   @override
@@ -98,6 +121,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     _eventsSub?.cancel();
     _bookingsSub?.cancel();
     _govSub?.cancel();
+    _categoriesSub?.cancel();
+    _experienceLevelsSub?.cancel();
+    _locationsSub?.cancel();
     super.dispose();
   }
 
@@ -109,6 +135,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         sl<ApiService>().getGalleries(forceRefresh: true, isAdmin: true).catchError((_) => <Map<String, dynamic>>[]),
         sl<ApiService>().getBookings(forceRefresh: true).catchError((_) => <Map<String, dynamic>>[]),
         sl<ApiService>().getGovernmentEntities(forceRefresh: true).catchError((_) => <GovernmentEntity>[]),
+        sl<ApiService>().getCategories(type: 'all', forceRefresh: true).catchError((_) => <CategoryInfo>[]),
+        sl<ApiService>().getExperienceLevels(forceRefresh: true).catchError((_) => <ExperienceLevelModel>[]),
+        sl<ApiService>().getLocations(forceRefresh: true).catchError((_) => <LocationModel>[]),
       ]);
 
       if (mounted) {
@@ -172,6 +201,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           _artCenters = artCenters;
           _bookings = results[3] as List<Map<String, dynamic>>;
           _govEntities = results[4] as List<GovernmentEntity>;
+          _categories = results[5] as List<CategoryInfo>;
+          _experienceLevels = results[6] as List<ExperienceLevelModel>;
+          _locations = results[7] as List<LocationModel>;
         });
       }
     } catch (_) {}
@@ -1124,6 +1156,30 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             ),
           ],
         ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildMetricCard(
+                icon: Icons.account_balance_outlined,
+                count: '${_govEntities.length}',
+                label: 'Government',
+                isSelected: _selectedTab == AdminTab.government,
+                onTap: () => setState(() => _selectedTab = AdminTab.government),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildMetricCard(
+                icon: Icons.tune_rounded,
+                count: '${_categories.length + _experienceLevels.length}',
+                label: 'Masters',
+                isSelected: _selectedTab == AdminTab.masters,
+                onTap: () => setState(() => _selectedTab = AdminTab.masters),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -1220,6 +1276,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 _buildTabButton(AdminTab.bookings, 'Bookings'),
                 _buildTabButton(AdminTab.artCenters, 'Art Centers'),
                 _buildTabButton(AdminTab.government, 'Government'),
+                _buildTabButton(AdminTab.masters, 'Masters'),
               ],
             )
           : Column(
@@ -1234,12 +1291,13 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   ],
                 ),
                 const SizedBox(height: 6),
-                // Row 2 (3 tabs)
+                // Row 2 (4 tabs)
                 Row(
                   children: [
                     _buildTabButton(AdminTab.bookings, 'Bookings'),
                     _buildTabButton(AdminTab.artCenters, 'Art Centers'),
                     _buildTabButton(AdminTab.government, 'Government'),
+                    _buildTabButton(AdminTab.masters, 'Masters'),
                   ],
                 ),
               ],
@@ -1306,6 +1364,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         return _buildArtCentersTab();
       case AdminTab.government:
         return _buildGovernmentTab();
+      case AdminTab.masters:
+        return _buildMastersTab();
     }
   }
 
@@ -2711,6 +2771,970 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               onPressed: onDelete,
             ),
         ],
+      ),
+    );
+  }
+
+  // --- 8. Masters Tab (Manage Categories & Experience Levels) ---
+  Widget _buildMastersTab() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Sub-tab switcher: Categories vs Experience Levels
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF1F5F9),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _masterSubTab = 0),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _masterSubTab == 0 ? Colors.white : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: _masterSubTab == 0
+                          ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.category_outlined,
+                          size: 15,
+                          color: _masterSubTab == 0 ? const Color(0xFF6A2777) : const Color(0xFF64748B),
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            'Categories (${_categories.length})',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: _masterSubTab == 0 ? FontWeight.w700 : FontWeight.w500,
+                              color: _masterSubTab == 0 ? const Color(0xFF6A2777) : const Color(0xFF64748B),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _masterSubTab = 1),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _masterSubTab == 1 ? Colors.white : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: _masterSubTab == 1
+                          ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.stars_outlined,
+                          size: 15,
+                          color: _masterSubTab == 1 ? const Color(0xFF6A2777) : const Color(0xFF64748B),
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            'Levels (${_experienceLevels.length})',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: _masterSubTab == 1 ? FontWeight.w700 : FontWeight.w500,
+                              color: _masterSubTab == 1 ? const Color(0xFF6A2777) : const Color(0xFF64748B),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _masterSubTab = 2),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _masterSubTab == 2 ? Colors.white : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: _masterSubTab == 2
+                          ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 15,
+                          color: _masterSubTab == 2 ? const Color(0xFF6A2777) : const Color(0xFF64748B),
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            'Locations (${_locations.length})',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: _masterSubTab == 2 ? FontWeight.w700 : FontWeight.w500,
+                              color: _masterSubTab == 2 ? const Color(0xFF6A2777) : const Color(0xFF64748B),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // Action header row
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              _masterSubTab == 0
+                  ? '${_categories.length} categories configured'
+                  : _masterSubTab == 1
+                      ? '${_experienceLevels.length} experience levels configured'
+                      : '${_locations.length} locations configured',
+              style: const TextStyle(
+                fontSize: 13.5,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6A2777),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              icon: const Icon(Icons.add, size: 14, color: Colors.white),
+              label: Text(
+                _masterSubTab == 0
+                    ? 'New Category'
+                    : _masterSubTab == 1
+                        ? 'New Level'
+                        : 'New Location',
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white),
+              ),
+              onPressed: () {
+                if (_masterSubTab == 0) {
+                  _showCategoryDialog();
+                } else if (_masterSubTab == 1) {
+                  _showExperienceLevelDialog();
+                } else {
+                  _showLocationDialog();
+                }
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        // List Content
+        if (_masterSubTab == 0)
+          _buildCategoriesMasterList()
+        else if (_masterSubTab == 1)
+          _buildExperienceLevelsMasterList()
+        else
+          _buildLocationsMasterList(),
+      ],
+    );
+  }
+
+  Widget _buildCategoriesMasterList() {
+    if (_categories.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 32),
+        child: Center(
+          child: Text('No categories configured.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _categories.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        final cat = _categories[index];
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Emoji Badge
+              Container(
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3E8FF),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  cat.emoji.isNotEmpty ? cat.emoji : '🎨',
+                  style: const TextStyle(fontSize: 22),
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            cat.name,
+                            style: const TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0F172A),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE2E8F0),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            cat.type.toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF475569),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (cat.description.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        cat.description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                      ),
+                    ],
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(Icons.person_outline, size: 13, color: Colors.purple.shade400),
+                        const SizedBox(width: 3),
+                        Text(
+                          '${cat.artistCount} artists',
+                          style: TextStyle(fontSize: 11.5, color: Colors.purple.shade700, fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(Icons.event_outlined, size: 13, color: Colors.indigo.shade400),
+                        const SizedBox(width: 3),
+                        Text(
+                          '${cat.eventCount} events',
+                          style: TextStyle(fontSize: 11.5, color: Colors.indigo.shade700, fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Actions
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 18, color: Color(0xFF64748B)),
+                tooltip: 'Edit Category',
+                onPressed: () => _showCategoryDialog(existing: cat),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, size: 18, color: Color(0xFFEF4444)),
+                tooltip: 'Delete Category',
+                onPressed: () {
+                  final messenger = ScaffoldMessenger.of(context);
+                  _confirmDelete(
+                    title: 'Delete Category',
+                    message: 'Are you sure you want to delete category "${cat.name}"? This action cannot be undone.',
+                    onConfirm: () async {
+                      final success = await sl<ApiService>().deleteCategory(id: cat.id, name: cat.name);
+                      if (success) {
+                        setState(() {
+                          _categories.removeWhere((c) => c.name == cat.name || (cat.id > 0 && c.id == cat.id));
+                        });
+                        messenger.showSnackBar(
+                          SnackBar(content: Text('Deleted "${cat.name}" category')),
+                        );
+                      }
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildExperienceLevelsMasterList() {
+    if (_experienceLevels.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 32),
+        child: Center(
+          child: Text('No experience levels configured.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _experienceLevels.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        final level = _experienceLevels[index];
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Order Badge
+              Container(
+                width: 38,
+                height: 38,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6A2777),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${level.displayOrder > 0 ? level.displayOrder : index + 1}',
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
+                ),
+              ),
+              const SizedBox(width: 14),
+
+              // Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      level.name,
+                      style: const TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    if (level.yearsRange.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'Years: ${level.yearsRange}',
+                          style: const TextStyle(fontSize: 11.5, color: Color(0xFF475569), fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              // Actions
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 18, color: Color(0xFF64748B)),
+                tooltip: 'Edit Experience Level',
+                onPressed: () => _showExperienceLevelDialog(existing: level),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, size: 18, color: Color(0xFFEF4444)),
+                tooltip: 'Delete Experience Level',
+                onPressed: () {
+                  final messenger = ScaffoldMessenger.of(context);
+                  _confirmDelete(
+                    title: 'Delete Experience Level',
+                    message: 'Are you sure you want to delete "${level.name}"?',
+                    onConfirm: () async {
+                      final success = await sl<ApiService>().deleteExperienceLevel(id: level.id);
+                      if (success) {
+                        setState(() {
+                          _experienceLevels.removeWhere((l) => l.id == level.id);
+                        });
+                        messenger.showSnackBar(
+                          SnackBar(content: Text('Deleted "${level.name}"')),
+                        );
+                      }
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showCategoryDialog({CategoryInfo? existing}) {
+    final isEdit = existing != null;
+    final nameCtrl = TextEditingController(text: existing?.name ?? '');
+    final emojiCtrl = TextEditingController(text: existing?.emoji ?? '🎨');
+    final descCtrl = TextEditingController(text: existing?.description ?? '');
+    String selectedType = existing?.type ?? 'general';
+
+    final presetEmojis = ['🎨', '✍️', '🗿', '💻', '📷', '🏺', '🎭', '🖌️', '📐', '🏛️'];
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Dialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        isEdit ? 'Edit Category' : 'New Category',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Color(0xFF64748B), size: 20),
+                        onPressed: () => Navigator.pop(ctx),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  _buildFormField(label: 'Category Name', controller: nameCtrl, isFocused: true, hint: 'e.g. Contemporary Painting'),
+                  const SizedBox(height: 12),
+
+                  _buildFormField(label: 'Emoji Icon', controller: emojiCtrl, hint: 'e.g. 🎨'),
+                  const SizedBox(height: 8),
+
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: presetEmojis.map((e) {
+                      final isSelected = emojiCtrl.text == e;
+                      return InkWell(
+                        onTap: () {
+                          setModalState(() => emojiCtrl.text = e);
+                        },
+                        borderRadius: BorderRadius.circular(6),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isSelected ? const Color(0xFFF3E8FF) : const Color(0xFFF1F5F9),
+                            border: Border.all(
+                              color: isSelected ? const Color(0xFF6A2777) : Colors.transparent,
+                            ),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(e, style: const TextStyle(fontSize: 18)),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Scope
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Applicable Scope',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 8,
+                        children: ['general', 'artist', 'event'].map((t) {
+                          final isSel = selectedType == t;
+                          return ChoiceChip(
+                            label: Text(
+                              t == 'general' ? 'All (General)' : t == 'artist' ? 'Artists Only' : 'Events Only',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
+                                color: isSel ? Colors.white : const Color(0xFF475569),
+                              ),
+                            ),
+                            selected: isSel,
+                            selectedColor: const Color(0xFF6A2777),
+                            backgroundColor: const Color(0xFFF1F5F9),
+                            onSelected: (val) {
+                              if (val) setModalState(() => selectedType = t);
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  _buildFormField(
+                    label: 'Description',
+                    controller: descCtrl,
+                    hint: 'Brief description of this art category...',
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 20),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6A2777),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        onPressed: () async {
+                          final name = nameCtrl.text.trim();
+                          if (name.isEmpty) return;
+                          Navigator.pop(ctx);
+                          if (isEdit) {
+                            await sl<ApiService>().updateCategory(
+                              id: existing.id,
+                              name: name,
+                              description: descCtrl.text.trim(),
+                              emoji: emojiCtrl.text.trim().isNotEmpty ? emojiCtrl.text.trim() : '🎨',
+                              type: selectedType,
+                            );
+                          } else {
+                            await sl<ApiService>().createCategory(
+                              name: name,
+                              description: descCtrl.text.trim(),
+                              emoji: emojiCtrl.text.trim().isNotEmpty ? emojiCtrl.text.trim() : '🎨',
+                            );
+                          }
+                          _loadAllData();
+                        },
+                        child: Text(isEdit ? 'Save Changes' : 'Create Category'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showExperienceLevelDialog({ExperienceLevelModel? existing}) {
+    final isEdit = existing != null;
+    final nameCtrl = TextEditingController(text: existing?.name ?? '');
+    final yearsCtrl = TextEditingController(text: existing?.yearsRange ?? '');
+    final orderCtrl = TextEditingController(text: existing != null ? '${existing.displayOrder}' : '${_experienceLevels.length + 1}');
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Dialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        isEdit ? 'Edit Experience Level' : 'New Experience Level',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Color(0xFF64748B), size: 20),
+                        onPressed: () => Navigator.pop(ctx),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  _buildFormField(label: 'Level Name', controller: nameCtrl, isFocused: true, hint: 'e.g. Intermediate (3-5 years)'),
+                  const SizedBox(height: 12),
+
+                  _buildFormField(label: 'Years Range', controller: yearsCtrl, hint: 'e.g. 3-5 years'),
+                  const SizedBox(height: 12),
+
+                  _buildFormField(label: 'Display Order', controller: orderCtrl, keyboardType: TextInputType.number, hint: 'e.g. 1'),
+                  const SizedBox(height: 20),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6A2777),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        onPressed: () async {
+                          final name = nameCtrl.text.trim();
+                          if (name.isEmpty) return;
+                          final order = int.tryParse(orderCtrl.text.trim()) ?? 0;
+                          Navigator.pop(ctx);
+                          if (isEdit) {
+                            await sl<ApiService>().updateExperienceLevel(
+                              id: existing.id,
+                              name: name,
+                              yearsRange: yearsCtrl.text.trim(),
+                              displayOrder: order,
+                            );
+                          } else {
+                            await sl<ApiService>().createExperienceLevel(
+                              name: name,
+                              yearsRange: yearsCtrl.text.trim(),
+                              displayOrder: order,
+                            );
+                          }
+                          _loadAllData();
+                        },
+                        child: Text(isEdit ? 'Save Changes' : 'Create Level'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildLocationsMasterList() {
+    if (_locations.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 32),
+        child: Center(
+          child: Text('No locations configured.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _locations.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        final loc = _locations[index];
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Icon Badge
+              Container(
+                width: 38,
+                height: 38,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3E8FF),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.location_on, color: Color(0xFF6A2777), size: 20),
+              ),
+              const SizedBox(width: 14),
+
+              // Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      loc.name,
+                      style: const TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '${loc.city}, ${loc.country}',
+                            style: const TextStyle(fontSize: 11.5, color: Color(0xFF475569), fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Order #${loc.displayOrder > 0 ? loc.displayOrder : index + 1}',
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Actions
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 18, color: Color(0xFF64748B)),
+                tooltip: 'Edit Location',
+                onPressed: () => _showLocationDialog(existing: loc),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, size: 18, color: Color(0xFFEF4444)),
+                tooltip: 'Delete Location',
+                onPressed: () {
+                  final messenger = ScaffoldMessenger.of(context);
+                  _confirmDelete(
+                    title: 'Delete Location',
+                    message: 'Are you sure you want to delete location "${loc.name}"?',
+                    onConfirm: () async {
+                      final success = await sl<ApiService>().deleteLocation(id: loc.id);
+                      if (success) {
+                        setState(() {
+                          _locations.removeWhere((l) => l.id == loc.id);
+                        });
+                        messenger.showSnackBar(
+                          SnackBar(content: Text('Deleted "${loc.name}"')),
+                        );
+                      }
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showLocationDialog({LocationModel? existing}) {
+    final isEdit = existing != null;
+    final nameCtrl = TextEditingController(text: existing?.name ?? '');
+    final cityCtrl = TextEditingController(text: existing?.city ?? 'Dubai');
+    final countryCtrl = TextEditingController(text: existing?.country ?? 'UAE');
+    final orderCtrl = TextEditingController(text: existing != null ? '${existing.displayOrder}' : '${_locations.length + 1}');
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Dialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        isEdit ? 'Edit Location' : 'New Location',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Color(0xFF64748B), size: 20),
+                        onPressed: () => Navigator.pop(ctx),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  _buildFormField(label: 'Location Name', controller: nameCtrl, isFocused: true, hint: 'e.g. Dubai Design District (d3), Dubai'),
+                  const SizedBox(height: 12),
+
+                  _buildFormField(label: 'City', controller: cityCtrl, hint: 'e.g. Dubai'),
+                  const SizedBox(height: 12),
+
+                  _buildFormField(label: 'Country', controller: countryCtrl, hint: 'e.g. UAE'),
+                  const SizedBox(height: 12),
+
+                  _buildFormField(label: 'Display Order', controller: orderCtrl, keyboardType: TextInputType.number, hint: 'e.g. 1'),
+                  const SizedBox(height: 20),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6A2777),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        onPressed: () async {
+                          final name = nameCtrl.text.trim();
+                          if (name.isEmpty) return;
+                          final order = int.tryParse(orderCtrl.text.trim()) ?? 0;
+                          Navigator.pop(ctx);
+                          if (isEdit) {
+                            await sl<ApiService>().updateLocation(
+                              id: existing.id,
+                              name: name,
+                              city: cityCtrl.text.trim().isNotEmpty ? cityCtrl.text.trim() : 'Dubai',
+                              country: countryCtrl.text.trim().isNotEmpty ? countryCtrl.text.trim() : 'UAE',
+                              displayOrder: order,
+                            );
+                          } else {
+                            await sl<ApiService>().createLocation(
+                              name: name,
+                              city: cityCtrl.text.trim().isNotEmpty ? cityCtrl.text.trim() : 'Dubai',
+                              country: countryCtrl.text.trim().isNotEmpty ? countryCtrl.text.trim() : 'UAE',
+                              displayOrder: order,
+                            );
+                          }
+                          _loadAllData();
+                        },
+                        child: Text(isEdit ? 'Save Changes' : 'Create Location'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

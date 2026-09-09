@@ -53,11 +53,10 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
         context.go(RouteNames.artists);
         break;
       case 2:
-        if (_isLoggedIn) {
-          context.go(RouteNames.events);
-        } else {
-          context.push(RouteNames.login);
-        }
+        context.go(RouteNames.events);
+        break;
+      case 3:
+        context.push(RouteNames.login);
         break;
     }
   }
@@ -123,15 +122,24 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                     padding: EdgeInsets.zero,
                     constraints: BoxConstraints(minWidth: minConstraint, minHeight: minConstraint),
                     icon: Icon(
-                      !loggedIn
-                          ? (widget.currentIndex == 2 ? Icons.login_rounded : Icons.login)
-                          : (widget.currentIndex == 2 ? Icons.calendar_month_rounded : Icons.calendar_today_outlined),
+                      widget.currentIndex == 2 ? Icons.calendar_month_rounded : Icons.calendar_today_outlined,
                       color: widget.currentIndex == 2 ? Colors.white : Colors.white70,
-                      size: !loggedIn ? iconSize : eventsIconSize,
+                      size: eventsIconSize,
                     ),
-                    tooltip: !loggedIn ? 'Log In / Sign Up' : 'Art Events',
                     onPressed: () => _onTabSelected(context, 2),
                   ),
+                  if (!loggedIn)
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints(minWidth: minConstraint, minHeight: minConstraint),
+                      icon: Icon(
+                        widget.currentIndex == 3 ? Icons.login_rounded : Icons.login,
+                        color: widget.currentIndex == 3 ? Colors.white : Colors.white70,
+                        size: iconSize,
+                      ),
+                      tooltip: 'Log In / Sign Up',
+                      onPressed: () => _onTabSelected(context, 3),
+                    ),
                 ],
               ),
             ),

@@ -79,22 +79,21 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
-      appBar: const AppTopBar(),
+      backgroundColor: const Color(0xFF6B1C9B),
+      appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
         child: Column(
           children: [
-            // Sub-Header with Back Button (Matching Screenshot media_1787732660883.png)
+            // Sub-Header with Back Button
             Container(
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
                 children: [
                   IconButton(
                     icon: const Icon(
                       Icons.arrow_back,
-                      color: Color(0xFF1E1E1E),
-                      size: 20,
+                      color: Colors.white,
+                      size: 22,
                     ),
                     onPressed: () {
                       if (context.canPop()) {
@@ -104,12 +103,13 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
                       }
                     },
                   ),
+                  const SizedBox(width: 4),
                   const Text(
                     'Back',
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E1E1E),
+                      color: Colors.white,
                     ),
                   ),
                 ],
@@ -155,7 +155,7 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1E1E1E),
+                                  color: Colors.white,
                                 ),
                               ),
                               SizedBox(height: 2),
@@ -163,7 +163,7 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
                                 'Discover talented artists',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Color(0xFF64748B),
+                                  color: Color(0xFFE2D6F5),
                                 ),
                               ),
                             ],
@@ -179,29 +179,30 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
                       height: 44,
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF6A2777),
-                          foregroundColor: Colors.white,
+                          backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xFF6B1C9B),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                         onPressed: _showCreateCategoryModal,
-                        icon: const Icon(Icons.add, size: 18),
+                        icon: const Icon(Icons.add, size: 18, color: Color(0xFF6B1C9B)),
                         label: const Text(
                           'Create Category',
                           style: TextStyle(
                             fontSize: 14.5,
                             fontWeight: FontWeight.bold,
+                            color: Color(0xFF6B1C9B),
                           ),
                         ),
                       ),
                     ),
                     const SizedBox(height: 18),
-                    const Divider(
+                    Divider(
                       height: 1,
                       thickness: 1,
-                      color: Color(0xFFE2E8F0),
+                      color: Colors.white.withValues(alpha: 0.18),
                     ),
                     const SizedBox(height: 20),
 

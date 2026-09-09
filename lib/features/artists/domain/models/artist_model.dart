@@ -1,8 +1,105 @@
 class CategoryInfo {
+  final int id;
   final String name;
   final String emoji;
+  final String description;
+  final String type;
+  final int artistCount;
+  final int eventCount;
 
-  const CategoryInfo({required this.name, required this.emoji});
+  const CategoryInfo({
+    this.id = 0,
+    required this.name,
+    required this.emoji,
+    this.description = '',
+    this.type = 'general',
+    this.artistCount = 0,
+    this.eventCount = 0,
+  });
+
+  factory CategoryInfo.fromJson(Map<String, dynamic> json) {
+    return CategoryInfo(
+      id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      name: json['name']?.toString() ?? '',
+      emoji: json['emoji']?.toString() ?? '🎨',
+      description: json['description']?.toString() ?? '',
+      type: json['type']?.toString() ?? 'general',
+      artistCount: int.tryParse(json['artist_count']?.toString() ?? '0') ?? 0,
+      eventCount: int.tryParse(json['event_count']?.toString() ?? '0') ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'emoji': emoji,
+    'description': description,
+    'type': type,
+  };
+}
+
+class ExperienceLevelModel {
+  final int id;
+  final String name;
+  final String yearsRange;
+  final int displayOrder;
+
+  const ExperienceLevelModel({
+    required this.id,
+    required this.name,
+    this.yearsRange = '',
+    this.displayOrder = 0,
+  });
+
+  factory ExperienceLevelModel.fromJson(Map<String, dynamic> json) {
+    return ExperienceLevelModel(
+      id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      name: json['name']?.toString() ?? '',
+      yearsRange: json['years_range']?.toString() ?? '',
+      displayOrder: int.tryParse(json['display_order']?.toString() ?? '0') ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'years_range': yearsRange,
+    'display_order': displayOrder,
+  };
+}
+
+class LocationModel {
+  final int id;
+  final String name;
+  final String city;
+  final String country;
+  final int displayOrder;
+
+  const LocationModel({
+    required this.id,
+    required this.name,
+    this.city = 'Dubai',
+    this.country = 'UAE',
+    this.displayOrder = 0,
+  });
+
+  factory LocationModel.fromJson(Map<String, dynamic> json) {
+    return LocationModel(
+      id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      name: json['name']?.toString() ?? '',
+      city: json['city']?.toString() ?? 'Dubai',
+      country: json['country']?.toString() ?? 'UAE',
+      displayOrder: int.tryParse(json['display_order']?.toString() ?? '0') ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'city': city,
+    'country': country,
+    'display_order': displayOrder,
+  };
 }
 
 class ArtistModel {
@@ -26,6 +123,7 @@ class ArtistModel {
   final String instagram;
   final String status;
   final bool isActive;
+  final String createdAt;
 
   const ArtistModel({
     required this.id,
@@ -48,6 +146,7 @@ class ArtistModel {
     this.instagram = '',
     this.status = 'active',
     this.isActive = true,
+    this.createdAt = '',
   });
 
   factory ArtistModel.fromJson(Map<String, dynamic> json) {
@@ -73,6 +172,7 @@ class ArtistModel {
       instagram: json['instagram'] as String? ?? '',
       status: json['status'] as String? ?? 'active',
       isActive: json['is_active'] == 1 || json['is_active'] == true || json['is_active'] == '1' || json['status'] == 'active' || json['status'] == null,
+      createdAt: json['created_at']?.toString() ?? '',
     );
   }
 
@@ -94,6 +194,7 @@ class ArtistModel {
       'phone': phone,
       'website': website,
       'instagram': instagram,
+      'created_at': createdAt,
     };
   }
 
@@ -118,6 +219,7 @@ class ArtistModel {
     String? instagram,
     String? status,
     bool? isActive,
+    String? createdAt,
   }) {
     return ArtistModel(
       id: id ?? this.id,
@@ -140,6 +242,7 @@ class ArtistModel {
       instagram: instagram ?? this.instagram,
       status: status ?? this.status,
       isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 

@@ -45,7 +45,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(TextField), findsNWidgets(4));
-      expect(find.text('Create Account'), findsWidgets);
+      expect(find.text('Sign Up & Access Events'), findsWidgets);
 
       await tester.enterText(find.byType(TextField).at(0), 'Fatima Calligrapher');
       await tester.enterText(find.byType(TextField).at(1), 'fatima.new@artistdubai.com');
@@ -84,7 +84,8 @@ void main() {
 
       expect(find.text('Full Name *'), findsOneWidget);
       expect(find.text('Email *'), findsOneWidget);
-      expect(find.text('Phone Number *'), findsOneWidget);
+      expect(find.text('Phone Number (Optional)'), findsOneWidget);
+      expect(find.text('+971'), findsWidgets);
 
       final textFields = find.byType(TextField);
       if (textFields.evaluate().isNotEmpty) {

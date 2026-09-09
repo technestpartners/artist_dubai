@@ -4,7 +4,7 @@ class AppColors {
   AppColors._();
 
   // Artist Dubai Brand Palette (Exact from Design)
-  static const Color primary = Color(0xFF631E9B); // Vibrant Purple / Violet
+  static const Color primary = Color(0xFF6B1C9B); // Vibrant Purple / Violet
   static const Color primaryLight = Color(0xFF7B2CBF);
   static const Color primaryDark = Color(0xFF481B85);
 
@@ -14,21 +14,21 @@ class AppColors {
   static const Color gradientBottom = Color(0xFF4D249E); // Bottom Luminous Purple
 
   // Card & Surface
-  static const Color cardBg = Color(0xFF301B92); // Deep Indigo
+  static const Color cardBg = Color(0xFF551478); // Deep Brand Purple
   static const Color logoBadge = Color(0xFF743AA0); // Plum / Medium Violet
   static const Color circleIconBg = Color(0xFFFFFFFF);
-  static const Color iconGlyph = Color(0xFF301B92);
+  static const Color iconGlyph = Color(0xFF6B1C9B);
 
   static const Color accent = Color(0xFF9D4EDD);
 
   // Dark Theme
-  static const Color darkBackground = Color(0xFF301B92);
-  static const Color darkSurface = Color(0xFF301B92);
-  static const Color darkCard = Color(0xFF301B92);
-  static const Color darkBorder = Color(0xFF4D2A9E);
+  static const Color darkBackground = Color(0xFF6B1C9B);
+  static const Color darkSurface = Color(0xFF5A1684);
+  static const Color darkCard = Color(0xFF551478);
+  static const Color darkBorder = Color(0xFF7B2CBF);
 
   // Light Theme
-  static const Color lightBackground = Color(0xFFF8F9FC);
+  static const Color lightBackground = Color(0xFF6B1C9B);
   static const Color lightSurface = Color(0xFFFFFFFF);
   static const Color lightCard = Color(0xFFFFFFFF);
   static const Color lightBorder = Color(0xFFE2E8F0);

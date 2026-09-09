@@ -309,12 +309,15 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                         children: [
                           Icon(Icons.info_outline, color: Colors.amberAccent, size: 16),
                           SizedBox(width: 6),
-                          Text(
-                            'Paid Gallery Publishing',
-                            style: TextStyle(
-                              color: Colors.amberAccent,
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.bold,
+                          Expanded(
+                            child: Text(
+                              'Paid Gallery Publishing',
+                              style: TextStyle(
+                                color: Colors.amberAccent,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],

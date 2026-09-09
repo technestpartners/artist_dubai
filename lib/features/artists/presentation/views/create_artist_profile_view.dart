@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -5,17 +6,29 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../app/routes/route_names.dart';
+import '../../../../core/constants/country_codes.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
+import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import '../../domain/models/artist_model.dart';
 
 class CreateArtistProfileView extends StatefulWidget {
   final bool fromAdmin;
+  final bool isEditing;
+  final ArtistModel? artist;
+  final String? artistId;
 
-  const CreateArtistProfileView({super.key, this.fromAdmin = false});
+  const CreateArtistProfileView({
+    super.key,
+    this.fromAdmin = false,
+    this.isEditing = false,
+    this.artist,
+    this.artistId,
+  });
 
   @override
   State<CreateArtistProfileView> createState() =>
@@ -23,7 +36,9 @@ class CreateArtistProfileView extends StatefulWidget {
 }
 
 class ProfileArtworkItem {
-  final XFile file;
+  final XFile? file;
+  final String? existingImageUrl;
+  final String? existingId;
   final TextEditingController titleController;
   final TextEditingController priceController;
   final TextEditingController mediumController;
@@ -32,7 +47,9 @@ class ProfileArtworkItem {
   bool isFeatured;
 
   ProfileArtworkItem({
-    required this.file,
+    this.file,
+    this.existingImageUrl,
+    this.existingId,
     String? initialTitle,
     String? initialMedium,
     String? initialPrice,
@@ -40,10 +57,12 @@ class ProfileArtworkItem {
     String? initialYear,
     this.isFeatured = false,
   })  : titleController = TextEditingController(text: initialTitle ?? ''),
-        priceController = TextEditingController(text: initialPrice ?? '\$3,200'),
-        mediumController = TextEditingController(text: initialMedium ?? 'Oil on Canvas'),
-        dimensionsController = TextEditingController(text: initialDimensions ?? '150 x 100 cm'),
+        priceController = TextEditingController(text: initialPrice ?? ''),
+        mediumController = TextEditingController(text: initialMedium ?? ''),
+        dimensionsController = TextEditingController(text: initialDimensions ?? ''),
         yearController = TextEditingController(text: initialYear ?? DateTime.now().year.toString());
+
+  bool get isExisting => existingId != null || (existingImageUrl != null && existingImageUrl!.isNotEmpty);
 
   void dispose() {
     titleController.dispose();
@@ -60,7 +79,6 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
   late final TextEditingController _fullNameController;
   late final TextEditingController _emailController;
   late final TextEditingController _phoneController;
-  late final TextEditingController _locationController;
   late final TextEditingController _bioController;
 
   late final TextEditingController _websiteController;
@@ -73,29 +91,100 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
 
   String? _selectedCategory;
   String? _selectedExperienceLevel;
+  String? _selectedLocation = 'Dubai, UAE';
+  String _selectedCountryCode = kDefaultCountryCode.code;
   bool _agreedToTerms = false;
   bool _isSubmitting = false;
 
+  bool _isEditMode = false;
+  String? _editingArtistId;
+  String? _existingAvatarUrl;
+
+  static const int kMaxArtworks = 6;
+
+  bool get _isAllCriteriaMet {
+    final hasName = _fullNameController.text.trim().isNotEmpty;
+    final hasEmail = _emailController.text.trim().isNotEmpty;
+    final hasLocation = _selectedLocation != null && _selectedLocation!.trim().isNotEmpty;
+    final hasCategory = _selectedCategory != null && _selectedCategory!.trim().isNotEmpty;
+    final hasExperience = _selectedExperienceLevel != null && _selectedExperienceLevel!.trim().isNotEmpty;
+    final hasBio = _bioController.text.trim().isNotEmpty;
+    final hasTerms = _agreedToTerms;
+    return hasName && hasEmail && hasLocation && hasCategory && hasExperience && hasBio && hasTerms;
+  }
+
+  void _onFormCriteriaChanged() {
+    if (mounted) setState(() {});
+  }
+
   final ImagePicker _picker = ImagePicker();
   final List<ProfileArtworkItem> _portfolioArtworks = [];
+  XFile? _profilePhotoFile;
+  Uint8List? _profilePhotoBytes;
+
+  Future<void> _pickProfilePhoto() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+      if (image != null) {
+        final bytes = await image.readAsBytes();
+        setState(() {
+          _profilePhotoFile = image;
+          _profilePhotoBytes = bytes;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error selecting profile picture: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    }
+  }
 
   Future<void> _pickImagesFromGallery() async {
+    final currentCount = _portfolioArtworks.length;
+    if (currentCount >= kMaxArtworks) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Maximum 6 artwork uploads allowed.'),
+            backgroundColor: Color(0xFF6A2777),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
     try {
       final List<XFile> images = await _picker.pickMultiImage(imageQuality: 85);
       if (images.isNotEmpty) {
+        final remainingSlots = kMaxArtworks - currentCount;
+        final imagesToAdd = images.take(remainingSlots).toList();
         setState(() {
-          for (final img in images) {
-            String baseTitle = img.name.split('.').first.replaceAll('_', ' ').replaceAll('-', ' ');
-            if (baseTitle.isEmpty || baseTitle.startsWith('image_picker')) {
-              baseTitle = 'Artwork Piece #${_portfolioArtworks.length + 1}';
-            }
+          for (final img in imagesToAdd) {
             _portfolioArtworks.add(ProfileArtworkItem(
               file: img,
-              initialTitle: baseTitle,
+              initialTitle: '',
               initialMedium: _selectedCategory ?? 'Mixed Media',
             ));
           }
         });
+        if (images.length > remainingSlots && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Maximum 6 artworks allowed. Added $remainingSlots artwork(s).'),
+              backgroundColor: const Color(0xFF6A2777),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -110,6 +199,18 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
   }
 
   Future<void> _pickImageFromCamera() async {
+    if (_portfolioArtworks.length >= kMaxArtworks) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Maximum 6 artwork uploads allowed.'),
+            backgroundColor: Color(0xFF6A2777),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.camera,
@@ -119,7 +220,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
         setState(() {
           _portfolioArtworks.add(ProfileArtworkItem(
             file: image,
-            initialTitle: 'Artwork Piece #${_portfolioArtworks.length + 1}',
+            initialTitle: '',
             initialMedium: _selectedCategory ?? 'Mixed Media',
           ));
         });
@@ -136,9 +237,15 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     }
   }
 
+  final List<String> _deletedArtworkIds = [];
+
   void _removeImage(int index) {
     setState(() {
-      _portfolioArtworks[index].dispose();
+      final item = _portfolioArtworks[index];
+      if (item.existingId != null && item.existingId!.isNotEmpty) {
+        _deletedArtworkIds.add(item.existingId!);
+      }
+      item.dispose();
       _portfolioArtworks.removeAt(index);
     });
   }
@@ -155,58 +262,236 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     'Other Art Form',
   ];
 
-  final List<String> _experienceLevels = [
+  List<String> _experienceLevels = [
     'Beginner (1-2 years)',
     'Intermediate (3-5 years)',
     'Advanced (5-10 years)',
     'Professional (10+ years)',
   ];
 
+  List<String> _locations = [
+    'Dubai, UAE',
+    'Dubai Design District (d3), Dubai',
+    'Alserkal Avenue, Al Quoz, Dubai',
+    'Downtown Dubai, UAE',
+    'DIFC, Dubai',
+    'Al Shindagha Historic District, Dubai',
+    'Jaddaf Waterfront, Dubai',
+    'Madinat Jumeirah, Dubai',
+    'Dubai Marina, UAE',
+    'Palm Jumeirah, Dubai',
+    'Jumeirah, Dubai',
+    'Business Bay, Dubai',
+    'Abu Dhabi, UAE',
+    'Sharjah, UAE',
+    'Ajman, UAE',
+    'Ras Al Khaimah, UAE',
+    'Fujairah, UAE',
+    'Umm Al Quwain, UAE',
+  ];
+
+  StreamSubscription<List<CategoryInfo>>? _catSub;
+  StreamSubscription<List<ExperienceLevelModel>>? _expSub;
+  StreamSubscription<List<LocationModel>>? _locSub;
+
   @override
   void initState() {
     super.initState();
-    String prefilledName = '';
-    String prefilledEmail = '';
-    try {
-      final storage = sl<StorageService>();
-      prefilledName = storage.getString('user_name') ?? '';
-      prefilledEmail = storage.getString('user_email') ?? '';
-    } catch (_) {}
+    _isEditMode = widget.isEditing || widget.artist != null || (widget.artistId != null && widget.artistId!.isNotEmpty);
+    _editingArtistId = widget.artist?.id ?? widget.artistId;
+    if (widget.artist != null) {
+      _existingAvatarUrl = widget.artist!.avatarUrl;
+    }
+
+    String prefilledName = widget.artist?.name ?? '';
+    String prefilledEmail = widget.artist?.email ?? '';
+    String prefilledPhone = widget.artist?.phone ?? '';
+    String prefilledBio = widget.artist?.bio ?? '';
+    String prefilledWebsite = widget.artist?.website ?? '';
+    String prefilledInstagram = widget.artist?.instagram ?? '';
+
+    if (!_isEditMode) {
+      try {
+        final storage = sl<StorageService>();
+        if (prefilledName.isEmpty) prefilledName = storage.getString('user_name') ?? '';
+        if (prefilledEmail.isEmpty) prefilledEmail = storage.getString('user_email') ?? '';
+      } catch (_) {}
+    }
 
     _fullNameController = TextEditingController(text: prefilledName);
     _emailController = TextEditingController(text: prefilledEmail);
-    _phoneController = TextEditingController();
-    _locationController = TextEditingController(text: 'Dubai, UAE');
-    _bioController = TextEditingController();
+    _phoneController = TextEditingController(text: prefilledPhone);
+    _bioController = TextEditingController(text: prefilledBio);
 
-    _websiteController = TextEditingController();
-    _instagramController = TextEditingController();
+    _fullNameController.addListener(_onFormCriteriaChanged);
+    _emailController.addListener(_onFormCriteriaChanged);
+    _bioController.addListener(_onFormCriteriaChanged);
+
+    _websiteController = TextEditingController(text: prefilledWebsite);
+    _instagramController = TextEditingController(text: prefilledInstagram);
     _facebookController = TextEditingController();
     _twitterController = TextEditingController();
     _linkedinController = TextEditingController();
     _tiktokController = TextEditingController();
     _youtubeController = TextEditingController();
 
+    if (widget.artist != null) {
+      _selectedCategory = widget.artist!.category;
+      _selectedLocation = widget.artist!.location;
+      if (widget.artist!.experienceLevel.isNotEmpty) {
+        _selectedExperienceLevel = widget.artist!.experienceLevel;
+      }
+      _agreedToTerms = true;
+    }
+
     _loadDynamicData();
+    _initEditProfile();
   }
 
-  Future<void> _loadDynamicData() async {
+  void _populateFromArtist(ArtistModel artist) {
+    if (!mounted) return;
+    setState(() {
+      _isEditMode = true;
+      _editingArtistId = artist.id;
+      _fullNameController.text = artist.name;
+      _emailController.text = artist.email;
+      _phoneController.text = artist.phone;
+      _bioController.text = artist.bio;
+      _websiteController.text = artist.website;
+      _instagramController.text = artist.instagram;
+      _selectedCategory = artist.category;
+      _selectedLocation = artist.location;
+      if (artist.experienceLevel.isNotEmpty) {
+        _selectedExperienceLevel = artist.experienceLevel;
+      }
+      _existingAvatarUrl = artist.avatarUrl;
+      _agreedToTerms = true;
+    });
+
+    _loadArtworksForArtist(artist.id, artist.name);
+  }
+
+  Future<void> _loadArtworksForArtist(String artistId, [String? artistName]) async {
     try {
-      final catInfos = await sl<ApiService>().getCategories(type: 'artist');
-      if (catInfos.isNotEmpty && mounted) {
+      final artworks = await sl<ApiService>().getArtworks(
+        artistId: artistId,
+        artistName: artistName,
+      );
+      if (artworks.isNotEmpty && mounted) {
         setState(() {
-          _categories = catInfos.map((c) => c.name).toList();
+          for (final art in artworks) {
+            final artId = art['id']?.toString();
+            final imgUrl = (art['image_url'] ?? art['image'] ?? '').toString();
+            if (imgUrl.isNotEmpty && !_portfolioArtworks.any((p) => p.existingId == artId)) {
+              if (_portfolioArtworks.length >= kMaxArtworks) break;
+              _portfolioArtworks.add(ProfileArtworkItem(
+                existingImageUrl: imgUrl,
+                existingId: artId,
+                initialTitle: (art['title'] ?? '').toString(),
+                initialMedium: (art['medium'] ?? '').toString(),
+                initialPrice: (art['price'] ?? '').toString(),
+                initialDimensions: (art['dimensions'] ?? '').toString(),
+                isFeatured: art['is_featured'] == 1 ||
+                    art['is_featured'] == true ||
+                    art['is_featured']?.toString() == '1' ||
+                    art['is_featured']?.toString() == 'true',
+              ));
+            }
+          }
         });
       }
     } catch (_) {}
   }
 
+  Future<void> _initEditProfile() async {
+    if (widget.artist != null) {
+      _populateFromArtist(widget.artist!);
+      return;
+    }
+    if (widget.artistId != null && widget.artistId!.isNotEmpty) {
+      try {
+        final artist = await sl<ApiService>().getArtistDetails(widget.artistId!);
+        _populateFromArtist(artist);
+        return;
+      } catch (_) {}
+    }
+
+    // Auto-detect if logged-in user already has an artist profile
+    try {
+      final myArtist = await sl<ApiService>().getMyArtistProfile();
+      if (myArtist != null && mounted) {
+        _populateFromArtist(myArtist);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadDynamicData() async {
+    try {
+      final results = await Future.wait([
+        sl<ApiService>().getCategories(type: 'artist'),
+        sl<ApiService>().getExperienceLevels(),
+        sl<ApiService>().getLocations(),
+      ]);
+      final catInfos = results[0] as List<CategoryInfo>;
+      final expLevels = results[1] as List<ExperienceLevelModel>;
+      final locModels = results[2] as List<LocationModel>;
+      if (mounted) {
+        setState(() {
+          if (catInfos.isNotEmpty) {
+            _categories = catInfos.map((c) => c.name).toList();
+          }
+          if (expLevels.isNotEmpty) {
+            _experienceLevels = expLevels.map((e) => e.name).toSet().toList();
+          }
+          if (locModels.isNotEmpty) {
+            _locations = locModels.map((l) => l.name).toList();
+            if (_selectedLocation != null && !_locations.contains(_selectedLocation)) {
+              _locations.insert(0, _selectedLocation!);
+            }
+          }
+        });
+      }
+    } catch (_) {}
+
+    final liveSync = sl<LiveSyncService>();
+    _catSub = liveSync.categoriesStream.listen((list) {
+      if (mounted && list.isNotEmpty) {
+        setState(() {
+          _categories = list.map((c) => c.name).toList();
+        });
+      }
+    });
+    _expSub = liveSync.experienceLevelsStream.listen((list) {
+      if (mounted && list.isNotEmpty) {
+        setState(() {
+          _experienceLevels = list.map((e) => e.name).toSet().toList();
+        });
+      }
+    });
+    _locSub = liveSync.locationsStream.listen((list) {
+      if (mounted && list.isNotEmpty) {
+        setState(() {
+          _locations = list.map((l) => l.name).toList();
+          if (_selectedLocation != null && !_locations.contains(_selectedLocation)) {
+            _locations.insert(0, _selectedLocation!);
+          }
+        });
+      }
+    });
+  }
+
   @override
   void dispose() {
+    _catSub?.cancel();
+    _expSub?.cancel();
+    _locSub?.cancel();
+    _fullNameController.removeListener(_onFormCriteriaChanged);
+    _emailController.removeListener(_onFormCriteriaChanged);
+    _bioController.removeListener(_onFormCriteriaChanged);
+
     _fullNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
-    _locationController.dispose();
     _bioController.dispose();
 
     _websiteController.dispose();
@@ -220,37 +505,9 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     for (final art in _portfolioArtworks) {
       art.dispose();
     }
+    _catSub?.cancel();
+    _expSub?.cancel();
     super.dispose();
-  }
-
-  Future<void> _pickYear(TextEditingController controller) async {
-    final now = DateTime.now();
-    final parsedYear = int.tryParse(controller.text.trim()) ?? now.year;
-    final initialDate = DateTime(parsedYear);
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
-      firstDate: DateTime(1950),
-      lastDate: DateTime(now.year + 5),
-      initialDatePickerMode: DatePickerMode.year,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF6A2777),
-              onPrimary: Colors.white,
-              onSurface: Color(0xFF1E1E1E),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      setState(() {
-        controller.text = picked.year.toString();
-      });
-    }
   }
 
   void _submitProfile() async {
@@ -259,6 +516,50 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter your full name or stage name.'),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (_emailController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter your email address.'),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (_selectedCategory == null || _selectedCategory!.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select an art category.'),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (_selectedExperienceLevel == null || _selectedExperienceLevel!.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select your experience level.'),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (_bioController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter your artist bio.'),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
         ),
@@ -287,36 +588,56 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
       String? uploadedAvatar;
       String? uploadedBanner;
 
-      // Upload artworks to server and collect their URLs & metadata
+      // 1. Upload dedicated profile photo if selected
+      if (_profilePhotoFile != null) {
+        try {
+          final bytes = _profilePhotoBytes ?? await _profilePhotoFile!.readAsBytes();
+          final nameParts = _profilePhotoFile!.name.split('.');
+          final ext = nameParts.length > 1 ? nameParts.last : 'jpg';
+          final url = await sl<ApiService>().uploadImageBytes(
+            bytes,
+            ext: ext.isNotEmpty ? ext : 'jpg',
+          );
+          if (url != null && url.isNotEmpty) {
+            uploadedAvatar = url;
+          }
+        } catch (_) {}
+      }
+
+      // 2. Upload artworks to server and collect their URLs & metadata
       final List<Map<String, dynamic>> uploadedArtworksData = [];
 
       if (_portfolioArtworks.isNotEmpty) {
         for (int i = 0; i < _portfolioArtworks.length; i++) {
           try {
             final artItem = _portfolioArtworks[i];
-            final bytes = await artItem.file.readAsBytes();
-            final nameParts = artItem.file.name.split('.');
+            if (artItem.isExisting || artItem.file == null) {
+              continue;
+            }
+            final bytes = await artItem.file!.readAsBytes();
+            final nameParts = artItem.file!.name.split('.');
             final ext = nameParts.length > 1 ? nameParts.last : 'jpg';
             final url = await sl<ApiService>().uploadImageBytes(
               bytes,
               ext: ext.isNotEmpty ? ext : 'jpg',
             );
             if (url != null && url.isNotEmpty) {
-              if (i == 0) uploadedAvatar = url;
-              if (i == 1) uploadedBanner = url;
+              if (i == 0 && (uploadedBanner == null || uploadedBanner.isEmpty)) {
+                uploadedBanner = url;
+              }
               uploadedArtworksData.add({
                 'title': artItem.titleController.text.trim().isNotEmpty
                     ? artItem.titleController.text.trim()
                     : 'Artwork Piece #${i + 1}',
                 'medium': artItem.mediumController.text.trim().isNotEmpty
                     ? artItem.mediumController.text.trim()
-                    : 'Oil on Canvas',
+                    : (_selectedCategory ?? 'Mixed Media'),
                 'price': artItem.priceController.text.trim().isNotEmpty
                     ? artItem.priceController.text.trim()
-                    : '\$3,200',
+                    : '',
                 'dimensions': artItem.dimensionsController.text.trim().isNotEmpty
                     ? artItem.dimensionsController.text.trim()
-                    : '150 x 100 cm',
+                    : '',
                 'year': artItem.yearController.text.trim().isNotEmpty
                     ? artItem.yearController.text.trim()
                     : DateTime.now().year.toString(),
@@ -328,13 +649,116 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
         }
       }
 
+      if (_isEditMode && _editingArtistId != null) {
+        final updateData = <String, dynamic>{
+          'id': _editingArtistId,
+          'name': name,
+          'category': _selectedCategory ?? (_categories.isNotEmpty ? _categories.first : 'Visual Arts'),
+          'location': _selectedLocation?.isNotEmpty == true ? _selectedLocation! : 'Dubai, UAE',
+          'bio': _bioController.text.trim(),
+          'email': _emailController.text.trim(),
+          'phone': _phoneController.text.trim().isEmpty
+              ? ''
+              : (_phoneController.text.trim().startsWith('+')
+                  ? _phoneController.text.trim()
+                  : '$_selectedCountryCode ${_phoneController.text.trim()}'),
+          'website': _websiteController.text.trim(),
+          'instagram': _instagramController.text.trim(),
+          'experience_level': _selectedExperienceLevel ?? '',
+          if (uploadedAvatar != null) 'avatar_url': uploadedAvatar,
+          if (uploadedBanner != null) 'banner_url': uploadedBanner,
+        };
+
+        final updated = await sl<ApiService>().updateArtist(updateData);
+
+        // Delete any artworks that were removed by the user
+        for (final delId in _deletedArtworkIds) {
+          try {
+            await sl<ApiService>().deleteArtwork(delId);
+          } catch (_) {}
+        }
+
+        // Update title and featured flag for existing artworks still in the list
+        for (int i = 0; i < _portfolioArtworks.length; i++) {
+          final artItem = _portfolioArtworks[i];
+          if (artItem.isExisting && artItem.existingId != null) {
+            try {
+              await sl<ApiService>().updateArtwork({
+                'id': artItem.existingId,
+                'title': artItem.titleController.text.trim().isNotEmpty
+                    ? artItem.titleController.text.trim()
+                    : 'Artwork Piece #${i + 1}',
+                'is_featured': artItem.isFeatured ? 1 : 0,
+              });
+            } catch (_) {}
+          }
+        }
+
+        // Upload any newly selected artworks
+        for (final artData in uploadedArtworksData) {
+          await sl<ApiService>().createArtwork(
+            title: artData['title'].toString(),
+            artistId: _editingArtistId,
+            artistName: name,
+            year: artData['year'].toString(),
+            medium: artData['medium'].toString(),
+            dimensions: artData['dimensions'].toString(),
+            price: artData['price'].toString(),
+            imageUrl: artData['image_url'].toString(),
+            isFeatured: artData['is_featured'] == true,
+          );
+        }
+
+        if (mounted) {
+          setState(() {
+            _isSubmitting = false;
+          });
+
+          if (updated) {
+            final storage = sl<StorageService>();
+            await storage.setBool('has_artist_profile', true);
+            await storage.setString('artist_profile_id', _editingArtistId!);
+            await storage.setString('artist_profile_name', name);
+            sl<LiveSyncService>().notifyArtistsChanged();
+
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Artist Profile updated successfully!'),
+                backgroundColor: Color(0xFF6A2777),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            if (context.canPop()) {
+              context.pop(true);
+            } else {
+              context.go(RouteNames.artists);
+            }
+          } else {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Failed to update profile. Please check your inputs.'),
+                backgroundColor: Colors.redAccent,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
+        return;
+      }
+
       final profileRes = await sl<ApiService>().createArtistProfile(
         name: name,
         category: _selectedCategory ?? (_categories.isNotEmpty ? _categories.first : 'Visual Arts'),
-        location: _locationController.text.trim().isEmpty ? 'Dubai, UAE' : _locationController.text.trim(),
+        location: _selectedLocation?.isNotEmpty == true ? _selectedLocation! : 'Dubai, UAE',
         bio: _bioController.text.trim(),
         email: _emailController.text.trim(),
-        phone: _phoneController.text.trim(),
+        phone: _phoneController.text.trim().isEmpty
+            ? ''
+            : (_phoneController.text.trim().startsWith('+')
+                ? _phoneController.text.trim()
+                : '$_selectedCountryCode ${_phoneController.text.trim()}'),
         website: _websiteController.text.trim(),
         instagram: _instagramController.text.trim(),
         experienceLevel: _selectedExperienceLevel,
@@ -367,7 +791,15 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
         });
 
         if (profileRes != null) {
+          final artistId = profileRes['artist_id']?.toString();
+          final storage = sl<StorageService>();
+          await storage.setBool('has_artist_profile', true);
+          if (artistId != null) {
+            await storage.setString('artist_profile_id', artistId);
+          }
+          await storage.setString('artist_profile_name', name);
           sl<LiveSyncService>().notifyArtistsChanged();
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Artist Profile & ${uploadedArtworksData.length} Artworks created successfully!'),
@@ -377,6 +809,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
           );
           context.go(RouteNames.artists);
         } else {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Failed to save profile. Please check your inputs.'),
@@ -405,27 +838,34 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9FB),
+      backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
         child: Column(
           children: [
             // "Create Artist Profile" Sub-Header with Back Arrow & Home Action
             Container(
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    width: 1,
+                  ),
+                ),
+              ),
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
                     onPressed: () => context.pop(),
                   ),
                   const SizedBox(width: 4),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Create Artist Profile',
-                      style: TextStyle(
-                        color: Colors.black87,
+                      _isEditMode ? 'Edit Artist Profile' : 'Create Artist Profile',
+                      style: const TextStyle(
+                        color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
@@ -434,25 +874,33 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                   InkWell(
                     onTap: () => context.go(RouteNames.home),
                     borderRadius: BorderRadius.circular(8),
-                    child: Padding(
+                    child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
                       ),
                       child: Row(
                         children: const [
                           Icon(
                             Icons.home_outlined,
-                            color: Colors.black87,
-                            size: 20,
+                            color: Colors.white,
+                            size: 18,
                           ),
                           SizedBox(width: 4),
                           Text(
                             'Home',
                             style: TextStyle(
-                              color: Colors.black87,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -462,15 +910,12 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                 ],
               ),
             ),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
 
             // Form Body Content
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 24,
-                ),
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 48),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -485,9 +930,9 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                             color: Color(0xFFF3E8FF),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
-                            Icons.person_outline,
-                            color: Color(0xFF5E227A),
+                          child: Icon(
+                            _isEditMode ? Icons.edit_outlined : Icons.person_outline,
+                            color: const Color(0xFF6B1C9B),
                             size: 28,
                           ),
                         ),
@@ -497,22 +942,24 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                       // Title & Subtitle
                       Center(
                         child: Column(
-                          children: const [
+                          children: [
                             Text(
-                              'Create Your Artist Profile',
-                              style: TextStyle(
+                              _isEditMode ? 'Edit Your Artist Profile' : 'Create Your Artist Profile',
+                              style: const TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF5E227A),
+                                color: Colors.white,
                               ),
                             ),
-                            SizedBox(height: 6),
+                            const SizedBox(height: 6),
                             Text(
-                              'Join Dubai\'s Artist Community and Showcase Your Portfolio',
+                              _isEditMode
+                                  ? 'Update your artist profile and showcase your portfolio'
+                                  : 'Join Dubai\'s Artist Community and Showcase Your Portfolio',
                               textAlign: TextAlign.center,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 13,
-                                color: Color(0xFF64748B),
+                                color: Color(0xFFE2D6F5),
                               ),
                             ),
                           ],
@@ -524,6 +971,73 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                       _buildSectionTitle(
                         icon: Icons.person_outline,
                         title: 'Basic Information',
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Dedicated Artist Profile Photo (Avatar) Picker
+                      Center(
+                        child: Column(
+                          children: [
+                            Stack(
+                              children: [
+                                CircleAvatar(
+                                  radius: 46,
+                                  backgroundColor: const Color(0xFFF3E8FF),
+                                  backgroundImage: _profilePhotoBytes != null
+                                      ? MemoryImage(_profilePhotoBytes!)
+                                      : (_existingAvatarUrl != null && _existingAvatarUrl!.isNotEmpty
+                                          ? NetworkImage(_existingAvatarUrl!)
+                                          : null),
+                                  child: _profilePhotoBytes == null && (_existingAvatarUrl == null || _existingAvatarUrl!.isEmpty)
+                                      ? const Icon(
+                                          Icons.person,
+                                          size: 46,
+                                          color: Color(0xFF6A2777),
+                                        )
+                                      : null,
+                                ),
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: InkWell(
+                                    onTap: _pickProfilePhoto,
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(7),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF6A2777),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 2),
+                                      ),
+                                      child: const Icon(
+                                        Icons.camera_alt,
+                                        size: 16,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            TextButton.icon(
+                              onPressed: _pickProfilePhoto,
+                              icon: const Icon(Icons.add_a_photo_outlined, size: 16, color: Colors.white),
+                              label: Text(
+                                _profilePhotoFile != null
+                                    ? 'Change Profile Picture'
+                                    : (_existingAvatarUrl != null && _existingAvatarUrl!.isNotEmpty
+                                        ? 'Change Profile Picture'
+                                        : 'Upload Artist Photo (Optional)'),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 14),
                       _buildLabel('Full Name *'),
@@ -539,18 +1053,11 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                         keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 14),
-                      _buildLabel('Phone Number *'),
-                      _buildTextField(
-                        controller: _phoneController,
-                        hintText: '+971 50 XXX XXXX',
-                        keyboardType: TextInputType.phone,
-                      ),
+                      _buildLabel('Phone Number (Optional)'),
+                      _buildPhoneField(),
                       const SizedBox(height: 14),
                       _buildLabel('Location *'),
-                      _buildTextField(
-                        controller: _locationController,
-                        hintText: 'Dubai, UAE',
-                      ),
+                      _buildSearchableLocationField(),
                       const SizedBox(height: 28),
 
                       // SECTION 2: Artist Information
@@ -561,7 +1068,9 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                       const SizedBox(height: 14),
                       _buildLabel('Art Category'),
                       _buildDropdownField(
-                        value: _selectedCategory,
+                        value: _categories.contains(_selectedCategory)
+                            ? _selectedCategory
+                            : null,
                         hintText: 'Select your primary art form',
                         items: _categories,
                         onChanged: (val) {
@@ -573,7 +1082,9 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                       const SizedBox(height: 14),
                       _buildLabel('Experience Level'),
                       _buildDropdownField(
-                        value: _selectedExperienceLevel,
+                        value: _experienceLevels.contains(_selectedExperienceLevel)
+                            ? _selectedExperienceLevel
+                            : null,
                         hintText: 'Select your experience level',
                         items: _experienceLevels,
                         onChanged: (val) {
@@ -588,7 +1099,9 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                         controller: _bioController,
                         hintText:
                             'Tell us about your artistic journey, style, and inspiration...',
-                        maxLines: 4,
+                        maxLines: 5,
+                        maxLength: 5000,
+                        showCounter: true,
                       ),
                       const SizedBox(height: 28),
 
@@ -645,14 +1158,14 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                       ),
                       const SizedBox(height: 28),
 
-                      // SECTION 4: Artwork Portfolio
+                      // SECTION 4: Artwork Portfolio (Max 6)
                       _buildSectionTitle(
                         icon: Icons.upload_file_outlined,
-                        title: 'Artwork Portfolio',
+                        title: 'Artwork Portfolio (${_portfolioArtworks.length}/$kMaxArtworks)',
                       ),
                       const SizedBox(height: 4),
                       const Text(
-                        'Upload your artwork images. You can crop, remove backgrounds, and manage your portfolio.',
+                        'Upload your artwork images (Max 6). You can crop, remove backgrounds, and manage your portfolio.',
                         style: TextStyle(
                           fontSize: 12.5,
                           color: Color(0xFF64748B),
@@ -763,11 +1276,18 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                 ],
                               ),
                               const SizedBox(height: 10),
-                              const Text(
-                                'Max 5MB per file',
+                              Text(
+                                _portfolioArtworks.length >= kMaxArtworks
+                                    ? 'Maximum 6 artworks reached'
+                                    : 'Max 6 uploads • Max 5MB per file',
                                 style: TextStyle(
                                   fontSize: 11.5,
-                                  color: Color(0xFF94A3B8),
+                                  color: _portfolioArtworks.length >= kMaxArtworks
+                                      ? const Color(0xFF6A2777)
+                                      : const Color(0xFF94A3B8),
+                                  fontWeight: _portfolioArtworks.length >= kMaxArtworks
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
                                 ),
                               ),
                             ],
@@ -780,36 +1300,51 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Portfolio Artworks (${_portfolioArtworks.length}):',
+                              'Portfolio Artworks (${_portfolioArtworks.length}/$kMaxArtworks):',
                               style: const TextStyle(
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF1E1E1E),
                               ),
                             ),
-                            TextButton.icon(
-                              onPressed: _pickImagesFromGallery,
-                              icon: const Icon(Icons.add_photo_alternate_outlined, size: 16, color: Color(0xFF6A2777)),
-                              label: const Text(
-                                'Add More',
-                                style: TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF6A2777),
+                            if (_portfolioArtworks.length < kMaxArtworks)
+                              TextButton.icon(
+                                onPressed: _pickImagesFromGallery,
+                                icon: const Icon(Icons.add_photo_alternate_outlined, size: 16, color: Color(0xFF6A2777)),
+                                label: const Text(
+                                  'Add More',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF6A2777),
+                                  ),
+                                ),
+                              )
+                            else
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF3E8FF),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: const Color(0xFF5E227A), width: 0.8),
+                                ),
+                                child: const Text(
+                                  'Max 6 reached',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF5E227A),
+                                  ),
                                 ),
                               ),
-                            ),
                           ],
                         ),
                         const SizedBox(height: 8),
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: _portfolioArtworks.length,
-                          itemBuilder: (context, index) {
+                        Column(
+                          children: List.generate(_portfolioArtworks.length, (index) {
                             final artItem = _portfolioArtworks[index];
                             return Container(
-                              margin: const EdgeInsets.only(bottom: 12),
+                              margin: const EdgeInsets.only(bottom: 14),
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF8FAFC),
@@ -820,26 +1355,40 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
                                       // Artwork Preview Image
                                       Stack(
                                         children: [
                                           ClipRRect(
                                             borderRadius: BorderRadius.circular(8),
-                                            child: kIsWeb
-                                                ? Image.network(
-                                                    artItem.file.path,
-                                                    width: 80,
-                                                    height: 80,
-                                                    fit: BoxFit.cover,
-                                                  )
-                                                : Image.file(
-                                                    File(artItem.file.path),
-                                                    width: 80,
-                                                    height: 80,
-                                                    fit: BoxFit.cover,
-                                                  ),
+                                            child: artItem.file != null
+                                                ? (kIsWeb
+                                                    ? Image.network(
+                                                        artItem.file!.path,
+                                                        width: 72,
+                                                        height: 72,
+                                                        fit: BoxFit.cover,
+                                                      )
+                                                    : Image.file(
+                                                        File(artItem.file!.path),
+                                                        width: 72,
+                                                        height: 72,
+                                                        fit: BoxFit.cover,
+                                                      ))
+                                                : (artItem.existingImageUrl != null && artItem.existingImageUrl!.isNotEmpty
+                                                    ? AppCachedImage(
+                                                        imageUrl: artItem.existingImageUrl!,
+                                                        width: 72,
+                                                        height: 72,
+                                                        fit: BoxFit.cover,
+                                                      )
+                                                    : Container(
+                                                        width: 72,
+                                                        height: 72,
+                                                        color: const Color(0xFFE2E8F0),
+                                                        child: const Icon(Icons.image, color: Color(0xFF94A3B8)),
+                                                      )),
                                           ),
                                           Positioned(
                                             bottom: 2,
@@ -853,8 +1402,8 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                               child: Text(
                                                 '#${index + 1}',
                                                 style: const TextStyle(
-                                                  fontSize: 10,
                                                   color: Colors.white,
+                                                  fontSize: 10,
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
@@ -864,180 +1413,60 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                       ),
                                       const SizedBox(width: 12),
 
-                                      // Title & Medium beside image
+                                      // Artwork Title & Delete button beside image
                                       Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                        child: Row(
                                           children: [
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: TextField(
-                                                    controller: artItem.titleController,
-                                                    style: const TextStyle(
-                                                      fontSize: 13.5,
-                                                      fontWeight: FontWeight.w600,
-                                                      color: Color(0xFF0F172A),
-                                                    ),
-                                                    decoration: const InputDecoration(
-                                                      hintText: 'Artwork Title',
-                                                      hintStyle: TextStyle(
-                                                        fontSize: 12.5,
-                                                        color: Color(0xFF94A3B8),
-                                                      ),
-                                                      isDense: true,
-                                                      filled: true,
-                                                      fillColor: Colors.white,
-                                                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                                      border: OutlineInputBorder(
-                                                        borderRadius: BorderRadius.all(Radius.circular(6)),
-                                                        borderSide: BorderSide(color: Color(0xFFCBD5E1)),
-                                                      ),
-                                                      enabledBorder: OutlineInputBorder(
-                                                        borderRadius: BorderRadius.all(Radius.circular(6)),
-                                                        borderSide: BorderSide(color: Color(0xFFCBD5E1)),
-                                                      ),
-                                                      focusedBorder: OutlineInputBorder(
-                                                        borderRadius: BorderRadius.all(Radius.circular(6)),
-                                                        borderSide: BorderSide(color: Color(0xFF6A2777), width: 1.5),
-                                                      ),
-                                                    ),
+                                            Expanded(
+                                              child: TextField(
+                                                controller: artItem.titleController,
+                                                style: const TextStyle(
+                                                  fontSize: 13.5,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Color(0xFF0F172A),
+                                                ),
+                                                decoration: const InputDecoration(
+                                                  hintText: 'Artwork Title',
+                                                  hintStyle: TextStyle(
+                                                    fontSize: 12.5,
+                                                    color: Color(0xFF94A3B8),
+                                                  ),
+                                                  isDense: true,
+                                                  filled: true,
+                                                  fillColor: Colors.white,
+                                                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                                  border: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                    borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+                                                  ),
+                                                  enabledBorder: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                    borderSide: BorderSide(color: Color(0xFFCBD5E1)),
+                                                  ),
+                                                  focusedBorder: OutlineInputBorder(
+                                                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                                                    borderSide: BorderSide(color: Color(0xFF6A2777), width: 1.5),
                                                   ),
                                                 ),
-                                                const SizedBox(width: 6),
-                                                IconButton(
-                                                  icon: const Icon(
-                                                    Icons.delete_outline,
-                                                    size: 20,
-                                                    color: Color(0xFFDC2626),
-                                                  ),
-                                                  onPressed: () => _removeImage(index),
-                                                  padding: EdgeInsets.zero,
-                                                  constraints: const BoxConstraints(),
-                                                ),
-                                              ],
+                                              ),
                                             ),
-                                            const SizedBox(height: 8),
-                                            TextField(
-                                              controller: artItem.mediumController,
-                                              style: const TextStyle(
-                                                fontSize: 12.5,
-                                                color: Color(0xFF334155),
+                                            const SizedBox(width: 6),
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.delete_outline,
+                                                size: 22,
+                                                color: Color(0xFFDC2626),
                                               ),
-                                              decoration: const InputDecoration(
-                                                hintText: 'Medium (e.g. Oil on Canvas)',
-                                                hintStyle: TextStyle(
-                                                  fontSize: 11.5,
-                                                  color: Color(0xFF94A3B8),
-                                                ),
-                                                isDense: true,
-                                                filled: true,
-                                                fillColor: Colors.white,
-                                                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                                border: OutlineInputBorder(
-                                                  borderRadius: BorderRadius.all(Radius.circular(6)),
-                                                  borderSide: BorderSide(color: Color(0xFFCBD5E1)),
-                                                ),
-                                                enabledBorder: OutlineInputBorder(
-                                                  borderRadius: BorderRadius.all(Radius.circular(6)),
-                                                  borderSide: BorderSide(color: Color(0xFFCBD5E1)),
-                                                ),
-                                                focusedBorder: OutlineInputBorder(
-                                                  borderRadius: BorderRadius.all(Radius.circular(6)),
-                                                  borderSide: BorderSide(color: Color(0xFF6A2777), width: 1.5),
-                                                ),
-                                              ),
+                                              onPressed: () => _removeImage(index),
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(),
                                             ),
                                           ],
                                         ),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 8),
-
-                                  // Full-width row for Dimensions & Year
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        flex: 3,
-                                        child: TextField(
-                                          controller: artItem.dimensionsController,
-                                          style: const TextStyle(
-                                            fontSize: 12.5,
-                                            color: Color(0xFF334155),
-                                          ),
-                                          decoration: const InputDecoration(
-                                            hintText: 'Dimensions (e.g. 150 x 100 cm)',
-                                            hintStyle: TextStyle(
-                                              fontSize: 11.5,
-                                              color: Color(0xFF94A3B8),
-                                            ),
-                                            isDense: true,
-                                            filled: true,
-                                            fillColor: Colors.white,
-                                            contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                            border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.all(Radius.circular(6)),
-                                              borderSide: BorderSide(color: Color(0xFFCBD5E1)),
-                                            ),
-                                            enabledBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.all(Radius.circular(6)),
-                                              borderSide: BorderSide(color: Color(0xFFCBD5E1)),
-                                            ),
-                                            focusedBorder: OutlineInputBorder(
-                                              borderRadius: BorderRadius.all(Radius.circular(6)),
-                                              borderSide: BorderSide(color: Color(0xFF6A2777), width: 1.5),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        flex: 2,
-                                        child: TextField(
-                                          controller: artItem.yearController,
-                                          readOnly: true,
-                                          onTap: () => _pickYear(artItem.yearController),
-                                          style: const TextStyle(
-                                            fontSize: 12.5,
-                                            color: Color(0xFF334155),
-                                          ),
-                                          decoration: InputDecoration(
-                                            hintText: 'Year (2026)',
-                                            hintStyle: const TextStyle(
-                                              fontSize: 11.5,
-                                              color: Color(0xFF94A3B8),
-                                            ),
-                                            suffixIcon: GestureDetector(
-                                              onTap: () => _pickYear(artItem.yearController),
-                                              child: const Icon(
-                                                Icons.calendar_today_outlined,
-                                                size: 14,
-                                                color: Color(0xFF64748B),
-                                              ),
-                                            ),
-                                            isDense: true,
-                                            filled: true,
-                                            fillColor: Colors.white,
-                                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                            border: const OutlineInputBorder(
-                                              borderRadius: BorderRadius.all(Radius.circular(6)),
-                                              borderSide: BorderSide(color: Color(0xFFCBD5E1)),
-                                            ),
-                                            enabledBorder: const OutlineInputBorder(
-                                              borderRadius: BorderRadius.all(Radius.circular(6)),
-                                              borderSide: BorderSide(color: Color(0xFFCBD5E1)),
-                                            ),
-                                            focusedBorder: const OutlineInputBorder(
-                                              borderRadius: BorderRadius.all(Radius.circular(6)),
-                                              borderSide: BorderSide(color: Color(0xFF6A2777), width: 1.5),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
+                                  const SizedBox(height: 12),
 
                                   // Featured checkbox across full width
                                   InkWell(
@@ -1048,21 +1477,21 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                     },
                                     borderRadius: BorderRadius.circular(6),
                                     child: Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 2.0),
+                                      padding: const EdgeInsets.symmetric(vertical: 4.0),
                                       child: Row(
                                         crossAxisAlignment: CrossAxisAlignment.center,
                                         children: [
                                           Icon(
                                             artItem.isFeatured ? Icons.check_box : Icons.check_box_outline_blank,
-                                            size: 18,
+                                            size: 20,
                                             color: artItem.isFeatured ? const Color(0xFF6A2777) : const Color(0xFF94A3B8),
                                           ),
-                                          const SizedBox(width: 6),
+                                          const SizedBox(width: 8),
                                           const Expanded(
                                             child: Text(
-                                              'Mark as Featured Artwork (show "Featured" badge)',
+                                              'Mark as Featured Artwork',
                                               style: TextStyle(
-                                                fontSize: 12,
+                                                fontSize: 12.5,
                                                 fontWeight: FontWeight.w600,
                                                 color: Color(0xFF334155),
                                               ),
@@ -1075,7 +1504,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                 ],
                               ),
                             );
-                          },
+                          }),
                         ),
                       ],
                       const SizedBox(height: 24),
@@ -1138,7 +1567,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                       text: TextSpan(
                                         style: const TextStyle(
                                           fontSize: 13,
-                                          color: Color(0xFF1E1E1E),
+                                          color: Colors.white,
                                           fontWeight: FontWeight.bold,
                                         ),
                                         children: [
@@ -1155,7 +1584,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                           TextSpan(
                                             text: 'Privacy Policy',
                                             style: const TextStyle(
-                                              color: Color(0xFF5E227A),
+                                              color: Color(0xFFF3E8FF),
                                               decoration:
                                                   TextDecoration.underline,
                                             ),
@@ -1178,7 +1607,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                           TextSpan(
                                             text: 'Terms & Conditions',
                                             style: const TextStyle(
-                                              color: Color(0xFF5E227A),
+                                              color: Color(0xFFF3E8FF),
                                               decoration:
                                                   TextDecoration.underline,
                                             ),
@@ -1200,7 +1629,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                               'By checking this box, you consent to the collection, processing, and storage of your personal data as described in our privacy policy. This includes your profile information, artwork images, and contact details which will be used to showcase your work on the Dubai Artist platform.',
                               style: TextStyle(
                                 fontSize: 11.5,
-                                color: Color(0xFF64748B),
+                                color: Color(0xFFE2D6F5),
                                 height: 1.4,
                               ),
                             ),
@@ -1208,7 +1637,6 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                         ),
                       ),
                       const SizedBox(height: 28),
-
                       // Action Buttons: Cancel & Create Profile
                       Row(
                         children: [
@@ -1217,9 +1645,10 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                               height: 48,
                               child: OutlinedButton(
                                 style: OutlinedButton.styleFrom(
+                                  backgroundColor: Colors.white.withValues(alpha: 0.15),
                                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  side: const BorderSide(
-                                    color: Color(0xFF1E1E1E),
+                                  side: BorderSide(
+                                    color: Colors.white.withValues(alpha: 0.3),
                                     width: 1.0,
                                   ),
                                   shape: RoundedRectangleBorder(
@@ -1231,11 +1660,10 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                   fit: BoxFit.scaleDown,
                                   child: Text(
                                     'Cancel',
-                                    maxLines: 1,
                                     style: TextStyle(
                                       fontSize: 14.5,
                                       fontWeight: FontWeight.bold,
-                                      color: Color(0xFF1E1E1E),
+                                      color: Colors.white,
                                     ),
                                   ),
                                 ),
@@ -1248,32 +1676,31 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                               height: 48,
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  backgroundColor: const Color(0xFF9E68B4),
-                                  foregroundColor: Colors.white,
+                                  backgroundColor: _isAllCriteriaMet ? Colors.white : Colors.white.withValues(alpha: 0.75),
+                                  foregroundColor: const Color(0xFF6B1C9B),
                                   elevation: 0,
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
-                                onPressed:
-                                    _isSubmitting ? null : _submitProfile,
+                                onPressed: _isSubmitting ? null : _submitProfile,
                                 child:
                                     _isSubmitting
                                         ? const SizedBox(
                                           width: 20,
                                           height: 20,
                                           child: CircularProgressIndicator(
-                                            color: Colors.white,
+                                            color: Color(0xFF6B1C9B),
                                             strokeWidth: 2,
                                           ),
                                         )
-                                        : const FittedBox(
+                                        : FittedBox(
                                           fit: BoxFit.scaleDown,
                                           child: Text(
-                                            'Create Profile',
+                                            _isEditMode ? 'Save Changes' : 'Create Profile',
                                             maxLines: 1,
-                                            style: TextStyle(
+                                            style: const TextStyle(
                                               fontSize: 14.5,
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -1300,7 +1727,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
   Widget _buildSectionTitle({required IconData icon, required String title}) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: const Color(0xFF5E227A)),
+        Icon(icon, size: 20, color: const Color(0xFFE2D6F5)),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
@@ -1308,7 +1735,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
             style: const TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1E1E1E),
+              color: Colors.white,
             ),
           ),
         ),
@@ -1324,7 +1751,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
         style: const TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.bold,
-          color: Color(0xFF1E1E1E),
+          color: Colors.white,
         ),
       ),
     );
@@ -1335,11 +1762,14 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     required String hintText,
     TextInputType? keyboardType,
     int maxLines = 1,
+    int? maxLength,
+    bool showCounter = false,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       maxLines: maxLines,
+      maxLength: maxLength,
       style: const TextStyle(
         fontSize: 14.5,
         color: Color(0xFF0F172A),
@@ -1347,6 +1777,12 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
       ),
       decoration: InputDecoration(
         hintText: hintText,
+        counterText: showCounter ? null : '',
+        counterStyle: const TextStyle(
+          fontSize: 12,
+          color: Color(0xFF64748B),
+          fontWeight: FontWeight.w500,
+        ),
         hintStyle: const TextStyle(
           fontSize: 13.5,
           color: Color(0xFF64748B),
@@ -1371,6 +1807,281 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
           borderSide: const BorderSide(color: Color(0xFF5E227A), width: 1.5),
         ),
       ),
+    );
+  }
+
+  Widget _buildPhoneField() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFCBD5E1), width: 1),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedCountryCode,
+              dropdownColor: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              menuMaxHeight: 340,
+              menuWidth: 290,
+              icon: const Icon(
+                Icons.keyboard_arrow_down,
+                color: Color(0xFF334155),
+                size: 18,
+              ),
+              selectedItemBuilder: (BuildContext context) {
+                return kCountryCodes.map((item) {
+                  return Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          item.flag,
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          item.code,
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList();
+              },
+              items: kCountryCodes.map((item) {
+                final isDubai = item.code == '+971';
+                return DropdownMenuItem<String>(
+                  value: item.code,
+                  child: Row(
+                    children: [
+                      Text(item.flag, style: const TextStyle(fontSize: 16)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          item.country,
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight:
+                                isDubai ? FontWeight.bold : FontWeight.w500,
+                            color: isDubai
+                                ? const Color(0xFF5E227A)
+                                : const Color(0xFF1E293B),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '(${item.code})',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: isDubai
+                              ? const Color(0xFF5E227A)
+                              : const Color(0xFF64748B),
+                          fontWeight:
+                              isDubai ? FontWeight.w600 : FontWeight.normal,
+                        ),
+                      ),
+                      if (isDubai) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF3E8FF),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'Default',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF5E227A),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              }).toList(),
+              onChanged: (val) {
+                if (val != null) {
+                  setState(() {
+                    _selectedCountryCode = val;
+                  });
+                }
+              },
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: TextFormField(
+            controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            style: const TextStyle(
+              fontSize: 14.5,
+              color: Color(0xFF0F172A),
+              fontWeight: FontWeight.w500,
+            ),
+            decoration: InputDecoration(
+              hintText: '50 XXX XXXX',
+              hintStyle: const TextStyle(
+                fontSize: 13.5,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.normal,
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide:
+                    const BorderSide(color: Color(0xFFCBD5E1), width: 1),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide:
+                    const BorderSide(color: Color(0xFFCBD5E1), width: 1),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide:
+                    const BorderSide(color: Color(0xFF5E227A), width: 1.5),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSearchableLocationField() {
+    return Autocomplete<String>(
+      optionsBuilder: (TextEditingValue textEditingValue) {
+        if (textEditingValue.text.isEmpty) {
+          return _locations;
+        }
+        return _locations.where((location) =>
+            location.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+      },
+      initialValue: TextEditingValue(text: _selectedLocation ?? ''),
+      onSelected: (String selection) {
+        setState(() {
+          _selectedLocation = selection;
+        });
+      },
+      optionsMaxHeight: 250,
+      optionsViewOpenDirection: OptionsViewOpenDirection.down,
+      fieldViewBuilder: (
+        BuildContext context,
+        TextEditingController fieldTextEditingController,
+        FocusNode fieldFocusNode,
+        VoidCallback onFieldSubmitted,
+      ) {
+        return TextFormField(
+          controller: fieldTextEditingController,
+          focusNode: fieldFocusNode,
+          style: const TextStyle(
+            fontSize: 14,
+            color: Color(0xFF1E293B),
+            fontWeight: FontWeight.w500,
+          ),
+          decoration: InputDecoration(
+            hintText: 'Search or select your location',
+            hintStyle: const TextStyle(
+              fontSize: 13.5,
+              color: Color(0xFF64748B),
+              fontWeight: FontWeight.normal,
+            ),
+            suffixIcon: const Icon(Icons.search, color: Color(0xFF334155), size: 20),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Color(0xFF5E227A), width: 1.5),
+            ),
+          ),
+          onChanged: (val) {
+            // Allow freeform text as well
+            _selectedLocation = val;
+          },
+        );
+      },
+      optionsViewBuilder: (
+        BuildContext context,
+        AutocompleteOnSelected<String> onSelected,
+        Iterable<String> options,
+      ) {
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.white,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 250),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: options.length,
+                itemBuilder: (BuildContext context, int index) {
+                  final option = options.elementAt(index);
+                  return InkWell(
+                    onTap: () => onSelected(option),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        border: index < options.length - 1
+                            ? const Border(bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1))
+                            : null,
+                      ),
+                      child: Text(
+                        option,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: option == _selectedLocation
+                              ? const Color(0xFF5E227A)
+                              : const Color(0xFF1E293B),
+                          fontWeight: option == _selectedLocation
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

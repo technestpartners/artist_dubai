@@ -304,6 +304,14 @@ class _ArtistsViewState extends State<ArtistsView> {
       if (st == 'inactive' || st == 'deactive' || st == 'suspended' || st == 'deleted' || st == 'pending') return false;
       return true;
     }).toList();
+
+    // Sort latest artists first
+    effectiveArtists.sort((a, b) {
+      final aId = int.tryParse(a.id) ?? 0;
+      final bId = int.tryParse(b.id) ?? 0;
+      if (aId != bId) return bId.compareTo(aId);
+      return b.createdAt.compareTo(a.createdAt);
+    });
     final filteredArtists =
         _selectedCategory == null
             ? effectiveArtists
@@ -317,11 +325,11 @@ class _ArtistsViewState extends State<ArtistsView> {
     final hPad = rh.horizontalPadding;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFBFBFD),
+      backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(),
       body: SafeArea(
         child: RefreshIndicator(
-          color: const Color(0xFF5E227A),
+          color: const Color(0xFF6A2777),
           onRefresh: _fetchData,
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
@@ -341,7 +349,7 @@ class _ArtistsViewState extends State<ArtistsView> {
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF1E1E1E),
+                          color: Colors.white,
                           letterSpacing: -0.3,
                         ),
                       ),
@@ -356,7 +364,7 @@ class _ArtistsViewState extends State<ArtistsView> {
                                     : 'Discover ${filteredArtists.length} talented artists in Dubai',
                         style: const TextStyle(
                           fontSize: 13.5,
-                          color: Color(0xFF64748B),
+                          color: Color(0xFFE2D6F5),
                         ),
                       ),
                     ],
@@ -375,21 +383,21 @@ class _ArtistsViewState extends State<ArtistsView> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF1E1E1E),
+                            color: Colors.white,
                           ),
                         ),
                         const SizedBox(height: 4),
                         const Text(
                           'Be the first to create an artist profile!',
-                          style: TextStyle(fontSize: 13.5, color: Color(0xFF616161)),
+                          style: TextStyle(fontSize: 13.5, color: Color(0xFFE2D6F5)),
                         ),
                         const SizedBox(height: 14),
                         SizedBox(
                           height: 40,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF5E227A),
-                              foregroundColor: Colors.white,
+                              backgroundColor: Colors.white,
+                              foregroundColor: const Color(0xFF6B1C9B),
                               elevation: 0,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 20,
@@ -404,7 +412,7 @@ class _ArtistsViewState extends State<ArtistsView> {
                               if (mounted) {
                                 setState(() {});
                                 if (_isLoggedIn) {
-                                  _fetchData(silent: false);
+                                   _fetchData(silent: false);
                                 }
                               }
                             },
@@ -413,6 +421,7 @@ class _ArtistsViewState extends State<ArtistsView> {
                               style: TextStyle(
                                 fontSize: 14.5,
                                 fontWeight: FontWeight.bold,
+                                color: Color(0xFF6B1C9B),
                               ),
                             ),
                           ),
@@ -426,7 +435,7 @@ class _ArtistsViewState extends State<ArtistsView> {
                     padding: EdgeInsets.symmetric(vertical: 48.0),
                     child: Center(
                       child: CircularProgressIndicator(
-                        color: Color(0xFF5E227A),
+                        color: Colors.white,
                         strokeWidth: 2.5,
                       ),
                     ),
@@ -440,21 +449,21 @@ class _ArtistsViewState extends State<ArtistsView> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF1E1E1E),
+                            color: Colors.white,
                           ),
                         ),
                         const SizedBox(height: 4),
                         const Text(
                           'Be the first to create an artist profile!',
-                          style: TextStyle(fontSize: 13.5, color: Color(0xFF616161)),
+                          style: TextStyle(fontSize: 13.5, color: Color(0xFFE2D6F5)),
                         ),
                         const SizedBox(height: 14),
                         SizedBox(
                           height: 40,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF5E227A),
-                              foregroundColor: Colors.white,
+                              backgroundColor: Colors.white,
+                              foregroundColor: const Color(0xFF6B1C9B),
                               elevation: 0,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 20,
@@ -470,6 +479,7 @@ class _ArtistsViewState extends State<ArtistsView> {
                               style: TextStyle(
                                 fontSize: 14.5,
                                 fontWeight: FontWeight.bold,
+                                color: Color(0xFF6B1C9B),
                               ),
                             ),
                           ),
@@ -756,7 +766,9 @@ class _ArtistsViewState extends State<ArtistsView> {
                   top: Radius.circular(15),
                 ),
                 child: AppCachedImage(
-                  imageUrl: artist.bannerUrl,
+                  imageUrl: artist.bannerUrl.isNotEmpty
+                      ? artist.bannerUrl
+                      : (artist.avatarUrl.isNotEmpty ? artist.avatarUrl : ''),
                   height: bannerHeight,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -926,7 +938,7 @@ class _ArtistsViewState extends State<ArtistsView> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          '${artist.likesCount} likes   ${artist.worksCount} artworks',
+                          '${artist.likesCount} likes   ${artist.worksCount} ${artist.worksCount == 1 ? "artwork" : "artworks"}',
                           style: const TextStyle(
                             fontSize: 13,
                             color: Color(0xFF757575),

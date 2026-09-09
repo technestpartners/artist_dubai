@@ -126,21 +126,28 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
-      appBar: const AppTopBar(),
+      backgroundColor: const Color(0xFF6B1C9B),
+      appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
         child: Column(
           children: [
-            // 1. Sub-Header with Back Button (Matching Screenshot media_1787732826497.png)
+            // 1. Sub-Header with Back Button
             Container(
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    width: 1,
+                  ),
+                ),
+              ),
               child: Row(
                 children: [
                   IconButton(
                     icon: const Icon(
                       Icons.arrow_back,
-                      color: Color(0xFF1E1E1E),
+                      color: Colors.white,
                       size: 20,
                     ),
                     onPressed: () {
@@ -156,7 +163,7 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E1E1E),
+                      color: Colors.white,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -169,14 +176,14 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF1E1E1E),
+                            color: Colors.white,
                           ),
                         ),
                         Text(
                           'Add a new category for artists to showcase their work',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF64748B),
+                            color: Color(0xFFE2D6F5),
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -186,7 +193,6 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                 ],
               ),
             ),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
 
             // Form Scroll Body
             Expanded(

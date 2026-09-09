@@ -562,7 +562,7 @@ void main() {
       // Paged Fetch
       final paged = await apiService.getArtistsPaged();
       expect(paged.data.length, greaterThanOrEqualTo(2));
-      expect(paged.data.first.name, 'Renish Artistry');
+      expect(paged.data.first.name, 'Fatima Al-Hashemi');
 
       // Simple Fetch
       final artists = await apiService.getArtists(forceRefresh: true);

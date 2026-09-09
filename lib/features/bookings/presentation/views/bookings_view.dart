@@ -79,18 +79,25 @@ class _BookingsViewState extends State<BookingsView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F9),
+      backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(backgroundColor: Colors.white),
       body: Column(
         children: [
           // Sub-header
           Container(
-            color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(12, 12, 16, 14),
+            padding: const EdgeInsets.fromLTRB(12, 10, 16, 12),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  width: 1,
+                ),
+              ),
+            ),
             child: Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.black87, size: 22),
+                  icon: const Icon(Icons.arrow_back, color: Colors.white, size: 22),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   onPressed: () {
@@ -110,7 +117,7 @@ class _BookingsViewState extends State<BookingsView> {
                       Text(
                         'My Bookings',
                         style: TextStyle(
-                          color: Colors.black87,
+                          color: Colors.white,
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),
@@ -118,7 +125,7 @@ class _BookingsViewState extends State<BookingsView> {
                       SizedBox(height: 2),
                       Text(
                         'Manage your event bookings',
-                        style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                        style: TextStyle(color: Color(0xFFE2D6F5), fontSize: 13),
                       ),
                     ],
                   ),
@@ -126,19 +133,27 @@ class _BookingsViewState extends State<BookingsView> {
                 InkWell(
                   onTap: () => context.go(RouteNames.home),
                   borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: const [
-                        Icon(Icons.home_outlined, color: Colors.black87, size: 20),
+                        Icon(Icons.home_outlined, color: Colors.white, size: 18),
                         SizedBox(width: 4),
                         Text(
                           'Home',
                           style: TextStyle(
-                            color: Colors.black87,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
@@ -148,15 +163,15 @@ class _BookingsViewState extends State<BookingsView> {
               ],
             ),
           ),
-          const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
 
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF6A2777)))
+                ? const Center(child: CircularProgressIndicator(color: Colors.white))
                 : _bookings.isEmpty
                     ? _buildEmpty(context)
                     : RefreshIndicator(
-                        color: const Color(0xFF6A2777),
+                        color: const Color(0xFF6B1C9B),
+                        backgroundColor: Colors.white,
                         onRefresh: () => _fetchBookings(forceRefresh: true),
                         child: ListView.builder(
                           padding: const EdgeInsets.all(16),
@@ -834,25 +849,25 @@ class _BookingsViewState extends State<BookingsView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.confirmation_number_outlined, size: 64, color: Color(0xFF4A5568)),
+            const Icon(Icons.confirmation_number_outlined, size: 64, color: Colors.white70),
             const SizedBox(height: 20),
             const Text(
               'No Bookings Found',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E1E1E)),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             const SizedBox(height: 10),
             const Text(
               "You haven't booked any events yet. Start exploring events to make your first booking!",
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Color(0xFF64748B), height: 1.45),
+              style: TextStyle(fontSize: 14, color: Color(0xFFE2D6F5), height: 1.45),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () => context.push(RouteNames.events),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF5E227A),
-                foregroundColor: Colors.white,
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF6B1C9B),
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

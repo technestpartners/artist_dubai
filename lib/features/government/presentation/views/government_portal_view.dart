@@ -107,8 +107,8 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
     final List<GovernmentEntity> entities = _entities;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7F9),
-      appBar: const AppTopBar(),
+      backgroundColor: const Color(0xFF6B1C9B),
+      appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
         child: RefreshIndicator(
           color: const Color(0xFF6A2777),
@@ -121,9 +121,9 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
                 'Government Portal',
                 style: TextStyle(
                   fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF1E1E1E),
-                  letterSpacing: -0.3,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: 0.3,
                 ),
               ),
               const SizedBox(height: 6),
@@ -131,7 +131,7 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
                 "Partnership opportunities with Dubai's government entities",
                 style: TextStyle(
                   fontSize: 14.5,
-                  color: Color(0xFF64748B),
+                  color: Color(0xFFE2D6F5),
                   fontWeight: FontWeight.w400,
                   height: 1.35,
                 ),

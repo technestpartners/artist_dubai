@@ -10,8 +10,8 @@ class PrivacyPolicyView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: const AppTopBar(),
+      backgroundColor: const Color(0xFF6B1C9B),
+      appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
@@ -36,15 +36,15 @@ class PrivacyPolicyView extends StatelessWidget {
                       Icon(
                         Icons.arrow_back,
                         size: 20,
-                        color: Color(0xFF1E1E1E),
+                        color: Colors.white,
                       ),
                       SizedBox(width: 8),
                       Text(
                         'Back',
                         style: TextStyle(
                           fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF1E1E1E),
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
                         ),
                       ),
                     ],
@@ -58,9 +58,9 @@ class PrivacyPolicyView extends StatelessWidget {
                 'Privacy Policy',
                 style: TextStyle(
                   fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF1E1E1E),
-                  letterSpacing: -0.2,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: 0.3,
                 ),
               ),
               const SizedBox(height: 10),
@@ -69,9 +69,9 @@ class PrivacyPolicyView extends StatelessWidget {
               const Text(
                 'Last updated: 22/8/2026',
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 14,
                   fontWeight: FontWeight.w400,
-                  color: Color(0xFF757575),
+                  color: Color(0xFFE2D6F5),
                 ),
               ),
               const SizedBox(height: 24),
@@ -82,7 +82,7 @@ class PrivacyPolicyView extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1E1E1E),
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(height: 12),
@@ -91,7 +91,7 @@ class PrivacyPolicyView extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w400,
-                  color: Color(0xFF5F6368),
+                  color: Color(0xFFE2D6F5),
                   height: 1.5,
                 ),
               ),
@@ -103,7 +103,7 @@ class PrivacyPolicyView extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1E1E1E),
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(height: 12),
@@ -112,7 +112,7 @@ class PrivacyPolicyView extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w400,
-                  color: Color(0xFF5F6368),
+                  color: Color(0xFFE2D6F5),
                   height: 1.5,
                 ),
               ),
@@ -158,25 +158,28 @@ class PrivacyPolicyView extends StatelessWidget {
         children: [
           const Padding(
             padding: EdgeInsets.only(top: 6.0, right: 10.0),
-            child: Icon(Icons.circle, size: 6, color: Color(0xFF757575)),
+            child: Icon(Icons.circle, size: 6, color: Color(0xFFE2D6F5)),
           ),
           Expanded(
             child: RichText(
               text: TextSpan(
                 style: const TextStyle(
                   fontSize: 14.5,
-                  color: Color(0xFF5F6368),
+                  color: Color(0xFFE2D6F5),
                   height: 1.45,
                 ),
                 children: [
                   TextSpan(
                     text: label,
                     style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF424242),
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
-                  TextSpan(text: text),
+                  TextSpan(
+                    text: text,
+                    style: const TextStyle(color: Color(0xFFE2D6F5)),
+                  ),
                 ],
               ),
             ),

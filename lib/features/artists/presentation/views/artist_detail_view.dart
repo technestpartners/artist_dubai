@@ -15,8 +15,8 @@ import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
-import '../../../bookings/presentation/views/book_artist_view.dart';
 import '../../domain/models/artist_model.dart';
+import 'create_artist_profile_view.dart';
 
 class ArtistDetailView extends StatefulWidget {
   final ArtistModel? artist;
@@ -50,6 +50,89 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
   DateTime? _lastUserFollowActionTime;
 
   List<Map<String, dynamic>> _photoGalleries = [];
+  String? _avatarUrlOverride;
+  bool _isUploadingPhoto = false;
+
+  bool _isMyProfile(ArtistModel? artist) {
+    if (artist == null) return false;
+    final storage = sl<StorageService>();
+    final myArtistId = storage.getString('artist_profile_id');
+    if (myArtistId != null && myArtistId.isNotEmpty && myArtistId == artist.id) {
+      return true;
+    }
+    final userEmail = storage.getString('user_email');
+    if (userEmail != null && userEmail.isNotEmpty && artist.email.isNotEmpty) {
+      if (userEmail.trim().toLowerCase() == artist.email.trim().toLowerCase()) {
+        return true;
+      }
+    }
+    final artistProfileName = storage.getString('artist_profile_name');
+    if (artistProfileName != null && artistProfileName.isNotEmpty) {
+      if (artistProfileName.trim().toLowerCase() == artist.name.trim().toLowerCase()) {
+        return true;
+      }
+    }
+    final userName = storage.getString('user_name');
+    if (userName != null && userName.isNotEmpty) {
+      if (userName.trim().toLowerCase() == artist.name.trim().toLowerCase()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  Future<void> _updateProfilePhoto() async {
+    try {
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+      if (image == null) return;
+      setState(() => _isUploadingPhoto = true);
+
+      final bytes = await image.readAsBytes();
+      final nameParts = image.name.split('.');
+      final ext = nameParts.length > 1 ? nameParts.last : 'jpg';
+      final url = await sl<ApiService>().uploadImageBytes(
+        bytes,
+        ext: ext.isNotEmpty ? ext : 'jpg',
+      );
+      if (url != null && url.isNotEmpty) {
+        final artistId = widget.artist?.id;
+        if (artistId != null && artistId.isNotEmpty && artistId != '0') {
+          await sl<ApiService>().updateArtist({
+            'id': artistId,
+            'avatar_url': url,
+          });
+        }
+        if (mounted) {
+          setState(() {
+            _avatarUrlOverride = url;
+            _isUploadingPhoto = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile picture updated successfully!'),
+              backgroundColor: Color(0xFF6A2777),
+            ),
+          );
+        }
+      } else {
+        if (mounted) setState(() => _isUploadingPhoto = false);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isUploadingPhoto = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating photo: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -283,58 +366,6 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                 : 'Liked ${artist.name}\'s profile ❤️',
           ),
           backgroundColor: wasFav ? const Color(0xFF475569) : const Color(0xFFE11D48),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
-  }
-
-  void _toggleFollowArtist() async {
-    final artist = widget.artist;
-    if (artist == null) return;
-    final userEmail = _getEffectiveEmail();
-    final wasFollowing = _isFollowing;
-    _lastUserFollowActionTime = DateTime.now();
-
-    setState(() {
-      _isFollowing = !wasFollowing;
-      if (!wasFollowing) {
-        _followersCount += 1;
-      } else {
-        if (_followersCount > 0) _followersCount -= 1;
-      }
-    });
-    // Patch in-memory cache so ArtistsView directory reflects this immediately on return
-    sl<ApiService>().patchInteractionsCache(artistId: artist.id, isFollowing: !wasFollowing);
-
-    final res = await sl<ApiService>().followArtist(
-      artistId: artist.id,
-      userEmail: userEmail,
-      action: wasFollowing ? 'unfollow' : 'follow',
-    );
-    if (res != null && mounted) {
-      final confirmed = res['is_following'] == true;
-      sl<ApiService>().patchInteractionsCache(artistId: artist.id, isFollowing: confirmed);
-      setState(() {
-        if (res['followers_count'] != null) {
-          _followersCount = (res['followers_count'] as num).toInt();
-        }
-        _isFollowing = confirmed;
-        if (_isFollowing && _followersCount == 0) _followersCount = 1;
-      });
-    }
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            wasFollowing
-                ? 'Unfollowed ${artist.name}'
-                : 'Now following ${artist.name} 🎉',
-          ),
-          backgroundColor: wasFollowing ? const Color(0xFF475569) : const Color(0xFF6A2777),
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
         ),
@@ -960,22 +991,21 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
     final List<Map<String, dynamic>> displayedArtworks = _artworksList;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
         child: Column(
           children: [
             // 1. Sub-Header with Back Button & Share/Favorite Actions
             Container(
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               child: Row(
                 children: [
                   IconButton(
                     icon: const Icon(
                       Icons.arrow_back,
-                      color: Color(0xFF1E1E1E),
-                      size: 20,
+                      color: Colors.white,
+                      size: 22,
                     ),
                     onPressed: () {
                       if (context.canPop()) {
@@ -985,34 +1015,71 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                       }
                     },
                   ),
+                  const SizedBox(width: 4),
                   const Expanded(
                     child: Text(
                       'Artist Profile',
                       style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1E1E1E),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  if (_isMyProfile(currentArtist)) ...[
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => CreateArtistProfileView(
+                                isEditing: true,
+                                artist: currentArtist,
+                                artistId: currentArtist.id,
+                              ),
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.edit_outlined,
+                            size: 18,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: _shareArtist,
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(8),
                       child: Container(
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          border: Border.all(color: const Color(0xFFCBD5E1)),
-                          borderRadius: BorderRadius.circular(6),
+                          color: Colors.white.withValues(alpha: 0.15),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(
                           Icons.share_outlined,
                           size: 18,
-                          color: Color(0xFF1E1E1E),
+                          color: Colors.white,
                         ),
                       ),
                     ),
@@ -1022,29 +1089,27 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: _toggleArtistFavorite,
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(8),
                       child: Container(
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
                           color: _isArtistFavorited
-                              ? const Color(0xFFE11D48).withValues(alpha: 0.1)
-                              : Colors.transparent,
+                              ? const Color(0xFFE11D48).withValues(alpha: 0.8)
+                              : Colors.white.withValues(alpha: 0.15),
                           border: Border.all(
                             color: _isArtistFavorited
                                 ? const Color(0xFFE11D48)
-                                : const Color(0xFFCBD5E1),
+                                : Colors.white.withValues(alpha: 0.3),
                           ),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
                           _isArtistFavorited
                               ? Icons.favorite
                               : Icons.favorite_border,
                           size: 18,
-                          color: _isArtistFavorited
-                              ? const Color(0xFFE11D48)
-                              : const Color(0xFF1E1E1E),
+                          color: Colors.white,
                         ),
                       ),
                     ),
@@ -1052,15 +1117,11 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                 ],
               ),
             ),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
 
             // Main Body Scroll Content
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 20,
-                ),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1074,23 +1135,64 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                       ),
                       child: Column(
                         children: [
-                          // Avatar
-                          CircleAvatar(
-                            radius: 42,
-                            backgroundColor: const Color(0xFFF3E8FF),
-                            backgroundImage: currentArtist.avatarUrl.isNotEmpty
-                                ? CachedNetworkImageProvider(
-                                    currentArtist.avatarUrl,
-                                  )
-                                : null,
-                            child:
-                                currentArtist.avatarUrl.isEmpty
-                                    ? const Icon(
-                                      Icons.person,
-                                      size: 42,
-                                      color: Color(0xFF6A2777),
-                                    )
+                          // Avatar with Edit / Camera Upload Option
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              CircleAvatar(
+                                radius: 42,
+                                backgroundColor: const Color(0xFFF3E8FF),
+                                backgroundImage: (_avatarUrlOverride ?? currentArtist.avatarUrl).isNotEmpty
+                                    ? CachedNetworkImageProvider(
+                                        _avatarUrlOverride ?? currentArtist.avatarUrl,
+                                      )
                                     : null,
+                                child:
+                                    (_avatarUrlOverride ?? currentArtist.avatarUrl).isEmpty
+                                        ? const Icon(
+                                          Icons.person,
+                                          size: 42,
+                                          color: Color(0xFF6A2777),
+                                        )
+                                        : null,
+                              ),
+                              if (_isUploadingPhoto)
+                                const Positioned.fill(
+                                  child: CircleAvatar(
+                                    backgroundColor: Colors.black38,
+                                    child: SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2.5,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              if (_isMyProfile(currentArtist))
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: InkWell(
+                                    onTap: _isUploadingPhoto ? null : _updateProfilePhoto,
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF6A2777),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 2),
+                                      ),
+                                      child: const Icon(
+                                        Icons.camera_alt,
+                                        size: 14,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                           const SizedBox(height: 14),
 
@@ -1141,7 +1243,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                           ),
                           const SizedBox(height: 20),
 
-                          // Stats Row (Artworks | Likes | Followers)
+                          // Stats Row (Artworks | Likes)
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
@@ -1152,12 +1254,6 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                 color: const Color(0xFFE2E8F0),
                               ),
                               _buildStatItem('$_likesCount', 'Likes'),
-                              Container(
-                                height: 24,
-                                width: 1,
-                                color: const Color(0xFFE2E8F0),
-                              ),
-                              _buildStatItem('$_followersCount', 'Followers'),
                             ],
                           ),
                           const SizedBox(height: 18),
@@ -1208,90 +1304,44 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 20),
-
-                          // Action Buttons Row: Book Artist & Follow
-                          Row(
-                            children: [
-                              Expanded(
-                                flex: 3,
-                                child: SizedBox(
-                                  height: 44,
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF6A2777),
-                                      foregroundColor: Colors.white,
-                                      elevation: 0,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
+                          // Action Button: Edit Profile (only if this is the logged-in user's profile)
+                          if (_isMyProfile(currentArtist)) ...[
+                            const SizedBox(height: 20),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 44,
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF6A2777),
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => CreateArtistProfileView(
+                                        isEditing: true,
+                                        artist: currentArtist,
+                                        artistId: currentArtist.id,
                                       ),
                                     ),
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder:
-                                              (context) => BookArtistView(
-                                                artistName: currentArtist.name,
-                                              ),
-                                        ),
-                                      );
-                                    },
-                                    child: const Text(
-                                      'Book Artist',
-                                      style: TextStyle(
-                                        fontSize: 14.5,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.edit_outlined, size: 18),
+                                label: const Text(
+                                  'Edit Profile',
+                                  style: TextStyle(
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                flex: 2,
-                                child: SizedBox(
-                                  height: 44,
-                                  child: OutlinedButton.icon(
-                                    style: OutlinedButton.styleFrom(
-                                      backgroundColor: _isFollowing
-                                          ? const Color(0xFF6A2777).withValues(alpha: 0.08)
-                                          : Colors.transparent,
-                                      side: BorderSide(
-                                        color: _isFollowing
-                                            ? const Color(0xFF6A2777)
-                                            : const Color(0xFF333333),
-                                        width: _isFollowing ? 1.4 : 1.0,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                    onPressed: _toggleFollowArtist,
-                                    icon: Icon(
-                                      _isFollowing
-                                          ? Icons.check
-                                          : Icons.person_add_outlined,
-                                      size: 16,
-                                      color: _isFollowing
-                                          ? const Color(0xFF6A2777)
-                                          : const Color(0xFF1E1E1E),
-                                    ),
-                                    label: Text(
-                                      _isFollowing ? 'Following' : 'Follow',
-                                      style: TextStyle(
-                                        fontSize: 13.5,
-                                        fontWeight: FontWeight.bold,
-                                        color: _isFollowing
-                                            ? const Color(0xFF6A2777)
-                                            : const Color(0xFF1E1E1E),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -1309,7 +1359,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF1E1E1E),
+                                color: Colors.white,
                               ),
                             ),
 
@@ -1317,8 +1367,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                             Container(
                               padding: const EdgeInsets.all(3),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFE2E8F0),
+                                color: Colors.white,
                                 borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFFE2E8F0)),
                               ),
                               child: Row(
                                 children: [
@@ -1335,7 +1386,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                       decoration: BoxDecoration(
                                         color:
                                             _isGridView
-                                                ? const Color(0xFF6A2777)
+                                                ? const Color(0xFF6B1C9B)
                                                 : Colors.transparent,
                                         borderRadius: BorderRadius.circular(6),
                                       ),
@@ -1364,7 +1415,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                       decoration: BoxDecoration(
                                         color:
                                             !_isGridView
-                                                ? const Color(0xFF6A2777)
+                                                ? const Color(0xFF6B1C9B)
                                                 : Colors.transparent,
                                         borderRadius: BorderRadius.circular(6),
                                       ),
@@ -1388,15 +1439,39 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                           'Explore ${currentArtist.name}\'s collection of artworks',
                           style: const TextStyle(
                             fontSize: 13.5,
-                            color: Color(0xFF64748B),
+                            color: Color(0xFFE2D6F5),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
 
-                    // Portfolio Artworks Content (Grid vs List)
-                    if (_isGridView)
+                    // Portfolio Artworks Content (Grid vs List vs Empty State)
+                    if (displayedArtworks.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFCBD5E1)),
+                        ),
+                        child: Column(
+                          children: const [
+                            Icon(Icons.palette_outlined, size: 36, color: Color(0xFF94A3B8)),
+                            SizedBox(height: 8),
+                            Text(
+                              'No artworks added yet',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1E1E1E),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else if (_isGridView)
                       _buildArtworksGrid(displayedArtworks)
                     else
                       _buildArtworksList(displayedArtworks),
@@ -1570,7 +1645,10 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
             ? item['id'] as int
             : int.tryParse(item['id']?.toString() ?? '') ?? (index + 1);
         final isFav = _favoritedArtworks.contains(itemId);
-        final isFeatured = item['is_featured'] == 1 || item['is_featured'] == true || index == 0;
+        final isFeatured = item['is_featured'] == 1 ||
+            item['is_featured'] == true ||
+            item['is_featured']?.toString() == '1' ||
+            item['is_featured']?.toString() == 'true';
         final imageUrl = (item['image_url'] ?? item['image'] ?? '').toString();
         final title = (item['title'] ?? 'Artwork ${index + 1}').toString();
         final year = (item['year'] ?? '2024').toString();

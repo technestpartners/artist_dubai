@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/routes/route_names.dart';
 import '../di/injection_container.dart';
+import '../services/api_service.dart';
 import '../services/live_sync_service.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
@@ -12,6 +14,7 @@ enum TopBarMenuItem {
   adminDashboard,
   accountSettings,
   createArtistProfile,
+  editArtistProfile,
   myBookings,
   bookingRequests,
   myFavorites,
@@ -24,7 +27,7 @@ enum TopBarMenuItem {
 }
 
 class AppTopBar extends StatefulWidget implements PreferredSizeWidget {
-  const AppTopBar({super.key, this.backgroundColor = const Color(0xFFFAFAFA)});
+  const AppTopBar({super.key, this.backgroundColor = Colors.white});
 
   final Color backgroundColor;
 
@@ -37,6 +40,53 @@ class AppTopBar extends StatefulWidget implements PreferredSizeWidget {
 
 class _AppTopBarState extends State<AppTopBar> {
   final GlobalKey _bellKey = GlobalKey();
+  bool _hasArtistProfile = false;
+  String? _myArtistId;
+  StreamSubscription? _artistsSub;
+  StreamSubscription? _authSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadArtistProfile();
+    _artistsSub = sl<LiveSyncService>().artistsStream.listen((_) {
+      if (mounted) _loadArtistProfile();
+    });
+    _authSub = sl<LiveSyncService>().authStream.listen((_) {
+      if (mounted) _loadArtistProfile();
+    });
+  }
+
+  @override
+  void dispose() {
+    _artistsSub?.cancel();
+    _authSub?.cancel();
+    super.dispose();
+  }
+
+  void _loadArtistProfile() async {
+    try {
+      final storage = sl<StorageService>();
+      final cachedHas = storage.getBool('has_artist_profile') ?? false;
+      final cachedId = storage.getString('artist_profile_id');
+      if (mounted) {
+        setState(() {
+          _hasArtistProfile = cachedHas && (cachedId != null && cachedId.isNotEmpty);
+          _myArtistId = cachedId;
+        });
+      }
+
+      if (_isLoggedIn) {
+        final artist = await sl<ApiService>().getMyArtistProfile();
+        if (mounted) {
+          setState(() {
+            _hasArtistProfile = artist != null;
+            _myArtistId = artist?.id;
+          });
+        }
+      }
+    } catch (_) {}
+  }
 
   bool get _isLoggedIn {
     try {
@@ -56,6 +106,15 @@ class _AppTopBarState extends State<AppTopBar> {
         break;
       case TopBarMenuItem.createArtistProfile:
         context.push(RouteNames.artistRegistration);
+        break;
+      case TopBarMenuItem.editArtistProfile:
+        context.push(
+          RouteNames.artistRegistration,
+          extra: {
+            'isEditing': true,
+            'artistId': _myArtistId,
+          },
+        );
         break;
       case TopBarMenuItem.myBookings:
         context.push(RouteNames.bookings);
@@ -367,66 +426,48 @@ class _AppTopBarState extends State<AppTopBar> {
                       ],
                     ),
                   ),
-                  const PopupMenuItem<TopBarMenuItem>(
-                    value: TopBarMenuItem.createArtistProfile,
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.palette_outlined,
-                          size: 18,
-                          color: Color(0xFF1E1E1E),
-                        ),
-                        SizedBox(width: 10),
-                        Text(
-                          'Create Artist Profile',
-                          style: TextStyle(
-                            fontSize: 14.5,
+                  if (_hasArtistProfile)
+                    const PopupMenuItem<TopBarMenuItem>(
+                      value: TopBarMenuItem.editArtistProfile,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.edit_outlined,
+                            size: 18,
                             color: Color(0xFF1E1E1E),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem<TopBarMenuItem>(
-                    value: TopBarMenuItem.myBookings,
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.calendar_today_outlined,
-                          size: 18,
-                          color: Color(0xFF1E1E1E),
-                        ),
-                        SizedBox(width: 10),
-                        Text(
-                          'My Bookings',
-                          style: TextStyle(
-                            fontSize: 14.5,
+                          SizedBox(width: 10),
+                          Text(
+                            'Edit Artist Profile',
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              color: Color(0xFF1E1E1E),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    const PopupMenuItem<TopBarMenuItem>(
+                      value: TopBarMenuItem.createArtistProfile,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.palette_outlined,
+                            size: 18,
                             color: Color(0xFF1E1E1E),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem<TopBarMenuItem>(
-                    value: TopBarMenuItem.bookingRequests,
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.inbox_outlined,
-                          size: 18,
-                          color: Color(0xFF1E1E1E),
-                        ),
-                        SizedBox(width: 10),
-                        Text(
-                          'Booking Requests',
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            color: Color(0xFF1E1E1E),
+                          SizedBox(width: 10),
+                          Text(
+                            'Create Artist Profile',
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              color: Color(0xFF1E1E1E),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
                   const PopupMenuItem<TopBarMenuItem>(
                     value: TopBarMenuItem.myEvents,
                     child: Row(

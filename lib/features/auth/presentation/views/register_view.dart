@@ -424,16 +424,19 @@ class _RegisterViewState extends State<RegisterView> {
                                             : const Color(0xFF64748B),
                                       ),
                                       const SizedBox(width: 6),
-                                      Text(
-                                        'Art Lover',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: _selectedRole == 'user'
-                                              ? FontWeight.w700
-                                              : FontWeight.w500,
-                                          color: _selectedRole == 'user'
-                                              ? const Color(0xFF6A2777)
-                                              : const Color(0xFF64748B),
+                                      Flexible(
+                                        child: Text(
+                                          'Art Lover',
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 12.5,
+                                            fontWeight: _selectedRole == 'user'
+                                                ? FontWeight.w700
+                                                : FontWeight.w500,
+                                            color: _selectedRole == 'user'
+                                                ? const Color(0xFF6A2777)
+                                                : const Color(0xFF64748B),
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -476,16 +479,19 @@ class _RegisterViewState extends State<RegisterView> {
                                             : const Color(0xFF64748B),
                                       ),
                                       const SizedBox(width: 6),
-                                      Text(
-                                        'Artist / Creator',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: _selectedRole == 'artist'
-                                              ? FontWeight.w700
-                                              : FontWeight.w500,
-                                          color: _selectedRole == 'artist'
-                                              ? const Color(0xFF6A2777)
-                                              : const Color(0xFF64748B),
+                                      Flexible(
+                                        child: Text(
+                                          'Artist / Creator',
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 12.5,
+                                            fontWeight: _selectedRole == 'artist'
+                                                ? FontWeight.w700
+                                                : FontWeight.w500,
+                                            color: _selectedRole == 'artist'
+                                                ? const Color(0xFF6A2777)
+                                                : const Color(0xFF64748B),
+                                          ),
                                         ),
                                       ),
                                     ],

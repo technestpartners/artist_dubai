@@ -599,7 +599,7 @@ class _ProfileViewState extends State<ProfileView> {
                     SizedBox(height: 6),
                     _BulletPointText('Your account information'),
                     SizedBox(height: 6),
-                    _BulletPointText('All your bookings and event history'),
+                    _BulletPointText('All your event history'),
                     SizedBox(height: 6),
                     _BulletPointText('Any saved preferences'),
                     SizedBox(height: 6),
@@ -680,7 +680,7 @@ class _ProfileViewState extends State<ProfileView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFC),
+      backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
         child: Column(
@@ -688,7 +688,14 @@ class _ProfileViewState extends State<ProfileView> {
             // Page Header Bar
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: Colors.white,
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    width: 1,
+                  ),
+                ),
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -698,7 +705,7 @@ class _ProfileViewState extends State<ProfileView> {
                         IconButton(
                           icon: const Icon(
                             Icons.arrow_back,
-                            color: Color(0xFF1E1E1E),
+                            color: Colors.white,
                           ),
                           onPressed: () {
                             if (context.canPop()) {
@@ -717,7 +724,7 @@ class _ProfileViewState extends State<ProfileView> {
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E1E1E),
+                              color: Colors.white,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -728,8 +735,9 @@ class _ProfileViewState extends State<ProfileView> {
                   ),
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(
-                        color: Color(0xFFE2E8F0),
+                      backgroundColor: Colors.white.withValues(alpha: 0.15),
+                      side: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.3),
                         width: 1.0,
                       ),
                       shape: RoundedRectangleBorder(
@@ -744,21 +752,20 @@ class _ProfileViewState extends State<ProfileView> {
                     icon: const Icon(
                       Icons.home_outlined,
                       size: 16,
-                      color: Color(0xFF1E1E1E),
+                      color: Colors.white,
                     ),
                     label: const Text(
                       'Home',
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E1E1E),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
 
             // Main Body Content
             Expanded(
@@ -859,19 +866,49 @@ class _ProfileViewState extends State<ProfileView> {
                                   ],
                                 ),
                                 const SizedBox(height: 14),
-                                SizedBox(
-                                  width: double.infinity,
-                                  height: 38,
-                                  child: OutlinedButton.icon(
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: const Color(0xFF6A2777),
-                                      side: const BorderSide(color: Color(0xFF6A2777), width: 1.2),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: SizedBox(
+                                        height: 38,
+                                        child: ElevatedButton.icon(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xFF6A2777),
+                                            foregroundColor: Colors.white,
+                                            elevation: 0,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                          ),
+                                          onPressed: () {
+                                            context.push(
+                                              RouteNames.artistRegistration,
+                                              extra: {
+                                                'isEditing': true,
+                                                'artistId': _artistProfile!['id']?.toString(),
+                                              },
+                                            );
+                                          },
+                                          icon: const Icon(Icons.edit_outlined, size: 16),
+                                          label: const Text('Edit Profile', style: TextStyle(fontWeight: FontWeight.bold)),
+                                        ),
+                                      ),
                                     ),
-                                    onPressed: () => context.push(RouteNames.artists),
-                                    icon: const Icon(Icons.visibility_outlined, size: 16),
-                                    label: const Text('View in Artists Directory', style: TextStyle(fontWeight: FontWeight.bold)),
-                                  ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: SizedBox(
+                                        height: 38,
+                                        child: OutlinedButton.icon(
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: const Color(0xFF6A2777),
+                                            side: const BorderSide(color: Color(0xFF6A2777), width: 1.2),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                          ),
+                                          onPressed: () => context.push(RouteNames.artists),
+                                          icon: const Icon(Icons.visibility_outlined, size: 16),
+                                          label: const Text('View Directory', style: TextStyle(fontWeight: FontWeight.bold)),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             )
@@ -901,7 +938,7 @@ class _ProfileViewState extends State<ProfileView> {
                                 ),
                                 const SizedBox(height: 6),
                                 const Text(
-                                  'Create your artist profile to be discoverable on the platform and receive booking requests.',
+                                  'Create your artist profile to be discoverable on the platform and showcase your portfolio.',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontSize: 13,

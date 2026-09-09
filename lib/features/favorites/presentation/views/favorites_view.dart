@@ -157,7 +157,7 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
       body: SafeArea(
         child: Column(
           children: [
-            // 1. Header Title & Subtitle (Dark Purple Theme matching design)
+            // 1. Header Title & Subtitle
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
@@ -178,7 +178,7 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                     'Your saved artist profiles, favorited events, and liked artworks',
                     style: TextStyle(
                       fontSize: 13.5,
-                      color: Colors.white70,
+                      color: Color(0xFFE2D6F5),
                       fontWeight: FontWeight.w400,
                     ),
                   ),
@@ -187,18 +187,23 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                   // Segmented Tab Switcher
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF5A1684).withValues(alpha: 0.85),
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 4,
+                        ),
+                      ],
                     ),
                     child: TabBar(
                       controller: _tabController,
                       indicator: BoxDecoration(
-                        color: Colors.white,
+                        color: const Color(0xFF6B1C9B),
                         borderRadius: BorderRadius.circular(9),
                       ),
-                      labelColor: const Color(0xFF5E227A),
-                      unselectedLabelColor: Colors.white70,
+                      labelColor: Colors.white,
+                      unselectedLabelColor: const Color(0xFF64748B),
                       labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                       padding: const EdgeInsets.all(3),
                       tabs: [
@@ -217,7 +222,8 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator(color: Colors.white))
                   : RefreshIndicator(
-                      color: const Color(0xFF5E227A),
+                      color: const Color(0xFF6B1C9B),
+                      backgroundColor: Colors.white,
                       onRefresh: _fetchFavorites,
                       child: TabBarView(
                         controller: _tabController,
@@ -266,9 +272,16 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
         return Container(
           margin: const EdgeInsets.only(bottom: 14),
           decoration: BoxDecoration(
-            color: const Color(0xFF5A1684).withValues(alpha: 0.85),
+            color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+            border: Border.all(color: const Color(0xFFCBD5E1)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Padding(
             padding: const EdgeInsets.all(12),
@@ -279,11 +292,11 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                   backgroundImage: artist.avatarUrl.isNotEmpty
                       ? CachedNetworkImageProvider(artist.avatarUrl)
                       : null,
-                  backgroundColor: const Color(0xFF8B2FC9),
+                  backgroundColor: const Color(0xFFF3E8FF),
                   child: artist.avatarUrl.isEmpty
                       ? Text(
                           artist.name.isNotEmpty ? artist.name[0].toUpperCase() : 'A',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+                          style: const TextStyle(color: Color(0xFF6A2777), fontWeight: FontWeight.bold, fontSize: 20),
                         )
                       : null,
                 ),
@@ -294,17 +307,17 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                     children: [
                       Text(
                         artist.name,
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         artist.category,
-                        style: const TextStyle(fontSize: 13, color: Color(0xFFFFD700), fontWeight: FontWeight.w600),
+                        style: const TextStyle(fontSize: 13, color: Color(0xFF6A2777), fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         artist.location,
-                        style: const TextStyle(fontSize: 12, color: Colors.white70),
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
                       ),
                     ],
                   ),
@@ -341,9 +354,16 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
         return Container(
           margin: const EdgeInsets.only(bottom: 14),
           decoration: BoxDecoration(
-            color: const Color(0xFF5A1684).withValues(alpha: 0.85),
+            color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+            border: Border.all(color: const Color(0xFFCBD5E1)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -368,12 +388,12 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFD700),
+                            color: const Color(0xFFF3E8FF),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             event.category,
-                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1E1E1E)),
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF6A2777)),
                           ),
                         ),
                         const Spacer(),
@@ -389,12 +409,12 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                     const SizedBox(height: 8),
                     Text(
                       event.title,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '${event.formattedDate} • ${event.location}',
-                      style: const TextStyle(fontSize: 12.5, color: Colors.white70),
+                      style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
                     ),
                     const SizedBox(height: 10),
                     Row(
@@ -402,12 +422,12 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                       children: [
                         Text(
                           event.price,
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFFFFD700)),
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: const Color(0xFF5E227A),
+                            backgroundColor: const Color(0xFF6A2777),
+                            foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           ),
@@ -452,9 +472,16 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
         return Container(
           margin: const EdgeInsets.only(bottom: 14),
           decoration: BoxDecoration(
-            color: const Color(0xFF5A1684).withValues(alpha: 0.85),
+            color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+            border: Border.all(color: const Color(0xFFCBD5E1)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Padding(
             padding: const EdgeInsets.all(12),
@@ -476,17 +503,17 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         'By $artist',
-                        style: const TextStyle(fontSize: 12.5, color: Color(0xFFFFD700), fontWeight: FontWeight.w600),
+                        style: const TextStyle(fontSize: 12.5, color: Color(0xFF6A2777), fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         '$year • $medium • $dimensions',
-                        style: const TextStyle(fontSize: 11.5, color: Colors.white70),
+                        style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
                       ),
                     ],
                   ),
@@ -517,7 +544,7 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 54, color: Colors.white54),
+            Icon(icon, size: 54, color: Colors.white70),
             const SizedBox(height: 16),
             Text(
               message,
@@ -527,13 +554,13 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
             Text(
               subMessage,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 13, color: Colors.white70, height: 1.4),
+              style: const TextStyle(fontSize: 13, color: Color(0xFFE2D6F5), height: 1.4),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF5E227A),
+                foregroundColor: const Color(0xFF6B1C9B),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),

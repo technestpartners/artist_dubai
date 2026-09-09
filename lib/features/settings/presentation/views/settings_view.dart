@@ -423,19 +423,26 @@ class _SettingsViewState extends State<SettingsView> {
     final isLoggedIn = storage.getBool('is_logged_in') ?? false;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFC),
+      backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
         child: Column(
           children: [
             // "Account Settings" Sub-Header with Back Arrow & Home Action
             Container(
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    width: 1,
+                  ),
+                ),
+              ),
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
                     onPressed: () {
                       if (context.canPop()) {
                         context.pop();
@@ -449,8 +456,8 @@ class _SettingsViewState extends State<SettingsView> {
                     child: Text(
                       'Account Settings',
                       style: TextStyle(
-                        color: Colors.black87,
-                        fontSize: 22,
+                        color: Colors.white,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -458,18 +465,26 @@ class _SettingsViewState extends State<SettingsView> {
                   InkWell(
                     onTap: () => context.go(RouteNames.home),
                     borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
                       child: Row(
                         children: const [
-                          Icon(Icons.home_outlined, color: Colors.black87, size: 20),
+                          Icon(Icons.home_outlined, color: Colors.white, size: 18),
                           SizedBox(width: 4),
                           Text(
                             'Home',
                             style: TextStyle(
-                              color: Colors.black87,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -479,12 +494,12 @@ class _SettingsViewState extends State<SettingsView> {
                 ],
               ),
             ),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
 
             // Main Body Scrollable List
             Expanded(
               child: RefreshIndicator(
-                color: const Color(0xFF5E227A),
+                color: const Color(0xFF6B1C9B),
+                backgroundColor: Colors.white,
                 onRefresh: _loadUserProfile,
                 child: ListView(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
@@ -641,19 +656,49 @@ class _SettingsViewState extends State<SettingsView> {
                                 ],
                               ),
                               const SizedBox(height: 18),
-                              SizedBox(
-                                width: double.infinity,
-                                height: 42,
-                                child: OutlinedButton.icon(
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: const Color(0xFF5E227A),
-                                    side: const BorderSide(color: Color(0xFF5E227A), width: 1.2),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: SizedBox(
+                                      height: 42,
+                                      child: ElevatedButton.icon(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFF5E227A),
+                                          foregroundColor: Colors.white,
+                                          elevation: 0,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        ),
+                                        onPressed: () {
+                                          context.push(
+                                            RouteNames.artistRegistration,
+                                            extra: {
+                                              'isEditing': true,
+                                              'artistId': _artistProfile!['id']?.toString(),
+                                            },
+                                          );
+                                        },
+                                        icon: const Icon(Icons.edit_outlined, size: 16),
+                                        label: const Text('Edit Profile', style: TextStyle(fontWeight: FontWeight.bold)),
+                                      ),
+                                    ),
                                   ),
-                                  onPressed: () => context.push(RouteNames.artists),
-                                  icon: const Icon(Icons.visibility_outlined, size: 18),
-                                  label: const Text('View in Artists Directory', style: TextStyle(fontWeight: FontWeight.bold)),
-                                ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: SizedBox(
+                                      height: 42,
+                                      child: OutlinedButton.icon(
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: const Color(0xFF5E227A),
+                                          side: const BorderSide(color: Color(0xFF5E227A), width: 1.2),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        ),
+                                        onPressed: () => context.push(RouteNames.artists),
+                                        icon: const Icon(Icons.visibility_outlined, size: 18),
+                                        label: const Text('View Directory', style: TextStyle(fontWeight: FontWeight.bold)),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ] else ...[
                               // No Artist Profile View
@@ -840,7 +885,7 @@ class _SettingsViewState extends State<SettingsView> {
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         child: Text(
                           'Artist Dubai · v1.0.0',
-                          style: TextStyle(fontSize: 12, color: Colors.grey.withValues(alpha: 0.5)),
+                          style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.7)),
                         ),
                       ),
                     ),

@@ -91,7 +91,7 @@ void main() {
       expect(find.text('Already have an account? Sign In'), findsOneWidget);
     });
 
-    testWidgets('AppBottomNavBar shows Login icon when logged out and Calendar when logged in', (tester) async {
+    testWidgets('AppBottomNavBar shows 4 options (Home, Artists, Events, Login) when logged out, and 3 when logged in', (tester) async {
       SharedPreferences.setMockInitialValues({'is_logged_in': false});
       await sl.reset();
       await initDependencyInjection();
@@ -105,9 +105,11 @@ void main() {
       );
       await tester.pump();
 
-      // Logged out: should find login icon
+      // Logged out: all 4 options are present (Home, Artists, Events/Calendar, Login)
+      expect(find.byIcon(Icons.home_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.people_outline_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.calendar_today_outlined), findsOneWidget);
       expect(find.byIcon(Icons.login), findsOneWidget);
-      expect(find.byIcon(Icons.calendar_today_outlined), findsNothing);
 
       // Now simulate logged in
       final storage = sl<StorageService>();
@@ -115,7 +117,9 @@ void main() {
       sl<LiveSyncService>().notifyAuthChanged(true);
       await tester.pumpAndSettle();
 
-      // Logged in: should find calendar icon
+      // Logged in: 3 options (Home, Artists, Events/Calendar), Login is hidden
+      expect(find.byIcon(Icons.home_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.people_outline_rounded), findsOneWidget);
       expect(find.byIcon(Icons.calendar_today_outlined), findsOneWidget);
       expect(find.byIcon(Icons.login), findsNothing);
     });

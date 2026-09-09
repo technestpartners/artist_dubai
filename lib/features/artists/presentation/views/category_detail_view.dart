@@ -205,21 +205,28 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
     final activeArtists = _categoryArtists;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
-      appBar: const AppTopBar(),
+      backgroundColor: const Color(0xFF6B1C9B),
+      appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
         child: Column(
           children: [
-            // 1. Sub-Header with Back Button (Matching Screenshot media_1787732673273.png)
+            // 1. Sub-Header with Back Button
             Container(
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    width: 1,
+                  ),
+                ),
+              ),
               child: Row(
                 children: [
                   IconButton(
                     icon: const Icon(
                       Icons.arrow_back,
-                      color: Color(0xFF1E1E1E),
+                      color: Colors.white,
                       size: 20,
                     ),
                     onPressed: () {
@@ -235,7 +242,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E1E1E),
+                      color: Colors.white,
                     ),
                   ),
                 ],
@@ -279,7 +286,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                 style: const TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w900,
-                                  color: Color(0xFF1E1E1E),
+                                  color: Colors.white,
                                   letterSpacing: -0.3,
                                   height: 1.15,
                                 ),
@@ -289,7 +296,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                 'Traditional and contemporary Arabic calligraphy and typographic art.',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Color(0xFF64748B),
+                                  color: Color(0xFFE2D6F5),
                                   height: 1.35,
                                 ),
                               ),
@@ -305,14 +312,14 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                       const Icon(
                                         Icons.group_outlined,
                                         size: 16,
-                                        color: Color(0xFF64748B),
+                                        color: Color(0xFFE2D6F5),
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
                                         '${activeArtists.length} Artists',
                                         style: const TextStyle(
                                           fontSize: 12.5,
-                                          color: Color(0xFF64748B),
+                                          color: Color(0xFFE2D6F5),
                                         ),
                                       ),
                                     ],
@@ -323,14 +330,14 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                       const Icon(
                                         Icons.image_outlined,
                                         size: 16,
-                                        color: Color(0xFF64748B),
+                                        color: Color(0xFFE2D6F5),
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
                                         '${_categoryArtworks.length} Artworks',
                                         style: const TextStyle(
                                           fontSize: 12.5,
-                                          color: Color(0xFF64748B),
+                                          color: Color(0xFFE2D6F5),
                                         ),
                                       ),
                                     ],
@@ -362,17 +369,17 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                     vertical: 6,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
+                                    color: Colors.white.withValues(alpha: 0.18),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                      color: const Color(0xFFE2E8F0),
+                                      color: Colors.white.withValues(alpha: 0.3),
                                     ),
                                   ),
                                   child: Text(
                                     tag,
                                     style: const TextStyle(
                                       fontSize: 12.5,
-                                      color: Color(0xFF334155),
+                                      color: Colors.white,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -644,10 +651,10 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                       ],
                     ),
                     const SizedBox(height: 18),
-                    const Divider(
+                    Divider(
                       height: 1,
                       thickness: 1,
-                      color: Color(0xFFE2E8F0),
+                      color: Colors.white.withValues(alpha: 0.18),
                     ),
                     const SizedBox(height: 16),
 
@@ -655,8 +662,14 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 4,
+                          ),
+                        ],
                       ),
                       child: Row(
                         children: [
@@ -675,20 +688,9 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                 decoration: BoxDecoration(
                                   color:
                                       _selectedTabIndex == 0
-                                          ? Colors.white
+                                          ? const Color(0xFF6B1C9B)
                                           : Colors.transparent,
                                   borderRadius: BorderRadius.circular(6),
-                                  boxShadow:
-                                      _selectedTabIndex == 0
-                                          ? [
-                                            BoxShadow(
-                                              color: Colors.black.withValues(
-                                                alpha: 0.05,
-                                              ),
-                                              blurRadius: 4,
-                                            ),
-                                          ]
-                                          : [],
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -698,7 +700,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                       size: 16,
                                       color:
                                           _selectedTabIndex == 0
-                                              ? const Color(0xFF1E1E1E)
+                                              ? Colors.white
                                               : const Color(0xFF64748B),
                                     ),
                                     const SizedBox(width: 6),
@@ -715,7 +717,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                                   : FontWeight.w500,
                                           color:
                                               _selectedTabIndex == 0
-                                                  ? const Color(0xFF1E1E1E)
+                                                  ? Colors.white
                                                   : const Color(0xFF64748B),
                                         ),
                                       ),
@@ -740,20 +742,9 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                 decoration: BoxDecoration(
                                   color:
                                       _selectedTabIndex == 1
-                                          ? Colors.white
+                                          ? const Color(0xFF6B1C9B)
                                           : Colors.transparent,
                                   borderRadius: BorderRadius.circular(6),
-                                  boxShadow:
-                                      _selectedTabIndex == 1
-                                          ? [
-                                            BoxShadow(
-                                              color: Colors.black.withValues(
-                                                alpha: 0.05,
-                                              ),
-                                              blurRadius: 4,
-                                            ),
-                                          ]
-                                          : [],
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -763,7 +754,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                       size: 16,
                                       color:
                                           _selectedTabIndex == 1
-                                              ? const Color(0xFF1E1E1E)
+                                              ? Colors.white
                                               : const Color(0xFF64748B),
                                     ),
                                     const SizedBox(width: 6),
@@ -780,7 +771,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                                   : FontWeight.w500,
                                           color:
                                               _selectedTabIndex == 1
-                                                  ? const Color(0xFF1E1E1E)
+                                                  ? Colors.white
                                                   : const Color(0xFF64748B),
                                         ),
                                       ),
@@ -1076,7 +1067,10 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
     final dimensions = (item['dimensions'] ?? '').toString();
     final description = (item['description'] ?? '').toString();
     final imageUrl = (item['image_url'] ?? item['image'] ?? '').toString();
-    final isFeatured = item['is_featured'] == 1 || item['is_featured'] == true;
+    final isFeatured = item['is_featured'] == 1 ||
+        item['is_featured'] == true ||
+        item['is_featured']?.toString() == '1' ||
+        item['is_featured']?.toString() == 'true';
 
     return Container(
       decoration: BoxDecoration(

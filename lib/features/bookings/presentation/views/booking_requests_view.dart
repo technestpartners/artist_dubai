@@ -88,19 +88,26 @@ class _BookingRequestsViewState extends State<BookingRequestsView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F9),
+      backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(backgroundColor: Colors.white),
       body: Column(
         children: [
           // Sub-header
           Container(
-            color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(12, 12, 16, 16),
+            padding: const EdgeInsets.fromLTRB(12, 10, 16, 12),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  width: 1,
+                ),
+              ),
+            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.black87, size: 22),
+                  icon: const Icon(Icons.arrow_back, color: Colors.white, size: 22),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   onPressed: () {
@@ -120,7 +127,7 @@ class _BookingRequestsViewState extends State<BookingRequestsView> {
                       Text(
                         'Booking Requests',
                         style: TextStyle(
-                          color: Colors.black87,
+                          color: Colors.white,
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),
@@ -129,7 +136,7 @@ class _BookingRequestsViewState extends State<BookingRequestsView> {
                       Text(
                         'Requests sent to you and attendees of your events',
                         style: TextStyle(
-                          color: Color(0xFF64748B),
+                          color: Color(0xFFE2D6F5),
                           fontSize: 13,
                         ),
                       ),
@@ -140,8 +147,6 @@ class _BookingRequestsViewState extends State<BookingRequestsView> {
             ),
           ),
 
-          const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
-
           const SizedBox(height: 16),
 
           // Segmented control tabs
@@ -150,8 +155,14 @@ class _BookingRequestsViewState extends State<BookingRequestsView> {
             child: Container(
               height: 44,
               decoration: BoxDecoration(
-                color: const Color(0xFFECECF0),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 4,
+                  ),
+                ],
               ),
               child: Row(
                 children: [
@@ -167,9 +178,10 @@ class _BookingRequestsViewState extends State<BookingRequestsView> {
           // Content
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF6A2777)))
+                ? const Center(child: CircularProgressIndicator(color: Colors.white))
                 : RefreshIndicator(
-                    color: const Color(0xFF6A2777),
+                    color: const Color(0xFF6B1C9B),
+                    backgroundColor: Colors.white,
                     onRefresh: () => _fetchBookingRequests(forceRefresh: true),
                     child: _selectedTab == 0
                         ? (_requests.isEmpty
@@ -199,17 +211,8 @@ class _BookingRequestsViewState extends State<BookingRequestsView> {
           duration: const Duration(milliseconds: 180),
           margin: const EdgeInsets.all(3),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.transparent,
+            color: isSelected ? const Color(0xFF6B1C9B) : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.10),
-                      blurRadius: 6,
-                      offset: const Offset(0, 1),
-                    ),
-                  ]
-                : [],
           ),
           alignment: Alignment.center,
           child: Text(
@@ -217,7 +220,7 @@ class _BookingRequestsViewState extends State<BookingRequestsView> {
             style: TextStyle(
               fontSize: 13.5,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isSelected ? const Color(0xFF1E1E1E) : const Color(0xFF64748B),
+              color: isSelected ? Colors.white : const Color(0xFF64748B),
             ),
           ),
         ),
@@ -475,7 +478,7 @@ class _BookingRequestsViewState extends State<BookingRequestsView> {
             const Icon(
               Icons.confirmation_number_outlined,
               size: 56,
-              color: Color(0xFF94A3B8),
+              color: Colors.white70,
             ),
             const SizedBox(height: 18),
             const Text(
@@ -483,7 +486,7 @@ class _BookingRequestsViewState extends State<BookingRequestsView> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF1E1E1E),
+                color: Colors.white,
               ),
             ),
             const SizedBox(height: 8),
@@ -492,15 +495,15 @@ class _BookingRequestsViewState extends State<BookingRequestsView> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13.5,
-                color: Color(0xFF64748B),
+                color: Color(0xFFE2D6F5),
               ),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () => context.push(RouteNames.createArtEvent),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6A2777),
-                foregroundColor: Colors.white,
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF6B1C9B),
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                 shape: RoundedRectangleBorder(
@@ -531,14 +534,14 @@ class _BookingRequestsViewState extends State<BookingRequestsView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 56, color: const Color(0xFF94A3B8)),
+            Icon(icon, size: 56, color: Colors.white70),
             const SizedBox(height: 18),
             Text(
               title,
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF1E1E1E),
+                color: Colors.white,
               ),
             ),
             const SizedBox(height: 8),
@@ -547,7 +550,7 @@ class _BookingRequestsViewState extends State<BookingRequestsView> {
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 13.5,
-                color: Color(0xFF64748B),
+                color: Color(0xFFE2D6F5),
               ),
             ),
           ],

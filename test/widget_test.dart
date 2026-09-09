@@ -82,7 +82,8 @@ void main() {
         matching: find.byType(InkWell),
       );
       await tester.tap(artworksTab.first);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Sacred Verses'), findsOneWidget);
     });

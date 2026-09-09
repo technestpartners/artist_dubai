@@ -71,7 +71,7 @@ void main() {
 
       expect(find.text('About this event'), findsOneWidget);
       expect(find.text('RSVP for Event'), findsOneWidget);
-      expect(find.text('Discover More Talented Artists'), findsOneWidget);
+      expect(find.text('✨ Featured Artists ✨'), findsOneWidget);
     });
 
     testWidgets('4. Government Portal Open/Closed Logic & Search Filter Test', (
@@ -82,7 +82,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(const MaterialApp(home: GovernmentPortalView()));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Government Portal'), findsOneWidget);
       expect(find.text('Dubai Culture & Arts Authority'), findsOneWidget);

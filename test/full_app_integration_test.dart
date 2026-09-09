@@ -41,7 +41,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(const MaterialApp(home: RegisterView()));
+      await tester.pumpWidget(const MaterialApp(home: RegisterView(initialRole: 'artist')));
       await tester.pumpAndSettle();
 
       expect(find.textContaining("Join Dubai's Artist Community"), findsOneWidget);

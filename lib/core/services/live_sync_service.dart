@@ -28,6 +28,10 @@ class LiveSyncService {
       StreamController<List<GovernmentEntity>>.broadcast();
   final StreamController<List<CategoryInfo>> _categoriesController =
       StreamController<List<CategoryInfo>>.broadcast();
+  final StreamController<List<ExperienceLevelModel>> _experienceLevelsController =
+      StreamController<List<ExperienceLevelModel>>.broadcast();
+  final StreamController<List<LocationModel>> _locationsController =
+      StreamController<List<LocationModel>>.broadcast();
   final StreamController<bool> _authController =
       StreamController<bool>.broadcast();
 
@@ -39,6 +43,8 @@ class LiveSyncService {
   Stream<List<Map<String, dynamic>>> get galleriesStream => _galleriesController.stream;
   Stream<List<GovernmentEntity>> get governmentStream => _governmentController.stream;
   Stream<List<CategoryInfo>> get categoriesStream => _categoriesController.stream;
+  Stream<List<ExperienceLevelModel>> get experienceLevelsStream => _experienceLevelsController.stream;
+  Stream<List<LocationModel>> get locationsStream => _locationsController.stream;
   Stream<bool> get authStream => _authController.stream;
 
   LiveSyncService(this._apiService);
@@ -152,6 +158,30 @@ class LiveSyncService {
     }
   }
 
+  /// Trigger sync for experience levels when an Add / Update / Delete occurs
+  Future<void> notifyExperienceLevelsChanged([List<ExperienceLevelModel>? updatedList]) async {
+    if (updatedList != null && !_experienceLevelsController.isClosed) {
+      _experienceLevelsController.add(updatedList);
+    } else {
+      try {
+        final fresh = await _apiService.getExperienceLevels(forceRefresh: true);
+        if (!_experienceLevelsController.isClosed) _experienceLevelsController.add(fresh);
+      } catch (_) {}
+    }
+  }
+
+  /// Trigger sync for locations when an Add / Update / Delete occurs
+  Future<void> notifyLocationsChanged([List<LocationModel>? updatedList]) async {
+    if (updatedList != null && !_locationsController.isClosed) {
+      _locationsController.add(updatedList);
+    } else {
+      try {
+        final fresh = await _apiService.getLocations(forceRefresh: true);
+        if (!_locationsController.isClosed) _locationsController.add(fresh);
+      } catch (_) {}
+    }
+  }
+
   /// Strictly on-demand multi-device live sync (NO periodic loop/polling timer)
   void startMultiDeviceSync({Duration? interval}) {
     // Disabled polling loop to prevent continuous HTTP requests
@@ -229,6 +259,8 @@ class LiveSyncService {
     _galleriesController.close();
     _governmentController.close();
     _categoriesController.close();
+    _experienceLevelsController.close();
+    _locationsController.close();
     _authController.close();
   }
 }

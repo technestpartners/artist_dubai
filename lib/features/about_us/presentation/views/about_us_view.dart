@@ -30,7 +30,7 @@ class AboutUsView extends StatelessWidget {
                 'Content to be provided.',
                 style: TextStyle(
                   fontSize: 15,
-                  color: Colors.white,
+                  color: Color(0xFFE2D6F5),
                   fontWeight: FontWeight.w400,
                 ),
               ),

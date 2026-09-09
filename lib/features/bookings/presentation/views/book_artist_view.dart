@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
+import '../../../../core/constants/country_codes.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
@@ -32,6 +33,7 @@ class _BookArtistViewState extends State<BookArtistView> {
 
   String? _selectedBookingType;
   String? _selectedBudgetRange;
+  String _selectedCountryCode = kDefaultCountryCode.code;
   bool _isSubmitting = false;
 
   final List<String> _bookingTypes = [
@@ -144,7 +146,11 @@ class _BookArtistViewState extends State<BookArtistView> {
             : _fullNameController.text.trim(),
         'name': _fullNameController.text.trim(),
         'email': _emailController.text.trim(),
-        'phone': _phoneController.text.trim(),
+        'phone': _phoneController.text.trim().isEmpty
+            ? ''
+            : (_phoneController.text.trim().startsWith('+')
+                ? _phoneController.text.trim()
+                : '$_selectedCountryCode ${_phoneController.text.trim()}'),
         'artist_name': _artistNameController.text.trim(),
         'booking_type': _selectedBookingType ?? 'Commission Artwork',
         'budget_range': _selectedBudgetRange ?? 'AED 5,000 - 15,000',
@@ -215,7 +221,7 @@ class _BookArtistViewState extends State<BookArtistView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9FB),
+      backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
         child: Column(
@@ -231,13 +237,13 @@ class _BookArtistViewState extends State<BookArtistView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Sub-Header Back Button & Circular Palette Badge (Matching Screenshot media_1787732959782.png)
+                      // Sub-Header Back Button & Circular Palette Badge
                       Row(
                         children: [
                           IconButton(
                             icon: const Icon(
                               Icons.arrow_back,
-                              color: Color(0xFF1E1E1E),
+                              color: Colors.white,
                               size: 20,
                             ),
                             onPressed: () {
@@ -258,7 +264,7 @@ class _BookArtistViewState extends State<BookArtistView> {
                             ),
                             child: const Icon(
                               Icons.palette_outlined,
-                              color: Color(0xFF6A2777),
+                              color: Color(0xFF6B1C9B),
                               size: 22,
                             ),
                           ),
@@ -275,7 +281,7 @@ class _BookArtistViewState extends State<BookArtistView> {
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF6A2777),
+                                color: Colors.white,
                               ),
                             ),
                             SizedBox(height: 6),
@@ -286,7 +292,7 @@ class _BookArtistViewState extends State<BookArtistView> {
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 13.5,
-                                  color: Color(0xFF64748B),
+                                  color: Color(0xFFE2D6F5),
                                 ),
                               ),
                             ),
@@ -327,12 +333,7 @@ class _BookArtistViewState extends State<BookArtistView> {
                             ),
                             const SizedBox(height: 14),
                             _buildLabel('Phone'),
-                            _buildTextField(
-                              controller: _phoneController,
-                              hintText: '+971 50 XXX XXXX',
-                              prefixIcon: Icons.phone_outlined,
-                              keyboardType: TextInputType.phone,
-                            ),
+                            _buildPhoneField(),
                             const SizedBox(height: 28),
 
                             // SECTION 2: Artist & Booking Details
@@ -652,6 +653,171 @@ class _BookArtistViewState extends State<BookArtistView> {
       );
     }
     return field;
+  }
+
+  Widget _buildPhoneField() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFCBD5E1), width: 1),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedCountryCode,
+              dropdownColor: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              menuMaxHeight: 340,
+              menuWidth: 290,
+              icon: const Icon(
+                Icons.keyboard_arrow_down,
+                color: Color(0xFF334155),
+                size: 18,
+              ),
+              selectedItemBuilder: (BuildContext context) {
+                return kCountryCodes.map((item) {
+                  return Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          item.flag,
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          item.code,
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList();
+              },
+              items: kCountryCodes.map((item) {
+                final isDubai = item.code == '+971';
+                return DropdownMenuItem<String>(
+                  value: item.code,
+                  child: Row(
+                    children: [
+                      Text(item.flag, style: const TextStyle(fontSize: 16)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          item.country,
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight:
+                                isDubai ? FontWeight.bold : FontWeight.w500,
+                            color: isDubai
+                                ? const Color(0xFF5E227A)
+                                : const Color(0xFF1E293B),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '(${item.code})',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: isDubai
+                              ? const Color(0xFF5E227A)
+                              : const Color(0xFF64748B),
+                          fontWeight:
+                              isDubai ? FontWeight.w600 : FontWeight.normal,
+                        ),
+                      ),
+                      if (isDubai) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF3E8FF),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'Default',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF5E227A),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              }).toList(),
+              onChanged: (val) {
+                if (val != null) {
+                  setState(() {
+                    _selectedCountryCode = val;
+                  });
+                }
+              },
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: TextFormField(
+            controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            style: const TextStyle(
+              fontSize: 14.5,
+              color: Color(0xFF0F172A),
+              fontWeight: FontWeight.w500,
+            ),
+            decoration: InputDecoration(
+              hintText: '50 XXX XXXX',
+              hintStyle: const TextStyle(
+                fontSize: 13.5,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.normal,
+              ),
+              prefixIcon: const Icon(
+                Icons.phone_outlined,
+                size: 18,
+                color: Color(0xFF64748B),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide:
+                    const BorderSide(color: Color(0xFFCBD5E1), width: 1),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide:
+                    const BorderSide(color: Color(0xFFCBD5E1), width: 1),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide:
+                    const BorderSide(color: Color(0xFF5E227A), width: 1.5),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildDropdownField({

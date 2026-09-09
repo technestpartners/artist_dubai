@@ -944,12 +944,15 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                const Text(
-                                  'Community Visibility',
-                                  style: TextStyle(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1E293B),
+                                const Expanded(
+                                  child: Text(
+                                    'Community Visibility',
+                                    style: TextStyle(
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF1E293B),
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               ],

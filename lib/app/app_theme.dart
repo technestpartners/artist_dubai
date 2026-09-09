@@ -51,11 +51,11 @@ class AppTheme {
         behavior: SnackBarBehavior.floating,
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.darkBackground,
+        backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
         scrolledUnderElevation: 0,
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: Colors.black87),
       ),
     );
   }
