@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -1092,19 +1093,47 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Checkbox(
-                                  value: _agreedToTerms,
-                                  activeColor: const Color(0xFF5E227A),
-                                  onChanged: (val) {
-                                    setState(() {
-                                      _agreedToTerms = val ?? false;
-                                    });
-                                  },
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2.0),
+                                  child: SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: Checkbox(
+                                      value: _agreedToTerms,
+                                      activeColor: const Color(0xFF5E227A),
+                                      checkColor: Colors.white,
+                                      fillColor:
+                                          WidgetStateProperty.resolveWith(
+                                        (states) {
+                                          if (states.contains(
+                                              WidgetState.selected)) {
+                                            return const Color(0xFF5E227A);
+                                          }
+                                          return Colors.white;
+                                        },
+                                      ),
+                                      side: const BorderSide(
+                                        color: Color(0xFF5E227A),
+                                        width: 1.8,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      materialTapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                      visualDensity: VisualDensity.compact,
+                                      onChanged: (val) {
+                                        setState(() {
+                                          _agreedToTerms = val ?? false;
+                                        });
+                                      },
+                                    ),
+                                  ),
                                 ),
-                                const SizedBox(width: 4),
+                                const SizedBox(width: 10),
                                 Expanded(
                                   child: Padding(
-                                    padding: const EdgeInsets.only(top: 8.0),
+                                    padding: const EdgeInsets.only(top: 1.0),
                                     child: RichText(
                                       text: TextSpan(
                                         style: const TextStyle(
@@ -1113,8 +1142,15 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                           fontWeight: FontWeight.bold,
                                         ),
                                         children: [
-                                          const TextSpan(
+                                          TextSpan(
                                             text: '* I agree to the ',
+                                            recognizer: TapGestureRecognizer()
+                                              ..onTap = () {
+                                                setState(() {
+                                                  _agreedToTerms =
+                                                      !_agreedToTerms;
+                                                });
+                                              },
                                           ),
                                           TextSpan(
                                             text: 'Privacy Policy',
@@ -1123,8 +1159,22 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                               decoration:
                                                   TextDecoration.underline,
                                             ),
+                                            recognizer: TapGestureRecognizer()
+                                              ..onTap = () {
+                                                context.push(
+                                                    RouteNames.privacyPolicy);
+                                              },
                                           ),
-                                          const TextSpan(text: ' and '),
+                                          TextSpan(
+                                            text: ' and ',
+                                            recognizer: TapGestureRecognizer()
+                                              ..onTap = () {
+                                                setState(() {
+                                                  _agreedToTerms =
+                                                      !_agreedToTerms;
+                                                });
+                                              },
+                                          ),
                                           TextSpan(
                                             text: 'Terms & Conditions',
                                             style: const TextStyle(
@@ -1132,6 +1182,11 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                               decoration:
                                                   TextDecoration.underline,
                                             ),
+                                            recognizer: TapGestureRecognizer()
+                                              ..onTap = () {
+                                                context.push(RouteNames
+                                                    .termsConditions);
+                                              },
                                           ),
                                         ],
                                       ),

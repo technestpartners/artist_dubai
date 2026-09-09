@@ -502,6 +502,25 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                               Checkbox(
                                 value: _isFeatured,
                                 activeColor: const Color(0xFF6A2777),
+                                checkColor: Colors.white,
+                                fillColor: WidgetStateProperty.resolveWith(
+                                  (states) {
+                                    if (states.contains(WidgetState.selected)) {
+                                      return const Color(0xFF6A2777);
+                                    }
+                                    return Colors.white;
+                                  },
+                                ),
+                                side: const BorderSide(
+                                  color: Color(0xFF6A2777),
+                                  width: 1.8,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                                visualDensity: VisualDensity.compact,
                                 onChanged: (val) {
                                   setState(() {
                                     _isFeatured = val ?? false;
