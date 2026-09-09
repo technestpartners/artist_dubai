@@ -149,224 +149,6 @@ class _MyEventsViewState extends State<MyEventsView> {
     }).toList();
   }
 
-  void _showAttendeesModal(ArtEventModel event) {
-    final bookings = _eventBookingsMap[event.id] ?? const [];
-    final totalTickets = bookings.fold<int>(0, (sum, b) => sum + b.ticketsCount);
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.75,
-          maxChildSize: 0.95,
-          minChildSize: 0.4,
-          builder: (context, scrollController) {
-            return Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 5,
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFCBD5E1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          event.title,
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1E1E1E),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Color(0xFF64748B)),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      _modalMetricItem('Registered RSVPs', '${bookings.length}', Icons.receipt_long_outlined),
-                      const SizedBox(width: 20),
-                      _modalMetricItem('Total Attendees', '$totalTickets / ${event.maxAttendees}', Icons.people_outline),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  const Divider(height: 1),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Attendee Booking List',
-                    style: TextStyle(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E1E1E),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Expanded(
-                    child: bookings.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'No bookings found for this event yet.',
-                              style: TextStyle(color: Color(0xFF64748B), fontSize: 14),
-                            ),
-                          )
-                        : ListView.separated(
-                            controller: scrollController,
-                            itemCount: bookings.length,
-                            separatorBuilder: (context, index) => const Divider(height: 20),
-                            itemBuilder: (context, index) {
-                              final booking = bookings[index];
-                              return Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  CircleAvatar(
-                                    radius: 20,
-                                    backgroundColor: const Color(0xFF5E227A),
-                                    child: Text(
-                                      booking.attendeeName.substring(0, 1).toUpperCase(),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                booking.attendeeName,
-                                                style: const TextStyle(
-                                                  fontSize: 14.5,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Color(0xFF1E1E1E),
-                                                ),
-                                              ),
-                                            ),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFFDCFCE7),
-                                                borderRadius: BorderRadius.circular(12),
-                                              ),
-                                              child: Text(
-                                                booking.status,
-                                                style: const TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Color(0xFF15803D),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          children: [
-                                            const Icon(Icons.email_outlined, size: 13, color: Color(0xFF64748B)),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              booking.attendeeEmail,
-                                              style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Row(
-                                          children: [
-                                            const Icon(Icons.phone_outlined, size: 13, color: Color(0xFF64748B)),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              booking.attendeePhone,
-                                              style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              '🎟️ ${booking.ticketsCount} Ticket${booking.ticketsCount > 1 ? 's' : ''} (${booking.pricePaid})',
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
-                                                color: Color(0xFF5E227A),
-                                              ),
-                                            ),
-                                            Text(
-                                              booking.bookingDate,
-                                              style: const TextStyle(fontSize: 11.5, color: Color(0xFF94A3B8)),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _modalMetricItem(String title, String value, IconData icon) {
-    return Row(
-      children: [
-        Icon(icon, color: const Color(0xFF5E227A), size: 18),
-        const SizedBox(width: 6),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-            ),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E1E1E)),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -385,7 +167,7 @@ class _MyEventsViewState extends State<MyEventsView> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator(color: Colors.white))
             : RefreshIndicator(
-                color: const Color(0xFF5E227A),
+                color: const Color(0xFF6A2777),
                 onRefresh: _fetchMyEvents,
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -393,7 +175,7 @@ class _MyEventsViewState extends State<MyEventsView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-              // 1. Header Title & Create Event Button (Dark Purple Theme)
+              // 1. Header Title & Create Event Button
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,7 +198,7 @@ class _MyEventsViewState extends State<MyEventsView> {
                           'Manage your published art events, track attendee RSVPs, and review attendee records',
                           style: TextStyle(
                             fontSize: 13.5,
-                            color: Colors.white70,
+                            color: Color(0xFFE2D6F5),
                             fontWeight: FontWeight.w400,
                           ),
                         ),
@@ -426,13 +208,13 @@ class _MyEventsViewState extends State<MyEventsView> {
                   const SizedBox(width: 10),
                   ElevatedButton.icon(
                     onPressed: () => context.push(RouteNames.createArtEvent),
-                    icon: const Icon(Icons.add, size: 16),
-                    label: const Text('Create Event', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    icon: const Icon(Icons.add, size: 16, color: Color(0xFF6B1C9B)),
+                    label: const Text('Create Event', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF6B1C9B))),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
-                      foregroundColor: const Color(0xFF5E227A),
+                      foregroundColor: const Color(0xFF6B1C9B),
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -442,7 +224,7 @@ class _MyEventsViewState extends State<MyEventsView> {
               ),
               const SizedBox(height: 20),
 
-              // 2. Metric Overview Bar (Translucent Cards)
+              // 2. Metric Overview Bar
               Row(
                 children: [
                   Expanded(
@@ -476,25 +258,25 @@ class _MyEventsViewState extends State<MyEventsView> {
               Container(
                 height: 44,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white24),
+                  border: Border.all(color: const Color(0xFFCBD5E1)),
                 ),
                 child: TextField(
                   controller: _searchController,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  cursorColor: Colors.white,
+                  style: const TextStyle(color: Color(0xFF0F172A), fontSize: 14),
+                  cursorColor: const Color(0xFF6A2777),
                   decoration: InputDecoration(
                     hintText: 'Search my created events...',
-                    hintStyle: const TextStyle(color: Colors.white54, fontSize: 14),
-                    prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 20),
+                    hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 14),
+                    prefixIcon: const Icon(Icons.search, color: Color(0xFF64748B), size: 20),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? GestureDetector(
                             onTap: () {
                               _searchController.clear();
                               setState(() => _searchQuery = '');
                             },
-                            child: const Icon(Icons.close, color: Colors.white54, size: 18),
+                            child: const Icon(Icons.close, color: Color(0xFF64748B), size: 18),
                           )
                         : null,
                     border: InputBorder.none,
@@ -511,21 +293,22 @@ class _MyEventsViewState extends State<MyEventsView> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(32),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF5A1684).withValues(alpha: 0.85),
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
                   child: const Column(
                     children: [
-                      Icon(Icons.event_busy_outlined, size: 48, color: Colors.white54),
+                      Icon(Icons.event_busy_outlined, size: 48, color: Color(0xFF94A3B8)),
                       SizedBox(height: 12),
                       Text(
                         'No created events found.',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                       ),
                       SizedBox(height: 4),
                       Text(
                         'Create your first art event to manage bookings here.',
-                        style: TextStyle(fontSize: 13, color: Colors.white70),
+                        style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
                       ),
                     ],
                   ),
@@ -543,9 +326,16 @@ class _MyEventsViewState extends State<MyEventsView> {
 
                     return Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFF5A1684).withValues(alpha: 0.85),
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                        border: Border.all(color: const Color(0xFFCBD5E1)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -574,20 +364,20 @@ class _MyEventsViewState extends State<MyEventsView> {
                                         style: const TextStyle(
                                           fontSize: 17,
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.white,
+                                          color: Color(0xFF0F172A),
                                         ),
                                       ),
                                     ),
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.15),
+                                        color: const Color(0xFFF3E8FF),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Text(
                                         event.category,
                                         style: const TextStyle(
-                                          color: Color(0xFFFFD700),
+                                          color: Color(0xFF6A2777),
                                           fontSize: 12,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -598,25 +388,25 @@ class _MyEventsViewState extends State<MyEventsView> {
                                 const SizedBox(height: 8),
                                 Row(
                                   children: [
-                                    const Icon(Icons.calendar_today_outlined, size: 14, color: Colors.white70),
+                                    const Icon(Icons.calendar_today_outlined, size: 14, color: Color(0xFF64748B)),
                                     const SizedBox(width: 6),
                                     Text(
                                       event.dateTime,
-                                      style: const TextStyle(fontSize: 12.5, color: Colors.white70),
+                                      style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    const Icon(Icons.location_on_outlined, size: 14, color: Colors.white70),
+                                    const Icon(Icons.location_on_outlined, size: 14, color: Color(0xFF64748B)),
                                     const SizedBox(width: 6),
                                     Expanded(
                                       child: Text(
                                         event.location,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(fontSize: 12.5, color: Colors.white70),
+                                        style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
                                       ),
                                     ),
                                   ],
@@ -627,56 +417,11 @@ class _MyEventsViewState extends State<MyEventsView> {
                                   children: [
                                     const Text(
                                       'Free Community Entry',
-                                      style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Colors.white),
+                                      style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                                     ),
                                     Text(
                                       'RSVPs: $ticketsSold / ${event.maxAttendees}',
-                                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFFFFD700)),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 14),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: ElevatedButton.icon(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.white,
-                                          foregroundColor: const Color(0xFF5E227A),
-                                          elevation: 0,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                          padding: const EdgeInsets.symmetric(vertical: 10),
-                                        ),
-                                        onPressed: () => _showAttendeesModal(event),
-                                        icon: const Icon(Icons.people_outline, size: 16),
-                                        label: Text(
-                                          'View Attendees (${bookings.length})',
-                                          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    OutlinedButton.icon(
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: Colors.white,
-                                        backgroundColor: Colors.white.withValues(alpha: 0.15),
-                                        side: const BorderSide(color: Colors.white70, width: 1.2),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                      ),
-                                      onPressed: () async {
-                                        await context.push(RouteNames.createArtEvent, extra: event);
-                                        _fetchMyEvents();
-                                      },
-                                      icon: const Icon(Icons.edit, size: 16, color: Colors.white),
-                                      label: const Text(
-                                        'Edit',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
+                                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF6A2777)),
                                     ),
                                   ],
                                 ),
@@ -710,21 +455,28 @@ class _MyEventsViewState extends State<MyEventsView> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF5A1684).withValues(alpha: 0.85),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+        border: Border.all(color: const Color(0xFFCBD5E1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: const Color(0xFFFFD700), size: 20),
+          Icon(icon, color: const Color(0xFF6A2777), size: 20),
           const SizedBox(height: 8),
           Text(
             value,
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w900,
-              color: Colors.white,
+              color: Color(0xFF0F172A),
             ),
           ),
           const SizedBox(height: 2),
@@ -732,7 +484,8 @@ class _MyEventsViewState extends State<MyEventsView> {
             title,
             style: const TextStyle(
               fontSize: 11,
-              color: Colors.white70,
+              color: Color(0xFF64748B),
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],

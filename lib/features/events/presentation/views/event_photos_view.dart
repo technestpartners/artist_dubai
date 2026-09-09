@@ -229,7 +229,7 @@ class _EventPhotosViewState extends State<EventPhotosView> {
                   'Photo galleries from Dubai art events',
                   style: TextStyle(
                     fontSize: 13.5,
-                    color: Colors.white70,
+                    color: Color(0xFFE2D6F5),
                   ),
                 ),
               ),
@@ -248,7 +248,7 @@ class _EventPhotosViewState extends State<EventPhotosView> {
                     padding: EdgeInsets.all(32.0),
                     child: Text(
                       'No photo galleries found.',
-                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                      style: TextStyle(color: Color(0xFFE2D6F5), fontSize: 14),
                     ),
                   ),
                 )

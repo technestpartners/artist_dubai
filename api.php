@@ -196,6 +196,23 @@ class DatabaseManager {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+            CREATE TABLE IF NOT EXISTS experience_levels (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL UNIQUE,
+                years_range VARCHAR(100) NULL,
+                display_order INT DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            CREATE TABLE IF NOT EXISTS locations (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL UNIQUE,
+                city VARCHAR(100) DEFAULT 'Dubai',
+                country VARCHAR(100) DEFAULT 'UAE',
+                display_order INT DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
             CREATE TABLE IF NOT EXISTS galleries (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
@@ -292,7 +309,13 @@ class DatabaseManager {
             "ALTER TABLE artists ADD COLUMN is_active TINYINT(1) DEFAULT 1",
             "ALTER TABLE galleries ADD COLUMN event_name VARCHAR(255) NULL",
             "ALTER TABLE galleries ADD COLUMN event_id VARCHAR(100) NULL",
-            "ALTER TABLE galleries ADD INDEX idx_gallery_event (event_name)"
+            "ALTER TABLE galleries ADD INDEX idx_gallery_event (event_name)",
+            "UPDATE artists SET banner_url = REPLACE(banner_url, 'api.php?resource=uploads&file=', 'uploads/') WHERE banner_url LIKE '%api.php?resource=uploads&file=%'",
+            "UPDATE artists SET avatar_url = REPLACE(avatar_url, 'api.php?resource=uploads&file=', 'uploads/') WHERE avatar_url LIKE '%api.php?resource=uploads&file=%'",
+            "UPDATE artworks SET image_url = REPLACE(image_url, 'api.php?resource=uploads&file=', 'uploads/') WHERE image_url LIKE '%api.php?resource=uploads&file=%'",
+            "UPDATE events SET image_url = REPLACE(image_url, 'api.php?resource=uploads&file=', 'uploads/') WHERE image_url LIKE '%api.php?resource=uploads&file=%'",
+            "UPDATE galleries SET image_url = REPLACE(image_url, 'api.php?resource=uploads&file=', 'uploads/') WHERE image_url LIKE '%api.php?resource=uploads&file=%'",
+            "UPDATE artists a SET works_count = (SELECT COUNT(*) FROM artworks WHERE artist_id = a.id OR (artist_id IS NULL AND artist_name IS NOT NULL AND LOWER(artist_name) = LOWER(a.name)))"
         ];
         foreach ($migrations as $m) {
             try { $this->pdo->exec($m); } catch (\Throwable $t) {}
@@ -376,6 +399,46 @@ class DatabaseManager {
                 ];
                 $cStmt = $this->pdo->prepare("INSERT INTO categories (id, name, type, description, emoji) VALUES (?, ?, ?, ?, ?)");
                 foreach ($categories as $c) { $cStmt->execute($c); }
+            }
+
+            // Seed Experience Levels
+            $expLevelsCount = (int)$this->pdo->query("SELECT COUNT(*) FROM `experience_levels`")->fetchColumn();
+            if ($expLevelsCount === 0) {
+                $expLevels = [
+                    [1, 'Beginner (1-2 years)', '1-2 years', 1],
+                    [2, 'Intermediate (3-5 years)', '3-5 years', 2],
+                    [3, 'Advanced (5-10 years)', '5-10 years', 3],
+                    [4, 'Professional (10+ years)', '10+ years', 4],
+                ];
+                $expStmt = $this->pdo->prepare("INSERT INTO experience_levels (id, name, years_range, display_order) VALUES (?, ?, ?, ?)");
+                foreach ($expLevels as $el) { $expStmt->execute($el); }
+            }
+
+            // Seed Locations
+            $locsCount = (int)$this->pdo->query("SELECT COUNT(*) FROM `locations`")->fetchColumn();
+            if ($locsCount === 0) {
+                $locations = [
+                    [1, 'Dubai, UAE', 'Dubai', 'UAE', 1],
+                    [2, 'Dubai Design District (d3), Dubai', 'Dubai', 'UAE', 2],
+                    [3, 'Alserkal Avenue, Al Quoz, Dubai', 'Dubai', 'UAE', 3],
+                    [4, 'Downtown Dubai, UAE', 'Dubai', 'UAE', 4],
+                    [5, 'DIFC, Dubai', 'Dubai', 'UAE', 5],
+                    [6, 'Al Shindagha Historic District, Dubai', 'Dubai', 'UAE', 6],
+                    [7, 'Jaddaf Waterfront, Dubai', 'Dubai', 'UAE', 7],
+                    [8, 'Madinat Jumeirah, Dubai', 'Dubai', 'UAE', 8],
+                    [9, 'Dubai Marina, UAE', 'Dubai', 'UAE', 9],
+                    [10, 'Palm Jumeirah, Dubai', 'Dubai', 'UAE', 10],
+                    [11, 'Jumeirah, Dubai', 'Dubai', 'UAE', 11],
+                    [12, 'Business Bay, Dubai', 'Dubai', 'UAE', 12],
+                    [13, 'Abu Dhabi, UAE', 'Abu Dhabi', 'UAE', 13],
+                    [14, 'Sharjah, UAE', 'Sharjah', 'UAE', 14],
+                    [15, 'Ajman, UAE', 'Ajman', 'UAE', 15],
+                    [16, 'Ras Al Khaimah, UAE', 'Ras Al Khaimah', 'UAE', 16],
+                    [17, 'Fujairah, UAE', 'Fujairah', 'UAE', 17],
+                    [18, 'Umm Al Quwain, UAE', 'Umm Al Quwain', 'UAE', 18],
+                ];
+                $locStmt = $this->pdo->prepare("INSERT INTO locations (id, name, city, country, display_order) VALUES (?, ?, ?, ?, ?)");
+                foreach ($locations as $loc) { $locStmt->execute($loc); }
             }
 
             // Seed Artworks
@@ -545,6 +608,10 @@ class AuthController {
             $userRole = !empty($user['role']) ? strtolower($user['role']) : ($isAdminEmail ? 'admin' : 'user');
             $isAdmin = in_array($userRole, ['admin', 'superadmin', 'super_admin', 'userpadmin']) || strpos($userRole, 'admin') !== false || $isAdminEmail;
 
+            $artistStmt = $this->db->prepare('SELECT * FROM artists WHERE user_id = ? OR email = ? OR name = ? ORDER BY id DESC LIMIT 1');
+            $artistStmt->execute([$user['id'], $user['email'], $user['full_name']]);
+            $artist = $artistStmt->fetch();
+
             ApiResponse::success([
                 'user' => [
                     'id' => (int)$user['id'],
@@ -552,8 +619,10 @@ class AuthController {
                     'email' => $user['email'],
                     'role' => $userRole,
                     'is_admin' => $isAdmin,
-                    'created_at' => $user['created_at']
+                    'created_at' => $user['created_at'],
+                    'artist_profile' => $artist ?: null
                 ],
+                'artist_profile' => $artist ?: null,
                 'token' => InputSanitizer::generateToken()
             ], $isAdmin ? 'Admin login successful' : 'Login successful');
             return;
@@ -579,15 +648,26 @@ class AuthController {
             return;
         }
 
+        $role = strtolower(trim($input['role'] ?? 'user'));
+        if (!in_array($role, ['admin', 'artist', 'user'])) {
+            $role = 'user';
+        }
+
         $hash = password_hash($password, PASSWORD_BCRYPT);
-        $insert = $this->db->prepare('INSERT INTO users (full_name, email, password_hash) VALUES (?, ?, ?)');
-        $insert->execute([$name, $email, $hash]);
+        try {
+            $insert = $this->db->prepare('INSERT INTO users (full_name, email, password_hash, role) VALUES (?, ?, ?, ?)');
+            $insert->execute([$name, $email, $hash, $role]);
+        } catch (\Throwable $t) {
+            $insert = $this->db->prepare('INSERT INTO users (full_name, email, password_hash) VALUES (?, ?, ?)');
+            $insert->execute([$name, $email, $hash]);
+        }
 
         ApiResponse::success([
             'user' => [
                 'id' => (int)$this->db->lastInsertId(),
                 'full_name' => $name,
-                'email' => $email
+                'email' => $email,
+                'role' => $role
             ],
             'token' => InputSanitizer::generateToken()
         ], 'Account registered successfully', 201);
@@ -637,8 +717,8 @@ class AuthController {
 
         if ($user) {
             // Check if user has an associated artist profile
-            $artistStmt = $this->db->prepare('SELECT * FROM artists WHERE user_id = ? OR name = ? LIMIT 1');
-            $artistStmt->execute([$user['id'], $user['full_name']]);
+            $artistStmt = $this->db->prepare('SELECT * FROM artists WHERE user_id = ? OR email = ? OR name = ? ORDER BY id DESC LIMIT 1');
+            $artistStmt->execute([$user['id'], $user['email'], $user['full_name']]);
             $artist = $artistStmt->fetch();
 
             ApiResponse::success([
@@ -721,11 +801,15 @@ class CategoryController {
 
     public function getCategories(array $query = []): void {
         $type = InputSanitizer::cleanString($query['type'] ?? '');
-        if (!empty($type)) {
-            $stmt = $this->db->prepare('SELECT * FROM categories WHERE type = ? OR type = "general" ORDER BY id ASC');
+        $sql = "SELECT c.*, 
+                (SELECT COUNT(*) FROM artists a WHERE a.category = c.name) AS artist_count,
+                (SELECT COUNT(*) FROM events e WHERE e.category = c.name) AS event_count
+                FROM categories c ";
+        if (!empty($type) && $type !== 'all') {
+            $stmt = $this->db->prepare($sql . 'WHERE c.type = ? OR c.type = "general" ORDER BY c.id ASC');
             $stmt->execute([$type]);
         } else {
-            $stmt = $this->db->query('SELECT * FROM categories ORDER BY id ASC');
+            $stmt = $this->db->query($sql . 'ORDER BY c.id ASC');
         }
         $categories = $stmt->fetchAll();
         ApiResponse::success($categories, 'Categories retrieved successfully');
@@ -735,15 +819,173 @@ class CategoryController {
         $name = InputSanitizer::cleanString($input['name'] ?? '');
         $description = InputSanitizer::cleanString($input['description'] ?? '');
         $emoji = InputSanitizer::cleanString($input['emoji'] ?? '🎨');
+        $type = InputSanitizer::cleanString($input['type'] ?? 'general');
 
         if (empty($name)) {
             ApiResponse::error('Category name is required.');
         }
 
-        $stmt = $this->db->prepare('INSERT INTO categories (name, description, emoji) VALUES (?, ?, ?)');
-        $stmt->execute([$name, $description, $emoji]);
+        $stmt = $this->db->prepare('INSERT INTO categories (name, description, emoji, type) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE description=VALUES(description), emoji=VALUES(emoji), type=VALUES(type)');
+        $stmt->execute([$name, $description, $emoji, $type]);
 
         ApiResponse::success(['category_id' => (int)$this->db->lastInsertId()], 'Category created successfully', 201);
+    }
+
+    public function updateCategory(array $input): void {
+        $id = (int)($input['id'] ?? $input['category_id'] ?? 0);
+        $name = InputSanitizer::cleanString($input['name'] ?? '');
+        $description = InputSanitizer::cleanString($input['description'] ?? '');
+        $emoji = InputSanitizer::cleanString($input['emoji'] ?? '🎨');
+        $type = InputSanitizer::cleanString($input['type'] ?? 'general');
+
+        if ($id <= 0 && empty($name)) {
+            ApiResponse::error('Category ID or name is required.');
+        }
+
+        if ($id > 0) {
+            $stmt = $this->db->prepare('UPDATE categories SET name = ?, description = ?, emoji = ?, type = ? WHERE id = ?');
+            $stmt->execute([$name, $description, $emoji, $type, $id]);
+        } else {
+            $stmt = $this->db->prepare('UPDATE categories SET description = ?, emoji = ?, type = ? WHERE name = ?');
+            $stmt->execute([$description, $emoji, $type, $name]);
+        }
+
+        ApiResponse::success(['updated' => true], 'Category updated successfully');
+    }
+
+    public function deleteCategory(array $input): void {
+        $id = (int)($input['id'] ?? $input['category_id'] ?? 0);
+        $name = InputSanitizer::cleanString($input['name'] ?? '');
+
+        if ($id <= 0 && empty($name)) {
+            ApiResponse::error('Category ID or name is required for deletion.');
+        }
+
+        if ($id > 0) {
+            $stmt = $this->db->prepare('DELETE FROM categories WHERE id = ?');
+            $stmt->execute([$id]);
+        } else {
+            $stmt = $this->db->prepare('DELETE FROM categories WHERE name = ?');
+            $stmt->execute([$name]);
+        }
+
+        ApiResponse::success(['deleted' => true], 'Category deleted successfully');
+    }
+}
+
+class ExperienceLevelController {
+    private PDO $db;
+
+    public function __construct() {
+        $this->db = DatabaseManager::getInstance()->getConnection();
+    }
+
+    public function getExperienceLevels(): void {
+        $stmt = $this->db->query('SELECT * FROM experience_levels ORDER BY display_order ASC, id ASC');
+        $levels = $stmt->fetchAll();
+        ApiResponse::success($levels, 'Experience levels retrieved successfully');
+    }
+
+    public function createExperienceLevel(array $input): void {
+        $name = InputSanitizer::cleanString($input['name'] ?? '');
+        $yearsRange = InputSanitizer::cleanString($input['years_range'] ?? '');
+        $displayOrder = (int)($input['display_order'] ?? 0);
+
+        if (empty($name)) {
+            ApiResponse::error('Experience level name is required.');
+        }
+
+        $stmt = $this->db->prepare('INSERT INTO experience_levels (name, years_range, display_order) VALUES (?, ?, ?)');
+        $stmt->execute([$name, $yearsRange, $displayOrder]);
+
+        ApiResponse::success(['id' => (int)$this->db->lastInsertId()], 'Experience level created successfully', 201);
+    }
+
+    public function updateExperienceLevel(array $input): void {
+        $id = (int)($input['id'] ?? 0);
+        $name = InputSanitizer::cleanString($input['name'] ?? '');
+        $yearsRange = InputSanitizer::cleanString($input['years_range'] ?? '');
+        $displayOrder = (int)($input['display_order'] ?? 0);
+
+        if ($id <= 0) {
+            ApiResponse::error('Experience level ID is required.');
+        }
+
+        $stmt = $this->db->prepare('UPDATE experience_levels SET name = ?, years_range = ?, display_order = ? WHERE id = ?');
+        $stmt->execute([$name, $yearsRange, $displayOrder, $id]);
+
+        ApiResponse::success(['updated' => true], 'Experience level updated successfully');
+    }
+
+    public function deleteExperienceLevel(array $input): void {
+        $id = (int)($input['id'] ?? 0);
+        if ($id <= 0) {
+            ApiResponse::error('Experience level ID is required for deletion.');
+        }
+
+        $stmt = $this->db->prepare('DELETE FROM experience_levels WHERE id = ?');
+        $stmt->execute([$id]);
+
+        ApiResponse::success(['deleted' => true], 'Experience level deleted successfully');
+    }
+}
+
+class LocationController {
+    private PDO $db;
+
+    public function __construct() {
+        $this->db = DatabaseManager::getInstance()->getConnection();
+    }
+
+    public function getLocations(): void {
+        $stmt = $this->db->query('SELECT * FROM locations ORDER BY display_order ASC, id ASC');
+        $locations = $stmt->fetchAll();
+        ApiResponse::success($locations, 'Locations retrieved successfully');
+    }
+
+    public function createLocation(array $input): void {
+        $name = InputSanitizer::cleanString($input['name'] ?? '');
+        $city = InputSanitizer::cleanString($input['city'] ?? 'Dubai');
+        $country = InputSanitizer::cleanString($input['country'] ?? 'UAE');
+        $displayOrder = (int)($input['display_order'] ?? 0);
+
+        if (empty($name)) {
+            ApiResponse::error('Location name is required.');
+        }
+
+        $stmt = $this->db->prepare('INSERT INTO locations (name, city, country, display_order) VALUES (?, ?, ?, ?)');
+        $stmt->execute([$name, $city, $country, $displayOrder]);
+
+        ApiResponse::success(['id' => (int)$this->db->lastInsertId()], 'Location created successfully', 201);
+    }
+
+    public function updateLocation(array $input): void {
+        $id = (int)($input['id'] ?? 0);
+        $name = InputSanitizer::cleanString($input['name'] ?? '');
+        $city = InputSanitizer::cleanString($input['city'] ?? 'Dubai');
+        $country = InputSanitizer::cleanString($input['country'] ?? 'UAE');
+        $displayOrder = (int)($input['display_order'] ?? 0);
+
+        if ($id <= 0) {
+            ApiResponse::error('Location ID is required.');
+        }
+
+        $stmt = $this->db->prepare('UPDATE locations SET name = ?, city = ?, country = ?, display_order = ? WHERE id = ?');
+        $stmt->execute([$name, $city, $country, $displayOrder, $id]);
+
+        ApiResponse::success(['updated' => true], 'Location updated successfully');
+    }
+
+    public function deleteLocation(array $input): void {
+        $id = (int)($input['id'] ?? 0);
+        if ($id <= 0) {
+            ApiResponse::error('Location ID is required for deletion.');
+        }
+
+        $stmt = $this->db->prepare('DELETE FROM locations WHERE id = ?');
+        $stmt->execute([$id]);
+
+        ApiResponse::success(['deleted' => true], 'Location deleted successfully');
     }
 }
 
@@ -760,17 +1002,21 @@ class ArtistController {
         $id = InputSanitizer::cleanString($query['id'] ?? '');
 
         if (!empty($id)) {
-            $stmt = $this->db->prepare('SELECT * FROM artists WHERE id = ?');
+            $stmt = $this->db->prepare('SELECT a.*, 
+                (SELECT COUNT(*) FROM favorites WHERE item_type = "artist" AND item_id = CAST(a.id AS CHAR)) AS likes_count,
+                (SELECT COUNT(*) FROM follows WHERE artist_id = CAST(a.id AS CHAR)) AS followers_count,
+                (SELECT COUNT(*) FROM artworks WHERE artist_id = a.id OR (artist_id IS NULL AND artist_name IS NOT NULL AND LOWER(artist_name) = LOWER(a.name))) AS works_count
+                FROM artists a WHERE a.id = ?');
             $stmt->execute([$id]);
             $artist = $stmt->fetch();
-            if ($artist) ApiResponse::success($artist, 'Artist details fetched');
-            else ApiResponse::error('Artist not found', 404);
+            if ($artist) { ApiResponse::success($artist, 'Artist details fetched'); return; }
+            else { ApiResponse::error('Artist not found', 404); return; }
         }
 
         $sql = 'SELECT a.*, 
                 (SELECT COUNT(*) FROM favorites WHERE item_type = "artist" AND item_id = CAST(a.id AS CHAR)) AS likes_count,
                 (SELECT COUNT(*) FROM follows WHERE artist_id = CAST(a.id AS CHAR)) AS followers_count,
-                (SELECT COUNT(*) FROM artworks WHERE artist_id = CAST(a.id AS CHAR) OR (artist_name IS NOT NULL AND LOWER(artist_name) = LOWER(a.name))) AS works_count
+                (SELECT COUNT(*) FROM artworks WHERE artist_id = a.id OR (artist_id IS NULL AND artist_name IS NOT NULL AND LOWER(artist_name) = LOWER(a.name))) AS works_count
                 FROM artists a WHERE 1=1';
         $params = [];
 
@@ -807,7 +1053,7 @@ class ArtistController {
         $countStmt->execute($countParams);
         $total = (int)$countStmt->fetchColumn();
 
-        $sql .= " LIMIT $limit OFFSET $offset";
+        $sql .= " ORDER BY a.id DESC LIMIT $limit OFFSET $offset";
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
         $artists = $stmt->fetchAll();
@@ -958,7 +1204,7 @@ class ArtistController {
         $cntFollowers->execute([(string)$id]);
         $followers = (int)$cntFollowers->fetchColumn();
 
-        $cntWorks = $this->db->prepare('SELECT COUNT(*) FROM artworks WHERE artist_id = ? OR (artist_name IS NOT NULL AND LOWER(artist_name) = (SELECT LOWER(name) FROM artists WHERE id = ? LIMIT 1))');
+        $cntWorks = $this->db->prepare('SELECT COUNT(*) FROM artworks WHERE artist_id = ? OR (artist_id IS NULL AND artist_name IS NOT NULL AND LOWER(artist_name) = (SELECT LOWER(name) FROM artists WHERE id = ? LIMIT 1))');
         $cntWorks->execute([(string)$id, $id]);
         $works = (int)$cntWorks->fetchColumn();
 
@@ -1025,11 +1271,13 @@ class ArtistController {
 
         $fields = [];
         $params = [];
-        $allowed = ['name','category','location','bio','email','phone','website','instagram','experience_level','booking_rate','avatar_url','banner_url','status','is_active'];
+        $allowed = ['name','category','location','bio','email','phone','website','instagram','experience_level','booking_rate','avatar_url','banner_url','status','is_active','works_count','likes_count','followers_count'];
         foreach ($allowed as $f) {
             if (isset($input[$f])) {
                 $fields[] = "$f = ?";
-                $params[] = InputSanitizer::cleanString((string)$input[$f]);
+                $params[] = ($f === 'works_count' || $f === 'likes_count' || $f === 'followers_count' || $f === 'is_active')
+                    ? (int)$input[$f]
+                    : InputSanitizer::cleanString((string)$input[$f]);
             }
         }
         if (empty($fields)) { ApiResponse::error('No fields to update.'); return; }
@@ -1134,7 +1382,7 @@ class EventController {
         $countStmt->execute($countParams);
         $total = (int)$countStmt->fetchColumn();
 
-        $sql .= " LIMIT $limit OFFSET $offset";
+        $sql .= " ORDER BY id DESC LIMIT $limit OFFSET $offset";
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
         $events = $stmt->fetchAll();
@@ -2122,7 +2370,13 @@ class ArtworkController {
     public function deleteArtwork(array $input): void {
         $id = (int)($input['id'] ?? $input['artwork_id'] ?? $_GET['id'] ?? 0);
         if ($id <= 0) { ApiResponse::error('Artwork ID is required.'); return; }
+        $art = $this->db->prepare('SELECT artist_id FROM artworks WHERE id = ?');
+        $art->execute([$id]);
+        $row = $art->fetch();
         $this->db->prepare('DELETE FROM artworks WHERE id = ?')->execute([$id]);
+        if ($row && !empty($row['artist_id'])) {
+            $this->db->prepare('UPDATE artists SET works_count = (SELECT COUNT(*) FROM artworks WHERE artist_id = ?) WHERE id = ?')->execute([(int)$row['artist_id'], (int)$row['artist_id']]);
+        }
         ApiResponse::success(['id' => $id], 'Artwork deleted successfully');
     }
 }
@@ -2399,6 +2653,8 @@ class UploadController {
         header('Access-Control-Allow-Origin: *');
         header('Access-Control-Allow-Methods: GET, OPTIONS');
         header('Access-Control-Allow-Headers: *');
+        header('Cross-Origin-Resource-Policy: cross-origin');
+        header('Timing-Allow-Origin: *');
 
         if (empty($cleanName) || !$filePath || !file_exists($filePath)) {
             http_response_code(404);
@@ -2418,9 +2674,13 @@ class UploadController {
         ];
         $mime = $mimes[$ext] ?? 'image/jpeg';
 
-        header('Content-Type: ' . $mime);
+        header('Content-Type: ' . $mime, true);
         header('Content-Length: ' . filesize($filePath));
-        header('Cache-Control: public, max-age=86400');
+        header('Cache-Control: public, max-age=604800');
+        if (function_exists('header_remove')) {
+            header_remove('Pragma');
+            header_remove('Expires');
+        }
         readfile($filePath);
         exit;
     }
@@ -2451,7 +2711,7 @@ class UploadController {
             $filename = 'art_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . strtolower($ext);
             $targetPath = $uploadDir . '/' . $filename;
             if (@move_uploaded_file($file['tmp_name'], $targetPath)) {
-                $url = $baseUrl . 'api.php?resource=uploads&file=' . $filename;
+                $url = $baseUrl . 'uploads/' . $filename;
                 ApiResponse::success(['url' => $url, 'filename' => $filename, 'success' => true], 'File uploaded successfully', 201);
                 return;
             }
@@ -2471,7 +2731,7 @@ class UploadController {
                 $targetPath = $uploadDir . '/' . $filename;
                 $saved = @file_put_contents($targetPath, $decoded);
                 if ($saved !== false) {
-                    $url = $baseUrl . 'api.php?resource=uploads&file=' . $filename;
+                    $url = $baseUrl . 'uploads/' . $filename;
                     ApiResponse::success(['url' => $url, 'filename' => $filename, 'success' => true], 'Image uploaded successfully', 201);
                     return;
                 }
@@ -2549,6 +2809,8 @@ class UnifiedMySqlApiRouter {
         if (empty($resource)) {
             if (strpos($uri, 'login') !== false || in_array($action, ['login', 'register', 'signup', 'profile', 'change_password', 'delete_account'])) $resource = 'login';
             elseif (strpos($uri, 'categories') !== false) $resource = 'categories';
+            elseif (strpos($uri, 'experience_levels') !== false || strpos($uri, 'experience-levels') !== false || strpos($uri, 'masters') !== false) $resource = 'experience_levels';
+            elseif (strpos($uri, 'locations') !== false) $resource = 'locations';
             elseif (strpos($uri, 'artists') !== false) $resource = 'artists';
             elseif (strpos($uri, 'events') !== false) $resource = 'events';
             elseif (strpos($uri, 'bookings') !== false) $resource = 'bookings';
@@ -2598,8 +2860,46 @@ class UnifiedMySqlApiRouter {
 
             case 'categories':
                 $cat = new CategoryController();
-                if ($method === 'POST') $cat->createCategory($input);
-                else $cat->getCategories($_GET);
+                $catAction = strtolower(trim($_GET['action'] ?? $input['action'] ?? ''));
+                if ($catAction === 'delete' || $method === 'DELETE') {
+                    $cat->deleteCategory(array_merge($input, $_GET));
+                } elseif ($catAction === 'update' || $method === 'PUT') {
+                    $cat->updateCategory(array_merge($input, $_GET));
+                } elseif ($method === 'POST') {
+                    $cat->createCategory($input);
+                } else {
+                    $cat->getCategories($_GET);
+                }
+                break;
+
+            case 'experience_levels':
+            case 'experience-levels':
+            case 'masters':
+                $expCtrl = new ExperienceLevelController();
+                $expAction = strtolower(trim($_GET['action'] ?? $input['action'] ?? ''));
+                if ($expAction === 'delete' || $method === 'DELETE') {
+                    $expCtrl->deleteExperienceLevel(array_merge($input, $_GET));
+                } elseif ($expAction === 'update' || $method === 'PUT') {
+                    $expCtrl->updateExperienceLevel(array_merge($input, $_GET));
+                } elseif ($method === 'POST') {
+                    $expCtrl->createExperienceLevel($input);
+                } else {
+                    $expCtrl->getExperienceLevels();
+                }
+                break;
+
+            case 'locations':
+                $locCtrl = new LocationController();
+                $locAction = strtolower(trim($_GET['action'] ?? $input['action'] ?? ''));
+                if ($locAction === 'delete' || $method === 'DELETE') {
+                    $locCtrl->deleteLocation(array_merge($input, $_GET));
+                } elseif ($locAction === 'update' || $method === 'PUT') {
+                    $locCtrl->updateLocation(array_merge($input, $_GET));
+                } elseif ($method === 'POST') {
+                    $locCtrl->createLocation($input);
+                } else {
+                    $locCtrl->getLocations();
+                }
                 break;
 
             case 'artists':

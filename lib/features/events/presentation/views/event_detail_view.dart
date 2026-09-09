@@ -283,8 +283,8 @@ class _EventDetailViewState extends State<EventDetailView> {
     final featuredArtists = _featuredArtists;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
-      appBar: const AppTopBar(),
+      backgroundColor: const Color(0xFF6B1C9B),
+      appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
@@ -876,7 +876,7 @@ class _EventDetailViewState extends State<EventDetailView> {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E1E1E),
+                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -887,7 +887,7 @@ class _EventDetailViewState extends State<EventDetailView> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF64748B),
+                          color: Colors.white70,
                           height: 1.4,
                         ),
                       ),
@@ -905,7 +905,7 @@ class _EventDetailViewState extends State<EventDetailView> {
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF334155),
+                            color: Colors.white70,
                           ),
                         ),
                         const Text(
@@ -913,7 +913,7 @@ class _EventDetailViewState extends State<EventDetailView> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF334155),
+                            color: Colors.white70,
                           ),
                         ),
                         const Text(
@@ -921,7 +921,7 @@ class _EventDetailViewState extends State<EventDetailView> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF334155),
+                            color: Colors.white70,
                           ),
                         ),
                       ],
@@ -942,94 +942,6 @@ class _EventDetailViewState extends State<EventDetailView> {
                   final artist = featuredArtists[index];
                   return _buildFeaturedArtistCard(context, artist);
                 },
-              ),
-              const SizedBox(height: 32),
-
-              // 8. Bottom Section: Discover More Talented Artists Card (Matching Screenshot media_1787732648257.png)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 24,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFF1F5F9)),
-                ),
-                child: Column(
-                  children: [
-                    const Text(
-                      'Discover More Talented Artists',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E1E1E),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Explore our full directory of 30+ artists across various categories and disciplines',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF64748B),
-                        height: 1.35,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    // Top Button: Browse All Categories (Solid Purple)
-                    SizedBox(
-                      width: double.infinity,
-                      height: 44,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF6A2777),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        onPressed: () => context.push(RouteNames.categories),
-                        child: const Text(
-                          'Browse All Categories',
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    // Bottom Button: View All Artists (Outlined)
-                    SizedBox(
-                      width: double.infinity,
-                      height: 44,
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF1E1E1E),
-                          backgroundColor: Colors.white,
-                          side: const BorderSide(
-                            color: Color(0xFF333333),
-                            width: 1.0,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        onPressed: () => context.go(RouteNames.artists),
-                        child: const Text(
-                          'View All Artists',
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ),
               const SizedBox(height: 24),
             ],

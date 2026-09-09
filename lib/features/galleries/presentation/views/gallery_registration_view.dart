@@ -291,7 +291,47 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                   maxLines: 4,
                   decoration: _whiteInputDecoration(),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
+
+                // Paid Publishing Service Notice
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                  ),
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.info_outline, color: Colors.amberAccent, size: 16),
+                          SizedBox(width: 6),
+                          Text(
+                            'Paid Gallery Publishing',
+                            style: TextStyle(
+                              color: Colors.amberAccent,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        'Publishing your gallery on Artist Dubai is the only paid service on the app. Once reviewed and published, your space will be prominently featured to all registered users across Dubai.',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
 
                 // Field 9: Submit registration button (Exact match to screenshot)
                 SizedBox(

@@ -258,8 +258,8 @@ class _LoginViewState extends State<LoginView> {
     final hPad = rh.isWide ? rh.horizontalPadding : 16.0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7F9),
-      appBar: const AppTopBar(),
+      backgroundColor: const Color(0xFF6B1C9B),
+      appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Center(
@@ -280,7 +280,7 @@ class _LoginViewState extends State<LoginView> {
                     IconButton(
                       icon: const Icon(
                         Icons.arrow_back,
-                        color: Color(0xFF1E1E1E),
+                        color: Colors.white,
                         size: 22,
                       ),
                       onPressed: () {
@@ -303,14 +303,14 @@ class _LoginViewState extends State<LoginView> {
                           children: [
                             Icon(
                               Icons.home_outlined,
-                              color: Color(0xFF1E1E1E),
+                              color: Colors.white,
                               size: 20,
                             ),
                             SizedBox(width: 6),
                             Text(
                               'Home',
                               style: TextStyle(
-                                color: Color(0xFF1E1E1E),
+                                color: Colors.white,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -337,6 +337,7 @@ class _LoginViewState extends State<LoginView> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16.0),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.04),
@@ -491,7 +492,7 @@ class _LoginViewState extends State<LoginView> {
                       Center(
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
-                          onTap: () => context.go(RouteNames.register),
+                          onTap: () => context.go(RouteNames.register, extra: 'user'),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
                             child: RichText(
@@ -504,7 +505,7 @@ class _LoginViewState extends State<LoginView> {
                                 children: [
                                   TextSpan(text: "Don't have an account? "),
                                   TextSpan(
-                                    text: 'Sign Up',
+                                    text: 'Sign Up Free',
                                     style: TextStyle(
                                       color: Color(0xFF6A2777),
                                       fontWeight: FontWeight.w700,

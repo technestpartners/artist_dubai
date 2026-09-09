@@ -546,12 +546,18 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
         : (isEdit ? 'Update details, tickets, and photos for this event.' : 'Publish a new exhibition, workshop, or cultural gathering.');
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFF6B1C9B),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.5,
+        backgroundColor: const Color(0xFF6B1C9B),
+        elevation: 0,
+        shape: Border(
+          bottom: BorderSide(
+            color: Colors.white.withValues(alpha: 0.18),
+            width: 1,
+          ),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1E293B)),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
             if (context.canPop()) {
               context.pop();
@@ -564,9 +570,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
         title: Text(
           appBarTitle,
           style: const TextStyle(
-            color: Color(0xFF1E293B),
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),
@@ -585,21 +591,21 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF1E6F5),
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE2D1E8)),
+                          border: Border.all(color: const Color(0xFFCBD5E1)),
                         ),
                         child: Row(
                           children: [
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF6A2777).withValues(alpha: 0.15),
+                                color: const Color(0xFF6B1C9B).withValues(alpha: 0.15),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
                                 widget.isCalendar ? Icons.calendar_month_rounded : Icons.event_note,
-                                color: const Color(0xFF6A2777),
+                                color: const Color(0xFF6B1C9B),
                                 size: 24,
                               ),
                             ),
@@ -778,7 +784,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                             _buildTextField(
                               controller: _descriptionController,
                               hintText: 'Describe your event..',
-                              maxLines: 3,
+                              maxLines: 4,
+                              maxLength: 2000,
+                              showCounter: true,
                             ),
                           ],
                         ),
@@ -905,6 +913,61 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                       ),
                       const SizedBox(height: 20),
 
+                      // Event Publishing Notice (Paid Service)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFCBD5E1)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF6B1C9B),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Text(
+                                    'PAID PUBLISHING',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Community Visibility',
+                                  style: TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1E293B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Publishing events is a paid feature on Artist Dubai. Once approved and published, your event is promoted and visible to all registered users across Dubai.',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color: Color(0xFF475569),
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
                       // Action Row: Cancel & Update Event
                       Wrap(
                         alignment: WrapAlignment.end,
@@ -913,8 +976,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                         children: [
                           OutlinedButton(
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF334155),
-                              side: const BorderSide(color: Color(0xFFCBD5E1)),
+                              backgroundColor: Colors.white.withValues(alpha: 0.15),
+                              foregroundColor: Colors.white,
+                              side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
@@ -929,8 +993,8 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                           ),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF5E227A),
-                              foregroundColor: Colors.white,
+                              backgroundColor: Colors.white,
+                              foregroundColor: const Color(0xFF6B1C9B),
                               elevation: 0,
                               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -940,14 +1004,14 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                 ? const SizedBox(
                                     width: 18,
                                     height: 18,
-                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                    child: CircularProgressIndicator(color: Color(0xFF6B1C9B), strokeWidth: 2),
                                   )
-                                  : Text(
-                                      isEdit
-                                          ? (widget.isCalendar ? 'Update Calendar Event' : 'Update Event')
-                                          : (widget.isCalendar ? 'Schedule on Calendar' : 'Create Event'),
-                                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                                    ),
+                                : Text(
+                                    isEdit
+                                        ? (widget.isCalendar ? 'Update Calendar Event' : 'Update Event')
+                                        : (widget.isCalendar ? 'Schedule on Calendar' : 'Create Event'),
+                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                  ),
                           ),
                         ],
                       ),
@@ -1016,12 +1080,15 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     IconData? suffixIcon,
     TextInputType? keyboardType,
     int maxLines = 1,
+    int? maxLength,
+    bool showCounter = false,
     VoidCallback? onTap,
   }) {
     final field = TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       maxLines: maxLines,
+      maxLength: maxLength,
       readOnly: onTap != null,
       enableInteractiveSelection: onTap == null,
       onTap: onTap,
@@ -1032,6 +1099,12 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       ),
       decoration: InputDecoration(
         hintText: hintText,
+        counterText: showCounter ? null : '',
+        counterStyle: const TextStyle(
+          fontSize: 11.5,
+          color: Color(0xFF64748B),
+          fontWeight: FontWeight.w500,
+        ),
         hintStyle: const TextStyle(
           fontSize: 13.5,
           color: Color(0xFF64748B),

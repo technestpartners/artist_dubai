@@ -6,6 +6,7 @@ import '../constants/api_endpoints.dart';
 import '../di/injection_container.dart';
 import '../network/api_client.dart';
 import 'live_sync_service.dart';
+import 'storage_service.dart';
 
 /// Pagination metadata returned from every list endpoint
 class PagedResult<T> {
@@ -71,7 +72,7 @@ class ApiService {
       res is Map<String, dynamic> && (res['status'] == 'success' || res['success'] == true);
 
   // 1. Categories (Instant Cache-First from MySQL)
-  Future<List<CategoryInfo>> getCategories({String type = 'artist', bool forceRefresh = false}) async {
+  Future<List<CategoryInfo>> getCategories({String type = 'all', bool forceRefresh = false}) async {
     if (!forceRefresh && _cachedCategories != null && _cachedCategories!.isNotEmpty) {
       return _cachedCategories!;
     }
@@ -84,6 +85,9 @@ class ApiService {
       if (_isSuccess(res)) {
         final list = res['data'] as List<dynamic>;
         _cachedCategories = list.map((item) {
+          if (item is Map<String, dynamic>) {
+            return CategoryInfo.fromJson(item);
+          }
           return CategoryInfo(
             name: item['name'] as String? ?? 'General',
             emoji: item['emoji'] as String? ?? '🎨',
@@ -140,6 +144,12 @@ class ApiService {
       final res = await _client.get(ApiEndpoints.artists, queryParameters: queryParams);
       if (_isSuccess(res)) {
         final result = PagedResult.fromResponse(res, ArtistModel.fromJson);
+        result.data.sort((a, b) {
+          final aId = int.tryParse(a.id) ?? 0;
+          final bId = int.tryParse(b.id) ?? 0;
+          if (aId != bId) return bId.compareTo(aId);
+          return b.createdAt.compareTo(a.createdAt);
+        });
         if (page == 1 && category == null && (query == null || query.isEmpty) && featured == null) {
           _cachedArtists = result.data;
         }
@@ -185,6 +195,12 @@ class ApiService {
       if (_isSuccess(res)) {
         final list = res['data'] as List<dynamic>;
         final artists = list.map((e) => ArtistModel.fromJson(e as Map<String, dynamic>)).toList();
+        artists.sort((a, b) {
+          final aId = int.tryParse(a.id) ?? 0;
+          final bId = int.tryParse(b.id) ?? 0;
+          if (aId != bId) return bId.compareTo(aId);
+          return b.createdAt.compareTo(a.createdAt);
+        });
         if (isDefaultQuery) {
           _cachedArtists = artists;
         }
@@ -229,12 +245,27 @@ class ApiService {
       );
       if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
         _cachedArtists = null;
+        final data = res['data'] as Map<String, dynamic>;
+        final artistId = data['artist_id']?.toString() ?? data['id']?.toString();
+        if (artistId != null) {
+          try {
+            final storage = sl<StorageService>();
+            await storage.setBool('has_artist_profile', true);
+            await storage.setString('artist_profile_id', artistId);
+            await storage.setString('artist_profile_name', name);
+          } catch (_) {}
+        }
         try {
           sl<LiveSyncService>().notifyArtistsChanged();
         } catch (_) {}
-        return res['data'] as Map<String, dynamic>;
+        return data;
       } else if (_isSuccess(res)) {
         _cachedArtists = null;
+        try {
+          final storage = sl<StorageService>();
+          await storage.setBool('has_artist_profile', true);
+          await storage.setString('artist_profile_name', name);
+        } catch (_) {}
         try {
           sl<LiveSyncService>().notifyArtistsChanged();
         } catch (_) {}
@@ -315,6 +346,11 @@ class ApiService {
       if (_isSuccess(res)) {
         final list = res['data'] as List<dynamic>;
         final events = list.map((e) => ArtEventModel.fromJson(e as Map<String, dynamic>)).toList();
+        events.sort((a, b) {
+          final aId = int.tryParse(a.id) ?? 0;
+          final bId = int.tryParse(b.id) ?? 0;
+          return bId.compareTo(aId);
+        });
 
         if (isDefaultQuery) {
           _cachedEvents = events;
@@ -705,6 +741,7 @@ class ApiService {
     required String email,
     required String password,
     String? phone,
+    String? role,
   }) async {
     final res = await _client.post(
       ApiEndpoints.register,
@@ -713,6 +750,7 @@ class ApiService {
         'email': email,
         'password': password,
         'phone': phone ?? '',
+        'role': role ?? 'user',
       },
     );
     if (_isSuccess(res)) {
@@ -947,7 +985,69 @@ class ApiService {
         queryParameters: {'email': email},
       );
       if (_isSuccess(res)) {
-        return res['data'] as Map<String, dynamic>?;
+        final data = res['data'] as Map<String, dynamic>?;
+        if (data != null) {
+          final artistProfile = data['artist_profile'] as Map<String, dynamic>?;
+          try {
+            final storage = sl<StorageService>();
+            if (artistProfile != null && artistProfile['id'] != null) {
+              await storage.setBool('has_artist_profile', true);
+              await storage.setString('artist_profile_id', artistProfile['id'].toString());
+              if (artistProfile['name'] != null) {
+                await storage.setString('artist_profile_name', artistProfile['name'].toString());
+              }
+            } else {
+              await storage.setBool('has_artist_profile', false);
+              await storage.remove('artist_profile_id');
+              await storage.remove('artist_profile_name');
+            }
+          } catch (_) {}
+        }
+        return data;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  // 15a-2. Helper to fetch the logged-in user's artist profile
+  Future<ArtistModel?> getMyArtistProfile() async {
+    try {
+      final storage = sl<StorageService>();
+      final email = (storage.getString('user_email') ?? '').trim();
+      final name = (storage.getString('user_name') ?? '').trim();
+      final savedId = storage.getString('artist_profile_id');
+
+      if (savedId != null && savedId.isNotEmpty) {
+        try {
+          return await getArtistDetails(savedId);
+        } catch (_) {}
+      }
+
+      if (email.isNotEmpty) {
+        final profile = await getUserProfile(email);
+        if (profile != null && profile['artist_profile'] is Map<String, dynamic>) {
+          final artistMap = profile['artist_profile'] as Map<String, dynamic>;
+          final artist = ArtistModel.fromJson(artistMap);
+          await storage.setBool('has_artist_profile', true);
+          await storage.setString('artist_profile_id', artist.id);
+          await storage.setString('artist_profile_name', artist.name);
+          return artist;
+        }
+
+        // Fallback: search live artists
+        final allArtists = await getArtists();
+        final match = allArtists.where((a) {
+          if (email.isNotEmpty && a.email.trim().toLowerCase() == email.toLowerCase()) return true;
+          if (name.isNotEmpty && name.toLowerCase() != 'user' && name.toLowerCase() != 'admin' && a.name.trim().toLowerCase() == name.toLowerCase()) return true;
+          return false;
+        }).firstOrNull;
+
+        if (match != null) {
+          await storage.setBool('has_artist_profile', true);
+          await storage.setString('artist_profile_id', match.id);
+          await storage.setString('artist_profile_name', match.name);
+          return match;
+        }
       }
     } catch (_) {}
     return null;
@@ -1001,6 +1101,267 @@ class ApiService {
         _cachedCategories = null;
         try {
           sl<LiveSyncService>().notifyCategoriesChanged();
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  // 15d. Update Category (MySQL Backend)
+  Future<bool> updateCategory({
+    required int id,
+    required String name,
+    required String description,
+    String emoji = '🎨',
+    String type = 'general',
+  }) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.categories}&action=update',
+        data: {
+          'id': id,
+          'name': name,
+          'description': description,
+          'emoji': emoji,
+          'type': type,
+        },
+      );
+      if (_isSuccess(res)) {
+        _cachedCategories = null;
+        try {
+          sl<LiveSyncService>().notifyCategoriesChanged();
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  // 15e. Delete Category (MySQL Backend)
+  Future<bool> deleteCategory({required int id, String? name}) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.categories}&action=delete',
+        data: {
+          'id': id,
+          if (name != null) 'name': name,
+        },
+      );
+      if (_isSuccess(res)) {
+        _cachedCategories = null;
+        try {
+          sl<LiveSyncService>().notifyCategoriesChanged();
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  // 15f. Experience Levels Master (MySQL Backend)
+  List<ExperienceLevelModel>? _cachedExperienceLevels;
+
+  Future<List<ExperienceLevelModel>> getExperienceLevels({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedExperienceLevels != null && _cachedExperienceLevels!.isNotEmpty) {
+      return _cachedExperienceLevels!;
+    }
+    try {
+      final res = await _client.get(ApiEndpoints.experienceLevels);
+      if (_isSuccess(res)) {
+        final list = res['data'] as List<dynamic>;
+        _cachedExperienceLevels = list
+            .map((item) => ExperienceLevelModel.fromJson(item as Map<String, dynamic>))
+            .toList();
+        return _cachedExperienceLevels!;
+      }
+    } catch (_) {}
+
+    return _cachedExperienceLevels ??
+        const [
+          ExperienceLevelModel(id: 1, name: 'Beginner (1-2 years)', yearsRange: '1-2 years', displayOrder: 1),
+          ExperienceLevelModel(id: 2, name: 'Intermediate (3-5 years)', yearsRange: '3-5 years', displayOrder: 2),
+          ExperienceLevelModel(id: 3, name: 'Advanced (5-10 years)', yearsRange: '5-10 years', displayOrder: 3),
+          ExperienceLevelModel(id: 4, name: 'Professional (10+ years)', yearsRange: '10+ years', displayOrder: 4),
+        ];
+  }
+
+  Future<bool> createExperienceLevel({
+    required String name,
+    String yearsRange = '',
+    int displayOrder = 0,
+  }) async {
+    try {
+      final res = await _client.post(
+        ApiEndpoints.experienceLevels,
+        data: {
+          'name': name,
+          'years_range': yearsRange,
+          'display_order': displayOrder,
+        },
+      );
+      if (_isSuccess(res)) {
+        _cachedExperienceLevels = null;
+        try {
+          sl<LiveSyncService>().notifyExperienceLevelsChanged();
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> updateExperienceLevel({
+    required int id,
+    required String name,
+    String yearsRange = '',
+    int displayOrder = 0,
+  }) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.experienceLevels}&action=update',
+        data: {
+          'id': id,
+          'name': name,
+          'years_range': yearsRange,
+          'display_order': displayOrder,
+        },
+      );
+      if (_isSuccess(res)) {
+        _cachedExperienceLevels = null;
+        try {
+          sl<LiveSyncService>().notifyExperienceLevelsChanged();
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> deleteExperienceLevel({required int id}) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.experienceLevels}&action=delete',
+        data: {'id': id},
+      );
+      if (_isSuccess(res)) {
+        _cachedExperienceLevels = null;
+        try {
+          sl<LiveSyncService>().notifyExperienceLevelsChanged();
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  // 15g. Locations Master (MySQL Backend)
+  List<LocationModel>? _cachedLocations;
+
+  Future<List<LocationModel>> getLocations({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedLocations != null && _cachedLocations!.isNotEmpty) {
+      return _cachedLocations!;
+    }
+    try {
+      final res = await _client.get(ApiEndpoints.locations);
+      if (_isSuccess(res)) {
+        final list = res['data'] as List<dynamic>;
+        _cachedLocations = list
+            .map((item) => LocationModel.fromJson(item as Map<String, dynamic>))
+            .toList();
+        return _cachedLocations!;
+      }
+    } catch (_) {}
+
+    return _cachedLocations ??
+        const [
+          LocationModel(id: 1, name: 'Dubai, UAE', city: 'Dubai', country: 'UAE', displayOrder: 1),
+          LocationModel(id: 2, name: 'Dubai Design District (d3), Dubai', city: 'Dubai', country: 'UAE', displayOrder: 2),
+          LocationModel(id: 3, name: 'Alserkal Avenue, Al Quoz, Dubai', city: 'Dubai', country: 'UAE', displayOrder: 3),
+          LocationModel(id: 4, name: 'Downtown Dubai, UAE', city: 'Dubai', country: 'UAE', displayOrder: 4),
+          LocationModel(id: 5, name: 'DIFC, Dubai', city: 'Dubai', country: 'UAE', displayOrder: 5),
+          LocationModel(id: 6, name: 'Al Shindagha Historic District, Dubai', city: 'Dubai', country: 'UAE', displayOrder: 6),
+          LocationModel(id: 7, name: 'Jaddaf Waterfront, Dubai', city: 'Dubai', country: 'UAE', displayOrder: 7),
+          LocationModel(id: 8, name: 'Madinat Jumeirah, Dubai', city: 'Dubai', country: 'UAE', displayOrder: 8),
+          LocationModel(id: 9, name: 'Dubai Marina, UAE', city: 'Dubai', country: 'UAE', displayOrder: 9),
+          LocationModel(id: 10, name: 'Palm Jumeirah, Dubai', city: 'Dubai', country: 'UAE', displayOrder: 10),
+          LocationModel(id: 11, name: 'Jumeirah, Dubai', city: 'Dubai', country: 'UAE', displayOrder: 11),
+          LocationModel(id: 12, name: 'Business Bay, Dubai', city: 'Dubai', country: 'UAE', displayOrder: 12),
+          LocationModel(id: 13, name: 'Abu Dhabi, UAE', city: 'Abu Dhabi', country: 'UAE', displayOrder: 13),
+          LocationModel(id: 14, name: 'Sharjah, UAE', city: 'Sharjah', country: 'UAE', displayOrder: 14),
+          LocationModel(id: 15, name: 'Ajman, UAE', city: 'Ajman', country: 'UAE', displayOrder: 15),
+          LocationModel(id: 16, name: 'Ras Al Khaimah, UAE', city: 'Ras Al Khaimah', country: 'UAE', displayOrder: 16),
+          LocationModel(id: 17, name: 'Fujairah, UAE', city: 'Fujairah', country: 'UAE', displayOrder: 17),
+          LocationModel(id: 18, name: 'Umm Al Quwain, UAE', city: 'Umm Al Quwain', country: 'UAE', displayOrder: 18),
+        ];
+  }
+
+  Future<bool> createLocation({
+    required String name,
+    String city = 'Dubai',
+    String country = 'UAE',
+    int displayOrder = 0,
+  }) async {
+    try {
+      final res = await _client.post(
+        ApiEndpoints.locations,
+        data: {
+          'name': name,
+          'city': city,
+          'country': country,
+          'display_order': displayOrder,
+        },
+      );
+      if (_isSuccess(res)) {
+        _cachedLocations = null;
+        try {
+          sl<LiveSyncService>().notifyLocationsChanged();
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> updateLocation({
+    required int id,
+    required String name,
+    String city = 'Dubai',
+    String country = 'UAE',
+    int displayOrder = 0,
+  }) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.locations}&action=update',
+        data: {
+          'id': id,
+          'name': name,
+          'city': city,
+          'country': country,
+          'display_order': displayOrder,
+        },
+      );
+      if (_isSuccess(res)) {
+        _cachedLocations = null;
+        try {
+          sl<LiveSyncService>().notifyLocationsChanged();
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> deleteLocation({required int id}) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.locations}&action=delete',
+        data: {'id': id},
+      );
+      if (_isSuccess(res)) {
+        _cachedLocations = null;
+        try {
+          sl<LiveSyncService>().notifyLocationsChanged();
         } catch (_) {}
         return true;
       }
@@ -1375,6 +1736,23 @@ class ApiService {
       final res = await _client.post(
         'api.php?resource=artworks&action=delete',
         data: {'id': id},
+      );
+      if (_isSuccess(res)) {
+        try {
+          sl<LiveSyncService>().notifyArtistsChanged();
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  // 28b. Update Artwork (MySQL Backend)
+  Future<bool> updateArtwork(Map<String, dynamic> data) async {
+    try {
+      final res = await _client.post(
+        'api.php?resource=artworks&action=update',
+        data: data,
       );
       if (_isSuccess(res)) {
         try {

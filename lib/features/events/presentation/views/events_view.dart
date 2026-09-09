@@ -12,6 +12,7 @@ import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../domain/models/art_event_model.dart';
+import '../../../artists/domain/models/artist_model.dart';
 
 class EventsView extends StatefulWidget {
   final int initialTabIndex;
@@ -33,6 +34,8 @@ class _EventsViewState extends State<EventsView> {
   bool _isCategoryListExpanded = false;
   StreamSubscription<List<ArtEventModel>>? _eventsSub;
   StreamSubscription<Map<String, dynamic>>? _favSub;
+  StreamSubscription<List<CategoryInfo>>? _catSub;
+  StreamSubscription<bool>? _authSub;
 
   @override
   void initState() {
@@ -40,10 +43,25 @@ class _EventsViewState extends State<EventsView> {
     _selectedTabIndex = widget.initialTabIndex;
     _fetchEvents();
     _fetchCategories();
+    _authSub = sl<LiveSyncService>().authStream.listen((isLoggedIn) {
+      if (mounted) {
+        setState(() {});
+        if (isLoggedIn) {
+          _fetchEvents(forceRefresh: true);
+        }
+      }
+    });
     _eventsSub = sl<LiveSyncService>().eventsStream.listen((events) {
       if (mounted) {
         setState(() {
           _allEvents = events;
+        });
+      }
+    });
+    _catSub = sl<LiveSyncService>().categoriesStream.listen((cats) {
+      if (mounted && cats.isNotEmpty) {
+        setState(() {
+          _categories = ['All Categories', ...cats.map((c) => c.name)];
         });
       }
     });
@@ -171,8 +189,10 @@ class _EventsViewState extends State<EventsView> {
 
   @override
   void dispose() {
+    _authSub?.cancel();
     _eventsSub?.cancel();
     _favSub?.cancel();
+    _catSub?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -230,7 +250,7 @@ class _EventsViewState extends State<EventsView> {
     final hPad = rh.horizontalPadding;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(),
       body: SafeArea(
         child: RefreshIndicator(
@@ -262,7 +282,7 @@ class _EventsViewState extends State<EventsView> {
                       padding: EdgeInsets.only(right: 12.0, top: 4.0, bottom: 4.0),
                       child: Icon(
                         Icons.arrow_back,
-                        color: Color(0xFF1E1E1E),
+                        color: Colors.white,
                         size: 20,
                       ),
                     ),
@@ -276,7 +296,7 @@ class _EventsViewState extends State<EventsView> {
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF1E1E1E),
+                            color: Colors.white,
                             letterSpacing: -0.3,
                           ),
                         ),
@@ -285,7 +305,7 @@ class _EventsViewState extends State<EventsView> {
                           'Discover Art Events in Dubai',
                           style: TextStyle(
                             fontSize: 13.5,
-                            color: Color(0xFF5B6E8C),
+                            color: Color(0xFFE2D6F5),
                           ),
                         ),
                       ],
@@ -311,7 +331,7 @@ class _EventsViewState extends State<EventsView> {
                           Icon(
                             Icons.home_outlined,
                             size: 18,
-                            color: Color(0xFF1E1E1E),
+                            color: Colors.white,
                           ),
                           SizedBox(width: 6),
                           Text(
@@ -319,7 +339,7 @@ class _EventsViewState extends State<EventsView> {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF1E1E1E),
+                              color: Colors.white,
                             ),
                           ),
                         ],
@@ -330,8 +350,8 @@ class _EventsViewState extends State<EventsView> {
                     height: 40,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6B267B),
-                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.white,
+                        foregroundColor: const Color(0xFF6B1C9B),
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(horizontal: 14),
                         shape: RoundedRectangleBorder(
@@ -350,14 +370,14 @@ class _EventsViewState extends State<EventsView> {
                         mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: const [
-                          Icon(Icons.add, size: 17, color: Colors.white),
+                          Icon(Icons.add, size: 17, color: Color(0xFF6B1C9B)),
                           SizedBox(width: 5),
                           Text(
                             'Create Event',
                             style: TextStyle(
                               fontSize: 13.5,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: Color(0xFF6B1C9B),
                             ),
                           ),
                         ],
@@ -368,91 +388,115 @@ class _EventsViewState extends State<EventsView> {
               ),
               const SizedBox(height: 14),
 
-              // Search Bar
-              TextField(
-                controller: _searchController,
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(
-                  hintText: 'Search events...',
-                  hintStyle: const TextStyle(
-                    color: Color(0xFF94A3B8),
+              if (!_isLoggedIn) ...[
+                _buildAuthGate(context),
+              ] else ...[
+                // Search Bar
+                TextField(
+                  controller: _searchController,
+                  onChanged: (_) => setState(() {}),
+                  style: const TextStyle(
+                    color: Color(0xFF1E293B),
                     fontSize: 14.5,
                   ),
-                  prefixIcon: const Icon(
-                    Icons.search,
-                    color: Color(0xFF5F6368),
-                    size: 22,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(
-                      color: Color(0xFF2E2E3E),
-                      width: 1.0,
+                  cursorColor: const Color(0xFF6B1C9B),
+                  decoration: InputDecoration(
+                    hintText: 'Search events...',
+                    hintStyle: const TextStyle(
+                      color: Color(0xFF64748B),
+                      fontSize: 14.5,
                     ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(
-                      color: const Color(0xFF2E2E3E).withValues(alpha: 0.5),
-                      width: 1.0,
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      color: Color(0xFF64748B),
+                      size: 22,
                     ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(
-                      color: Color(0xFF6A2777),
-                      width: 1.5,
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? GestureDetector(
+                            onTap: () {
+                              _searchController.clear();
+                              setState(() {});
+                            },
+                            child: const Icon(
+                              Icons.close,
+                              color: Color(0xFF64748B),
+                              size: 20,
+                            ),
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFCBD5E1),
+                        width: 1.0,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFCBD5E1),
+                        width: 1.0,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF6B1C9B),
+                        width: 1.5,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
 
-              // Category Selector Box (Floating Dropdown)
-              _buildCategorySelectorField(),
-              const SizedBox(height: 18),
+                // Category Selector Box (Floating Dropdown)
+                _buildCategorySelectorField(),
+                const SizedBox(height: 18),
 
-              // Events Cards List
-              if (filteredEvents.isEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 40),
-                  alignment: Alignment.center,
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.event_busy_outlined,
-                        size: 48,
-                        color: Colors.grey.shade400,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'No events found',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
+                // Events Cards List
+                if (filteredEvents.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    alignment: Alignment.center,
+                    child: Column(
+                      children: const [
+                        Icon(
+                          Icons.event_busy_outlined,
+                          size: 48,
+                          color: Colors.white70,
                         ),
-                      ),
-                    ],
+                        SizedBox(height: 12),
+                        Text(
+                          'No events found',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Color(0xFFE2D6F5),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: filteredEvents.length,
+                    separatorBuilder:
+                        (context, index) => const SizedBox(height: 16),
+                    itemBuilder: (context, index) {
+                      final event = filteredEvents[index];
+                      return _buildEventCard(event);
+                    },
                   ),
-                )
-              else
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: filteredEvents.length,
-                  separatorBuilder:
-                      (context, index) => const SizedBox(height: 16),
-                  itemBuilder: (context, index) {
-                    final event = filteredEvents[index];
-                    return _buildEventCard(event);
-                  },
-                ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
+              ],
               ],
             ),
             ),
@@ -461,6 +505,158 @@ class _EventsViewState extends State<EventsView> {
         ),
       ),
       bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
+    );
+  }
+
+  Widget _buildAuthGate(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(top: 16, bottom: 30),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 68,
+            height: 68,
+            decoration: BoxDecoration(
+              color: const Color(0xFF6B1C9B).withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.calendar_month_rounded,
+                size: 34,
+                color: Color(0xFF6B1C9B),
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          const Text(
+            'Explore Dubai Art Events',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF1E293B),
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Log in or sign up with your email to discover upcoming exhibitions, workshops, artist talks, and cultural events across Dubai.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13.5,
+              height: 1.45,
+              color: Color(0xFF64748B),
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6B1C9B),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () async {
+                final loggedIn = await context.push(RouteNames.register, extra: 'user');
+                if (loggedIn == true || _isLoggedIn) {
+                  if (mounted) setState(() {});
+                }
+              },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.person_add_outlined, size: 18),
+                  SizedBox(width: 8),
+                  Text(
+                    'Sign Up as Art Lover (Free Access)',
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF6B1C9B),
+                side: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () async {
+                final loggedIn = await context.push(RouteNames.login);
+                if (loggedIn == true || _isLoggedIn) {
+                  if (mounted) setState(() {});
+                }
+              },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.login_rounded, size: 18),
+                  SizedBox(width: 8),
+                  Text(
+                    'Already have an account? Sign In',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.lock_outline_rounded, size: 16, color: Color(0xFF94A3B8)),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Sign-in is completely free and only takes a moment so we can provide you with event updates.',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

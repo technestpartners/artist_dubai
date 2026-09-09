@@ -321,27 +321,52 @@ class AppRouter {
       GoRoute(
         path: RouteNames.register,
         name: 'register',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const RegisterView(),
-        ),
+        pageBuilder: (context, state) {
+          final role = state.extra is String
+              ? state.extra as String
+              : (state.uri.queryParameters['role'] ?? 'user');
+          return _buildSlidePage(
+            context: context,
+            state: state,
+            child: RegisterView(initialRole: role),
+          );
+        },
       ),
       GoRoute(
         path: RouteNames.artistRegistration,
         name: 'artistRegistration',
         pageBuilder: (context, state) {
           bool fromAdmin = false;
-          if (state.extra is Map && (state.extra as Map)['fromAdmin'] == true) {
-            fromAdmin = true;
+          bool isEditing = false;
+          ArtistModel? artist;
+          String? artistId;
+
+          if (state.extra is Map) {
+            final map = state.extra as Map;
+            if (map['fromAdmin'] == true) fromAdmin = true;
+            if (map['isEditing'] == true) isEditing = true;
+            if (map['artist'] is ArtistModel) artist = map['artist'] as ArtistModel;
+            if (map['artistId'] != null) artistId = map['artistId'].toString();
           }
           if (state.uri.queryParameters['fromAdmin'] == 'true') {
             fromAdmin = true;
           }
+          if (state.uri.queryParameters['isEditing'] == 'true') {
+            isEditing = true;
+          }
+          if (state.uri.queryParameters['artistId'] != null) {
+            artistId = state.uri.queryParameters['artistId'];
+          }
+
           return _buildSlidePage(
             context: context,
             state: state,
-            child: CreateArtistProfileView(fromAdmin: fromAdmin),
+            child: CreateArtistProfileView(
+              fromAdmin: fromAdmin,
+              isEditing: isEditing,
+              artist: artist,
+              artistId: artistId,
+            ),
           );
         },
       ),
