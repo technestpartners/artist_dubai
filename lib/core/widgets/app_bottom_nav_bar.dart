@@ -144,20 +144,20 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
       top: false,
       child: Container(
         height: 90,
-        padding: const EdgeInsets.only(
-          left: 20.0,
-          right: 20.0,
+        padding: EdgeInsets.only(
+          left: rh.horizontalPadding,
+          right: rh.horizontalPadding,
           bottom: 20.0,
           top: 6.0,
         ),
         child: Center(
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxWidth: rh.isWide ? 480.0 : double.infinity,
+              maxWidth: rh.isWide ? 560.0 : double.infinity,
             ),
             child: Container(
               height: 64,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
