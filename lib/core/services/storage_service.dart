@@ -49,6 +49,7 @@ class StorageServiceImpl implements StorageService {
   Future<void> clearAuthSession() async {
     await prefs.setBool('is_logged_in', false);
     await prefs.setBool('is_admin', false);
+    await prefs.remove('user_id');
     await prefs.remove('user_role');
     await prefs.remove('user_name');
     await prefs.remove('user_email');

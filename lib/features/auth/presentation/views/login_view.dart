@@ -97,14 +97,28 @@ class _LoginViewState extends State<LoginView> {
         if (user['created_at'] != null) {
           await storage.setString('user_created_at', user['created_at'].toString());
         }
+        if (user['id'] != null) {
+          await storage.setString('user_id', user['id'].toString());
+        }
         if (userData['token'] != null) {
           await storage.setString('auth_token', userData['token'].toString());
         }
 
-        // Reset stale artist profile cache and sync live artist profile for this user
-        await storage.setBool('has_artist_profile', false);
-        await storage.remove('artist_profile_id');
-        await storage.remove('artist_profile_name');
+        // Hydrate artist profile immediately from login response if present
+        final dynamic rawArtist = userData['artist_profile'] ?? user['artist_profile'];
+        if (rawArtist is Map<String, dynamic> && rawArtist['id'] != null) {
+          await storage.setBool('has_artist_profile', true);
+          await storage.setString('artist_profile_id', rawArtist['id'].toString());
+          if (rawArtist['name'] != null) {
+            await storage.setString('artist_profile_name', rawArtist['name'].toString());
+          }
+        } else {
+          // Reset stale artist profile cache and sync live artist profile for this user
+          await storage.setBool('has_artist_profile', false);
+          await storage.remove('artist_profile_id');
+          await storage.remove('artist_profile_name');
+        }
+
         try {
           await sl<ApiService>().getMyArtistProfile(forceRefresh: true);
         } catch (_) {}

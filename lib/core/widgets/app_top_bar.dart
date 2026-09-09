@@ -112,11 +112,17 @@ class _AppTopBarState extends State<AppTopBar> {
         context.push(RouteNames.artistRegistration);
         break;
       case TopBarMenuItem.editArtistProfile:
+        String? artistId = _myArtistId;
+        if (artistId == null || artistId.isEmpty) {
+          try {
+            artistId = sl<StorageService>().getString('artist_profile_id');
+          } catch (_) {}
+        }
         context.push(
           RouteNames.artistRegistration,
           extra: {
             'isEditing': true,
-            'artistId': _myArtistId,
+            'artistId': artistId,
           },
         );
         break;

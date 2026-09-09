@@ -354,9 +354,16 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     if (!mounted) return;
     final storage = sl<StorageService>();
     final currentEmail = (storage.getString('user_email') ?? '').trim().toLowerCase();
+    final currentName = (storage.getString('user_name') ?? '').trim().toLowerCase();
+
+    final artistEmail = artist.email.trim().toLowerCase();
+    final artistName = artist.name.trim().toLowerCase();
+    final isOwner = currentEmail.isEmpty ||
+        (artistEmail.isNotEmpty && artistEmail == currentEmail) ||
+        (artistEmail.isEmpty && artistName == currentName);
 
     // Safety check: unless in admin mode, do not populate another user's artist profile
-    if (!widget.fromAdmin && currentEmail.isNotEmpty && artist.email.trim().toLowerCase() != currentEmail) {
+    if (!widget.fromAdmin && !isOwner) {
       setState(() {
         _isEditMode = false;
         _editingArtistId = null;
@@ -424,9 +431,18 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
   Future<void> _initEditProfile() async {
     final storage = sl<StorageService>();
     final currentEmail = (storage.getString('user_email') ?? '').trim().toLowerCase();
+    final currentName = (storage.getString('user_name') ?? '').trim().toLowerCase();
+
+    bool checkOwner(ArtistModel a) {
+      if (widget.fromAdmin || currentEmail.isEmpty) return true;
+      final aEmail = a.email.trim().toLowerCase();
+      final aName = a.name.trim().toLowerCase();
+      return (aEmail.isNotEmpty && aEmail == currentEmail) ||
+          (aEmail.isEmpty && aName == currentName);
+    }
 
     if (widget.artist != null) {
-      if (widget.fromAdmin || currentEmail.isEmpty || widget.artist!.email.trim().toLowerCase() == currentEmail) {
+      if (checkOwner(widget.artist!)) {
         _populateFromArtist(widget.artist!);
         return;
       }
@@ -434,7 +450,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     if (widget.artistId != null && widget.artistId!.isNotEmpty) {
       try {
         final artist = await sl<ApiService>().getArtistDetails(widget.artistId!);
-        if (widget.fromAdmin || currentEmail.isEmpty || artist.email.trim().toLowerCase() == currentEmail) {
+        if (checkOwner(artist)) {
           _populateFromArtist(artist);
           return;
         }

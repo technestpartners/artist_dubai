@@ -227,6 +227,8 @@ class ApiService {
     String? bannerUrl,
   }) async {
     try {
+      final storage = sl<StorageService>();
+      final userId = storage.getString('user_id');
       final res = await _client.post(
         ApiEndpoints.artists,
         data: {
@@ -239,6 +241,7 @@ class ApiService {
           'website': website ?? '',
           'instagram': instagram ?? '',
           'experience_level': experienceLevel ?? '',
+          if (userId != null && userId.isNotEmpty) 'user_id': userId,
           if (avatarUrl != null && avatarUrl.isNotEmpty) 'avatar_url': avatarUrl,
           if (bannerUrl != null && bannerUrl.isNotEmpty) 'banner_url': bannerUrl,
         },
@@ -987,6 +990,11 @@ class ApiService {
       if (_isSuccess(res)) {
         final data = res['data'] as Map<String, dynamic>?;
         if (data != null) {
+          final returnedEmail = (data['email'] as String? ?? '').trim().toLowerCase();
+          if (returnedEmail.isNotEmpty && returnedEmail != email.trim().toLowerCase()) {
+            // Default user record fallback from PHP backend
+            return null;
+          }
           final artistProfile = data['artist_profile'] as Map<String, dynamic>?;
           try {
             final storage = sl<StorageService>();
@@ -996,10 +1004,6 @@ class ApiService {
               if (artistProfile['name'] != null) {
                 await storage.setString('artist_profile_name', artistProfile['name'].toString());
               }
-            } else {
-              await storage.setBool('has_artist_profile', false);
-              await storage.remove('artist_profile_id');
-              await storage.remove('artist_profile_name');
             }
           } catch (_) {}
         }
@@ -1014,6 +1018,7 @@ class ApiService {
     try {
       final storage = sl<StorageService>();
       final email = (storage.getString('user_email') ?? '').trim();
+      final userName = (storage.getString('user_name') ?? '').trim();
       final isLoggedIn = storage.getBool('is_logged_in') ?? false;
 
       if (!isLoggedIn || email.isEmpty) {
@@ -1023,12 +1028,15 @@ class ApiService {
         return null;
       }
 
-      // If we have a cached ID, verify that it actually belongs to THIS logged-in user's email
+      // If we have a cached ID, verify that it actually belongs to THIS logged-in user
       final savedId = storage.getString('artist_profile_id');
       if (!forceRefresh && savedId != null && savedId.isNotEmpty) {
         try {
           final candidate = await getArtistDetails(savedId);
-          if (candidate.email.trim().toLowerCase() == email.toLowerCase()) {
+          final candidateEmail = candidate.email.trim().toLowerCase();
+          final userEmail = email.toLowerCase();
+          if (candidateEmail == userEmail || (candidateEmail.isEmpty && candidate.name.trim().toLowerCase() == userName.toLowerCase())) {
+            await storage.setBool('has_artist_profile', true);
             return candidate;
           }
           // ID belonged to a different user session! Remove it immediately.
@@ -1051,7 +1059,9 @@ class ApiService {
       // 2. Cross-check against all artists in MySQL by matching email strictly
       final allArtists = await getArtists(forceRefresh: forceRefresh);
       final match = allArtists.where((a) {
-        if (a.email.trim().isNotEmpty && a.email.trim().toLowerCase() == email.toLowerCase()) {
+        final aEmail = a.email.trim().toLowerCase();
+        final uEmail = email.toLowerCase();
+        if (aEmail.isNotEmpty && aEmail == uEmail) {
           return true;
         }
         return false;
