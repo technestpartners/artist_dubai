@@ -296,8 +296,15 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     super.initState();
     _isEditMode = widget.isEditing || widget.artist != null || (widget.artistId != null && widget.artistId!.isNotEmpty);
     _editingArtistId = widget.artist?.id ?? widget.artistId;
-    if (widget.artist != null) {
+    if (widget.artist != null && widget.artist!.avatarUrl.isNotEmpty) {
       _existingAvatarUrl = widget.artist!.avatarUrl;
+    } else {
+      try {
+        final savedAvatar = sl<StorageService>().getString('artist_avatar_url');
+        if (savedAvatar != null && savedAvatar.isNotEmpty) {
+          _existingAvatarUrl = savedAvatar;
+        }
+      } catch (_) {}
     }
 
     String prefilledName = widget.artist?.name ?? '';
@@ -386,7 +393,12 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
       if (artist.experienceLevel.isNotEmpty) {
         _selectedExperienceLevel = artist.experienceLevel;
       }
-      _existingAvatarUrl = artist.avatarUrl;
+      if (artist.avatarUrl.isNotEmpty) {
+        _existingAvatarUrl = artist.avatarUrl;
+        try {
+          storage.setString('artist_avatar_url', artist.avatarUrl);
+        } catch (_) {}
+      }
       _agreedToTerms = true;
     });
 
@@ -441,12 +453,21 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     if (widget.artist != null) {
       if (checkOwner(widget.artist!)) {
         _populateFromArtist(widget.artist!);
+        // Ensure latest server version is loaded in background
+        if (widget.artist!.id.isNotEmpty && widget.artist!.id != '0') {
+          try {
+            final freshArtist = await sl<ApiService>().getArtistDetails(widget.artist!.id, forceRefresh: true);
+            if (mounted && checkOwner(freshArtist)) {
+              _populateFromArtist(freshArtist);
+            }
+          } catch (_) {}
+        }
         return;
       }
     }
     if (widget.artistId != null && widget.artistId!.isNotEmpty) {
       try {
-        final artist = await sl<ApiService>().getArtistDetails(widget.artistId!);
+        final artist = await sl<ApiService>().getArtistDetails(widget.artistId!, forceRefresh: true);
         if (checkOwner(artist)) {
           _populateFromArtist(artist);
           return;
@@ -456,7 +477,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
 
     // Auto-detect if logged-in user already has an artist profile
     try {
-      final myArtist = await sl<ApiService>().getMyArtistProfile();
+      final myArtist = await sl<ApiService>().getMyArtistProfile(forceRefresh: true);
       if (myArtist != null && mounted) {
         _populateFromArtist(myArtist);
         return;
@@ -1010,21 +1031,47 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                           children: [
                             Stack(
                               children: [
-                                CircleAvatar(
-                                  radius: 46,
-                                  backgroundColor: const Color(0xFFF3E8FF),
-                                  backgroundImage: _profilePhotoBytes != null
-                                      ? MemoryImage(_profilePhotoBytes!)
-                                      : (_existingAvatarUrl != null && _existingAvatarUrl!.isNotEmpty
-                                          ? NetworkImage(_existingAvatarUrl!)
-                                          : null),
-                                  child: _profilePhotoBytes == null && (_existingAvatarUrl == null || _existingAvatarUrl!.isEmpty)
-                                      ? const Icon(
-                                          Icons.person,
-                                          size: 46,
-                                          color: Color(0xFF6A2777),
-                                        )
-                                      : null,
+                                ClipOval(
+                                  child: Container(
+                                    width: 92,
+                                    height: 92,
+                                    color: const Color(0xFFF3E8FF),
+                                    child: _profilePhotoBytes != null
+                                        ? Image.memory(
+                                            _profilePhotoBytes!,
+                                            width: 92,
+                                            height: 92,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : (_existingAvatarUrl != null &&
+                                                _existingAvatarUrl!.isNotEmpty
+                                            ? AppCachedImage(
+                                                imageUrl: _existingAvatarUrl!,
+                                                width: 92,
+                                                height: 92,
+                                                fit: BoxFit.cover,
+                                                placeholder: const Center(
+                                                  child: SizedBox(
+                                                    width: 24,
+                                                    height: 24,
+                                                    child: CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: Color(0xFF6A2777),
+                                                    ),
+                                                  ),
+                                                ),
+                                                errorWidget: const Icon(
+                                                  Icons.person,
+                                                  size: 46,
+                                                  color: Color(0xFF6A2777),
+                                                ),
+                                              )
+                                            : const Icon(
+                                                Icons.person,
+                                                size: 46,
+                                                color: Color(0xFF6A2777),
+                                              )),
+                                  ),
                                 ),
                                 Positioned(
                                   bottom: 0,

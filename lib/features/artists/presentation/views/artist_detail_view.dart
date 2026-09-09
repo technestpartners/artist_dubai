@@ -106,6 +106,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
             'avatar_url': url,
           });
         }
+        try {
+          await sl<StorageService>().setString('artist_avatar_url', url);
+        } catch (_) {}
         if (mounted) {
           setState(() {
             _avatarUrlOverride = url;
@@ -1320,17 +1323,21 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                   ),
                                 ),
                                 onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => CreateArtistProfileView(
-                                        isEditing: true,
-                                        artist: currentArtist,
-                                        artistId: currentArtist.id,
-                                      ),
-                                    ),
-                                  );
-                                },
+                                   Navigator.push(
+                                     context,
+                                     MaterialPageRoute(
+                                       builder: (context) => CreateArtistProfileView(
+                                         isEditing: true,
+                                         artist: currentArtist.copyWith(
+                                           avatarUrl: (_avatarUrlOverride != null && _avatarUrlOverride!.isNotEmpty)
+                                               ? _avatarUrlOverride
+                                               : currentArtist.avatarUrl,
+                                         ),
+                                         artistId: currentArtist.id,
+                                       ),
+                                     ),
+                                   );
+                                 },
                                 icon: const Icon(Icons.edit_outlined, size: 18),
                                 label: const Text(
                                   'Edit Profile',

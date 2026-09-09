@@ -1896,6 +1896,7 @@ class ApiService {
       );
       if (_isSuccess(res)) {
         _cachedArtists = null;
+        _cachedArtistDetails.clear();
         try {
           sl<LiveSyncService>().notifyArtistsChanged();
         } catch (_) {}
