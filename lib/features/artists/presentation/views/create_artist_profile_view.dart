@@ -106,11 +106,8 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     final hasName = _fullNameController.text.trim().isNotEmpty;
     final hasEmail = _emailController.text.trim().isNotEmpty;
     final hasLocation = _selectedLocation != null && _selectedLocation!.trim().isNotEmpty;
-    final hasCategory = _selectedCategory != null && _selectedCategory!.trim().isNotEmpty;
-    final hasExperience = _selectedExperienceLevel != null && _selectedExperienceLevel!.trim().isNotEmpty;
-    final hasBio = _bioController.text.trim().isNotEmpty;
     final hasTerms = _agreedToTerms;
-    return hasName && hasEmail && hasLocation && hasCategory && hasExperience && hasBio && hasTerms;
+    return hasName && hasEmail && hasLocation && hasTerms;
   }
 
   void _onFormCriteriaChanged() {
@@ -593,38 +590,12 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
       return;
     }
 
-    if (_selectedCategory == null || _selectedCategory!.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select an art category.'),
-          backgroundColor: Colors.redAccent,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
-
-    if (_selectedExperienceLevel == null || _selectedExperienceLevel!.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select your experience level.'),
-          backgroundColor: Colors.redAccent,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
-
-    if (_bioController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter your artist bio.'),
-          backgroundColor: Colors.redAccent,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
+    final effectiveCategory = _selectedCategory?.trim().isNotEmpty == true
+        ? _selectedCategory!
+        : (_categories.isNotEmpty ? _categories.first : 'Visual Arts');
+    final effectiveExperience = _selectedExperienceLevel?.trim().isNotEmpty == true
+        ? _selectedExperienceLevel!
+        : 'Professional (5+ years)';
 
     if (!_agreedToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -712,7 +683,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
         final updateData = <String, dynamic>{
           'id': _editingArtistId,
           'name': name,
-          'category': _selectedCategory ?? (_categories.isNotEmpty ? _categories.first : 'Visual Arts'),
+          'category': effectiveCategory,
           'location': _selectedLocation?.isNotEmpty == true ? _selectedLocation! : 'Dubai, UAE',
           'bio': _bioController.text.trim(),
           'email': _emailController.text.trim(),
@@ -723,7 +694,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                   : '$_selectedCountryCode ${_phoneController.text.trim()}'),
           'website': _websiteController.text.trim(),
           'instagram': _instagramController.text.trim(),
-          'experience_level': _selectedExperienceLevel ?? '',
+          'experience_level': effectiveExperience,
           if (uploadedAvatar != null) 'avatar_url': uploadedAvatar,
           if (uploadedBanner != null) 'banner_url': uploadedBanner,
         };
@@ -809,7 +780,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
 
       final profileRes = await sl<ApiService>().createArtistProfile(
         name: name,
-        category: _selectedCategory ?? (_categories.isNotEmpty ? _categories.first : 'Visual Arts'),
+        category: effectiveCategory,
         location: _selectedLocation?.isNotEmpty == true ? _selectedLocation! : 'Dubai, UAE',
         bio: _bioController.text.trim(),
         email: _emailController.text.trim(),
@@ -820,7 +791,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                 : '$_selectedCountryCode ${_phoneController.text.trim()}'),
         website: _websiteController.text.trim(),
         instagram: _instagramController.text.trim(),
-        experienceLevel: _selectedExperienceLevel,
+        experienceLevel: effectiveExperience,
         avatarUrl: uploadedAvatar,
         bannerUrl: uploadedBanner,
       );
@@ -1136,6 +1107,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                           setState(() {
                             _selectedCategory = val;
                           });
+                          _onFormCriteriaChanged();
                         },
                       ),
                       const SizedBox(height: 14),
@@ -1150,6 +1122,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                           setState(() {
                             _selectedExperienceLevel = val;
                           });
+                          _onFormCriteriaChanged();
                         },
                       ),
                       const SizedBox(height: 14),
@@ -1739,12 +1712,23 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                               height: 48,
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: _isAllCriteriaMet ? Colors.white : Colors.white.withValues(alpha: 0.75),
-                                  foregroundColor: const Color(0xFF6B1C9B),
-                                  elevation: 0,
+                                  backgroundColor: _isAllCriteriaMet
+                                      ? Colors.white
+                                      : Colors.white.withValues(alpha: 0.20),
+                                  foregroundColor: _isAllCriteriaMet
+                                      ? const Color(0xFF6B1C9B)
+                                      : Colors.white.withValues(alpha: 0.45),
+                                  elevation: _isAllCriteriaMet ? 3 : 0,
+                                  shadowColor: Colors.black38,
                                   padding: const EdgeInsets.symmetric(horizontal: 8),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
+                                    side: _isAllCriteriaMet
+                                        ? BorderSide.none
+                                        : BorderSide(
+                                            color: Colors.white.withValues(alpha: 0.25),
+                                            width: 1.0,
+                                          ),
                                   ),
                                 ),
                                 onPressed: _isSubmitting ? null : _submitProfile,
@@ -2047,6 +2031,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
         setState(() {
           _selectedLocation = selection;
         });
+        _onFormCriteriaChanged();
       },
       optionsMaxHeight: 250,
       optionsViewOpenDirection: OptionsViewOpenDirection.down,
@@ -2094,6 +2079,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
           onChanged: (val) {
             // Allow freeform text as well
             _selectedLocation = val;
+            _onFormCriteriaChanged();
           },
         );
       },
