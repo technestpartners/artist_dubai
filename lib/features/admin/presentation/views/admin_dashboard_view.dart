@@ -49,6 +49,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   final Set<String> _togglingEventIds = {};
   Timer? _periodicSyncTimer;
   int _masterSubTab = 0; // 0 = Categories, 1 = Experience Levels, 2 = Locations
+  int _eventFilterIndex = 0; // 0 = All, 1 = Pending Review, 2 = Active
 
   Future<void> _pickAndUploadImageForField(TextEditingController controller, StateSetter setModalState) async {
     try {
@@ -135,7 +136,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     try {
       final results = await Future.wait([
         sl<ApiService>().getArtists(forceRefresh: true).catchError((_) => <ArtistModel>[]),
-        sl<ApiService>().getEvents(forceRefresh: true).catchError((_) => <ArtEventModel>[]),
+        sl<ApiService>().getEvents(forceRefresh: true, isAdmin: true).catchError((_) => <ArtEventModel>[]),
         sl<ApiService>().getGalleries(forceRefresh: true, isAdmin: true).catchError((_) => <Map<String, dynamic>>[]),
         sl<ApiService>().getGovernmentEntities(forceRefresh: true).catchError((_) => <GovernmentEntity>[]),
         sl<ApiService>().getCategories(type: 'all', forceRefresh: true).catchError((_) => <CategoryInfo>[]),
@@ -1476,6 +1477,25 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
 
   // --- 2. Events Tab ---
   Widget _buildEventsTab() {
+    final pendingEvents = _events.where((e) {
+      final st = e.status.toLowerCase().trim();
+      return st == 'pending' || st == 'pending_approval' || (!e.isActive && st != 'cancelled' && st != 'inactive');
+    }).toList();
+
+    final activeEvents = _events.where((e) {
+      final st = e.status.toLowerCase().trim();
+      return e.isActive && st != 'cancelled' && st != 'inactive' && st != 'pending' && st != 'pending_approval';
+    }).toList();
+
+    List<ArtEventModel> displayedEvents;
+    if (_eventFilterIndex == 1) {
+      displayedEvents = pendingEvents;
+    } else if (_eventFilterIndex == 2) {
+      displayedEvents = activeEvents;
+    } else {
+      displayedEvents = _events;
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1484,7 +1504,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              '${_events.length} events',
+              '${_events.length} events total',
               style: const TextStyle(
                 fontSize: 13.5,
                 color: Color(0xFF64748B),
@@ -1512,13 +1532,29 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           ],
         ),
         const SizedBox(height: 12),
-        if (_events.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 32),
+        // Filter sub-tabs (All, Pending Review, Active)
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildEventFilterChip(0, 'All (${_events.length})'),
+              const SizedBox(width: 8),
+              _buildEventFilterChip(1, 'Pending Review (${pendingEvents.length})', isHighlight: pendingEvents.isNotEmpty),
+              const SizedBox(width: 8),
+              _buildEventFilterChip(2, 'Active (${activeEvents.length})'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        if (displayedEvents.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
             child: Center(
               child: Text(
-                'No events created yet.',
-                style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                _eventFilterIndex == 1
+                    ? 'No pending event requests.'
+                    : (_eventFilterIndex == 2 ? 'No active events.' : 'No events created yet.'),
+                style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
               ),
             ),
           )
@@ -1526,17 +1562,23 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: _events.length,
+            itemCount: displayedEvents.length,
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (context, index) {
-              final ev = _events[index];
-              final isActive = ev.isActive && ev.status.toLowerCase().trim() != 'cancelled' && ev.status.toLowerCase().trim() != 'inactive';
+              final ev = displayedEvents[index];
+              final realIndex = _events.indexOf(ev);
+              final st = ev.status.toLowerCase().trim();
+              final isPending = st == 'pending' || st == 'pending_approval' || (!ev.isActive && st != 'cancelled' && st != 'inactive');
+              final isActive = ev.isActive && st != 'cancelled' && st != 'inactive' && !isPending;
+
               return _buildListItemCard(
                 title: ev.title,
-                subtitle: '${ev.formattedDate.isNotEmpty ? ev.formattedDate : ev.dateTime} - ${ev.location}',
-                badgeText: isActive ? 'Active' : 'Inactive',
+                subtitle: '${ev.organizer.isNotEmpty ? "Organizer: ${ev.organizer} · " : ""}${ev.formattedDate.isNotEmpty ? ev.formattedDate : ev.dateTime} - ${ev.location}',
+                badgeText: isPending ? 'Pending Review' : (isActive ? 'Active' : 'Inactive'),
                 isPurpleBadge: isActive,
-                onToggleStatus: () => _toggleEventStatus(ev, index),
+                isAmberBadge: isPending,
+                onApprove: isPending ? () => _approveEvent(ev, realIndex) : null,
+                onToggleStatus: () => _toggleEventStatus(ev, realIndex),
                 onEdit: () async {
                   await context.push(
                     RouteNames.createArtEvent,
@@ -1549,7 +1591,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     title: 'Delete Event',
                     message: 'Are you sure you want to delete "${ev.title}"?',
                     onConfirm: () async {
-                      setState(() => _events.removeAt(index));
+                      if (realIndex >= 0) {
+                        setState(() => _events.removeAt(realIndex));
+                      }
                       await sl<ApiService>().deleteEvent(ev.id);
                     },
                   );
@@ -1559,6 +1603,83 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           ),
       ],
     );
+  }
+
+  Widget _buildEventFilterChip(int index, String label, {bool isHighlight = false}) {
+    final isSelected = _eventFilterIndex == index;
+    return GestureDetector(
+      onTap: () => setState(() => _eventFilterIndex = index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFF6A2777)
+              : (isHighlight ? const Color(0xFFFEF3C7) : const Color(0xFFF1F5F9)),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFF6A2777)
+                : (isHighlight ? const Color(0xFFFDE68A) : const Color(0xFFE2E8F0)),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: isSelected || isHighlight ? FontWeight.bold : FontWeight.w500,
+            color: isSelected
+                ? Colors.white
+                : (isHighlight ? const Color(0xFFD97706) : const Color(0xFF475569)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _approveEvent(ArtEventModel ev, int index) async {
+    final updated = ev.copyWith(isActive: true, status: 'active');
+    if (index >= 0 && index < _events.length) {
+      setState(() {
+        _events[index] = updated;
+      });
+    }
+    sl<LiveSyncService>().notifyEventsChanged(_events);
+
+    final success = await sl<ApiService>().updateEvent({
+      'id': int.tryParse(ev.id) ?? ev.id,
+      'status': 'active',
+      'is_active': 1,
+    });
+
+    if (!success && mounted) {
+      if (index >= 0 && index < _events.length) {
+        setState(() {
+          _events[index] = ev;
+        });
+      }
+      sl<LiveSyncService>().notifyEventsChanged(_events);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to approve "${ev.title}". Please try again.'),
+          backgroundColor: const Color(0xFFDC2626),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('"${ev.title}" approved and published to public events!'),
+          backgroundColor: const Color(0xFF16A34A),
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Future<void> _toggleEventStatus(ArtEventModel ev, int index) async {

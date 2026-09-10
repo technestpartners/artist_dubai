@@ -325,8 +325,10 @@ class ApiService {
     String? category,
     String? query,
     bool forceRefresh = false,
+    bool isAdmin = false,
+    String? userEmail,
   }) async {
-    final isDefaultQuery = (category == null || category == 'All' || category == 'All Categories') && (query == null || query.isEmpty);
+    final isDefaultQuery = !isAdmin && (userEmail == null || userEmail.isEmpty) && (category == null || category == 'All' || category == 'All Categories') && (query == null || query.isEmpty);
 
     if (!forceRefresh && isDefaultQuery && _cachedEvents != null && _cachedEvents!.isNotEmpty) {
       return _cachedEvents!;
@@ -334,6 +336,12 @@ class ApiService {
 
     try {
       final queryParams = <String, dynamic>{'all': 1};
+      if (isAdmin) {
+        queryParams['admin'] = 1;
+      }
+      if (userEmail != null && userEmail.isNotEmpty) {
+        queryParams['user_email'] = userEmail;
+      }
       if (category != null && category != 'All Categories' && category != 'All') {
         queryParams['category'] = category;
       }
@@ -407,6 +415,9 @@ class ApiService {
     String? contactPhone,
     String? tags,
     String? imageUrl,
+    String status = 'pending',
+    bool isActive = false,
+    bool fromAdmin = false,
   }) async {
     try {
       final res = await _client.post(
@@ -427,6 +438,9 @@ class ApiService {
           'contact_phone': contactPhone ?? '',
           'tags': tags ?? '',
           'image_url': imageUrl ?? '',
+          'status': status,
+          'is_active': isActive ? 1 : 0,
+          'from_admin': fromAdmin ? 1 : 0,
         },
       );
       if (_isSuccess(res)) {

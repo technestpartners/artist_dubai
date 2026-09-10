@@ -5,6 +5,7 @@ import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
+import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
@@ -53,7 +54,11 @@ class _MyEventsViewState extends State<MyEventsView> {
     }
     setState(() => _isLoading = _myCreatedEvents.isEmpty);
     try {
-      final events = await sl<ApiService>().getEvents(forceRefresh: forceRefresh);
+      String? uEmail;
+      try {
+        uEmail = sl<StorageService>().getString('user_email');
+      } catch (_) {}
+      final events = await sl<ApiService>().getEvents(forceRefresh: forceRefresh, userEmail: uEmail);
       if (mounted) {
         setState(() {
           _myCreatedEvents = events;
@@ -175,7 +180,32 @@ class _MyEventsViewState extends State<MyEventsView> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
+
+                      if (_myCreatedEvents.any((e) => e.status.toLowerCase().trim() == 'pending' || (!e.isActive && e.status.toLowerCase().trim() != 'cancelled' && e.status.toLowerCase().trim() != 'inactive'))) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF3C7),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFFDE68A)),
+                          ),
+                          child: Row(
+                            children: const [
+                              Icon(Icons.hourglass_top_rounded, size: 20, color: Color(0xFFD97706)),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Submitted events are sent to the administrator for review and will be published once approved.',
+                                  style: TextStyle(fontSize: 12.5, color: Color(0xFF92400E), height: 1.35, fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                      ],
 
                       // 3. Search Bar
                       Container(
@@ -277,6 +307,7 @@ class _MyEventsViewState extends State<MyEventsView> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
                                             Expanded(
@@ -289,20 +320,66 @@ class _MyEventsViewState extends State<MyEventsView> {
                                                 ),
                                               ),
                                             ),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFFF3E8FF),
-                                                borderRadius: BorderRadius.circular(12),
-                                              ),
-                                              child: Text(
-                                                event.category,
-                                                style: const TextStyle(
-                                                  color: Color(0xFF6A2777),
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.bold,
+                                            const SizedBox(width: 8),
+                                            Wrap(
+                                              spacing: 6,
+                                              runSpacing: 4,
+                                              crossAxisAlignment: WrapCrossAlignment.center,
+                                              children: [
+                                                Builder(
+                                                  builder: (context) {
+                                                    final isPending = event.status.toLowerCase().trim() == 'pending' ||
+                                                        (!event.isActive &&
+                                                            event.status.toLowerCase().trim() != 'cancelled' &&
+                                                            event.status.toLowerCase().trim() != 'inactive');
+                                                    return Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                      decoration: BoxDecoration(
+                                                        color: isPending ? const Color(0xFFFEF3C7) : const Color(0xFFDCFCE7),
+                                                        borderRadius: BorderRadius.circular(10),
+                                                        border: Border.all(
+                                                          color: isPending ? const Color(0xFFFDE68A) : const Color(0xFFBBF7D0),
+                                                          width: 0.8,
+                                                        ),
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          Icon(
+                                                            isPending ? Icons.hourglass_top_rounded : Icons.check_circle_outline_rounded,
+                                                            size: 11,
+                                                            color: isPending ? const Color(0xFFD97706) : const Color(0xFF16A34A),
+                                                          ),
+                                                          const SizedBox(width: 4),
+                                                          Text(
+                                                            isPending ? 'Pending Review' : 'Approved & Live',
+                                                            style: TextStyle(
+                                                              color: isPending ? const Color(0xFFB45309) : const Color(0xFF15803D),
+                                                              fontSize: 10.5,
+                                                              fontWeight: FontWeight.bold,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    );
+                                                  },
                                                 ),
-                                              ),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(0xFFF3E8FF),
+                                                    borderRadius: BorderRadius.circular(10),
+                                                  ),
+                                                  child: Text(
+                                                    event.category,
+                                                    style: const TextStyle(
+                                                      color: Color(0xFF6A2777),
+                                                      fontSize: 11,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ],
                                         ),

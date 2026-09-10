@@ -1347,6 +1347,23 @@ class EventController {
         $sql = 'SELECT * FROM events WHERE 1=1';
         $params = [];
 
+        $isAdmin = isset($query['admin']) && ($query['admin'] == '1' || $query['admin'] == 'true');
+        $userEmail = InputSanitizer::cleanEmail($query['user_email'] ?? $query['email'] ?? '');
+        $statusFilter = InputSanitizer::cleanString($query['status'] ?? '');
+
+        if (!$isAdmin && empty($userEmail)) {
+            $sql .= " AND (status = 'active' OR status = 'scheduled' OR status IS NULL OR status = '') AND (is_active IS NULL OR is_active = 1)";
+        } elseif (!empty($userEmail) && !$isAdmin) {
+            $sql .= " AND (contact_email = ? OR organizer_name LIKE ?)";
+            $params[] = $userEmail;
+            $params[] = "%$userEmail%";
+        }
+
+        if (!empty($statusFilter) && $statusFilter !== 'all') {
+            $sql .= " AND status = ?";
+            $params[] = $statusFilter;
+        }
+
         if (!empty($category) && $category !== 'All Categories' && $category !== 'All') {
             $sql .= ' AND category LIKE ?';
             $params[] = "%$category%";
@@ -1367,6 +1384,20 @@ class EventController {
         // Count total matching records
         $countSql = 'SELECT COUNT(*) FROM events WHERE 1=1';
         $countParams = [];
+
+        if (!$isAdmin && empty($userEmail)) {
+            $countSql .= " AND (status = 'active' OR status = 'scheduled' OR status IS NULL OR status = '') AND (is_active IS NULL OR is_active = 1)";
+        } elseif (!empty($userEmail) && !$isAdmin) {
+            $countSql .= " AND (contact_email = ? OR organizer_name LIKE ?)";
+            $countParams[] = $userEmail;
+            $countParams[] = "%$userEmail%";
+        }
+
+        if (!empty($statusFilter) && $statusFilter !== 'all') {
+            $countSql .= " AND status = ?";
+            $countParams[] = $statusFilter;
+        }
+
         if (!empty($category) && $category !== 'All Categories' && $category !== 'All') {
             $countSql .= ' AND category LIKE ?';
             $countParams[] = "%$category%";
@@ -1445,6 +1476,10 @@ class EventController {
             ApiResponse::error('Event title is required.');
         }
 
+        $fromAdmin = !empty($input['from_admin']) || (isset($input['status']) && strtolower(trim((string)$input['status'])) === 'active');
+        $status = $fromAdmin ? 'active' : InputSanitizer::cleanString($input['status'] ?? 'pending');
+        $isActive = $fromAdmin ? 1 : (isset($input['is_active']) ? (int)$input['is_active'] : ($status === 'active' ? 1 : 0));
+
         $maxAttendees = isset($input['max_attendees']) ? (int)$input['max_attendees'] : 100;
         $galleriesJson = null;
         if (isset($input['galleries'])) {
@@ -1453,18 +1488,56 @@ class EventController {
             $galleriesJson = (string)$input['galleries_json'];
         }
 
-        $stmt = $this->db->prepare('INSERT INTO events (title, description, category, price, event_date, end_date, location, venue, is_free, organizer_name, contact_email, contact_phone, tags, image_url, max_attendees, attendees_count, galleries_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)');
-        $stmt->execute([$title, $description, $category, $price, $eventDate, $endDate, $location, $venue, $isFree, $organizer, $contactEmail, $contactPhone, $tags, $imageUrl, $maxAttendees, $galleriesJson]);
+        $stmt = $this->db->prepare('INSERT INTO events (title, description, category, price, event_date, end_date, location, venue, is_free, organizer_name, contact_email, contact_phone, tags, image_url, max_attendees, attendees_count, galleries_json, status, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)');
+        $stmt->execute([$title, $description, $category, $price, $eventDate, $endDate, $location, $venue, $isFree, $organizer, $contactEmail, $contactPhone, $tags, $imageUrl, $maxAttendees, $galleriesJson, $status, $isActive]);
 
         $newEventId = (int)$this->db->lastInsertId();
 
-        // Auto-create notification in MySQL
+        // Create Notifications in MySQL
         try {
-            $this->db->prepare('INSERT INTO notifications (title, body, type, route, user_email, is_read) VALUES (?, ?, ?, ?, ?, 0)')
-                     ->execute(["New Event: $title", "Explore the newly scheduled event '$title' in $location.", 'event', '/events', null]);
+            if ($status === 'pending' || $isActive === 0) {
+                // 1. Notification sent to Admin
+                $this->db->prepare('INSERT INTO notifications (title, body, type, route, user_email, is_read) VALUES (?, ?, ?, ?, ?, 0)')
+                         ->execute([
+                             "New Event Approval Request: $title",
+                             "$organizer has submitted event '$title' for administrative review and approval.",
+                             'event_request',
+                             '/admin-dashboard',
+                             null // Visible to all admins
+                         ]);
+
+                // 2. Notification sent to Submitting User
+                if (!empty($contactEmail)) {
+                    $this->db->prepare('INSERT INTO notifications (title, body, type, route, user_email, is_read) VALUES (?, ?, ?, ?, ?, 0)')
+                             ->execute([
+                                 "Event Submitted: $title",
+                                 "Your event '$title' was received and sent to the admin for review. You will be notified once approved.",
+                                 'event',
+                                 '/my-events',
+                                 $contactEmail
+                             ]);
+                }
+            } else {
+                // Admin directly created active event
+                $this->db->prepare('INSERT INTO notifications (title, body, type, route, user_email, is_read) VALUES (?, ?, ?, ?, ?, 0)')
+                         ->execute([
+                             "New Event: $title",
+                             "Explore the newly scheduled event '$title' in $location.",
+                             'event',
+                             '/events',
+                             null
+                         ]);
+            }
         } catch (\Throwable $nt) {}
 
-        ApiResponse::success(['event_id' => $newEventId], 'Event created successfully', 201);
+        ApiResponse::success([
+            'event_id' => $newEventId,
+            'status' => $status,
+            'is_active' => $isActive,
+            'message' => $status === 'pending'
+                ? 'Event request sent to admin for approval.'
+                : 'Event created and published successfully.'
+        ], 'Event created successfully', 201);
     }
 
     public function updateEvent(array $input): void {
@@ -1473,6 +1546,14 @@ class EventController {
             ApiResponse::error('Valid event ID is required.', 400);
             return;
         }
+
+        // Fetch current event to detect approval transition
+        $oldEvent = null;
+        try {
+            $checkStmt = $this->db->prepare('SELECT * FROM events WHERE id = ?');
+            $checkStmt->execute([$id]);
+            $oldEvent = $checkStmt->fetch();
+        } catch (\Throwable $t) {}
 
         $title = InputSanitizer::cleanString($input['title'] ?? '');
         $description = InputSanitizer::cleanString($input['description'] ?? '');
@@ -1517,6 +1598,42 @@ class EventController {
         $sql = 'UPDATE events SET ' . implode(', ', $fields) . ' WHERE id = ?';
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
+
+        // Check if event transitioned from pending to active (approved by admin)
+        if ($oldEvent) {
+            $oldStatus = strtolower(trim((string)($oldEvent['status'] ?? '')));
+            $newStatus = isset($input['status']) ? strtolower(trim((string)$input['status'])) : $oldStatus;
+            $newActive = isset($input['is_active']) ? (int)$input['is_active'] : (int)($oldEvent['is_active'] ?? 0);
+
+            if (($oldStatus === 'pending' || (int)($oldEvent['is_active'] ?? 0) === 0) && ($newStatus === 'active' || $newActive === 1)) {
+                $evTitle = !empty($title) ? $title : ($oldEvent['title'] ?? 'Art Event');
+                $evLoc = !empty($location) ? $location : ($oldEvent['location'] ?? 'Dubai, UAE');
+                $userEmail = $oldEvent['contact_email'] ?? '';
+
+                try {
+                    // Notify organizer
+                    if (!empty($userEmail)) {
+                        $this->db->prepare('INSERT INTO notifications (title, body, type, route, user_email, is_read) VALUES (?, ?, ?, ?, ?, 0)')
+                                 ->execute([
+                                     "Event Approved: $evTitle",
+                                     "Congratulations! Your event '$evTitle' has been approved by the administrator and is now live on Artist Dubai!",
+                                     'event_approved',
+                                     '/events',
+                                     $userEmail
+                                 ]);
+                    }
+                    // Public broadcast
+                    $this->db->prepare('INSERT INTO notifications (title, body, type, route, user_email, is_read) VALUES (?, ?, ?, ?, ?, 0)')
+                             ->execute([
+                                 "New Event: $evTitle",
+                                 "Explore the newly approved event '$evTitle' in $evLoc.",
+                                 'event',
+                                 '/events',
+                                 null
+                             ]);
+                } catch (\Throwable $nt) {}
+            }
+        }
 
         ApiResponse::success(['event_id' => $id], 'Event updated successfully');
     }

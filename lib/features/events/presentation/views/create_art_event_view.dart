@@ -489,6 +489,14 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
     try {
       final isEdit = widget.event != null;
+      bool isAdmin = widget.fromAdmin;
+      try {
+        final storage = sl<StorageService>();
+        if (!isAdmin) {
+          isAdmin = storage.getBool('is_admin') ?? false;
+        }
+      } catch (_) {}
+
       final parsedCapacity = int.tryParse(_maxTicketsController.text.trim()) ?? 100;
       final selectedLoc = (_selectedLocation != null && _selectedLocation!.trim().isNotEmpty)
           ? _selectedLocation!.trim()
@@ -527,6 +535,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           contactPhone: _contactPhoneController.text.trim(),
           tags: _tagsController.text.trim(),
           imageUrl: _uploadedImageUrl,
+          status: isAdmin ? 'active' : 'pending',
+          isActive: isAdmin,
+          fromAdmin: isAdmin,
         );
       }
 
@@ -537,21 +548,102 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
         if (success) {
           sl<LiveSyncService>().notifyEventsChanged();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                widget.isCalendar
-                    ? (isEdit ? 'Calendar event updated successfully!' : 'Event scheduled on calendar successfully!')
-                    : (isEdit ? 'Event updated successfully!' : 'Event created successfully!'),
+
+          if (isEdit || isAdmin) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  widget.isCalendar
+                      ? (isEdit ? 'Calendar event updated successfully!' : 'Event scheduled on calendar successfully!')
+                      : (isEdit ? 'Event updated successfully!' : 'Event created and published successfully!'),
+                ),
+                backgroundColor: const Color(0xFF6A2777),
+                behavior: SnackBarBehavior.floating,
               ),
-              backgroundColor: const Color(0xFF6A2777),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-          if (context.canPop()) {
-            context.pop();
+            );
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(widget.fromAdmin ? RouteNames.adminDashboard : RouteNames.myEvents);
+            }
           } else {
-            context.go(widget.fromAdmin ? RouteNames.adminDashboard : RouteNames.myEvents);
+            // User submitted event request to admin
+            await showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (ctx) => AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                title: Row(
+                  children: const [
+                    Icon(Icons.mark_email_read_outlined, color: Color(0xFF6A2777), size: 26),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Request Sent to Admin',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                      ),
+                    ),
+                  ],
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Your event "$title" has been successfully submitted for administrative review.',
+                      style: const TextStyle(fontSize: 14, color: Color(0xFF334155), height: 1.4),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF3C7),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFFDE68A)),
+                      ),
+                      child: Row(
+                        children: const [
+                          Icon(Icons.info_outline, size: 18, color: Color(0xFFD97706)),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Once approved by the admin, it will be published in the public directory.',
+                              style: TextStyle(fontSize: 12, color: Color(0xFFB45309)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go(RouteNames.myEvents);
+                      }
+                    },
+                    child: const Text('Close', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6A2777),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      context.go(RouteNames.myEvents);
+                    },
+                    child: const Text('View My Events', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            );
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(

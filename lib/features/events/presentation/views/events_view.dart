@@ -254,7 +254,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
         _allEvents.where((e) {
           if (!e.isActive) return false;
           final st = e.status.toLowerCase().trim();
-          if (st == 'cancelled' || st == 'inactive' || st == 'draft' || st == 'deleted') return false;
+          if (st == 'cancelled' || st == 'inactive' || st == 'draft' || st == 'deleted' || st == 'pending' || st == 'pending_approval') return false;
 
           final matchesCategory =
               _selectedCategory == 'All Categories' ||
