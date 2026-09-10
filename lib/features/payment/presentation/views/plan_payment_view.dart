@@ -102,6 +102,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
       final picker = ImagePicker();
       final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
       if (picked != null) {
+        if (!mounted) return;
         setState(() => _isUploadingReceipt = true);
         final bytes = await picked.readAsBytes();
         final nameParts = picked.name.split('.');
