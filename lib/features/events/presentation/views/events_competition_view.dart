@@ -10,6 +10,7 @@ import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../domain/models/art_event_model.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class EventsCompetitionView extends StatefulWidget {
   const EventsCompetitionView({super.key});
@@ -95,6 +96,7 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: _screenBg,
       appBar: const AppTopBar(),
@@ -112,9 +114,9 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 1. Header Title & Subtitle
-                const Text(
-                  'EVENTS COMPETITION',
-                  style: TextStyle(
+                Text(
+                  l10n.eventsCompetitionTitle,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
@@ -122,9 +124,9 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Open calls and art competitions in Dubai',
-                  style: TextStyle(
+                Text(
+                  l10n.eventsCompetitionSubtitle,
+                  style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 14.5,
                     fontWeight: FontWeight.w400,
@@ -152,12 +154,12 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                               context.go(RouteNames.events);
                             }
                           },
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
                             child: Center(
                               child: Text(
-                                'Art Events',
-                                style: TextStyle(
+                                l10n.eventsTitle,
+                                style: const TextStyle(
                                   color: Colors.white70,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 13.5,
@@ -181,10 +183,10 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                               ),
                             ],
                           ),
-                          child: const Center(
+                          child: Center(
                             child: Text(
-                              'Competitions & Open Calls',
-                              style: TextStyle(
+                              l10n.eventsCompetitionTitle,
+                              style: const TextStyle(
                                 color: Color(0xFF651B8A),
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13.5,
@@ -227,9 +229,9 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                           size: 46,
                         ),
                         const SizedBox(height: 16),
-                        const Text(
-                          'No competitions announced yet',
-                          style: TextStyle(
+                        Text(
+                          l10n.noCompetitionsAvailable,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 17.5,
                             fontWeight: FontWeight.bold,
@@ -698,6 +700,7 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
   }
 
   Widget _buildAuthGate(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       margin: const EdgeInsets.only(top: 8, bottom: 30),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -731,10 +734,10 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
             ),
           ),
           const SizedBox(height: 18),
-          const Text(
-            'Explore Art Competitions',
+          Text(
+            l10n.eventsCompetitionTitle,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w800,
               color: Color(0xFF1E293B),
@@ -742,10 +745,10 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Log in or sign up with your email to discover open calls, art competitions, grants, and opportunities across Dubai.',
+          Text(
+            l10n.eventsCompetitionSubtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 13.5,
               height: 1.45,
               color: Color(0xFF64748B),
@@ -770,14 +773,14 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                   if (mounted) setState(() {});
                 }
               },
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.person_add_outlined, size: 18),
-                  SizedBox(width: 8),
+                  const Icon(Icons.person_add_outlined, size: 18),
+                  const SizedBox(width: 8),
                   Text(
-                    'Sign Up as Art Lover (Free Access)',
-                    style: TextStyle(
+                    l10n.signUpFree,
+                    style: const TextStyle(
                       fontSize: 14.5,
                       fontWeight: FontWeight.w700,
                     ),
@@ -804,14 +807,14 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                   if (mounted) setState(() {});
                 }
               },
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.login_rounded, size: 18),
-                  SizedBox(width: 8),
+                  const Icon(Icons.login_rounded, size: 18),
+                  const SizedBox(width: 8),
                   Text(
-                    'Already have an account? Sign In',
-                    style: TextStyle(
+                    '${l10n.alreadyHaveAccount}${l10n.signInNow}',
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),

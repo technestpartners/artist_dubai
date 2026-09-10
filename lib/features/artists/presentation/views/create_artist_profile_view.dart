@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../app/routes/route_names.dart';
@@ -14,6 +15,8 @@ import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import '../../../../core/utils/data_translator.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../domain/models/artist_model.dart';
 
 class CreateArtistProfileView extends StatefulWidget {
@@ -95,6 +98,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
   String _selectedCountryCode = kDefaultCountryCode.code;
   bool _agreedToTerms = false;
   bool _isSubmitting = false;
+  String _submissionStatus = '';
 
   bool _isEditMode = false;
   String? _editingArtistId;
@@ -123,7 +127,9 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 85,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 82,
       );
       if (image != null) {
         final bytes = await image.readAsBytes();
@@ -160,7 +166,11 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     }
 
     try {
-      final List<XFile> images = await _picker.pickMultiImage(imageQuality: 85);
+      final List<XFile> images = await _picker.pickMultiImage(
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 82,
+      );
       if (images.isNotEmpty) {
         final remainingSlots = kMaxArtworks - currentCount;
         final imagesToAdd = images.take(remainingSlots).toList();
@@ -211,7 +221,9 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.camera,
-        imageQuality: 85,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 82,
       );
       if (image != null) {
         setState(() {
@@ -326,7 +338,8 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
 
     _fullNameController = TextEditingController(text: prefilledName);
     _emailController = TextEditingController(text: prefilledEmail);
-    _phoneController = TextEditingController(text: prefilledPhone);
+    _phoneController = TextEditingController();
+    _setPhoneAndCountryCode(prefilledPhone);
     _bioController = TextEditingController(text: prefilledBio);
 
     _fullNameController.addListener(_onFormCriteriaChanged);
@@ -352,6 +365,32 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
 
     _loadDynamicData();
     _initEditProfile();
+  }
+
+  void _setPhoneAndCountryCode(String rawPhone) {
+    final clean = rawPhone.trim();
+    if (clean.isEmpty) {
+      _phoneController.text = '';
+      return;
+    }
+
+    final sortedCodes = [...kCountryCodes]..sort((a, b) => b.code.length.compareTo(a.code.length));
+    for (final item in sortedCodes) {
+      if (clean.startsWith(item.code)) {
+        _selectedCountryCode = item.code;
+        final numberPart = clean.substring(item.code.length).replaceAll(RegExp(r'[^0-9]'), '');
+        _phoneController.text = numberPart;
+        return;
+      }
+    }
+
+    if (clean.startsWith('+')) {
+      final digits = clean.substring(1).replaceAll(RegExp(r'[^0-9]'), '');
+      _phoneController.text = digits;
+      return;
+    }
+
+    _phoneController.text = clean.replaceAll(RegExp(r'[^0-9]'), '');
   }
 
   void _populateFromArtist(ArtistModel artist) {
@@ -384,7 +423,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
       _editingArtistId = artist.id;
       _fullNameController.text = artist.name;
       _emailController.text = artist.email;
-      _phoneController.text = artist.phone;
+      _setPhoneAndCountryCode(artist.phone);
       _bioController.text = artist.bio;
       _websiteController.text = artist.website;
       _instagramController.text = artist.instagram;
@@ -611,6 +650,21 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
       return;
     }
 
+    final rawPhone = _phoneController.text.trim();
+    if (rawPhone.isNotEmpty) {
+      final digits = rawPhone.replaceAll(RegExp(r'[^0-9]'), '');
+      if (digits.length < 7 || digits.length > 15 || RegExp(r'[^0-9]').hasMatch(rawPhone)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please enter a valid phone number (7-15 digits) or leave it empty.'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+    }
+
     final effectiveCategory = _selectedCategory?.trim().isNotEmpty == true
         ? _selectedCategory!
         : (_categories.isNotEmpty ? _categories.first : 'Visual Arts');
@@ -633,38 +687,66 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
 
     setState(() {
       _isSubmitting = true;
+      _submissionStatus = 'Uploading media files...';
     });
 
     try {
       String? uploadedAvatar;
       String? uploadedBanner;
 
-      // 1. Upload dedicated profile photo if selected
-      if (_profilePhotoFile != null) {
-        try {
-          final bytes = _profilePhotoBytes ?? await _profilePhotoFile!.readAsBytes();
-          final nameParts = _profilePhotoFile!.name.split('.');
-          final ext = nameParts.length > 1 ? nameParts.last : 'jpg';
-          final url = await sl<ApiService>().uploadImageBytes(
-            bytes,
-            ext: ext.isNotEmpty ? ext : 'jpg',
-          );
-          if (url != null && url.isNotEmpty) {
-            uploadedAvatar = url;
-          }
-        } catch (_) {}
+      // 1. Prepare profile photo upload task
+      Future<String?> uploadAvatarTask() async {
+        if (_profilePhotoFile != null) {
+          try {
+            final bytes = _profilePhotoBytes ?? await _profilePhotoFile!.readAsBytes();
+            final nameParts = _profilePhotoFile!.name.split('.');
+            final ext = nameParts.length > 1 ? nameParts.last : 'jpg';
+            return await sl<ApiService>().uploadImageBytes(
+              bytes,
+              ext: ext.isNotEmpty ? ext : 'jpg',
+            );
+          } catch (_) {}
+        }
+        return null;
       }
 
-      // 2. Upload artworks to server and collect their URLs & metadata
+      // 2. Prepare artwork upload tasks concurrently
       final List<Map<String, dynamic>> uploadedArtworksData = [];
+      final List<Future<Map<String, dynamic>?>> artworkUploadTasks = [];
 
-      if (_portfolioArtworks.isNotEmpty) {
-        for (int i = 0; i < _portfolioArtworks.length; i++) {
+      for (int i = 0; i < _portfolioArtworks.length; i++) {
+        final artItem = _portfolioArtworks[i];
+        if (artItem.isExisting) {
+          uploadedArtworksData.add({
+            'index': i,
+            'existing_id': artItem.existingId,
+            'title': artItem.titleController.text.trim().isNotEmpty
+                ? artItem.titleController.text.trim()
+                : 'Artwork Piece #${i + 1}',
+            'medium': artItem.mediumController.text.trim().isNotEmpty
+                ? artItem.mediumController.text.trim()
+                : (_selectedCategory ?? 'Mixed Media'),
+            'price': artItem.priceController.text.trim().isNotEmpty
+                ? artItem.priceController.text.trim()
+                : '',
+            'dimensions': artItem.dimensionsController.text.trim().isNotEmpty
+                ? artItem.dimensionsController.text.trim()
+                : '',
+            'year': artItem.yearController.text.trim().isNotEmpty
+                ? artItem.yearController.text.trim()
+                : DateTime.now().year.toString(),
+            'is_featured': artItem.isFeatured,
+            'image_url': artItem.existingImageUrl ?? '',
+            'is_existing': true,
+          });
+          continue;
+        }
+
+        if (artItem.file == null) continue;
+
+        final itemIndex = i;
+        artworkUploadTasks.add(() async {
           try {
-            final artItem = _portfolioArtworks[i];
-            if (artItem.isExisting || artItem.file == null) {
-              continue;
-            }
             final bytes = await artItem.file!.readAsBytes();
             final nameParts = artItem.file!.name.split('.');
             final ext = nameParts.length > 1 ? nameParts.last : 'jpg';
@@ -673,13 +755,11 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
               ext: ext.isNotEmpty ? ext : 'jpg',
             );
             if (url != null && url.isNotEmpty) {
-              if (i == 0 && (uploadedBanner == null || uploadedBanner.isEmpty)) {
-                uploadedBanner = url;
-              }
-              uploadedArtworksData.add({
+              return {
+                'index': itemIndex,
                 'title': artItem.titleController.text.trim().isNotEmpty
                     ? artItem.titleController.text.trim()
-                    : 'Artwork Piece #${i + 1}',
+                    : 'Artwork Piece #${itemIndex + 1}',
                 'medium': artItem.mediumController.text.trim().isNotEmpty
                     ? artItem.mediumController.text.trim()
                     : (_selectedCategory ?? 'Mixed Media'),
@@ -694,13 +774,45 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                     : DateTime.now().year.toString(),
                 'is_featured': artItem.isFeatured,
                 'image_url': url,
-              });
+                'is_existing': false,
+              };
             }
           } catch (_) {}
+          return null;
+        }());
+      }
+
+      // Execute avatar and artwork uploads concurrently
+      final uploadResults = await Future.wait<dynamic>([
+        uploadAvatarTask(),
+        Future.wait(artworkUploadTasks),
+      ]);
+
+      uploadedAvatar = uploadResults[0] as String?;
+      final newlyUploaded = (uploadResults[1] as List).whereType<Map<String, dynamic>>().toList();
+      uploadedArtworksData.addAll(newlyUploaded);
+
+      // Preserve artwork display ordering
+      uploadedArtworksData.sort((a, b) {
+        final aIdx = a['index'] as int? ?? 0;
+        final bIdx = b['index'] as int? ?? 0;
+        return aIdx.compareTo(bIdx);
+      });
+
+      if (uploadedArtworksData.isNotEmpty) {
+        final firstImg = uploadedArtworksData.first['image_url'] as String?;
+        if (firstImg != null && firstImg.isNotEmpty) {
+          uploadedBanner = firstImg;
         }
       }
 
       if (_isEditMode && _editingArtistId != null) {
+        if (mounted) {
+          setState(() {
+            _submissionStatus = 'Saving profile changes...';
+          });
+        }
+
         final updateData = <String, dynamic>{
           'id': _editingArtistId,
           'name': name,
@@ -708,11 +820,10 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
           'location': _selectedLocation?.isNotEmpty == true ? _selectedLocation! : 'Dubai, UAE',
           'bio': _bioController.text.trim(),
           'email': _emailController.text.trim(),
-          'phone': _phoneController.text.trim().isEmpty
-              ? ''
-              : (_phoneController.text.trim().startsWith('+')
-                  ? _phoneController.text.trim()
-                  : '$_selectedCountryCode ${_phoneController.text.trim()}'),
+          'phone': () {
+            final digits = _phoneController.text.trim().replaceAll(RegExp(r'[^0-9]'), '');
+            return digits.isEmpty ? '' : '$_selectedCountryCode $digits';
+          }(),
           'website': _websiteController.text.trim(),
           'instagram': _instagramController.text.trim(),
           'experience_level': effectiveExperience,
@@ -722,47 +833,52 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
 
         final updated = await sl<ApiService>().updateArtist(updateData);
 
-        // Delete any artworks that were removed by the user
+        // Concurrently run artwork deletions, updates, and newly added artworks
+        final editArtworkOps = <Future<dynamic>>[];
+
         for (final delId in _deletedArtworkIds) {
-          try {
-            await sl<ApiService>().deleteArtwork(delId);
-          } catch (_) {}
+          editArtworkOps.add(sl<ApiService>().deleteArtwork(delId).catchError((_) => false));
         }
 
-        // Update title and featured flag for existing artworks still in the list
         for (int i = 0; i < _portfolioArtworks.length; i++) {
           final artItem = _portfolioArtworks[i];
           if (artItem.isExisting && artItem.existingId != null) {
-            try {
-              await sl<ApiService>().updateArtwork({
+            editArtworkOps.add(
+              sl<ApiService>().updateArtwork({
                 'id': artItem.existingId,
                 'title': artItem.titleController.text.trim().isNotEmpty
                     ? artItem.titleController.text.trim()
                     : 'Artwork Piece #${i + 1}',
                 'is_featured': artItem.isFeatured ? 1 : 0,
-              });
-            } catch (_) {}
+              }).catchError((_) => false),
+            );
           }
         }
 
-        // Upload any newly selected artworks
-        for (final artData in uploadedArtworksData) {
-          await sl<ApiService>().createArtwork(
-            title: artData['title'].toString(),
-            artistId: _editingArtistId,
-            artistName: name,
-            year: artData['year'].toString(),
-            medium: artData['medium'].toString(),
-            dimensions: artData['dimensions'].toString(),
-            price: artData['price'].toString(),
-            imageUrl: artData['image_url'].toString(),
-            isFeatured: artData['is_featured'] == true,
+        for (final artData in newlyUploaded) {
+          editArtworkOps.add(
+            sl<ApiService>().createArtwork(
+              title: artData['title'].toString(),
+              artistId: _editingArtistId,
+              artistName: name,
+              year: artData['year'].toString(),
+              medium: artData['medium'].toString(),
+              dimensions: artData['dimensions'].toString(),
+              price: artData['price'].toString(),
+              imageUrl: artData['image_url'].toString(),
+              isFeatured: artData['is_featured'] == true,
+            ).catchError((_) => <String, dynamic>{}),
           );
+        }
+
+        if (editArtworkOps.isNotEmpty) {
+          await Future.wait(editArtworkOps);
         }
 
         if (mounted) {
           setState(() {
             _isSubmitting = false;
+            _submissionStatus = '';
           });
 
           if (updated) {
@@ -799,39 +915,48 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
         return;
       }
 
+      if (mounted) {
+        setState(() {
+          _submissionStatus = 'Saving artist profile...';
+        });
+      }
+
       final profileRes = await sl<ApiService>().createArtistProfile(
         name: name,
         category: effectiveCategory,
         location: _selectedLocation?.isNotEmpty == true ? _selectedLocation! : 'Dubai, UAE',
         bio: _bioController.text.trim(),
         email: _emailController.text.trim(),
-        phone: _phoneController.text.trim().isEmpty
-            ? ''
-            : (_phoneController.text.trim().startsWith('+')
-                ? _phoneController.text.trim()
-                : '$_selectedCountryCode ${_phoneController.text.trim()}'),
+        phone: () {
+          final digits = _phoneController.text.trim().replaceAll(RegExp(r'[^0-9]'), '');
+          return digits.isEmpty ? '' : '$_selectedCountryCode $digits';
+        }(),
         website: _websiteController.text.trim(),
         instagram: _instagramController.text.trim(),
         experienceLevel: effectiveExperience,
         avatarUrl: uploadedAvatar,
         bannerUrl: uploadedBanner,
+        artworks: uploadedArtworksData,
       );
 
       if (profileRes != null) {
         final artistId = profileRes['artist_id']?.toString();
+        final serverCreatedArtworks = (profileRes['artworks_created'] as int? ?? 0) > 0;
 
-        // Insert artworks into MySQL artworks table
-        for (final artData in uploadedArtworksData) {
-          await sl<ApiService>().createArtwork(
-            title: artData['title'].toString(),
-            artistId: artistId,
-            artistName: name,
-            year: artData['year'].toString(),
-            medium: artData['medium'].toString(),
-            dimensions: artData['dimensions'].toString(),
-            price: artData['price'].toString(),
-            imageUrl: artData['image_url'].toString(),
-            isFeatured: artData['is_featured'] == true,
+        // Fallback for older backend versions that did not batch-insert artworks
+        if (!serverCreatedArtworks && uploadedArtworksData.isNotEmpty && artistId != null) {
+          await Future.wait(
+            uploadedArtworksData.map((artData) => sl<ApiService>().createArtwork(
+              title: artData['title'].toString(),
+              artistId: artistId,
+              artistName: name,
+              year: artData['year'].toString(),
+              medium: artData['medium'].toString(),
+              dimensions: artData['dimensions'].toString(),
+              price: artData['price'].toString(),
+              imageUrl: artData['image_url'].toString(),
+              isFeatured: artData['is_featured'] == true,
+            ).catchError((_) => <String, dynamic>{})),
           );
         }
       }
@@ -839,6 +964,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
       if (mounted) {
         setState(() {
           _isSubmitting = false;
+          _submissionStatus = '';
         });
 
         if (profileRes != null) {
@@ -874,6 +1000,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
       if (mounted) {
         setState(() {
           _isSubmitting = false;
+          _submissionStatus = '';
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -888,6 +1015,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(backgroundColor: Colors.white),
@@ -914,7 +1042,9 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      _isEditMode ? 'Edit Artist Profile' : 'Create Artist Profile',
+                      _isEditMode
+                          ? l10n.editArtistProfileTitle
+                          : l10n.createArtistProfileTitle,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
@@ -939,16 +1069,16 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                         ),
                       ),
                       child: Row(
-                        children: const [
-                          Icon(
+                        children: [
+                          const Icon(
                             Icons.home_outlined,
                             color: Colors.white,
                             size: 18,
                           ),
-                          SizedBox(width: 4),
+                          const SizedBox(width: 4),
                           Text(
-                            'Home',
-                            style: TextStyle(
+                            l10n.home,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -995,7 +1125,9 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                         child: Column(
                           children: [
                             Text(
-                              _isEditMode ? 'Edit Your Artist Profile' : 'Create Your Artist Profile',
+                              _isEditMode
+                                  ? l10n.editYourArtistProfile
+                                  : l10n.createYourArtistProfile,
                               style: const TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
@@ -1005,8 +1137,8 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                             const SizedBox(height: 6),
                             Text(
                               _isEditMode
-                                  ? 'Update your artist profile and showcase your portfolio'
-                                  : 'Join Dubai\'s Artist Community and Showcase Your Portfolio',
+                                  ? l10n.editArtistSubtitle
+                                  : l10n.createArtistSubtitle,
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 fontSize: 13,
@@ -1021,7 +1153,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                       // SECTION 1: Basic Information
                       _buildSectionTitle(
                         icon: Icons.person_outline,
-                        title: 'Basic Information',
+                        title: l10n.basicInformation,
                       ),
                       const SizedBox(height: 16),
 
@@ -1101,11 +1233,9 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                               onPressed: _pickProfilePhoto,
                               icon: const Icon(Icons.add_a_photo_outlined, size: 16, color: Colors.white),
                               label: Text(
-                                _profilePhotoFile != null
-                                    ? 'Change Profile Picture'
-                                    : (_existingAvatarUrl != null && _existingAvatarUrl!.isNotEmpty
-                                        ? 'Change Profile Picture'
-                                        : 'Upload Artist Photo (Optional)'),
+                                _profilePhotoFile != null || (_existingAvatarUrl != null && _existingAvatarUrl!.isNotEmpty)
+                                    ? l10n.changeProfilePicture
+                                    : l10n.uploadArtistPhotoOptional,
                                 style: const TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
@@ -1117,38 +1247,38 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                         ),
                       ),
                       const SizedBox(height: 14),
-                      _buildLabel('Full Name *'),
+                      _buildLabel('${l10n.fullNameLabel} *'),
                       _buildTextField(
                         controller: _fullNameController,
-                        hintText: 'Enter your full name',
+                        hintText: l10n.fullNameLabel,
                       ),
                       const SizedBox(height: 14),
-                      _buildLabel('Email *'),
+                      _buildLabel('${l10n.emailLabel} *'),
                       _buildTextField(
                         controller: _emailController,
                         hintText: 'your@email.com',
                         keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 14),
-                      _buildLabel('Phone Number (Optional)'),
+                      _buildLabel(l10n.phoneNumberOptional),
                       _buildPhoneField(),
                       const SizedBox(height: 14),
-                      _buildLabel('Location *'),
+                      _buildLabel('${l10n.locationLabel} *'),
                       _buildSearchableLocationField(),
                       const SizedBox(height: 28),
 
                       // SECTION 2: Artist Information
                       _buildSectionTitle(
                         icon: Icons.palette_outlined,
-                        title: 'Artist Information',
+                        title: l10n.artistInformation,
                       ),
                       const SizedBox(height: 14),
-                      _buildLabel('Art Category'),
+                      _buildLabel(l10n.artCategory),
                       _buildDropdownField(
                         value: _categories.contains(_selectedCategory)
                             ? _selectedCategory
                             : null,
-                        hintText: 'Select your primary art form',
+                        hintText: l10n.selectPrimaryArtForm,
                         items: _categories,
                         onChanged: (val) {
                           setState(() {
@@ -1158,12 +1288,12 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                         },
                       ),
                       const SizedBox(height: 14),
-                      _buildLabel('Experience Level'),
+                      _buildLabel(l10n.experienceLevel),
                       _buildDropdownField(
                         value: _experienceLevels.contains(_selectedExperienceLevel)
                             ? _selectedExperienceLevel
                             : null,
-                        hintText: 'Select your experience level',
+                        hintText: l10n.selectExperienceLevel,
                         items: _experienceLevels,
                         onChanged: (val) {
                           setState(() {
@@ -1173,11 +1303,10 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                         },
                       ),
                       const SizedBox(height: 14),
-                      _buildLabel('Artist Bio'),
+                      _buildLabel(l10n.artistBio),
                       _buildTextField(
                         controller: _bioController,
-                        hintText:
-                            'Tell us about your artistic journey, style, and inspiration...',
+                        hintText: l10n.bioHint,
                         maxLines: 5,
                         maxLength: 5000,
                         showCounter: true,
@@ -1185,16 +1314,16 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                       const SizedBox(height: 28),
 
                       // SECTION 3: Social Media (Optional)
-                      const Text(
-                        'Social Media (Optional)',
-                        style: TextStyle(
+                      Text(
+                        l10n.socialMediaOptional,
+                        style: const TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF1E1E1E),
                         ),
                       ),
                       const SizedBox(height: 14),
-                      _buildLabel('Website'),
+                      _buildLabel(l10n.website),
                       _buildTextField(
                         controller: _websiteController,
                         hintText: 'https://yourwebsite.com',
@@ -1240,12 +1369,12 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                       // SECTION 4: Artwork Portfolio (Max 6)
                       _buildSectionTitle(
                         icon: Icons.upload_file_outlined,
-                        title: 'Artwork Portfolio (${_portfolioArtworks.length}/$kMaxArtworks)',
+                        title: '${l10n.artworkPortfolio} (${_portfolioArtworks.length}/$kMaxArtworks)',
                       ),
                       const SizedBox(height: 4),
-                      const Text(
-                        'Upload your artwork images (Max 6). You can crop, remove backgrounds, and manage your portfolio.',
-                        style: TextStyle(
+                      Text(
+                        l10n.artworkPortfolioDesc,
+                        style: const TextStyle(
                           fontSize: 12.5,
                           color: Color(0xFF64748B),
                         ),
@@ -1279,9 +1408,9 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                 color: Color(0xFF64748B),
                               ),
                               const SizedBox(height: 10),
-                              const Text(
-                                'Drag & drop images here or click to select',
-                                style: TextStyle(
+                              Text(
+                                l10n.dragDropImages,
+                                style: const TextStyle(
                                   fontSize: 13.5,
                                   color: Color(0xFF64748B),
                                 ),
@@ -1314,9 +1443,9 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                       size: 16,
                                       color: Color(0xFF1E1E1E),
                                     ),
-                                    label: const Text(
-                                      'Choose Files',
-                                      style: TextStyle(
+                                    label: Text(
+                                      l10n.chooseFiles,
+                                      style: const TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.bold,
                                         color: Color(0xFF1E1E1E),
@@ -1343,9 +1472,9 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                       size: 16,
                                       color: Color(0xFF1E1E1E),
                                     ),
-                                    label: const Text(
-                                      'Camera',
-                                      style: TextStyle(
+                                    label: Text(
+                                      l10n.camera,
+                                      style: const TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.bold,
                                         color: Color(0xFF1E1E1E),
@@ -1357,8 +1486,8 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                               const SizedBox(height: 10),
                               Text(
                                 _portfolioArtworks.length >= kMaxArtworks
-                                    ? 'Maximum 6 artworks reached'
-                                    : 'Max 6 uploads • Max 5MB per file',
+                                    ? l10n.maxArtworksReached
+                                    : l10n.maxUploadsLimit,
                                 style: TextStyle(
                                   fontSize: 11.5,
                                   color: _portfolioArtworks.length >= kMaxArtworks
@@ -1379,7 +1508,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Portfolio Artworks (${_portfolioArtworks.length}/$kMaxArtworks):',
+                              '${l10n.artworkPortfolio} (${_portfolioArtworks.length}/$kMaxArtworks):',
                               style: const TextStyle(
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.bold,
@@ -1390,9 +1519,9 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                               TextButton.icon(
                                 onPressed: _pickImagesFromGallery,
                                 icon: const Icon(Icons.add_photo_alternate_outlined, size: 16, color: Color(0xFF6A2777)),
-                                label: const Text(
-                                  'Add More',
-                                  style: TextStyle(
+                                label: Text(
+                                  l10n.chooseFiles,
+                                  style: const TextStyle(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.bold,
                                     color: Color(0xFF6A2777),
@@ -1407,9 +1536,9 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(color: const Color(0xFF5E227A), width: 0.8),
                                 ),
-                                child: const Text(
-                                  'Max 6 reached',
-                                  style: TextStyle(
+                                child: Text(
+                                  l10n.maxArtworksReached,
+                                  style: const TextStyle(
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.bold,
                                     color: Color(0xFF5E227A),
@@ -1516,25 +1645,25 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                                   fontWeight: FontWeight.w600,
                                                   color: Color(0xFF0F172A),
                                                 ),
-                                                decoration: const InputDecoration(
-                                                  hintText: 'Artwork Title',
-                                                  hintStyle: TextStyle(
+                                                decoration: InputDecoration(
+                                                  hintText: l10n.localeName == 'ar' ? 'عنوان العمل الفني' : 'Artwork Title',
+                                                  hintStyle: const TextStyle(
                                                     fontSize: 12.5,
                                                     color: Color(0xFF94A3B8),
                                                   ),
                                                   isDense: true,
                                                   filled: true,
                                                   fillColor: Colors.white,
-                                                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                                                  border: OutlineInputBorder(
+                                                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                                  border: const OutlineInputBorder(
                                                     borderRadius: BorderRadius.all(Radius.circular(6)),
                                                     borderSide: BorderSide(color: Color(0xFFCBD5E1)),
                                                   ),
-                                                  enabledBorder: OutlineInputBorder(
+                                                  enabledBorder: const OutlineInputBorder(
                                                     borderRadius: BorderRadius.all(Radius.circular(6)),
                                                     borderSide: BorderSide(color: Color(0xFFCBD5E1)),
                                                   ),
-                                                  focusedBorder: OutlineInputBorder(
+                                                  focusedBorder: const OutlineInputBorder(
                                                     borderRadius: BorderRadius.all(Radius.circular(6)),
                                                     borderSide: BorderSide(color: Color(0xFF6A2777), width: 1.5),
                                                   ),
@@ -1578,10 +1707,10 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                             color: artItem.isFeatured ? const Color(0xFF6A2777) : const Color(0xFF94A3B8),
                                           ),
                                           const SizedBox(width: 8),
-                                          const Expanded(
+                                          Expanded(
                                             child: Text(
-                                              'Mark as Featured Artwork',
-                                              style: TextStyle(
+                                              l10n.markAsFeaturedArtwork,
+                                              style: const TextStyle(
                                                 fontSize: 12.5,
                                                 fontWeight: FontWeight.w600,
                                                 color: Color(0xFF334155),
@@ -1663,7 +1792,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                         ),
                                         children: [
                                           TextSpan(
-                                            text: '* I agree to the ',
+                                            text: '* ${l10n.agreeToTermsPrefix}',
                                             recognizer: TapGestureRecognizer()
                                               ..onTap = () {
                                                 setState(() {
@@ -1673,7 +1802,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                               },
                                           ),
                                           TextSpan(
-                                            text: 'Privacy Policy',
+                                            text: l10n.privacyPolicy,
                                             style: const TextStyle(
                                               color: Color(0xFF6B1C9B),
                                               fontWeight: FontWeight.bold,
@@ -1688,7 +1817,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                               },
                                           ),
                                           TextSpan(
-                                            text: ' and ',
+                                            text: l10n.localeName == 'ar' ? ' و ' : ' and ',
                                             recognizer: TapGestureRecognizer()
                                               ..onTap = () {
                                                 setState(() {
@@ -1698,7 +1827,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                               },
                                           ),
                                           TextSpan(
-                                            text: 'Terms & Conditions',
+                                            text: l10n.termsAndConditions,
                                             style: const TextStyle(
                                               color: Color(0xFF6B1C9B),
                                               fontWeight: FontWeight.bold,
@@ -1720,9 +1849,9 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                               ],
                             ),
                             const SizedBox(height: 6),
-                            const Text(
-                              'By checking this box, you consent to the collection, processing, and storage of your personal data as described in our privacy policy. This includes your profile information, artwork images, and contact details which will be used to showcase your work on the Dubai Artist platform.',
-                              style: TextStyle(
+                            Text(
+                              l10n.consentPrivacyTermsDesc,
+                              style: const TextStyle(
                                 fontSize: 11.5,
                                 color: Color(0xFF64748B),
                                 height: 1.4,
@@ -1733,6 +1862,46 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                       ),
                       const SizedBox(height: 28),
                       // Action Buttons: Cancel & Create Profile
+                      if (_isSubmitting) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.20),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.35),
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2.2,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  _submissionStatus.isNotEmpty
+                                      ? _submissionStatus
+                                      : (_isEditMode ? l10n.saving : l10n.creating),
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       Row(
                         children: [
                           Expanded(
@@ -1740,25 +1909,28 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                               height: 48,
                               child: OutlinedButton(
                                 style: OutlinedButton.styleFrom(
-                                  backgroundColor: Colors.white.withValues(alpha: 0.15),
+                                  backgroundColor: _isSubmitting
+                                      ? Colors.white.withValues(alpha: 0.08)
+                                      : Colors.white.withValues(alpha: 0.15),
+                                  disabledForegroundColor: Colors.white38,
                                   padding: const EdgeInsets.symmetric(horizontal: 8),
                                   side: BorderSide(
-                                    color: Colors.white.withValues(alpha: 0.3),
+                                    color: Colors.white.withValues(alpha: _isSubmitting ? 0.15 : 0.3),
                                     width: 1.0,
                                   ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
-                                onPressed: () => context.pop(),
-                                child: const FittedBox(
+                                onPressed: _isSubmitting ? null : () => context.pop(),
+                                child: FittedBox(
                                   fit: BoxFit.scaleDown,
                                   child: Text(
-                                    'Cancel',
+                                    l10n.cancel,
                                     style: TextStyle(
                                       fontSize: 14.5,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.white,
+                                      color: _isSubmitting ? Colors.white38 : Colors.white,
                                     ),
                                   ),
                                 ),
@@ -1777,12 +1949,18 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                   foregroundColor: _isAllCriteriaMet
                                       ? const Color(0xFF6B1C9B)
                                       : Colors.white.withValues(alpha: 0.45),
-                                  elevation: _isAllCriteriaMet ? 3 : 0,
+                                  disabledBackgroundColor: _isSubmitting
+                                      ? Colors.white
+                                      : Colors.white.withValues(alpha: 0.20),
+                                  disabledForegroundColor: _isSubmitting
+                                      ? const Color(0xFF6B1C9B)
+                                      : Colors.white.withValues(alpha: 0.45),
+                                  elevation: (_isAllCriteriaMet || _isSubmitting) ? 3 : 0,
                                   shadowColor: Colors.black38,
                                   padding: const EdgeInsets.symmetric(horizontal: 8),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
-                                    side: _isAllCriteriaMet
+                                    side: (_isAllCriteriaMet || _isSubmitting)
                                         ? BorderSide.none
                                         : BorderSide(
                                             color: Colors.white.withValues(alpha: 0.25),
@@ -1791,27 +1969,44 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                   ),
                                 ),
                                 onPressed: _isSubmitting ? null : _submitProfile,
-                                child:
-                                    _isSubmitting
-                                        ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            color: Color(0xFF6B1C9B),
-                                            strokeWidth: 2,
-                                          ),
-                                        )
-                                        : FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          child: Text(
-                                            _isEditMode ? 'Save Changes' : 'Create Profile',
-                                            maxLines: 1,
-                                            style: const TextStyle(
-                                              fontSize: 14.5,
-                                              fontWeight: FontWeight.bold,
+                                child: _isSubmitting
+                                    ? Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(
+                                              color: Color(0xFF6B1C9B),
+                                              strokeWidth: 2.5,
                                             ),
                                           ),
+                                          const SizedBox(width: 8),
+                                          Flexible(
+                                            child: Text(
+                                              _isEditMode ? l10n.saving : l10n.creating,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontSize: 13.5,
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xFF6B1C9B),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    : FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(
+                                          _isEditMode ? l10n.updateProfile : l10n.createProfile,
+                                          maxLines: 1,
+                                          style: const TextStyle(
+                                            fontSize: 14.5,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
+                                      ),
                               ),
                             ),
                           ),
@@ -2036,6 +2231,24 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
           child: TextFormField(
             controller: _phoneController,
             keyboardType: TextInputType.phone,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(15),
+            ],
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return null;
+              }
+              final clean = value.trim();
+              if (clean.length < 7) {
+                return 'Phone number must be at least 7 digits';
+              }
+              if (clean.length > 15) {
+                return 'Phone number cannot exceed 15 digits';
+              }
+              return null;
+            },
             style: const TextStyle(
               fontSize: 14.5,
               color: Color(0xFF0F172A),
@@ -2068,6 +2281,21 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                 borderRadius: BorderRadius.circular(8),
                 borderSide:
                     const BorderSide(color: Color(0xFF5E227A), width: 1.5),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide:
+                    const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide:
+                    const BorderSide(color: Color(0xFFDC2626), width: 2),
+              ),
+              errorStyle: const TextStyle(
+                fontSize: 11.5,
+                color: Color(0xFFFFD1D1),
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -2171,7 +2399,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                             : null,
                       ),
                       child: Text(
-                        option,
+                        DataTranslator.tr(context, option),
                         style: TextStyle(
                           fontSize: 14,
                           color: option == _selectedLocation
@@ -2244,7 +2472,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
         return DropdownMenuItem<String>(
           value: item,
           child: Text(
-            item,
+            DataTranslator.tr(context, item),
             style: const TextStyle(
               fontSize: 14,
               color: Color(0xFF1E293B),

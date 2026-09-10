@@ -14,6 +14,7 @@ class DashboardItem {
   });
 
   static const List<DashboardItem> items = [
+    // Row 1
     DashboardItem(
       title: 'ABOUT US',
       iconPath: 'assets/icons/dashboard/about_us.png',
@@ -26,6 +27,8 @@ class DashboardItem {
       imagePath: 'assets/images/artists-9NH3TeXO.jpg',
       route: '/artists',
     ),
+
+    // Row 2
     DashboardItem(
       title: 'GOVERNMENT',
       iconPath: 'assets/icons/dashboard/government.png',
@@ -39,6 +42,8 @@ class DashboardItem {
       imagePath: 'assets/images/artist-registration-DqgORA9-.jpg',
       route: '/artist-registration',
     ),
+
+    // Row 3
     DashboardItem(
       title: 'EVENTS',
       subtitle: 'COMPETITION',
@@ -53,6 +58,8 @@ class DashboardItem {
       imagePath: 'assets/images/galleries-DjK8LuXg.jpg',
       route: '/galleries',
     ),
+
+    // Row 4
     DashboardItem(
       title: 'EVENTS',
       subtitle: 'PHOTOS',

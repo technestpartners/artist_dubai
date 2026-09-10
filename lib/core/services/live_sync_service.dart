@@ -256,6 +256,13 @@ class LiveSyncService with WidgetsBindingObserver {
     _syncTimer = null;
   }
 
+  /// Force an immediate re-sync of all data and masters when locale toggles
+  Future<void> forceLocaleRefresh() async {
+    _isSyncing = false;
+    _hasLoadedMasters = false;
+    await syncAllSilently(forceRefresh: true, syncMasters: true);
+  }
+
   /// Lightweight multi-device sync for active data from MySQL database
   Future<void> syncAllSilently({bool forceRefresh = true, bool syncMasters = false}) async {
     if (_isSyncing) return;

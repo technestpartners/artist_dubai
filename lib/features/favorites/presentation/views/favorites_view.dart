@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
@@ -11,6 +12,7 @@ import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../artists/domain/models/artist_model.dart';
 import '../../../events/domain/models/art_event_model.dart';
+import '../../../../core/utils/data_translator.dart';
 import '../../../home/presentation/widgets/home_footer_widget.dart';
 
 class FavoritesView extends StatefulWidget {
@@ -150,6 +152,8 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(backgroundColor: Colors.white),
@@ -163,9 +167,9 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'MY FAVORITES | SAVED PROFILES',
-                    style: TextStyle(
+                  Text(
+                    l10n.myFavorites.toUpperCase(),
+                    style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
                       color: Colors.white,
@@ -173,9 +177,9 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'Your saved artist profiles, favorited events, and liked artworks',
-                    style: TextStyle(
+                  Text(
+                    l10n.myFavoritesSubtitle,
+                    style: const TextStyle(
                       fontSize: 13.5,
                       color: Color(0xFFE2D6F5),
                       fontWeight: FontWeight.w400,
@@ -206,9 +210,9 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                       labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                       padding: const EdgeInsets.all(3),
                       tabs: [
-                        Tab(text: 'Artists (${_favoritedArtists.length})'),
-                        Tab(text: 'Events (${_favoritedEvents.length})'),
-                        Tab(text: 'Artworks (${_favoritedArtworks.length})'),
+                        Tab(text: '${l10n.artists} (${_favoritedArtists.length})'),
+                        Tab(text: '${l10n.events} (${_favoritedEvents.length})'),
+                        Tab(text: '${l10n.artworks} (${_favoritedArtworks.length})'),
                       ],
                     ),
                   ),
@@ -228,13 +232,13 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                         controller: _tabController,
                         children: [
                           // Tab 1: Favorited Artists List
-                          _buildArtistsTab(),
+                          _buildArtistsTab(l10n),
 
                           // Tab 2: Favorited Events List
-                          _buildEventsTab(),
+                          _buildEventsTab(l10n),
 
                           // Tab 3: Favorited Artworks List
-                          _buildArtworksTab(),
+                          _buildArtworksTab(l10n),
                         ],
                       ),
                     ),
@@ -252,13 +256,13 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
     );
   }
 
-  Widget _buildArtistsTab() {
+  Widget _buildArtistsTab(AppLocalizations l10n) {
     if (_favoritedArtists.isEmpty) {
       return _buildEmptyState(
         icon: Icons.person_off_outlined,
-        message: 'No favorited artist profiles yet.',
+        message: l10n.noFavoritedArtistsYet,
         subMessage: 'Explore artists and tap the heart icon to save them here.',
-        actionText: 'Explore Artists',
+        actionText: l10n.exploreArtists,
         onAction: () => context.go(RouteNames.artists),
       );
     }
@@ -318,17 +322,17 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        artist.name,
+                        artist.localizedName(context),
                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        artist.category,
+                        artist.localizedCategory(context),
                         style: const TextStyle(fontSize: 13, color: Color(0xFF6A2777), fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        artist.location,
+                        artist.localizedLocation(context),
                         style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
                       ),
                     ],
@@ -347,13 +351,13 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
     );
   }
 
-  Widget _buildEventsTab() {
+  Widget _buildEventsTab(AppLocalizations l10n) {
     if (_favoritedEvents.isEmpty) {
       return _buildEmptyState(
         icon: Icons.event_busy_outlined,
-        message: 'No favorited events saved.',
+        message: l10n.noFavoritedEventsYet,
         subMessage: 'Discover upcoming art events and bookmark them for quick access.',
-        actionText: 'Explore Events',
+        actionText: l10n.exploreEvents,
         onAction: () => context.go(RouteNames.events),
       );
     }
@@ -404,7 +408,7 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            event.category,
+                            event.localizedCategory(context),
                             style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF6A2777)),
                           ),
                         ),
@@ -420,12 +424,12 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      event.title,
+                      event.localizedTitle(context),
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${event.formattedDate} • ${event.location}',
+                      '${event.formattedDate} • ${event.localizedLocation(context)}',
                       style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
                     ),
                     const SizedBox(height: 10),
@@ -433,7 +437,7 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          event.price,
+                          event.localizedPrice(context),
                           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                         ),
                         ElevatedButton(
@@ -444,7 +448,7 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           ),
                           onPressed: () => context.go(RouteNames.events),
-                          child: const Text('View Event', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                          child: Text(l10n.viewDetails, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
@@ -458,13 +462,13 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
     );
   }
 
-  Widget _buildArtworksTab() {
+  Widget _buildArtworksTab(AppLocalizations l10n) {
     if (_favoritedArtworks.isEmpty) {
       return _buildEmptyState(
         icon: Icons.image_not_supported_outlined,
-        message: 'No favorited artworks saved.',
+        message: l10n.noFavoritedArtworksYet,
         subMessage: 'Explore portfolios and heart individual artworks.',
-        actionText: 'Explore Portfolios',
+        actionText: l10n.explorePortfolios,
         onAction: () => context.go(RouteNames.artists),
       );
     }
@@ -475,9 +479,9 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
       itemBuilder: (context, index) {
         final item = _favoritedArtworks[index];
         final title = item['title']?.toString() ?? 'Artwork';
-        final artist = item['artist_name']?.toString() ?? item['artist']?.toString() ?? 'Artist';
+        final artist = (item['artist_name']?.toString() ?? item['artist']?.toString() ?? 'Artist').trData(context);
         final year = item['year']?.toString() ?? '2025';
-        final medium = item['medium']?.toString() ?? item['details']?.toString() ?? 'Mixed Media';
+        final medium = (item['medium']?.toString() ?? item['details']?.toString() ?? 'Mixed Media').trData(context);
         final dimensions = item['dimensions']?.toString() ?? '120 x 80 cm';
         final image = item['image_url']?.toString() ?? item['image']?.toString() ?? '';
 
@@ -519,7 +523,7 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'By $artist',
+                        Localizations.localeOf(context).languageCode == 'ar' ? 'بواسطة $artist' : 'By $artist',
                         style: const TextStyle(fontSize: 12.5, color: Color(0xFF6A2777), fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 2),

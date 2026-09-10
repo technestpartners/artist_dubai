@@ -1,0 +1,864 @@
+{
+  "@@locale": "en",
+
+  "appName": "Artist Dubai",
+  "@appName": { "description": "The name of the application" },
+
+  "tagline": "VIP Art & Cultural Community Platform",
+  "@tagline": {},
+
+  "home": "Home",
+  "@home": {},
+
+  "settings": "Settings",
+  "@settings": {},
+
+  "language": "Language",
+  "@language": {},
+
+  "languageSubtitle": "Choose your preferred language",
+  "@languageSubtitle": {},
+
+  "english": "English",
+  "@english": {},
+
+  "arabic": "Arabic",
+  "@arabic": {},
+
+  "accountSettings": "Account Settings",
+  "@accountSettings": {},
+
+  "accountInformation": "Account Information",
+  "@accountInformation": {},
+
+  "accountInformationSubtitle": "Manage your account settings and preferences",
+  "@accountInformationSubtitle": {},
+
+  "artistProfile": "Artist Profile",
+  "@artistProfile": {},
+
+  "artistProfileSubtitle": "Your active artist profile details on Artist Dubai",
+  "@artistProfileSubtitle": {},
+
+  "artistProfileCreateSubtitle": "Create your artist profile to showcase your work",
+  "@artistProfileCreateSubtitle": {},
+
+  "accountActions": "Account Actions",
+  "@accountActions": {},
+
+  "accountActionsSubtitle": "Sign out or delete your account",
+  "@accountActionsSubtitle": {},
+
+  "email": "Email",
+  "@email": {},
+
+  "memberSince": "Member Since",
+  "@memberSince": {},
+
+  "fullName": "Full Name",
+  "@fullName": {},
+
+  "noEmailProvided": "No email provided",
+  "@noEmailProvided": {},
+
+  "recentlyJoined": "Recently Joined",
+  "@recentlyJoined": {},
+
+  "signIn": "Sign In",
+  "@signIn": {},
+
+  "signOut": "Sign Out",
+  "@signOut": {},
+
+  "changePassword": "Change Password",
+  "@changePassword": {},
+
+  "deleteAccount": "Delete Account",
+  "@deleteAccount": {},
+
+  "editProfile": "Edit Profile",
+  "@editProfile": {},
+
+  "viewDirectory": "View Directory",
+  "@viewDirectory": {},
+
+  "createArtistProfile": "Create Artist Profile",
+  "@createArtistProfile": {},
+
+  "noArtistProfile": "No Artist Profile",
+  "@noArtistProfile": {},
+
+  "noArtistProfileBody": "Create your artist profile to be discoverable on the platform and showcase your portfolio.",
+  "@noArtistProfileBody": {},
+
+  "pleaseSignIn": "Please sign in to manage your account settings.",
+  "@pleaseSignIn": {},
+
+  "changePasswordTitle": "Change Password",
+  "@changePasswordTitle": {},
+
+  "changePasswordSubtitle": "Enter your new password. Make sure it's secure and at least 6 characters long.",
+  "@changePasswordSubtitle": {},
+
+  "newPassword": "New Password",
+  "@newPassword": {},
+
+  "newPasswordHint": "Enter new password",
+  "@newPasswordHint": {},
+
+  "confirmNewPassword": "Confirm New Password",
+  "@confirmNewPassword": {},
+
+  "confirmNewPasswordHint": "Confirm new password",
+  "@confirmNewPasswordHint": {},
+
+  "cancel": "Cancel",
+  "@cancel": {},
+
+  "updatePassword": "Update Password",
+  "@updatePassword": {},
+
+  "passwordMinLength": "Password must be at least 6 characters",
+  "@passwordMinLength": {},
+
+  "passwordsDoNotMatch": "Passwords do not match",
+  "@passwordsDoNotMatch": {},
+
+  "passwordUpdatedSuccess": "Password updated successfully!",
+  "@passwordUpdatedSuccess": {},
+
+  "passwordUpdateFailed": "Failed to update password. Please check backend connection.",
+  "@passwordUpdateFailed": {},
+
+  "deleteAccountTitle": "Are you absolutely sure?",
+  "@deleteAccountTitle": {},
+
+  "deleteAccountBody": "This action cannot be undone. This will permanently delete your account and remove all your data from our servers. This includes:",
+  "@deleteAccountBody": {},
+
+  "deleteAccountItem1": "Your artist profile (if any)",
+  "@deleteAccountItem1": {},
+
+  "deleteAccountItem2": "All your artwork images",
+  "@deleteAccountItem2": {},
+
+  "deleteAccountItem3": "Your account information",
+  "@deleteAccountItem3": {},
+
+  "deleteAccountItem4": "All your activity and event history",
+  "@deleteAccountItem4": {},
+
+  "deleteAccountItem5": "Any saved preferences",
+  "@deleteAccountItem5": {},
+
+  "deleteAccountItem6": "Your liked artists and galleries",
+  "@deleteAccountItem6": {},
+
+  "yesDeleteMyAccount": "Yes, delete my account",
+  "@yesDeleteMyAccount": {},
+
+  "accountDeletedSuccess": "Account deleted successfully.",
+  "@accountDeletedSuccess": {},
+
+  "deleteAccountNote": "Note: Account deletion permanently removes your account and all associated data.",
+  "@deleteAccountNote": {},
+
+  "retry": "Retry",
+  "@retry": {},
+
+  "somethingWentWrong": "Something went wrong. Please try again.",
+  "@somethingWentWrong": {},
+
+  "noInternet": "No internet connection detected.",
+  "@noInternet": {},
+
+  "loginTitle": "VIP Sign In",
+  "@loginTitle": {},
+
+  "loginSubtitle": "Access world-class artists and talent across UAE",
+  "@loginSubtitle": {},
+
+  "registerTitle": "Create VIP Account",
+  "@registerTitle": {},
+
+  "registerSubtitle": "Join Dubai's premier artist & cultural community",
+  "@registerSubtitle": {},
+
+  "communityPlatform": "Community Platform",
+  "@communityPlatform": {},
+
+  "hostedBy": "Hosted by Nizar Fahem",
+  "@hostedBy": {},
+
+  "aboutUs": "About Us",
+  "@aboutUs": {},
+
+  "artists": "Artists",
+  "@artists": {},
+
+  "government": "Government",
+  "@government": {},
+
+  "artistRegistration": "Artist Registration",
+  "@artistRegistration": {},
+
+  "eventsCompetition": "Events Competition",
+  "@eventsCompetition": {},
+
+  "galleriesArtCenter": "Galleries & Art Center",
+  "@galleriesArtCenter": {},
+
+  "eventsPhotos": "Events Photos",
+  "@eventsPhotos": {},
+
+  "galleryRegistration": "Art Venue Registration",
+  "@galleryRegistration": {},
+
+  "events": "Events",
+  "@events": {},
+
+  "galleries": "Galleries",
+  "@galleries": {},
+
+  "featuredArtists": "Featured Artists",
+  "@featuredArtists": {},
+
+  "noArtistProfilesAvailable": "No artist profiles available yet",
+  "@noArtistProfilesAvailable": {},
+
+  "noArtistsYet": "No Artists Yet",
+  "@noArtistsYet": {},
+
+  "beTheFirstToCreateArtistProfile": "Be the first to create an artist profile!",
+  "@beTheFirstToCreateArtistProfile": {},
+
+  "selectCategory": "Select a Category",
+  "@selectCategory": {},
+
+  "governmentPortal": "Government Portal",
+  "@governmentPortal": {},
+
+  "governmentPortalSubtitle": "Partnership opportunities with Dubai's government entities",
+  "@governmentPortalSubtitle": {},
+
+  "openStatus": "Open",
+  "@openStatus": {},
+
+  "closedStatus": "Closed",
+  "@closedStatus": {},
+
+  "website": "Website",
+  "@website": {},
+
+  "directions": "Directions",
+  "@directions": {},
+
+  "loginToYourAccount": "Login to Your Account",
+  "@loginToYourAccount": {},
+
+  "welcomeBackLogin": "Welcome back! Enter your credentials to access your account",
+  "@welcomeBackLogin": {},
+
+  "emailAddress": "Email Address",
+  "@emailAddress": {},
+
+  "passwordLabel": "Password",
+  "@passwordLabel": {},
+
+  "enterYourPassword": "Enter your password",
+  "@enterYourPassword": {},
+
+  "dontHaveAccount": "Don't have an account? ",
+  "@dontHaveAccount": {},
+
+  "signUpFree": "Sign Up Free",
+  "@signUpFree": {},
+
+  "viewProfile": "View Profile",
+  "@viewProfile": {},
+
+  "eventsTitle": "Events",
+  "@eventsTitle": {},
+
+  "eventsSubtitle": "Curated art exhibitions, workshops & gallery openings in Dubai",
+  "@eventsSubtitle": {},
+
+  "tabAll": "All",
+  "@tabAll": {},
+
+  "tabUpcoming": "Upcoming",
+  "@tabUpcoming": {},
+
+  "tabOngoing": "Ongoing",
+  "@tabOngoing": {},
+
+  "tabPast": "Past",
+  "@tabPast": {},
+
+  "searchEventsHint": "Search events by name, location...",
+  "@searchEventsHint": {},
+
+  "allCategories": "All Categories",
+  "@allCategories": {},
+
+  "noEventsFound": "No Events Found",
+  "@noEventsFound": {},
+
+  "noEventsDescription": "Check back soon for exciting upcoming art events",
+  "@noEventsDescription": {},
+
+  "registerArtEvent": "Register Art Event",
+  "@registerArtEvent": {},
+
+  "viewDetails": "View Details",
+  "@viewDetails": {},
+
+  "addToCalendar": "Add to Calendar",
+  "@addToCalendar": {},
+
+  "freeEntry": "Free Entry",
+  "@freeEntry": {},
+
+  "paid": "Paid",
+  "@paid": {},
+
+  "galleriesSubtitle": "Physical galleries and art spaces across Dubai",
+  "@galleriesSubtitle": {},
+
+  "loginRequired": "Login Required",
+  "@loginRequired": {},
+
+  "logIn": "Log In",
+  "@logIn": {},
+
+  "virtualTour": "Virtual Tour",
+  "@virtualTour": {},
+
+  "noGalleriesAvailable": "No galleries available yet",
+  "@noGalleriesAvailable": {},
+
+  "aboutUsTitle": "ABOUT US",
+  "@aboutUsTitle": {},
+
+  "aboutUsDescription": "VIP Art & Cultural Community Platform connecting artists, galleries, and art enthusiasts across the UAE.",
+  "@aboutUsDescription": {},
+
+  "eventsCompetitionTitle": "Events Competition",
+  "@eventsCompetitionTitle": {},
+
+  "eventsCompetitionSubtitle": "Competitions, contests, and open calls for artists in UAE",
+  "@eventsCompetitionSubtitle": {},
+
+  "noCompetitionsAvailable": "No competitions available yet",
+  "@noCompetitionsAvailable": {},
+
+  "eventsPhotosTitle": "Events Photos",
+  "@eventsPhotosTitle": {},
+
+  "eventsPhotosSubtitle": "High-resolution photo coverage from art exhibitions and galas",
+  "@eventsPhotosSubtitle": {},
+
+  "noPhotosAvailable": "No event photos available yet",
+  "@noPhotosAvailable": {},
+
+  "registerAccountTitle": "Create Your Account",
+  "@registerAccountTitle": {},
+
+  "registerAccountSubtitle": "Join Dubai's premier art & cultural community",
+  "@registerAccountSubtitle": {},
+
+  "confirmPasswordLabel": "Confirm Password",
+  "@confirmPasswordLabel": {},
+
+  "enterConfirmPassword": "Confirm your password",
+  "@enterConfirmPassword": {},
+
+  "alreadyHaveAccount": "Already have an account? ",
+  "@alreadyHaveAccount": {},
+
+  "signInNow": "Sign In",
+  "@signInNow": {},
+
+  "createAccount": "Create Account",
+  "@createAccount": {},
+
+  "myFavorites": "My Favorites",
+  "@myFavorites": {},
+
+  "noFavoritesYet": "No favorites saved yet",
+  "@noFavoritesYet": {},
+
+  "termsOfService": "Terms of Service",
+  "@termsOfService": {},
+
+  "privacyPolicy": "Privacy Policy",
+  "@privacyPolicy": {},
+
+  "comingSoon": "Coming Soon",
+  "@comingSoon": {},
+
+  "enterFullName": "Enter your full name",
+  "@enterFullName": {},
+
+  "acceptTermsPrefix": "I accept the ",
+  "@acceptTermsPrefix": {},
+
+  "andWord": " and ",
+  "@andWord": {},
+
+  "myFavoritesSubtitle": "Your saved artist profiles, favorited events, and liked artworks",
+  "@myFavoritesSubtitle": {},
+
+  "artworks": "Artworks",
+  "@artworks": {},
+
+  "noFavoritedArtistsYet": "No favorited artist profiles yet.",
+  "@noFavoritedArtistsYet": {},
+
+  "exploreArtists": "Explore Artists",
+  "@exploreArtists": {},
+
+  "noFavoritedEventsYet": "No favorited events saved.",
+  "@noFavoritedEventsYet": {},
+
+  "exploreEvents": "Explore Events",
+  "@exploreEvents": {},
+
+  "noFavoritedArtworksYet": "No favorited artworks saved.",
+  "@noFavoritedArtworksYet": {},
+
+  "explorePortfolios": "Explore Portfolios",
+  "@explorePortfolios": {},
+
+  "activelyFrom": "Actively from",
+  "@activelyFrom": {},
+
+  "backToHome": "back to home",
+  "@backToHome": {},
+
+  "back": "Back",
+  "@back": {},
+
+  "likes": "Likes",
+  "@likes": {},
+
+  "portfolio": "Portfolio",
+  "@portfolio": {},
+
+  "aboutThisEvent": "About this event",
+  "@aboutThisEvent": {},
+
+  "tags": "Tags",
+  "@tags": {},
+
+  "organizer": "Organizer",
+  "@organizer": {},
+
+  "addPhoto": "Add Photo",
+  "@addPhoto": {},
+
+  "noEventPhotosYet": "No event photos yet",
+  "@noEventPhotosYet": {},
+
+  "exploreCategories": "Explore Categories",
+  "@exploreCategories": {},
+
+  "exploreCategoriesSubtitle": "Discover artists across various art forms and styles",
+  "@exploreCategoriesSubtitle": {},
+
+  "loadingArtists": "Loading artists...",
+  "@loadingArtists": {},
+
+  "discoverArtistsCount": "Discover {count} talented artists in Dubai",
+  "@discoverArtistsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "artistCardStats": "{likes} likes   {artworks} artworks",
+  "@artistCardStats": {
+    "placeholders": {
+      "likes": {
+        "type": "int"
+      },
+      "artworks": {
+        "type": "int"
+      }
+    }
+  },
+
+  "organizedBy": "Organized by ",
+  "@organizedBy": {},
+
+  "categoryAll": "All Categories",
+  "@categoryAll": {},
+
+  "categoryArtExhibition": "Art Exhibition",
+  "@categoryArtExhibition": {},
+
+  "categoryGalleryOpening": "Gallery Opening",
+  "@categoryGalleryOpening": {},
+
+  "categoryArtWorkshop": "Art Workshop",
+  "@categoryArtWorkshop": {},
+
+  "categoryArtistTalk": "Artist Talk",
+  "@categoryArtistTalk": {},
+
+  "categoryArtFair": "Art Fair",
+  "@categoryArtFair": {},
+
+  "categorySculptureInstallation": "Sculpture Installation",
+  "@categorySculptureInstallation": {},
+
+  "categoryPhotographyExhibition": "Photography Exhibition",
+  "@categoryPhotographyExhibition": {},
+
+  "categoryCulturalFestival": "Cultural Festival",
+  "@categoryCulturalFestival": {},
+
+  "categoryArtCompetition": "Art Competition",
+  "@categoryArtCompetition": {},
+
+  "categoryCommunityArtProject": "Community Art Project",
+  "@categoryCommunityArtProject": {},
+
+  "myEvents": "My Events",
+  "@myEvents": {},
+
+  "termsAndConditions": "Terms & Conditions",
+  "@termsAndConditions": {},
+
+  "createArtistProfileTitle": "Create Artist Profile",
+  "@createArtistProfileTitle": {},
+
+  "editArtistProfileTitle": "Edit Artist Profile",
+  "@editArtistProfileTitle": {},
+
+  "createYourArtistProfile": "Create Your Artist Profile",
+  "@createYourArtistProfile": {},
+
+  "editYourArtistProfile": "Edit Your Artist Profile",
+  "@editYourArtistProfile": {},
+
+  "createArtistSubtitle": "Join Dubai's Artist Community and Showcase Your Portfolio",
+  "@createArtistSubtitle": {},
+
+  "editArtistSubtitle": "Update your artist profile and showcase your portfolio",
+  "@editArtistSubtitle": {},
+
+  "basicInformation": "Basic Information",
+  "@basicInformation": {},
+
+  "uploadArtistPhotoOptional": "Upload Artist Photo (Optional)",
+  "@uploadArtistPhotoOptional": {},
+
+  "changeProfilePicture": "Change Profile Picture",
+  "@changeProfilePicture": {},
+
+  "fullNameLabel": "Full Name",
+  "@fullNameLabel": {},
+
+  "emailLabel": "Email",
+  "@emailLabel": {},
+
+  "phoneNumberOptional": "Phone Number (Optional)",
+  "@phoneNumberOptional": {},
+
+  "locationLabel": "Location",
+  "@locationLabel": {},
+
+  "artistInformation": "Artist Information",
+  "@artistInformation": {},
+
+  "artCategory": "Art Category",
+  "@artCategory": {},
+
+  "selectPrimaryArtForm": "Select your primary art form",
+  "@selectPrimaryArtForm": {},
+
+  "experienceLevel": "Experience Level",
+  "@experienceLevel": {},
+
+  "selectExperienceLevel": "Select your experience level",
+  "@selectExperienceLevel": {},
+
+  "artistBio": "Artist Bio",
+  "@artistBio": {},
+
+  "bioHint": "Tell us about your artistic journey, style, and inspiration...",
+  "@bioHint": {},
+
+  "socialMediaOptional": "Social Media (Optional)",
+  "@socialMediaOptional": {},
+
+  "artworkPortfolio": "Artwork Portfolio",
+  "@artworkPortfolio": {},
+
+  "artworkPortfolioDesc": "Upload your artwork images (Max 6). You can crop, remove backgrounds, and manage your portfolio.",
+  "@artworkPortfolioDesc": {},
+
+  "dragDropImages": "Drag & drop images here or click to select",
+  "@dragDropImages": {},
+
+  "chooseFiles": "Choose Files",
+  "@chooseFiles": {},
+
+  "camera": "Camera",
+  "@camera": {},
+
+  "maxUploadsLimit": "Max 6 uploads • Max 5MB per file",
+  "@maxUploadsLimit": {},
+
+  "maxArtworksReached": "Maximum 6 artworks reached",
+  "@maxArtworksReached": {},
+
+  "markAsFeaturedArtwork": "Mark as Featured Artwork",
+  "@markAsFeaturedArtwork": {},
+
+  "agreeToTermsPrefix": "I agree to the ",
+  "@agreeToTermsPrefix": {},
+
+  "consentPrivacyTermsDesc": "By checking this box, you consent to the collection, processing, and storage of your personal data as described in our privacy policy. This includes your profile information, artwork images, and contact details which will be used to showcase your work on the Dubai Artist platform.",
+  "@consentPrivacyTermsDesc": {},
+
+  "cancel": "Cancel",
+  "@cancel": {},
+
+  "createProfile": "Create Profile",
+  "@createProfile": {},
+
+  "updateProfile": "Update Profile",
+  "@updateProfile": {},
+
+  "saving": "Saving...",
+  "@saving": {},
+
+  "creating": "Creating...",
+  "@creating": {},
+
+  "artVenue": "ART VENUE",
+  "@artVenue": {},
+
+  "artVenueSubtitle": "Register your art venue or gallery to be listed in the app",
+  "@artVenueSubtitle": {},
+
+  "galleryCenterName": "Gallery / center name",
+  "@galleryCenterName": {},
+
+  "venueType": "Type",
+  "@venueType": {},
+
+  "venueTypeHint": "Gallery · Exhibition space · Studio",
+  "@venueTypeHint": {},
+
+  "address": "Address",
+  "@address": {},
+
+  "contactPerson": "Contact person",
+  "@contactPerson": {},
+
+  "phone": "Phone",
+  "@phone": {},
+
+  "aboutTheSpace": "About the space",
+  "@aboutTheSpace": {},
+
+  "gallerySpacePhotoOptional": "Gallery / Space Photo (Optional)",
+  "@gallerySpacePhotoOptional": {},
+
+  "registerVenue": "Register Venue",
+  "@registerVenue": {},
+
+  "uploadingImage": "Uploading image to server...",
+  "@uploadingImage": {},
+
+  "myCreatedEvents": "MY CREATED EVENTS",
+  "@myCreatedEvents": {},
+
+  "myCreatedEventsSubtitle": "Manage your published art events and community exhibitions",
+  "@myCreatedEventsSubtitle": {},
+
+  "createEvent": "Create Event",
+  "@createEvent": {},
+
+  "eventsCreated": "Events Created",
+  "@eventsCreated": {},
+
+  "categories": "Categories",
+  "@categories": {},
+
+  "totalCapacity": "Total Capacity",
+  "@totalCapacity": {},
+
+  "searchCreatedEvents": "Search your created events...",
+  "@searchCreatedEvents": {},
+
+  "noCreatedEventsYet": "No created events yet",
+  "@noCreatedEventsYet": {},
+
+  "createFirstEventPrompt": "Publish your first art event to manage tickets and view attendees here.",
+  "@createFirstEventPrompt": {},
+
+  "editCalendarEvent": "Edit Calendar Event",
+  "@editCalendarEvent": {},
+
+  "addToCalendar": "Add to Calendar",
+  "@addToCalendar": {},
+
+  "editEvent": "Edit Event",
+  "@editEvent": {},
+
+  "scheduleCalendarEvent": "Schedule on Calendar",
+  "@scheduleCalendarEvent": {},
+
+  "headerScheduleCalendarEvent": "SCHEDULE CALENDAR EVENT",
+  "@headerScheduleCalendarEvent": {},
+
+  "headerEditCalendarEvent": "EDIT CALENDAR EVENT",
+  "@headerEditCalendarEvent": {},
+
+  "headerCreateArtEvent": "CREATE ART EVENT",
+  "@headerCreateArtEvent": {},
+
+  "headerEditArtEvent": "EDIT ART EVENT",
+  "@headerEditArtEvent": {},
+
+  "headerSubtitleCalendarEdit": "Update scheduled exhibition or calendar date.",
+  "@headerSubtitleCalendarEdit": {},
+
+  "headerSubtitleCalendarCreate": "Schedule an upcoming exhibition, showcase, or cultural date on the calendar.",
+  "@headerSubtitleCalendarCreate": {},
+
+  "headerSubtitleEventEdit": "Update details, tickets, and photos for this event.",
+  "@headerSubtitleEventEdit": {},
+
+  "headerSubtitleEventCreate": "Publish a new exhibition, workshop, or cultural gathering.",
+  "@headerSubtitleEventCreate": {},
+
+  "featuredImage": "Featured Image",
+  "@featuredImage": {},
+
+  "changeImage": "Change Image",
+  "@changeImage": {},
+
+  "uploaded": "Uploaded",
+  "@uploaded": {},
+
+  "uploadImagePrompt": "Select banner from device gallery or take a photo (JPG, PNG, WebP).",
+  "@uploadImagePrompt": {},
+
+  "eventInformation": "Event Information",
+  "@eventInformation": {},
+
+  "eventTitle": "Event Title",
+  "@eventTitle": {},
+
+  "enterEventTitle": "Enter event title",
+  "@enterEventTitle": {},
+
+  "selectCategory": "Select category",
+  "@selectCategory": {},
+
+  "describeYourEvent": "Describe your event..",
+  "@describeYourEvent": {},
+
+  "dateTime": "Date & Time",
+  "@dateTime": {},
+
+  "startDateTime": "Start Date & Time",
+  "@startDateTime": {},
+
+  "endDateTimeOptional": "End Date & Time (Optional)",
+  "@endDateTimeOptional": {},
+
+  "venueNameOptional": "Venue Name (Optional)",
+  "@venueNameOptional": {},
+
+  "venueNameHint": "e.g., Dubai Opera",
+  "@venueNameHint": {},
+
+  "addressLocation": "Address/Location",
+  "@addressLocation": {},
+
+  "searchLocationHint": "Search or select location (e.g. Dubai, UAE)",
+  "@searchLocationHint": {},
+
+  "additionalDetails": "Additional Details",
+  "@additionalDetails": {},
+
+  "phoneOptional": "Phone Number (Optional)",
+  "@phoneOptional": {},
+
+  "requirementsOptional": "Requirements (Optional)",
+  "@requirementsOptional": {},
+
+  "requirementsHint": "Any special requirements or instructions for attendees..",
+  "@requirementsHint": {},
+
+  "tagsOptional": "Tags (Optional)",
+  "@tagsOptional": {},
+
+  "tagsHint": "Add tags (press Enter to add)",
+  "@tagsHint": {},
+
+  "paidPublishing": "PAID PUBLISHING",
+  "@paidPublishing": {},
+
+  "choosePublishingPlan": "Choose Publishing Plan",
+  "@choosePublishingPlan": {},
+
+  "paidPublishingDesc": "Publishing events is a paid service on Artist Dubai. Select your preferred promotion duration. Once reviewed and approved by the admin, your event will be broadcasted to art enthusiasts across Dubai.",
+  "@paidPublishingDesc": {},
+
+  "weekly": "Weekly",
+  "@weekly": {},
+
+  "monthly": "Monthly",
+  "@monthly": {},
+
+  "yearly": "Yearly",
+  "@yearly": {},
+
+  "daysActive7": "7 days active",
+  "@daysActive7": {},
+
+  "daysActive30": "30 days active",
+  "@daysActive30": {},
+
+  "daysActive365": "365 days active",
+  "@daysActive365": {},
+
+  "popularTag": "POPULAR",
+  "@popularTag": {},
+
+  "bestValueTag": "BEST VALUE",
+  "@bestValueTag": {},
+
+  "paymentOnNextStep": "Payment on Next Step: ",
+  "@paymentOnNextStep": {},
+
+  "paymentDetailsNotice": "Admin Payment QR code & bank transfer details on checkout page.",
+  "@paymentDetailsNotice": {},
+
+  "updateCalendarEvent": "Update Calendar Event",
+  "@updateCalendarEvent": {},
+
+  "updateEvent": "Update Event",
+  "@updateEvent": {},
+
+  "proceedToPayment": "Proceed to Payment",
+  "@proceedToPayment": {},
+
+  "uploadImage": "Upload Image",
+  "@uploadImage": {},
+
+  "descriptionLabel": "Description",
+  "@descriptionLabel": {},
+
+  "categoryLabel": "Category",
+  "@categoryLabel": {}
+}

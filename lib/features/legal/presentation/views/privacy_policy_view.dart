@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
@@ -9,6 +10,8 @@ class PrivacyPolicyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(backgroundColor: Colors.white),
@@ -28,20 +31,20 @@ class PrivacyPolicyView extends StatelessWidget {
                   }
                 },
                 borderRadius: BorderRadius.circular(6),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 6.0),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6.0),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.arrow_back,
                         size: 20,
                         color: Colors.white,
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Text(
-                        'Back',
-                        style: TextStyle(
+                        l10n.back,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
@@ -54,9 +57,9 @@ class PrivacyPolicyView extends StatelessWidget {
               const SizedBox(height: 16),
 
               // Title
-              const Text(
-                'Privacy Policy',
-                style: TextStyle(
+              Text(
+                l10n.privacyPolicy,
+                style: const TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w900,
                   color: Colors.white,

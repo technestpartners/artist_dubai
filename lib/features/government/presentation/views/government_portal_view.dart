@@ -7,6 +7,7 @@ import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../domain/models/government_entity.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class GovernmentPortalView extends StatefulWidget {
   const GovernmentPortalView({super.key});
@@ -117,9 +118,9 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
             children: [
               // Page Header
-              const Text(
-                'Government Portal',
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context).governmentPortal,
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w900,
                   color: Colors.white,
@@ -127,9 +128,9 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
-                "Partnership opportunities with Dubai's government entities",
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context).governmentPortalSubtitle,
+                style: const TextStyle(
                   fontSize: 14.5,
                   color: Color(0xFFE2D6F5),
                   fontWeight: FontWeight.w400,
@@ -151,7 +152,7 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
 
   Widget _buildEntityCard(BuildContext context, GovernmentEntity entity) {
     final isOpen = entity.isCurrentlyOpen;
-    final timingText = entity.liveTimingText;
+    final timingText = entity.localizedLiveTiming(context);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16.0),
@@ -177,7 +178,7 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
             children: [
               Expanded(
                 child: Text(
-                  entity.name,
+                  entity.localizedName(context),
                   style: const TextStyle(
                     fontSize: 16.5,
                     fontWeight: FontWeight.w700,
@@ -200,7 +201,9 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  isOpen ? 'Open' : 'Closed',
+                  isOpen
+                      ? AppLocalizations.of(context).openStatus
+                      : AppLocalizations.of(context).closedStatus,
                   style: TextStyle(
                     color:
                         isOpen
@@ -248,7 +251,7 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  entity.category,
+                  entity.localizedCategory(context),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -275,7 +278,7 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
-                    entity.location,
+                    entity.localizedLocation(context),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -313,21 +316,21 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
                       color: const Color(0xFFF4EEF7),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.language,
                           size: 18,
                           color: Color(0xFF6A2777),
                         ),
-                        SizedBox(width: 6),
+                        const SizedBox(width: 6),
                         Flexible(
                           child: Text(
-                            'Website',
+                            AppLocalizations.of(context).website,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Color(0xFF6A2777),
                               fontSize: 13.5,
                               fontWeight: FontWeight.w600,
@@ -350,21 +353,21 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
                       color: const Color(0xFFF4EEF7),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.near_me_outlined,
                           size: 18,
                           color: Color(0xFF6A2777),
                         ),
-                        SizedBox(width: 6),
+                        const SizedBox(width: 6),
                         Flexible(
                           child: Text(
-                            'Directions',
+                            AppLocalizations.of(context).directions,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Color(0xFF6A2777),
                               fontSize: 13.5,
                               fontWeight: FontWeight.w600,

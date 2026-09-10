@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
+import '../../../../core/services/locale_provider.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
@@ -98,6 +101,7 @@ class _SettingsViewState extends State<SettingsView> {
   }
 
   void _showChangePasswordDialog() {
+    final l10n = AppLocalizations.of(context);
     final newPasswordController = TextEditingController();
     final confirmPasswordController = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -133,9 +137,9 @@ class _SettingsViewState extends State<SettingsView> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'Change Password',
-                              style: TextStyle(
+                            Text(
+                              l10n.changePasswordTitle,
+                              style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF1E1E1E),
@@ -150,18 +154,18 @@ class _SettingsViewState extends State<SettingsView> {
                           ],
                         ),
                         const SizedBox(height: 6),
-                        const Text(
-                          'Enter your new password. Make sure it\'s secure and at least 6 characters long.',
-                          style: TextStyle(
+                        Text(
+                          l10n.changePasswordSubtitle,
+                          style: const TextStyle(
                             fontSize: 13,
                             color: Color(0xFF64748B),
                             height: 1.4,
                           ),
                         ),
                         const SizedBox(height: 16),
-                        const Text(
-                          'New Password',
-                          style: TextStyle(
+                        Text(
+                          l10n.newPassword,
+                          style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                             color: Color(0xFF1E1E1E),
@@ -172,7 +176,7 @@ class _SettingsViewState extends State<SettingsView> {
                           controller: newPasswordController,
                           obscureText: true,
                           decoration: InputDecoration(
-                            hintText: 'Enter new password',
+                            hintText: l10n.newPasswordHint,
                             hintStyle: const TextStyle(fontSize: 13.5, color: Color(0xFF94A3B8)),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             border: OutlineInputBorder(
@@ -190,15 +194,15 @@ class _SettingsViewState extends State<SettingsView> {
                           ),
                           validator: (val) {
                             if (val == null || val.length < 6) {
-                              return 'Password must be at least 6 characters';
+                              return l10n.passwordMinLength;
                             }
                             return null;
                           },
                         ),
                         const SizedBox(height: 14),
-                        const Text(
-                          'Confirm New Password',
-                          style: TextStyle(
+                        Text(
+                          l10n.confirmNewPassword,
+                          style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                             color: Color(0xFF1E1E1E),
@@ -209,7 +213,7 @@ class _SettingsViewState extends State<SettingsView> {
                           controller: confirmPasswordController,
                           obscureText: true,
                           decoration: InputDecoration(
-                            hintText: 'Confirm new password',
+                            hintText: l10n.confirmNewPasswordHint,
                             hintStyle: const TextStyle(fontSize: 13.5, color: Color(0xFF94A3B8)),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             border: OutlineInputBorder(
@@ -227,7 +231,7 @@ class _SettingsViewState extends State<SettingsView> {
                           ),
                           validator: (val) {
                             if (val != newPasswordController.text) {
-                              return 'Passwords do not match';
+                              return l10n.passwordsDoNotMatch;
                             }
                             return null;
                           },
@@ -244,7 +248,7 @@ class _SettingsViewState extends State<SettingsView> {
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                               ),
-                              child: const Text('Cancel', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
+                              child: Text(l10n.cancel, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
                             ),
                             const SizedBox(width: 10),
                             ElevatedButton(
@@ -277,8 +281,8 @@ class _SettingsViewState extends State<SettingsView> {
                                             SnackBar(
                                               content: Text(
                                                 success
-                                                    ? 'Password updated successfully in MySQL!'
-                                                    : 'Failed to update password. Please check backend connection.',
+                                                    ? l10n.passwordUpdatedSuccess
+                                                    : l10n.passwordUpdateFailed,
                                               ),
                                               backgroundColor:
                                                   success ? const Color(0xFF5E227A) : const Color(0xFFEF4444),
@@ -295,7 +299,7 @@ class _SettingsViewState extends State<SettingsView> {
                                       height: 18,
                                       child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                                     )
-                                  : const Text('Update Password', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
+                                  : Text(l10n.updatePassword, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
                             ),
                           ],
                         ),
@@ -312,6 +316,7 @@ class _SettingsViewState extends State<SettingsView> {
   }
 
   void _showDeleteAccountDialog() {
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (dialogContext) {
@@ -335,20 +340,20 @@ class _SettingsViewState extends State<SettingsView> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
-                    'Are you absolutely sure?',
+                  Text(
+                    l10n.deleteAccountTitle,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF1E1E1E),
                     ),
                   ),
                   const SizedBox(height: 10),
-                  const Text(
-                    'This action cannot be undone. This will permanently delete your account and remove all your data from our servers. This includes:',
+                  Text(
+                    l10n.deleteAccountBody,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 13,
                       color: Color(0xFF64748B),
                       height: 1.4,
@@ -357,13 +362,13 @@ class _SettingsViewState extends State<SettingsView> {
                   const SizedBox(height: 14),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
-                    children: const [
-                      Text('Your artist profile (if any)', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
-                      Text('All your artwork images', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
-                      Text('Your account information', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
-                      Text('All your activity and event history', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
-                      Text('Any saved preferences', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
-                      Text('Your liked artists and galleries', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
+                    children: [
+                      Text(l10n.deleteAccountItem1, style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
+                      Text(l10n.deleteAccountItem2, style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
+                      Text(l10n.deleteAccountItem3, style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
+                      Text(l10n.deleteAccountItem4, style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
+                      Text(l10n.deleteAccountItem5, style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
+                      Text(l10n.deleteAccountItem6, style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.5)),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -382,16 +387,16 @@ class _SettingsViewState extends State<SettingsView> {
                       if (mounted) {
                         ScaffoldMessenger.of(context).hideCurrentSnackBar();
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Account deleted successfully from MySQL.'),
-                            backgroundColor: Color(0xFFEF4444),
+                          SnackBar(
+                            content: Text(l10n.accountDeletedSuccess),
+                            backgroundColor: const Color(0xFFEF4444),
                             behavior: SnackBarBehavior.floating,
-                            duration: Duration(milliseconds: 2000),
+                            duration: const Duration(milliseconds: 2000),
                           ),
                         );
                       }
                     },
-                    child: const Text('Yes, delete my account', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    child: Text(l10n.yesDeleteMyAccount, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(height: 10),
                   OutlinedButton(
@@ -402,7 +407,7 @@ class _SettingsViewState extends State<SettingsView> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: const Text('Cancel', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    child: Text(l10n.cancel, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
@@ -417,6 +422,7 @@ class _SettingsViewState extends State<SettingsView> {
   Widget build(BuildContext context) {
     final storage = sl<StorageService>();
     final isLoggedIn = storage.getBool('is_logged_in') ?? false;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFF6B1C9B),
@@ -448,10 +454,10 @@ class _SettingsViewState extends State<SettingsView> {
                     },
                   ),
                   const SizedBox(width: 4),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Account Settings',
-                      style: TextStyle(
+                      l10n.accountSettings,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -472,12 +478,12 @@ class _SettingsViewState extends State<SettingsView> {
                         ),
                       ),
                       child: Row(
-                        children: const [
-                          Icon(Icons.home_outlined, color: Colors.white, size: 18),
-                          SizedBox(width: 4),
+                        children: [
+                          const Icon(Icons.home_outlined, color: Colors.white, size: 18),
+                          const SizedBox(width: 4),
                           Text(
-                            'Home',
-                            style: TextStyle(
+                            l10n.home,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -500,6 +506,126 @@ class _SettingsViewState extends State<SettingsView> {
                 child: ListView(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                   children: [
+                    // ── Card 0: Language Preference ─────────────────────────
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFCBD5E1)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.language, size: 22, color: Color(0xFF1E1E1E)),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  l10n.language,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1E1E1E),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            l10n.languageSubtitle,
+                            style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                          ),
+                          const SizedBox(height: 16),
+                          Consumer<LocaleProvider>(
+                            builder: (context, localeProvider, _) {
+                              final isArabic = localeProvider.isArabic;
+                              return Row(
+                                children: [
+                                  Expanded(
+                                    child: InkWell(
+                                      onTap: () => localeProvider.setLocale(const Locale('en')),
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                                        decoration: BoxDecoration(
+                                          color: !isArabic ? const Color(0xFFF3E8FF) : const Color(0xFFF8FAFC),
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(
+                                            color: !isArabic ? const Color(0xFF5E227A) : const Color(0xFFE2E8F0),
+                                            width: !isArabic ? 1.8 : 1.0,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            const Text('🇬🇧', style: TextStyle(fontSize: 18)),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              l10n.english,
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: !isArabic ? FontWeight.bold : FontWeight.w500,
+                                                color: !isArabic ? const Color(0xFF5E227A) : const Color(0xFF1E1E1E),
+                                              ),
+                                            ),
+                                            if (!isArabic) ...[
+                                              const SizedBox(width: 6),
+                                              const Icon(Icons.check_circle, size: 16, color: Color(0xFF5E227A)),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: InkWell(
+                                      onTap: () => localeProvider.setLocale(const Locale('ar')),
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                                        decoration: BoxDecoration(
+                                          color: isArabic ? const Color(0xFFF3E8FF) : const Color(0xFFF8FAFC),
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(
+                                            color: isArabic ? const Color(0xFF5E227A) : const Color(0xFFE2E8F0),
+                                            width: isArabic ? 1.8 : 1.0,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            const Text('🇦🇪', style: TextStyle(fontSize: 18)),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              l10n.arabic,
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: isArabic ? FontWeight.bold : FontWeight.w500,
+                                                color: isArabic ? const Color(0xFF5E227A) : const Color(0xFF1E1E1E),
+                                              ),
+                                            ),
+                                            if (isArabic) ...[
+                                              const SizedBox(width: 6),
+                                              const Icon(Icons.check_circle, size: 16, color: Color(0xFF5E227A)),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
                     if (!isLoggedIn)
                       // Unauthenticated State Card
                       Container(
@@ -511,10 +637,10 @@ class _SettingsViewState extends State<SettingsView> {
                         ),
                         child: Column(
                           children: [
-                            const Text(
-                              'Please sign in to manage your account settings.',
+                            Text(
+                              l10n.pleaseSignIn,
                               textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 15, color: Color(0xFF64748B)),
+                              style: const TextStyle(fontSize: 15, color: Color(0xFF64748B)),
                             ),
                             const SizedBox(height: 16),
                             ElevatedButton(
@@ -525,7 +651,7 @@ class _SettingsViewState extends State<SettingsView> {
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                               ),
-                              child: const Text('Sign In', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                              child: Text(l10n.signIn, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                             ),
                           ],
                         ),
@@ -543,13 +669,13 @@ class _SettingsViewState extends State<SettingsView> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              children: const [
-                                Icon(Icons.person_outline, size: 22, color: Color(0xFF1E1E1E)),
-                                SizedBox(width: 10),
+                              children: [
+                                const Icon(Icons.person_outline, size: 22, color: Color(0xFF1E1E1E)),
+                                const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    'Account Information',
-                                    style: TextStyle(
+                                    l10n.accountInformation,
+                                    style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
                                       color: Color(0xFF1E1E1E),
@@ -559,16 +685,16 @@ class _SettingsViewState extends State<SettingsView> {
                               ],
                             ),
                             const SizedBox(height: 4),
-                            const Text(
-                              'Manage your account settings and preferences',
-                              style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                            Text(
+                              l10n.accountInformationSubtitle,
+                              style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
                             ),
                             const SizedBox(height: 20),
-                            _buildAccountField('Email', _userEmail.isNotEmpty ? _userEmail : 'No email provided'),
+                            _buildAccountField(l10n.email, _userEmail.isNotEmpty ? _userEmail : l10n.noEmailProvided),
                             const SizedBox(height: 16),
-                            _buildAccountField('Member Since', _memberSince.isNotEmpty ? _memberSince : 'Recently Joined'),
+                            _buildAccountField(l10n.memberSince, _memberSince.isNotEmpty ? _memberSince : l10n.recentlyJoined),
                             const SizedBox(height: 16),
-                            _buildAccountField('Full Name', _userName.isNotEmpty ? _userName : 'User'),
+                            _buildAccountField(l10n.fullName, _userName.isNotEmpty ? _userName : 'User'),
                           ],
                         ),
                       ),
@@ -586,13 +712,13 @@ class _SettingsViewState extends State<SettingsView> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              children: const [
-                                Icon(Icons.palette_outlined, size: 22, color: Color(0xFF1E1E1E)),
-                                SizedBox(width: 10),
+                              children: [
+                                const Icon(Icons.palette_outlined, size: 22, color: Color(0xFF1E1E1E)),
+                                const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    'Artist Profile',
-                                    style: TextStyle(
+                                    l10n.artistProfile,
+                                    style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
                                       color: Color(0xFF1E1E1E),
@@ -604,8 +730,8 @@ class _SettingsViewState extends State<SettingsView> {
                             const SizedBox(height: 4),
                             Text(
                               _artistProfile != null
-                                  ? 'Your active artist profile details on Artist Dubai'
-                                  : 'Create your artist profile to showcase your work',
+                                  ? l10n.artistProfileSubtitle
+                                  : l10n.artistProfileCreateSubtitle,
                               style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
                             ),
                             const SizedBox(height: 20),
@@ -680,7 +806,7 @@ class _SettingsViewState extends State<SettingsView> {
                                           );
                                         },
                                         icon: const Icon(Icons.edit_outlined, size: 16),
-                                        label: const Text('Edit Profile', style: TextStyle(fontWeight: FontWeight.bold)),
+                                        label: Text(l10n.editProfile, style: const TextStyle(fontWeight: FontWeight.bold)),
                                       ),
                                     ),
                                   ),
@@ -696,7 +822,7 @@ class _SettingsViewState extends State<SettingsView> {
                                         ),
                                         onPressed: () => context.push(RouteNames.artists),
                                         icon: const Icon(Icons.visibility_outlined, size: 18),
-                                        label: const Text('View Directory', style: TextStyle(fontWeight: FontWeight.bold)),
+                                        label: Text(l10n.viewDirectory, style: const TextStyle(fontWeight: FontWeight.bold)),
                                       ),
                                     ),
                                   ),
@@ -717,21 +843,21 @@ class _SettingsViewState extends State<SettingsView> {
                                       child: const Icon(Icons.palette_outlined, size: 28, color: Color(0xFF475569)),
                                     ),
                                     const SizedBox(height: 12),
-                                    const Text(
-                                      'No Artist Profile',
-                                      style: TextStyle(
+                                    Text(
+                                      l10n.noArtistProfile,
+                                      style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                         color: Color(0xFF1E1E1E),
                                       ),
                                     ),
                                     const SizedBox(height: 6),
-                                    const Padding(
-                                      padding: EdgeInsets.symmetric(horizontal: 16),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16),
                                       child: Text(
-                                        'Create your artist profile to be discoverable on the platform and showcase your portfolio.',
+                                        l10n.noArtistProfileBody,
                                         textAlign: TextAlign.center,
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           fontSize: 13,
                                           color: Color(0xFF64748B),
                                           height: 1.4,
@@ -748,9 +874,9 @@ class _SettingsViewState extends State<SettingsView> {
                                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                                       ),
                                       onPressed: () => context.push(RouteNames.artistRegistration),
-                                      child: const Text(
-                                        'Create Artist Profile',
-                                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                      child: Text(
+                                        l10n.createArtistProfile,
+                                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                                       ),
                                     ),
                                   ],
@@ -774,13 +900,13 @@ class _SettingsViewState extends State<SettingsView> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              children: const [
-                                Icon(Icons.shield_outlined, size: 22, color: Color(0xFF1E1E1E)),
-                                SizedBox(width: 10),
+                              children: [
+                                const Icon(Icons.shield_outlined, size: 22, color: Color(0xFF1E1E1E)),
+                                const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    'Account Actions',
-                                    style: TextStyle(
+                                    l10n.accountActions,
+                                    style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
                                       color: Color(0xFF1E1E1E),
@@ -790,9 +916,9 @@ class _SettingsViewState extends State<SettingsView> {
                               ],
                             ),
                             const SizedBox(height: 4),
-                            const Text(
-                              'Sign out or delete your account',
-                              style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                            Text(
+                              l10n.accountActionsSubtitle,
+                              style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
                             ),
                             const SizedBox(height: 20),
 
@@ -809,9 +935,9 @@ class _SettingsViewState extends State<SettingsView> {
                                 ),
                                 onPressed: _showChangePasswordDialog,
                                 icon: const Icon(Icons.vpn_key_outlined, size: 18, color: Colors.black),
-                                label: const Text(
-                                  'Change Password',
-                                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
+                                label: Text(
+                                  l10n.changePassword,
+                                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ),
@@ -830,9 +956,9 @@ class _SettingsViewState extends State<SettingsView> {
                                 ),
                                 onPressed: _onSignOut,
                                 icon: const Icon(Icons.logout, size: 18, color: Colors.black),
-                                label: const Text(
-                                  'Sign Out',
-                                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
+                                label: Text(
+                                  l10n.signOut,
+                                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ),
@@ -851,9 +977,9 @@ class _SettingsViewState extends State<SettingsView> {
                                 ),
                                 onPressed: _showDeleteAccountDialog,
                                 icon: const Icon(Icons.delete_outline, size: 18, color: Colors.black),
-                                label: const Text(
-                                  'Delete Account',
-                                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
+                                label: Text(
+                                  l10n.deleteAccount,
+                                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ),
@@ -868,9 +994,9 @@ class _SettingsViewState extends State<SettingsView> {
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(color: const Color(0xFFE2E8F0)),
                               ),
-                              child: const Text(
-                                'Note: Account deletion permanently removes your account and all associated data.',
-                                style: TextStyle(
+                              child: Text(
+                                l10n.deleteAccountNote,
+                                style: const TextStyle(
                                   fontSize: 12.5,
                                   color: Color(0xFF64748B),
                                   height: 1.45,

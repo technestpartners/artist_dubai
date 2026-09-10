@@ -141,7 +141,7 @@ void main() {
       await tester.pumpWidget(createTestWidget(const GalleryRegistrationView()));
       await tester.pumpAndSettle();
 
-      expect(find.text('GALLERIES | ART CENTERS'), findsOneWidget);
+      expect(find.text('ART VENUE'), findsOneWidget);
       expect(find.text('Gallery / center name *'), findsOneWidget);
       expect(find.text('Submit registration'), findsOneWidget);
 

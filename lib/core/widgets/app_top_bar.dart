@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../app/routes/route_names.dart';
 import '../di/injection_container.dart';
 import '../services/api_service.dart';
 import '../services/live_sync_service.dart';
+import '../services/locale_provider.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
 import '../utils/responsive_helper.dart';
@@ -160,6 +163,7 @@ class _AppTopBarState extends State<AppTopBar> {
   @override
   Widget build(BuildContext context) {
     final loggedIn = _isLoggedIn;
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
 
     // Read dynamic user info from storage
     String userName = 'User';
@@ -246,6 +250,45 @@ class _AppTopBarState extends State<AppTopBar> {
         ),
       ),
       actions: [
+        // ── Language Toggle Button ──────────────────────────────────────────
+        Consumer<LocaleProvider>(
+          builder: (context, localeProvider, _) {
+            final isArabic = localeProvider.isArabic;
+            return Tooltip(
+              message: isArabic ? 'Switch to English' : 'التبديل إلى العربية',
+              child: InkWell(
+                onTap: () => localeProvider.toggleLocale(),
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF5E227A).withValues(alpha: 0.08),
+                    border: Border.all(color: const Color(0xFF5E227A), width: 1.4),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.language, size: 15, color: Color(0xFF5E227A)),
+                      const SizedBox(width: 4),
+                      Text(
+                        isArabic ? 'English' : 'عربي',
+                        style: const TextStyle(
+                          color: Color(0xFF5E227A),
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(width: 2),
+
         if (loggedIn) ...[
           // Dynamic Notification Bell with live unread badge
           ListenableBuilder(
@@ -316,7 +359,7 @@ class _AppTopBarState extends State<AppTopBar> {
             child: MouseRegion(
               cursor: SystemMouseCursors.click,
               child: Tooltip(
-                message: 'Account Settings',
+                message: l10n?.accountSettings ?? 'Account Settings',
                 child: Container(
                   width: avatarSize,
                   height: avatarSize,
@@ -341,21 +384,23 @@ class _AppTopBarState extends State<AppTopBar> {
           const SizedBox(width: 2),
         ],
 
-        // Popup Menu (Matching Screenshot media_1787726981939.png)
-        PopupMenuButton<TopBarMenuItem>(
-          icon: const Icon(Icons.more_vert, color: Color(0xFF1E1E1E), size: 22),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10.0),
-            side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.0),
-          ),
-          color: Colors.white,
-          elevation: 8,
-          offset: const Offset(0, 48),
-          onSelected: (item) => _onMenuItemSelected(context, item),
-          itemBuilder:
-              (BuildContext context) => <PopupMenuEntry<TopBarMenuItem>>[
+        // Popup Menu — wrapped in Builder so itemBuilder can call AppLocalizations.of(context)
+        Builder(
+          builder: (ctx) {
+            final menuL10n = AppLocalizations.of(ctx);
+            return PopupMenuButton<TopBarMenuItem>(
+              icon: const Icon(Icons.more_vert, color: Color(0xFF1E1E1E), size: 22),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.0),
+                side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.0),
+              ),
+              color: Colors.white,
+              elevation: 8,
+              offset: const Offset(0, 48),
+              onSelected: (item) => _onMenuItemSelected(ctx, item),
+              itemBuilder: (BuildContext context) => <PopupMenuEntry<TopBarMenuItem>>[
                 if (loggedIn) ...[
                   // User Header inside Popup (dynamic from storage)
                   PopupMenuItem<TopBarMenuItem>(
@@ -388,10 +433,10 @@ class _AppTopBarState extends State<AppTopBar> {
                   ),
                   const PopupMenuDivider(height: 1),
                   if (isAdmin) ...[
-                    const PopupMenuItem<TopBarMenuItem>(
+                    PopupMenuItem<TopBarMenuItem>(
                       value: TopBarMenuItem.adminDashboard,
                       child: Row(
-                        children: [
+                        children: const [
                           Icon(
                             Icons.admin_panel_settings_outlined,
                             size: 18,
@@ -410,84 +455,56 @@ class _AppTopBarState extends State<AppTopBar> {
                       ),
                     ),
                   ],
-                  const PopupMenuItem<TopBarMenuItem>(
+                  PopupMenuItem<TopBarMenuItem>(
                     value: TopBarMenuItem.accountSettings,
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.person_outline,
-                          size: 18,
-                          color: Color(0xFF1E1E1E),
-                        ),
-                        SizedBox(width: 10),
+                        const Icon(Icons.person_outline, size: 18, color: Color(0xFF1E1E1E)),
+                        const SizedBox(width: 10),
                         Text(
-                          'Account Settings',
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            color: Color(0xFF1E1E1E),
-                          ),
+                          menuL10n.accountSettings,
+                          style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
                         ),
                       ],
                     ),
                   ),
                   if (_hasArtistProfile)
-                    const PopupMenuItem<TopBarMenuItem>(
+                    PopupMenuItem<TopBarMenuItem>(
                       value: TopBarMenuItem.editArtistProfile,
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.edit_outlined,
-                            size: 18,
-                            color: Color(0xFF1E1E1E),
-                          ),
-                          SizedBox(width: 10),
+                          const Icon(Icons.edit_outlined, size: 18, color: Color(0xFF1E1E1E)),
+                          const SizedBox(width: 10),
                           Text(
-                            'Edit Artist Profile',
-                            style: TextStyle(
-                              fontSize: 14.5,
-                              color: Color(0xFF1E1E1E),
-                            ),
+                            menuL10n.editProfile,
+                            style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
                           ),
                         ],
                       ),
                     )
                   else
-                    const PopupMenuItem<TopBarMenuItem>(
+                    PopupMenuItem<TopBarMenuItem>(
                       value: TopBarMenuItem.createArtistProfile,
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.palette_outlined,
-                            size: 18,
-                            color: Color(0xFF1E1E1E),
-                          ),
-                          SizedBox(width: 10),
+                          const Icon(Icons.palette_outlined, size: 18, color: Color(0xFF1E1E1E)),
+                          const SizedBox(width: 10),
                           Text(
-                            'Create Artist Profile',
-                            style: TextStyle(
-                              fontSize: 14.5,
-                              color: Color(0xFF1E1E1E),
-                            ),
+                            menuL10n.createArtistProfile,
+                            style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
                           ),
                         ],
                       ),
                     ),
-                  const PopupMenuItem<TopBarMenuItem>(
+                  PopupMenuItem<TopBarMenuItem>(
                     value: TopBarMenuItem.myEvents,
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.event_outlined,
-                          size: 18,
-                          color: Color(0xFF1E1E1E),
-                        ),
-                        SizedBox(width: 10),
+                        const Icon(Icons.event_outlined, size: 18, color: Color(0xFF1E1E1E)),
+                        const SizedBox(width: 10),
                         Text(
-                          'My Events',
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            color: Color(0xFF1E1E1E),
-                          ),
+                          menuL10n.myEvents,
+                          style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
                         ),
                       ],
                     ),
@@ -495,42 +512,28 @@ class _AppTopBarState extends State<AppTopBar> {
                   const PopupMenuDivider(height: 1),
                 ],
 
-                const PopupMenuItem<TopBarMenuItem>(
+                PopupMenuItem<TopBarMenuItem>(
                   value: TopBarMenuItem.privacyPolicy,
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.help_outline,
-                        size: 18,
-                        color: Color(0xFF1E1E1E),
-                      ),
-                      SizedBox(width: 10),
+                      const Icon(Icons.help_outline, size: 18, color: Color(0xFF1E1E1E)),
+                      const SizedBox(width: 10),
                       Text(
-                        'Privacy Policy',
-                        style: TextStyle(
-                          fontSize: 14.5,
-                          color: Color(0xFF1E1E1E),
-                        ),
+                        menuL10n.privacyPolicy,
+                        style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
                       ),
                     ],
                   ),
                 ),
-                const PopupMenuItem<TopBarMenuItem>(
+                PopupMenuItem<TopBarMenuItem>(
                   value: TopBarMenuItem.termsConditions,
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.settings_outlined,
-                        size: 18,
-                        color: Color(0xFF1E1E1E),
-                      ),
-                      SizedBox(width: 10),
+                      const Icon(Icons.settings_outlined, size: 18, color: Color(0xFF1E1E1E)),
+                      const SizedBox(width: 10),
                       Text(
-                        'Terms & Conditions',
-                        style: TextStyle(
-                          fontSize: 14.5,
-                          color: Color(0xFF1E1E1E),
-                        ),
+                        menuL10n.termsAndConditions,
+                        style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
                       ),
                     ],
                   ),
@@ -538,61 +541,50 @@ class _AppTopBarState extends State<AppTopBar> {
 
                 if (loggedIn) ...[
                   const PopupMenuDivider(height: 1),
-                  const PopupMenuItem<TopBarMenuItem>(
+                  PopupMenuItem<TopBarMenuItem>(
                     value: TopBarMenuItem.signOut,
                     child: Row(
                       children: [
-                        Icon(Icons.logout, size: 18, color: Color(0xFF1E1E1E)),
-                        SizedBox(width: 10),
+                        const Icon(Icons.logout, size: 18, color: Color(0xFF1E1E1E)),
+                        const SizedBox(width: 10),
                         Text(
-                          'Sign Out',
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            color: Color(0xFF1E1E1E),
-                          ),
+                          menuL10n.signOut,
+                          style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
                         ),
                       ],
                     ),
                   ),
                 ] else ...[
-                  const PopupMenuItem<TopBarMenuItem>(
+                  PopupMenuItem<TopBarMenuItem>(
                     value: TopBarMenuItem.signIn,
                     child: Row(
                       children: [
-                        Icon(Icons.login, size: 18, color: Color(0xFF1E1E1E)),
-                        SizedBox(width: 10),
+                        const Icon(Icons.login, size: 18, color: Color(0xFF1E1E1E)),
+                        const SizedBox(width: 10),
                         Text(
-                          'Sign In',
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            color: Color(0xFF1E1E1E),
-                          ),
+                          menuL10n.signIn,
+                          style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
                         ),
                       ],
                     ),
                   ),
-                  const PopupMenuItem<TopBarMenuItem>(
+                  PopupMenuItem<TopBarMenuItem>(
                     value: TopBarMenuItem.settings,
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.settings_outlined,
-                          size: 18,
-                          color: Color(0xFF1E1E1E),
-                        ),
-                        SizedBox(width: 10),
+                        const Icon(Icons.settings_outlined, size: 18, color: Color(0xFF1E1E1E)),
+                        const SizedBox(width: 10),
                         Text(
-                          'Settings',
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            color: Color(0xFF1E1E1E),
-                          ),
+                          menuL10n.settings,
+                          style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
                         ),
                       ],
                     ),
                   ),
                 ],
               ],
+            );
+          },
         ),
       ],
       bottom: const PreferredSize(

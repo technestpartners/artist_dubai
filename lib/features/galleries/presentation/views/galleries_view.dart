@@ -10,6 +10,8 @@ import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
+import '../../../../core/utils/data_translator.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class GalleriesView extends StatefulWidget {
   const GalleriesView({super.key});
@@ -96,11 +98,11 @@ class _GalleriesViewState extends State<GalleriesView> {
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.lock_outline, color: Color(0xFF6A2777), size: 24),
-            SizedBox(width: 10),
-            Text('Login Required', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1E293B))),
+            const Icon(Icons.lock_outline, color: Color(0xFF6A2777), size: 24),
+            const SizedBox(width: 10),
+            Text(AppLocalizations.of(context).loginRequired, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1E293B))),
           ],
         ),
         content: Text(
@@ -110,7 +112,7 @@ class _GalleriesViewState extends State<GalleriesView> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+            child: Text(AppLocalizations.of(context).cancel, style: const TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -123,7 +125,7 @@ class _GalleriesViewState extends State<GalleriesView> {
               Navigator.of(ctx).pop();
               context.push(RouteNames.login);
             },
-            child: const Text('Log In', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(AppLocalizations.of(context).logIn, style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -139,6 +141,7 @@ class _GalleriesViewState extends State<GalleriesView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: _screenBg,
       appBar: const AppTopBar(backgroundColor: Colors.white),
@@ -152,9 +155,9 @@ class _GalleriesViewState extends State<GalleriesView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 1. Header Title & Subtitle
-                const Text(
-                  'GALLERIES ART CENTER',
-                  style: TextStyle(
+                Text(
+                  l10n.galleriesArtCenter,
+                  style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
                     color: Colors.white,
@@ -162,9 +165,9 @@ class _GalleriesViewState extends State<GalleriesView> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Physical galleries and art spaces across Dubai',
-                  style: TextStyle(
+                Text(
+                  l10n.galleriesSubtitle,
+                  style: const TextStyle(
                     fontSize: 14.5,
                     color: Colors.white70,
                     fontWeight: FontWeight.w400,
@@ -180,20 +183,20 @@ class _GalleriesViewState extends State<GalleriesView> {
                     InkWell(
                       borderRadius: BorderRadius.circular(6),
                       onTap: () => context.go(RouteNames.home),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.home_outlined,
                               size: 18,
                               color: Colors.white,
                             ),
-                            SizedBox(width: 6),
+                            const SizedBox(width: 6),
                             Text(
-                              'Home',
-                              style: TextStyle(
+                              l10n.home,
+                              style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
@@ -225,18 +228,18 @@ class _GalleriesViewState extends State<GalleriesView> {
                               promptMessage: 'Please log in to register an art gallery',
                             );
                           },
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.add, size: 17, color: Color(0xFF6B1C9B)),
-                              SizedBox(width: 5),
+                              const Icon(Icons.add, size: 17, color: Color(0xFF6B1C9B)),
+                              const SizedBox(width: 5),
                               Flexible(
                                 child: Text(
-                                  'Register Gallery',
+                                  l10n.galleryRegistration,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 13.5,
                                     fontWeight: FontWeight.w700,
                                     color: Color(0xFF6B1C9B),
@@ -348,7 +351,7 @@ class _GalleriesViewState extends State<GalleriesView> {
                                     children: [
                                       Expanded(
                                         child: Text(
-                                          name,
+                                          name.trData(context),
                                           style: const TextStyle(
                                             fontSize: 18,
                                             fontWeight: FontWeight.bold,
@@ -365,9 +368,9 @@ class _GalleriesViewState extends State<GalleriesView> {
                                           color: Colors.white.withValues(alpha: 0.18),
                                           borderRadius: BorderRadius.circular(16),
                                         ),
-                                        child: const Text(
-                                          'Open',
-                                          style: TextStyle(
+                                        child: Text(
+                                          Localizations.localeOf(context).languageCode == 'ar' ? 'مفتوح' : 'Open',
+                                          style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 12.5,
                                             fontWeight: FontWeight.w600,
@@ -380,7 +383,7 @@ class _GalleriesViewState extends State<GalleriesView> {
 
                                   // Subtitle: Category / Type
                                   Text(
-                                    category.isNotEmpty ? category : 'Art Space',
+                                    (category.isNotEmpty ? category : 'Art Space').trData(context),
                                     style: const TextStyle(
                                       fontSize: 13.5,
                                       color: Colors.white70,
@@ -398,7 +401,7 @@ class _GalleriesViewState extends State<GalleriesView> {
                                       const SizedBox(width: 6),
                                       Expanded(
                                         child: Text(
-                                          location,
+                                          location.trData(context),
                                           style: const TextStyle(
                                             fontSize: 13.5,
                                             color: Colors.white70,
@@ -426,9 +429,9 @@ class _GalleriesViewState extends State<GalleriesView> {
                                       ),
                                       onPressed: () => _launchUrl('https://maps.google.com/?q=${Uri.encodeComponent('$name $location')}'),
                                       icon: const Icon(Icons.location_on_outlined, size: 18, color: Colors.white),
-                                      label: const Text(
-                                        'Directions',
-                                        style: TextStyle(
+                                      label: Text(
+                                        l10n.directions,
+                                        style: const TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w600,
                                           color: Colors.white,
@@ -445,10 +448,10 @@ class _GalleriesViewState extends State<GalleriesView> {
                     },
                   ),
                   const SizedBox(height: 24),
-                  const Center(
+                  Center(
                     child: Text(
-                      'Hosted by Nizar Fahem',
-                      style: TextStyle(
+                      l10n.hostedBy,
+                      style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 13.5,
                         fontWeight: FontWeight.w500,
@@ -467,6 +470,7 @@ class _GalleriesViewState extends State<GalleriesView> {
   }
 
   Widget _buildAuthGate(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(top: 8, bottom: 24),
@@ -501,10 +505,10 @@ class _GalleriesViewState extends State<GalleriesView> {
             ),
           ),
           const SizedBox(height: 18),
-          const Text(
-            'Explore Dubai Galleries',
+          Text(
+            l10n.galleriesArtCenter,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w800,
               color: Color(0xFF1E293B),
@@ -512,10 +516,10 @@ class _GalleriesViewState extends State<GalleriesView> {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Log in or sign up with your email to discover physical art spaces, galleries, and exhibition hubs across Dubai.',
+          Text(
+            l10n.galleriesSubtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 13.5,
               height: 1.45,
               color: Color(0xFF64748B),
@@ -540,17 +544,17 @@ class _GalleriesViewState extends State<GalleriesView> {
                   if (mounted) setState(() {});
                 }
               },
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.person_add_outlined, size: 18),
-                  SizedBox(width: 8),
+                  const Icon(Icons.person_add_outlined, size: 18),
+                  const SizedBox(width: 8),
                   Flexible(
                     child: Text(
-                      'Sign Up as Art Lover (Free Access)',
+                      l10n.signUpFree,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
                       ),
@@ -578,17 +582,17 @@ class _GalleriesViewState extends State<GalleriesView> {
                   if (mounted) setState(() {});
                 }
               },
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.login_rounded, size: 18),
-                  SizedBox(width: 8),
+                  const Icon(Icons.login_rounded, size: 18),
+                  const SizedBox(width: 8),
                   Flexible(
                     child: Text(
-                      'Already have an account? Sign In',
+                      '${l10n.alreadyHaveAccount}${l10n.signInNow}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w600,
                       ),

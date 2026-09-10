@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
+import '../../../../core/services/locale_provider.dart';
 import '../../../../core/utils/responsive_helper.dart';
 
 class HomeHeaderWidget extends StatelessWidget {
@@ -7,6 +10,8 @@ class HomeHeaderWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rh = ResponsiveHelper.of(context);
+    final l10n = AppLocalizations.of(context);
+
     final logoSize = rh.isDesktop
         ? 120.0
         : rh.isTablet
@@ -53,7 +58,7 @@ class HomeHeaderWidget extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'ARTIST DUBAI',
+                      l10n.appName.toUpperCase(),
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: titleFontSize,
@@ -66,7 +71,7 @@ class HomeHeaderWidget extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      'COMMUNITY PLATFORM',
+                      l10n.communityPlatform.toUpperCase(),
                       style: TextStyle(
                         color: const Color(0xFFD4C2F0),
                         fontSize: subtitleFontSize,
@@ -78,6 +83,47 @@ class HomeHeaderWidget extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(width: 8),
+
+              // Home Header Language Toggle Button
+              Consumer<LocaleProvider>(
+                builder: (context, localeProvider, _) {
+                  final isArabic = localeProvider.isArabic;
+                  return Tooltip(
+                    message: isArabic ? 'Switch to English' : 'التبديل إلى العربية',
+                    child: InkWell(
+                      onTap: () => localeProvider.toggleLocale(),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.45),
+                            width: 1.2,
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.language, size: 15, color: Colors.white),
+                            const SizedBox(width: 4),
+                            Text(
+                              isArabic ? 'English' : 'عربي',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
           ),

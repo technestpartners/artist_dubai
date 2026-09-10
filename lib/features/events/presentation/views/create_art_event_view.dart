@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../app/routes/route_names.dart';
@@ -8,6 +9,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
+import '../../../../core/utils/data_translator.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 
 import '../../../../core/widgets/app_cached_image.dart';
@@ -760,19 +762,20 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isEdit = widget.event != null;
 
     final appBarTitle = widget.isCalendar
-        ? (isEdit ? 'Edit Calendar Event' : 'Add to Calendar')
-        : (isEdit ? 'Edit Event' : 'Create Event');
+        ? (isEdit ? l10n.editCalendarEvent : l10n.addToCalendar)
+        : (isEdit ? l10n.editEvent : l10n.createEvent);
 
     final headerTitle = widget.isCalendar
-        ? (isEdit ? 'EDIT CALENDAR EVENT' : 'SCHEDULE CALENDAR EVENT')
-        : (isEdit ? 'EDIT ART EVENT' : 'CREATE ART EVENT');
+        ? (isEdit ? l10n.headerEditCalendarEvent : l10n.headerScheduleCalendarEvent)
+        : (isEdit ? l10n.headerEditArtEvent : l10n.headerCreateArtEvent);
 
     final headerSubtitle = widget.isCalendar
-        ? (isEdit ? 'Update scheduled exhibition or calendar date.' : 'Schedule an upcoming exhibition, showcase, or cultural date on the calendar.')
-        : (isEdit ? 'Update details, tickets, and photos for this event.' : 'Publish a new exhibition, workshop, or cultural gathering.');
+        ? (isEdit ? l10n.headerSubtitleCalendarEdit : l10n.headerSubtitleCalendarCreate)
+        : (isEdit ? l10n.headerSubtitleEventEdit : l10n.headerSubtitleEventCreate);
 
     return Scaffold(
       backgroundColor: const Color(0xFF6B1C9B),
@@ -870,7 +873,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
                       // Featured Image Card
                       _buildCardSection(
-                        title: 'Featured Image',
+                        title: l10n.featuredImage,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -883,13 +886,13 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(color: const Color(0xFFCBD5E1)),
                                 ),
-                                child: const Center(
+                                child: Center(
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      CircularProgressIndicator(color: Color(0xFF6A2777)),
-                                      SizedBox(height: 8),
-                                      Text('Uploading image to server...', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                                      const CircularProgressIndicator(color: Color(0xFF6A2777)),
+                                      const SizedBox(height: 8),
+                                      Text(l10n.uploadingImage, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
                                     ],
                                   ),
                                 ),
@@ -947,13 +950,13 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                     ),
                                     icon: const Icon(Icons.refresh, size: 16),
-                                    label: const Text('Change Image', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                                    label: Text(l10n.changeImage, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
                                     onPressed: () => _showImageSourceActionSheet(context),
                                   ),
                                   const SizedBox(width: 8),
                                   const Icon(Icons.check_circle, color: Colors.green, size: 16),
                                   const SizedBox(width: 4),
-                                  const Text('Uploaded', style: TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.w600)),
+                                  Text(l10n.uploaded, style: const TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.w600)),
                                 ],
                               ),
                             ] else ...[
@@ -967,13 +970,13 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                     ),
                                     icon: const Icon(Icons.upload_outlined, size: 16),
-                                    label: const Text('Upload Image', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                                    label: Text(l10n.uploadImage, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                                     onPressed: () => _showImageSourceActionSheet(context),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
-                                      'Select banner from device gallery or take a photo (JPG, PNG, WebP).',
+                                      l10n.uploadImagePrompt,
                                       style: TextStyle(fontSize: 11, color: const Color(0xFF64748B).withValues(alpha: 0.8)),
                                     ),
                                   ),
@@ -987,20 +990,20 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
                       // Event Information Card
                       _buildCardSection(
-                        title: 'Event Information',
+                        title: l10n.eventInformation,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildLabel('Event Title'),
+                            _buildLabel(l10n.eventTitle),
                             _buildTextField(
                               controller: _eventTitleController,
-                              hintText: 'Enter event title',
+                              hintText: l10n.enterEventTitle,
                             ),
                             const SizedBox(height: 12),
-                            _buildLabel('Category'),
+                            _buildLabel(l10n.categoryLabel),
                             _buildDropdownField(
                               value: _selectedCategory,
-                              hintText: 'Select category',
+                              hintText: l10n.selectCategory,
                               items: _categories,
                               onChanged: (val) {
                                 setState(() {
@@ -1009,10 +1012,10 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                               },
                             ),
                             const SizedBox(height: 12),
-                            _buildLabel('Description'),
+                            _buildLabel(l10n.descriptionLabel),
                             _buildTextField(
                               controller: _descriptionController,
-                              hintText: 'Describe your event..',
+                              hintText: l10n.describeYourEvent,
                               maxLines: 4,
                               maxLength: 2000,
                               showCounter: true,
@@ -1024,11 +1027,11 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
                       // Date & Time Card
                       _buildCardSection(
-                        title: 'Date & Time',
+                        title: l10n.dateTime,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildLabel('Start Date & Time'),
+                            _buildLabel(l10n.startDateTime),
                             _buildTextField(
                               controller: _eventDateController,
                               hintText: 'dd-mm-yyyy --:--',
@@ -1036,7 +1039,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                               onTap: () => _pickDateTime(_eventDateController),
                             ),
                             const SizedBox(height: 12),
-                            _buildLabel('End Date & Time (Optional)'),
+                            _buildLabel(l10n.endDateTimeOptional),
                             _buildTextField(
                               controller: _endDateController,
                               hintText: 'dd-mm-yyyy --:--',
@@ -1050,17 +1053,17 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
                       // Location Card
                       _buildCardSection(
-                        title: 'Location',
+                        title: l10n.locationLabel,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildLabel('Venue Name (Optional)'),
+                            _buildLabel(l10n.venueNameOptional),
                             _buildTextField(
                               controller: _venueController,
-                              hintText: 'e.g., Dubai Opera',
+                              hintText: l10n.venueNameHint,
                             ),
                             const SizedBox(height: 12),
-                            _buildLabel('Address/Location'),
+                            _buildLabel(l10n.addressLocation),
                             _buildSearchableLocationField(),
                           ],
                         ),
@@ -1070,28 +1073,28 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
                       // Additional Details Card
                       _buildCardSection(
-                        title: 'Additional Details',
+                        title: l10n.additionalDetails,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildLabel('Phone Number (Optional)'),
+                            _buildLabel(l10n.phoneOptional),
                             _buildTextField(
                               controller: _contactPhoneController,
                               hintText: '+971 50 123 4567',
                               keyboardType: TextInputType.phone,
                             ),
                             const SizedBox(height: 12),
-                            _buildLabel('Requirements (Optional)'),
+                            _buildLabel(l10n.requirementsOptional),
                             _buildTextField(
                               controller: _notesController,
-                              hintText: 'Any special requirements or instructions for attendees..',
+                              hintText: l10n.requirementsHint,
                               maxLines: 3,
                             ),
                             const SizedBox(height: 12),
-                            _buildLabel('Tags (Optional)'),
+                            _buildLabel(l10n.tagsOptional),
                             _buildTextField(
                               controller: _tagsController,
-                              hintText: 'Add tags (press Enter to add)',
+                              hintText: l10n.tagsHint,
                             ),
                           ],
                         ),
@@ -1118,9 +1121,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                     color: const Color(0xFF6B1C9B),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
-                                  child: const Text(
-                                    'PAID PUBLISHING',
-                                    style: TextStyle(
+                                  child: Text(
+                                    l10n.paidPublishing,
+                                    style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 10.5,
                                       fontWeight: FontWeight.bold,
@@ -1129,10 +1132,10 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                const Expanded(
+                                Expanded(
                                   child: Text(
-                                    'Choose Publishing Plan',
-                                    style: TextStyle(
+                                    l10n.choosePublishingPlan,
+                                    style: const TextStyle(
                                       fontSize: 13.5,
                                       fontWeight: FontWeight.bold,
                                       color: Color(0xFF1E293B),
@@ -1143,9 +1146,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                               ],
                             ),
                             const SizedBox(height: 8),
-                            const Text(
-                              'Publishing events is a paid service on Artist Dubai. Select your preferred promotion duration. Once reviewed and approved by the admin, your event will be broadcasted to art enthusiasts across Dubai.',
-                              style: TextStyle(
+                            Text(
+                              l10n.paidPublishingDesc,
+                              style: const TextStyle(
                                 fontSize: 12.5,
                                 color: Color(0xFF475569),
                                 height: 1.4,
@@ -1162,27 +1165,27 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                 final cards = [
                                   _buildPricingPlanCard(
                                     id: 'weekly',
-                                    title: 'Weekly',
+                                    title: l10n.weekly,
                                     price: weeklyPrice,
                                     period: '/ week',
-                                    subtitle: '7 days active',
+                                    subtitle: l10n.daysActive7,
                                     tag: null,
                                   ),
                                   _buildPricingPlanCard(
                                     id: 'monthly',
-                                    title: 'Monthly',
+                                    title: l10n.monthly,
                                     price: monthlyPrice,
                                     period: '/ month',
-                                    subtitle: '30 days active',
-                                    tag: 'POPULAR',
+                                    subtitle: l10n.daysActive30,
+                                    tag: l10n.popularTag,
                                   ),
                                   _buildPricingPlanCard(
                                     id: 'yearly',
-                                    title: 'Yearly',
+                                    title: l10n.yearly,
                                     price: yearlyPrice,
                                     period: '/ year',
-                                    subtitle: '365 days active',
-                                    tag: 'BEST VALUE',
+                                    subtitle: l10n.daysActive365,
+                                    tag: l10n.bestValueTag,
                                   ),
                                 ];
 
@@ -1238,7 +1241,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                 context.go(widget.fromAdmin ? RouteNames.adminDashboard : RouteNames.events);
                               }
                             },
-                            child: const Text('Cancel', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                            child: Text(l10n.cancel, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                           ),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
@@ -1260,10 +1263,10 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                     children: [
                                       Text(
                                         isEdit
-                                            ? (widget.isCalendar ? 'Update Calendar Event' : 'Update Event')
+                                            ? (widget.isCalendar ? l10n.updateCalendarEvent : l10n.updateEvent)
                                             : (widget.fromAdmin
-                                                ? (widget.isCalendar ? 'Schedule on Calendar' : 'Create Event')
-                                                : 'Proceed to Payment'),
+                                                ? (widget.isCalendar ? l10n.scheduleCalendarEvent : l10n.createEvent)
+                                                : l10n.proceedToPayment),
                                         style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                                       ),
                                       if (!isEdit && !widget.fromAdmin) ...[
@@ -1318,6 +1321,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
   }
 
   Widget _buildPaymentNoticeCard() {
+    final l10n = AppLocalizations.of(context);
     final planAmount = _eventPricing?.getPriceForPlan(_selectedPublishingPlan) ??
         (_selectedPublishingPlan == 'monthly' ? 'AED 500' : (_selectedPublishingPlan == 'yearly' ? 'AED 4,500' : 'AED 150'));
 
@@ -1348,7 +1352,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
               children: [
                 Text.rich(
                   TextSpan(
-                    text: 'Payment on Next Step: ',
+                    text: l10n.paymentOnNextStep,
                     style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Colors.white),
                     children: [
                       TextSpan(
@@ -1359,9 +1363,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                   ),
                 ),
                 const SizedBox(height: 2),
-                const Text(
-                  'Admin Payment QR code & bank transfer details on checkout page.',
-                  style: TextStyle(fontSize: 11, color: Colors.white70),
+                Text(
+                  l10n.paymentDetailsNotice,
+                  style: const TextStyle(fontSize: 11, color: Colors.white70),
                 ),
               ],
             ),
@@ -1521,11 +1525,27 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           borderSide: const BorderSide(color: Color(0xFF5E227A), width: 1.5),
         ),
       ),
+      selectedItemBuilder: (context) {
+        return uniqueItems.map((item) {
+          return Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              DataTranslator.tr(context, item),
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF1E293B),
+                fontWeight: FontWeight.w500,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          );
+        }).toList();
+      },
       items: uniqueItems.map((item) {
         return DropdownMenuItem<String>(
           value: item,
           child: Text(
-            item,
+            DataTranslator.tr(context, item),
             style: const TextStyle(
               fontSize: 14,
               color: Color(0xFF1E293B),
@@ -1541,15 +1561,17 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
   Widget _buildSearchableLocationField() {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final l10n = AppLocalizations.of(context);
         return Autocomplete<String>(
           optionsBuilder: (TextEditingValue textEditingValue) {
             if (textEditingValue.text.isEmpty) {
               return _locations;
             }
             return _locations.where((loc) =>
-                loc.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+                loc.toLowerCase().contains(textEditingValue.text.toLowerCase()) ||
+                DataTranslator.tr(context, loc).toLowerCase().contains(textEditingValue.text.toLowerCase()));
           },
-          initialValue: TextEditingValue(text: _selectedLocation ?? 'Dubai, UAE'),
+          initialValue: TextEditingValue(text: DataTranslator.tr(context, _selectedLocation ?? 'Dubai, UAE')),
           onSelected: (String selection) {
             setState(() {
               _selectedLocation = selection;
@@ -1573,7 +1595,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                 fontWeight: FontWeight.w500,
               ),
               decoration: InputDecoration(
-                hintText: 'Search or select location (e.g. Dubai, UAE)',
+                hintText: l10n.searchLocationHint,
                 hintStyle: const TextStyle(
                   fontSize: 13.5,
                   color: Color(0xFF64748B),
@@ -1668,7 +1690,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  option,
+                                  DataTranslator.tr(context, option),
                                   style: TextStyle(
                                     fontSize: 13.5,
                                     color: isSelected

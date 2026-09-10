@@ -9,6 +9,7 @@ import '../network/dio_interceptor.dart';
 import '../network/network_info.dart';
 import '../services/api_service.dart';
 import '../services/live_sync_service.dart';
+import '../services/locale_provider.dart';
 import '../services/logger_service.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
@@ -69,6 +70,10 @@ Future<void> initDependencyInjection() async {
   sl.registerLazySingleton<NotificationService>(
     () => NotificationService(),
   );
+
+  final localeProvider = LocaleProvider();
+  await localeProvider.loadSavedLocale();
+  sl.registerSingleton<LocaleProvider>(localeProvider);
 
   //! 3. Features (Auth, Home, Artists, Events, Profile)
 }

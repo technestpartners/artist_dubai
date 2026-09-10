@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../app/routes/route_names.dart';
@@ -14,6 +15,7 @@ import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import '../../../../core/utils/data_translator.dart';
 import '../../domain/models/artist_model.dart';
 import 'create_artist_profile_view.dart';
 
@@ -398,7 +400,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
   void _showArtworkDetailModal(Map<String, dynamic> item, int itemId) {
     final title = (item['title'] ?? 'Artwork').toString();
     final year = (item['year'] ?? '').toString();
-    final medium = (item['medium'] ?? '').toString();
+    final medium = (item['medium'] ?? '').toString().trData(context);
     final dimensions = (item['dimensions'] ?? '').toString();
     final description = (item['description'] ?? '').toString();
     final imageUrl = (item['image_url'] ?? item['image'] ?? '').toString();
@@ -986,8 +988,558 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
     );
   }
 
+  void _confirmDeleteGallery(Map<String, dynamic> gallery) {
+    final title = (gallery['title'] ?? gallery['name'] ?? 'Photo Gallery').toString();
+    final galleryId = gallery['id'];
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.delete_outline, color: Color(0xFFDC2626), size: 24),
+            SizedBox(width: 8),
+            Text('Delete Gallery', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to delete "$title"? This action will remove the gallery and its photos and cannot be undone.',
+          style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+        ),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        actions: [
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF1E1E1E), fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              if (galleryId != null) {
+                final success = await sl<ApiService>().deleteGallery(galleryId);
+                if (!mounted) return;
+                if (success) {
+                  setState(() {
+                    _photoGalleries.removeWhere((g) => g['id'] == galleryId);
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Gallery "$title" deleted successfully'),
+                      backgroundColor: const Color(0xFFDC2626),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Failed to delete gallery. Please try again.'),
+                      backgroundColor: Color(0xFFDC2626),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditGalleryModal(Map<String, dynamic> gallery) {
+    final title = (gallery['title'] ?? gallery['name'] ?? '').toString();
+    final subtitle = (gallery['subtitle'] ?? gallery['description'] ?? '').toString();
+    final galleryId = gallery['id'];
+
+    // Extract existing images
+    final List<String> existingPhotos = [];
+    if (gallery['images'] is List) {
+      for (final img in gallery['images']) {
+        if (img is String && img.isNotEmpty) {
+          existingPhotos.add(img);
+        } else if (img is Map && img['image_url'] != null && img['image_url'].toString().isNotEmpty) {
+          existingPhotos.add(img['image_url'].toString());
+        }
+      }
+    } else if (gallery['images_json'] != null) {
+      try {
+        final decoded = jsonDecode(gallery['images_json'].toString());
+        if (decoded is List) {
+          for (final img in decoded) {
+            if (img is String && img.isNotEmpty) {
+              existingPhotos.add(img);
+            } else if (img is Map && img['image_url'] != null && img['image_url'].toString().isNotEmpty) {
+              existingPhotos.add(img['image_url'].toString());
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    final coverImg = (gallery['image'] ?? gallery['image_url'] ?? '').toString();
+    if (existingPhotos.isEmpty && coverImg.isNotEmpty) {
+      existingPhotos.add(coverImg);
+    }
+
+    final titleController = TextEditingController(text: title);
+    final descController = TextEditingController(text: subtitle);
+    final List<XFile> newlyPickedImages = [];
+    bool isSaving = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (modalContext, setModalState) {
+            Future<void> pickNewImages() async {
+              try {
+                final picker = ImagePicker();
+                final picked = await picker.pickMultiImage(
+                  maxWidth: 1600,
+                  maxHeight: 1600,
+                  imageQuality: 82,
+                );
+                if (picked.isNotEmpty) {
+                  setModalState(() {
+                    newlyPickedImages.addAll(picked);
+                  });
+                }
+              } catch (_) {}
+            }
+
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              backgroundColor: Colors.white,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Edit Photo Gallery',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1E1E1E),
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Color(0xFF64748B), size: 20),
+                            onPressed: isSaving ? null : () => Navigator.pop(dialogContext),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+
+                      // Title field
+                      const Text(
+                        'Gallery Title',
+                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Color(0xFF1E1E1E)),
+                      ),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: titleController,
+                        style: const TextStyle(color: Color(0xFF0F172A), fontSize: 14, fontWeight: FontWeight.w500),
+                        cursorColor: const Color(0xFF6A2777),
+                        decoration: InputDecoration(
+                          hintText: 'Enter gallery title...',
+                          hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.0),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.0),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Description
+                      const Text(
+                        'Description (optional)',
+                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Color(0xFF1E1E1E)),
+                      ),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: descController,
+                        maxLines: 3,
+                        style: const TextStyle(color: Color(0xFF0F172A), fontSize: 14, fontWeight: FontWeight.w500),
+                        cursorColor: const Color(0xFF6A2777),
+                        decoration: InputDecoration(
+                          hintText: 'Describe this gallery...',
+                          hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.all(12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Current & New Photos
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Gallery Photos',
+                            style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Color(0xFF1E1E1E)),
+                          ),
+                          Text(
+                            '${existingPhotos.length + newlyPickedImages.length} photo(s)',
+                            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Existing photos strip with delete badges
+                      if (existingPhotos.isNotEmpty || newlyPickedImages.isNotEmpty) ...[
+                        SizedBox(
+                          height: 82,
+                          child: ListView(
+                            scrollDirection: Axis.horizontal,
+                            children: [
+                              // Existing uploaded photos
+                              ...existingPhotos.asMap().entries.map((entry) {
+                                final idx = entry.key;
+                                final imgUrl = entry.value;
+                                return Container(
+                                  margin: const EdgeInsets.only(right: 8),
+                                  width: 78,
+                                  height: 78,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: const Color(0xFFCBD5E1)),
+                                  ),
+                                  child: Stack(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(7),
+                                        child: _buildGalleryPhotoItem(
+                                          imgUrl,
+                                          width: 78,
+                                          height: 78,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: 3,
+                                        right: 3,
+                                        child: InkWell(
+                                          onTap: isSaving
+                                              ? null
+                                              : () {
+                                                  if (existingPhotos.length + newlyPickedImages.length <= 1) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text('A gallery must have at least 1 photo.'),
+                                                        backgroundColor: Color(0xFFDC2626),
+                                                        behavior: SnackBarBehavior.floating,
+                                                      ),
+                                                    );
+                                                    return;
+                                                  }
+                                                  setModalState(() {
+                                                    existingPhotos.removeAt(idx);
+                                                  });
+                                                },
+                                          child: Container(
+                                            padding: const EdgeInsets.all(3),
+                                            decoration: const BoxDecoration(
+                                              color: Color(0xFFDC2626),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(Icons.close, size: 12, color: Colors.white),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
+
+                              // Newly picked photos
+                              ...newlyPickedImages.asMap().entries.map((entry) {
+                                final idx = entry.key;
+                                final img = entry.value;
+                                return Container(
+                                  margin: const EdgeInsets.only(right: 8),
+                                  width: 78,
+                                  height: 78,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: const Color(0xFF6A2777), width: 1.5),
+                                  ),
+                                  child: Stack(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(7),
+                                        child: kIsWeb
+                                            ? Image.network(img.path, width: 78, height: 78, fit: BoxFit.cover)
+                                            : Image.file(File(img.path), width: 78, height: 78, fit: BoxFit.cover),
+                                      ),
+                                      Positioned(
+                                        top: 3,
+                                        right: 3,
+                                        child: InkWell(
+                                          onTap: isSaving
+                                              ? null
+                                              : () {
+                                                  setModalState(() {
+                                                    newlyPickedImages.removeAt(idx);
+                                                  });
+                                                },
+                                          child: Container(
+                                            padding: const EdgeInsets.all(3),
+                                            decoration: const BoxDecoration(
+                                              color: Color(0xFFDC2626),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(Icons.close, size: 12, color: Colors.white),
+                                          ),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        bottom: 3,
+                                        left: 3,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF6A2777),
+                                            borderRadius: BorderRadius.circular(3),
+                                          ),
+                                          child: const Text('NEW', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+
+                      // Add more photos button
+                      InkWell(
+                        onTap: isSaving ? null : pickNewImages,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFCBD5E1)),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_photo_alternate_outlined, size: 20, color: Color(0xFF6A2777)),
+                              SizedBox(width: 8),
+                              Text(
+                                'Add More Photos',
+                                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF6A2777)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Action Buttons
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 42,
+                              child: OutlinedButton(
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(color: Color(0xFF333333), width: 1.0),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                onPressed: isSaving ? null : () => Navigator.pop(dialogContext),
+                                child: const Text(
+                                  'Cancel',
+                                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E1E1E)),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: SizedBox(
+                              height: 42,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF6A2777),
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                onPressed: isSaving
+                                    ? null
+                                    : () async {
+                                        final newTitle = titleController.text.trim();
+                                        final newDesc = descController.text.trim();
+                                        if (newTitle.isEmpty) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('Please enter a gallery title')),
+                                          );
+                                          return;
+                                        }
+
+                                        if (existingPhotos.isEmpty && newlyPickedImages.isEmpty) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Please have at least one photo in the gallery.'),
+                                              backgroundColor: Color(0xFFDC2626),
+                                            ),
+                                          );
+                                          return;
+                                        }
+
+                                        setModalState(() {
+                                          isSaving = true;
+                                        });
+
+                                        final List<String> finalUploadedUrls = List<String>.from(existingPhotos);
+
+                                        if (newlyPickedImages.isNotEmpty) {
+                                          for (final xfile in newlyPickedImages) {
+                                            try {
+                                              final bytes = await xfile.readAsBytes();
+                                              final nameParts = xfile.name.split('.');
+                                              final ext = nameParts.length > 1 ? nameParts.last : 'jpg';
+                                              final url = await sl<ApiService>().uploadImageBytes(
+                                                bytes,
+                                                ext: ext.isNotEmpty ? ext : 'jpg',
+                                              );
+                                              if (url != null && url.isNotEmpty) {
+                                                finalUploadedUrls.add(url);
+                                              }
+                                            } catch (_) {}
+                                          }
+                                        }
+
+                                        final updatedCover = finalUploadedUrls.isNotEmpty ? finalUploadedUrls.first : coverImg;
+
+                                        if (galleryId != null) {
+                                          await sl<ApiService>().updateGallery(
+                                            id: galleryId,
+                                            title: newTitle,
+                                            description: newDesc.isNotEmpty ? newDesc : 'Curated collection by Artist',
+                                            imageUrl: updatedCover,
+                                            images: finalUploadedUrls,
+                                          );
+                                        }
+
+                                        if (dialogContext.mounted) {
+                                          Navigator.pop(dialogContext);
+                                        }
+
+                                        if (!mounted) return;
+                                        setState(() {
+                                          final idx = _photoGalleries.indexWhere((g) => g['id'] == galleryId);
+                                          final updatedMap = Map<String, dynamic>.from(gallery);
+                                          updatedMap['title'] = newTitle;
+                                          updatedMap['name'] = newTitle;
+                                          updatedMap['description'] = newDesc;
+                                          updatedMap['subtitle'] = newDesc;
+                                          updatedMap['image'] = updatedCover;
+                                          updatedMap['image_url'] = updatedCover;
+                                          updatedMap['images'] = finalUploadedUrls;
+                                          updatedMap['photo_count'] = finalUploadedUrls.length;
+                                          updatedMap['count'] = '${finalUploadedUrls.length} photos';
+
+                                          if (idx != -1) {
+                                            _photoGalleries[idx] = updatedMap;
+                                          }
+                                        });
+
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Gallery "$newTitle" updated successfully!'),
+                                            backgroundColor: const Color(0xFF6A2777),
+                                            behavior: SnackBarBehavior.floating,
+                                          ),
+                                        );
+                                      },
+                                child: isSaving
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Text(
+                                        'Save Changes',
+                                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final currentArtist =
         widget.artist ??
         const ArtistModel(
@@ -1030,10 +1582,10 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                     },
                   ),
                   const SizedBox(width: 4),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Artist Profile',
-                      style: TextStyle(
+                      l10n.artistProfile,
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -1219,7 +1771,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
 
                           // Name
                           Text(
-                            currentArtist.name,
+                            currentArtist.localizedName(context),
                             style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
@@ -1230,7 +1782,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
 
                           // Category
                           Text(
-                            currentArtist.category,
+                            currentArtist.localizedCategory(context),
                             style: const TextStyle(
                               fontSize: 14.5,
                               fontWeight: FontWeight.w600,
@@ -1251,7 +1803,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                               const SizedBox(width: 4),
                               Flexible(
                                 child: Text(
-                                  currentArtist.location,
+                                  currentArtist.localizedLocation(context),
                                   style: const TextStyle(
                                     fontSize: 13.5,
                                     color: Color(0xFF64748B),
@@ -1268,20 +1820,20 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              _buildStatItem('$_worksCount', 'Artworks'),
+                              _buildStatItem('$_worksCount', l10n.artworks),
                               Container(
                                 height: 24,
                                 width: 1,
                                 color: const Color(0xFFE2E8F0),
                               ),
-                              _buildStatItem('$_likesCount', 'Likes'),
+                              _buildStatItem('$_likesCount', l10n.likes),
                             ],
                           ),
                           const SizedBox(height: 18),
 
                           // Bio Paragraph
                           Text(
-                            currentArtist.bio,
+                            currentArtist.localizedBio(context),
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 13.5,
@@ -1297,9 +1849,13 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                             runSpacing: 8,
                             alignment: WrapAlignment.center,
                             children: [
-                              _buildTagChip(currentArtist.category),
-                              _buildTagChip(currentArtist.location),
-                              _buildTagChip(currentArtist.experienceLevel.isNotEmpty ? currentArtist.experienceLevel : 'Verified Artist'),
+                              _buildTagChip(currentArtist.localizedCategory(context)),
+                              _buildTagChip(currentArtist.localizedLocation(context)),
+                              _buildTagChip(currentArtist.localizedExperienceLevel(context).isNotEmpty
+                                  ? currentArtist.localizedExperienceLevel(context)
+                                  : (Localizations.localeOf(context).languageCode == 'ar'
+                                      ? 'فنان معتمد'
+                                      : 'Verified Artist')),
                             ],
                           ),
                           const SizedBox(height: 16),
@@ -1357,9 +1913,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                    );
                                  },
                                 icon: const Icon(Icons.edit_outlined, size: 18),
-                                label: const Text(
-                                  'Edit Profile',
-                                  style: TextStyle(
+                                label: Text(
+                                  l10n.editProfile,
+                                  style: const TextStyle(
                                     fontSize: 14.5,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -1379,9 +1935,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'Portfolio',
-                              style: TextStyle(
+                            Text(
+                              l10n.portfolio,
+                              style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -1677,7 +2233,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         final imageUrl = (item['image_url'] ?? item['image'] ?? '').toString();
         final title = (item['title'] ?? 'Artwork ${index + 1}').toString();
         final year = (item['year'] ?? '2024').toString();
-        final medium = (item['medium'] ?? 'Mixed Media').toString();
+        final medium = (item['medium'] ?? 'Mixed Media').toString().trData(context);
         final dimensions = (item['dimensions'] ?? '').toString();
 
         return InkWell(
@@ -1834,7 +2390,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         final imageUrl = (item['image_url'] ?? item['image'] ?? '').toString();
         final title = (item['title'] ?? 'Artwork ${index + 1}').toString();
         final year = (item['year'] ?? '2024').toString();
-        final medium = (item['medium'] ?? 'Mixed Media').toString();
+        final medium = (item['medium'] ?? 'Mixed Media').toString().trData(context);
         final dimensions = (item['dimensions'] ?? '').toString();
 
         return InkWell(
@@ -2059,21 +2615,66 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
             ),
             Padding(
               padding: const EdgeInsets.all(12.0),
-              child: Column(
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF0F172A),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                        if (subtitle.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, size: 20, color: Color(0xFF64748B)),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    tooltip: 'Gallery options',
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    onSelected: (val) {
+                      if (val == 'edit') {
+                        _showEditGalleryModal(gallery);
+                      } else if (val == 'delete') {
+                        _confirmDeleteGallery(gallery);
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_outlined, size: 18, color: Color(0xFF0F172A)),
+                            SizedBox(width: 8),
+                            Text('Edit Gallery', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline, size: 18, color: Color(0xFFDC2626)),
+                            SizedBox(width: 8),
+                            Text('Delete Gallery', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFDC2626))),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -2175,6 +2776,22 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                 ),
                               ],
                             ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, color: Colors.white, size: 20),
+                            tooltip: 'Edit Gallery / Photos',
+                            onPressed: () {
+                              Navigator.pop(context);
+                              _showEditGalleryModal(gallery);
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, color: Color(0xFFEF4444), size: 20),
+                            tooltip: 'Delete Gallery',
+                            onPressed: () {
+                              Navigator.pop(context);
+                              _confirmDeleteGallery(gallery);
+                            },
                           ),
                           IconButton(
                             icon: const Icon(Icons.close, color: Colors.white, size: 22),

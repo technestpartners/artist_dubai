@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../domain/models/dashboard_item.dart';
 import '../../../../core/utils/responsive_helper.dart';
+import '../../../../core/utils/data_translator.dart';
 
 class DashboardCardWidget extends StatelessWidget {
   final DashboardItem item;
@@ -53,7 +54,7 @@ class DashboardCardWidget extends StatelessWidget {
                 // Title Text
                 Flexible(
                   child: Text(
-                    item.title,
+                    item.title.trData(context),
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -72,7 +73,7 @@ class DashboardCardWidget extends StatelessWidget {
                   const SizedBox(height: 3),
                   Flexible(
                     child: Text(
-                      item.subtitle!,
+                      item.subtitle!.trData(context),
                       textAlign: TextAlign.center,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

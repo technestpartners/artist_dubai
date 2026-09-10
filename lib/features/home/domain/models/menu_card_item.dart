@@ -1,3 +1,6 @@
+import 'package:flutter/widgets.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 class MenuCardItem {
   final String title;
   final String? subtitle;
@@ -12,6 +15,42 @@ class MenuCardItem {
   });
 
   bool get isLongTitle => title.contains('|') || title.length > 15;
+
+  String getLocalizedTitle(BuildContext context) {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    if (isAr) {
+      final l10n = AppLocalizations.of(context);
+      switch (routeName) {
+        case '/about-us':
+          return l10n.aboutUs;
+        case '/artists':
+          return l10n.artists;
+        case '/government':
+          return l10n.government;
+        case '/artist-registration':
+          return l10n.artistRegistration;
+        case '/events':
+          return l10n.eventsCompetition;
+        case '/galleries':
+          return l10n.galleriesArtCenter;
+        case '/events-photos':
+          return l10n.eventsPhotos;
+        case '/gallery-registration':
+          return l10n.galleryRegistration;
+        default:
+          return title;
+      }
+    }
+    return title;
+  }
+
+  String? getLocalizedSubtitle(BuildContext context) {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    if (isAr) {
+      return null;
+    }
+    return subtitle;
+  }
 
   static const List<MenuCardItem> items = [
     // Row 1

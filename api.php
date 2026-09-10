@@ -540,17 +540,370 @@ class DatabaseManager {
 }
 
 // -----------------------------------------------------------------------------
-// 2. High-Speed API Response Class
+// 2. High-Speed API Response & Translation Engine
 // -----------------------------------------------------------------------------
+class BackendTranslator {
+    private static ?array $dictionary = null;
+    private static ?array $phraseReplacements = null;
+
+    public static function getRequestLanguage(): string {
+        $lang = strtolower(trim((string)($_GET['lang'] ?? $_POST['lang'] ?? '')));
+        if ($lang === 'ar' || $lang === 'en') {
+            return $lang;
+        }
+        if (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
+            $accept = strtolower($_SERVER['HTTP_ACCEPT_LANGUAGE']);
+            if (strpos($accept, 'ar') === 0 || strpos($accept, ',ar') !== false || strpos($accept, ';ar') !== false) {
+                return 'ar';
+            }
+        }
+        return 'en';
+    }
+
+    private static function initDictionary(): void {
+        if (self::$dictionary !== null) return;
+
+        self::$dictionary = [
+            // Categories
+            'contemporary painting' => 'الرسم المعاصر',
+            'arabic calligraphy' => 'الخط العربي',
+            'sculpture & bronze' => 'النحت والبرونز',
+            'digital & generative art' => 'الفن الرقمي والتوليدي',
+            'fine art photography' => 'التصوير الفوتوغرافي الفني',
+            'painting' => 'رسم',
+            'calligraphy' => 'خط عربي',
+            'sculpture' => 'نحت',
+            'digital art' => 'فن رقمي',
+            'photography' => 'تصوير فوتوغرافي',
+            'mixed media' => 'وسائط متعددة',
+            'traditional' => 'فن تقليدي',
+            'contemporary' => 'فن معاصر',
+            'fine art' => 'فنون جميلة',
+            'abstract' => 'تجريدي',
+            'realism' => 'واقعي',
+            'modern art' => 'فن حديث',
+            'street art' => 'فن الشوارع',
+            'illustration' => 'رسم توضيحي',
+            'all' => 'الكل',
+            'all categories' => 'جميع الفئات',
+
+            // Category Descriptions
+            'fine art, oil on canvas, acrylic, and modern abstract expressions.' => 'الفنون الجميلة، زيت على قماش، أكريليك، والتعبيرات التجريدية الحديثة.',
+            'classical and modern arabic lettering, gold leaf illumination, and sacred geometry.' => 'الحروفية العربية الكلاسيكية والحديثة، التذهيب بأوراق الذهب، والهندسة المقدسة.',
+            'monumental 3d sculptures, cast bronze, marble, and architectural installations.' => 'منحوتات ثلاثية الأبعاد ضخمة، برونز مصبوب، رخام، وتركيبات معمارية.',
+            'spatial 3d projection, neural network artworks, and dynamic interactive displays.' => 'عروض ثلاثية الأبعاد مكانية، أعمال فنية بالشبكات العصبية، وشاشات تفاعلية ديناميكية.',
+            'architectural, landscape, documentary, and portrait photography of the middle east.' => 'تصوير معماري، مناظر طبيعية، وثائقي، وتصوير بورتريه في الشرق الأوسط.',
+
+            // Experience Levels
+            'beginner (1-2 years)' => 'مبتدئ (١-٢ سنة)',
+            'intermediate (3-5 years)' => 'متوسط (٣-٥ سنوات)',
+            'advanced (5-10 years)' => 'متقدم (٥-١٠ سنوات)',
+            'professional (10+ years)' => 'محترف (١٠+ سنوات)',
+            'senior / 9 years' => 'خبير / ٩ سنوات',
+            'master / 12 years' => 'رائد / ١٢ سنة',
+            'senior / 14 years' => 'خبير / ١٤ سنة',
+            'expert / 8 years' => 'متخصص / ٨ سنوات',
+            'mid-senior / 6 years' => 'متوسط الخبرة / ٦ سنوات',
+            'emerging' => 'فنان صاعد',
+            'mid-career' => 'متوسط الخبرة',
+            'established' => 'فنان متمرس',
+            'master' => 'فنان رائد',
+            'beginner' => 'مبتدئ',
+            'professional' => 'محترف',
+            'amateur' => 'هاوٍ',
+
+            // Artists
+            'renish artistry' => 'رينيش آرتيستري',
+            'fatima al-hashemi' => 'فاطمة الهاشمي',
+            'tariq mansoor' => 'طارق منصور',
+            'elena rostova' => 'إيلينا روستوفا',
+            'zayd al-nuaimi' => 'زايد النعيمي',
+
+            // Artist Bios
+            'celebrated uae visual artist specializing in modern abstract, fluid acrylics, and textured canvas commissions for luxury interiors.' => 'فنان بصري إماراتي مرموق متخصص في التجريد الحديث، الأكريليك السائل، والتكليفات القماشية الفاخرة للديكورات الراقية.',
+            'master calligrapher blending classical thuluth and diwani scripts with contemporary 24k gold leaf illumination.' => 'خطاطة قديرة تدمج خطي الثلث والديواني الكلاسيكيين مع التذهيب المعاصر بورق الذهب عيار 24 قيراط.',
+            'award-winning sculptor creating monumental bronze and marble installations celebrating uae maritime and falconry heritage.' => 'نحات حائز على جوائز ينحت تماثيل ومنحوتات برونزية ورخامية تحتفي بالتراث البحري وتراث الصيد بالصقور في الإمارات.',
+            'pioneer in immersive generative art, 3d projection mapping, and digital collectible artworks for tech and hospitality venues.' => 'رائدة في الفن التوليدي الغامر، ورسم الخرائط ثلاثية الأبعاد، والأعمال الفنية الرقمية للأماكن التقنية والفندقية.',
+            'documentary and landscape photographer capturing the architectural marvels and raw desert wilderness of the arabian peninsula.' => 'مصور وثائقي ومناظر طبيعية يوثق الروائع المعمارية وبراري الصحراء البكر في شبه الجزيرة العربية.',
+
+            // Events
+            'dubai modern art showcase' => 'معرض دبي للفن الحديث',
+            'sharjah calligraphy biennial' => 'بينالي الشارقة للخط العربي',
+            'al quoz bronze & sculpture gala' => 'احتفالية القوز للنحت والبرونز',
+            'generative art & spatial 3d expo' => 'معرض الفن التوليدي والأبعاد الثلاثية',
+            'a premier art gathering bringing together contemporary painters, sculptors, and digital creators in dubai.' => 'ملتقى فني رائد يجمع نخبة من الرسامين والنحاتين والمبدعين الرقميين المعاصرين في دبي.',
+            'celebrating classical and modern arabic calligraphy with master artists from across the islamic world.' => 'الاحتفاء بالخط العربي الكلاسيكي والحديث مع كبار الخطاطين من مختلف أرجاء العالم الإسلامي.',
+            'an open-air evening symposium featuring live bronze casting, marble chiseling, and curator-led walkthroughs.' => 'ندوة مسائية في الهواء الطلق تشمل سباكة البرونز الحية، نحت الرخام، وجولات تفاعلية بإشراف القيمين.',
+            'immersive spatial digital projections, interactive neural network art, and large-format dynamic leds.' => 'إسقاطات رقمية مكانية غامرة، فنون تفاعلية بالشبكات العصبية، وشاشات عرض ديناميكية كبيرة.',
+            'art exhibition' => 'معرض فني',
+            'calligraphy festival' => 'مهرجان الخط العربي',
+            'sculpture & heritage' => 'النحت والتراث',
+            'digital art & tech' => 'الفن الرقمي والتكنولوجيا',
+            'alserkal avenue, warehouse 42' => 'جادة السركال، المستودع 42',
+            'heart of sharjah heritage area' => 'منطقة قلب الشارقة التراثية',
+            'alserkal avenue, the yard' => 'جادة السركال، ذا يارد',
+            'amphitheatre pavilion' => 'جناح المسرح الروماني',
+
+            // Galleries
+            'custot gallery dubai' => 'معرض كوستوت دبي',
+            'leila heller gallery' => 'معرض ليلى هيلر',
+            'the third line' => 'ذا ثيرد لاين',
+            'jameel arts centre' => 'مركز جميل للفنون',
+            'contemporary art' => 'فن معاصر',
+            'modern & contemporary' => 'حديث ومعاصر',
+            'contemporary middle eastern' => 'معاصر من الشرق الأوسط',
+            'contemporary art institution' => 'مؤسسة للفن المعاصر',
+            'tue - sat: 10:00 am - 7:00 pm' => 'الثلاثاء - السبت: ١٠:٠٠ ص - ٠٧:٠٠ م',
+            'sun - thu: 10:00 am - 7:00 pm' => 'الأحد - الخميس: ١٠:٠٠ ص - ٠٧:٠٠ م',
+            'mon - sat: 11:00 am - 7:00 pm' => 'الإثنين - السبت: ١١:٠٠ ص - ٠٧:٠٠ م',
+            'daily: 10:00 am - 8:00 pm' => 'يومياً: ١٠:٠٠ ص - ٠٨:٠٠ م',
+
+            // Artworks
+            'burj horizon in ochre' => 'أفق البرج باللون المغري',
+            'desert mirage symphony' => 'سيمفونية سراب الصحراء',
+            'diwani calligraphic harmony' => 'هارموني الخط الديواني',
+            'a textured exploration of sunset gradients across modern dubai skyline.' => 'استكشاف ملمسي لتدرجات غروب الشمس عبر أفق دبي الحديث.',
+            'dynamic abstract flow reflecting golden hour in the arabian desert.' => 'تدفق تجريدي ديناميكي يعكس الساعة الذهبية في صحراء العرب.',
+            'sacred verses rendered in flowing diwani script with hand-beaten gold leaf.' => 'آيات كريمة بخط ديواني انسيابي مع ورق ذهب مطروق يدوياً.',
+            'oil & acrylic on canvas' => 'زيت وأكريليك على قماش',
+            'mixed media with gold flakes' => 'وسائط متعددة مع رقائق الذهب',
+            '24k gold leaf & ink' => 'ورق ذهب عيار 24 وحبر',
+
+            // Government Entities
+            'dubai culture & arts authority' => 'هيئة الثقافة والفنون في دبي (دبي للثقافة)',
+            'ministry of culture & youth' => 'وزارة الثقافة والشباب',
+            'dubai design district (d3)' => 'حي دبي للتصميم (d3)',
+            'art dubai' => 'آرت دبي',
+            'alserkal avenue' => 'جادة السركال',
+            'dubai opera' => 'دبي أوبرا',
+            'government · cultural authority' => 'حكومي · هيئة ثقافية',
+            'government · federal ministry' => 'حكومي · وزارة اتحادية',
+            'creative hub · design district' => 'مركز إبداعي · حي التصميم',
+            'art fair · cultural event' => 'معرض فني · حدث ثقافي',
+            'arts district · gallery hub' => 'حي الفنون · مجمع معارض',
+            'performing arts · venue' => 'فنون أدائية · مسرح وفعاليات',
+            'open · closes at 15:00' => 'مفتوح · يغلق في 15:00',
+            'open · closes at 14:30' => 'مفتوح · يغلق في 14:30',
+            'open · closes at 22:00' => 'مفتوح · يغلق في 22:00',
+            'closed · opens mar 2026' => 'مغلق · يفتتح في مارس 2026',
+            'open · closes at 20:00' => 'مفتوح · يغلق في 20:00',
+            'open · next show at 19:30' => 'مفتوح · العرض القادم في 19:30',
+
+            // Publishing Pricing
+            'event publishing' => 'نشر الفعاليات',
+            'gallery listing & showcase' => 'إدراج وعرض المعارض الفنية',
+            'standard rate for publishing art events, exhibitions, and symposiums on artist dubai.' => 'الرسوم القياسية لنشر الفعاليات والمعارض والندوات على منصة فنان دبي.',
+            'premier directory listing, verified status badge, and spotlight showcase for dubai art galleries.' => 'إدراج متميز في الدليل مع شارة توثيق وتسليط الضوء على معارض دبي الفنية.',
+
+            // Notifications
+            'welcome to artist dubai' => 'مرحباً بك في فنان دبي',
+            'explore top uae visual artists, art galleries, and cultural showcases across dubai.' => 'استكشف نخبة الفنانين البصريين والمعارض الفنية والفعاليات الثقافية في دبي والإمارات.',
+            'upcoming art exhibition' => 'معرض فني قادم',
+            'dubai modern art showcase is scheduled at alserkal avenue.' => 'تمت جدولة معرض دبي للفن الحديث في جادة السركال.',
+            'new booking request' => 'طلب حجز جديد',
+            'you have received a new booking inquiry for contemporary painting commission.' => 'لقد تلقيت استفسار حجز جديد لطلب لوحة رسم معاصرة.',
+
+            // Statuses
+            'pending' => 'قيد الانتظار',
+            'approved' => 'معتمد',
+            'rejected' => 'مرفوض',
+            'cancelled' => 'ملغى',
+            'completed' => 'مكتمل',
+            'active' => 'نشط',
+            'inactive' => 'غير نشط',
+            'available' => 'متاح',
+            'sold' => 'تم البيع',
+            'reserved' => 'محجوز',
+            'confirmed' => 'مؤكد',
+            'upcoming' => 'قادم',
+            'ongoing' => 'جاري',
+            'closed' => 'مغلق',
+            'open' => 'مفتوح',
+            'free' => 'مجاني',
+            'paid' => 'مدفوع',
+            'free entry' => 'دخول مجاني',
+            'free admission' => 'الدخول مجاني',
+
+            // API Messages
+            'success' => 'تم بنجاح',
+            'data retrieved successfully' => 'تم جلب البيانات بنجاح',
+            'profile updated successfully' => 'تم تحديث الملف الشخصي بنجاح',
+            'artist profile created successfully' => 'تم إنشاء ملف الفنان بنجاح',
+            'artwork added successfully' => 'تمت إضافة العمل الفني بنجاح',
+            'gallery created successfully' => 'تم إنشاء المعرض بنجاح',
+            'gallery updated successfully' => 'تم تحديث المعرض بنجاح',
+            'gallery deleted successfully' => 'تم حذف المعرض بنجاح',
+            'booking submitted successfully' => 'تم إرسال طلب الحجز بنجاح',
+            'payment submitted successfully' => 'تم إرسال إيصال الدفع بنجاح',
+            'error' => 'حدث خطأ',
+            'invalid request' => 'طلب غير صالح',
+            'artist not found' => 'لم يتم العثور على الفنان',
+            'unauthorized' => 'غير مصرح به',
+            'failed to upload image' => 'فشل تحميل الصورة',
+            'email already in use' => 'البريد الإلكتروني مستخدم بالفعل',
+            'user registered successfully' => 'تم تسجيل المستخدم بنجاح',
+            'login successful' => 'تم تسجيل الدخول بنجاح',
+            'invalid credentials' => 'بيانات الاعتماد غير صالحة',
+            'validation error' => 'خطأ في التحقق من البيانات'
+        ];
+
+        self::$phraseReplacements = [
+            'United Arab Emirates' => 'الإمارات العربية المتحدة',
+            'Dubai Design District (d3)' => 'حي دبي للتصميم (d3)',
+            'Dubai Design District' => 'حي دبي للتصميم',
+            'Al Shindagha Historic District' => 'حي الشندغة التاريخي',
+            'Al Shindagha' => 'الشندغة',
+            'Alserkal Avenue' => 'جادة السركال',
+            'Al Quoz Creative Zone' => 'منطقة القوز الإبداعية',
+            'Al Quoz' => 'القوز',
+            'Downtown Dubai' => 'وسط مدينة دبي',
+            'Dubai Marina' => 'دبي مارينا',
+            'Dubai Media City' => 'مدينة دبي للإعلام',
+            'Jumeirah Beach Road' => 'شارع شاطئ جميرا',
+            'Jaddaf Waterfront' => 'واجهة الجداف البحرية',
+            'Madinat Jumeirah' => 'مدينة جميرا',
+            'Palm Jumeirah' => 'نخلة جميرا',
+            'Business Bay' => 'الخليج التجاري',
+            'Jumeirah' => 'جميرا',
+            'DIFC' => 'مركز دبي المالي العالمي',
+            'Abu Dhabi' => 'أبوظبي',
+            'Sharjah' => 'الشارقة',
+            'Ajman' => 'عجمان',
+            'Ras Al Khaimah' => 'رأس الخيمة',
+            'Fujairah' => 'الفجيرة',
+            'Umm Al Quwain' => 'أم القيوين',
+            'Dubai' => 'دبي',
+            'UAE' => 'الإمارات',
+            'Oil & Acrylic on Canvas' => 'زيت وأكريليك على قماش',
+            'Oil on Canvas' => 'زيت على قماش',
+            'Acrylic on Canvas' => 'أكريليك على قماش',
+            'Watercolor on Paper' => 'ألوان مائية على ورق',
+            'Watercolor' => 'ألوان مائية',
+            'Mixed Media on Wood' => 'وسائط متعددة على خشب',
+            'Mixed Media' => 'وسائط متعددة',
+            'Digital Painting' => 'رسم رقمي',
+            'Free Entry' => 'دخول مجاني',
+            'Free Admission' => 'الدخول مجاني',
+            'Free' => 'مجاني',
+            'AED ' => 'درهم إماراتي ',
+            'AED' => 'درهم إماراتي',
+            'Daily:' => 'يومياً:',
+            'Daily' => 'يومياً',
+            'Tue - Sat:' => 'الثلاثاء - السبت:',
+            'Sun - Thu:' => 'الأحد - الخميس:',
+            'Mon - Sat:' => 'الإثنين - السبت:',
+            'Open · Closes at' => 'مفتوح · يغلق في',
+            'Closed · Opens' => 'مغلق · يفتتح في'
+        ];
+    }
+
+    public static function translateString(string $text, string $lang = 'ar'): string {
+        if ($lang !== 'ar') return $text;
+        $trimmed = trim($text);
+        if ($trimmed === '') return $text;
+
+        // Skip non-translatable tokens (URLs, emails, phone numbers, file paths)
+        if (filter_var($trimmed, FILTER_VALIDATE_EMAIL) ||
+            strpos($trimmed, 'http://') === 0 ||
+            strpos($trimmed, 'https://') === 0 ||
+            strpos($trimmed, '/') === 0 ||
+            preg_match('/\.(jpg|jpeg|png|webp|gif|svg|mp4|pdf)$/i', $trimmed) ||
+            preg_match('/^\+?[0-9\s\-()]{7,20}$/', $trimmed)) {
+            return $text;
+        }
+
+        self::initDictionary();
+
+        $lower = strtolower($trimmed);
+        if (isset(self::$dictionary[$lower])) {
+            return self::$dictionary[$lower];
+        }
+
+        if (isset(self::$dictionary[$trimmed])) {
+            return self::$dictionary[$trimmed];
+        }
+
+        // Phrase replacements for composite strings
+        $result = $trimmed;
+        foreach (self::$phraseReplacements as $en => $ar) {
+            if (stripos($result, $en) !== false) {
+                $result = str_ireplace($en, $ar, $result);
+            }
+        }
+
+        return $result;
+    }
+
+    private static function isTranslatableKey(string $key): bool {
+        $translatable = [
+            'category', 'category_name', 'title', 'bio', 'about',
+            'description', 'details', 'location', 'city', 'country',
+            'venue', 'status', 'medium', 'experience_level', 'price',
+            'timing', 'timings', 'default_timing', 'seasonal_notice',
+            'item_name', 'role', 'entity_name', 'instructions', 'body'
+        ];
+        if (in_array(strtolower($key), $translatable, true)) {
+            return true;
+        }
+        // Name field: translatable for entities/galleries/categories
+        if (strtolower($key) === 'name') {
+            return true;
+        }
+        return false;
+    }
+
+    public static function translateData(mixed $data, string $lang = 'ar'): mixed {
+        if ($lang !== 'ar' || empty($data)) {
+            return $data;
+        }
+
+        if (is_string($data)) {
+            return self::translateString($data, $lang);
+        }
+
+        if (is_array($data)) {
+            $translated = [];
+            foreach ($data as $key => $val) {
+                if (is_array($val)) {
+                    $translated[$key] = self::translateData($val, $lang);
+                } elseif (is_string($val)) {
+                    if (self::isTranslatableKey((string)$key)) {
+                        $enKey = $key . '_en';
+                        if (!isset($data[$enKey]) && !isset($translated[$enKey])) {
+                            $translated[$enKey] = $val;
+                        }
+                        $translated[$key] = self::translateString($val, $lang);
+                    } else {
+                        $translated[$key] = $val;
+                    }
+                } else {
+                    $translated[$key] = $val;
+                }
+            }
+            return $translated;
+        }
+
+        return $data;
+    }
+}
+
 class ApiResponse {
     public static function success(mixed $data = [], string $message = 'Success', int $statusCode = 200, ?array $pagination = null): void {
         if (!headers_sent()) { http_response_code($statusCode); }
+
+        $lang = BackendTranslator::getRequestLanguage();
+        if ($lang === 'ar') {
+            $data = BackendTranslator::translateData($data, 'ar');
+            $message = BackendTranslator::translateString($message, 'ar');
+        }
+
         $payload = [
             'status' => 'success',
             'success' => true,
             'message' => $message,
             'database' => 'MySQL',
             'timestamp' => time(),
+            'lang' => $lang,
             'data' => $data
         ];
         if ($pagination !== null) {
@@ -564,12 +917,19 @@ class ApiResponse {
 
     public static function error(string $message = 'Error', int $statusCode = 400): void {
         if (!headers_sent()) { http_response_code($statusCode); }
+
+        $lang = BackendTranslator::getRequestLanguage();
+        if ($lang === 'ar') {
+            $message = BackendTranslator::translateString($message, 'ar');
+        }
+
         echo json_encode([
             'status' => 'error',
             'success' => false,
             'message' => $message,
             'database' => 'MySQL',
-            'timestamp' => time()
+            'timestamp' => time(),
+            'lang' => $lang
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         if (!defined('CLI_TEST_MODE')) {
             exit();
@@ -1132,6 +1492,9 @@ class ArtistController {
         $bio = InputSanitizer::cleanString($input['bio'] ?? '');
         $email = InputSanitizer::cleanEmail($input['email'] ?? '');
         $phone = InputSanitizer::cleanString($input['phone'] ?? '');
+        if (!empty($phone)) {
+            $phone = trim(preg_replace('/[^\d\+\-\s]/', '', $phone));
+        }
         $website = InputSanitizer::cleanString($input['website'] ?? '');
         $instagram = InputSanitizer::cleanString($input['instagram'] ?? '');
         $experience_level = InputSanitizer::cleanString($input['experience_level'] ?? $input['experience'] ?? '');
@@ -1155,7 +1518,33 @@ class ArtistController {
         $stmt = $this->db->prepare('INSERT INTO artists (user_id, name, category, location, bio, email, phone, website, instagram, experience_level, booking_rate, avatar_url, banner_url, followers_count, works_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)');
         $stmt->execute([$userId, $name, $category, $location, $bio, $email, $phone, $website, $instagram, $experience_level, $booking_rate, $avatar_url, $banner_url]);
 
-        ApiResponse::success(['artist_id' => (int)$this->db->lastInsertId()], 'Artist profile created successfully', 201);
+        $newArtistId = (int)$this->db->lastInsertId();
+
+        $artworks = $input['artworks'] ?? [];
+        $artworksCount = 0;
+        if (!empty($artworks) && is_array($artworks)) {
+            $artStmt = $this->db->prepare('INSERT INTO artworks (artist_id, artist_name, title, year, medium, dimensions, description, price, image_url, is_featured) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+            foreach ($artworks as $art) {
+                $artTitle = InputSanitizer::cleanString($art['title'] ?? 'Artwork Piece');
+                $artYear = InputSanitizer::cleanString($art['year'] ?? date('Y'));
+                $artMedium = InputSanitizer::cleanString($art['medium'] ?? $category);
+                $artDim = InputSanitizer::cleanString($art['dimensions'] ?? '');
+                $artDesc = InputSanitizer::cleanString($art['description'] ?? '');
+                $artPrice = InputSanitizer::cleanString($art['price'] ?? '');
+                $artImg = InputSanitizer::cleanString($art['image_url'] ?? $art['image'] ?? '');
+                $artFeat = !empty($art['is_featured']) ? 1 : 0;
+                $artStmt->execute([$newArtistId, $name, $artTitle, $artYear, $artMedium, $artDim, $artDesc, $artPrice, $artImg, $artFeat]);
+                $artworksCount++;
+            }
+            if ($artworksCount > 0) {
+                $this->db->prepare('UPDATE artists SET works_count = ? WHERE id = ?')->execute([$artworksCount, $newArtistId]);
+            }
+        }
+
+        ApiResponse::success([
+            'artist_id' => $newArtistId,
+            'artworks_created' => $artworksCount
+        ], 'Artist profile created successfully', 201);
     }
 
     public function likeArtist(array $input): void {
@@ -1331,9 +1720,15 @@ class ArtistController {
         foreach ($allowed as $f) {
             if (isset($input[$f])) {
                 $fields[] = "$f = ?";
-                $params[] = ($f === 'works_count' || $f === 'likes_count' || $f === 'followers_count' || $f === 'is_active')
-                    ? (int)$input[$f]
-                    : InputSanitizer::cleanString((string)$input[$f]);
+                if ($f === 'works_count' || $f === 'likes_count' || $f === 'followers_count' || $f === 'is_active') {
+                    $params[] = (int)$input[$f];
+                } else {
+                    $val = InputSanitizer::cleanString((string)$input[$f]);
+                    if ($f === 'phone' && !empty($val)) {
+                        $val = trim(preg_replace('/[^\d\+\-\s]/', '', $val));
+                    }
+                    $params[] = $val;
+                }
             }
         }
         if (empty($fields)) { ApiResponse::error('No fields to update.'); return; }
@@ -2135,11 +2530,49 @@ class GalleryController {
     }
 
     public function updateGallery(array $input): void {
-        $id = (int)($input['id'] ?? $input['gallery_id'] ?? 0);
+        $id = (int)($input['id'] ?? $input['gallery_id'] ?? $_GET['id'] ?? 0);
         if ($id <= 0) { ApiResponse::error('Gallery ID is required.'); return; }
         $fields = [];
         $params = [];
-        $allowed = ['name','title','description','category','location','image_url','cover_url','status','is_public','is_approved','about','website','timing','currently_open','display_order','event_name','event_id','publishing_plan','publishing_amount','payment_status','payment_proof_url','payment_reference'];
+
+        if (isset($input['name']) || isset($input['title'])) {
+            $nameVal = InputSanitizer::cleanString($input['name'] ?? $input['title'] ?? '');
+            if (!empty($nameVal)) {
+                $fields[] = "name = ?";
+                $params[] = $nameVal;
+            }
+        }
+        if (isset($input['description']) || isset($input['about']) || isset($input['subtitle'])) {
+            $descVal = InputSanitizer::cleanString($input['description'] ?? $input['about'] ?? $input['subtitle'] ?? '');
+            $fields[] = "description = ?";
+            $params[] = $descVal;
+        }
+        if (isset($input['image_url']) || isset($input['image'])) {
+            $imgVal = InputSanitizer::cleanString($input['image_url'] ?? $input['image'] ?? '');
+            if (!empty($imgVal)) {
+                $fields[] = "image_url = ?";
+                $params[] = $imgVal;
+            }
+        }
+        if (isset($input['images']) && is_array($input['images'])) {
+            $fields[] = "images_json = ?";
+            $params[] = json_encode($input['images']);
+            $fields[] = "photo_count = ?";
+            $params[] = count($input['images']);
+            if (!isset($input['image_url']) && !empty($input['images'])) {
+                $fields[] = "image_url = ?";
+                $params[] = InputSanitizer::cleanString((string)$input['images'][0]);
+            }
+        } elseif (isset($input['images_json'])) {
+            $fields[] = "images_json = ?";
+            $params[] = $input['images_json'];
+        }
+        if (isset($input['photo_count'])) {
+            $fields[] = "photo_count = ?";
+            $params[] = (int)$input['photo_count'];
+        }
+
+        $allowed = ['category','location','cover_url','status','is_public','is_approved','about','website','timing','currently_open','display_order','event_name','event_id','publishing_plan','publishing_amount','payment_status','payment_proof_url','payment_reference'];
         foreach ($allowed as $f) {
             if (isset($input[$f])) { $fields[] = "$f = ?"; $params[] = InputSanitizer::cleanString((string)$input[$f]); }
         }

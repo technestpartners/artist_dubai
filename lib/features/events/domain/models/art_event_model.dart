@@ -1,3 +1,6 @@
+import 'package:flutter/widgets.dart';
+import '../../../../core/utils/data_translator.dart';
+
 class GalleryImageItem {
   final String title;
   final String imageUrl;
@@ -82,6 +85,15 @@ class ArtEventModel {
     this.paymentProofUrl,
     this.paymentReference,
   });
+
+  String localizedTitle([BuildContext? context]) => title.trData(context);
+  String localizedCategory([BuildContext? context]) => category.trData(context);
+  String localizedPrice([BuildContext? context]) => price.trData(context);
+  String localizedDescription([BuildContext? context]) => description.trData(context);
+  String localizedLocation([BuildContext? context]) => location.trData(context);
+  String localizedVenue([BuildContext? context]) => (locationCity != null && locationCity!.isNotEmpty ? locationCity! : location).trData(context);
+  String localizedStatus([BuildContext? context]) => status.trData(context);
+  String localizedRequirements([BuildContext? context]) => requirements.trData(context);
 
   ArtEventModel copyWith({
     String? id,
@@ -183,18 +195,28 @@ class ArtEventModel {
     }).toList();
 
     final dateStr = (json['event_date'] ?? json['date_time'] ?? json['dateTime'] ?? '') as String;
+    final rawTitle = json['title'] as String? ?? 'Art Event';
+    final rawCat = json['category'] as String? ?? 'Art Exhibition';
+    final rawPrice = json['price'] as String? ?? 'Free';
+    final rawDesc = json['description'] as String? ?? '';
+    final rawReq = json['requirements'] as String? ?? '';
+    final rawLoc = json['location'] as String? ?? json['venue'] as String? ?? 'Dubai, UAE';
+    final rawCity = json['location_city'] as String? ?? 'Dubai';
+    final rawStatus = (json['status'] as String? ?? 'active').trim().toLowerCase();
+    final isAr = DataTranslator.isAppArabic;
+
     return ArtEventModel(
       id: json['id']?.toString() ?? '',
-      title: json['title'] as String? ?? 'Art Event',
-      category: json['category'] as String? ?? 'Art Exhibition',
-      price: json['price'] as String? ?? 'Free',
-      description: json['description'] as String? ?? '',
-      requirements: json['requirements'] as String? ?? '',
+      title: DataTranslator.translate(rawTitle, isArabic: isAr),
+      category: DataTranslator.translate(rawCat, isArabic: isAr),
+      price: DataTranslator.translate(rawPrice, isArabic: isAr),
+      description: DataTranslator.translate(rawDesc, isArabic: isAr),
+      requirements: DataTranslator.translate(rawReq, isArabic: isAr),
       dateTime: dateStr,
       formattedDate: json['formatted_date'] as String? ?? dateStr,
       timeRange: json['time_range'] as String? ?? '',
-      location: json['location'] as String? ?? json['venue'] as String? ?? 'Dubai, UAE',
-      locationCity: json['location_city'] as String? ?? 'Dubai',
+      location: DataTranslator.translate(rawLoc, isArabic: isAr),
+      locationCity: DataTranslator.translate(rawCity, isArabic: isAr),
       attendeesCount: (json['attendees_count'] as num?)?.toInt() ?? 0,
       maxAttendees: (json['max_attendees'] as num?)?.toInt() ?? 100,
       organizer: json['organizer_name'] as String? ?? json['organizer'] as String? ?? 'Artist Dubai',
@@ -202,7 +224,7 @@ class ArtEventModel {
       tags: parsedTags,
       imageUrl: json['image_url'] as String? ?? json['imageUrl'] as String?,
       galleries: parsedGalleries,
-      status: (json['status'] as String? ?? 'active').trim().toLowerCase(),
+      status: DataTranslator.translate(rawStatus, isArabic: isAr),
       isActive: () {
         final rawStatus = (json['status'] ?? '').toString().trim().toLowerCase();
         final rawActive = json['is_active'];

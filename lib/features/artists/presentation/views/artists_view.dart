@@ -13,6 +13,8 @@ import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../domain/models/artist_model.dart';
 import 'artist_detail_view.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../../../core/utils/data_translator.dart';
 
 class ArtistsView extends StatefulWidget {
   const ArtistsView({super.key});
@@ -298,6 +300,7 @@ class _ArtistsViewState extends State<ArtistsView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final effectiveArtists = _allArtists.where((a) {
       if (!a.isActive) return false;
       final st = a.status.toLowerCase().trim();
@@ -315,11 +318,21 @@ class _ArtistsViewState extends State<ArtistsView> {
     final filteredArtists =
         _selectedCategory == null
             ? effectiveArtists
-            : effectiveArtists
-                .where((a) =>
-                    a.category.toLowerCase().contains(_selectedCategory!.toLowerCase()) ||
-                    _selectedCategory!.toLowerCase().contains(a.category.toLowerCase()))
-                .toList();
+            : effectiveArtists.where((a) {
+                final selLower = _selectedCategory!.toLowerCase().trim();
+                final aCatLower = a.category.toLowerCase().trim();
+                final selEn = DataTranslator.translate(selLower, isArabic: false).toLowerCase();
+                final selAr = DataTranslator.translate(selLower, isArabic: true).toLowerCase();
+                final aCatEn = DataTranslator.translate(aCatLower, isArabic: false).toLowerCase();
+                final aCatAr = DataTranslator.translate(aCatLower, isArabic: true).toLowerCase();
+
+                return aCatLower.contains(selLower) ||
+                    selLower.contains(aCatLower) ||
+                    aCatEn.contains(selEn) ||
+                    selEn.contains(aCatEn) ||
+                    aCatAr.contains(selAr) ||
+                    selAr.contains(aCatAr);
+              }).toList();
 
     final rh = ResponsiveHelper.of(context);
     final hPad = rh.horizontalPadding;
@@ -344,9 +357,9 @@ class _ArtistsViewState extends State<ArtistsView> {
                 Center(
                   child: Column(
                     children: [
-                      const Text(
-                        'Featured Artists',
-                        style: TextStyle(
+                      Text(
+                        l10n.featuredArtists,
+                        style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
@@ -356,12 +369,12 @@ class _ArtistsViewState extends State<ArtistsView> {
                       const SizedBox(height: 4),
                       Text(
                         !_isLoggedIn
-                            ? 'No artist profiles available yet'
+                            ? l10n.noArtistProfilesAvailable
                             : _isLoading && filteredArtists.isEmpty
-                                ? 'Loading artists...'
+                                ? l10n.loadingArtists
                                 : filteredArtists.isEmpty
-                                    ? 'No artist profiles available yet'
-                                    : 'Discover ${filteredArtists.length} talented artists in Dubai',
+                                    ? l10n.noArtistProfilesAvailable
+                                    : l10n.discoverArtistsCount(filteredArtists.length),
                         style: const TextStyle(
                           fontSize: 13.5,
                           color: Color(0xFFE2D6F5),
@@ -378,18 +391,18 @@ class _ArtistsViewState extends State<ArtistsView> {
                   Center(
                     child: Column(
                       children: [
-                        const Text(
-                          'No Artists Yet',
-                          style: TextStyle(
+                        Text(
+                          l10n.noArtistsYet,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Be the first to create an artist profile!',
-                          style: TextStyle(fontSize: 13.5, color: Color(0xFFE2D6F5)),
+                        Text(
+                          l10n.beTheFirstToCreateArtistProfile,
+                          style: const TextStyle(fontSize: 13.5, color: Color(0xFFE2D6F5)),
                         ),
                         const SizedBox(height: 14),
                         SizedBox(
@@ -416,9 +429,9 @@ class _ArtistsViewState extends State<ArtistsView> {
                                 }
                               }
                             },
-                            child: const Text(
-                              'Create Artist Profile',
-                              style: TextStyle(
+                            child: Text(
+                              l10n.createArtistProfile,
+                              style: const TextStyle(
                                 fontSize: 14.5,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF6B1C9B),
@@ -444,18 +457,18 @@ class _ArtistsViewState extends State<ArtistsView> {
                   Center(
                     child: Column(
                       children: [
-                        const Text(
-                          'No Artists Yet',
-                          style: TextStyle(
+                        Text(
+                          l10n.noArtistsYet,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Be the first to create an artist profile!',
-                          style: TextStyle(fontSize: 13.5, color: Color(0xFFE2D6F5)),
+                        Text(
+                          l10n.beTheFirstToCreateArtistProfile,
+                          style: const TextStyle(fontSize: 13.5, color: Color(0xFFE2D6F5)),
                         ),
                         const SizedBox(height: 14),
                         SizedBox(
@@ -474,9 +487,9 @@ class _ArtistsViewState extends State<ArtistsView> {
                               ),
                             ),
                             onPressed: () => context.push(RouteNames.artistRegistration),
-                            child: const Text(
-                              'Create Artist Profile',
-                              style: TextStyle(
+                            child: Text(
+                              l10n.createArtistProfile,
+                              style: const TextStyle(
                                 fontSize: 14.5,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF6B1C9B),
@@ -564,7 +577,9 @@ class _ArtistsViewState extends State<ArtistsView> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  _selectedCategory ?? 'Select a Category',
+                  _selectedCategory != null
+                      ? DataTranslator.tr(context, _selectedCategory!)
+                      : AppLocalizations.of(context).selectCategory,
                   style: TextStyle(
                     fontSize: 14.5,
                     fontWeight: FontWeight.w500,
@@ -689,7 +704,7 @@ class _ArtistsViewState extends State<ArtistsView> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    cat.name,
+                                    DataTranslator.tr(context, cat.name),
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
@@ -698,7 +713,9 @@ class _ArtistsViewState extends State<ArtistsView> {
                                   ),
                                 ),
                                 Text(
-                                  '$count artists',
+                                  Localizations.localeOf(context).languageCode == 'ar'
+                                      ? '$count فنان'
+                                      : '$count artists',
                                   style: TextStyle(
                                     fontSize: 12.5,
                                     color: isSelected ? const Color(0xFF5E227A) : const Color(0xFF64748B),
@@ -739,6 +756,7 @@ class _ArtistsViewState extends State<ArtistsView> {
   }
 
   Widget _buildArtistCard(ArtistModel artist) {
+    final l10n = AppLocalizations.of(context);
     final rh = ResponsiveHelper.of(context);
     final bannerHeight = rh.cardBannerHeight;
     return Material(
@@ -845,7 +863,7 @@ class _ArtistsViewState extends State<ArtistsView> {
               children: [
                 // Artist Name
                 Text(
-                  artist.name,
+                  artist.localizedName(context),
                   style: const TextStyle(
                     fontSize: 19,
                     fontWeight: FontWeight.bold,
@@ -856,7 +874,7 @@ class _ArtistsViewState extends State<ArtistsView> {
 
                 // Category Name
                 Text(
-                  artist.category,
+                  artist.localizedCategory(context),
                   style: const TextStyle(
                     fontSize: 14,
                     color: Color(0xFF5F6368),
@@ -875,7 +893,7 @@ class _ArtistsViewState extends State<ArtistsView> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      artist.location,
+                      artist.localizedLocation(context),
                       style: const TextStyle(
                         fontSize: 13.5,
                         color: Color(0xFF757575),
@@ -887,7 +905,7 @@ class _ArtistsViewState extends State<ArtistsView> {
 
                 // Bio
                 Text(
-                  artist.bio,
+                  artist.localizedBio(context),
                   style: const TextStyle(
                     fontSize: 13.5,
                     color: Color(0xFF5F6368),
@@ -912,9 +930,11 @@ class _ArtistsViewState extends State<ArtistsView> {
                     ),
                   ),
                   child: Text(
-                    artist.experienceLevel.isNotEmpty
-                        ? artist.experienceLevel
-                        : 'Professional (5+ years)',
+                    artist.localizedExperienceLevel(context).isNotEmpty
+                        ? artist.localizedExperienceLevel(context)
+                        : (Localizations.localeOf(context).languageCode == 'ar'
+                            ? 'محترف (أكثر من 5 سنوات)'
+                            : 'Professional (5+ years)'),
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -938,7 +958,7 @@ class _ArtistsViewState extends State<ArtistsView> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          '${artist.likesCount} likes   ${artist.worksCount} ${artist.worksCount == 1 ? "artwork" : "artworks"}',
+                          l10n.artistCardStats(artist.likesCount, artist.worksCount),
                           style: const TextStyle(
                             fontSize: 13,
                             color: Color(0xFF757575),
@@ -960,9 +980,9 @@ class _ArtistsViewState extends State<ArtistsView> {
                           ),
                         ),
                         onPressed: () => _openArtistDetail(artist),
-                        child: const Text(
-                          'View Profile',
-                          style: TextStyle(
+                        child: Text(
+                          AppLocalizations.of(context).viewProfile,
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),

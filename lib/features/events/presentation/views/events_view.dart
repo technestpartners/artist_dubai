@@ -13,6 +13,8 @@ import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../domain/models/art_event_model.dart';
 import '../../../artists/domain/models/artist_model.dart';
+import '../../../../core/utils/data_translator.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class EventsView extends StatefulWidget {
   final int initialTabIndex;
@@ -246,8 +248,38 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
     context.push(RouteNames.eventDetail, extra: event);
   }
 
+  String _getCategoryTitle(String cat, AppLocalizations l10n) {
+    switch (cat.trim().toLowerCase()) {
+      case 'all categories':
+        return l10n.categoryAll;
+      case 'art exhibition':
+        return l10n.categoryArtExhibition;
+      case 'gallery opening':
+        return l10n.categoryGalleryOpening;
+      case 'art workshop':
+        return l10n.categoryArtWorkshop;
+      case 'artist talk':
+        return l10n.categoryArtistTalk;
+      case 'art fair':
+        return l10n.categoryArtFair;
+      case 'sculpture installation':
+        return l10n.categorySculptureInstallation;
+      case 'photography exhibition':
+        return l10n.categoryPhotographyExhibition;
+      case 'cultural festival':
+        return l10n.categoryCulturalFestival;
+      case 'art competition':
+        return l10n.categoryArtCompetition;
+      case 'community art project':
+        return l10n.categoryCommunityArtProject;
+      default:
+        return cat.trData(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final query = _searchController.text.trim().toLowerCase();
 
     final filteredEvents =
@@ -256,15 +288,25 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
           final st = e.status.toLowerCase().trim();
           if (st == 'cancelled' || st == 'inactive' || st == 'draft' || st == 'deleted' || st == 'pending' || st == 'pending_approval') return false;
 
+          final selLower = _selectedCategory.toLowerCase().trim();
+          final eCatLower = e.category.toLowerCase().trim();
           final matchesCategory =
-              _selectedCategory == 'All Categories' ||
-              e.category == _selectedCategory;
+              selLower == 'all categories' ||
+              selLower == 'الكل' ||
+              selLower == 'جميع الفئات' ||
+              eCatLower == selLower ||
+              DataTranslator.translate(eCatLower, isArabic: false).toLowerCase() == DataTranslator.translate(selLower, isArabic: false).toLowerCase() ||
+              DataTranslator.translate(eCatLower, isArabic: true).toLowerCase() == DataTranslator.translate(selLower, isArabic: true).toLowerCase();
+
           final matchesQuery =
               query.isEmpty ||
               e.title.toLowerCase().contains(query) ||
+              e.localizedTitle(context).toLowerCase().contains(query) ||
               e.description.toLowerCase().contains(query) ||
+              e.localizedDescription(context).toLowerCase().contains(query) ||
               e.organizer.toLowerCase().contains(query) ||
-              e.location.toLowerCase().contains(query);
+              e.location.toLowerCase().contains(query) ||
+              e.localizedLocation(context).toLowerCase().contains(query);
 
           return matchesCategory && matchesQuery;
         }).toList();
@@ -302,7 +344,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                       }
                     },
                     child: const Padding(
-                      padding: EdgeInsets.only(right: 12.0, top: 4.0, bottom: 4.0),
+                      padding: EdgeInsetsDirectional.only(end: 12.0, top: 4.0, bottom: 4.0),
                       child: Icon(
                         Icons.arrow_back,
                         color: Colors.white,
@@ -313,20 +355,20 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         Text(
-                          'Art Events',
-                          style: TextStyle(
+                          l10n.eventsTitle,
+                          style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
                             letterSpacing: -0.3,
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
-                          'Discover Art Events in Dubai',
-                          style: TextStyle(
+                          l10n.eventsSubtitle,
+                          style: const TextStyle(
                             fontSize: 13.5,
                             color: Color(0xFFE2D6F5),
                           ),
@@ -350,16 +392,16 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                       padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Icon(
+                        children: [
+                          const Icon(
                             Icons.home_outlined,
                             size: 18,
                             color: Colors.white,
                           ),
-                          SizedBox(width: 6),
+                          const SizedBox(width: 6),
                           Text(
-                            'Home',
-                            style: TextStyle(
+                            l10n.home,
+                            style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,
@@ -392,12 +434,12 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(Icons.add, size: 17, color: Color(0xFF6B1C9B)),
-                          SizedBox(width: 5),
+                        children: [
+                          const Icon(Icons.add, size: 17, color: Color(0xFF6B1C9B)),
+                          const SizedBox(width: 5),
                           Text(
-                            'Create Event',
-                            style: TextStyle(
+                            l10n.registerArtEvent,
+                            style: const TextStyle(
                               fontSize: 13.5,
                               fontWeight: FontWeight.w700,
                               color: Color(0xFF6B1C9B),
@@ -424,7 +466,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                   ),
                   cursorColor: const Color(0xFF6B1C9B),
                   decoration: InputDecoration(
-                    hintText: 'Search events...',
+                    hintText: l10n.searchEventsHint,
                     hintStyle: const TextStyle(
                       color: Color(0xFF64748B),
                       fontSize: 14.5,
@@ -488,16 +530,16 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                     padding: const EdgeInsets.symmetric(vertical: 40),
                     alignment: Alignment.center,
                     child: Column(
-                      children: const [
-                        Icon(
+                      children: [
+                        const Icon(
                           Icons.event_busy_outlined,
                           size: 48,
                           color: Colors.white70,
                         ),
-                        SizedBox(height: 12),
+                        const SizedBox(height: 12),
                         Text(
-                          'No events found',
-                          style: TextStyle(
+                          l10n.noEventsFound,
+                          style: const TextStyle(
                             fontSize: 16,
                             color: Color(0xFFE2D6F5),
                             fontWeight: FontWeight.w600,
@@ -604,14 +646,14 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                   if (mounted) setState(() {});
                 }
               },
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.person_add_outlined, size: 18),
-                  SizedBox(width: 8),
+                  const Icon(Icons.person_add_outlined, size: 18),
+                  const SizedBox(width: 8),
                   Text(
-                    'Sign Up as Art Lover (Free Access)',
-                    style: TextStyle(
+                    AppLocalizations.of(context).signUpFree,
+                    style: const TextStyle(
                       fontSize: 14.5,
                       fontWeight: FontWeight.w700,
                     ),
@@ -638,14 +680,14 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                   if (mounted) setState(() {});
                 }
               },
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.login_rounded, size: 18),
-                  SizedBox(width: 8),
+                  const Icon(Icons.login_rounded, size: 18),
+                  const SizedBox(width: 8),
                   Text(
-                    'Already have an account? Sign In',
-                    style: TextStyle(
+                    '${AppLocalizations.of(context).alreadyHaveAccount}${AppLocalizations.of(context).signInNow}',
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
@@ -712,7 +754,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
             children: [
               Expanded(
                 child: Text(
-                  _selectedCategory,
+                  _getCategoryTitle(_selectedCategory, AppLocalizations.of(context)),
                   style: const TextStyle(
                     fontSize: 14.5,
                     fontWeight: FontWeight.w500,
@@ -825,7 +867,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    cat,
+                                    _getCategoryTitle(cat, AppLocalizations.of(context)),
                                     style: TextStyle(
                                       fontSize: 13.5,
                                       fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
@@ -913,7 +955,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  event.category,
+                  _getCategoryTitle(event.category, AppLocalizations.of(context)),
                   style: const TextStyle(
                     color: Color(0xFF6A2777),
                     fontWeight: FontWeight.w600,
@@ -984,7 +1026,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
 
           // Title
           Text(
-            event.title,
+            event.localizedTitle(context),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
@@ -995,7 +1037,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
 
           // Description
           Text(
-            event.description,
+            event.localizedDescription(context),
             style: const TextStyle(
               fontSize: 13.5,
               color: Color(0xFF64748B),
@@ -1037,7 +1079,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  event.location,
+                  event.localizedLocation(context),
                   style: const TextStyle(
                     fontSize: 13,
                     color: Color(0xFF4A4A4A),
@@ -1053,7 +1095,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
             text: TextSpan(
               style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
               children: [
-                const TextSpan(text: 'Organized by '),
+                TextSpan(text: AppLocalizations.of(context).organizedBy),
                 TextSpan(
                   text: event.organizer,
                   style: const TextStyle(
@@ -1083,7 +1125,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                           border: Border.all(color: const Color(0xFFE2E8F0)),
                         ),
                         child: Text(
-                          tag,
+                          tag.trData(context),
                           style: const TextStyle(
                             fontSize: 11.5,
                             color: Color(0xFF475569),
@@ -1110,7 +1152,9 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
               ),
               onPressed: () => _showEventDetails(event),
               child: Text(
-                _selectedTabIndex == 1 ? 'Apply Now' : 'View Details',
+                _selectedTabIndex == 1
+                    ? 'Apply Now'
+                    : AppLocalizations.of(context).viewDetails,
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,

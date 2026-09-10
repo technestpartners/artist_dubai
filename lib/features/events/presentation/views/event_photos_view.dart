@@ -12,6 +12,7 @@ import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../domain/models/art_event_model.dart';
 import '../widgets/event_gallery_modal.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class EventPhotosView extends StatefulWidget {
   const EventPhotosView({super.key});
@@ -232,11 +233,11 @@ class _EventPhotosViewState extends State<EventPhotosView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 1. Header Section
-              const Padding(
-                padding: EdgeInsets.only(left: 4, bottom: 4),
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 4),
                 child: Text(
-                  'EVENTS PHOTOS',
-                  style: TextStyle(
+                  AppLocalizations.of(context).eventsPhotosTitle,
+                  style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w900,
                     color: Colors.white,
@@ -244,11 +245,11 @@ class _EventPhotosViewState extends State<EventPhotosView> {
                   ),
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.only(left: 4, bottom: 20),
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 20),
                 child: Text(
-                  'Photo galleries from Dubai art events',
-                  style: TextStyle(
+                  AppLocalizations.of(context).eventsPhotosSubtitle,
+                  style: const TextStyle(
                     fontSize: 13.5,
                     color: Color(0xFFE2D6F5),
                   ),
@@ -266,12 +267,12 @@ class _EventPhotosViewState extends State<EventPhotosView> {
                   ),
                 )
               else if (_eventsWithGalleries.isEmpty)
-                const Center(
+                Center(
                   child: Padding(
-                    padding: EdgeInsets.all(32.0),
+                    padding: const EdgeInsets.all(32.0),
                     child: Text(
-                      'No photo galleries found.',
-                      style: TextStyle(color: Color(0xFFE2D6F5), fontSize: 14),
+                      AppLocalizations.of(context).noPhotosAvailable,
+                      style: const TextStyle(color: Color(0xFFE2D6F5), fontSize: 14),
                     ),
                   ),
                 )
@@ -439,14 +440,14 @@ class _EventPhotosViewState extends State<EventPhotosView> {
                   if (mounted) setState(() {});
                 }
               },
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.person_add_outlined, size: 18),
-                  SizedBox(width: 8),
+                  const Icon(Icons.person_add_outlined, size: 18),
+                  const SizedBox(width: 8),
                   Text(
-                    'Sign Up as Art Lover (Free Access)',
-                    style: TextStyle(
+                    AppLocalizations.of(context).signUpFree,
+                    style: const TextStyle(
                       fontSize: 14.5,
                       fontWeight: FontWeight.w700,
                     ),
@@ -473,14 +474,14 @@ class _EventPhotosViewState extends State<EventPhotosView> {
                   if (mounted) setState(() {});
                 }
               },
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.login_rounded, size: 18),
-                  SizedBox(width: 8),
+                  const Icon(Icons.login_rounded, size: 18),
+                  const SizedBox(width: 8),
                   Text(
-                    'Already have an account? Sign In',
-                    style: TextStyle(
+                    '${AppLocalizations.of(context).alreadyHaveAccount}${AppLocalizations.of(context).signInNow}',
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),

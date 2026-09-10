@@ -9,6 +9,7 @@ import '../../../../core/services/storage_service.dart';
 import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -276,6 +277,7 @@ class _LoginViewState extends State<LoginView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final rh = ResponsiveHelper.of(context);
     final hPad = rh.isWide ? rh.horizontalPadding : 16.0;
 
@@ -316,22 +318,22 @@ class _LoginViewState extends State<LoginView> {
                     InkWell(
                       onTap: () => context.go(RouteNames.home),
                       borderRadius: BorderRadius.circular(6),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
                           horizontal: 8.0,
                           vertical: 4.0,
                         ),
                         child: Row(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.home_outlined,
                               color: Colors.white,
                               size: 20,
                             ),
-                            SizedBox(width: 6),
+                            const SizedBox(width: 6),
                             Text(
-                              'Home',
-                              style: TextStyle(
+                              l10n.home,
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
@@ -371,10 +373,10 @@ class _LoginViewState extends State<LoginView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Text(
-                        'Login to Your Account',
+                      Text(
+                        l10n.loginToYourAccount,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Color(0xFF1E1E1E),
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
@@ -382,10 +384,10 @@ class _LoginViewState extends State<LoginView> {
                         ),
                       ),
                       const SizedBox(height: 6),
-                      const Text(
-                        'Welcome back! Enter your credentials to access your account',
+                      Text(
+                        l10n.welcomeBackLogin,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Color(0xFF6B7280),
                           fontSize: 13,
                           fontWeight: FontWeight.w400,
@@ -394,9 +396,9 @@ class _LoginViewState extends State<LoginView> {
                       const SizedBox(height: 28),
 
                       // Email Field
-                      const Text(
-                        'Email Address',
-                        style: TextStyle(
+                      Text(
+                        l10n.emailAddress,
+                        style: const TextStyle(
                           color: Color(0xFF374151),
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -427,9 +429,9 @@ class _LoginViewState extends State<LoginView> {
                       const SizedBox(height: 18),
 
                       // Password Field
-                      const Text(
-                        'Password',
-                        style: TextStyle(
+                      Text(
+                        l10n.passwordLabel,
+                        style: const TextStyle(
                           color: Color(0xFF374151),
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -451,7 +453,7 @@ class _LoginViewState extends State<LoginView> {
                           fontFamilyFallback: ['Outfit', 'Roboto', 'Arial', 'sans-serif'],
                         ),
                         decoration: _buildInputDecoration(
-                          hintText: 'Enter your password',
+                          hintText: l10n.enterYourPassword,
                           icon: Icons.lock_outline,
                           errorText: _passwordError,
                           suffixIcon: IconButton(
@@ -499,9 +501,9 @@ class _LoginViewState extends State<LoginView> {
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Text(
-                                  'Sign In',
-                                  style: TextStyle(
+                              : Text(
+                                  l10n.signIn,
+                                  style: const TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -519,16 +521,16 @@ class _LoginViewState extends State<LoginView> {
                             padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
                             child: RichText(
                               textAlign: TextAlign.center,
-                              text: const TextSpan(
-                                style: TextStyle(
+                              text: TextSpan(
+                                style: const TextStyle(
                                   color: Color(0xFF6B7280),
                                   fontSize: 13,
                                 ),
                                 children: [
-                                  TextSpan(text: "Don't have an account? "),
+                                  TextSpan(text: l10n.dontHaveAccount),
                                   TextSpan(
-                                    text: 'Sign Up Free',
-                                    style: TextStyle(
+                                    text: l10n.signUpFree,
+                                    style: const TextStyle(
                                       color: Color(0xFF6A2777),
                                       fontWeight: FontWeight.w700,
                                     ),

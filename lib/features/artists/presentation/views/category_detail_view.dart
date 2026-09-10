@@ -10,6 +10,7 @@ import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
+import '../../../../core/utils/data_translator.dart';
 import '../../domain/models/artist_model.dart';
 import 'artist_detail_view.dart';
 
@@ -58,7 +59,16 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
     _artistSub = sl<LiveSyncService>().artistsStream.listen((artists) {
       if (mounted && artists.isNotEmpty) {
         setState(() {
-          _categoryArtists = artists.where((a) => a.category.toLowerCase().contains(_title.toLowerCase()) || _title.toLowerCase().contains(a.category.toLowerCase())).toList();
+          _categoryArtists = artists.where((a) {
+            final aCat = a.category.toLowerCase().trim();
+            final tLower = _title.toLowerCase().trim();
+            return aCat.contains(tLower) ||
+                tLower.contains(aCat) ||
+                DataTranslator.translate(aCat, isArabic: false).toLowerCase().contains(
+                    DataTranslator.translate(tLower, isArabic: false).toLowerCase()) ||
+                DataTranslator.translate(aCat, isArabic: true).toLowerCase().contains(
+                    DataTranslator.translate(tLower, isArabic: true).toLowerCase());
+          }).toList();
         });
       }
     });
@@ -282,7 +292,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                _title,
+                                _title.trData(context),
                                 style: const TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w900,
@@ -316,7 +326,9 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        '${activeArtists.length} Artists',
+                                        Localizations.localeOf(context).languageCode == 'ar'
+                                            ? '${activeArtists.length} فنان'
+                                            : '${activeArtists.length} Artists',
                                         style: const TextStyle(
                                           fontSize: 12.5,
                                           color: Color(0xFFE2D6F5),
@@ -334,7 +346,9 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        '${_categoryArtworks.length} Artworks',
+                                        Localizations.localeOf(context).languageCode == 'ar'
+                                            ? '${_categoryArtworks.length} عمل فني'
+                                            : '${_categoryArtworks.length} Artworks',
                                         style: const TextStyle(
                                           fontSize: 12.5,
                                           color: Color(0xFFE2D6F5),
@@ -376,7 +390,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                     ),
                                   ),
                                   child: Text(
-                                    tag,
+                                    tag.trData(context),
                                     style: const TextStyle(
                                       fontSize: 12.5,
                                       color: Colors.white,
@@ -864,7 +878,9 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      artist.name.isEmpty ? 'Artist' : artist.name,
+                      artist.localizedName(context).isEmpty
+                          ? (Localizations.localeOf(context).languageCode == 'ar' ? 'فنان' : 'Artist')
+                          : artist.localizedName(context),
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
@@ -882,9 +898,9 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            artist.location.isEmpty
-                                ? 'Dubai, UAE'
-                                : artist.location,
+                            artist.localizedLocation(context).isEmpty
+                                ? (Localizations.localeOf(context).languageCode == 'ar' ? 'دبي، الإمارات' : 'Dubai, UAE')
+                                : artist.localizedLocation(context),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -956,9 +972,9 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
 
           // Bio Snippet
           Text(
-            artist.bio.isEmpty
-                ? 'Artist based in Dubai, UAE.'
-                : artist.bio,
+            artist.localizedBio(context).isEmpty
+                ? (Localizations.localeOf(context).languageCode == 'ar' ? 'فنان مقيم في دبي، الإمارات.' : 'Artist based in Dubai, UAE.')
+                : artist.localizedBio(context),
             style: const TextStyle(
               fontSize: 13,
               color: Color(0xFF64748B),
@@ -976,13 +992,17 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                   const Icon(Icons.people_outline, size: 14, color: Color(0xFF64748B)),
                   const SizedBox(width: 4),
                   Text(
-                    '${artist.followersCount} likes',
+                    Localizations.localeOf(context).languageCode == 'ar'
+                        ? '${artist.followersCount} إعجاب'
+                        : '${artist.followersCount} likes',
                     style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
               Text(
-                '${artist.worksCount > 0 ? artist.worksCount : 3} artworks',
+                Localizations.localeOf(context).languageCode == 'ar'
+                    ? '${artist.worksCount > 0 ? artist.worksCount : 3} عمل فني'
+                    : '${artist.worksCount > 0 ? artist.worksCount : 3} artworks',
                 style: const TextStyle(
                   fontSize: 12.5,
                   color: Color(0xFF64748B),

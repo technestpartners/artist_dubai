@@ -168,7 +168,7 @@ void main() {
       await tester.pumpWidget(wrapTestApp(const GalleryRegistrationView()));
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('GALLERIES | ART CENTERS'), findsOneWidget);
+      expect(find.text('ART VENUE'), findsOneWidget);
       expect(find.text('Submit registration'), findsOneWidget);
 
       final textFields = find.byType(TextFormField);

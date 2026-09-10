@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/routes/route_names.dart';
 import '../di/injection_container.dart';
@@ -139,6 +140,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
   Widget build(BuildContext context) {
     final rh = ResponsiveHelper.of(context);
     final loggedIn = _isLoggedIn;
+    final l10n = AppLocalizations.of(context);
 
     return SafeArea(
       top: false,
@@ -196,7 +198,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                     index: 0,
                     selectedIcon: Icons.home_rounded,
                     unselectedIcon: Icons.home_outlined,
-                    label: 'Home',
+                    label: l10n.home,
                     onTap: () => _onTabSelected(context, 0),
                   ),
                   _buildNavItem(
@@ -204,7 +206,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                     index: 1,
                     selectedIcon: Icons.people_rounded,
                     unselectedIcon: Icons.people_outline_rounded,
-                    label: 'Artists',
+                    label: l10n.artists,
                     onTap: () => _onTabSelected(context, 1),
                   ),
                   _buildNavItem(
@@ -212,7 +214,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                     index: 2,
                     selectedIcon: Icons.calendar_month_rounded,
                     unselectedIcon: Icons.calendar_today_outlined,
-                    label: 'Events',
+                    label: l10n.events,
                     onTap: () => _onTabSelected(context, 2),
                   ),
                   if (!loggedIn)
@@ -221,7 +223,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                       index: 3,
                       selectedIcon: Icons.login_rounded,
                       unselectedIcon: Icons.login,
-                      label: 'Login',
+                      label: l10n.signIn,
                       onTap: () => _onTabSelected(context, 3),
                     ),
                 ],

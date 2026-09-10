@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
@@ -9,6 +10,7 @@ import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../domain/models/artist_model.dart';
+import '../../../../core/utils/data_translator.dart';
 import 'category_detail_view.dart';
 
 class ExploreCategoriesView extends StatefulWidget {
@@ -78,6 +80,8 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(backgroundColor: Colors.white),
@@ -104,9 +108,9 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
                     },
                   ),
                   const SizedBox(width: 4),
-                  const Text(
-                    'Back',
-                    style: TextStyle(
+                  Text(
+                    l10n.back,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
@@ -149,19 +153,19 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
+                            children: [
                               Text(
-                                'Explore Categories',
-                                style: TextStyle(
+                                l10n.exploreCategories,
+                                style: const TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                 ),
                               ),
-                              SizedBox(height: 2),
+                              const SizedBox(height: 2),
                               Text(
-                                'Discover talented artists',
-                                style: TextStyle(
+                                l10n.exploreCategoriesSubtitle,
+                                style: const TextStyle(
                                   fontSize: 13,
                                   color: Color(0xFFE2D6F5),
                                 ),
@@ -220,10 +224,15 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
                       itemCount: _categories.length,
                       itemBuilder: (context, index) {
                         final category = _categories[index];
-                        final count =
-                            _allArtists
-                                .where((a) => a.category == category.name)
-                                .length;
+                        final count = _allArtists.where((a) {
+                          final aCat = a.category.toLowerCase().trim();
+                          final cName = category.name.toLowerCase().trim();
+                          return aCat == cName ||
+                              DataTranslator.translate(aCat, isArabic: false).toLowerCase() ==
+                                  DataTranslator.translate(cName, isArabic: false).toLowerCase() ||
+                              DataTranslator.translate(aCat, isArabic: true).toLowerCase() ==
+                                  DataTranslator.translate(cName, isArabic: true).toLowerCase();
+                        }).length;
                         return InkWell(
                           onTap: () {
                             Navigator.push(
@@ -263,7 +272,7 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  category.name,
+                                  category.localizedName(context),
                                   textAlign: TextAlign.center,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
@@ -276,7 +285,9 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '$count artists',
+                                  Localizations.localeOf(context).languageCode == 'ar'
+                                      ? '$count فنان'
+                                      : '$count artists',
                                   style: const TextStyle(
                                     fontSize: 11.5,
                                     color: Color(0xFFD6C8F2),

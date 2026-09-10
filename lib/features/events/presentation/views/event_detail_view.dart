@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
@@ -12,6 +13,7 @@ import '../../../artists/domain/models/artist_model.dart';
 import '../../../artists/presentation/views/artist_detail_view.dart';
 import '../../domain/models/art_event_model.dart';
 import '../widgets/event_gallery_modal.dart';
+import '../../../../core/utils/data_translator.dart';
 
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
@@ -276,6 +278,7 @@ class _EventDetailViewState extends State<EventDetailView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final event = widget.event;
     final featuredArtists = _featuredArtists;
 
@@ -339,7 +342,7 @@ class _EventDetailViewState extends State<EventDetailView> {
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
-                                  event.category,
+                                  event.localizedCategory(context),
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
@@ -349,7 +352,7 @@ class _EventDetailViewState extends State<EventDetailView> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                event.title,
+                                event.localizedTitle(context),
                                 style: const TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w900,
@@ -372,9 +375,9 @@ class _EventDetailViewState extends State<EventDetailView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'About this event',
-                      style: TextStyle(
+                    Text(
+                      l10n.aboutThisEvent,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF1E1E1E),
@@ -382,7 +385,7 @@ class _EventDetailViewState extends State<EventDetailView> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      event.description,
+                      event.localizedDescription(context),
                       style: const TextStyle(
                         fontSize: 13.5,
                         color: Color(0xFF475569),
@@ -400,16 +403,16 @@ class _EventDetailViewState extends State<EventDetailView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      children: const [
-                        Icon(
+                      children: [
+                        const Icon(
                           Icons.local_offer_outlined,
                           size: 18,
                           color: Color(0xFF1E1E1E),
                         ),
-                        SizedBox(width: 6),
+                        const SizedBox(width: 6),
                         Text(
-                          'Tags',
-                          style: TextStyle(
+                          l10n.tags,
+                          style: const TextStyle(
                             fontSize: 15.5,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF1E1E1E),
@@ -436,7 +439,7 @@ class _EventDetailViewState extends State<EventDetailView> {
                                     color: Colors.white,
                                   ),
                                   child: Text(
-                                    tag,
+                                    tag.trData(context),
                                     style: const TextStyle(
                                       fontSize: 12,
                                       color: Color(0xFF334155),
@@ -457,16 +460,16 @@ class _EventDetailViewState extends State<EventDetailView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      children: const [
-                        Icon(
+                      children: [
+                        const Icon(
                           Icons.person_outline,
                           size: 18,
                           color: Color(0xFF1E1E1E),
                         ),
-                        SizedBox(width: 6),
+                        const SizedBox(width: 6),
                         Text(
-                          'Organizer',
-                          style: TextStyle(
+                          l10n.organizer,
+                          style: const TextStyle(
                             fontSize: 15.5,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF1E1E1E),
@@ -532,10 +535,10 @@ class _EventDetailViewState extends State<EventDetailView> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'Event Photos',
-                            style: TextStyle(
+                            l10n.eventsPhotosTitle,
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF1E1E1E),
@@ -561,9 +564,9 @@ class _EventDetailViewState extends State<EventDetailView> {
                               _showCreateGalleryModal(context, event.title);
                             },
                             icon: const Icon(Icons.add_photo_alternate_outlined, size: 15, color: Colors.white),
-                            label: const Text(
-                              'Add Photo',
-                              style: TextStyle(
+                            label: Text(
+                              l10n.addPhoto,
+                              style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
@@ -595,12 +598,12 @@ class _EventDetailViewState extends State<EventDetailView> {
                               border: Border.all(color: const Color(0xFFE2E8F0)),
                             ),
                             child: Column(
-                              children: const [
-                                Icon(Icons.photo_library_outlined, size: 36, color: Color(0xFF94A3B8)),
-                                SizedBox(height: 8),
+                              children: [
+                                const Icon(Icons.photo_library_outlined, size: 36, color: Color(0xFF94A3B8)),
+                                const SizedBox(height: 8),
                                 Text(
-                                  'No event photos yet',
-                                  style: TextStyle(
+                                  l10n.noEventPhotosYet,
+                                  style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                     color: Color(0xFF64748B),
@@ -785,7 +788,7 @@ class _EventDetailViewState extends State<EventDetailView> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                event.location,
+                                event.localizedLocation(context),
                                 style: const TextStyle(
                                   fontSize: 13.5,
                                   fontWeight: FontWeight.bold,

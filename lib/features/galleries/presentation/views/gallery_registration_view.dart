@@ -6,6 +6,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../admin/domain/models/publishing_pricing_model.dart';
 
 class GalleryRegistrationView extends StatefulWidget {
@@ -36,7 +37,6 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
 
   static const Color _screenBg = Color(0xFF651B8A);
   static const Color _cardBg = Color(0xFF551478);
-  static const Color _formCardBg = Color(0xFF5A1684);
 
   @override
   void initState() {
@@ -352,15 +352,16 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
   }
 
   Widget _buildFormView() {
+    final l10n = AppLocalizations.of(context);
     return Form(
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Header Title & Subtitle (Exact match to media_1788343870170.png)
-          const Text(
-            'GALLERIES | ART CENTERS',
-            style: TextStyle(
+          // 1. Header Title & Subtitle
+          Text(
+            l10n.artVenue,
+            style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w900,
               color: Colors.white,
@@ -368,9 +369,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Register your gallery or art center to be listed in the app',
-            style: TextStyle(
+          Text(
+            l10n.artVenueSubtitle,
+            style: const TextStyle(
               fontSize: 13.5,
               color: Colors.white70,
               fontWeight: FontWeight.w400,
@@ -380,25 +381,22 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
 
           // 2. Form Container Card
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: _formCardBg.withValues(alpha: 0.85),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              color: Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.25),
+                width: 1,
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Field 1: Gallery / center name *
-                const Text(
-                  'Gallery / center name *',
-                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
+                Text(
+                  '${l10n.galleryCenterName} *',
+                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
@@ -411,23 +409,23 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 const SizedBox(height: 14),
 
                 // Field 2: Type
-                const Text(
-                  'Type',
-                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
+                Text(
+                  l10n.venueType,
+                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _typeController,
                   style: const TextStyle(color: Color(0xFF1E1E1E), fontSize: 14),
-                  decoration: _whiteInputDecoration(hintText: 'Gallery · Exhibition space · Studio'),
+                  decoration: _whiteInputDecoration(hintText: l10n.venueTypeHint),
                   textInputAction: TextInputAction.next,
                 ),
                 const SizedBox(height: 14),
 
                 // Field 3: Address
-                const Text(
-                  'Address',
-                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
+                Text(
+                  l10n.address,
+                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
@@ -439,9 +437,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 const SizedBox(height: 14),
 
                 // Field 4: Website
-                const Text(
-                  'Website',
-                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
+                Text(
+                  l10n.website,
+                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
@@ -454,9 +452,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 const SizedBox(height: 14),
 
                 // Field 5: Contact person
-                const Text(
-                  'Contact person',
-                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
+                Text(
+                  l10n.contactPerson,
+                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
@@ -468,9 +466,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 const SizedBox(height: 14),
 
                 // Field 6: Email *
-                const Text(
-                  'Email *',
-                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
+                Text(
+                  '${l10n.emailLabel} *',
+                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
@@ -488,9 +486,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 const SizedBox(height: 14),
 
                 // Field 7: Phone
-                const Text(
-                  'Phone',
-                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
+                Text(
+                  l10n.phone,
+                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
@@ -503,9 +501,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 const SizedBox(height: 14),
 
                 // Field 8: About the space
-                const Text(
-                  'About the space',
-                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
+                Text(
+                  l10n.aboutTheSpace,
+                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
@@ -517,9 +515,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 const SizedBox(height: 14),
 
                 // Field 9: Gallery / Space Photo
-                const Text(
-                  'Gallery / Space Photo (Optional)',
-                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
+                Text(
+                  l10n.gallerySpacePhotoOptional,
+                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
                 ),
                 const SizedBox(height: 6),
                 Container(
@@ -535,16 +533,16 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                     children: [
                       if (_isUploadingImage) ...[
                         Row(
-                          children: const [
-                            SizedBox(
+                          children: [
+                            const SizedBox(
                               width: 18,
                               height: 18,
                               child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                             ),
-                            SizedBox(width: 12),
+                            const SizedBox(width: 12),
                             Text(
-                              'Uploading image to server...',
-                              style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                              l10n.uploadingImage,
+                              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
                             ),
                           ],
                         ),
@@ -750,9 +748,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     onPressed: _submitForm,
-                    child: const Text(
-                      'Submit registration',
-                      style: TextStyle(
+                    child: Text(
+                      l10n.registerVenue,
+                      style: const TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF1E1E1E),
@@ -786,9 +784,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 1. Header Title & Subtitle (Exact match to media_1788343894492.png)
+        // 1. Header Title & Subtitle
         const Text(
-          'GALLERIES | ART CENTERS',
+          'ART VENUE',
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w900,

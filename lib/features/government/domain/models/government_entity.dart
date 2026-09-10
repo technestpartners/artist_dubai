@@ -1,3 +1,6 @@
+import 'package:flutter/widgets.dart';
+import '../../../../core/utils/data_translator.dart';
+
 class ReviewModel {
   final int? id;
   final String entityName;
@@ -20,6 +23,9 @@ class ReviewModel {
     this.isLocalGuide = true,
     this.likesCount = 0,
   });
+
+  String localizedText([BuildContext? context]) => text.trData(context);
+  String localizedRelativeTime([BuildContext? context]) => relativeTime.trData(context);
 
   static String calculateRelativeTime(dynamic createdAtRaw, String? fallback) {
     if (createdAtRaw != null && createdAtRaw.toString().isNotEmpty) {
@@ -45,6 +51,8 @@ class ReviewModel {
       rawCreatedAt,
       json['relative_time'] as String?,
     );
+    final rawText = json['text'] as String? ?? '';
+    final isAr = DataTranslator.isAppArabic;
 
     return ReviewModel(
       id: json['id'] != null ? int.tryParse(json['id'].toString()) : null,
@@ -52,8 +60,8 @@ class ReviewModel {
       authorName: json['author_name'] as String? ?? 'Reviewer',
       authorPhoto: json['author_photo'] as String?,
       rating: double.tryParse(json['rating']?.toString() ?? '5.0') ?? 5.0,
-      text: json['text'] as String? ?? '',
-      relativeTime: relativeTime,
+      text: DataTranslator.translate(rawText, isArabic: isAr),
+      relativeTime: DataTranslator.translate(relativeTime, isArabic: isAr),
       isLocalGuide: json['is_local_guide'] == 1 || json['is_local_guide'] == true || json['is_local_guide'] == '1',
       likesCount: (json['likes_count'] as num?)?.toInt() ?? 0,
     );
@@ -103,19 +111,31 @@ class GovernmentEntity {
     this.seasonalNotice,
   });
 
+  String localizedName([BuildContext? context]) => name.trData(context);
+  String localizedCategory([BuildContext? context]) => category.trData(context);
+  String localizedLocation([BuildContext? context]) => location.trData(context);
+  String localizedDefaultTiming([BuildContext? context]) => defaultTiming.trData(context);
+  String localizedLiveTiming([BuildContext? context]) => liveTimingText.trData(context);
+
   factory GovernmentEntity.fromJson(Map<String, dynamic> json) {
     final locationName = (json['name'] as String? ?? 'Dubai').replaceAll(' ', '+');
     final defaultMapsUrl = 'https://www.google.com/maps/search/?api=1&query=$locationName+Dubai';
+    final rawName = json['name'] as String? ?? 'Entity';
+    final rawCat = json['category'] as String? ?? 'Government';
+    final rawLoc = json['location'] as String? ?? 'Dubai, UAE';
+    final rawTiming = json['default_timing'] as String? ?? 'Open · Closes at 20:00';
+    final rawNotice = json['seasonal_notice'] as String?;
+    final isAr = DataTranslator.isAppArabic;
 
     return GovernmentEntity(
       id: json['id'] != null ? int.tryParse(json['id'].toString()) : null,
-      name: json['name'] as String? ?? 'Entity',
+      name: DataTranslator.translate(rawName, isArabic: isAr),
       defaultIsOpen: json['default_is_open'] == 1 || json['default_is_open'] == true || json['is_open'] == true,
       rating: double.tryParse(json['rating']?.toString() ?? '4.5') ?? 4.5,
       reviewCount: (json['review_count'] as num?)?.toInt() ?? 0,
-      category: json['category'] as String? ?? 'Government',
-      location: json['location'] as String? ?? 'Dubai, UAE',
-      defaultTiming: json['default_timing'] as String? ?? 'Open · Closes at 20:00',
+      category: DataTranslator.translate(rawCat, isArabic: isAr),
+      location: DataTranslator.translate(rawLoc, isArabic: isAr),
+      defaultTiming: DataTranslator.translate(rawTiming, isArabic: isAr),
       websiteUrl: json['website_url'] as String? ?? 'https://dubaiculture.gov.ae/',
       directionsUrl: json['directions_url'] as String? ?? defaultMapsUrl,
       googleMapsReviewsUrl: json['google_maps_reviews_url'] as String? ?? defaultMapsUrl,
@@ -131,7 +151,7 @@ class GovernmentEntity {
           (json['closed_days'] as List?)
               ?.map((e) => (e as num).toInt())
               .toList(),
-      seasonalNotice: json['seasonal_notice'] as String?,
+      seasonalNotice: rawNotice != null ? DataTranslator.translate(rawNotice, isArabic: isAr) : null,
     );
   }
 

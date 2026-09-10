@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 
@@ -7,6 +8,8 @@ class ComingSoonView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFF5D1F8E),
       body: SafeArea(
@@ -37,21 +40,21 @@ class ComingSoonView extends StatelessWidget {
             const Spacer(flex: 3),
 
             // "Actively from" & "06.2026"
-            const Center(
+            Center(
               child: Column(
                 children: [
                   Text(
-                    'Actively from',
+                    l10n.activelyFrom,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                       letterSpacing: -0.3,
                     ),
                   ),
-                  SizedBox(height: 8),
-                  Text(
+                  const SizedBox(height: 8),
+                  const Text(
                     '06.2026',
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -86,9 +89,9 @@ class ComingSoonView extends StatelessWidget {
                   onPressed: () {
                     context.go(RouteNames.home);
                   },
-                  child: const Text(
-                    'back to home',
-                    style: TextStyle(
+                  child: Text(
+                    l10n.backToHome,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.2,
@@ -100,12 +103,12 @@ class ComingSoonView extends StatelessWidget {
             const Spacer(flex: 4),
 
             // Bottom Footer
-            const Padding(
-              padding: EdgeInsets.only(bottom: 20.0),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 20.0),
               child: Center(
                 child: Text(
-                  'Hosted by Nizar Fahem',
-                  style: TextStyle(
+                  l10n.hostedBy,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,

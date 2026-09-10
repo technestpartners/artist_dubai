@@ -65,10 +65,22 @@ class ApiService {
 
   ApiService(this._client);
 
-  /// Public read-only access to in-memory artist cache for stale-while-revalidate
   List<ArtistModel>? get cachedArtists => _cachedArtists;
   List<Map<String, dynamic>>? get cachedCompetitions => _cachedCompetitions;
   List<Map<String, dynamic>>? get cachedGalleries => _cachedGalleries;
+
+  /// Invalidate all in-memory caches (called when switching language)
+  void invalidateAllCaches() {
+    _cachedCategories = null;
+    _cachedArtists = null;
+    _cachedArtistDetails.clear();
+    _cachedEvents = null;
+    _cachedEventDetails.clear();
+    _cachedGovEntities = null;
+    _cachedGalleries = null;
+    _cachedAbout = null;
+    _cachedCompetitions = null;
+  }
 
   bool _isSuccess(dynamic res) =>
       res is Map<String, dynamic> && (res['status'] == 'success' || res['success'] == true);
@@ -227,6 +239,7 @@ class ApiService {
     String? experienceLevel,
     String? avatarUrl,
     String? bannerUrl,
+    List<Map<String, dynamic>>? artworks,
   }) async {
     try {
       final storage = sl<StorageService>();
@@ -246,6 +259,7 @@ class ApiService {
           if (userId != null && userId.isNotEmpty) 'user_id': userId,
           if (avatarUrl != null && avatarUrl.isNotEmpty) 'avatar_url': avatarUrl,
           if (bannerUrl != null && bannerUrl.isNotEmpty) 'banner_url': bannerUrl,
+          if (artworks != null && artworks.isNotEmpty) 'artworks': artworks,
         },
       );
       if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
@@ -1899,6 +1913,38 @@ class ApiService {
       final res = await _client.post(
         '${ApiEndpoints.galleries}&action=delete',
         data: {'id': id},
+      );
+      if (_isSuccess(res)) {
+        _cachedGalleries = null;
+        try {
+          sl<LiveSyncService>().notifyGalleriesChanged();
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  // 27b. Update Gallery (MySQL Backend)
+  Future<bool> updateGallery({
+    required dynamic id,
+    String? title,
+    String? description,
+    String? imageUrl,
+    List<String>? images,
+  }) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.galleries}&action=update',
+        data: {
+          'id': id,
+          if (title != null) 'name': title,
+          if (title != null) 'title': title,
+          if (description != null) 'description': description,
+          if (imageUrl != null) 'image_url': imageUrl,
+          if (images != null) 'images': images,
+          if (images != null) 'photo_count': images.length,
+        },
       );
       if (_isSuccess(res)) {
         _cachedGalleries = null;

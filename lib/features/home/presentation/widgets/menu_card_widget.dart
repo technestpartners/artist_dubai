@@ -84,46 +84,52 @@ class MenuCardWidget extends StatelessWidget {
                     // 2. Flexible Text Container
                     Flexible(
                       flex: 2,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Flexible(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                item.title,
-                                textAlign: TextAlign.center,
-                                maxLines: 1,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: titleFontSize,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.2,
-                                  height: 1.1,
-                                ),
-                              ),
-                            ),
-                          ),
-                          if (item.subtitle != null)
-                            Flexible(
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  item.subtitle!,
-                                  textAlign: TextAlign.center,
-                                  maxLines: 1,
-                                  style: TextStyle(
-                                    color: const Color(0xFFD6C8F2),
-                                    fontSize: subtitleFontSize,
-                                    fontWeight: FontWeight.w500,
-                                    letterSpacing: 0.2,
-                                    height: 1.05,
+                      child: Builder(
+                        builder: (context) {
+                          final localizedTitle = item.getLocalizedTitle(context);
+                          final localizedSubtitle = item.getLocalizedSubtitle(context);
+                          return Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Flexible(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    localizedTitle,
+                                    textAlign: TextAlign.center,
+                                    maxLines: 1,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: titleFontSize,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.2,
+                                      height: 1.1,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                        ],
+                              if (localizedSubtitle != null)
+                                Flexible(
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      localizedSubtitle,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      style: TextStyle(
+                                        color: const Color(0xFFD6C8F2),
+                                        fontSize: subtitleFontSize,
+                                        fontWeight: FontWeight.w500,
+                                        letterSpacing: 0.2,
+                                        height: 1.05,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ],

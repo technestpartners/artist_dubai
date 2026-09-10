@@ -21,11 +21,15 @@ class DioInterceptor extends Interceptor {
     }
 
     options.headers['Accept'] = 'application/json';
+    final currentLocale = storageService.getString('app_locale') ?? 'en';
+    options.headers['Accept-Language'] = currentLocale;
+    options.queryParameters['lang'] = currentLocale;
+
     if (options.data != null || options.method == 'POST' || options.method == 'PUT' || options.method == 'PATCH') {
       options.headers['Content-Type'] = 'application/json';
     }
 
-    loggerService.debug('🌐 [HTTP] ${options.method} ${options.path}');
+    loggerService.debug('🌐 [HTTP] ${options.method} ${options.path} (lang: $currentLocale)');
 
     return handler.next(options);
   }

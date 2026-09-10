@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
@@ -290,6 +291,8 @@ class _RegisterViewState extends State<RegisterView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(backgroundColor: Colors.white),
@@ -324,22 +327,22 @@ class _RegisterViewState extends State<RegisterView> {
                     InkWell(
                       onTap: () => context.go(RouteNames.home),
                       borderRadius: BorderRadius.circular(6),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
                           horizontal: 8.0,
                           vertical: 4.0,
                         ),
                         child: Row(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.home_outlined,
                               color: Colors.white,
                               size: 20,
                             ),
-                            SizedBox(width: 6),
+                            const SizedBox(width: 6),
                             Text(
-                              'Home',
-                              style: TextStyle(
+                              l10n.home,
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
@@ -379,10 +382,10 @@ class _RegisterViewState extends State<RegisterView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Text(
-                        "Join Dubai's Artist Community",
+                      Text(
+                        l10n.registerAccountTitle,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Color(0xFF111827),
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
@@ -390,10 +393,10 @@ class _RegisterViewState extends State<RegisterView> {
                         ),
                       ),
                       const SizedBox(height: 6),
-                      const Text(
-                        'Free access to explore Dubai art events, exhibitions & galleries.',
+                      Text(
+                        l10n.registerAccountSubtitle,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Color(0xFF6B7280),
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
@@ -402,9 +405,9 @@ class _RegisterViewState extends State<RegisterView> {
                       const SizedBox(height: 24),
 
                       // Full Name Field
-                      const Text(
-                        'Full Name',
-                        style: TextStyle(
+                      Text(
+                        l10n.fullName,
+                        style: const TextStyle(
                           color: Color(0xFF1F2937),
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -424,7 +427,7 @@ class _RegisterViewState extends State<RegisterView> {
                           fontWeight: FontWeight.w500,
                         ),
                         decoration: _buildInputDecoration(
-                          hintText: 'Enter your full name',
+                          hintText: l10n.enterFullName,
                           errorText: _fullNameError,
                           isFilled: _fullNameController.text.isNotEmpty,
                         ),
@@ -433,9 +436,9 @@ class _RegisterViewState extends State<RegisterView> {
                       const SizedBox(height: 18),
 
                       // Email Field
-                      const Text(
-                        'Email',
-                        style: TextStyle(
+                      Text(
+                        l10n.email,
+                        style: const TextStyle(
                           color: Color(0xFF1F2937),
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -465,9 +468,9 @@ class _RegisterViewState extends State<RegisterView> {
                       const SizedBox(height: 18),
 
                       // Password Field
-                      const Text(
-                        'Password',
-                        style: TextStyle(
+                      Text(
+                        l10n.passwordLabel,
+                        style: const TextStyle(
                           color: Color(0xFF1F2937),
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -511,9 +514,9 @@ class _RegisterViewState extends State<RegisterView> {
                       const SizedBox(height: 18),
 
                       // Confirm Password Field
-                      const Text(
-                        'Confirm Password',
-                        style: TextStyle(
+                      Text(
+                        l10n.confirmPasswordLabel,
+                        style: const TextStyle(
                           color: Color(0xFF1F2937),
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -534,7 +537,7 @@ class _RegisterViewState extends State<RegisterView> {
                           fontWeight: FontWeight.w500,
                         ),
                         decoration: _buildInputDecoration(
-                          hintText: 'Confirm your password',
+                          hintText: l10n.enterConfirmPassword,
                           errorText: _confirmPasswordError,
                           isFilled: _confirmPasswordController.text.isNotEmpty,
                         ),
@@ -595,7 +598,7 @@ class _RegisterViewState extends State<RegisterView> {
                             Expanded(
                               child: Text.rich(
                                 TextSpan(
-                                  text: 'I accept the ',
+                                  text: l10n.acceptTermsPrefix,
                                   style: const TextStyle(
                                     color: Color(0xFF374151),
                                     fontSize: 12.5,
@@ -603,7 +606,7 @@ class _RegisterViewState extends State<RegisterView> {
                                   ),
                                   children: [
                                     TextSpan(
-                                      text: 'Privacy Policy',
+                                      text: l10n.privacyPolicy,
                                       style: const TextStyle(
                                         color: Color(0xFF6A2777),
                                         fontWeight: FontWeight.w700,
@@ -615,9 +618,9 @@ class _RegisterViewState extends State<RegisterView> {
                                           );
                                         },
                                     ),
-                                    const TextSpan(text: ' and '),
+                                    TextSpan(text: l10n.andWord),
                                     TextSpan(
-                                      text: 'Terms of Service',
+                                      text: l10n.termsOfService,
                                       style: const TextStyle(
                                         color: Color(0xFF6A2777),
                                         fontWeight: FontWeight.w700,
@@ -663,9 +666,9 @@ class _RegisterViewState extends State<RegisterView> {
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Text(
-                                  'Sign Up & Access Events',
-                                  style: TextStyle(
+                              : Text(
+                                  l10n.createAccount,
+                                  style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -679,11 +682,11 @@ class _RegisterViewState extends State<RegisterView> {
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () => context.go(RouteNames.login),
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
                             child: Text(
-                              'Already have an account? Sign in',
-                              style: TextStyle(
+                              '${l10n.alreadyHaveAccount}${l10n.signInNow}',
+                              style: const TextStyle(
                                 color: Color(0xFF6A2777),
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,

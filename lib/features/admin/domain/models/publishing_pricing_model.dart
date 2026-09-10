@@ -1,4 +1,7 @@
-﻿class PublishingPricingModel {
+import 'package:flutter/widgets.dart';
+import '../../../../core/utils/data_translator.dart';
+
+class PublishingPricingModel {
   final int id;
   final String itemType; // 'event' or 'gallery'
   final String itemName;
@@ -22,6 +25,8 @@
     this.description,
     this.updatedAt,
   });
+
+  String localizedItemName([BuildContext? context]) => itemName.trData(context);
 
   factory PublishingPricingModel.fromJson(Map<String, dynamic> json) {
     return PublishingPricingModel(

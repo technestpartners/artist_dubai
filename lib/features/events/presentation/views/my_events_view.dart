@@ -9,6 +9,7 @@ import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../home/presentation/widgets/home_footer_widget.dart';
 import '../../domain/models/art_event_model.dart';
 
@@ -82,6 +83,7 @@ class _MyEventsViewState extends State<MyEventsView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final totalCreated = _myCreatedEvents.length;
     final totalCategories = _myCreatedEvents.map((e) => e.category).toSet().length;
     final totalCapacity = _myCreatedEvents.fold<int>(0, (sum, e) => sum + e.maxAttendees);
@@ -108,23 +110,23 @@ class _MyEventsViewState extends State<MyEventsView> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Expanded(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'MY CREATED EVENTS',
-                                  style: TextStyle(
+                                  l10n.myCreatedEvents,
+                                  style: const TextStyle(
                                     fontSize: 22,
                                     fontWeight: FontWeight.w900,
                                     color: Colors.white,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
-                                SizedBox(height: 4),
+                                const SizedBox(height: 4),
                                 Text(
-                                  'Manage your published art events and community exhibitions',
-                                  style: TextStyle(
+                                  l10n.myCreatedEventsSubtitle,
+                                  style: const TextStyle(
                                     fontSize: 13.5,
                                     color: Color(0xFFE2D6F5),
                                     fontWeight: FontWeight.w400,
@@ -137,7 +139,7 @@ class _MyEventsViewState extends State<MyEventsView> {
                           ElevatedButton.icon(
                             onPressed: () => context.push(RouteNames.createArtEvent),
                             icon: const Icon(Icons.add, size: 16, color: Color(0xFF6B1C9B)),
-                            label: const Text('Create Event', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF6B1C9B))),
+                            label: Text(l10n.createEvent, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF6B1C9B))),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.white,
                               foregroundColor: const Color(0xFF6B1C9B),
@@ -157,7 +159,7 @@ class _MyEventsViewState extends State<MyEventsView> {
                         children: [
                           Expanded(
                             child: _buildMetricCard(
-                              title: 'Events Created',
+                              title: l10n.eventsCreated,
                               value: '$totalCreated',
                               icon: Icons.event_outlined,
                             ),
@@ -165,7 +167,7 @@ class _MyEventsViewState extends State<MyEventsView> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: _buildMetricCard(
-                              title: 'Categories',
+                              title: l10n.categories,
                               value: '$totalCategories',
                               icon: Icons.category_outlined,
                             ),
@@ -173,7 +175,7 @@ class _MyEventsViewState extends State<MyEventsView> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: _buildMetricCard(
-                              title: 'Total Capacity',
+                              title: l10n.totalCapacity,
                               value: '$totalCapacity',
                               icon: Icons.people_outline,
                             ),
@@ -220,7 +222,7 @@ class _MyEventsViewState extends State<MyEventsView> {
                           style: const TextStyle(color: Color(0xFF0F172A), fontSize: 14),
                           cursorColor: const Color(0xFF6A2777),
                           decoration: InputDecoration(
-                            hintText: 'Search my created events...',
+                            hintText: l10n.searchCreatedEvents,
                             hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 14),
                             prefixIcon: const Icon(Icons.search, color: Color(0xFF64748B), size: 20),
                             suffixIcon: _searchQuery.isNotEmpty
@@ -250,18 +252,18 @@ class _MyEventsViewState extends State<MyEventsView> {
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: const Color(0xFFE2E8F0)),
                           ),
-                          child: const Column(
+                          child: Column(
                             children: [
-                              Icon(Icons.event_busy_outlined, size: 48, color: Color(0xFF94A3B8)),
-                              SizedBox(height: 12),
+                              const Icon(Icons.event_busy_outlined, size: 48, color: Color(0xFF94A3B8)),
+                              const SizedBox(height: 12),
                               Text(
-                                'No created events found.',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                                l10n.noCreatedEventsYet,
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                               ),
-                              SizedBox(height: 4),
+                              const SizedBox(height: 4),
                               Text(
-                                'Create your first art event to showcase it here.',
-                                style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                                l10n.createFirstEventPrompt,
+                                style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
                               ),
                             ],
                           ),
@@ -312,7 +314,7 @@ class _MyEventsViewState extends State<MyEventsView> {
                                           children: [
                                             Expanded(
                                               child: Text(
-                                                event.title,
+                                                event.localizedTitle(context),
                                                 style: const TextStyle(
                                                   fontSize: 17,
                                                   fontWeight: FontWeight.bold,
@@ -352,7 +354,9 @@ class _MyEventsViewState extends State<MyEventsView> {
                                                           ),
                                                           const SizedBox(width: 4),
                                                           Text(
-                                                            isPending ? 'Pending Review' : 'Approved & Live',
+                                                            isPending
+                                                                ? (l10n.localeName == 'ar' ? 'قيد المراجعة' : 'Pending Review')
+                                                                : (l10n.localeName == 'ar' ? 'معتمد ونشط' : 'Approved & Live'),
                                                             style: TextStyle(
                                                               color: isPending ? const Color(0xFFB45309) : const Color(0xFF15803D),
                                                               fontSize: 10.5,
@@ -371,7 +375,7 @@ class _MyEventsViewState extends State<MyEventsView> {
                                                     borderRadius: BorderRadius.circular(10),
                                                   ),
                                                   child: Text(
-                                                    event.category,
+                                                    event.localizedCategory(context),
                                                     style: const TextStyle(
                                                       color: Color(0xFF6A2777),
                                                       fontSize: 11,
@@ -401,7 +405,7 @@ class _MyEventsViewState extends State<MyEventsView> {
                                             const SizedBox(width: 6),
                                             Expanded(
                                               child: Text(
-                                                event.location,
+                                                event.localizedLocation(context),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                                 style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
@@ -413,12 +417,14 @@ class _MyEventsViewState extends State<MyEventsView> {
                                         Row(
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
-                                            const Text(
-                                              'Free Community Entry',
-                                              style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                                            Text(
+                                              l10n.localeName == 'ar' ? 'دخول مجاني للمجتمع' : 'Free Community Entry',
+                                              style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                                             ),
                                             Text(
-                                              'Capacity: ${event.maxAttendees} attendees',
+                                              l10n.localeName == 'ar'
+                                                  ? 'السعة: ${event.maxAttendees} حاضر'
+                                                  : 'Capacity: ${event.maxAttendees} attendees',
                                               style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF6A2777)),
                                             ),
                                           ],
