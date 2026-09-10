@@ -257,6 +257,19 @@ class DatabaseManager {
                 INDEX idx_user_email (user_email),
                 INDEX idx_is_read (is_read)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            CREATE TABLE IF NOT EXISTS publishing_pricing (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                item_type VARCHAR(50) NOT NULL UNIQUE,
+                item_name VARCHAR(100) NOT NULL,
+                weekly_price VARCHAR(50) DEFAULT 'AED 150',
+                monthly_price VARCHAR(50) DEFAULT 'AED 500',
+                yearly_price VARCHAR(50) DEFAULT 'AED 4,500',
+                currency VARCHAR(20) DEFAULT 'AED',
+                is_active TINYINT(1) DEFAULT 1,
+                description TEXT NULL,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         ");
 
         // Safe Column Migrations for Existing Tables
@@ -305,6 +318,10 @@ class DatabaseManager {
             "ALTER TABLE events ADD COLUMN galleries_json LONGTEXT NULL",
             "ALTER TABLE events ADD COLUMN status VARCHAR(50) DEFAULT 'active'",
             "ALTER TABLE events ADD COLUMN is_active TINYINT(1) DEFAULT 1",
+            "ALTER TABLE events ADD COLUMN publishing_plan VARCHAR(50) DEFAULT 'weekly'",
+            "ALTER TABLE events ADD COLUMN publishing_amount VARCHAR(50) DEFAULT 'AED 150'",
+            "ALTER TABLE galleries ADD COLUMN publishing_plan VARCHAR(50) DEFAULT 'weekly'",
+            "ALTER TABLE galleries ADD COLUMN publishing_amount VARCHAR(50) DEFAULT 'AED 200'",
             "ALTER TABLE artists ADD COLUMN status VARCHAR(50) DEFAULT 'active'",
             "ALTER TABLE artists ADD COLUMN is_active TINYINT(1) DEFAULT 1",
             "ALTER TABLE galleries ADD COLUMN event_name VARCHAR(255) NULL",
@@ -478,6 +495,16 @@ class DatabaseManager {
                 ];
                 $nStmt = $this->pdo->prepare("INSERT INTO notifications (title, body, type, route, user_email, is_read) VALUES (?, ?, ?, ?, ?, ?)");
                 foreach ($notifs as $n) { $nStmt->execute($n); }
+            }
+            // Seed Publishing Pricing
+            $pricingCount = (int)$this->pdo->query("SELECT COUNT(*) FROM `publishing_pricing`")->fetchColumn();
+            if ($pricingCount === 0) {
+                $pricingSeed = [
+                    [1, 'event', 'Event Publishing', 'AED 150', 'AED 500', 'AED 4,500', 'AED', 1, 'Standard rate for publishing art events, exhibitions, and symposiums on Artist Dubai.'],
+                    [2, 'gallery', 'Gallery Listing & Showcase', 'AED 200', 'AED 750', 'AED 6,500', 'AED', 1, 'Premier directory listing, verified status badge, and spotlight showcase for Dubai art galleries.'],
+                ];
+                $pStmt = $this->pdo->prepare("INSERT INTO publishing_pricing (id, item_type, item_name, weekly_price, monthly_price, yearly_price, currency, is_active, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                foreach ($pricingSeed as $ps) { $pStmt->execute($ps); }
             }
         } catch (\Throwable $t) {}
     }
@@ -1488,8 +1515,11 @@ class EventController {
             $galleriesJson = (string)$input['galleries_json'];
         }
 
-        $stmt = $this->db->prepare('INSERT INTO events (title, description, category, price, event_date, end_date, location, venue, is_free, organizer_name, contact_email, contact_phone, tags, image_url, max_attendees, attendees_count, galleries_json, status, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)');
-        $stmt->execute([$title, $description, $category, $price, $eventDate, $endDate, $location, $venue, $isFree, $organizer, $contactEmail, $contactPhone, $tags, $imageUrl, $maxAttendees, $galleriesJson, $status, $isActive]);
+        $publishingPlan = InputSanitizer::cleanString($input['publishing_plan'] ?? 'weekly');
+        $publishingAmount = InputSanitizer::cleanString($input['publishing_amount'] ?? '');
+
+        $stmt = $this->db->prepare('INSERT INTO events (title, description, category, price, event_date, end_date, location, venue, is_free, organizer_name, contact_email, contact_phone, tags, image_url, max_attendees, attendees_count, galleries_json, status, is_active, publishing_plan, publishing_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)');
+        $stmt->execute([$title, $description, $category, $price, $eventDate, $endDate, $location, $venue, $isFree, $organizer, $contactEmail, $contactPhone, $tags, $imageUrl, $maxAttendees, $galleriesJson, $status, $isActive, $publishingPlan, $publishingAmount]);
 
         $newEventId = (int)$this->db->lastInsertId();
 
@@ -1588,6 +1618,8 @@ class EventController {
         if ($maxAttendees !== null) { $fields[] = 'max_attendees = ?'; $params[] = $maxAttendees; }
         if (isset($input['status'])) { $fields[] = 'status = ?'; $params[] = InputSanitizer::cleanString((string)$input['status']); }
         if (isset($input['is_active'])) { $fields[] = 'is_active = ?'; $params[] = (int)$input['is_active']; }
+        if (isset($input['publishing_plan'])) { $fields[] = 'publishing_plan = ?'; $params[] = InputSanitizer::cleanString($input['publishing_plan']); }
+        if (isset($input['publishing_amount'])) { $fields[] = 'publishing_amount = ?'; $params[] = InputSanitizer::cleanString($input['publishing_amount']); }
 
         if (empty($fields)) {
             ApiResponse::error('No fields provided to update.', 400);
@@ -2017,14 +2049,16 @@ class GalleryController {
         $status = InputSanitizer::cleanString($input['status'] ?? 'pending');
         $isPublic = isset($input['is_public']) ? (int)$input['is_public'] : ($status === 'approved' ? 1 : 0);
         $isApproved = isset($input['is_approved']) ? (int)$input['is_approved'] : ($status === 'approved' ? 1 : 0);
+        $publishingPlan = InputSanitizer::cleanString($input['publishing_plan'] ?? 'weekly');
+        $publishingAmount = InputSanitizer::cleanString($input['publishing_amount'] ?? '');
 
         if (empty($name)) {
             ApiResponse::error('Gallery / center name is required.');
             return;
         }
 
-        $stmt = $this->db->prepare('INSERT INTO galleries (name, category, location, website, contact_person, email, phone, about, image_url, artist_id, artist_name, description, photo_count, images_json, status, is_public, is_approved, event_name, event_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        $stmt->execute([$name, $category, $location, $website, $contactPerson, $email, $phone, $about, $imageUrl, $artistId, $artistName, $description, $photoCount, $imagesJson, $status, $isPublic, $isApproved, $eventName, $eventId]);
+        $stmt = $this->db->prepare('INSERT INTO galleries (name, category, location, website, contact_person, email, phone, about, image_url, artist_id, artist_name, description, photo_count, images_json, status, is_public, is_approved, event_name, event_id, publishing_plan, publishing_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$name, $category, $location, $website, $contactPerson, $email, $phone, $about, $imageUrl, $artistId, $artistName, $description, $photoCount, $imagesJson, $status, $isPublic, $isApproved, $eventName, $eventId, $publishingPlan, $publishingAmount]);
 
         $newId = (int)$this->db->lastInsertId();
 
@@ -2051,6 +2085,8 @@ class GalleryController {
             'artist_name' => $artistName,
             'event_name' => $eventName,
             'event_id' => $eventId,
+            'publishing_plan' => $publishingPlan,
+            'publishing_amount' => $publishingAmount,
             'status' => $status,
             'is_public' => $isPublic,
             'is_approved' => $isApproved
@@ -2062,7 +2098,7 @@ class GalleryController {
         if ($id <= 0) { ApiResponse::error('Gallery ID is required.'); return; }
         $fields = [];
         $params = [];
-        $allowed = ['name','title','description','category','location','image_url','cover_url','status','is_public','is_approved','about','website','timing','currently_open','display_order','event_name','event_id'];
+        $allowed = ['name','title','description','category','location','image_url','cover_url','status','is_public','is_approved','about','website','timing','currently_open','display_order','event_name','event_id','publishing_plan','publishing_amount'];
         foreach ($allowed as $f) {
             if (isset($input[$f])) { $fields[] = "$f = ?"; $params[] = InputSanitizer::cleanString((string)$input[$f]); }
         }
@@ -2901,6 +2937,97 @@ class AboutController {
 }
 
 // -----------------------------------------------------------------------------
+// 4. Publishing Pricing Controller Class
+// -----------------------------------------------------------------------------
+class PublishingPricingController {
+    private PDO $db;
+
+    public function __construct() {
+        $this->db = DatabaseManager::getInstance()->getConnection();
+    }
+
+    public function getPricing(): void {
+        try {
+            $stmt = $this->db->query("SELECT * FROM publishing_pricing ORDER BY id ASC");
+            $pricing = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // If empty, auto-seed and reload
+            if (empty($pricing)) {
+                $this->db->exec("
+                    INSERT INTO publishing_pricing (item_type, item_name, weekly_price, monthly_price, yearly_price, currency, is_active, description)
+                    VALUES 
+                    ('event', 'Event Publishing', 'AED 150', 'AED 500', 'AED 4,500', 'AED', 1, 'Standard rate for publishing art events, exhibitions, and symposiums on Artist Dubai.'),
+                    ('gallery', 'Gallery Listing & Showcase', 'AED 200', 'AED 750', 'AED 6,500', 'AED', 1, 'Premier directory listing, verified status badge, and spotlight showcase for Dubai art galleries.')
+                    ON DUPLICATE KEY UPDATE item_name=VALUES(item_name)
+                ");
+                $pricing = $this->db->query("SELECT * FROM publishing_pricing ORDER BY id ASC")->fetchAll(PDO::FETCH_ASSOC);
+            }
+
+            ApiResponse::success($pricing, 'Publishing pricing retrieved successfully');
+        } catch (\Throwable $t) {
+            ApiResponse::error('Failed to retrieve publishing pricing: ' . $t->getMessage(), 500);
+        }
+    }
+
+    public function updatePricing(array $input): void {
+        try {
+            $id = isset($input['id']) ? (int)$input['id'] : 0;
+            $itemType = strtolower(trim(InputSanitizer::cleanString($input['item_type'] ?? '')));
+
+            if ($id <= 0 && empty($itemType)) {
+                ApiResponse::error('Pricing ID or item_type is required to update pricing.', 400);
+                return;
+            }
+
+            $weeklyPrice = InputSanitizer::cleanString($input['weekly_price'] ?? $input['weekly'] ?? '');
+            $monthlyPrice = InputSanitizer::cleanString($input['monthly_price'] ?? $input['monthly'] ?? '');
+            $yearlyPrice = InputSanitizer::cleanString($input['yearly_price'] ?? $input['yearly'] ?? '');
+            $description = isset($input['description']) ? InputSanitizer::cleanString($input['description']) : null;
+            $currency = InputSanitizer::cleanString($input['currency'] ?? 'AED');
+
+            if (empty($weeklyPrice) && empty($monthlyPrice) && empty($yearlyPrice)) {
+                ApiResponse::error('At least one pricing rate (weekly, monthly, or yearly) must be provided.', 400);
+                return;
+            }
+
+            // Find current record
+            if ($id > 0) {
+                $checkStmt = $this->db->prepare("SELECT * FROM publishing_pricing WHERE id = ?");
+                $checkStmt->execute([$id]);
+            } else {
+                $checkStmt = $this->db->prepare("SELECT * FROM publishing_pricing WHERE item_type = ?");
+                $checkStmt->execute([$itemType]);
+            }
+            $existing = $checkStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$existing) {
+                ApiResponse::error('Pricing configuration not found.', 404);
+                return;
+            }
+
+            $finalWeekly = !empty($weeklyPrice) ? $weeklyPrice : $existing['weekly_price'];
+            $finalMonthly = !empty($monthlyPrice) ? $monthlyPrice : $existing['monthly_price'];
+            $finalYearly = !empty($yearlyPrice) ? $yearlyPrice : $existing['yearly_price'];
+            $finalDesc = $description !== null ? $description : $existing['description'];
+            $finalCurrency = !empty($currency) ? $currency : ($existing['currency'] ?? 'AED');
+
+            $updateStmt = $this->db->prepare("
+                UPDATE publishing_pricing 
+                SET weekly_price = ?, monthly_price = ?, yearly_price = ?, currency = ?, description = ?
+                WHERE id = ?
+            ");
+            $updateStmt->execute([$finalWeekly, $finalMonthly, $finalYearly, $finalCurrency, $finalDesc, $existing['id']]);
+
+            // Return all updated pricing records
+            $all = $this->db->query("SELECT * FROM publishing_pricing ORDER BY id ASC")->fetchAll(PDO::FETCH_ASSOC);
+            ApiResponse::success($all, 'Publishing pricing updated successfully');
+        } catch (\Throwable $t) {
+            ApiResponse::error('Failed to update publishing pricing: ' . $t->getMessage(), 500);
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
 // 5. Strictly Pure MySQL API Router Class
 // -----------------------------------------------------------------------------
 class UnifiedMySqlApiRouter {
@@ -2936,6 +3063,7 @@ class UnifiedMySqlApiRouter {
             elseif (strpos($uri, 'artworks') !== false) $resource = 'artworks';
             elseif (strpos($uri, 'favorites') !== false) $resource = 'favorites';
             elseif (strpos($uri, 'uploads') !== false || strpos($uri, 'upload') !== false) $resource = 'uploads';
+            elseif (strpos($uri, 'pricing') !== false || strpos($uri, 'publishing_pricing') !== false || strpos($uri, 'publishing-pricing') !== false) $resource = 'publishing_pricing';
             else $resource = 'artists';
         }
 
@@ -3135,6 +3263,17 @@ class UnifiedMySqlApiRouter {
                     $notifCtrl->createNotification($input);
                 } else {
                     $notifCtrl->getNotifications($_GET);
+                }
+                break;
+
+            case 'publishing_pricing':
+            case 'publishing-pricing':
+            case 'pricing':
+                $pricingCtrl = new PublishingPricingController();
+                if ($method === 'POST' || $method === 'PUT') {
+                    $pricingCtrl->updatePricing(array_merge($input, $_GET));
+                } else {
+                    $pricingCtrl->getPricing();
                 }
                 break;
 

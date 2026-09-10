@@ -12,6 +12,7 @@ import '../../../../core/widgets/app_bottom_nav_bar.dart';
 
 import '../../../../core/widgets/app_cached_image.dart';
 
+import '../../../admin/domain/models/publishing_pricing_model.dart';
 import '../../domain/models/art_event_model.dart';
 
 class CreateArtEventView extends StatefulWidget {
@@ -55,6 +56,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
   String? _selectedCategory;
   String? _selectedLocation = 'Dubai, UAE';
   bool _isSubmitting = false;
+
+  String _selectedPublishingPlan = 'weekly';
+  PublishingPricingModel? _eventPricing;
 
   List<String> _categories = [
     'Art Exhibition',
@@ -136,6 +140,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       if (_selectedCategory != null && !_categories.contains(_selectedCategory)) {
         _categories.insert(0, _selectedCategory!);
       }
+      if (ev.publishingPlan != null && ev.publishingPlan!.isNotEmpty) {
+        _selectedPublishingPlan = ev.publishingPlan!;
+      }
     } else {
       _eventTitleController = TextEditingController();
       _descriptionController = TextEditingController();
@@ -153,6 +160,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     }
     _loadDynamicCategories();
     _loadDynamicLocations();
+    _loadPublishingPricing();
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -390,6 +398,29 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     } catch (_) {}
   }
 
+  Future<void> _loadPublishingPricing() async {
+    try {
+      final pricingList = await sl<ApiService>().getPublishingPricing();
+      final evPricing = pricingList.firstWhere(
+        (p) => p.itemType == 'event',
+        orElse: () => const PublishingPricingModel(
+          id: 1,
+          itemType: 'event',
+          itemName: 'Event Publishing',
+          weeklyPrice: 'AED 150',
+          monthlyPrice: 'AED 500',
+          yearlyPrice: 'AED 4,500',
+          currency: 'AED',
+        ),
+      );
+      if (mounted) {
+        setState(() {
+          _eventPricing = evPricing;
+        });
+      }
+    } catch (_) {}
+  }
+
   Future<void> _pickDateTime(TextEditingController controller) async {
     final now = DateTime.now();
     final pickedDate = await showDatePicker(
@@ -501,6 +532,8 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       final selectedLoc = (_selectedLocation != null && _selectedLocation!.trim().isNotEmpty)
           ? _selectedLocation!.trim()
           : (_locationController.text.trim().isEmpty ? 'Dubai, UAE' : _locationController.text.trim());
+      final publishingAmount = _eventPricing?.getPriceForPlan(_selectedPublishingPlan) ??
+          (_selectedPublishingPlan == 'monthly' ? 'AED 500' : (_selectedPublishingPlan == 'yearly' ? 'AED 4,500' : 'AED 150'));
       bool success = false;
 
       if (isEdit) {
@@ -516,6 +549,8 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           'price': 'Free Entry',
           'max_attendees': parsedCapacity,
           'tags': _tagsController.text.trim(),
+          'publishing_plan': _selectedPublishingPlan,
+          'publishing_amount': publishingAmount,
           if (_uploadedImageUrl != null && _uploadedImageUrl!.isNotEmpty) 'image_url': _uploadedImageUrl!,
         });
       } else {
@@ -538,6 +573,8 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           status: isAdmin ? 'active' : 'pending',
           isActive: isAdmin,
           fromAdmin: isAdmin,
+          publishingPlan: _selectedPublishingPlan,
+          publishingAmount: publishingAmount,
         );
       }
 
@@ -1037,7 +1074,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                 const SizedBox(width: 8),
                                 const Expanded(
                                   child: Text(
-                                    'Community Visibility',
+                                    'Choose Publishing Plan',
                                     style: TextStyle(
                                       fontSize: 13.5,
                                       fontWeight: FontWeight.bold,
@@ -1050,12 +1087,70 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                             ),
                             const SizedBox(height: 8),
                             const Text(
-                              'Publishing events is a paid feature on Artist Dubai. Once approved and published, your event is promoted and visible to all registered users across Dubai.',
+                              'Publishing events is a paid service on Artist Dubai. Select your preferred promotion duration. Once reviewed and approved by the admin, your event will be broadcasted to art enthusiasts across Dubai.',
                               style: TextStyle(
                                 fontSize: 12.5,
                                 color: Color(0xFF475569),
                                 height: 1.4,
                               ),
+                            ),
+                            const SizedBox(height: 14),
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                final isSmall = constraints.maxWidth < 460;
+                                final weeklyPrice = _eventPricing?.weeklyPrice ?? 'AED 150';
+                                final monthlyPrice = _eventPricing?.monthlyPrice ?? 'AED 500';
+                                final yearlyPrice = _eventPricing?.yearlyPrice ?? 'AED 4,500';
+
+                                final cards = [
+                                  _buildPricingPlanCard(
+                                    id: 'weekly',
+                                    title: 'Weekly',
+                                    price: weeklyPrice,
+                                    period: '/ week',
+                                    subtitle: '7 days active',
+                                    tag: null,
+                                  ),
+                                  _buildPricingPlanCard(
+                                    id: 'monthly',
+                                    title: 'Monthly',
+                                    price: monthlyPrice,
+                                    period: '/ month',
+                                    subtitle: '30 days active',
+                                    tag: 'POPULAR',
+                                  ),
+                                  _buildPricingPlanCard(
+                                    id: 'yearly',
+                                    title: 'Yearly',
+                                    price: yearlyPrice,
+                                    period: '/ year',
+                                    subtitle: '365 days active',
+                                    tag: 'BEST VALUE',
+                                  ),
+                                ];
+
+                                if (isSmall) {
+                                  return Column(
+                                    children: cards
+                                        .map((c) => Padding(
+                                              padding: const EdgeInsets.only(bottom: 8),
+                                              child: c,
+                                            ))
+                                        .toList(),
+                                  );
+                                }
+
+                                return Row(
+                                  children: cards
+                                      .map((c) => Expanded(
+                                            child: Padding(
+                                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                                              child: c,
+                                            ),
+                                          ))
+                                      .toList(),
+                                );
+                              },
                             ),
                           ],
                         ),
@@ -1476,6 +1571,113 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildPricingPlanCard({
+    required String id,
+    required String title,
+    required String price,
+    required String period,
+    required String subtitle,
+    String? tag,
+  }) {
+    final isSelected = _selectedPublishingPlan == id;
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedPublishingPlan = id;
+        });
+      },
+      borderRadius: BorderRadius.circular(10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFAF5FF) : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF6B1C9B) : const Color(0xFFE2E8F0),
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF6B1C9B).withValues(alpha: 0.12),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: isSelected ? const Color(0xFF6B1C9B) : const Color(0xFF334155),
+                      ),
+                    ),
+                    Icon(
+                      isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                      size: 18,
+                      color: isSelected ? const Color(0xFF6B1C9B) : const Color(0xFF94A3B8),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  price,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+            if (tag != null)
+              Positioned(
+                top: -6,
+                right: 22,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                  decoration: BoxDecoration(
+                    color: tag == 'POPULAR' ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    tag,
+                    style: const TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

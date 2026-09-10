@@ -1,5 +1,6 @@
 import 'dart:convert';
 import '../../features/artists/domain/models/artist_model.dart';
+import '../../features/admin/domain/models/publishing_pricing_model.dart';
 import '../../features/events/domain/models/art_event_model.dart';
 import '../../features/government/domain/models/government_entity.dart';
 import '../constants/api_endpoints.dart';
@@ -418,6 +419,8 @@ class ApiService {
     String status = 'pending',
     bool isActive = false,
     bool fromAdmin = false,
+    String? publishingPlan,
+    String? publishingAmount,
   }) async {
     try {
       final res = await _client.post(
@@ -441,6 +444,8 @@ class ApiService {
           'status': status,
           'is_active': isActive ? 1 : 0,
           'from_admin': fromAdmin ? 1 : 0,
+          'publishing_plan': publishingPlan ?? 'weekly',
+          'publishing_amount': publishingAmount ?? '',
         },
       );
       if (_isSuccess(res)) {
@@ -1407,6 +1412,81 @@ class ApiService {
         try {
           sl<LiveSyncService>().notifyLocationsChanged();
         } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  // 15h. Publishing Pricing & Plans Master (MySQL Backend)
+  List<PublishingPricingModel>? _cachedPublishingPricing;
+
+  Future<List<PublishingPricingModel>> getPublishingPricing({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedPublishingPricing != null && _cachedPublishingPricing!.isNotEmpty) {
+      return _cachedPublishingPricing!;
+    }
+    try {
+      final res = await _client.get(ApiEndpoints.publishingPricing);
+      if (_isSuccess(res)) {
+        final list = res['data'] as List<dynamic>;
+        _cachedPublishingPricing = list
+            .map((item) => PublishingPricingModel.fromJson(item as Map<String, dynamic>))
+            .toList();
+        return _cachedPublishingPricing!;
+      }
+    } catch (_) {}
+
+    return _cachedPublishingPricing ??
+        const [
+          PublishingPricingModel(
+            id: 1,
+            itemType: 'event',
+            itemName: 'Event Publishing',
+            weeklyPrice: 'AED 150',
+            monthlyPrice: 'AED 500',
+            yearlyPrice: 'AED 4,500',
+            currency: 'AED',
+            description: 'Standard rate for publishing art events, exhibitions, and symposiums on Artist Dubai.',
+          ),
+          PublishingPricingModel(
+            id: 2,
+            itemType: 'gallery',
+            itemName: 'Gallery Listing & Showcase',
+            weeklyPrice: 'AED 200',
+            monthlyPrice: 'AED 750',
+            yearlyPrice: 'AED 6,500',
+            currency: 'AED',
+            description: 'Premier directory listing, verified status badge, and spotlight showcase for Dubai art galleries.',
+          ),
+        ];
+  }
+
+  Future<bool> updatePublishingPricing({
+    required String itemType,
+    required String weeklyPrice,
+    required String monthlyPrice,
+    required String yearlyPrice,
+    String? description,
+    String currency = 'AED',
+  }) async {
+    try {
+      final res = await _client.post(
+        ApiEndpoints.publishingPricing,
+        data: {
+          'item_type': itemType,
+          'weekly_price': weeklyPrice,
+          'monthly_price': monthlyPrice,
+          'yearly_price': yearlyPrice,
+          if (description != null) 'description': description,
+          'currency': currency,
+        },
+      );
+      if (_isSuccess(res)) {
+        _cachedPublishingPricing = null;
+        try {
+          sl<LiveSyncService>().notifyPublishingPricingChanged();
+        } catch (_) {}
+        await getPublishingPricing(forceRefresh: true);
         return true;
       }
     } catch (_) {}

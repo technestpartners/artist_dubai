@@ -60,4 +60,7 @@ class ApiEndpoints {
 
   // About Platform (MySQL Backend)
   static const String aboutUs = 'api.php?resource=about';
+
+  // Publishing Pricing & Plans (MySQL Backend)
+  static const String publishingPricing = 'api.php?resource=publishing_pricing';
 }

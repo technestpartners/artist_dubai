@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/widgets.dart';
 import '../../features/artists/domain/models/artist_model.dart';
+import '../../features/admin/domain/models/publishing_pricing_model.dart';
 import '../../features/events/domain/models/art_event_model.dart';
 import '../../features/government/domain/models/government_entity.dart';
 import '../di/injection_container.dart';
@@ -42,6 +43,8 @@ class LiveSyncService with WidgetsBindingObserver {
       StreamController<List<ExperienceLevelModel>>.broadcast();
   final StreamController<List<LocationModel>> _locationsController =
       StreamController<List<LocationModel>>.broadcast();
+  final StreamController<List<PublishingPricingModel>> _publishingPricingController =
+      StreamController<List<PublishingPricingModel>>.broadcast();
   final StreamController<bool> _authController =
       StreamController<bool>.broadcast();
 
@@ -55,6 +58,7 @@ class LiveSyncService with WidgetsBindingObserver {
   Stream<List<CategoryInfo>> get categoriesStream => _categoriesController.stream;
   Stream<List<ExperienceLevelModel>> get experienceLevelsStream => _experienceLevelsController.stream;
   Stream<List<LocationModel>> get locationsStream => _locationsController.stream;
+  Stream<List<PublishingPricingModel>> get publishingPricingStream => _publishingPricingController.stream;
   Stream<bool> get authStream => _authController.stream;
 
   LiveSyncService(this._apiService) {
@@ -196,6 +200,17 @@ class LiveSyncService with WidgetsBindingObserver {
     } catch (_) {}
   }
 
+  /// Trigger sync for publishing pricing when an Admin Update occurs
+  Future<void> notifyPublishingPricingChanged([List<PublishingPricingModel>? updatedList]) async {
+    if (updatedList != null && !_publishingPricingController.isClosed) {
+      _publishingPricingController.add(updatedList);
+    }
+    try {
+      final fresh = await _apiService.getPublishingPricing(forceRefresh: true);
+      if (!_publishingPricingController.isClosed) _publishingPricingController.add(fresh);
+    } catch (_) {}
+  }
+
   /// Starts real-time multi-device database synchronization loop
   void startMultiDeviceSync({Duration? interval}) {
     if (_isTesting) return;
@@ -250,17 +265,20 @@ class LiveSyncService with WidgetsBindingObserver {
       if (!_governmentController.isClosed) _governmentController.add(govEntities);
       if (!_favoritesController.isClosed) _favoritesController.add(favorites);
 
-      // Phase 3: Masters (Experience Levels & Locations)
+      // Phase 3: Masters (Experience Levels, Locations & Publishing Pricing)
       final mastersBatch = await Future.wait([
         _apiService.getExperienceLevels(forceRefresh: forceRefresh).catchError((_) => <ExperienceLevelModel>[]),
         _apiService.getLocations(forceRefresh: forceRefresh).catchError((_) => <LocationModel>[]),
+        _apiService.getPublishingPricing(forceRefresh: forceRefresh).catchError((_) => <PublishingPricingModel>[]),
       ]);
 
       final experienceLevels = mastersBatch[0] as List<ExperienceLevelModel>;
       final locations = mastersBatch[1] as List<LocationModel>;
+      final publishingPricing = mastersBatch[2] as List<PublishingPricingModel>;
 
       if (!_experienceLevelsController.isClosed) _experienceLevelsController.add(experienceLevels);
       if (!_locationsController.isClosed) _locationsController.add(locations);
+      if (!_publishingPricingController.isClosed) _publishingPricingController.add(publishingPricing);
 
       try {
         sl<NotificationService>().syncWithBackend();
@@ -287,6 +305,7 @@ class LiveSyncService with WidgetsBindingObserver {
     _categoriesController.close();
     _experienceLevelsController.close();
     _locationsController.close();
+    _publishingPricingController.close();
     _authController.close();
   }
 }

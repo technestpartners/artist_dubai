@@ -8,6 +8,7 @@ import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/utils/responsive_helper.dart';
 import '../../../artists/domain/models/artist_model.dart';
+import '../../domain/models/publishing_pricing_model.dart';
 import '../../../events/domain/models/art_event_model.dart';
 import '../../../government/domain/models/government_entity.dart';
 
@@ -39,6 +40,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   List<CategoryInfo> _categories = [];
   List<ExperienceLevelModel> _experienceLevels = [];
   List<LocationModel> _locations = [];
+  List<PublishingPricingModel> _publishingPricing = [];
 
   StreamSubscription<List<ArtistModel>>? _artistsSub;
   StreamSubscription<List<ArtEventModel>>? _eventsSub;
@@ -46,9 +48,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   StreamSubscription<List<CategoryInfo>>? _categoriesSub;
   StreamSubscription<List<ExperienceLevelModel>>? _experienceLevelsSub;
   StreamSubscription<List<LocationModel>>? _locationsSub;
+  StreamSubscription<List<PublishingPricingModel>>? _publishingPricingSub;
   final Set<String> _togglingEventIds = {};
   Timer? _periodicSyncTimer;
-  int _masterSubTab = 0; // 0 = Categories, 1 = Experience Levels, 2 = Locations
+  int _masterSubTab = 0; // 0 = Categories, 1 = Experience Levels, 2 = Locations, 3 = Publishing Pricing
   int _eventFilterIndex = 0; // 0 = All, 1 = Pending Review, 2 = Active
 
   Future<void> _pickAndUploadImageForField(TextEditingController controller, StateSetter setModalState) async {
@@ -118,6 +121,11 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         setState(() => _locations = list);
       }
     });
+    _publishingPricingSub = liveSync.publishingPricingStream.listen((list) {
+      if (mounted) {
+        setState(() => _publishingPricing = list);
+      }
+    });
   }
 
   @override
@@ -129,6 +137,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     _categoriesSub?.cancel();
     _experienceLevelsSub?.cancel();
     _locationsSub?.cancel();
+    _publishingPricingSub?.cancel();
     super.dispose();
   }
 
@@ -142,6 +151,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         sl<ApiService>().getCategories(type: 'all', forceRefresh: true).catchError((_) => <CategoryInfo>[]),
         sl<ApiService>().getExperienceLevels(forceRefresh: true).catchError((_) => <ExperienceLevelModel>[]),
         sl<ApiService>().getLocations(forceRefresh: true).catchError((_) => <LocationModel>[]),
+        sl<ApiService>().getPublishingPricing(forceRefresh: true).catchError((_) => <PublishingPricingModel>[]),
       ]);
 
       if (mounted) {
@@ -207,6 +217,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           _categories = results[4] as List<CategoryInfo>;
           _experienceLevels = results[5] as List<ExperienceLevelModel>;
           _locations = results[6] as List<LocationModel>;
+          _publishingPricing = results[7] as List<PublishingPricingModel>;
         });
       }
     } catch (_) {}
@@ -1571,9 +1582,13 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               final isPending = st == 'pending' || st == 'pending_approval' || (!ev.isActive && st != 'cancelled' && st != 'inactive');
               final isActive = ev.isActive && st != 'cancelled' && st != 'inactive' && !isPending;
 
+              final plan = ev.publishingPlan ?? '';
+              final amount = ev.publishingAmount ?? '';
+              final planInfo = plan.isNotEmpty ? ' · Plan: ${plan.toUpperCase()}${amount.isNotEmpty ? " ($amount)" : ""}' : '';
+
               return _buildListItemCard(
                 title: ev.title,
-                subtitle: '${ev.organizer.isNotEmpty ? "Organizer: ${ev.organizer} · " : ""}${ev.formattedDate.isNotEmpty ? ev.formattedDate : ev.dateTime} - ${ev.location}',
+                subtitle: '${ev.organizer.isNotEmpty ? "Organizer: ${ev.organizer} · " : ""}${ev.formattedDate.isNotEmpty ? ev.formattedDate : ev.dateTime} - ${ev.location}$planInfo',
                 badgeText: isPending ? 'Pending Review' : (isActive ? 'Active' : 'Inactive'),
                 isPurpleBadge: isActive,
                 isAmberBadge: isPending,
@@ -1995,13 +2010,17 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               final name = gal['name'] as String? ?? 'Gallery';
               final id = gal['id'];
               final isPending = _isItemPending(gal);
+              final plan = gal['publishing_plan']?.toString() ?? '';
+              final amount = gal['publishing_amount']?.toString() ?? '';
+              final planInfo = plan.isNotEmpty ? ' · Plan: ${plan.toUpperCase()}${amount.isNotEmpty ? " ($amount)" : ""}' : '';
+
               return _buildListItemCard(
                 title: name,
-                subtitle: (gal['description'] != null && gal['description'].toString().isNotEmpty
+                subtitle: '${(gal['description'] != null && gal['description'].toString().isNotEmpty
                     ? gal['description']
                     : (gal['artist_name'] != null && gal['artist_name'].toString().isNotEmpty
                         ? 'Artist: ${gal['artist_name']}'
-                        : 'Artist photo collection')).toString(),
+                        : 'Artist photo collection'))}$planInfo',
                 badgeText: isPending ? 'Pending' : 'Approved',
                 isPurpleBadge: !isPending,
                 isAmberBadge: isPending,
@@ -2723,6 +2742,46 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   ),
                 ),
               ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _masterSubTab = 3),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _masterSubTab == 3 ? Colors.white : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: _masterSubTab == 3
+                          ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.payments_outlined,
+                          size: 15,
+                          color: _masterSubTab == 3 ? const Color(0xFF6A2777) : const Color(0xFF64748B),
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            'Pricing',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: _masterSubTab == 3 ? FontWeight.w700 : FontWeight.w500,
+                              color: _masterSubTab == 3 ? const Color(0xFF6A2777) : const Color(0xFF64748B),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -2733,45 +2792,81 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              _masterSubTab == 0
-                  ? '${_categories.length} categories configured'
-                  : _masterSubTab == 1
-                      ? '${_experienceLevels.length} experience levels configured'
-                      : '${_locations.length} locations configured',
-              style: const TextStyle(
-                fontSize: 13.5,
-                color: Color(0xFF64748B),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6A2777),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              icon: const Icon(Icons.add, size: 14, color: Colors.white),
-              label: Text(
+            Expanded(
+              child: Text(
                 _masterSubTab == 0
-                    ? 'New Category'
+                    ? '${_categories.length} categories configured'
                     : _masterSubTab == 1
-                        ? 'New Level'
-                        : 'New Location',
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white),
+                        ? '${_experienceLevels.length} experience levels configured'
+                        : _masterSubTab == 2
+                            ? '${_locations.length} locations configured'
+                            : 'Set weekly, monthly & yearly publishing rates',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  color: Color(0xFF64748B),
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-              onPressed: () {
-                if (_masterSubTab == 0) {
-                  _showCategoryDialog();
-                } else if (_masterSubTab == 1) {
-                  _showExperienceLevelDialog();
-                } else {
-                  _showLocationDialog();
-                }
-              },
             ),
+            const SizedBox(width: 8),
+            if (_masterSubTab != 3)
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6A2777),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                icon: const Icon(Icons.add, size: 14, color: Colors.white),
+                label: Text(
+                  _masterSubTab == 0
+                      ? 'New Category'
+                      : _masterSubTab == 1
+                          ? 'New Level'
+                          : 'New Location',
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white),
+                ),
+                onPressed: () {
+                  if (_masterSubTab == 0) {
+                    _showCategoryDialog();
+                  } else if (_masterSubTab == 1) {
+                    _showExperienceLevelDialog();
+                  } else {
+                    _showLocationDialog();
+                  }
+                },
+              )
+            else
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF6A2777),
+                  side: const BorderSide(color: Color(0xFF6A2777), width: 1.2),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                icon: const Icon(Icons.refresh, size: 14),
+                label: const Text(
+                  'Refresh',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                ),
+                onPressed: () async {
+                  final pricing = await sl<ApiService>().getPublishingPricing(forceRefresh: true);
+                  if (mounted) {
+                    setState(() => _publishingPricing = pricing);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Publishing pricing rates refreshed from database'),
+                        backgroundColor: Color(0xFF6A2777),
+                        behavior: SnackBarBehavior.floating,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                },
+              ),
           ],
         ),
         const SizedBox(height: 14),
@@ -2781,8 +2876,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           _buildCategoriesMasterList()
         else if (_masterSubTab == 1)
           _buildExperienceLevelsMasterList()
+        else if (_masterSubTab == 2)
+          _buildLocationsMasterList()
         else
-          _buildLocationsMasterList(),
+          _buildPublishingPricingMasterList(),
       ],
     );
   }
@@ -3546,6 +3643,494 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     ],
                   ),
                 ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPublishingPricingMasterList() {
+    final pricingList = _publishingPricing.isNotEmpty
+        ? _publishingPricing
+        : const [
+            PublishingPricingModel(
+              id: 1,
+              itemType: 'event',
+              itemName: 'Event Publishing',
+              weeklyPrice: 'AED 150',
+              monthlyPrice: 'AED 500',
+              yearlyPrice: 'AED 4,500',
+              currency: 'AED',
+              description: 'Standard rate for publishing art events, exhibitions, and symposiums on Artist Dubai.',
+            ),
+            PublishingPricingModel(
+              id: 2,
+              itemType: 'gallery',
+              itemName: 'Gallery Listing & Showcase',
+              weeklyPrice: 'AED 200',
+              monthlyPrice: 'AED 750',
+              yearlyPrice: 'AED 6,500',
+              currency: 'AED',
+              description: 'Premier directory listing, verified status badge, and spotlight showcase for Dubai art galleries.',
+            ),
+          ];
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: pricingList.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 16),
+      itemBuilder: (context, index) {
+        final pricing = pricingList[index];
+        final isEvent = pricing.itemType == 'event';
+
+        return Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isEvent ? const Color(0xFFE9D5FF) : const Color(0xFFBAE6FD),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header row
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: isEvent ? const Color(0xFFF3E8FF) : const Color(0xFFE0F2FE),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      isEvent ? Icons.event_available_rounded : Icons.museum_outlined,
+                      color: isEvent ? const Color(0xFF6A2777) : const Color(0xFF0284C7),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                pricing.itemName,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF0F172A),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFECFDF5),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: const Color(0xFFA7F3D0)),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.check_circle_rounded, size: 11, color: Color(0xFF059669)),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Active in App',
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF059669),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          pricing.description ??
+                              (isEvent
+                                  ? 'Rates displayed to users & organizers when creating events in the app.'
+                                  : 'Rates applied when galleries register for directory listing and showcases.'),
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            color: Color(0xFF64748B),
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              const SizedBox(height: 16),
+
+              // Rate Cards Grid (Weekly, Monthly, Yearly)
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isCompact = constraints.maxWidth < 500;
+                  final cards = [
+                    _buildRateBadge(
+                      title: 'Weekly Rate',
+                      duration: '7 Days Exposure',
+                      amount: pricing.weeklyPrice,
+                      accentColor: const Color(0xFF6A2777),
+                      badgeText: 'Standard',
+                    ),
+                    _buildRateBadge(
+                      title: 'Monthly Rate',
+                      duration: '30 Days Exposure',
+                      amount: pricing.monthlyPrice,
+                      accentColor: const Color(0xFFD97706),
+                      badgeText: 'Popular',
+                    ),
+                    _buildRateBadge(
+                      title: 'Yearly Rate',
+                      duration: '365 Days Featured',
+                      amount: pricing.yearlyPrice,
+                      accentColor: const Color(0xFF059669),
+                      badgeText: 'Best Value',
+                    ),
+                  ];
+
+                  if (isCompact) {
+                    return Column(
+                      children: cards
+                          .map((c) => Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: c,
+                              ))
+                          .toList(),
+                    );
+                  }
+
+                  return Row(
+                    children: [
+                      Expanded(child: cards[0]),
+                      const SizedBox(width: 10),
+                      Expanded(child: cards[1]),
+                      const SizedBox(width: 10),
+                      Expanded(child: cards[2]),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Bottom Action Bar
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Currency: ${pricing.currency}',
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF94A3B8),
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6A2777),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.edit_note_rounded, size: 16, color: Colors.white),
+                    label: Text(
+                      'Edit ${isEvent ? 'Event' : 'Gallery'} Rates',
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5, color: Colors.white),
+                    ),
+                    onPressed: () => _showEditPricingDialog(pricing),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRateBadge({
+    required String title,
+    required String duration,
+    required String amount,
+    required Color accentColor,
+    required String badgeText,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF64748B),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  badgeText,
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w700,
+                    color: accentColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            amount,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF0F172A),
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            duration,
+            style: const TextStyle(
+              fontSize: 10.5,
+              color: Color(0xFF94A3B8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditPricingDialog(PublishingPricingModel pricing) {
+    final weeklyCtrl = TextEditingController(text: pricing.weeklyPrice);
+    final monthlyCtrl = TextEditingController(text: pricing.monthlyPrice);
+    final yearlyCtrl = TextEditingController(text: pricing.yearlyPrice);
+    final descCtrl = TextEditingController(text: pricing.description ?? '');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Container(
+              width: 500,
+              padding: const EdgeInsets.all(22),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF3E8FF),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.payments_outlined, color: Color(0xFF6A2777), size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Edit ${pricing.itemName}',
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF0F172A),
+                              ),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 20),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Configure live amounts charged for ${pricing.itemType == 'event' ? 'event publishing' : 'gallery registration'} in the app.',
+                      style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Weekly Rate Field
+                    const Text('Weekly Rate *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: weeklyCtrl,
+                      decoration: InputDecoration(
+                        hintText: 'e.g. AED 150',
+                        prefixIcon: const Icon(Icons.calendar_view_week_rounded, size: 18),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Monthly Rate Field
+                    const Text('Monthly Rate *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: monthlyCtrl,
+                      decoration: InputDecoration(
+                        hintText: 'e.g. AED 500',
+                        prefixIcon: const Icon(Icons.calendar_month_rounded, size: 18),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Yearly Rate Field
+                    const Text('Yearly Rate *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: yearlyCtrl,
+                      decoration: InputDecoration(
+                        hintText: 'e.g. AED 4,500',
+                        prefixIcon: const Icon(Icons.stars_rounded, size: 18),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Description Field
+                    const Text('Plan Description', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: descCtrl,
+                      maxLines: 2,
+                      decoration: InputDecoration(
+                        hintText: 'Brief summary of what this plan covers',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+
+                    // Action buttons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
+                        ),
+                        const SizedBox(width: 10),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF6A2777),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          onPressed: () async {
+                            final weekly = weeklyCtrl.text.trim();
+                            final monthly = monthlyCtrl.text.trim();
+                            final yearly = yearlyCtrl.text.trim();
+
+                            if (weekly.isEmpty || monthly.isEmpty || yearly.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Please enter weekly, monthly, and yearly amounts'),
+                                  backgroundColor: Colors.redAccent,
+                                ),
+                              );
+                              return;
+                            }
+
+                            final messenger = ScaffoldMessenger.of(context);
+                            Navigator.pop(ctx);
+
+                            final success = await sl<ApiService>().updatePublishingPricing(
+                              itemType: pricing.itemType,
+                              weeklyPrice: weekly,
+                              monthlyPrice: monthly,
+                              yearlyPrice: yearly,
+                              description: descCtrl.text.trim().isNotEmpty ? descCtrl.text.trim() : null,
+                            );
+
+                            if (success) {
+                              final updatedList = await sl<ApiService>().getPublishingPricing(forceRefresh: true);
+                              if (mounted) {
+                                setState(() => _publishingPricing = updatedList);
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text('${pricing.itemName} rates updated successfully!'),
+                                    backgroundColor: const Color(0xFF6A2777),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            } else {
+                              if (mounted) {
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Failed to update rates. Please check connection.'),
+                                    backgroundColor: Colors.redAccent,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          child: const Text(
+                            'Save Rates',
+                            style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           );

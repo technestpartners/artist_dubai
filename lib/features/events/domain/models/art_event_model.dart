@@ -49,6 +49,8 @@ class ArtEventModel {
   final List<EventPhotoGallery> galleries;
   final String status;
   final bool isActive;
+  final String? publishingPlan;
+  final String? publishingAmount;
 
   const ArtEventModel({
     required this.id,
@@ -71,6 +73,8 @@ class ArtEventModel {
     this.galleries = const [],
     this.status = 'active',
     this.isActive = true,
+    this.publishingPlan,
+    this.publishingAmount,
   });
 
   ArtEventModel copyWith({
@@ -94,6 +98,8 @@ class ArtEventModel {
     List<EventPhotoGallery>? galleries,
     String? status,
     bool? isActive,
+    String? publishingPlan,
+    String? publishingAmount,
   }) {
     return ArtEventModel(
       id: id ?? this.id,
@@ -119,6 +125,8 @@ class ArtEventModel {
           (status != null
               ? (status.trim().toLowerCase() == 'active' || status.trim().toLowerCase() == 'scheduled')
               : this.isActive),
+      publishingPlan: publishingPlan ?? this.publishingPlan,
+      publishingAmount: publishingAmount ?? this.publishingAmount,
     );
   }
 
@@ -201,6 +209,8 @@ class ArtEventModel {
             rawStatus == 'scheduled' ||
             rawStatus.isEmpty;
       }(),
+      publishingPlan: json['publishing_plan'] as String?,
+      publishingAmount: json['publishing_amount'] as String?,
     );
   }
 
