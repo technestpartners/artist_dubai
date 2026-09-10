@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../app/routes/route_names.dart';
@@ -12,6 +13,7 @@ import '../../../../core/widgets/app_bottom_nav_bar.dart';
 
 import '../../../../core/widgets/app_cached_image.dart';
 
+import '../../../admin/domain/models/payment_settings_model.dart';
 import '../../../admin/domain/models/publishing_pricing_model.dart';
 import '../../domain/models/art_event_model.dart';
 
@@ -59,6 +61,11 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
   String _selectedPublishingPlan = 'weekly';
   PublishingPricingModel? _eventPricing;
+
+  final _transactionIdController = TextEditingController();
+  String? _receiptUrl;
+  bool _isUploadingReceipt = false;
+  PaymentSettingsModel? _paymentSettings;
 
   List<String> _categories = [
     'Art Exhibition',
@@ -143,6 +150,12 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       if (ev.publishingPlan != null && ev.publishingPlan!.isNotEmpty) {
         _selectedPublishingPlan = ev.publishingPlan!;
       }
+      if (ev.paymentProofUrl != null && ev.paymentProofUrl!.isNotEmpty) {
+        _receiptUrl = ev.paymentProofUrl;
+      }
+      if (ev.paymentReference != null && ev.paymentReference!.isNotEmpty) {
+        _transactionIdController.text = ev.paymentReference!;
+      }
     } else {
       _eventTitleController = TextEditingController();
       _descriptionController = TextEditingController();
@@ -161,6 +174,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     _loadDynamicCategories();
     _loadDynamicLocations();
     _loadPublishingPricing();
+    _loadPaymentSettings();
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -421,6 +435,48 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     } catch (_) {}
   }
 
+  Future<void> _loadPaymentSettings() async {
+    try {
+      final settings = await sl<ApiService>().getPaymentSettings();
+      if (mounted) {
+        setState(() {
+          _paymentSettings = settings;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _pickReceiptImage() async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+      if (picked != null) {
+        setState(() => _isUploadingReceipt = true);
+        final bytes = await picked.readAsBytes();
+        final nameParts = picked.name.split('.');
+        final ext = nameParts.length > 1 ? nameParts.last : 'jpg';
+        final url = await sl<ApiService>().uploadImageBytes(bytes, ext: ext);
+        if (mounted) {
+          setState(() {
+            _receiptUrl = url;
+            _isUploadingReceipt = false;
+          });
+          if (url != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Payment receipt attached successfully!'),
+                backgroundColor: Color(0xFF6A2777),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isUploadingReceipt = false);
+    }
+  }
+
   Future<void> _pickDateTime(TextEditingController controller) async {
     final now = DateTime.now();
     final pickedDate = await showDatePicker(
@@ -486,6 +542,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     _notesController.dispose();
     _tagsController.dispose();
     _maxTicketsController.dispose();
+    _transactionIdController.dispose();
     super.dispose();
   }
 
@@ -534,6 +591,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           : (_locationController.text.trim().isEmpty ? 'Dubai, UAE' : _locationController.text.trim());
       final publishingAmount = _eventPricing?.getPriceForPlan(_selectedPublishingPlan) ??
           (_selectedPublishingPlan == 'monthly' ? 'AED 500' : (_selectedPublishingPlan == 'yearly' ? 'AED 4,500' : 'AED 150'));
+      final txnRef = _transactionIdController.text.trim();
+      final hasPaymentProof = (_receiptUrl != null && _receiptUrl!.isNotEmpty) || txnRef.isNotEmpty;
+      final paymentStatus = isAdmin ? 'paid' : (hasPaymentProof ? 'submitted' : 'unpaid');
       bool success = false;
 
       if (isEdit) {
@@ -551,6 +611,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           'tags': _tagsController.text.trim(),
           'publishing_plan': _selectedPublishingPlan,
           'publishing_amount': publishingAmount,
+          'payment_status': paymentStatus,
+          if (_receiptUrl != null && _receiptUrl!.isNotEmpty) 'payment_proof_url': _receiptUrl!,
+          if (txnRef.isNotEmpty) 'payment_reference': txnRef,
           if (_uploadedImageUrl != null && _uploadedImageUrl!.isNotEmpty) 'image_url': _uploadedImageUrl!,
         });
       } else {
@@ -575,6 +638,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           fromAdmin: isAdmin,
           publishingPlan: _selectedPublishingPlan,
           publishingAmount: publishingAmount,
+          paymentStatus: paymentStatus,
+          paymentProofUrl: _receiptUrl,
+          paymentReference: txnRef.isNotEmpty ? txnRef : null,
         );
       }
 
@@ -1155,6 +1221,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                           ],
                         ),
                       ),
+                      if (!widget.fromAdmin) ...[
+                        _buildPaymentDetailsCard(),
+                      ],
                       const SizedBox(height: 20),
 
                       // Action Row: Cancel & Update Event
@@ -1241,6 +1310,378 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           ),
           const SizedBox(height: 14),
           child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentDetailsCard() {
+    final settings = _paymentSettings ?? PaymentSettingsModel.defaultSettings();
+    final planAmount = _eventPricing?.getPriceForPlan(_selectedPublishingPlan) ??
+        (_selectedPublishingPlan == 'monthly' ? 'AED 500' : (_selectedPublishingPlan == 'yearly' ? 'AED 4,500' : 'AED 150'));
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6A2777).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFF6A2777), size: 20),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Payment & Transfer Details',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                    ),
+                    Text(
+                      'Scan QR or transfer via bank to activate your plan',
+                      style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3E8FF),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFD8B4FE)),
+                ),
+                child: Text(
+                  'Pay $planAmount',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF6A2777)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // QR Code + Bank Details Layout
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 480;
+
+              final qrWidget = Container(
+                width: isNarrow ? double.infinity : 150,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: settings.qrCodeUrl.isNotEmpty
+                            ? AppCachedImage(
+                                imageUrl: settings.qrCodeUrl,
+                                fit: BoxFit.contain,
+                                errorWidget: const Center(
+                                  child: Icon(Icons.qr_code_2_rounded, size: 50, color: Color(0xFF94A3B8)),
+                                ),
+                              )
+                            : const Center(
+                                child: Icon(Icons.qr_code_2_rounded, size: 50, color: Color(0xFF94A3B8)),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Scan to Pay',
+                      style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF475569)),
+                    ),
+                  ],
+                ),
+              );
+
+              final bankInfoWidget = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildPaymentInfoRow('Bank Name', settings.bankName, Icons.account_balance_rounded),
+                  const SizedBox(height: 8),
+                  _buildPaymentInfoRow('Account Title', settings.accountName, Icons.person_rounded),
+                  const SizedBox(height: 8),
+                  _buildPaymentInfoRow(
+                    'IBAN / Account #',
+                    settings.accountNumber,
+                    Icons.tag_rounded,
+                    isCopyable: true,
+                  ),
+                  if (settings.instructions.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFFBEB),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFFDE68A)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFFD97706)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              settings.instructions,
+                              style: const TextStyle(fontSize: 11.5, color: Color(0xFF92400E), height: 1.3),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              );
+
+              if (isNarrow) {
+                return Column(
+                  children: [
+                    qrWidget,
+                    const SizedBox(height: 14),
+                    bankInfoWidget,
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  qrWidget,
+                  const SizedBox(width: 16),
+                  Expanded(child: bankInfoWidget),
+                ],
+              );
+            },
+          ),
+
+          const SizedBox(height: 18),
+          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+          const SizedBox(height: 14),
+
+          // User Payment Proof Submission
+          const Text(
+            'Payment Verification',
+            style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'After transferring, provide the Transaction ID or upload the transfer screenshot for faster approval.',
+            style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+          ),
+          const SizedBox(height: 12),
+
+          // Transaction ID Field
+          TextFormField(
+            controller: _transactionIdController,
+            style: const TextStyle(fontSize: 13.5, color: Color(0xFF0F172A), fontWeight: FontWeight.w500),
+            decoration: InputDecoration(
+              hintText: 'e.g. TXN-98421074 or Bank Reference No.',
+              hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF94A3B8)),
+              prefixIcon: const Icon(Icons.receipt_long_rounded, size: 18, color: Color(0xFF64748B)),
+              filled: true,
+              fillColor: const Color(0xFFF8FAFC),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Receipt Upload Card
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: _receiptUrl != null ? const Color(0xFFF0FDF4) : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: _receiptUrl != null ? const Color(0xFF86EFAC) : const Color(0xFFE2E8F0),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    if (_receiptUrl != null) ...[
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: AppCachedImage(
+                          imageUrl: _receiptUrl!,
+                          width: 38,
+                          height: 38,
+                          fit: BoxFit.cover,
+                          errorWidget: const Icon(Icons.receipt_rounded, color: Color(0xFF16A34A)),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Payment Proof Attached',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF15803D)),
+                            ),
+                            Text(
+                              'Screenshot ready for admin review',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 10.5, color: Color(0xFF166534)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEDE9FE),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(Icons.upload_file_rounded, color: Color(0xFF6A2777), size: 20),
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Attach Transfer Receipt',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+                            ),
+                            Text(
+                              'PNG, JPG up to 10MB',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton.icon(
+                    onPressed: _isUploadingReceipt ? null : _pickReceiptImage,
+                    icon: _isUploadingReceipt
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6A2777)),
+                          )
+                        : Icon(
+                            _receiptUrl != null ? Icons.refresh_rounded : Icons.add_photo_alternate_rounded,
+                            size: 16,
+                            color: const Color(0xFF6A2777),
+                          ),
+                    label: Text(
+                      _isUploadingReceipt
+                          ? 'Uploading...'
+                          : (_receiptUrl != null ? 'Change Receipt Photo' : 'Upload Payment Receipt'),
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF6A2777)),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      backgroundColor: const Color(0xFFF3E8FF),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentInfoRow(String label, String value, IconData icon, {bool isCopyable = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: const Color(0xFF64748B)),
+          const SizedBox(width: 8),
+          Text(
+            '$label: ',
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+            ),
+          ),
+          if (isCopyable && value.isNotEmpty)
+            InkWell(
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: value));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Copied $label to clipboard!'),
+                    backgroundColor: const Color(0xFF6A2777),
+                    duration: const Duration(seconds: 2),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+              child: const Padding(
+                padding: EdgeInsets.all(4),
+                child: Icon(Icons.copy_rounded, size: 15, color: Color(0xFF6A2777)),
+              ),
+            ),
         ],
       ),
     );

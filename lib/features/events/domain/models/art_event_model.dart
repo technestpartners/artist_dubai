@@ -51,6 +51,9 @@ class ArtEventModel {
   final bool isActive;
   final String? publishingPlan;
   final String? publishingAmount;
+  final String? paymentStatus;
+  final String? paymentProofUrl;
+  final String? paymentReference;
 
   const ArtEventModel({
     required this.id,
@@ -75,6 +78,9 @@ class ArtEventModel {
     this.isActive = true,
     this.publishingPlan,
     this.publishingAmount,
+    this.paymentStatus,
+    this.paymentProofUrl,
+    this.paymentReference,
   });
 
   ArtEventModel copyWith({
@@ -100,6 +106,9 @@ class ArtEventModel {
     bool? isActive,
     String? publishingPlan,
     String? publishingAmount,
+    String? paymentStatus,
+    String? paymentProofUrl,
+    String? paymentReference,
   }) {
     return ArtEventModel(
       id: id ?? this.id,
@@ -127,6 +136,9 @@ class ArtEventModel {
               : this.isActive),
       publishingPlan: publishingPlan ?? this.publishingPlan,
       publishingAmount: publishingAmount ?? this.publishingAmount,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+      paymentProofUrl: paymentProofUrl ?? this.paymentProofUrl,
+      paymentReference: paymentReference ?? this.paymentReference,
     );
   }
 
@@ -211,6 +223,9 @@ class ArtEventModel {
       }(),
       publishingPlan: json['publishing_plan'] as String?,
       publishingAmount: json['publishing_amount'] as String?,
+      paymentStatus: json['payment_status'] as String?,
+      paymentProofUrl: (json['payment_proof_url'] ?? json['receipt_url']) as String?,
+      paymentReference: (json['payment_reference'] ?? json['transaction_id']) as String?,
     );
   }
 

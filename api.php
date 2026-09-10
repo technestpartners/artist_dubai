@@ -270,6 +270,17 @@ class DatabaseManager {
                 description TEXT NULL,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            CREATE TABLE IF NOT EXISTS payment_settings (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                qr_code_url TEXT NULL,
+                account_name VARCHAR(255) DEFAULT 'Artist Dubai LLC',
+                account_number VARCHAR(255) DEFAULT 'AE290331234567890123456',
+                bank_name VARCHAR(255) DEFAULT 'Emirates NBD',
+                instructions TEXT NULL,
+                is_active TINYINT(1) DEFAULT 1,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         ");
 
         // Safe Column Migrations for Existing Tables
@@ -320,8 +331,14 @@ class DatabaseManager {
             "ALTER TABLE events ADD COLUMN is_active TINYINT(1) DEFAULT 1",
             "ALTER TABLE events ADD COLUMN publishing_plan VARCHAR(50) DEFAULT 'weekly'",
             "ALTER TABLE events ADD COLUMN publishing_amount VARCHAR(50) DEFAULT 'AED 150'",
+            "ALTER TABLE events ADD COLUMN payment_status VARCHAR(50) DEFAULT 'pending'",
+            "ALTER TABLE events ADD COLUMN payment_proof_url TEXT NULL",
+            "ALTER TABLE events ADD COLUMN payment_reference VARCHAR(100) NULL",
             "ALTER TABLE galleries ADD COLUMN publishing_plan VARCHAR(50) DEFAULT 'weekly'",
             "ALTER TABLE galleries ADD COLUMN publishing_amount VARCHAR(50) DEFAULT 'AED 200'",
+            "ALTER TABLE galleries ADD COLUMN payment_status VARCHAR(50) DEFAULT 'pending'",
+            "ALTER TABLE galleries ADD COLUMN payment_proof_url TEXT NULL",
+            "ALTER TABLE galleries ADD COLUMN payment_reference VARCHAR(100) NULL",
             "ALTER TABLE artists ADD COLUMN status VARCHAR(50) DEFAULT 'active'",
             "ALTER TABLE artists ADD COLUMN is_active TINYINT(1) DEFAULT 1",
             "ALTER TABLE galleries ADD COLUMN event_name VARCHAR(255) NULL",
@@ -505,6 +522,18 @@ class DatabaseManager {
                 ];
                 $pStmt = $this->pdo->prepare("INSERT INTO publishing_pricing (id, item_type, item_name, weekly_price, monthly_price, yearly_price, currency, is_active, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 foreach ($pricingSeed as $ps) { $pStmt->execute($ps); }
+            }
+
+            // Seed Payment Settings (QR Code & UAE Bank Account)
+            $payCount = (int)$this->pdo->query("SELECT COUNT(*) FROM `payment_settings`")->fetchColumn();
+            if ($payCount === 0) {
+                $defaultQr = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=iban%3AAE280330000000012345678%26name%3DArtistDubai';
+                $defaultAccName = 'Artist Dubai Cultural Services LLC';
+                $defaultIban = 'AE28 0330 0000 0001 2345 678';
+                $defaultBank = 'Emirates NBD, Dubai';
+                $defaultNote = 'Please scan the QR code with your mobile banking or payment app, or transfer directly via IBAN. Once paid, enter your transaction reference number and upload the receipt screenshot.';
+                $payStmt = $this->pdo->prepare("INSERT INTO payment_settings (id, qr_code_url, account_name, account_number, bank_name, instructions, is_active) VALUES (1, ?, ?, ?, ?, ?, 1)");
+                $payStmt->execute([$defaultQr, $defaultAccName, $defaultIban, $defaultBank, $defaultNote]);
             }
         } catch (\Throwable $t) {}
     }
@@ -1517,9 +1546,12 @@ class EventController {
 
         $publishingPlan = InputSanitizer::cleanString($input['publishing_plan'] ?? 'weekly');
         $publishingAmount = InputSanitizer::cleanString($input['publishing_amount'] ?? '');
+        $paymentStatus = InputSanitizer::cleanString($input['payment_status'] ?? 'pending');
+        $paymentProofUrl = InputSanitizer::cleanString($input['payment_proof_url'] ?? $input['receipt_url'] ?? '');
+        $paymentReference = InputSanitizer::cleanString($input['payment_reference'] ?? $input['transaction_id'] ?? '');
 
-        $stmt = $this->db->prepare('INSERT INTO events (title, description, category, price, event_date, end_date, location, venue, is_free, organizer_name, contact_email, contact_phone, tags, image_url, max_attendees, attendees_count, galleries_json, status, is_active, publishing_plan, publishing_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)');
-        $stmt->execute([$title, $description, $category, $price, $eventDate, $endDate, $location, $venue, $isFree, $organizer, $contactEmail, $contactPhone, $tags, $imageUrl, $maxAttendees, $galleriesJson, $status, $isActive, $publishingPlan, $publishingAmount]);
+        $stmt = $this->db->prepare('INSERT INTO events (title, description, category, price, event_date, end_date, location, venue, is_free, organizer_name, contact_email, contact_phone, tags, image_url, max_attendees, attendees_count, galleries_json, status, is_active, publishing_plan, publishing_amount, payment_status, payment_proof_url, payment_reference) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$title, $description, $category, $price, $eventDate, $endDate, $location, $venue, $isFree, $organizer, $contactEmail, $contactPhone, $tags, $imageUrl, $maxAttendees, $galleriesJson, $status, $isActive, $publishingPlan, $publishingAmount, $paymentStatus, $paymentProofUrl, $paymentReference]);
 
         $newEventId = (int)$this->db->lastInsertId();
 
@@ -1620,6 +1652,9 @@ class EventController {
         if (isset($input['is_active'])) { $fields[] = 'is_active = ?'; $params[] = (int)$input['is_active']; }
         if (isset($input['publishing_plan'])) { $fields[] = 'publishing_plan = ?'; $params[] = InputSanitizer::cleanString($input['publishing_plan']); }
         if (isset($input['publishing_amount'])) { $fields[] = 'publishing_amount = ?'; $params[] = InputSanitizer::cleanString($input['publishing_amount']); }
+        if (isset($input['payment_status'])) { $fields[] = 'payment_status = ?'; $params[] = InputSanitizer::cleanString($input['payment_status']); }
+        if (isset($input['payment_proof_url']) || isset($input['receipt_url'])) { $fields[] = 'payment_proof_url = ?'; $params[] = InputSanitizer::cleanString($input['payment_proof_url'] ?? $input['receipt_url']); }
+        if (isset($input['payment_reference']) || isset($input['transaction_id'])) { $fields[] = 'payment_reference = ?'; $params[] = InputSanitizer::cleanString($input['payment_reference'] ?? $input['transaction_id']); }
 
         if (empty($fields)) {
             ApiResponse::error('No fields provided to update.', 400);
@@ -2051,14 +2086,17 @@ class GalleryController {
         $isApproved = isset($input['is_approved']) ? (int)$input['is_approved'] : ($status === 'approved' ? 1 : 0);
         $publishingPlan = InputSanitizer::cleanString($input['publishing_plan'] ?? 'weekly');
         $publishingAmount = InputSanitizer::cleanString($input['publishing_amount'] ?? '');
+        $paymentStatus = InputSanitizer::cleanString($input['payment_status'] ?? 'pending');
+        $paymentProofUrl = InputSanitizer::cleanString($input['payment_proof_url'] ?? $input['receipt_url'] ?? '');
+        $paymentReference = InputSanitizer::cleanString($input['payment_reference'] ?? $input['transaction_id'] ?? '');
 
         if (empty($name)) {
             ApiResponse::error('Gallery / center name is required.');
             return;
         }
 
-        $stmt = $this->db->prepare('INSERT INTO galleries (name, category, location, website, contact_person, email, phone, about, image_url, artist_id, artist_name, description, photo_count, images_json, status, is_public, is_approved, event_name, event_id, publishing_plan, publishing_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        $stmt->execute([$name, $category, $location, $website, $contactPerson, $email, $phone, $about, $imageUrl, $artistId, $artistName, $description, $photoCount, $imagesJson, $status, $isPublic, $isApproved, $eventName, $eventId, $publishingPlan, $publishingAmount]);
+        $stmt = $this->db->prepare('INSERT INTO galleries (name, category, location, website, contact_person, email, phone, about, image_url, artist_id, artist_name, description, photo_count, images_json, status, is_public, is_approved, event_name, event_id, publishing_plan, publishing_amount, payment_status, payment_proof_url, payment_reference) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$name, $category, $location, $website, $contactPerson, $email, $phone, $about, $imageUrl, $artistId, $artistName, $description, $photoCount, $imagesJson, $status, $isPublic, $isApproved, $eventName, $eventId, $publishingPlan, $publishingAmount, $paymentStatus, $paymentProofUrl, $paymentReference]);
 
         $newId = (int)$this->db->lastInsertId();
 
@@ -2087,6 +2125,9 @@ class GalleryController {
             'event_id' => $eventId,
             'publishing_plan' => $publishingPlan,
             'publishing_amount' => $publishingAmount,
+            'payment_status' => $paymentStatus,
+            'payment_proof_url' => $paymentProofUrl,
+            'payment_reference' => $paymentReference,
             'status' => $status,
             'is_public' => $isPublic,
             'is_approved' => $isApproved
@@ -2098,7 +2139,7 @@ class GalleryController {
         if ($id <= 0) { ApiResponse::error('Gallery ID is required.'); return; }
         $fields = [];
         $params = [];
-        $allowed = ['name','title','description','category','location','image_url','cover_url','status','is_public','is_approved','about','website','timing','currently_open','display_order','event_name','event_id','publishing_plan','publishing_amount'];
+        $allowed = ['name','title','description','category','location','image_url','cover_url','status','is_public','is_approved','about','website','timing','currently_open','display_order','event_name','event_id','publishing_plan','publishing_amount','payment_status','payment_proof_url','payment_reference'];
         foreach ($allowed as $f) {
             if (isset($input[$f])) { $fields[] = "$f = ?"; $params[] = InputSanitizer::cleanString((string)$input[$f]); }
         }
@@ -3028,6 +3069,85 @@ class PublishingPricingController {
 }
 
 // -----------------------------------------------------------------------------
+// Payment Settings Controller (QR Code & Bank Details)
+// -----------------------------------------------------------------------------
+class PaymentSettingsController {
+    private PDO $db;
+
+    public function __construct() {
+        $this->db = DatabaseManager::getInstance()->getConnection();
+    }
+
+    public function getSettings(): void {
+        try {
+            $stmt = $this->db->query("SELECT * FROM payment_settings ORDER BY id ASC LIMIT 1");
+            $settings = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$settings) {
+                // Auto seed fallback
+                $defaultQr = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=iban%3AAE280330000000012345678%26name%3DArtistDubai';
+                $defaultAccName = 'Artist Dubai Cultural Services LLC';
+                $defaultIban = 'AE28 0330 0000 0001 2345 678';
+                $defaultBank = 'Emirates NBD, Dubai';
+                $defaultNote = 'Please scan the QR code with your mobile banking or payment app, or transfer directly via IBAN. Once paid, enter your transaction reference number and upload the receipt screenshot.';
+                $payStmt = $this->db->prepare("INSERT INTO payment_settings (id, qr_code_url, account_name, account_number, bank_name, instructions, is_active) VALUES (1, ?, ?, ?, ?, ?, 1)");
+                $payStmt->execute([$defaultQr, $defaultAccName, $defaultIban, $defaultBank, $defaultNote]);
+                $settings = $this->db->query("SELECT * FROM payment_settings ORDER BY id ASC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+            }
+
+            ApiResponse::success($settings, 'Payment settings retrieved successfully');
+        } catch (\Throwable $t) {
+            ApiResponse::error('Failed to retrieve payment settings: ' . $t->getMessage(), 500);
+        }
+    }
+
+    public function updateSettings(array $input): void {
+        try {
+            $qrCodeUrl = isset($input['qr_code_url']) ? InputSanitizer::cleanString($input['qr_code_url']) : null;
+            $accountName = isset($input['account_name']) ? InputSanitizer::cleanString($input['account_name']) : null;
+            $accountNumber = isset($input['account_number']) ? InputSanitizer::cleanString($input['account_number']) : null;
+            $bankName = isset($input['bank_name']) ? InputSanitizer::cleanString($input['bank_name']) : null;
+            $instructions = isset($input['instructions']) ? InputSanitizer::cleanString($input['instructions']) : null;
+            $isActive = isset($input['is_active']) ? (int)$input['is_active'] : null;
+
+            // Fetch existing
+            $existing = $this->db->query("SELECT * FROM payment_settings ORDER BY id ASC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+
+            if ($existing) {
+                $fields = [];
+                $params = [];
+                if ($qrCodeUrl !== null) { $fields[] = 'qr_code_url = ?'; $params[] = $qrCodeUrl; }
+                if ($accountName !== null) { $fields[] = 'account_name = ?'; $params[] = $accountName; }
+                if ($accountNumber !== null) { $fields[] = 'account_number = ?'; $params[] = $accountNumber; }
+                if ($bankName !== null) { $fields[] = 'bank_name = ?'; $params[] = $bankName; }
+                if ($instructions !== null) { $fields[] = 'instructions = ?'; $params[] = $instructions; }
+                if ($isActive !== null) { $fields[] = 'is_active = ?'; $params[] = $isActive; }
+
+                if (!empty($fields)) {
+                    $params[] = $existing['id'];
+                    $this->db->prepare("UPDATE payment_settings SET " . implode(', ', $fields) . " WHERE id = ?")->execute($params);
+                }
+            } else {
+                $stmt = $this->db->prepare("INSERT INTO payment_settings (qr_code_url, account_name, account_number, bank_name, instructions, is_active) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt->execute([
+                    $qrCodeUrl ?? '',
+                    $accountName ?? 'Artist Dubai LLC',
+                    $accountNumber ?? '',
+                    $bankName ?? 'Emirates NBD',
+                    $instructions ?? '',
+                    $isActive ?? 1
+                ]);
+            }
+
+            $updated = $this->db->query("SELECT * FROM payment_settings ORDER BY id ASC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+            ApiResponse::success($updated, 'Payment settings updated successfully');
+        } catch (\Throwable $t) {
+            ApiResponse::error('Failed to update payment settings: ' . $t->getMessage(), 500);
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
 // 5. Strictly Pure MySQL API Router Class
 // -----------------------------------------------------------------------------
 class UnifiedMySqlApiRouter {
@@ -3064,6 +3184,7 @@ class UnifiedMySqlApiRouter {
             elseif (strpos($uri, 'favorites') !== false) $resource = 'favorites';
             elseif (strpos($uri, 'uploads') !== false || strpos($uri, 'upload') !== false) $resource = 'uploads';
             elseif (strpos($uri, 'pricing') !== false || strpos($uri, 'publishing_pricing') !== false || strpos($uri, 'publishing-pricing') !== false) $resource = 'publishing_pricing';
+            elseif (strpos($uri, 'payment_settings') !== false || strpos($uri, 'payment-settings') !== false || strpos($uri, 'payment') !== false) $resource = 'payment_settings';
             else $resource = 'artists';
         }
 
@@ -3274,6 +3395,17 @@ class UnifiedMySqlApiRouter {
                     $pricingCtrl->updatePricing(array_merge($input, $_GET));
                 } else {
                     $pricingCtrl->getPricing();
+                }
+                break;
+
+            case 'payment_settings':
+            case 'payment-settings':
+            case 'payment':
+                $payCtrl = new PaymentSettingsController();
+                if ($method === 'POST' || $method === 'PUT') {
+                    $payCtrl->updateSettings(array_merge($input, $_GET));
+                } else {
+                    $payCtrl->getSettings();
                 }
                 break;
 

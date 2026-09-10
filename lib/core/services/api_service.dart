@@ -1,6 +1,7 @@
 import 'dart:convert';
 import '../../features/artists/domain/models/artist_model.dart';
 import '../../features/admin/domain/models/publishing_pricing_model.dart';
+import '../../features/admin/domain/models/payment_settings_model.dart';
 import '../../features/events/domain/models/art_event_model.dart';
 import '../../features/government/domain/models/government_entity.dart';
 import '../constants/api_endpoints.dart';
@@ -421,6 +422,9 @@ class ApiService {
     bool fromAdmin = false,
     String? publishingPlan,
     String? publishingAmount,
+    String? paymentStatus,
+    String? paymentProofUrl,
+    String? paymentReference,
   }) async {
     try {
       final res = await _client.post(
@@ -446,6 +450,9 @@ class ApiService {
           'from_admin': fromAdmin ? 1 : 0,
           'publishing_plan': publishingPlan ?? 'weekly',
           'publishing_amount': publishingAmount ?? '',
+          if (paymentStatus != null) 'payment_status': paymentStatus,
+          if (paymentProofUrl != null) 'payment_proof_url': paymentProofUrl,
+          if (paymentReference != null) 'payment_reference': paymentReference,
         },
       );
       if (_isSuccess(res)) {
@@ -1487,6 +1494,56 @@ class ApiService {
           sl<LiveSyncService>().notifyPublishingPricingChanged();
         } catch (_) {}
         await getPublishingPricing(forceRefresh: true);
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  // 15i. Payment Settings & QR Code (MySQL Backend)
+  PaymentSettingsModel? _cachedPaymentSettings;
+
+  Future<PaymentSettingsModel> getPaymentSettings({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedPaymentSettings != null) {
+      return _cachedPaymentSettings!;
+    }
+    try {
+      final res = await _client.get(ApiEndpoints.paymentSettings);
+      if (_isSuccess(res) && res['data'] != null) {
+        _cachedPaymentSettings = PaymentSettingsModel.fromJson(res['data'] as Map<String, dynamic>);
+        return _cachedPaymentSettings!;
+      }
+    } catch (_) {}
+
+    return _cachedPaymentSettings ?? PaymentSettingsModel.defaultSettings();
+  }
+
+  Future<bool> updatePaymentSettings({
+    String? qrCodeUrl,
+    String? accountName,
+    String? accountNumber,
+    String? bankName,
+    String? instructions,
+    bool? isActive,
+  }) async {
+    try {
+      final res = await _client.post(
+        ApiEndpoints.paymentSettings,
+        data: {
+          if (qrCodeUrl != null) 'qr_code_url': qrCodeUrl,
+          if (accountName != null) 'account_name': accountName,
+          if (accountNumber != null) 'account_number': accountNumber,
+          if (bankName != null) 'bank_name': bankName,
+          if (instructions != null) 'instructions': instructions,
+          if (isActive != null) 'is_active': isActive ? 1 : 0,
+        },
+      );
+      if (_isSuccess(res)) {
+        _cachedPaymentSettings = null;
+        try {
+          sl<LiveSyncService>().notifyPaymentSettingsChanged();
+        } catch (_) {}
+        await getPaymentSettings(forceRefresh: true);
         return true;
       }
     } catch (_) {}

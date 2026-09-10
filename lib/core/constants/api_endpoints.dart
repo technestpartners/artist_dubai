@@ -63,4 +63,7 @@ class ApiEndpoints {
 
   // Publishing Pricing & Plans (MySQL Backend)
   static const String publishingPricing = 'api.php?resource=publishing_pricing';
+
+  // Payment QR & Bank Settings (MySQL Backend)
+  static const String paymentSettings = 'api.php?resource=payment_settings';
 }

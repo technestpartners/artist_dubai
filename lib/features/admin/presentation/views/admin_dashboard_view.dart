@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../app/routes/route_names.dart';
@@ -9,6 +10,7 @@ import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/utils/responsive_helper.dart';
 import '../../../artists/domain/models/artist_model.dart';
 import '../../domain/models/publishing_pricing_model.dart';
+import '../../domain/models/payment_settings_model.dart';
 import '../../../events/domain/models/art_event_model.dart';
 import '../../../government/domain/models/government_entity.dart';
 
@@ -41,6 +43,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   List<ExperienceLevelModel> _experienceLevels = [];
   List<LocationModel> _locations = [];
   List<PublishingPricingModel> _publishingPricing = [];
+  // ignore: unused_field
+  PaymentSettingsModel _paymentSettings = PaymentSettingsModel.defaultSettings();
 
   StreamSubscription<List<ArtistModel>>? _artistsSub;
   StreamSubscription<List<ArtEventModel>>? _eventsSub;
@@ -49,6 +53,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   StreamSubscription<List<ExperienceLevelModel>>? _experienceLevelsSub;
   StreamSubscription<List<LocationModel>>? _locationsSub;
   StreamSubscription<List<PublishingPricingModel>>? _publishingPricingSub;
+  StreamSubscription<PaymentSettingsModel>? _paymentSettingsSub;
   final Set<String> _togglingEventIds = {};
   Timer? _periodicSyncTimer;
   int _masterSubTab = 0; // 0 = Categories, 1 = Experience Levels, 2 = Locations, 3 = Publishing Pricing
@@ -126,6 +131,11 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         setState(() => _publishingPricing = list);
       }
     });
+    _paymentSettingsSub = liveSync.paymentSettingsStream.listen((settings) {
+      if (mounted) {
+        setState(() => _paymentSettings = settings);
+      }
+    });
   }
 
   @override
@@ -138,6 +148,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     _experienceLevelsSub?.cancel();
     _locationsSub?.cancel();
     _publishingPricingSub?.cancel();
+    _paymentSettingsSub?.cancel();
     super.dispose();
   }
 
@@ -152,6 +163,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         sl<ApiService>().getExperienceLevels(forceRefresh: true).catchError((_) => <ExperienceLevelModel>[]),
         sl<ApiService>().getLocations(forceRefresh: true).catchError((_) => <LocationModel>[]),
         sl<ApiService>().getPublishingPricing(forceRefresh: true).catchError((_) => <PublishingPricingModel>[]),
+        sl<ApiService>().getPaymentSettings(forceRefresh: true).catchError((_) => PaymentSettingsModel.defaultSettings()),
       ]);
 
       if (mounted) {
@@ -218,6 +230,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           _experienceLevels = results[5] as List<ExperienceLevelModel>;
           _locations = results[6] as List<LocationModel>;
           _publishingPricing = results[7] as List<PublishingPricingModel>;
+          _paymentSettings = results[8] as PaymentSettingsModel;
         });
       }
     } catch (_) {}
@@ -1585,6 +1598,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               final plan = ev.publishingPlan ?? '';
               final amount = ev.publishingAmount ?? '';
               final planInfo = plan.isNotEmpty ? ' · Plan: ${plan.toUpperCase()}${amount.isNotEmpty ? " ($amount)" : ""}' : '';
+              final payRef = ev.paymentReference ?? '';
+              final payStatus = ev.paymentStatus ?? (isPending ? 'pending' : 'paid');
+              final payProof = ev.paymentProofUrl ?? '';
 
               return _buildListItemCard(
                 title: ev.title,
@@ -1592,6 +1608,20 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 badgeText: isPending ? 'Pending Review' : (isActive ? 'Active' : 'Inactive'),
                 isPurpleBadge: isActive,
                 isAmberBadge: isPending,
+                paymentProofUrl: payProof,
+                paymentReference: payRef,
+                paymentStatus: isPending ? payStatus : null,
+                onViewReceipt: payProof.isNotEmpty
+                    ? () => _showReceiptDialog(
+                          context,
+                          title: ev.title,
+                          receiptUrl: payProof,
+                          refNumber: payRef,
+                          plan: plan,
+                          amount: amount,
+                          onAccept: isPending ? () => _approveEvent(ev, realIndex) : null,
+                        )
+                    : null,
                 onApprove: isPending ? () => _approveEvent(ev, realIndex) : null,
                 onToggleStatus: () => _toggleEventStatus(ev, realIndex),
                 onEdit: () async {
@@ -2013,6 +2043,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               final plan = gal['publishing_plan']?.toString() ?? '';
               final amount = gal['publishing_amount']?.toString() ?? '';
               final planInfo = plan.isNotEmpty ? ' · Plan: ${plan.toUpperCase()}${amount.isNotEmpty ? " ($amount)" : ""}' : '';
+              final payRef = gal['payment_reference']?.toString() ?? '';
+              final payStatus = gal['payment_status']?.toString() ?? (isPending ? 'pending' : 'paid');
+              final payProof = (gal['payment_proof_url'] ?? gal['receipt_url'])?.toString() ?? '';
 
               return _buildListItemCard(
                 title: name,
@@ -2024,6 +2057,20 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 badgeText: isPending ? 'Pending' : 'Approved',
                 isPurpleBadge: !isPending,
                 isAmberBadge: isPending,
+                paymentProofUrl: payProof,
+                paymentReference: payRef,
+                paymentStatus: isPending ? payStatus : null,
+                onViewReceipt: payProof.isNotEmpty
+                    ? () => _showReceiptDialog(
+                          context,
+                          title: name,
+                          receiptUrl: payProof,
+                          refNumber: payRef,
+                          plan: plan,
+                          amount: amount,
+                          onAccept: isPending ? () => _approveGallery(gal, index) : null,
+                        )
+                    : null,
                 onApprove: isPending ? () => _approveGallery(gal, index) : null,
                 onToggleStatus: () => _toggleGalleryApproval(gal, index),
                 onEdit: () => _showCreateGalleryDialog(existing: gal, index: index),
@@ -2471,6 +2518,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     VoidCallback? onToggleStatus,
     VoidCallback? onEdit,
     VoidCallback? onDelete,
+    String? paymentProofUrl,
+    String? paymentReference,
+    String? paymentStatus,
+    VoidCallback? onViewReceipt,
   }) {
     Color badgeBg;
     Color badgeFg;
@@ -2537,9 +2588,85 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     color: Color(0xFF64748B),
                   ),
                 ),
+                if ((paymentReference != null && paymentReference.isNotEmpty) ||
+                    (paymentStatus != null && paymentStatus.isNotEmpty)) ...[
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      if (paymentReference != null && paymentReference.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: const Color(0xFFBFDBFE), width: 0.8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.tag_rounded, size: 10, color: Color(0xFF2563EB)),
+                              const SizedBox(width: 2),
+                              Text(
+                                'Ref: $paymentReference',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF1D4ED8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (paymentStatus != null && paymentStatus.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: paymentStatus.toLowerCase() == 'paid' || paymentStatus.toLowerCase() == 'approved'
+                                ? const Color(0xFFECFDF5)
+                                : const Color(0xFFFEF3C7),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: paymentStatus.toLowerCase() == 'paid' || paymentStatus.toLowerCase() == 'approved'
+                                  ? const Color(0xFFA7F3D0)
+                                  : const Color(0xFFFDE68A),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Text(
+                            paymentStatus.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w700,
+                              color: paymentStatus.toLowerCase() == 'paid' || paymentStatus.toLowerCase() == 'approved'
+                                  ? const Color(0xFF059669)
+                                  : const Color(0xFFD97706),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
+          if (onViewReceipt != null) ...[
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF6A2777),
+                side: const BorderSide(color: Color(0xFF6A2777), width: 1.2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: const Size(60, 28),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              ),
+              onPressed: onViewReceipt,
+              icon: const Icon(Icons.receipt_long_rounded, size: 12),
+              label: const Text('Receipt', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(width: 6),
+          ],
           if (badgeText != null) ...[
             MouseRegion(
               cursor: onToggleStatus != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
@@ -2605,6 +2732,166 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               onPressed: onDelete,
             ),
         ],
+      ),
+    );
+  }
+
+  void _showReceiptDialog(
+    BuildContext context, {
+    required String title,
+    required String receiptUrl,
+    String? refNumber,
+    String? plan,
+    String? amount,
+    VoidCallback? onAccept,
+  }) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: 500,
+          constraints: const BoxConstraints(maxHeight: 650),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF3E8FF),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.receipt_long_rounded, color: Color(0xFF6A2777), size: 20),
+                      ),
+                      const SizedBox(width: 10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Payment Proof',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                          ),
+                          Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 20, color: Color(0xFF64748B)),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Meta chips
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (plan != null && plan.isNotEmpty)
+                      Text(
+                        'Plan: ${plan.toUpperCase()}${amount != null && amount.isNotEmpty ? " ($amount)" : ""}',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF6A2777)),
+                      ),
+                    if (refNumber != null && refNumber.isNotEmpty)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.tag, size: 12, color: Color(0xFF2563EB)),
+                          const SizedBox(width: 2),
+                          SelectableText(
+                            refNumber,
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF1D4ED8)),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              // Receipt Image preview
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F172A),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: InteractiveViewer(
+                      child: Image.network(
+                        receiptUrl,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(20),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.broken_image_outlined, size: 40, color: Colors.white54),
+                                SizedBox(height: 8),
+                                Text('Receipt image not accessible', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Close', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                  ),
+                  if (onAccept != null) ...[
+                    const SizedBox(width: 10),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF16A34A),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        onAccept();
+                      },
+                      icon: const Icon(Icons.check, size: 14, color: Colors.white),
+                      label: const Text('Accept & Publish', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -3677,201 +3964,800 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             ),
           ];
 
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: pricingList.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 16),
-      itemBuilder: (context, index) {
-        final pricing = pricingList[index];
-        final isEvent = pricing.itemType == 'event';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: pricingList.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 16),
+          itemBuilder: (context, index) {
+            final pricing = pricingList[index];
+            final isEvent = pricing.itemType == 'event';
 
-        return Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isEvent ? const Color(0xFFE9D5FF) : const Color(0xFFBAE6FD),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+            return Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isEvent ? const Color(0xFFE9D5FF) : const Color(0xFFBAE6FD),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header row
-              Row(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: isEvent ? const Color(0xFFF3E8FF) : const Color(0xFFE0F2FE),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      isEvent ? Icons.event_available_rounded : Icons.museum_outlined,
-                      color: isEvent ? const Color(0xFF6A2777) : const Color(0xFF0284C7),
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                  // Header row
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: isEvent ? const Color(0xFFF3E8FF) : const Color(0xFFE0F2FE),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          isEvent ? Icons.event_available_rounded : Icons.museum_outlined,
+                          color: isEvent ? const Color(0xFF6A2777) : const Color(0xFF0284C7),
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Flexible(
-                              child: Text(
-                                pricing.itemName,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF0F172A),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFECFDF5),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFA7F3D0)),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.check_circle_rounded, size: 11, color: Color(0xFF059669)),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'Active in App',
-                                    style: TextStyle(
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF059669),
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    pricing.itemName,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF0F172A),
                                     ),
                                   ),
-                                ],
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFECFDF5),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: const Color(0xFFA7F3D0)),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.check_circle_rounded, size: 11, color: Color(0xFF059669)),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        'Active in App',
+                                        style: TextStyle(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFF059669),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              pricing.description ??
+                                  (isEvent
+                                      ? 'Rates displayed to users & organizers when creating events in the app.'
+                                      : 'Rates applied when galleries register for directory listing and showcases.'),
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                color: Color(0xFF64748B),
+                                height: 1.35,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          pricing.description ??
-                              (isEvent
-                                  ? 'Rates displayed to users & organizers when creating events in the app.'
-                                  : 'Rates applied when galleries register for directory listing and showcases.'),
-                          style: const TextStyle(
-                            fontSize: 12.5,
-                            color: Color(0xFF64748B),
-                            height: 1.35,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                  const SizedBox(height: 16),
+
+                  // Rate Cards Grid (Weekly, Monthly, Yearly)
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isCompact = constraints.maxWidth < 500;
+                      final cards = [
+                        _buildRateBadge(
+                          title: 'Weekly Rate',
+                          duration: '7 Days Exposure',
+                          amount: pricing.weeklyPrice,
+                          accentColor: const Color(0xFF6A2777),
+                          badgeText: 'Standard',
+                        ),
+                        _buildRateBadge(
+                          title: 'Monthly Rate',
+                          duration: '30 Days Exposure',
+                          amount: pricing.monthlyPrice,
+                          accentColor: const Color(0xFFD97706),
+                          badgeText: 'Popular',
+                        ),
+                        _buildRateBadge(
+                          title: 'Yearly Rate',
+                          duration: '365 Days Featured',
+                          amount: pricing.yearlyPrice,
+                          accentColor: const Color(0xFF059669),
+                          badgeText: 'Best Value',
+                        ),
+                      ];
+
+                      if (isCompact) {
+                        return Column(
+                          children: cards
+                              .map((c) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: c,
+                                  ))
+                              .toList(),
+                        );
+                      }
+
+                      return Row(
+                        children: [
+                          Expanded(child: cards[0]),
+                          const SizedBox(width: 10),
+                          Expanded(child: cards[1]),
+                          const SizedBox(width: 10),
+                          Expanded(child: cards[2]),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Bottom Action Bar
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Currency: ${pricing.currency}',
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF94A3B8),
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6A2777),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        icon: const Icon(Icons.edit_note_rounded, size: 16, color: Colors.white),
+                        label: Text(
+                          'Edit ${isEvent ? 'Event' : 'Gallery'} Rates',
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5, color: Colors.white),
+                        ),
+                        onPressed: () => _showEditPricingDialog(pricing),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 20),
+        _buildPaymentSettingsCard(),
+      ],
+    );
+  }
+
+  Widget _buildPaymentSettingsCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE9D5FF), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3E8FF),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.qr_code_2_rounded, color: Color(0xFF6A2777), size: 24),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Flexible(
+                          child: Text(
+                            'Payment QR & Receiver Bank Details',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFECFDF5),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFA7F3D0)),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.check_circle_rounded, size: 11, color: Color(0xFF059669)),
+                              SizedBox(width: 4),
+                              Text(
+                                'Live for Users',
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF059669),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Divider(height: 1, color: Color(0xFFF1F5F9)),
-              const SizedBox(height: 16),
-
-              // Rate Cards Grid (Weekly, Monthly, Yearly)
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final isCompact = constraints.maxWidth < 500;
-                  final cards = [
-                    _buildRateBadge(
-                      title: 'Weekly Rate',
-                      duration: '7 Days Exposure',
-                      amount: pricing.weeklyPrice,
-                      accentColor: const Color(0xFF6A2777),
-                      badgeText: 'Standard',
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Presented to organizers and galleries to pay their publishing fee via QR code or direct IBAN transfer.',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: Color(0xFF64748B),
+                        height: 1.35,
+                      ),
                     ),
-                    _buildRateBadge(
-                      title: 'Monthly Rate',
-                      duration: '30 Days Exposure',
-                      amount: pricing.monthlyPrice,
-                      accentColor: const Color(0xFFD97706),
-                      badgeText: 'Popular',
-                    ),
-                    _buildRateBadge(
-                      title: 'Yearly Rate',
-                      duration: '365 Days Featured',
-                      amount: pricing.yearlyPrice,
-                      accentColor: const Color(0xFF059669),
-                      badgeText: 'Best Value',
-                    ),
-                  ];
-
-                  if (isCompact) {
-                    return Column(
-                      children: cards
-                          .map((c) => Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: c,
-                              ))
-                          .toList(),
-                    );
-                  }
-
-                  return Row(
-                    children: [
-                      Expanded(child: cards[0]),
-                      const SizedBox(width: 10),
-                      Expanded(child: cards[1]),
-                      const SizedBox(width: 10),
-                      Expanded(child: cards[2]),
-                    ],
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Bottom Action Bar
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Currency: ${pricing.currency}',
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF94A3B8),
-                    ),
-                  ),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6A2777),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    icon: const Icon(Icons.edit_note_rounded, size: 16, color: Colors.white),
-                    label: Text(
-                      'Edit ${isEvent ? 'Event' : 'Gallery'} Rates',
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5, color: Colors.white),
-                    ),
-                    onPressed: () => _showEditPricingDialog(pricing),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
-        );
-      },
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          const SizedBox(height: 16),
+
+          // Content Layout
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isSmall = constraints.maxWidth < 620;
+
+              final qrWidget = Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 150,
+                      height: 150,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: _paymentSettings.qrCodeUrl.isNotEmpty
+                            ? Image.network(
+                                _paymentSettings.qrCodeUrl,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => const Center(
+                                  child: Icon(Icons.qr_code_2, size: 60, color: Color(0xFF94A3B8)),
+                                ),
+                              )
+                            : const Center(
+                                child: Icon(Icons.qr_code_2, size: 60, color: Color(0xFF94A3B8)),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Scan to Pay (UAE App / Bank)',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                    ),
+                  ],
+                ),
+              );
+
+              final detailsWidget = Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildPaymentDetailRow(
+                      icon: Icons.business_rounded,
+                      label: 'Account Name',
+                      value: _paymentSettings.accountName,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildPaymentDetailRow(
+                      icon: Icons.account_balance_wallet_outlined,
+                      label: 'IBAN / Account Number',
+                      value: _paymentSettings.accountNumber,
+                      copyable: true,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildPaymentDetailRow(
+                      icon: Icons.account_balance_outlined,
+                      label: 'Bank & Branch',
+                      value: _paymentSettings.bankName,
+                    ),
+                    if (_paymentSettings.instructions.isNotEmpty) ...[
+                      const SizedBox(height: 14),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFAF5FF),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFE9D5FF)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.info_outline_rounded, size: 15, color: Color(0xFF6A2777)),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _paymentSettings.instructions,
+                                style: const TextStyle(fontSize: 11.5, color: Color(0xFF475569), height: 1.35),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+
+              if (isSmall) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    qrWidget,
+                    const SizedBox(height: 16),
+                    detailsWidget,
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(width: 170, child: qrWidget),
+                  const SizedBox(width: 20),
+                  Expanded(child: detailsWidget),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+
+          // Action button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6A2777),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                icon: const Icon(Icons.edit_note_rounded, size: 16, color: Colors.white),
+                label: const Text(
+                  'Edit Payment QR & Bank Details',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5, color: Colors.white),
+                ),
+                onPressed: _showEditPaymentSettingsDialog,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentDetailRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    bool copyable = false,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Icon(icon, size: 18, color: const Color(0xFF6A2777)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 2),
+              SelectableText(
+                value,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+              ),
+            ],
+          ),
+        ),
+        if (copyable && value.isNotEmpty)
+          IconButton(
+            icon: const Icon(Icons.copy_rounded, size: 16, color: Color(0xFF6A2777)),
+            tooltip: 'Copy to Clipboard',
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: value));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Copied $label to clipboard!'),
+                  duration: const Duration(seconds: 2),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  void _showEditPaymentSettingsDialog() {
+    final qrCtrl = TextEditingController(text: _paymentSettings.qrCodeUrl);
+    final nameCtrl = TextEditingController(text: _paymentSettings.accountName);
+    final ibanCtrl = TextEditingController(text: _paymentSettings.accountNumber);
+    final bankCtrl = TextEditingController(text: _paymentSettings.bankName);
+    final instructionsCtrl = TextEditingController(text: _paymentSettings.instructions);
+    bool isUploadingQr = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Dialog(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Container(
+              width: 520,
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF3E8FF),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.qr_code_2_rounded, color: Color(0xFF6A2777), size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              'Edit Payment QR & Bank Details',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 20, color: Color(0xFF64748B)),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+
+                    // QR Code URL & Upload
+                    const Text('Payment QR Code Image URL *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: qrCtrl,
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF0F172A)),
+                            decoration: InputDecoration(
+                              hintText: 'https://... or upload image',
+                              hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                              prefixIcon: const Icon(Icons.link_rounded, size: 18, color: Color(0xFF6B1C9B)),
+                              filled: true,
+                              fillColor: const Color(0xFFF8FAFC),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            ),
+                            onChanged: (_) => setModalState(() {}),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF6A2777),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          onPressed: isUploadingQr
+                              ? null
+                              : () async {
+                                  setModalState(() => isUploadingQr = true);
+                                  await _pickAndUploadImageForField(qrCtrl, setModalState);
+                                  setModalState(() => isUploadingQr = false);
+                                },
+                          icon: isUploadingQr
+                              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : const Icon(Icons.upload_file_rounded, size: 16, color: Colors.white),
+                          label: const Text('Upload', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                        ),
+                      ],
+                    ),
+                    if (qrCtrl.text.trim().isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Center(
+                        child: Container(
+                          width: 110,
+                          height: 110,
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: Image.network(
+                              qrCtrl.text.trim(),
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined, color: Colors.grey),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 14),
+
+                    // Account Name
+                    const Text('Account Name *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: nameCtrl,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. Artist Dubai Cultural Services LLC',
+                        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                        prefixIcon: const Icon(Icons.business_rounded, size: 18, color: Color(0xFF6B1C9B)),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // IBAN / Account Number
+                    const Text('IBAN / Account Number *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: ibanCtrl,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. AE28 0330 0000 0001 2345 678',
+                        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                        prefixIcon: const Icon(Icons.account_balance_wallet_outlined, size: 18, color: Color(0xFF6B1C9B)),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Bank Name
+                    const Text('Bank & Branch Name *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: bankCtrl,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. Emirates NBD, Dubai',
+                        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                        prefixIcon: const Icon(Icons.account_balance_outlined, size: 18, color: Color(0xFF6B1C9B)),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Instructions
+                    const Text('Payment Instructions for Users', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: instructionsCtrl,
+                      maxLines: 3,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF0F172A)),
+                      decoration: InputDecoration(
+                        hintText: 'Enter steps for user to follow when transferring and submitting receipt...',
+                        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Actions
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600, fontSize: 14)),
+                        ),
+                        const SizedBox(width: 10),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF6A2777),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          onPressed: () async {
+                            final messenger = ScaffoldMessenger.of(context);
+                            final success = await sl<ApiService>().updatePaymentSettings(
+                              qrCodeUrl: qrCtrl.text.trim(),
+                              accountName: nameCtrl.text.trim(),
+                              accountNumber: ibanCtrl.text.trim(),
+                              bankName: bankCtrl.text.trim(),
+                              instructions: instructionsCtrl.text.trim(),
+                            );
+                            if (ctx.mounted) Navigator.pop(ctx);
+                            if (mounted) {
+                              if (success) {
+                                setState(() {
+                                  _paymentSettings = _paymentSettings.copyWith(
+                                    qrCodeUrl: qrCtrl.text.trim(),
+                                    accountName: nameCtrl.text.trim(),
+                                    accountNumber: ibanCtrl.text.trim(),
+                                    bankName: bankCtrl.text.trim(),
+                                    instructions: instructionsCtrl.text.trim(),
+                                  );
+                                });
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Payment settings and QR code updated successfully!'),
+                                    backgroundColor: Color(0xFF059669),
+                                  ),
+                                );
+                              } else {
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Failed to update payment settings.'),
+                                    backgroundColor: Color(0xFFDC2626),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          child: const Text('Save Details', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -3954,10 +4840,16 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) {
           return Dialog(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: Container(
               width: 500,
               padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -3989,7 +4881,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                           ],
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close, size: 20),
+                          icon: const Icon(Icons.close, size: 20, color: Color(0xFF64748B)),
                           onPressed: () => Navigator.pop(ctx),
                         ),
                       ],
@@ -4002,56 +4894,100 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     const SizedBox(height: 18),
 
                     // Weekly Rate Field
-                    const Text('Weekly Rate *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
+                    const Text('Weekly Rate *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
                     const SizedBox(height: 6),
                     TextField(
                       controller: weeklyCtrl,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
                       decoration: InputDecoration(
                         hintText: 'e.g. AED 150',
-                        prefixIcon: const Icon(Icons.calendar_view_week_rounded, size: 18),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
+                        prefixIcon: const Icon(Icons.calendar_view_week_rounded, size: 18, color: Color(0xFF6B1C9B)),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
+                        ),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       ),
                     ),
                     const SizedBox(height: 14),
 
                     // Monthly Rate Field
-                    const Text('Monthly Rate *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
+                    const Text('Monthly Rate *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
                     const SizedBox(height: 6),
                     TextField(
                       controller: monthlyCtrl,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
                       decoration: InputDecoration(
                         hintText: 'e.g. AED 500',
-                        prefixIcon: const Icon(Icons.calendar_month_rounded, size: 18),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
+                        prefixIcon: const Icon(Icons.calendar_month_rounded, size: 18, color: Color(0xFF6B1C9B)),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
+                        ),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       ),
                     ),
                     const SizedBox(height: 14),
 
                     // Yearly Rate Field
-                    const Text('Yearly Rate *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
+                    const Text('Yearly Rate *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
                     const SizedBox(height: 6),
                     TextField(
                       controller: yearlyCtrl,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
                       decoration: InputDecoration(
                         hintText: 'e.g. AED 4,500',
-                        prefixIcon: const Icon(Icons.stars_rounded, size: 18),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
+                        prefixIcon: const Icon(Icons.stars_rounded, size: 18, color: Color(0xFF6B1C9B)),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
+                        ),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       ),
                     ),
                     const SizedBox(height: 14),
 
                     // Description Field
-                    const Text('Plan Description', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
+                    const Text('Plan Description', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
                     const SizedBox(height: 6),
                     TextField(
                       controller: descCtrl,
                       maxLines: 2,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF0F172A)),
                       decoration: InputDecoration(
                         hintText: 'Brief summary of what this plan covers',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
+                        ),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       ),
                     ),
@@ -4063,7 +4999,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(ctx),
-                          child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
+                          child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600, fontSize: 14)),
                         ),
                         const SizedBox(width: 10),
                         ElevatedButton(
