@@ -136,6 +136,8 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
             children: const [
@@ -144,7 +146,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
               Expanded(
                 child: Text(
                   'No Payment Proof Attached',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
                 ),
               ),
             ],
@@ -295,6 +297,8 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
         content: Column(

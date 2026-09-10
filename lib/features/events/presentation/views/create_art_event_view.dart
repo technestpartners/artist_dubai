@@ -664,6 +664,8 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
               context: context,
               barrierDismissible: false,
               builder: (ctx) => AlertDialog(
+                backgroundColor: Colors.white,
+                surfaceTintColor: Colors.transparent,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 title: Row(
                   children: const [
