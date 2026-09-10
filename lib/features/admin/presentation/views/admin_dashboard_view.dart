@@ -82,17 +82,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     super.initState();
     _loadAllData();
     _subscribeLiveStreams();
-    if (!_isTesting) {
-      _periodicSyncTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-        if (mounted && _togglingEventIds.isEmpty) {
-          _loadAllData();
-        }
-      });
-    }
   }
-
-  bool get _isTesting =>
-      WidgetsBinding.instance.runtimeType.toString().contains('Test');
 
   void _subscribeLiveStreams() {
     final liveSync = sl<LiveSyncService>();
@@ -103,7 +93,19 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     });
     _eventsSub = liveSync.eventsStream.listen((list) {
       if (mounted) {
-        setState(() => _events = list);
+        final currentPending = _events.where((e) => e.status.toLowerCase() == 'pending' || !e.isActive).toList();
+        final incomingPending = list.where((e) => e.status.toLowerCase() == 'pending' || !e.isActive).toList();
+        if (currentPending.isNotEmpty && incomingPending.isEmpty) {
+          final merged = List<ArtEventModel>.from(list);
+          for (final p in currentPending) {
+            if (!merged.any((e) => e.id == p.id)) {
+              merged.insert(0, p);
+            }
+          }
+          setState(() => _events = merged);
+        } else {
+          setState(() => _events = list);
+        }
       }
     });
     _govSub = liveSync.governmentStream.listen((list) {

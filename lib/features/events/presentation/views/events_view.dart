@@ -63,7 +63,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
     _eventsSub = sl<LiveSyncService>().eventsStream.listen((events) {
       if (mounted) {
         setState(() {
-          _allEvents = events;
+          _allEvents = events.where((e) => e.isActive && e.status.toLowerCase() != 'pending').toList();
         });
       }
     });
@@ -119,7 +119,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
 
       if (mounted) {
         setState(() {
-          _allEvents = events;
+          _allEvents = events.where((e) => e.isActive && e.status.toLowerCase() != 'pending').toList();
           _likedEventIds.clear();
           _likedEventIds.addAll(favIds);
         });

@@ -87,6 +87,16 @@ class LiveSyncService with WidgetsBindingObserver {
     }
   }
 
+  bool _isCurrentUserAdmin() {
+    try {
+      final role = sl<StorageService>().getString('role')?.toLowerCase();
+      final email = sl<StorageService>().getString('user_email')?.toLowerCase() ?? '';
+      return role == 'admin' || email.contains('admin');
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Trigger sync for artists when an Add / Update / Delete / View occurs
   Future<void> notifyArtistsChanged([List<ArtistModel>? updatedList]) async {
     if (updatedList != null && !_artistsController.isClosed) {
@@ -104,7 +114,8 @@ class LiveSyncService with WidgetsBindingObserver {
       _eventsController.add(updatedList);
     }
     try {
-      final fresh = await _apiService.getEvents(forceRefresh: true);
+      final isAdmin = _isCurrentUserAdmin();
+      final fresh = await _apiService.getEvents(forceRefresh: true, isAdmin: isAdmin);
       if (!_eventsController.isClosed) _eventsController.add(fresh);
     } catch (_) {}
   }
@@ -155,7 +166,8 @@ class LiveSyncService with WidgetsBindingObserver {
       _galleriesController.add(updatedGalleries);
     }
     try {
-      final fresh = await _apiService.getGalleries(forceRefresh: true);
+      final isAdmin = _isCurrentUserAdmin();
+      final fresh = await _apiService.getGalleries(forceRefresh: true, isAdmin: isAdmin);
       if (!_galleriesController.isClosed) _galleriesController.add(fresh);
     } catch (_) {}
   }
@@ -226,11 +238,13 @@ class LiveSyncService with WidgetsBindingObserver {
     } catch (_) {}
   }
 
+  bool _hasLoadedMasters = false;
+
   /// Starts real-time multi-device database synchronization loop
   void startMultiDeviceSync({Duration? interval}) {
     if (_isTesting) return;
     _syncTimer?.cancel();
-    final pollInterval = interval ?? const Duration(seconds: 4);
+    final pollInterval = interval ?? const Duration(seconds: 30);
     _syncTimer = Timer.periodic(pollInterval, (_) {
       syncAllSilently(forceRefresh: true);
     });
@@ -242,18 +256,19 @@ class LiveSyncService with WidgetsBindingObserver {
     _syncTimer = null;
   }
 
-  /// Lightweight multi-device sync for all active data from MySQL database
-  Future<void> syncAllSilently({bool forceRefresh = true}) async {
+  /// Lightweight multi-device sync for active data from MySQL database
+  Future<void> syncAllSilently({bool forceRefresh = true, bool syncMasters = false}) async {
     if (_isSyncing) return;
     _isSyncing = true;
 
     try {
       final effectiveEmail = _getEffectiveEmail();
+      final isAdmin = _isCurrentUserAdmin();
 
       // Phase 1: High-priority core streams (Artists, Events, Categories)
       final coreBatch = await Future.wait([
         _apiService.getArtists(forceRefresh: forceRefresh).catchError((_) => <ArtistModel>[]),
-        _apiService.getEvents(forceRefresh: forceRefresh).catchError((_) => <ArtEventModel>[]),
+        _apiService.getEvents(forceRefresh: forceRefresh, isAdmin: isAdmin).catchError((_) => <ArtEventModel>[]),
         _apiService.getCategories(forceRefresh: forceRefresh).catchError((_) => <CategoryInfo>[]),
       ]);
 
@@ -267,7 +282,7 @@ class LiveSyncService with WidgetsBindingObserver {
 
       // Phase 2: Secondary streams (Galleries, Government, Favorites)
       final secondaryBatch = await Future.wait([
-        _apiService.getGalleries(forceRefresh: forceRefresh).catchError((_) => <Map<String, dynamic>>[]),
+        _apiService.getGalleries(forceRefresh: forceRefresh, isAdmin: isAdmin).catchError((_) => <Map<String, dynamic>>[]),
         _apiService.getGovernmentEntities(forceRefresh: forceRefresh).catchError((_) => <GovernmentEntity>[]),
         _apiService.getFavorites(email: effectiveEmail, forceRefresh: forceRefresh).catchError((_) => <String, dynamic>{}),
       ]);
@@ -281,22 +296,26 @@ class LiveSyncService with WidgetsBindingObserver {
       if (!_favoritesController.isClosed) _favoritesController.add(favorites);
 
       // Phase 3: Masters (Experience Levels, Locations, Publishing Pricing & Payment Settings)
-      final mastersBatch = await Future.wait([
-        _apiService.getExperienceLevels(forceRefresh: forceRefresh).catchError((_) => <ExperienceLevelModel>[]),
-        _apiService.getLocations(forceRefresh: forceRefresh).catchError((_) => <LocationModel>[]),
-        _apiService.getPublishingPricing(forceRefresh: forceRefresh).catchError((_) => <PublishingPricingModel>[]),
-        _apiService.getPaymentSettings(forceRefresh: forceRefresh).catchError((_) => PaymentSettingsModel.defaultSettings()),
-      ]);
+      // Only fetch once at startup or when explicitly requested, as they are static admin configurations.
+      if (!_hasLoadedMasters || syncMasters) {
+        final mastersBatch = await Future.wait([
+          _apiService.getExperienceLevels(forceRefresh: forceRefresh).catchError((_) => <ExperienceLevelModel>[]),
+          _apiService.getLocations(forceRefresh: forceRefresh).catchError((_) => <LocationModel>[]),
+          _apiService.getPublishingPricing(forceRefresh: forceRefresh).catchError((_) => <PublishingPricingModel>[]),
+          _apiService.getPaymentSettings(forceRefresh: forceRefresh).catchError((_) => PaymentSettingsModel.defaultSettings()),
+        ]);
 
-      final experienceLevels = mastersBatch[0] as List<ExperienceLevelModel>;
-      final locations = mastersBatch[1] as List<LocationModel>;
-      final publishingPricing = mastersBatch[2] as List<PublishingPricingModel>;
-      final paymentSettings = mastersBatch[3] as PaymentSettingsModel;
+        final experienceLevels = mastersBatch[0] as List<ExperienceLevelModel>;
+        final locations = mastersBatch[1] as List<LocationModel>;
+        final publishingPricing = mastersBatch[2] as List<PublishingPricingModel>;
+        final paymentSettings = mastersBatch[3] as PaymentSettingsModel;
 
-      if (!_experienceLevelsController.isClosed) _experienceLevelsController.add(experienceLevels);
-      if (!_locationsController.isClosed) _locationsController.add(locations);
-      if (!_publishingPricingController.isClosed) _publishingPricingController.add(publishingPricing);
-      if (!_paymentSettingsController.isClosed) _paymentSettingsController.add(paymentSettings);
+        if (!_experienceLevelsController.isClosed) _experienceLevelsController.add(experienceLevels);
+        if (!_locationsController.isClosed) _locationsController.add(locations);
+        if (!_publishingPricingController.isClosed) _publishingPricingController.add(publishingPricing);
+        if (!_paymentSettingsController.isClosed) _paymentSettingsController.add(paymentSettings);
+        _hasLoadedMasters = true;
+      }
 
       try {
         sl<NotificationService>().syncWithBackend();

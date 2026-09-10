@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 
 abstract class LoggerService {
@@ -14,7 +14,7 @@ class LoggerServiceImpl implements LoggerService {
   LoggerServiceImpl() {
     _logger = Logger(
       printer: PrettyPrinter(
-        methodCount: 2,
+        methodCount: 0,
         errorMethodCount: 8,
         lineLength: 100,
         colors: true,
