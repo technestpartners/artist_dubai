@@ -6,7 +6,6 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
@@ -287,18 +286,31 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundImage: artist.avatarUrl.isNotEmpty
-                      ? CachedNetworkImageProvider(artist.avatarUrl)
-                      : null,
-                  backgroundColor: const Color(0xFFF3E8FF),
-                  child: artist.avatarUrl.isEmpty
-                      ? Text(
-                          artist.name.isNotEmpty ? artist.name[0].toUpperCase() : 'A',
-                          style: const TextStyle(color: Color(0xFF6A2777), fontWeight: FontWeight.bold, fontSize: 20),
-                        )
-                      : null,
+                ClipOval(
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    color: const Color(0xFFF3E8FF),
+                    child: artist.avatarUrl.isNotEmpty
+                        ? AppCachedImage(
+                            imageUrl: artist.avatarUrl,
+                            width: 56,
+                            height: 56,
+                            fit: BoxFit.cover,
+                            errorWidget: Center(
+                              child: Text(
+                                artist.name.isNotEmpty ? artist.name[0].toUpperCase() : 'A',
+                                style: const TextStyle(color: Color(0xFF6A2777), fontWeight: FontWeight.bold, fontSize: 20),
+                              ),
+                            ),
+                          )
+                        : Center(
+                            child: Text(
+                              artist.name.isNotEmpty ? artist.name[0].toUpperCase() : 'A',
+                              style: const TextStyle(color: Color(0xFF6A2777), fontWeight: FontWeight.bold, fontSize: 20),
+                            ),
+                          ),
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(

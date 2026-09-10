@@ -1448,12 +1448,24 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                                         width: 72,
                                                         height: 72,
                                                         fit: BoxFit.cover,
+                                                        errorBuilder: (ctx, err, st) => Container(
+                                                          width: 72,
+                                                          height: 72,
+                                                          color: const Color(0xFFE2E8F0),
+                                                          child: const Icon(Icons.image, color: Color(0xFF94A3B8)),
+                                                        ),
                                                       )
                                                     : Image.file(
                                                         File(artItem.file!.path),
                                                         width: 72,
                                                         height: 72,
                                                         fit: BoxFit.cover,
+                                                        errorBuilder: (ctx, err, st) => Container(
+                                                          width: 72,
+                                                          height: 72,
+                                                          color: const Color(0xFFE2E8F0),
+                                                          child: const Icon(Icons.image, color: Color(0xFF94A3B8)),
+                                                        ),
                                                       ))
                                                 : (artItem.existingImageUrl != null && artItem.existingImageUrl!.isNotEmpty
                                                     ? AppCachedImage(

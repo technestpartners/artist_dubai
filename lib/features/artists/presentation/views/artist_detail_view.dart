@@ -10,7 +10,6 @@ import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/storage_service.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
@@ -766,12 +765,24 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                               width: 70,
                                               height: 70,
                                               fit: BoxFit.cover,
+                                              errorBuilder: (ctx, err, st) => Container(
+                                                width: 70,
+                                                height: 70,
+                                                color: const Color(0xFFE2E8F0),
+                                                child: const Icon(Icons.image, color: Color(0xFF94A3B8)),
+                                              ),
                                             )
                                           : Image.file(
                                               File(img.path),
                                               width: 70,
                                               height: 70,
                                               fit: BoxFit.cover,
+                                              errorBuilder: (ctx, err, st) => Container(
+                                                width: 70,
+                                                height: 70,
+                                                color: const Color(0xFFE2E8F0),
+                                                child: const Icon(Icons.image, color: Color(0xFF94A3B8)),
+                                              ),
                                             ),
                                     ),
                                     Positioned(
@@ -1142,22 +1153,29 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                           Stack(
                             alignment: Alignment.center,
                             children: [
-                              CircleAvatar(
-                                radius: 42,
-                                backgroundColor: const Color(0xFFF3E8FF),
-                                backgroundImage: (_avatarUrlOverride ?? currentArtist.avatarUrl).isNotEmpty
-                                    ? CachedNetworkImageProvider(
-                                        _avatarUrlOverride ?? currentArtist.avatarUrl,
-                                      )
-                                    : null,
-                                child:
-                                    (_avatarUrlOverride ?? currentArtist.avatarUrl).isEmpty
-                                        ? const Icon(
+                              ClipOval(
+                                child: Container(
+                                  width: 84,
+                                  height: 84,
+                                  color: const Color(0xFFF3E8FF),
+                                  child: (_avatarUrlOverride ?? currentArtist.avatarUrl).isNotEmpty
+                                      ? AppCachedImage(
+                                          imageUrl: _avatarUrlOverride ?? currentArtist.avatarUrl,
+                                          width: 84,
+                                          height: 84,
+                                          fit: BoxFit.cover,
+                                          errorWidget: const Icon(
+                                            Icons.person,
+                                            size: 42,
+                                            color: Color(0xFF6A2777),
+                                          ),
+                                        )
+                                      : const Icon(
                                           Icons.person,
                                           size: 42,
                                           color: Color(0xFF6A2777),
-                                        )
-                                        : null,
+                                        ),
+                                ),
                               ),
                               if (_isUploadingPhoto)
                                 const Positioned.fill(
