@@ -25,6 +25,7 @@ import '../../features/home/presentation/views/home_view.dart';
 import '../../features/legal/presentation/views/privacy_policy_view.dart';
 import '../../features/legal/presentation/views/terms_view.dart';
 import '../../features/onboarding/presentation/views/onboarding_view.dart';
+import '../../features/payment/presentation/views/plan_payment_view.dart';
 import '../../features/placeholder/presentation/views/coming_soon_view.dart';
 import '../../features/profile/presentation/views/profile_view.dart';
 import '../../features/settings/presentation/views/settings_view.dart';
@@ -403,6 +404,20 @@ class AppRouter {
           state: state,
           child: EventDetailView(event: state.extra as ArtEventModel),
         ),
+      ),
+      GoRoute(
+        path: RouteNames.planPayment,
+        name: 'planPayment',
+        pageBuilder: (context, state) {
+          final extra = state.extra is Map<String, dynamic>
+              ? state.extra as Map<String, dynamic>
+              : (state.extra is Map ? Map<String, dynamic>.from(state.extra as Map) : <String, dynamic>{});
+          return _buildSlidePage(
+            context: context,
+            state: state,
+            child: PlanPaymentView(args: extra),
+          );
+        },
       ),
     ],
     errorBuilder: (context, state) => const ComingSoonView(),
