@@ -207,6 +207,8 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           'email': _formData['email'] ?? '',
           'phone': _formData['phone'] ?? '',
           'about': _formData['about'] ?? '',
+          if (_formData['image_url'] != null && _formData['image_url'].toString().isNotEmpty)
+            'image_url': _formData['image_url'],
           'status': 'pending',
           'is_public': 0,
           'is_approved': 0,

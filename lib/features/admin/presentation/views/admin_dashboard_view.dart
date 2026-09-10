@@ -54,6 +54,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   StreamSubscription<List<LocationModel>>? _locationsSub;
   StreamSubscription<List<PublishingPricingModel>>? _publishingPricingSub;
   StreamSubscription<PaymentSettingsModel>? _paymentSettingsSub;
+  StreamSubscription<List<Map<String, dynamic>>>? _galleriesSub;
   final Set<String> _togglingEventIds = {};
   Timer? _periodicSyncTimer;
   int _masterSubTab = 0; // 0 = Categories, 1 = Experience Levels, 2 = Locations, 3 = Publishing Pricing
@@ -138,6 +139,71 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         setState(() => _paymentSettings = settings);
       }
     });
+    _galleriesSub = liveSync.galleriesStream.listen((list) {
+      if (mounted && list.isNotEmpty) {
+        final photoGalleries = list.where((item) {
+          final cat = (item['category'] ?? '').toString().toLowerCase();
+          final artistId = (item['artist_id'] ?? '').toString();
+          final artistName = (item['artist_name'] ?? '').toString();
+          final eventName = (item['event_name'] ?? '').toString();
+          final images = item['images_json'] ?? item['images'];
+          return cat.contains('photo') ||
+              cat.contains('artist') ||
+              cat.contains('album') ||
+              artistId.isNotEmpty ||
+              artistName.isNotEmpty ||
+              eventName.isNotEmpty ||
+              (images != null && images.toString().isNotEmpty && images.toString() != '[]');
+        }).toList();
+
+        final artCenters = list.where((item) {
+          final cat = (item['category'] ?? '').toString().toLowerCase();
+          final artistId = (item['artist_id'] ?? '').toString();
+          final artistName = (item['artist_name'] ?? '').toString();
+          final eventName = (item['event_name'] ?? '').toString();
+          final images = item['images_json'] ?? item['images'];
+          final isPhoto = cat.contains('photo') ||
+              cat.contains('artist') ||
+              cat.contains('album') ||
+              artistId.isNotEmpty ||
+              artistName.isNotEmpty ||
+              eventName.isNotEmpty ||
+              (images != null && images.toString().isNotEmpty && images.toString() != '[]');
+          return !isPhoto;
+        }).toList();
+
+        // Protective merge for pending galleries so background sync never drops them
+        final currentPendingGalleries = _galleries.where((g) => _isItemPending(g)).toList();
+        final incomingPendingGalleries = photoGalleries.where((g) => _isItemPending(g)).toList();
+        List<Map<String, dynamic>> mergedGalleries = photoGalleries;
+        if (currentPendingGalleries.isNotEmpty && incomingPendingGalleries.isEmpty) {
+          mergedGalleries = List<Map<String, dynamic>>.from(photoGalleries);
+          for (final p in currentPendingGalleries) {
+            if (!mergedGalleries.any((g) => g['id'] == p['id'])) {
+              mergedGalleries.insert(0, p);
+            }
+          }
+        }
+
+        // Protective merge for pending art centers so background sync never drops them
+        final currentPendingCenters = _artCenters.where((c) => _isItemPending(c)).toList();
+        final incomingPendingCenters = artCenters.where((c) => _isItemPending(c)).toList();
+        List<Map<String, dynamic>> mergedCenters = artCenters;
+        if (currentPendingCenters.isNotEmpty && incomingPendingCenters.isEmpty) {
+          mergedCenters = List<Map<String, dynamic>>.from(artCenters);
+          for (final p in currentPendingCenters) {
+            if (!mergedCenters.any((c) => c['id'] == p['id'])) {
+              mergedCenters.insert(0, p);
+            }
+          }
+        }
+
+        setState(() {
+          if (mergedGalleries.isNotEmpty) _galleries = mergedGalleries;
+          if (mergedCenters.isNotEmpty) _artCenters = mergedCenters;
+        });
+      }
+    });
   }
 
   @override
@@ -145,6 +211,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     _periodicSyncTimer?.cancel();
     _artistsSub?.cancel();
     _eventsSub?.cancel();
+    _galleriesSub?.cancel();
     _govSub?.cancel();
     _categoriesSub?.cancel();
     _experienceLevelsSub?.cancel();

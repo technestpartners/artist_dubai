@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
@@ -24,6 +25,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _aboutController = TextEditingController();
+
+  String? _uploadedImageUrl;
+  bool _isUploadingImage = false;
 
   final bool _isSubmitted = false;
 
@@ -76,6 +80,204 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
     super.dispose();
   }
 
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(source: source, imageQuality: 85);
+      if (picked != null) {
+        if (!mounted) return;
+        setState(() {
+          _isUploadingImage = true;
+        });
+
+        final bytes = await picked.readAsBytes();
+        final nameParts = picked.name.split('.');
+        final ext = nameParts.length > 1 ? nameParts.last : 'jpg';
+        final url = await sl<ApiService>().uploadImageBytes(bytes, ext: ext);
+        if (mounted) {
+          setState(() {
+            _uploadedImageUrl = url;
+            _isUploadingImage = false;
+          });
+          if (url != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Gallery photo uploaded successfully!'),
+                backgroundColor: Color(0xFF6A2777),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isUploadingImage = false);
+    }
+  }
+
+  void _showImageSourceActionSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      elevation: 20,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Select Image Source',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 20, color: Color(0xFF64748B)),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _pickImage(ImageSource.gallery);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEDE9FE),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.photo_library_rounded,
+                          color: Color(0xFF6A2777),
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Choose from Gallery',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF0F172A),
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Select a photo from your device library',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, color: Color(0xFF94A3B8)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _pickImage(ImageSource.camera);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF3E8FF),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt_rounded,
+                          color: Color(0xFF6A2777),
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Take a Photo',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF0F172A),
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Use your camera to capture space photo',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, color: Color(0xFF94A3B8)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _submitForm() {
     if (!_formKey.currentState!.validate()) return;
 
@@ -101,6 +303,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
           'email': _emailController.text.trim(),
           'phone': _phoneController.text.trim(),
           'about': _aboutController.text.trim(),
+          'image_url': _uploadedImageUrl ?? '',
         },
       },
     );
@@ -310,6 +513,125 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                   style: const TextStyle(color: Color(0xFF1E1E1E), fontSize: 14),
                   maxLines: 4,
                   decoration: _whiteInputDecoration(),
+                ),
+                const SizedBox(height: 14),
+
+                // Field 9: Gallery / Space Photo
+                const Text(
+                  'Gallery / Space Photo (Optional)',
+                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (_isUploadingImage) ...[
+                        Row(
+                          children: const [
+                            SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            ),
+                            SizedBox(width: 12),
+                            Text(
+                              'Uploading image to server...',
+                              style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
+                      ] else if (_uploadedImageUrl != null && _uploadedImageUrl!.isNotEmpty) ...[
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Stack(
+                            children: [
+                              Image.network(
+                                _uploadedImageUrl!,
+                                height: 160,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  height: 120,
+                                  color: Colors.black26,
+                                  child: const Center(
+                                    child: Icon(Icons.broken_image, color: Colors.white54, size: 36),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: InkWell(
+                                  onTap: () => setState(() {
+                                    _uploadedImageUrl = null;
+                                  }),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.black54,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.delete_outline, color: Colors.white, size: 18),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                side: const BorderSide(color: Colors.white70),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                              icon: const Icon(Icons.refresh, size: 16),
+                              label: const Text('Change Photo', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                              onPressed: () => _showImageSourceActionSheet(context),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.check_circle, color: Color(0xFF4ADE80), size: 16),
+                            const SizedBox(width: 4),
+                            const Text('Uploaded', style: TextStyle(fontSize: 12, color: Color(0xFF4ADE80), fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ] else ...[
+                        Row(
+                          children: [
+                            OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                side: const BorderSide(color: Colors.white70),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                              icon: const Icon(Icons.upload_outlined, size: 16),
+                              label: const Text('Upload Photo', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                              onPressed: () => _showImageSourceActionSheet(context),
+                            ),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Text(
+                                'Select showcase photo of the gallery/space (JPG, PNG, WebP).',
+                                style: TextStyle(fontSize: 11, color: Colors.white70),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 16),
 

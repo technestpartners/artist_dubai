@@ -78,6 +78,58 @@ class _GalleriesViewState extends State<GalleriesView> {
     } catch (_) {}
   }
 
+  void _handleProtectedAction({
+    required VoidCallback onAuthorized,
+    required String promptMessage,
+  }) {
+    if (_isLoggedIn) {
+      onAuthorized();
+    } else {
+      _showAuthDialog(promptMessage: promptMessage);
+    }
+  }
+
+  void _showAuthDialog({required String promptMessage}) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.lock_outline, color: Color(0xFF6A2777), size: 24),
+            SizedBox(width: 10),
+            Text('Login Required', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1E293B))),
+          ],
+        ),
+        content: Text(
+          promptMessage,
+          style: const TextStyle(fontSize: 14, color: Color(0xFF64748B), height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6A2777),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              context.push(RouteNames.login);
+            },
+            child: const Text('Log In', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _launchUrl(String url) async {
     try {
       final uri = Uri.parse(url);
@@ -118,7 +170,87 @@ class _GalleriesViewState extends State<GalleriesView> {
                     fontWeight: FontWeight.w400,
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 18),
+
+                // Action Row (Home Breadcrumb & Register Gallery Button)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    InkWell(
+                      borderRadius: BorderRadius.circular(6),
+                      onTap: () => context.go(RouteNames.home),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.home_outlined,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              'Home',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: SizedBox(
+                        height: 40,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFF6B1C9B),
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: () {
+                            _handleProtectedAction(
+                              onAuthorized: () {
+                                context.push(RouteNames.galleryRegistration);
+                              },
+                              promptMessage: 'Please log in to register an art gallery',
+                            );
+                          },
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add, size: 17, color: Color(0xFF6B1C9B)),
+                              SizedBox(width: 5),
+                              Flexible(
+                                child: Text(
+                                  'Register Gallery',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF6B1C9B),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
 
                 if (!_isLoggedIn) ...[
                   _buildAuthGate(context),
@@ -413,11 +545,15 @@ class _GalleriesViewState extends State<GalleriesView> {
                 children: [
                   Icon(Icons.person_add_outlined, size: 18),
                   SizedBox(width: 8),
-                  Text(
-                    'Sign Up as Art Lover (Free Access)',
-                    style: TextStyle(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w700,
+                  Flexible(
+                    child: Text(
+                      'Sign Up as Art Lover (Free Access)',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ],
@@ -447,11 +583,15 @@ class _GalleriesViewState extends State<GalleriesView> {
                 children: [
                   Icon(Icons.login_rounded, size: 18),
                   SizedBox(width: 8),
-                  Text(
-                    'Already have an account? Sign In',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                  Flexible(
+                    child: Text(
+                      'Already have an account? Sign In',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
