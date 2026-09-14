@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
@@ -11,10 +10,12 @@ import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/utils/data_translator.dart';
+import '../../../../core/utils/share_helper.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class GalleriesView extends StatefulWidget {
-  const GalleriesView({super.key});
+  final String? initialGalleryId;
+  const GalleriesView({super.key, this.initialGalleryId});
 
   @override
   State<GalleriesView> createState() => _GalleriesViewState();
@@ -22,11 +23,61 @@ class GalleriesView extends StatefulWidget {
 
 class _GalleriesViewState extends State<GalleriesView> {
   List<Map<String, dynamic>> _registeredGalleries = [];
+  bool _isLoading = true;
   StreamSubscription<List<Map<String, dynamic>>>? _galleriesSub;
-  StreamSubscription<bool>? _authSub;
 
-  static const Color _screenBg = Color(0xFF651B8A);
+  static const Color _screenBg = Color(0xFF6B1C9B);
   static const Color _cardBg = Color(0xFF551478);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadGalleries();
+    _galleriesSub = sl<LiveSyncService>().galleriesStream.listen((galleries) {
+      if (mounted) {
+        setState(() {
+          _registeredGalleries = galleries;
+        });
+      }
+    });
+    DataTranslator.translationNotifier.addListener(_onTranslationChanged);
+  }
+
+  void _onTranslationChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
+    _galleriesSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadGalleries() async {
+    setState(() => _isLoading = true);
+    try {
+      final list = await sl<ApiService>().getGalleries();
+      if (widget.initialGalleryId != null && widget.initialGalleryId!.isNotEmpty) {
+        final targetId = widget.initialGalleryId!.trim();
+        list.sort((a, b) {
+          final aMatch = a['id']?.toString() == targetId;
+          final bMatch = b['id']?.toString() == targetId;
+          if (aMatch && !bMatch) return -1;
+          if (!aMatch && bMatch) return 1;
+          return 0;
+        });
+      }
+      if (mounted) {
+        setState(() {
+          _registeredGalleries = list;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   bool get _isLoggedIn {
     try {
@@ -36,50 +87,6 @@ class _GalleriesViewState extends State<GalleriesView> {
     }
   }
 
-  void _updateGalleriesList(List<Map<String, dynamic>> galleries) {
-    if (!mounted) return;
-    setState(() {
-      _registeredGalleries = galleries.where((g) {
-        final status = (g['status'] ?? '').toString().trim().toLowerCase();
-        if (status == 'pending' || status == 'rejected') return false;
-        final isPublic = g['is_public'];
-        if (isPublic == 0 || isPublic == '0' || isPublic == false || isPublic == 'false') return false;
-        return true;
-      }).toList();
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchGalleries();
-    _authSub = sl<LiveSyncService>().authStream.listen((isLoggedIn) {
-      if (mounted) {
-        setState(() {});
-        if (isLoggedIn) {
-          _fetchGalleries();
-        }
-      }
-    });
-    _galleriesSub = sl<LiveSyncService>().galleriesStream.listen((galleries) {
-      _updateGalleriesList(galleries);
-    });
-  }
-
-  @override
-  void dispose() {
-    _authSub?.cancel();
-    _galleriesSub?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _fetchGalleries() async {
-    try {
-      final galleries = await sl<ApiService>().getGalleries();
-      _updateGalleriesList(galleries);
-    } catch (_) {}
-  }
-
   void _handleProtectedAction({
     required VoidCallback onAuthorized,
     required String promptMessage,
@@ -87,16 +94,15 @@ class _GalleriesViewState extends State<GalleriesView> {
     if (_isLoggedIn) {
       onAuthorized();
     } else {
-      _showAuthDialog(promptMessage: promptMessage);
+      _showLoginPromptDialog(promptMessage);
     }
   }
 
-  void _showAuthDialog({required String promptMessage}) {
+  void _showLoginPromptDialog(String promptMessage) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
@@ -133,10 +139,7 @@ class _GalleriesViewState extends State<GalleriesView> {
   }
 
   Future<void> _launchUrl(String url) async {
-    try {
-      final uri = Uri.parse(url);
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {}
+    await ShareHelper.openUrl(url);
   }
 
   @override
@@ -225,7 +228,7 @@ class _GalleriesViewState extends State<GalleriesView> {
                               onAuthorized: () {
                                 context.push(RouteNames.galleryRegistration);
                               },
-                              promptMessage: 'Please log in to register an art gallery',
+                              promptMessage: 'Please log in to register an art gallery'.trData(context),
                             );
                           },
                           child: Row(
@@ -255,11 +258,14 @@ class _GalleriesViewState extends State<GalleriesView> {
                 ),
                 const SizedBox(height: 20),
 
-                if (!_isLoggedIn) ...[
-                  _buildAuthGate(context),
-                ] else ...[
-                  // 2. Center Announcement Card / Galleries List
-                  if (_registeredGalleries.isEmpty) ...[
+                if (_isLoading)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    ),
+                  )
+                else if (_registeredGalleries.isEmpty) ...[
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
@@ -267,29 +273,29 @@ class _GalleriesViewState extends State<GalleriesView> {
                       color: _cardBg,
                       borderRadius: BorderRadius.circular(18),
                     ),
-                    child: const Column(
+                    child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.apartment_outlined,
                           size: 46,
                           color: Colors.white,
                         ),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         Text(
-                          'No art centers listed yet',
-                          style: TextStyle(
+                          'No art centers listed yet'.trData(context),
+                          style: const TextStyle(
                             fontSize: 17.5,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         Text(
-                          'Registered galleries and art centers will be shown here.',
+                          'Registered galleries and art centers will be shown here.'.trData(context),
                           textAlign: TextAlign.center,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 13.5,
                             color: Colors.white70,
                             height: 1.4,
@@ -310,140 +316,193 @@ class _GalleriesViewState extends State<GalleriesView> {
                     ),
                   ),
                 ] else ...[
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _registeredGalleries.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 16),
-                    itemBuilder: (context, index) {
-                      final gallery = _registeredGalleries[index];
-                      final name = (gallery['name'] ?? gallery['title'] ?? 'Art Gallery').toString();
-                      final category = (gallery['category'] ?? gallery['type'] ?? '').toString();
-                      final location = (gallery['location'] ?? gallery['address'] ?? 'Dubai, UAE').toString();
-                      final imageUrl = (gallery['image_url'] ?? gallery['image'] ?? '').toString();
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isWide = constraints.maxWidth >= 600;
+                      final crossAxisCount = constraints.maxWidth >= 900 ? 3 : 2;
 
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: _cardBg,
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (imageUrl.isNotEmpty)
-                              ClipRRect(
-                                borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-                                child: AppCachedImage(
-                                  imageUrl: imageUrl,
-                                  height: 140,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
+                      Widget buildGalleryCard(Map<String, dynamic> gallery) {
+                        final name = (gallery['name'] ?? gallery['title'] ?? 'Art Gallery').toString();
+                        final category = (gallery['category'] ?? gallery['type'] ?? '').toString();
+                        final location = (gallery['location'] ?? gallery['address'] ?? 'Dubai, UAE').toString();
+                        final imageUrl = (gallery['image_url'] ?? gallery['image'] ?? '').toString();
+
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: _cardBg,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (imageUrl.isNotEmpty)
+                                ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                                  child: AppCachedImage(
+                                    imageUrl: imageUrl,
+                                    height: 140,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              Padding(
+                                padding: const EdgeInsets.all(20.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Top Row: Title + Open Pill Badge
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            name.trData(context),
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withValues(alpha: 0.18),
+                                            borderRadius: BorderRadius.circular(16),
+                                          ),
+                                          child: Text(
+                                            Localizations.localeOf(context).languageCode == 'ar' ? 'مفتوح' : 'Open',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12.5,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+
+                                    // Subtitle: Category / Type
+                                    Text(
+                                      (category.isNotEmpty ? category : 'Art Space').trData(context),
+                                      style: const TextStyle(
+                                        fontSize: 13.5,
+                                        color: Colors.white70,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 10),
+
+                                    // Location Pin & Address
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.location_on_outlined, size: 16, color: Colors.white70),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            location.trData(context),
+                                            style: const TextStyle(
+                                              fontSize: 13.5,
+                                              color: Colors.white70,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 16),
+
+                                    // Directions and Share Actions
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: SizedBox(
+                                            height: 44,
+                                            child: ElevatedButton.icon(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.white.withValues(alpha: 0.15),
+                                                foregroundColor: Colors.white,
+                                                elevation: 0,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                              ),
+                                              onPressed: () => _launchUrl('https://maps.google.com/?q=${Uri.encodeComponent('$name $location')}'),
+                                              icon: const Icon(Icons.location_on_outlined, size: 18, color: Colors.white),
+                                              label: Text(
+                                                l10n.directions,
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        InkWell(
+                                          onTap: () {
+                                            ShareHelper.shareGallery(
+                                              context: context,
+                                              galleryId: gallery['id']?.toString() ?? '',
+                                              title: name,
+                                              location: location,
+                                              imageUrl: imageUrl,
+                                            );
+                                          },
+                                          borderRadius: BorderRadius.circular(12),
+                                          child: Container(
+                                            width: 44,
+                                            height: 44,
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withValues(alpha: 0.15),
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: const Icon(
+                                              Icons.share_outlined,
+                                              color: Colors.white,
+                                              size: 20,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
-                            Padding(
-                              padding: const EdgeInsets.all(20.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Top Row: Title + Open Pill Badge
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          name.trData(context),
-                                          style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.18),
-                                          borderRadius: BorderRadius.circular(16),
-                                        ),
-                                        child: Text(
-                                          Localizations.localeOf(context).languageCode == 'ar' ? 'مفتوح' : 'Open',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 12.5,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
+                            ],
+                          ),
+                        );
+                      }
 
-                                  // Subtitle: Category / Type
-                                  Text(
-                                    (category.isNotEmpty ? category : 'Art Space').trData(context),
-                                    style: const TextStyle(
-                                      fontSize: 13.5,
-                                      color: Colors.white70,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 10),
-
-                                  // Location Pin & Address
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.location_on_outlined, size: 16, color: Colors.white70),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Text(
-                                          location.trData(context),
-                                          style: const TextStyle(
-                                            fontSize: 13.5,
-                                            color: Colors.white70,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 16),
-
-                                  // Full-width Directions Button
-                                  SizedBox(
-                                    width: double.infinity,
-                                    height: 44,
-                                    child: ElevatedButton.icon(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.white.withValues(alpha: 0.15),
-                                        foregroundColor: Colors.white,
-                                        elevation: 0,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                      ),
-                                      onPressed: () => _launchUrl('https://maps.google.com/?q=${Uri.encodeComponent('$name $location')}'),
-                                      icon: const Icon(Icons.location_on_outlined, size: 18, color: Colors.white),
-                                      label: Text(
-                                        l10n.directions,
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                      if (isWide) {
+                        return GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _registeredGalleries.length,
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: crossAxisCount,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                            childAspectRatio: 0.78,
+                          ),
+                          itemBuilder: (context, index) => buildGalleryCard(_registeredGalleries[index]),
+                        );
+                      }
+                      return ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _registeredGalleries.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 16),
+                        itemBuilder: (context, index) => buildGalleryCard(_registeredGalleries[index]),
                       );
                     },
                   ),
@@ -460,174 +519,11 @@ class _GalleriesViewState extends State<GalleriesView> {
                   ),
                 ],
               ],
-              ],
             ),
           ),
         ),
       ),
       bottomNavigationBar: const AppBottomNavBar(currentIndex: -1),
-    );
-  }
-
-  Widget _buildAuthGate(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(top: 8, bottom: 24),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 68,
-            height: 68,
-            decoration: BoxDecoration(
-              color: const Color(0xFF651B8A).withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.museum_outlined,
-                size: 34,
-                color: Color(0xFF651B8A),
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
-          Text(
-            l10n.galleriesArtCenter,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF1E293B),
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.galleriesSubtitle,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 13.5,
-              height: 1.45,
-              color: Color(0xFF64748B),
-            ),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            height: 46,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF651B8A),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              onPressed: () async {
-                final loggedIn = await context.push(RouteNames.register, extra: 'user');
-                if (loggedIn == true || _isLoggedIn) {
-                  if (mounted) setState(() {});
-                }
-              },
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.person_add_outlined, size: 18),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      l10n.signUpFree,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            height: 46,
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF651B8A),
-                side: const BorderSide(color: Color(0xFF651B8A), width: 1.5),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              onPressed: () async {
-                final loggedIn = await context.push(RouteNames.login);
-                if (loggedIn == true || _isLoggedIn) {
-                  if (mounted) setState(() {});
-                }
-              },
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.login_rounded, size: 18),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      '${l10n.alreadyHaveAccount}${l10n.signInNow}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.lock_outline_rounded, size: 16, color: Color(0xFF94A3B8)),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Access is free. Simply sign in so we can provide you with gallery opening and exhibition updates.',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

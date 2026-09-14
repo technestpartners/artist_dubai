@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:artist_dubai/core/utils/data_translator.dart';
+import 'package:artist_dubai/features/events/domain/models/art_event_model.dart';
 
 void main() {
   group('DataTranslator Tests', () {
@@ -57,6 +58,26 @@ void main() {
         DataTranslator.translate('معتمد', isArabic: false),
         equals('Approved'),
       );
+      expect(
+        DataTranslator.translate('تفاصيل الفعالية', isArabic: false),
+        equals('Event Details'),
+      );
+      expect(
+        DataTranslator.translate('فتح الاتجاهات', isArabic: false),
+        equals('Open Directions'),
+      );
+      expect(
+        DataTranslator.translate('جوجل', isArabic: false),
+        equals('Google'),
+      );
+      expect(
+        DataTranslator.translate('بيت الحكمة والفنون، دبي', isArabic: false),
+        equals('House of Wisdom & Arts, Dubai'),
+      );
+      expect(
+        DataTranslator.translate('اليوم • 11:00 صباحاً - 09:00 مساءً', isArabic: false),
+        equals('Today • 11:00 AM - 09:00 PM'),
+      );
     });
 
     test('Pattern matching for compound status and timing', () {
@@ -76,15 +97,112 @@ void main() {
         DataTranslator.translate('Recent', isArabic: true),
         equals('الآن'),
       );
+      expect(
+        DataTranslator.translate('Today • 11:00 AM - 09:00 PM', isArabic: true),
+        equals('اليوم • 11:00 صباحاً - 09:00 مساءً'),
+      );
+      expect(
+        DataTranslator.translate('This Week • 04:00 PM - 07:00 PM', isArabic: true),
+        equals('هذا الأسبوع • 04:00 مساءً - 07:00 مساءً'),
+      );
+      expect(
+        DataTranslator.translate('House of Wisdom & Arts, Dubai', isArabic: true),
+        equals('بيت الحكمة والفنون، دبي'),
+      );
+      expect(
+        DataTranslator.translate('House of Wisdom & Arts', isArabic: true),
+        equals('بيت الحكمة والفنون'),
+      );
+      expect(
+        DataTranslator.translate('Event Details', isArabic: true),
+        equals('تفاصيل الفعالية'),
+      );
+      expect(
+        DataTranslator.translate('Open Directions', isArabic: true),
+        equals('فتح الاتجاهات'),
+      );
+      expect(
+        DataTranslator.translate('Google', isArabic: true),
+        equals('جوجل'),
+      );
     });
 
-    test('Gracefully handles unknown or empty strings', () {
+    test('Translates dynamic backend cities and bios to Arabic', () {
+      expect(
+        DataTranslator.translate('Hannover', isArabic: true),
+        equals('هانوفر'),
+      );
+      expect(
+        DataTranslator.translate('Braunschweig', isArabic: true),
+        equals('براونشفايغ'),
+      );
+      expect(
+        DataTranslator.translate('burj', isArabic: true),
+        equals('برج'),
+      );
+      expect(
+        DataTranslator.translate('Germany', isArabic: true),
+        equals('ألمانيا'),
+      );
+      expect(
+        DataTranslator.translate('London', isArabic: true),
+        equals('لندن'),
+      );
+    });
+
+
+    test('Translates gallery strings and explore pattern matching', () {
+      expect(
+        DataTranslator.translate('Photo Galleries', isArabic: true),
+        equals('معارض الصور'),
+      );
+      expect(
+        DataTranslator.translate('Create Gallery', isArabic: true),
+        equals('إنشاء معرض'),
+      );
+      expect(
+        DataTranslator.translate('Featured', isArabic: true),
+        equals('مميز'),
+      );
+      expect(
+        DataTranslator.translate("Explore Shiv's collection of artworks", isArabic: true),
+        equals('استكشف مجموعة أعمال Shiv الفنية'),
+      );
+    });
+
+    test('Gracefully handles empty strings and pure punctuation', () {
       expect(DataTranslator.translate('', isArabic: true), equals(''));
       expect(DataTranslator.translate(null, isArabic: true), equals(''));
-      expect(
-        DataTranslator.translate('Custom Unknown Category', isArabic: true),
-        equals('Custom Unknown Category'),
-      );
+      expect(DataTranslator.translate('.', isArabic: true), equals('.'));
+      expect(DataTranslator.translate('...', isArabic: true), equals('...'));
+      expect(DataTranslator.translate('-', isArabic: true), equals('-'));
+    });
+
+    test('Translates test and demo terms accurately to Arabic', () {
+      expect(DataTranslator.translate('Test', isArabic: true), equals('اختبار'));
+      expect(DataTranslator.translate('test', isArabic: true), equals('اختبار'));
+      expect(DataTranslator.translate('tezt', isArabic: true), equals('اختبار'));
+      expect(DataTranslator.translate('demo', isArabic: true), equals('عرض تجريبي'));
+      expect(DataTranslator.translate('sample', isArabic: true), equals('عينة'));
+      expect(DataTranslator.translate('good', isArabic: true), equals('جيد'));
+    });
+
+    test('ArtEventModel recovers from backend dot translations using _en fallback', () {
+      final json = {
+        'id': 10,
+        'title': '.',
+        'title_en': 'test',
+        'description': '.',
+        'description_en': 'test',
+        'category': 'Gallery Opening',
+        'price': 'Free',
+      };
+      final model = ArtEventModel.fromJson(json);
+      // In Arabic environment, title and description will be translated from 'test' -> 'اختبار'
+      final arTitle = DataTranslator.translate(model.title, isArabic: true);
+      final arDesc = DataTranslator.translate(model.description, isArabic: true);
+      expect(arTitle, equals('اختبار'));
+      expect(arDesc, equals('اختبار'));
     });
   });
 }

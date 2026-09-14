@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:artist_dubai/app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/locale_provider.dart';
 import '../../../../core/services/storage_service.dart';
+import '../../../../core/utils/data_translator.dart';
 import '../../domain/models/onboarding_item.dart';
 import '../widgets/onboarding_slide_widget.dart';
 
@@ -20,7 +23,20 @@ class _OnboardingViewState extends State<OnboardingView> {
   final List<OnboardingItem> _slides = OnboardingItem.items;
 
   @override
+  void initState() {
+    super.initState();
+    DataTranslator.translationNotifier.addListener(_onTranslationChanged);
+  }
+
+  void _onTranslationChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
   void dispose() {
+    DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
     _pageController.dispose();
     super.dispose();
   }
@@ -79,26 +95,72 @@ class _OnboardingViewState extends State<OnboardingView> {
         child: SafeArea(
           child: Column(
             children: [
-              // Top Bar with Skip Button
+              // Top Bar with Language Toggle and Skip Button
               Padding(
-                padding: const EdgeInsets.only(top: 8.0, right: 20.0),
-                child: Align(
-                  alignment: Alignment.topRight,
-                  child: TextButton(
-                    onPressed: _onFinish,
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w400,
-                      ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20.0,
+                  vertical: 8.0,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Consumer<LocaleProvider>(
+                      builder: (context, localeProvider, _) {
+                        final isArabic = localeProvider.isArabic;
+                        return Tooltip(
+                          message: isArabic ? 'Switch to English' : 'التبديل إلى العربية',
+                          child: InkWell(
+                            onTap: () => localeProvider.toggleLocale(),
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.18),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.45),
+                                  width: 1.2,
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.language, size: 15, color: Colors.white),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    isArabic ? 'English' : 'عربي',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                    child: const Text('Skip'),
-                  ),
+                    TextButton(
+                      onPressed: _onFinish,
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      child: Text('Skip'.trData(context)),
+                    ),
+                  ],
                 ),
               ),
 
@@ -154,60 +216,97 @@ class _OnboardingViewState extends State<OnboardingView> {
                             ? MainAxisAlignment.end
                             : MainAxisAlignment.spaceBetween,
                     children: [
-                      if (!isFirstPage)
-                        SizedBox(
-                          width: 142,
-                          height: 56,
-                          child: ElevatedButton(
-                            onPressed: _onPrevious,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF5A396A),
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(28),
+                      if (!isFirstPage) ...[
+                        Expanded(
+                          flex: 1,
+                          child: SizedBox(
+                            height: 56,
+                            child: ElevatedButton(
+                              onPressed: _onPrevious,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF5A396A),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(28),
+                                ),
                               ),
-                            ),
-                            child: const Text(
-                              'Previous',
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w400,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  'Previous'.trData(context),
+                                  maxLines: 1,
+                                  style: const TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      SizedBox(
-                        width: isLastPage ? 168 : (isFirstPage ? 116 : 116),
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: _onNext,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                isLastPage
-                                    ? Colors.white
-                                    : const Color(0xFF5A396A),
-                            foregroundColor:
-                                isLastPage
-                                    ? const Color(0xFF1E0A36)
-                                    : Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(28),
+                        const SizedBox(width: 14),
+                      ],
+                      isFirstPage
+                          ? SizedBox(
+                              width: 130,
+                              height: 56,
+                              child: ElevatedButton(
+                                onPressed: _onNext,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF5A396A),
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(28),
+                                  ),
+                                ),
+                                child: Text(
+                                  'Next'.trData(context),
+                                  style: const TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Expanded(
+                              flex: isLastPage ? 2 : 1,
+                              child: SizedBox(
+                                height: 56,
+                                child: ElevatedButton(
+                                  onPressed: _onNext,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        isLastPage
+                                            ? Colors.white
+                                            : const Color(0xFF5A396A),
+                                    foregroundColor:
+                                        isLastPage
+                                            ? const Color(0xFF1E0A36)
+                                            : Colors.white,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(28),
+                                    ),
+                                  ),
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      (isLastPage ? 'Get Started' : 'Next').trData(context),
+                                      maxLines: 1,
+                                      style: TextStyle(
+                                        fontSize: 17,
+                                        fontWeight:
+                                            isLastPage
+                                                ? FontWeight.w600
+                                                : FontWeight.w400,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                          child: Text(
-                            isLastPage ? 'Get Started' : 'Next',
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight:
-                                  isLastPage
-                                      ? FontWeight.w600
-                                      : FontWeight.w400,
-                            ),
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),

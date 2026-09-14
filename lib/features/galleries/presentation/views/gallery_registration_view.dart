@@ -32,7 +32,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
 
   final bool _isSubmitted = false;
 
-  String _selectedPublishingPlan = 'weekly';
+  String _selectedPublishingPlan = 'six_month';
   PublishingPricingModel? _galleryPricing;
 
   static const Color _screenBg = Color(0xFF651B8A);
@@ -55,6 +55,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
           itemName: 'Gallery Showcase',
           weeklyPrice: 'AED 200',
           monthlyPrice: 'AED 750',
+          sixMonthPrice: 'AED 3,800',
           yearlyPrice: 'AED 6,500',
           currency: 'AED',
         ),
@@ -282,7 +283,11 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
     if (!_formKey.currentState!.validate()) return;
 
     final publishingAmount = _galleryPricing?.getPriceForPlan(_selectedPublishingPlan) ??
-        (_selectedPublishingPlan == 'monthly' ? 'AED 750' : (_selectedPublishingPlan == 'yearly' ? 'AED 6,500' : 'AED 200'));
+        (_selectedPublishingPlan == 'monthly'
+            ? 'AED 750'
+            : (_selectedPublishingPlan == 'six_month'
+                ? 'AED 3,800'
+                : (_selectedPublishingPlan == 'yearly' ? 'AED 6,500' : 'AED 200')));
 
     context.push(
       RouteNames.planPayment,
@@ -675,26 +680,16 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                       LayoutBuilder(
                         builder: (context, constraints) {
                           final isSmall = constraints.maxWidth < 460;
-                          final weeklyPrice = _galleryPricing?.weeklyPrice ?? 'AED 200';
-                          final monthlyPrice = _galleryPricing?.monthlyPrice ?? 'AED 750';
+                          final sixMonthPrice = _galleryPricing?.sixMonthPrice ?? 'AED 3,800';
                           final yearlyPrice = _galleryPricing?.yearlyPrice ?? 'AED 6,500';
 
                           final cards = [
                             _buildGalleryPricingCard(
-                              id: 'weekly',
-                              title: 'Weekly',
-                              price: weeklyPrice,
-                              period: '/ week',
-                              subtitle: '7 days showcase',
-                              tag: null,
-                            ),
-                            _buildGalleryPricingCard(
-                              id: 'monthly',
-                              title: 'Monthly',
-                              price: monthlyPrice,
-                              period: '/ month',
-                              subtitle: '30 days showcase',
-                              tag: 'POPULAR',
+                              id: 'six_month',
+                              title: '6 Months',
+                              price: sixMonthPrice,
+                              period: '/ 6 mo',
+                              subtitle: '180 days showcase',
                             ),
                             _buildGalleryPricingCard(
                               id: 'yearly',
@@ -702,30 +697,25 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                               price: yearlyPrice,
                               period: '/ year',
                               subtitle: '365 days showcase',
-                              tag: 'BEST VALUE',
                             ),
                           ];
 
                           if (isSmall) {
                             return Column(
-                              children: cards
-                                  .map((c) => Padding(
-                                        padding: const EdgeInsets.only(bottom: 8),
-                                        child: c,
-                                      ))
-                                  .toList(),
+                              children: [
+                                cards[0],
+                                const SizedBox(height: 10),
+                                cards[1],
+                              ],
                             );
                           }
 
                           return Row(
-                            children: cards
-                                .map((c) => Expanded(
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                                        child: c,
-                                      ),
-                                    ))
-                                .toList(),
+                            children: [
+                              Expanded(child: cards[0]),
+                              const SizedBox(width: 12),
+                              Expanded(child: cards[1]),
+                            ],
                           );
                         },
                       ),
@@ -977,7 +967,11 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                   decoration: BoxDecoration(
-                    color: tag == 'POPULAR' ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
+                    color: tag == 'POPULAR'
+                        ? const Color(0xFFF59E0B)
+                        : (tag.startsWith('SAVE')
+                            ? const Color(0xFFE11D48)
+                            : const Color(0xFF10B981)),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -999,7 +993,11 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
 
   Widget _buildPaymentNoticeCard() {
     final planAmount = _galleryPricing?.getPriceForPlan(_selectedPublishingPlan) ??
-        (_selectedPublishingPlan == 'monthly' ? 'AED 750' : (_selectedPublishingPlan == 'yearly' ? 'AED 6,500' : 'AED 200'));
+        (_selectedPublishingPlan == 'monthly'
+            ? 'AED 750'
+            : (_selectedPublishingPlan == 'six_month'
+                ? 'AED 3,800'
+                : (_selectedPublishingPlan == 'yearly' ? 'AED 6,500' : 'AED 200')));
 
     return Container(
       width: double.infinity,

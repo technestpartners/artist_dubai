@@ -9,6 +9,7 @@ import '../di/injection_container.dart';
 import '../network/api_client.dart';
 import 'live_sync_service.dart';
 import 'storage_service.dart';
+import '../utils/data_translator.dart';
 
 /// Pagination metadata returned from every list endpoint
 class PagedResult<T> {
@@ -62,6 +63,21 @@ class ApiService {
   Map<String, dynamic>? _cachedAbout;
   List<Map<String, dynamic>>? _cachedCompetitions;
   Map<String, Set<String>>? _cachedInteractions; // liked/followed artist IDs per session
+  List<String>? _cachedEventCategories;
+
+  // TTL timestamps for cache entries
+  final Map<String, DateTime> _cacheTimestamps = {};
+  static const Duration _dynamicTtl = Duration(minutes: 2);   // artists, events, galleries
+  static const Duration _masterTtl  = Duration(minutes: 10);  // categories, locations, pricing, etc.
+
+  /// Returns true if the named cache entry is still fresh within [ttl]
+  bool _isCacheValid(String key, {Duration ttl = _dynamicTtl}) {
+    final ts = _cacheTimestamps[key];
+    if (ts == null) return false;
+    return DateTime.now().difference(ts) < ttl;
+  }
+
+  void _stampCache(String key) => _cacheTimestamps[key] = DateTime.now();
 
   ApiService(this._client);
 
@@ -80,14 +96,17 @@ class ApiService {
     _cachedGalleries = null;
     _cachedAbout = null;
     _cachedCompetitions = null;
+    _cachedEventCategories = null;
+    _cacheTimestamps.clear();
   }
 
   bool _isSuccess(dynamic res) =>
       res is Map<String, dynamic> && (res['status'] == 'success' || res['success'] == true);
 
-  // 1. Categories (Instant Cache-First from MySQL)
+  // 1. Categories (Instant Cache-First from MySQL — TTL 10 min)
   Future<List<CategoryInfo>> getCategories({String type = 'all', bool forceRefresh = false}) async {
-    if (!forceRefresh && _cachedCategories != null && _cachedCategories!.isNotEmpty) {
+    if (!forceRefresh && _cachedCategories != null && _cachedCategories!.isNotEmpty
+        && _isCacheValid('categories', ttl: _masterTtl)) {
       return _cachedCategories!;
     }
 
@@ -107,6 +126,7 @@ class ApiService {
             emoji: item['emoji'] as String? ?? '🎨',
           );
         }).toList();
+        _stampCache('categories');
         return _cachedCategories!;
       }
     } catch (_) {}
@@ -114,8 +134,12 @@ class ApiService {
     return _cachedCategories ?? ArtistModel.categoryList;
   }
 
-  // 1b. Event Categories (Dynamic from MySQL)
+  // 1b. Event Categories (Dynamic from MySQL — TTL 10 min)
   Future<List<String>> getEventCategories({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedEventCategories != null && _cachedEventCategories!.isNotEmpty
+        && _isCacheValid('eventCategories', ttl: _masterTtl)) {
+      return _cachedEventCategories!;
+    }
     try {
       final res = await _client.get(
         ApiEndpoints.categories,
@@ -128,15 +152,16 @@ class ApiService {
             .where((name) => name.isNotEmpty)
             .toList();
         if (fetched.isNotEmpty) {
-          if (!fetched.contains('All Categories')) {
-            return ['All Categories', ...fetched];
-          }
-          return fetched;
+          _cachedEventCategories = fetched.contains('All Categories')
+              ? fetched
+              : ['All Categories', ...fetched];
+          _stampCache('eventCategories');
+          return _cachedEventCategories!;
         }
       }
     } catch (_) {}
 
-    return ArtEventModel.categories;
+    return _cachedEventCategories ?? ArtEventModel.categories;
   }
 
   // 2. Artists — paginated fetch
@@ -167,6 +192,10 @@ class ApiService {
         if (page == 1 && category == null && (query == null || query.isEmpty) && featured == null) {
           _cachedArtists = result.data;
         }
+        DataTranslator.prefetchBatch(
+          result.data.expand((a) => [a.location, a.bio, a.category, a.experienceLevel]).toList(),
+          isArabic: DataTranslator.isAppArabic,
+        );
         return result;
       }
     } catch (_) {}
@@ -218,6 +247,10 @@ class ApiService {
         if (isDefaultQuery) {
           _cachedArtists = artists;
         }
+        DataTranslator.prefetchBatch(
+          artists.expand((a) => [a.location, a.bio, a.category, a.experienceLevel]).toList(),
+          isArabic: DataTranslator.isAppArabic,
+        );
         return artists;
       }
     } catch (_) {}
@@ -382,6 +415,10 @@ class ApiService {
         if (isDefaultQuery) {
           _cachedEvents = events;
         }
+        DataTranslator.prefetchBatch(
+          events.expand((e) => [e.title, e.description, e.location, e.category, e.price]).toList(),
+          isArabic: DataTranslator.isAppArabic,
+        );
         return events;
       }
     } catch (_) {}
@@ -491,6 +528,10 @@ class ApiService {
       if (_isSuccess(res)) {
         final list = res['data'] as List<dynamic>;
         _cachedGovEntities = list.map((e) => GovernmentEntity.fromJson(e as Map<String, dynamic>)).toList();
+        DataTranslator.prefetchBatch(
+          _cachedGovEntities!.expand((g) => [g.name, g.category, g.location, g.defaultTiming]).toList(),
+          isArabic: DataTranslator.isAppArabic,
+        );
         return _cachedGovEntities!;
       }
     } catch (_) {}
@@ -555,8 +596,20 @@ class ApiService {
         if (isFullFetch && page == 1 && list.isNotEmpty) {
           _cachedGalleries = list;
         }
+        DataTranslator.prefetchBatch(
+          list.expand((g) => [
+            g['name']?.toString(),
+            g['category']?.toString(),
+            g['location']?.toString(),
+            g['timing']?.toString(),
+            g['description']?.toString(),
+            g['about']?.toString(),
+          ]).toList(),
+          isArabic: DataTranslator.isAppArabic,
+        );
         return list;
       }
+
     } catch (_) {}
 
     return _cachedGalleries ?? [];
@@ -654,9 +707,19 @@ class ApiService {
         queryParameters: queryParams,
       );
       if (_isSuccess(res)) {
-        return (res['data'] as List<dynamic>)
+        final list = (res['data'] as List<dynamic>)
             .map((e) => e as Map<String, dynamic>)
             .toList();
+        DataTranslator.prefetchBatch(
+          list.expand((aw) => [
+            aw['title']?.toString(),
+            aw['medium']?.toString(),
+            aw['description']?.toString(),
+            aw['price']?.toString(),
+          ]).toList(),
+          isArabic: DataTranslator.isAppArabic,
+        );
+        return list;
       }
     } catch (_) {}
     return [];
@@ -1465,7 +1528,10 @@ class ApiService {
             itemName: 'Event Publishing',
             weeklyPrice: 'AED 150',
             monthlyPrice: 'AED 500',
+            sixMonthPrice: 'AED 2,500',
             yearlyPrice: 'AED 4,500',
+            sixMonthBadge: 'Save 17%',
+            yearlyBadge: 'Best Value',
             currency: 'AED',
             description: 'Standard rate for publishing art events, exhibitions, and symposiums on Artist Dubai.',
           ),
@@ -1475,7 +1541,10 @@ class ApiService {
             itemName: 'Gallery Listing & Showcase',
             weeklyPrice: 'AED 200',
             monthlyPrice: 'AED 750',
+            sixMonthPrice: 'AED 3,800',
             yearlyPrice: 'AED 6,500',
+            sixMonthBadge: 'Save 15%',
+            yearlyBadge: 'Best Value',
             currency: 'AED',
             description: 'Premier directory listing, verified status badge, and spotlight showcase for Dubai art galleries.',
           ),
@@ -1486,7 +1555,10 @@ class ApiService {
     required String itemType,
     required String weeklyPrice,
     required String monthlyPrice,
+    String? sixMonthPrice,
     required String yearlyPrice,
+    String? sixMonthBadge,
+    String? yearlyBadge,
     String? description,
     String currency = 'AED',
   }) async {
@@ -1497,7 +1569,10 @@ class ApiService {
           'item_type': itemType,
           'weekly_price': weeklyPrice,
           'monthly_price': monthlyPrice,
+          if (sixMonthPrice != null) 'six_month_price': sixMonthPrice,
           'yearly_price': yearlyPrice,
+          if (sixMonthBadge != null) 'six_month_badge': sixMonthBadge,
+          if (yearlyBadge != null) 'yearly_badge': yearlyBadge,
           if (description != null) 'description': description,
           'currency': currency,
         },

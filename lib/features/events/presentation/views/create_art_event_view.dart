@@ -59,7 +59,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
   String? _selectedLocation = 'Dubai, UAE';
   bool _isSubmitting = false;
 
-  String _selectedPublishingPlan = 'weekly';
+  String _selectedPublishingPlan = 'six_month';
   PublishingPricingModel? _eventPricing;
 
   final _transactionIdController = TextEditingController();
@@ -420,6 +420,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           itemName: 'Event Publishing',
           weeklyPrice: 'AED 150',
           monthlyPrice: 'AED 500',
+          sixMonthPrice: 'AED 2,500',
           yearlyPrice: 'AED 4,500',
           currency: 'AED',
         ),
@@ -547,7 +548,11 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           ? _selectedLocation!.trim()
           : (_locationController.text.trim().isEmpty ? 'Dubai, UAE' : _locationController.text.trim());
       final publishingAmount = _eventPricing?.getPriceForPlan(_selectedPublishingPlan) ??
-          (_selectedPublishingPlan == 'monthly' ? 'AED 500' : (_selectedPublishingPlan == 'yearly' ? 'AED 4,500' : 'AED 150'));
+          (_selectedPublishingPlan == 'monthly'
+              ? 'AED 500'
+              : (_selectedPublishingPlan == 'six_month'
+                  ? 'AED 2,500'
+                  : (_selectedPublishingPlan == 'yearly' ? 'AED 4,500' : 'AED 150')));
       final txnRef = _transactionIdController.text.trim();
       final hasPaymentProof = (_receiptUrl != null && _receiptUrl!.isNotEmpty) || txnRef.isNotEmpty;
       final paymentStatus = isAdmin ? 'paid' : (hasPaymentProof ? 'submitted' : 'unpaid');
@@ -1158,26 +1163,16 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                             LayoutBuilder(
                               builder: (context, constraints) {
                                 final isSmall = constraints.maxWidth < 460;
-                                final weeklyPrice = _eventPricing?.weeklyPrice ?? 'AED 150';
-                                final monthlyPrice = _eventPricing?.monthlyPrice ?? 'AED 500';
+                                final sixMonthPrice = _eventPricing?.sixMonthPrice ?? 'AED 2,500';
                                 final yearlyPrice = _eventPricing?.yearlyPrice ?? 'AED 4,500';
 
                                 final cards = [
                                   _buildPricingPlanCard(
-                                    id: 'weekly',
-                                    title: l10n.weekly,
-                                    price: weeklyPrice,
-                                    period: '/ week',
-                                    subtitle: l10n.daysActive7,
-                                    tag: null,
-                                  ),
-                                  _buildPricingPlanCard(
-                                    id: 'monthly',
-                                    title: l10n.monthly,
-                                    price: monthlyPrice,
-                                    period: '/ month',
-                                    subtitle: l10n.daysActive30,
-                                    tag: l10n.popularTag,
+                                    id: 'six_month',
+                                    title: l10n.sixMonths,
+                                    price: sixMonthPrice,
+                                    period: '/ 6 mo',
+                                    subtitle: l10n.daysActive180,
                                   ),
                                   _buildPricingPlanCard(
                                     id: 'yearly',
@@ -1185,30 +1180,25 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                     price: yearlyPrice,
                                     period: '/ year',
                                     subtitle: l10n.daysActive365,
-                                    tag: l10n.bestValueTag,
                                   ),
                                 ];
 
                                 if (isSmall) {
                                   return Column(
-                                    children: cards
-                                        .map((c) => Padding(
-                                              padding: const EdgeInsets.only(bottom: 8),
-                                              child: c,
-                                            ))
-                                        .toList(),
+                                    children: [
+                                      cards[0],
+                                      const SizedBox(height: 10),
+                                      cards[1],
+                                    ],
                                   );
                                 }
 
                                 return Row(
-                                  children: cards
-                                      .map((c) => Expanded(
-                                            child: Padding(
-                                              padding: const EdgeInsets.symmetric(horizontal: 4),
-                                              child: c,
-                                            ),
-                                          ))
-                                      .toList(),
+                                  children: [
+                                    Expanded(child: cards[0]),
+                                    const SizedBox(width: 12),
+                                    Expanded(child: cards[1]),
+                                  ],
                                 );
                               },
                             ),
@@ -1323,7 +1313,11 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
   Widget _buildPaymentNoticeCard() {
     final l10n = AppLocalizations.of(context);
     final planAmount = _eventPricing?.getPriceForPlan(_selectedPublishingPlan) ??
-        (_selectedPublishingPlan == 'monthly' ? 'AED 500' : (_selectedPublishingPlan == 'yearly' ? 'AED 4,500' : 'AED 150'));
+        (_selectedPublishingPlan == 'monthly'
+            ? 'AED 500'
+            : (_selectedPublishingPlan == 'six_month'
+                ? 'AED 2,500'
+                : (_selectedPublishingPlan == 'yearly' ? 'AED 4,500' : 'AED 150')));
 
     return Container(
       width: double.infinity,

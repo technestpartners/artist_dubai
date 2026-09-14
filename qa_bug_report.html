@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>QA Bug and Usability Report - Artist Dubai Full System & Translation</title>
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 18mm 16mm 18mm 16mm;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #1a1a1a;
+    background-color: #ffffff;
+    line-height: 1.5;
+    font-size: 13.5px;
+    margin: 0;
+    padding: 0;
+  }
+  .header-cover {
+    border-bottom: 2px solid #5a189a;
+    padding-bottom: 12px;
+    margin-bottom: 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .header-cover .title-group h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #3c096c;
+    margin: 0 0 4px 0;
+    letter-spacing: -0.3px;
+  }
+  .header-cover .title-group p {
+    font-size: 12px;
+    color: #6c757d;
+    margin: 0;
+  }
+  .badge-meta {
+    text-align: right;
+    font-size: 11px;
+    color: #495057;
+  }
+  .badge-meta .status-badge {
+    display: inline-block;
+    background: #e0aaff;
+    color: #240046;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 10.5px;
+    margin-bottom: 4px;
+  }
+  
+  .section-divider {
+    background: #f3e8ff;
+    border-left: 4px solid #7b2cbf;
+    padding: 7px 12px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #3c096c;
+    margin: 22px 0 16px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .bug-card {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin-bottom: 20px;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+
+  .bug-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .bug-id-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #1e293b;
+  }
+  .checkbox-icon {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 1.8px solid #4a148c;
+    border-radius: 3px;
+    position: relative;
+    vertical-align: middle;
+    background: #f3e8ff;
+  }
+  .checkbox-icon::after {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 1px;
+    width: 4px;
+    height: 8px;
+    border: solid #4a148c;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  .severity-tag {
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+  .severity-critical { background: #fee2e2; color: #991b1b; }
+  .severity-high { background: #ffedd5; color: #9a3412; }
+  .severity-medium { background: #fef3c7; color: #92400e; }
+  .severity-fixed { background: #dcfce7; color: #166534; }
+
+  .bug-field {
+    margin-bottom: 9px;
+  }
+  .field-label {
+    font-weight: 700;
+    color: #1e293b;
+    margin-right: 4px;
+  }
+  .bug-title {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 8px;
+  }
+  .steps-list {
+    margin: 4px 0 6px 20px;
+    padding: 0;
+  }
+  .steps-list li {
+    margin-bottom: 3px;
+    color: #334155;
+  }
+  .result-text {
+    color: #334155;
+  }
+
+  .screenshot-container {
+    margin: 12px 0 6px 0;
+    text-align: center;
+    background: #f8fafc;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .screenshot-img {
+    max-width: 320px;
+    max-height: 290px;
+    object-fit: contain;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  }
+  .screenshot-caption {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 5px;
+    font-style: italic;
+  }
+
+  .fix-resolution-box {
+    margin-top: 10px;
+    background: #f0fdf4;
+    border-left: 3px solid #16a34a;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #14532d;
+    border-radius: 0 4px 4px 0;
+  }
+  .fix-resolution-box strong {
+    color: #15803d;
+  }
+
+  .ar-translation-box {
+    margin-top: 8px;
+    background: #fbfbfe;
+    border: 1px dashed #cbd5e1;
+    border-radius: 6px;
+    padding: 8px 12px;
+    direction: rtl;
+    text-align: right;
+    font-size: 12.5px;
+    color: #1e293b;
+  }
+  .ar-translation-box .ar-title {
+    font-weight: 700;
+    color: #581c87;
+    margin-bottom: 4px;
+  }
+
+  .suggestion-card {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    border: 1px solid #c7d2fe;
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .suggestion-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #3730a3;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .recommend-list {
+    margin: 4px 0 8px 18px;
+    padding: 0;
+  }
+  .recommend-list li {
+    margin-bottom: 4px;
+    color: #334155;
+  }
+
+  .page-break {
+    page-break-before: always;
+    break-before: page;
+  }
+
+  .table-summary {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0 20px 0;
+    font-size: 11.5px;
+  }
+  .table-summary th {
+    background: #4a148c;
+    color: #ffffff;
+    padding: 7px 10px;
+    text-align: left;
+    font-weight: 600;
+  }
+  .table-summary td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #1e293b;
+  }
+  .table-summary tr:nth-child(even) td {
+    background: #f8fafc;
+  }
+</style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header-cover">
+    <div class="title-group">
+      <h1>Quality Assurance Bug & Usability Report</h1>
+      <p>Artist Dubai Community Platform &bull; Comprehensive System &amp; Translation Audit</p>
+    </div>
+    <div class="badge-meta">
+      <span class="status-badge">Official QA Report</span><br>
+      <strong>Date:</strong> 2026-09-11 &bull; <strong>Build:</strong> v2.4 (Production/Staging)
+    </div>
+  </div>
+
+  <!-- Executive Summary Table -->
+  <div style="margin-bottom: 18px;">
+    <p style="margin: 0 0 8px 0; font-size: 12.5px; color: #475569;">
+      This official QA report consolidates all verified software defects, localization regressions, and usability findings across the full system (Mobile Application &amp; PHP API Backend), complete with reproduction steps, actual vs. expected results, UI captures, and implemented code fixes.
+    </p>
+    <table class="table-summary">
+      <thead>
+        <tr>
+          <th>Bug ID</th>
+          <th>Category</th>
+          <th>Title / Description Summary</th>
+          <th>Severity</th>
+          <th>Fix Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Bug ID: 001</strong></td>
+          <td>Performance / UX</td>
+          <td>Create artist profile takes unusually long time to complete</td>
+          <td><span class="severity-tag severity-high">High</span></td>
+          <td><span class="severity-tag severity-fixed">Verified Fixed</span></td>
+        </tr>
+        <tr>
+          <td><strong>Bug ID: 002</strong></td>
+          <td>Validation / Form</td>
+          <td>Phone number field accepts alphabetic and special characters</td>
+          <td><span class="severity-tag severity-high">High</span></td>
+          <td><span class="severity-tag severity-fixed">Verified Fixed</span></td>
+        </tr>
+        <tr>
+          <td><strong>Bug ID: 003</strong></td>
+          <td>Media / Gallery</td>
+          <td>Edit/delete option is not available in Photo Gallery after viewing an Artist profile</td>
+          <td><span class="severity-tag severity-medium">Medium</span></td>
+          <td><span class="severity-tag severity-fixed">Verified Fixed</span></td>
+        </tr>
+        <tr>
+          <td><strong>Bug ID: 004</strong></td>
+          <td>Localization / i18n</td>
+          <td>Single dot (.) displayed instead of Arabic translation for Event &amp; Artwork text</td>
+          <td><span class="severity-tag severity-critical">Critical</span></td>
+          <td><span class="severity-tag severity-fixed">Verified Fixed</span></td>
+        </tr>
+        <tr>
+          <td><strong>Bug ID: 005</strong></td>
+          <td>UI / Dashboard</td>
+          <td>Home screen bottom grid text overflows card boundary on smaller screens</td>
+          <td><span class="severity-tag severity-medium">Medium</span></td>
+          <td><span class="severity-tag severity-fixed">Verified Fixed</span></td>
+        </tr>
+        <tr>
+          <td><strong>Bug ID: 006</strong></td>
+          <td>Validation / Logic</td>
+          <td>Event date selector permits end date prior to start date</td>
+          <td><span class="severity-tag severity-medium">Medium</span></td>
+          <td><span class="severity-tag severity-fixed">Verified Fixed</span></td>
+        </tr>
+        <tr>
+          <td><strong>Bug ID: 007</strong></td>
+          <td>Booking / Checkout</td>
+          <td>Ticket quantity field accepts zero or negative values</td>
+          <td><span class="severity-tag severity-medium">Medium</span></td>
+          <td><span class="severity-tag severity-fixed">Verified Fixed</span></td>
+        </tr>
+        <tr>
+          <td><strong>Bug ID: 008</strong></td>
+          <td>Cache / API</td>
+          <td>ETag 60-second caching causes newly created entries to not display immediately</td>
+          <td><span class="severity-tag severity-high">High</span></td>
+          <td><span class="severity-tag severity-fixed">Verified Fixed</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-divider">Section 1: Detailed Bug Reports &amp; Verified Fixes</div>
+
+  <!-- BUG ID 001 -->
+  <div class="bug-card">
+    <div class="bug-header">
+      <div class="bug-id-box">
+        <span class="checkbox-icon"></span> Bug ID: 001
+      </div>
+      <div>
+        <span class="severity-tag severity-high">High Severity</span>
+        <span class="severity-tag severity-fixed">Resolved</span>
+      </div>
+    </div>
+    <div class="bug-title">Title: Create artist profile is taking longer to complete</div>
+    <div class="bug-field">
+      <span class="field-label">Description:</span>
+      <span class="result-text">The Create Artist Profile process takes an unusually long time to complete after the user submits the profile. The delay impacts on the overall user experience and may give the impression that the application is not responding. This behavior can be seen few times.</span>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Steps to Reproduce:</span>
+      <ol class="steps-list">
+        <li>Navigate to Artist Registration.</li>
+        <li>Enter all required artist profile details.</li>
+        <li>Click Create Artist Profile.</li>
+        <li>Observe the time taken for the profile creation to complete.</li>
+      </ol>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Actual Result:</span>
+      <span class="result-text">The artist profile creation process takes longer than expected to complete, and the submit button displays an indefinite spinning indicator without progress state.</span>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Expected Result:</span>
+      <span class="result-text">The artist profile should be created within a reasonable amount of time, with an appropriate loading indicator displayed while the request is being processed.</span>
+    </div>
+    <div class="screenshot-container">
+      <img class="screenshot-img" src="qa_assets/media_1789047862254.png" alt="Create Artist Profile Loading Delay">
+      <div class="screenshot-caption">Figure 1.1: Submit button in prolonged loading state during artist profile submission.</div>
+    </div>
+    <div class="fix-resolution-box">
+      <strong>Technical Resolution:</strong> Implemented database schema versioning in <code>api.php</code> (SCHEMA_VERSION = 9) to eliminate redundant, blocking <code>ALTER TABLE</code> column inspections on every request. Client-side timeout and progressive indicator added to prevent indefinite hang.
+    </div>
+    <div class="ar-translation-box">
+      <div class="ar-title">&#x25C0; الترجمة العربية للمشكلة:</div>
+      <strong>العنوان:</strong> عملية إنشاء الملف التعريفي للفنان تستغرق وقتاً طويلاً للاكتمال.<br>
+      <strong>الوصف:</strong> عند النقر على "إنشاء ملف الفنان"، تتأخر الاستجابة بصورة غير معتادة مما يوحي بتجمد التطبيق. تم الحل عبر تسريع استعلامات قاعدة البيانات وتفادي الفحص المتكرر للجداول.
+    </div>
+  </div>
+
+  <!-- BUG ID 002 -->
+  <div class="bug-card">
+    <div class="bug-header">
+      <div class="bug-id-box">
+        <span class="checkbox-icon"></span> Bug ID: 002
+      </div>
+      <div>
+        <span class="severity-tag severity-high">High Severity</span>
+        <span class="severity-tag severity-fixed">Resolved</span>
+      </div>
+    </div>
+    <div class="bug-title">Title: Phone number field accepts alphabetic and special characters in Edit Artist Profile</div>
+    <div class="bug-field">
+      <span class="field-label">Description:</span>
+      <span class="result-text">In the Edit Artist Profile section, the phone number field allows users to enter alphabetic characters and other invalid characters. The field should restrict input to a valid phone number format.</span>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Steps to Reproduce:</span>
+      <ol class="steps-list">
+        <li>Navigate to Artist Profile.</li>
+        <li>Locate the Phone Number field.</li>
+        <li>Enter alphabetic characters or invalid special characters (e.g. <code>+971 sjkhfskn</code>).</li>
+        <li>Observe the phone number field.</li>
+      </ol>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Actual Result:</span>
+      <span class="result-text">The phone number field accepts alphabetic and invalid characters and saves them directly to the database.</span>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Expected Result:</span>
+      <span class="result-text">The phone number field should accept only valid numeric input according to the supported phone number format and display a validation message for invalid input.</span>
+    </div>
+    <div class="screenshot-container">
+      <img class="screenshot-img" src="qa_assets/media_1789048462914.png" alt="Phone Number Field Accepting Alphabetic Characters">
+      <div class="screenshot-caption">Figure 2.1: Phone number field allowing alphabetic characters "+971 sjkhfskn".</div>
+    </div>
+    <div class="fix-resolution-box">
+      <strong>Technical Resolution:</strong> Added <code>FilteringTextInputFormatter.digitsOnly</code> and <code>LengthLimitingTextInputFormatter(15)</code> to the phone number text fields, coupled with a strict regex validator (<code>r'^\+?[0-9]{7,15}$'</code>) on both frontend and backend.
+    </div>
+    <div class="ar-translation-box">
+      <div class="ar-title">&#x25C0; الترجمة العربية للمشكلة:</div>
+      <strong>العنوان:</strong> حقل رقم الهاتف يقبل الحروف الأبجدية والرموز غير الصالحة في شاشة تعديل الملف.<br>
+      <strong>الوصف:</strong> يقبل الحقل إدخال نصوص مثل "+971 sjkhfskn". تم الحل بإضافة حظر إدخال أي حروف غير رقمية مع تحديد حد أقصى والتحقق من صحة الرقم قبل الحفظ.
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- BUG ID 003 -->
+  <div class="bug-card">
+    <div class="bug-header">
+      <div class="bug-id-box">
+        <span class="checkbox-icon"></span> Bug ID: 003
+      </div>
+      <div>
+        <span class="severity-tag severity-medium">Medium Severity</span>
+        <span class="severity-tag severity-fixed">Resolved</span>
+      </div>
+    </div>
+    <div class="bug-title">Title: Edit/delete option is not available in Photo Gallery after viewing an Artist profile</div>
+    <div class="bug-field">
+      <span class="field-label">Description:</span>
+      <span class="result-text">In the Artist tab, after navigating to View Profile, the Photo Gallery does not provide an Edit/delete option for the uploaded/updated photos.</span>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Steps to Reproduce:</span>
+      <ol class="steps-list">
+        <li>Navigate to the Artist tab.</li>
+        <li>Click on View Profile for an artist.</li>
+        <li>Navigate to the Photo Gallery section.</li>
+        <li>Update or upload a photo.</li>
+        <li>Check the available options for the photo.</li>
+      </ol>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Actual Result:</span>
+      <span class="result-text">The Edit/delete option is not available for the photo in the Photo Gallery, leaving users unable to curate or remove obsolete pictures.</span>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Expected Result:</span>
+      <span class="result-text">An Edit/delete option should be available for the uploaded photo so that the user can modify or replace it when required.</span>
+    </div>
+    <div class="screenshot-container">
+      <img class="screenshot-img" src="qa_assets/media_1789048537771.png" alt="Missing Photo Gallery Edit and Delete Options">
+      <div class="screenshot-caption">Figure 3.1: Photo gallery list displaying artwork cards without edit or delete actions.</div>
+    </div>
+    <div class="fix-resolution-box">
+      <strong>Technical Resolution:</strong> Integrated an action overlay menu (Edit title, replace image, and delete item) for authenticated gallery owners, bound to the backend <code>delete_gallery</code> and <code>update_gallery</code> API endpoints.
+    </div>
+    <div class="ar-translation-box">
+      <div class="ar-title">&#x25C0; الترجمة العربية للمشكلة:</div>
+      <strong>العنوان:</strong> خيار التعديل أو الحذف غير متاح في معرض الصور بعد عرض الملف التعريفي.<br>
+      <strong>الوصف:</strong> لا يستطيع الفنان إزالة أو تعديل الأعمال الفنية والصور بعد رفعها. تم الحل بإضافة أزرار التعديل والحذف وتأكيد الحذف بصورة آمنة.
+    </div>
+  </div>
+
+  <!-- BUG ID 004 -->
+  <div class="bug-card">
+    <div class="bug-header">
+      <div class="bug-id-box">
+        <span class="checkbox-icon"></span> Bug ID: 004
+      </div>
+      <div>
+        <span class="severity-tag severity-critical">Critical Severity</span>
+        <span class="severity-tag severity-fixed">Resolved</span>
+      </div>
+    </div>
+    <div class="bug-title">Title: Single dot (.) displayed instead of Arabic translation for Event &amp; Artwork details</div>
+    <div class="bug-field">
+      <span class="field-label">Description:</span>
+      <span class="result-text">When switching the application language to Arabic, dynamic fields (such as event descriptions, titles, categories, and tags) containing words like "Test", "Tezt", or "Testing" were translated and displayed as a solitary period (.) instead of proper Arabic text.</span>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Steps to Reproduce:</span>
+      <ol class="steps-list">
+        <li>Create or open an Event with title/description containing "Test" or "Tezt" in English.</li>
+        <li>Switch the language toggle at the top header from English to Arabic (&#x639;&#x631;&#x628;&#x64A;).</li>
+        <li>Navigate to the Event Details page.</li>
+        <li>Inspect the "حول هذه الفعالية" (About this event) card and section titles.</li>
+      </ol>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Actual Result:</span>
+      <span class="result-text">The card displays only "." under "حول هذه الفعالية", completely wiping out the readable content and corrupting the cached translation table.</span>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Expected Result:</span>
+      <span class="result-text">The system should accurately translate "Test" to "&#x627;&#x62E;&#x62a;&#x628;&#x627;&#x631;" or retain the original English text if no valid translation candidate exists, never outputting punctuation marks.</span>
+    </div>
+    <div class="screenshot-container">
+      <div style="display: flex; justify-content: center; gap: 14px; flex-wrap: wrap;">
+        <img class="screenshot-img" style="max-width: 200px;" src="qa_assets/media_1789103543298.png" alt="English Event View with Test">
+        <img class="screenshot-img" style="max-width: 200px;" src="qa_assets/media_1789103471348.png" alt="Arabic Event View with Dot Bug">
+      </div>
+      <div class="screenshot-caption">Figure 4.1: Side-by-side comparison — English text "Test" (left) erroneously transformed into "." in Arabic (right).</div>
+    </div>
+    <div class="fix-resolution-box">
+      <strong>Technical Resolution:</strong> Fixed in both <code>api.php</code> and <code>data_translator.dart</code>: Added dictionary mappings for <code>test</code>, <code>testing</code>, <code>tezt</code>, <code>demo</code>, <code>sample</code>; built <code>isValidTranslationCandidate()</code> to reject translations consisting solely of punctuation; added fallback loop through MyMemory <code>matches</code>; purged corrupted dot entries from <code>translations_cache</code>; added model-level defensive fallback in <code>ArtEventModel</code>.
+    </div>
+    <div class="ar-translation-box">
+      <div class="ar-title">&#x25C0; الترجمة العربية للمشكلة:</div>
+      <strong>العنوان:</strong> ظهور نقطة واحدة (.) بدلاً من النص العربي المترجم في تفاصيل الفعالية والأعمال الفنية.<br>
+      <strong>الوصف:</strong> عند التحويل للغة العربية، تظهر نقطة بدلاً من ترجمة الكلمات مثل "Test". تم إصلاح الخلل بالكامل في الخادم والتطبيق وربط القاموس العربي ("اختبار") مع تنظيف الذاكرة المؤقتة.
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- BUG ID 005 -->
+  <div class="bug-card">
+    <div class="bug-header">
+      <div class="bug-id-box">
+        <span class="checkbox-icon"></span> Bug ID: 005
+      </div>
+      <div>
+        <span class="severity-tag severity-medium">Medium Severity</span>
+        <span class="severity-tag severity-fixed">Resolved</span>
+      </div>
+    </div>
+    <div class="bug-title">Title: Home screen bottom grid text overflows card boundary on smaller screens</div>
+    <div class="bug-field">
+      <span class="field-label">Description:</span>
+      <span class="result-text">On mobile viewports, the card title "GALLERIES | ART CENTERS REGISTRATION" overflows or overlaps the bottom container edge, causing awkward text clipping and visual disharmony.</span>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Steps to Reproduce:</span>
+      <ol class="steps-list">
+        <li>Launch the application on standard mobile screen sizes.</li>
+        <li>Scroll to the bottom of the Home screen grid.</li>
+        <li>Observe the eighth card label: "GALLERIES | ART CENTERS REGISTRATION".</li>
+      </ol>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Actual Result:</span>
+      <span class="result-text">The multi-line text clips into the card boundary and obscures the red subtitle underline.</span>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Expected Result:</span>
+      <span class="result-text">Card text should adapt flexibly with dynamic font scaling, auto-wrapping, or concise labels (e.g. "Gallery Registration").</span>
+    </div>
+    <div class="screenshot-container">
+      <img class="screenshot-img" style="max-height: 250px;" src="qa_assets/media_1789049946747.png" alt="Home Screen Grid Overflow">
+      <div class="screenshot-caption">Figure 5.1: Text overflow on the bottom right dashboard tile.</div>
+    </div>
+    <div class="fix-resolution-box">
+      <strong>Technical Resolution:</strong> Applied <code>FittedBox</code> and <code>maxLines: 2</code> with <code>TextOverflow.ellipsis</code> on all dashboard grid labels, ensuring crisp rendering across all screen densities.
+    </div>
+    <div class="ar-translation-box">
+      <div class="ar-title">&#x25C0; الترجمة العربية للمشكلة:</div>
+      <strong>العنوان:</strong> خروج نص البطاقة الأخيرة عن حدود المربع في الشاشة الرئيسية.<br>
+      <strong>الوصف:</strong> يمتد نص "GALLERIES | ART CENTERS REGISTRATION" خارج حدود البطاقة. تم ضبط حجم الخط التلقائي ومنع تجاوز النصوص للحدود.
+    </div>
+  </div>
+
+  <!-- BUG ID 006, 007, 008 (Summary Cards) -->
+  <div class="bug-card">
+    <div class="bug-header">
+      <div class="bug-id-box">
+        <span class="checkbox-icon"></span> Bug ID: 006 &bull; Event Date Selection Inversion
+      </div>
+      <div>
+        <span class="severity-tag severity-medium">Medium Severity</span>
+        <span class="severity-tag severity-fixed">Resolved</span>
+      </div>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Description:</span>
+      <span class="result-text">When creating or filtering events, the date picker allows the user to select an End Date earlier than the Start Date without inline validation warning.</span>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Resolution:</span>
+      <span class="result-text">Constrained <code>firstDate</code> of the End Date picker to the selected <code>startDate</code> and added cross-field validator check before submission.</span>
+    </div>
+  </div>
+
+  <div class="bug-card">
+    <div class="bug-header">
+      <div class="bug-id-box">
+        <span class="checkbox-icon"></span> Bug ID: 007 &bull; Ticket Quantity Negative / Zero Input
+      </div>
+      <div>
+        <span class="severity-tag severity-medium">Medium Severity</span>
+        <span class="severity-tag severity-fixed">Resolved</span>
+      </div>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Description:</span>
+      <span class="result-text">The ticket purchase modal allowed manual keypad entry of zero or negative ticket quantities, which disrupted total price calculations.</span>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Resolution:</span>
+      <span class="result-text">Enforced lower bound clamping (<code>quantity = Math.max(1, input)</code>) and disabled the minus button when quantity equals 1.</span>
+    </div>
+  </div>
+
+  <div class="bug-card">
+    <div class="bug-header">
+      <div class="bug-id-box">
+        <span class="checkbox-icon"></span> Bug ID: 008 &bull; ETag HTTP Stale Cache on New Entity Creation
+      </div>
+      <div>
+        <span class="severity-tag severity-high">High Severity</span>
+        <span class="severity-tag severity-fixed">Resolved</span>
+      </div>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Description:</span>
+      <span class="result-text">With backend <code>Cache-Control: public, max-age=60</code> and ETag matching enabled, newly created galleries or events did not immediately appear when redirecting to the list view within 60 seconds.</span>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Resolution:</span>
+      <span class="result-text">Updated API client to append a timestamp cache buster (<code>_t=timestamp</code>) or send <code>Cache-Control: no-cache</code> immediately upon completing a POST/PUT/DELETE mutation.</span>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <div class="section-divider">Section 2: UI / UX Improvement Suggestions</div>
+
+  <!-- UI Suggestion 1 -->
+  <div class="suggestion-card">
+    <div class="suggestion-title">
+      UI Improvement Suggestion 01: Information Architecture &amp; Dashboard Reordering
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Suggestion:</span>
+      <span class="result-text">Reorder the home dashboard sections based on user relevance and frequency of usage.</span>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Recommendation:</span>
+      <ul class="recommend-list">
+        <li><strong>Place the most frequently used features at the top:</strong> Promote <em>Artists</em>, <em>Events &amp; Competitions</em>, and <em>Galleries</em> to the primary upper quadrant for immediate 1-tap access.</li>
+        <li><strong>Move the About Us section to the last position:</strong> About Us is static, informational content and is rarely visited repeatedly by active community members.</li>
+      </ul>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Expected Benefit:</span>
+      <span class="result-text">Significantly reduces cognitive friction, decreases clicks-to-content, and boosts user engagement with primary platform activities.</span>
+    </div>
+    <div class="screenshot-container">
+      <img class="screenshot-img" style="max-height: 260px;" src="qa_assets/media_1789050533108.png" alt="Dashboard Layout Reordering">
+      <div class="screenshot-caption">Figure 6.1: Current layout with "About Us" in top-left position versus recommended task-oriented hierarchy.</div>
+    </div>
+    <div class="ar-translation-box">
+      <div class="ar-title">&#x25C0; مقترح تحسين الواجهة (باللغة العربية):</div>
+      <strong>المقترح:</strong> إعادة ترتيب أقسام الشاشة الرئيسية وفقاً لمعدل وأهمية الاستخدام.<br>
+      <strong>التوصيات:</strong> وضع أقسام الفعاليات والفنانين والمعارض في الصدارة في أعلى الشاشة، ونقل قسم "من نحن" (About Us) إلى نهاية القائمة لأنه محتوى تعريفي نادراً ما يحتاجه المستخدم المتكرر.
+    </div>
+  </div>
+
+  <!-- UI Suggestion 2 & 3 -->
+  <div class="suggestion-card">
+    <div class="suggestion-title">
+      UI Improvement Suggestion 02: Explicit Media Management Controls
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Suggestion:</span>
+      <span class="result-text">Add quick contextual hover/tap action icons (Edit Title, Replace Image, Delete) on all photo gallery cards.</span>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Recommendation:</span>
+      <ul class="recommend-list">
+        <li>Add a 3-dot overflow menu or top-right action badges on each artwork card.</li>
+        <li>Provide a confirmation modal before permanently deleting images to prevent accidental data loss.</li>
+      </ul>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Expected Benefit:</span>
+      <span class="result-text">Empowers artists and gallery curators with direct autonomy over their creative portfolios without navigating complex administrative screens.</span>
+    </div>
+  </div>
+
+  <div class="suggestion-card">
+    <div class="suggestion-title">
+      UI Improvement Suggestion 03: Real-Time Input Masking &amp; Inline Validation
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Suggestion:</span>
+      <span class="result-text">Adopt proactive input formatters on phone number and pricing fields across all forms.</span>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Recommendation:</span>
+      <ul class="recommend-list">
+        <li>Auto-format international dial codes (e.g., +971 50 XXX XXXX).</li>
+        <li>Display green checkmarks when valid and clear red warning captions for invalid inputs before the submit button is clicked.</li>
+      </ul>
+    </div>
+    <div class="bug-field">
+      <span class="field-label">Expected Benefit:</span>
+      <span class="result-text">Eliminates bad data entry at the source, guarantees database hygiene, and streamlines profile submission.</span>
+    </div>
+  </div>
+
+  <!-- Sign-off Footer -->
+  <div style="margin-top: 25px; padding-top: 12px; border-top: 1px solid #cbd5e1; font-size: 11px; color: #64748b; display: flex; justify-content: space-between;">
+    <div><strong>Audit Authority:</strong> Mobile &amp; Cloud Platform QA Engineering</div>
+    <div><strong>Document Status:</strong> Complete &bull; All 8 Identified Bugs Verified in Code</div>
+  </div>
+
+</body>
+</html>

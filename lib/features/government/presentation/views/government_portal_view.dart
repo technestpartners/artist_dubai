@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
@@ -8,6 +7,8 @@ import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../domain/models/government_entity.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../../../core/utils/data_translator.dart';
+import '../../../../core/utils/share_helper.dart';
 
 class GovernmentPortalView extends StatefulWidget {
   const GovernmentPortalView({super.key});
@@ -32,10 +33,17 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
         });
       }
     });
+
+    DataTranslator.translationNotifier.addListener(_onTranslationChanged);
+  }
+
+  void _onTranslationChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
     _govSub?.cancel();
     super.dispose();
   }
@@ -51,29 +59,14 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
 
   Future<void> _launchExternalUrl(BuildContext context, String url) async {
     if (url.isEmpty) return;
-    try {
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Could not open $url'),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      }
-    } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Could not open $url'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
+    final success = await ShareHelper.openUrl(url);
+    if (!success && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not open $url'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
     }
   }
 

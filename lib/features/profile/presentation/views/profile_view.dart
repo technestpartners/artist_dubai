@@ -9,6 +9,7 @@ import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import '../../../../core/utils/share_helper.dart';
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -105,6 +106,22 @@ class _ProfileViewState extends State<ProfileView> {
     if (mounted) {
       context.go(RouteNames.home);
     }
+  }
+
+  void _onShareProfile() {
+    final artistId = _artistProfile?['id']?.toString();
+    final name = _artistProfile?['name']?.toString() ?? _userName;
+    final category = _artistProfile?['category']?.toString();
+    final avatar = _artistProfile?['avatar_url']?.toString();
+
+    ShareHelper.shareProfile(
+      context: context,
+      name: name,
+      artistId: artistId,
+      category: category,
+      avatarUrl: avatar,
+      email: _userEmail,
+    );
   }
 
   void _showChangePasswordModal() {
@@ -745,6 +762,37 @@ class _ProfileViewState extends State<ProfileView> {
                         vertical: 6,
                       ),
                     ),
+                    onPressed: _onShareProfile,
+                    icon: const Icon(
+                      Icons.share_outlined,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                    label: const Text(
+                      'Share',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.white.withValues(alpha: 0.15),
+                      side: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        width: 1.0,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                    ),
                     onPressed: () => context.go(RouteNames.home),
                     icon: const Icon(
                       Icons.home_outlined,
@@ -880,6 +928,7 @@ class _ProfileViewState extends State<ProfileView> {
                                             foregroundColor: Colors.white,
                                             elevation: 0,
                                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                            padding: const EdgeInsets.symmetric(horizontal: 10),
                                           ),
                                           onPressed: () {
                                             context.push(
@@ -890,25 +939,49 @@ class _ProfileViewState extends State<ProfileView> {
                                               },
                                             );
                                           },
-                                          icon: const Icon(Icons.edit_outlined, size: 16),
-                                          label: const Text('Edit Profile', style: TextStyle(fontWeight: FontWeight.bold)),
+                                          icon: const Icon(Icons.edit_outlined, size: 15),
+                                          label: const Text('Edit', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 10),
+                                    const SizedBox(width: 8),
                                     Expanded(
                                       child: SizedBox(
                                         height: 38,
-                                        child: OutlinedButton.icon(
-                                          style: OutlinedButton.styleFrom(
-                                            foregroundColor: const Color(0xFF6A2777),
-                                            side: const BorderSide(color: Color(0xFF6A2777), width: 1.2),
+                                        child: ElevatedButton.icon(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xFF551478),
+                                            foregroundColor: Colors.white,
+                                            elevation: 0,
                                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                            padding: const EdgeInsets.symmetric(horizontal: 10),
                                           ),
-                                          onPressed: () => context.push(RouteNames.artists),
-                                          icon: const Icon(Icons.visibility_outlined, size: 16),
-                                          label: const Text('View Directory', style: TextStyle(fontWeight: FontWeight.bold)),
+                                          onPressed: _onShareProfile,
+                                          icon: const Icon(Icons.share_outlined, size: 15),
+                                          label: const Text('Share', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                                         ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    SizedBox(
+                                      height: 38,
+                                      width: 44,
+                                      child: OutlinedButton(
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: const Color(0xFF6A2777),
+                                          side: const BorderSide(color: Color(0xFF6A2777), width: 1.2),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                          padding: EdgeInsets.zero,
+                                        ),
+                                        onPressed: () {
+                                          final id = _artistProfile!['id']?.toString();
+                                          if (id != null && id.isNotEmpty) {
+                                            context.push('/artist/$id');
+                                          } else {
+                                            context.push(RouteNames.artists);
+                                          }
+                                        },
+                                        child: const Icon(Icons.visibility_outlined, size: 18),
                                       ),
                                     ),
                                   ],

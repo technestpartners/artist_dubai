@@ -1,261 +1,154 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:image_picker/image_picker.dart';
-import '../../../../core/widgets/app_cached_image.dart';
-import '../../../../core/widgets/app_bottom_nav_bar.dart';
-import '../../../../core/widgets/app_top_bar.dart';
-import '../../../artists/domain/models/artist_model.dart';
-import '../../../artists/presentation/views/artist_detail_view.dart';
-import '../../domain/models/art_event_model.dart';
-import '../widgets/event_gallery_modal.dart';
-import '../../../../core/utils/data_translator.dart';
-
+import 'package:go_router/go_router.dart';
+import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
-import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/storage_service.dart';
+import '../../../../core/widgets/app_cached_image.dart';
+import '../../../../core/widgets/app_top_bar.dart';
+import '../../../../core/utils/share_helper.dart';
+import '../../../../core/utils/data_translator.dart';
+import '../../domain/models/art_event_model.dart';
 
 class EventDetailView extends StatefulWidget {
-  final ArtEventModel event;
+  final ArtEventModel? event;
+  final String? eventId;
 
-  const EventDetailView({super.key, required this.event});
+  const EventDetailView({super.key, this.event, this.eventId});
 
   @override
   State<EventDetailView> createState() => _EventDetailViewState();
 }
 
 class _EventDetailViewState extends State<EventDetailView> {
-  List<ArtistModel> _featuredArtists = [];
-  final Set<String> _likedArtistIds = {};
-  List<EventPhotoGallery> _eventGalleries = [];
-  StreamSubscription<List<ArtistModel>>? _artistsSub;
+  ArtEventModel? _fetchedEvent;
+  bool _isLoading = false;
+  bool _isDescriptionExpanded = false;
+  final Set<String> _likedEventIds = {};
   StreamSubscription<Map<String, dynamic>>? _favSub;
-  StreamSubscription<List<Map<String, dynamic>>>? _galleriesSub;
+  StreamSubscription<List<ArtEventModel>>? _eventsSub;
+
+  static const Color _primaryPurple = Color(0xFF6B1C9B);
+  static const Color _darkBg = Color(0xFF6B1C9B);
+
+  String? get effectiveId => widget.eventId ?? widget.event?.id ?? _fetchedEvent?.id;
+
+  ArtEventModel get event {
+    if (_fetchedEvent != null) return _fetchedEvent!;
+    if (widget.event != null) return widget.event!;
+    return ArtEventModel.sampleEvent;
+  }
 
   @override
   void initState() {
     super.initState();
-    _fetchArtists();
-    _fetchEventGalleries();
-    _artistsSub = sl<LiveSyncService>().artistsStream.listen((artists) {
-      if (mounted) {
-        setState(() => _featuredArtists = artists);
-      }
-    });
+    _loadEventDetails();
+    _checkInitialFavorite();
+
     _favSub = sl<LiveSyncService>().favoritesStream.listen((favData) {
       if (mounted && favData.isNotEmpty) {
-        final favArtists = (favData['artists'] as List<ArtistModel>?) ?? [];
+        final favEvents = (favData['events'] as List<ArtEventModel>?) ?? [];
         setState(() {
-          _likedArtistIds.clear();
-          _likedArtistIds.addAll(favArtists.map((a) => a.id));
+          _likedEventIds.clear();
+          _likedEventIds.addAll(favEvents.map((e) => e.id));
         });
       }
     });
-    _galleriesSub = sl<LiveSyncService>().galleriesStream.listen((_) {
-      _fetchEventGalleries(forceRefresh: true);
+
+    _eventsSub = sl<LiveSyncService>().eventsStream.listen((events) {
+      final id = effectiveId;
+      if (id != null && mounted) {
+        final match = events.where((e) => e.id == id).firstOrNull;
+        if (match != null) {
+          setState(() {
+            _fetchedEvent = match;
+          });
+        }
+      }
     });
+
+    DataTranslator.translationNotifier.addListener(_onTranslationChanged);
+  }
+
+  void _onTranslationChanged() {
+    _loadEventDetails();
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    _artistsSub?.cancel();
+    DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
     _favSub?.cancel();
-    _galleriesSub?.cancel();
+    _eventsSub?.cancel();
     super.dispose();
   }
 
-  bool get _isLoggedIn {
-    try {
-      return sl<StorageService>().getBool('is_logged_in') ?? false;
-    } catch (_) {
-      return false;
+  Future<void> _checkInitialFavorite() async {
+    final userEmail = sl<StorageService>().getString('user_email');
+    if (userEmail != null && userEmail.isNotEmpty) {
+      try {
+        final favData = await sl<ApiService>().getFavorites(email: userEmail);
+        final favEvents = (favData['events'] as List<ArtEventModel>?) ?? [];
+        if (mounted) {
+          setState(() {
+            _likedEventIds.clear();
+            _likedEventIds.addAll(favEvents.map((e) => e.id));
+          });
+        }
+      } catch (_) {}
     }
   }
 
-  Future<void> _fetchArtists({bool forceRefresh = false}) async {
+  Future<void> _loadEventDetails() async {
+    final id = effectiveId;
+    if (id == null || id.isEmpty) return;
+
     try {
-      final artists = await sl<ApiService>().getArtists(forceRefresh: forceRefresh);
-      final userEmail = sl<StorageService>().getString('user_email');
-      Set<String> favIds = {};
-      if (userEmail != null && userEmail.isNotEmpty) {
-        final favData = await sl<ApiService>().getFavorites(email: userEmail, forceRefresh: forceRefresh);
-        final favArtists = (favData['artists'] as List<ArtistModel>?) ?? [];
-        favIds = favArtists.map((a) => a.id).toSet();
-      }
+      final res = await sl<ApiService>().getEventDetails(id, forceRefresh: true);
       if (mounted) {
         setState(() {
-          _featuredArtists = artists;
-          _likedArtistIds.clear();
-          _likedArtistIds.addAll(favIds);
+          _fetchedEvent = res;
+          _isLoading = false;
         });
+        return;
       }
     } catch (_) {}
-  }
 
-  Future<void> _fetchEventGalleries({bool forceRefresh = false}) async {
     try {
-      final allGals = await sl<ApiService>().getGalleries(
-        eventName: widget.event.title,
-        eventId: widget.event.id,
-        forceRefresh: forceRefresh,
-      );
-      final eventTitleLower = widget.event.title.toLowerCase().trim();
-      final eventId = widget.event.id.toString().trim();
-
-      final List<EventPhotoGallery> matched = [];
-
-      for (final g in allGals) {
-        final status = (g['status'] ?? '').toString().toLowerCase().trim();
-        if (status == 'pending' || status == 'rejected' || status == 'unapproved') continue;
-        final isApproved = g['is_approved'];
-        if (isApproved == 0 || isApproved == '0' || isApproved == false || isApproved == 'false') continue;
-        final isPublic = g['is_public'];
-        if (isPublic == 0 || isPublic == '0' || isPublic == false || isPublic == 'false') continue;
-
-        final evName = (g['event_name'] ?? '').toString().toLowerCase().trim();
-        final evId = (g['event_id'] ?? '').toString().trim();
-        final desc = (g['description'] ?? g['subtitle'] ?? g['about'] ?? '').toString().toLowerCase();
-        final title = (g['name'] ?? g['title'] ?? '').toString().toLowerCase();
-
-        final matches = (evId.isNotEmpty && evId == eventId) ||
-            (evName.isNotEmpty && (evName == eventTitleLower || eventTitleLower.contains(evName))) ||
-            desc.contains(eventTitleLower) ||
-            title.contains(eventTitleLower);
-
-        if (matches) {
-          final galTitle = (g['name'] ?? g['title'] ?? 'Gallery').toString();
-          final galSubtitle = (g['description'] ?? g['subtitle'] ?? g['about'])?.toString();
-          final coverImage = (g['image_url'] ?? g['image'] ?? '').toString();
-
-          List<dynamic> rawImgs = [];
-          if (g['images'] is List) {
-            rawImgs = g['images'] as List<dynamic>;
-          } else if (g['images'] is String && (g['images'] as String).isNotEmpty) {
-            try {
-              final decoded = jsonDecode(g['images'] as String);
-              if (decoded is List) rawImgs = decoded;
-            } catch (_) {
-              rawImgs = (g['images'] as String).split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
-            }
-          }
-
-          final List<GalleryImageItem> imagesList = [];
-          for (var i = 0; i < rawImgs.length; i++) {
-            final itm = rawImgs[i];
-            if (itm is String && itm.trim().isNotEmpty) {
-              imagesList.add(GalleryImageItem(title: '$galTitle #${i + 1}', imageUrl: itm.trim()));
-            } else if (itm is Map) {
-              final u = (itm['image_url'] ?? itm['image'] ?? '').toString().trim();
-              if (u.isNotEmpty) {
-                imagesList.add(GalleryImageItem(
-                  title: (itm['title'] ?? '$galTitle #${i + 1}').toString(),
-                  imageUrl: u,
-                  caption: itm['caption']?.toString() ?? 'Event photo',
-                ));
-              }
-            }
-          }
-
-          if (imagesList.isEmpty && coverImage.isNotEmpty) {
-            imagesList.add(GalleryImageItem(title: galTitle, imageUrl: coverImage.trim()));
-          }
-
-          final effectiveCover = coverImage.isNotEmpty
-              ? coverImage
-              : (imagesList.isNotEmpty ? imagesList.first.imageUrl : '');
-
-          if (effectiveCover.isNotEmpty || imagesList.isNotEmpty) {
-            matched.add(EventPhotoGallery(
-              title: galTitle,
-              subtitle: galSubtitle,
-              photoCount: imagesList.isNotEmpty ? imagesList.length : 1,
-              date: (g['created_at'] ?? 'Recent').toString(),
-              imageUrl: effectiveCover,
-              images: imagesList,
-            ));
-          }
-        }
-      }
-
-      if (mounted) {
+      final allEvents = await sl<ApiService>().getEvents(forceRefresh: true);
+      final match = allEvents.where((e) => e.id == id).firstOrNull;
+      if (match != null && mounted) {
         setState(() {
-          _eventGalleries = matched;
+          _fetchedEvent = match;
+          _isLoading = false;
         });
+        return;
       }
     } catch (_) {}
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
-  void _shareArtist(ArtistModel artist) {
-    Clipboard.setData(
-      ClipboardData(
-        text: 'Check out ${artist.name} on Artist Dubai: https://artistdubai.com/artists/${artist.id}',
-      ),
-    );
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Profile link for ${artist.name} copied to clipboard!',
-                style: const TextStyle(fontWeight: FontWeight.w500),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: const Color(0xFF6A2777),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  void _toggleArtistLike(ArtistModel artist) async {
-    final userEmail = sl<StorageService>().getString('user_email') ?? '';
-    final wasLiked = _likedArtistIds.contains(artist.id);
-
+  void _toggleFavorite(ArtEventModel ev) async {
+    final wasLiked = _likedEventIds.contains(ev.id);
     setState(() {
       if (wasLiked) {
-        _likedArtistIds.remove(artist.id);
+        _likedEventIds.remove(ev.id);
       } else {
-        _likedArtistIds.add(artist.id);
-      }
-
-      final idx = _featuredArtists.indexWhere((a) => a.id == artist.id);
-      if (idx != -1) {
-        final old = _featuredArtists[idx];
-        final newLikes = wasLiked
-            ? (old.followersCount - 1).clamp(0, 999999)
-            : (old.followersCount + 1);
-        _featuredArtists[idx] = ArtistModel(
-          id: old.id,
-          name: old.name,
-          category: old.category,
-          bio: old.bio,
-          location: old.location,
-          bannerUrl: old.bannerUrl,
-          avatarUrl: old.avatarUrl,
-          isFeatured: old.isFeatured,
-          tags: old.tags,
-          worksCount: old.worksCount,
-          followersCount: newLikes,
-        );
+        _likedEventIds.add(ev.id);
       }
     });
 
+    final userEmail = sl<StorageService>().getString('user_email') ?? '';
     if (userEmail.isNotEmpty) {
-      await sl<ApiService>().likeArtist(
-        artistId: artist.id,
-        userEmail: userEmail,
+      await sl<ApiService>().toggleFavorite(
+        email: userEmail,
+        itemType: 'event',
+        itemId: ev.id,
       );
     }
 
@@ -265,10 +158,10 @@ class _EventDetailViewState extends State<EventDetailView> {
         SnackBar(
           content: Text(
             wasLiked
-                ? 'Unliked ${artist.name}'
-                : 'Liked ${artist.name}\'s profile! ❤️',
+                ? 'Removed "${ev.title}" from favorites'
+                : 'Saved "${ev.title}" to favorites! ❤️',
           ),
-          backgroundColor: wasLiked ? null : const Color(0xFF6A2777),
+          backgroundColor: wasLiked ? null : _primaryPurple,
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
         ),
@@ -276,843 +169,492 @@ class _EventDetailViewState extends State<EventDetailView> {
     }
   }
 
+  void _shareEvent(ArtEventModel ev) {
+    ShareHelper.shareEvent(
+      context: context,
+      eventId: ev.id,
+      title: ev.title,
+      location: ev.location,
+      imageUrl: ev.imageUrl,
+      dateTime: ev.dateTime,
+    );
+  }
+
+  Future<void> _openMapDirections(String locationQuery) async {
+    final encoded = Uri.encodeComponent(locationQuery);
+    await ShareHelper.openUrl('https://www.google.com/maps/search/?api=1&query=$encoded');
+  }
+
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final event = widget.event;
-    final featuredArtists = _featuredArtists;
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: _darkBg,
+        appBar: AppTopBar(backgroundColor: Colors.white),
+        body: Center(child: CircularProgressIndicator(color: Colors.white)),
+      );
+    }
+
+    final ev = event;
+    final isLiked = _likedEventIds.contains(ev.id);
+    final similarEvents = ArtEventModel.mockEvents.where((e) => e.id != ev.id).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF6B1C9B),
+      backgroundColor: _darkBg,
       appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Top Hero Banner with Image & Title Overlay (Matching Screenshot media_1787732374690.png)
+              // 1. Sub-Header: Back button, Title, Actions (Heart, Calendar, Share)
+              _buildSubHeader(isLiked, ev),
+              const SizedBox(height: 12),
+
+              // 2. Hero Banner Image (Reference Screenshot 4)
               ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 child: SizedBox(
-                  height: 180,
+                  height: 240,
                   width: double.infinity,
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: (event.imageUrl != null && event.imageUrl!.isNotEmpty)
-                            ? AppCachedImage(
-                                imageUrl: event.imageUrl!,
-                                fit: BoxFit.cover,
-                              )
-                            : Container(
-                                decoration: const BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [Color(0xFF6B1C9B), Color(0xFF4A106D)],
-                                  ),
-                                ),
-                              ),
+                  child: ev.imageUrl != null && ev.imageUrl!.isNotEmpty
+                      ? AppCachedImage(imageUrl: ev.imageUrl!, fit: BoxFit.cover)
+                      : Container(
+                          color: const Color(0xFFE2E8F0),
+                          child: const Icon(Icons.event, size: 64, color: Colors.grey),
+                        ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // 3. Event Details Card (White Container)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title
+                    Text(
+                      ev.localizedTitle(context),
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF1E1E1E),
+                        height: 1.2,
                       ),
-                      Positioned.fill(
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withValues(alpha: 0.8),
-                              ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Date & Time (Purple text)
+                    Text(
+                      ev.displaySchedule.trData(context),
+                      style: const TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w800,
+                        color: _primaryPurple,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Expandable Description with "Read More"
+                    _buildExpandableDescription(ev.localizedDescription(context)),
+                    const SizedBox(height: 16),
+                    const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                    const SizedBox(height: 16),
+
+                    // Location Row with pin
+                    GestureDetector(
+                      onTap: () => _openMapDirections(ev.location),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.location_on,
+                            color: _primaryPurple,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              (ev.location.isNotEmpty
+                                      ? ev.location
+                                      : 'Hatta Wadi Hub, located off the Dubai-Hatta road, Dubai')
+                                  .trData(context),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF334155),
+                                height: 1.35,
+                              ),
                             ),
                           ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF6A2777),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  event.localizedCategory(context),
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                event.localizedTitle(context),
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.white,
-                                  letterSpacing: -0.3,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Map Preview Card (Reference Screenshot 4 & 5)
+                    _buildMapPreviewWidget(ev),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // 4. "Similar Events You Might Like" Section
+              Text(
+                'Similar Events You Might Like'.trData(context),
+                style: const TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(height: 14),
 
-              // 2. About This Event Card
-              _buildCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.aboutThisEvent,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E1E1E),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      event.localizedDescription(context),
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        color: Color(0xFF475569),
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
+              // Horizontal list of similar events
+              SizedBox(
+                height: 270,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: similarEvents.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 14),
+                  itemBuilder: (context, index) {
+                    return _buildSimilarEventCard(similarEvents[index]);
+                  },
                 ),
               ),
-              const SizedBox(height: 12),
-
-              // 3. Tags Card
-              _buildCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.local_offer_outlined,
-                          size: 18,
-                          color: Color(0xFF1E1E1E),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          l10n.tags,
-                          style: const TextStyle(
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1E1E1E),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      children:
-                          event.tags
-                              .map(
-                                (tag) => Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 5,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: const Color(0xFFCBD5E1),
-                                    ),
-                                    color: Colors.white,
-                                  ),
-                                  child: Text(
-                                    tag.trData(context),
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Color(0xFF334155),
-                                    ),
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // 4. Organizer Card
-              _buildCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.person_outline,
-                          size: 18,
-                          color: Color(0xFF1E1E1E),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          l10n.organizer,
-                          style: const TextStyle(
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1E1E1E),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.person,
-                          size: 16,
-                          color: Color(0xFF64748B),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          event.organizer,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF1E1E1E),
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.mail_outline,
-                          size: 16,
-                          color: Color(0xFF64748B),
-                        ),
-                        const SizedBox(width: 8),
-                        if (event.organizerEmail != null)
-                          Text(
-                            event.organizerEmail!,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // 5. Event Photos Section
-              Container(
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            l10n.eventsPhotosTitle,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E1E1E),
-                            ),
-                          ),
-                        ),
-                        if (_isLoggedIn) ...[
-                          const SizedBox(width: 8),
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF6A2777),
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 7,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            onPressed: () {
-                              _showCreateGalleryModal(context, event.title);
-                            },
-                            icon: const Icon(Icons.add_photo_alternate_outlined, size: 15, color: Colors.white),
-                            label: Text(
-                              l10n.addPhoto,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 14),                    // 5. Event Photos / Galleries (Live Synced with Admin)
-                    Builder(
-                      builder: (context) {
-                        final Set<String> seenKeys = {};
-                        final List<EventPhotoGallery> allGalleries = [];
-                        for (final g in [..._eventGalleries, ...event.galleries]) {
-                          final key = '${g.title}_${g.imageUrl}'.trim().toLowerCase();
-                          if (seenKeys.add(key)) {
-                            allGalleries.add(g);
-                          }
-                        }
-
-                        if (allGalleries.isEmpty) {
-                          return Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF8FAFC),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: const Color(0xFFE2E8F0)),
-                            ),
-                            child: Column(
-                              children: [
-                                const Icon(Icons.photo_library_outlined, size: 36, color: Color(0xFF94A3B8)),
-                                const SizedBox(height: 8),
-                                Text(
-                                  l10n.noEventPhotosYet,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF64748B),
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Photos approved in admin dashboard will appear here.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF94A3B8),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-
-                        return Column(
-                          children: allGalleries.map((gallery) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12.0),
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(8),
-                                onTap: () {
-                                  EventGalleryModal.show(
-                                    context,
-                                    event: event,
-                                    gallery: gallery,
-                                  );
-                                },
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: const Color(0xFFCBD5E1)),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      if (gallery.imageUrl.isNotEmpty)
-                                        ClipRRect(
-                                          borderRadius: const BorderRadius.vertical(
-                                            top: Radius.circular(8),
-                                          ),
-                                          child: AppCachedImage(
-                                            imageUrl: gallery.imageUrl,
-                                            height: 180,
-                                            width: double.infinity,
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ),
-                                      Padding(
-                                        padding: const EdgeInsets.all(12.0),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                Expanded(
-                                                  child: Text(
-                                                    gallery.title,
-                                                    style: const TextStyle(
-                                                      fontSize: 14,
-                                                      fontWeight: FontWeight.bold,
-                                                      color: Color(0xFF1E1E1E),
-                                                    ),
-                                                  ),
-                                                ),
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                                  decoration: BoxDecoration(
-                                                    color: const Color(0xFF6A2777).withValues(alpha: 0.1),
-                                                    borderRadius: BorderRadius.circular(12),
-                                                  ),
-                                                  child: Text(
-                                                    '${gallery.photoCount} photos',
-                                                    style: const TextStyle(
-                                                      fontSize: 11,
-                                                      fontWeight: FontWeight.w600,
-                                                      color: Color(0xFF6A2777),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            if (gallery.subtitle != null && gallery.subtitle!.isNotEmpty) ...[
-                                              const SizedBox(height: 3),
-                                              Text(
-                                                gallery.subtitle!,
-                                                style: const TextStyle(
-                                                  fontSize: 12.5,
-                                                  color: Color(0xFF64748B),
-                                                ),
-                                              ),
-                                            ],
-                                            const SizedBox(height: 3),
-                                            Text(
-                                              gallery.date,
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                color: Color(0xFF94A3B8),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // 6. Event Information Card
-              _buildCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Event Information',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E1E1E),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    // Date
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.calendar_today_outlined,
-                          size: 18,
-                          color: Color(0xFF64748B),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                event.formattedDate,
-                                style: const TextStyle(
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1E1E1E),
-                                ),
-                              ),
-                              Text(
-                                event.timeRange,
-                                style: const TextStyle(
-                                  fontSize: 12.5,
-                                  color: Color(0xFF64748B),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    // Location
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          size: 18,
-                          color: Color(0xFF64748B),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                event.localizedLocation(context),
-                                style: const TextStyle(
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1E1E1E),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    // Organizer
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.person_outline,
-                          size: 18,
-                          color: Color(0xFF64748B),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            event.organizer,
-                            style: const TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E1E1E),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    // Admission Type
-                    Row(
-                      children: const [
-                        Icon(
-                          Icons.how_to_reg_outlined,
-                          size: 18,
-                          color: Color(0xFF64748B),
-                        ),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Free Community Admission',
-                            style: TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF16A34A),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    // Book Event Full-Width Purple Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 44,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF6A2777),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        ),
-                        onPressed: () {
-                          _showRsvpModal(context, event);
-                        },
-                        child: const Text(
-                          'RSVP for Event',
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // 7. ✨ Featured Artists ✨ Section Header (Matching Screenshot media_1787732374690.png)
-              Center(
-                child: Column(
-                  children: [
-                    const Text(
-                      '✨ Featured Artists ✨',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Text(
-                        'Discover exceptional talent from across the UAE, each bringing unique perspectives and artistic mastery to this extraordinary event.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white70,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Quick Stats Chips Row
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 12,
-                      runSpacing: 6,
-                      children: [
-                        Text(
-                          '👥 ${featuredArtists.length} Artists',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white70,
-                          ),
-                        ),
-                        const Text(
-                          '✨ Multiple Disciplines',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white70,
-                          ),
-                        ),
-                        const Text(
-                          '📍 UAE-based',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white70,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Featured Artists Cards List
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: featuredArtists.length,
-                separatorBuilder:
-                    (context, index) => const SizedBox(height: 18),
-                itemBuilder: (context, index) {
-                  final artist = featuredArtists[index];
-                  return _buildFeaturedArtistCard(context, artist);
-                },
-              ),
-              const SizedBox(height: 24),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
     );
   }
 
-  Widget _buildCard({required Widget child}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
+  // Sub-header with back button and top action icons (Reference Screenshot 4)
+  Widget _buildSubHeader(bool isLiked, ArtEventModel ev) {
+    return Row(
+      children: [
+        IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white, size: 22),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              context.go(RouteNames.events);
+            }
+          },
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            'Event Details'.trData(context),
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        // Action 1: Favorite Heart Button
+        _buildTopActionIcon(
+          icon: isLiked ? Icons.favorite : Icons.favorite_border,
+          color: isLiked ? Colors.redAccent : Colors.white,
+          onTap: () => _toggleFavorite(ev),
+        ),
+        const SizedBox(width: 8),
+        // Action 2: Share Button
+        _buildTopActionIcon(
+          icon: Icons.ios_share,
+          color: Colors.white,
+          onTap: () => _shareEvent(ev),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTopActionIcon({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        child: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.18),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 19, color: color),
+        ),
       ),
-      child: child,
     );
   }
 
-  Widget _buildFeaturedArtistCard(BuildContext context, ArtistModel artist) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFCBD5E1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Banner Image & Badges
-          Stack(
+  Widget _buildExpandableDescription(String rawText) {
+    final text = rawText.isNotEmpty
+        ? rawText
+        : "Get ready to push your limits at Ultra Trail Dubai (UTD), one of the region's most exciting and inclusive ultra trail events. Held from 27-29 November in the rugged wilderness of Hatta, runners will experience breathtaking mountain trails, steep climbs, and picturesque valley vistas. Whether you are a beginner or a seasoned endurance athlete, there are distances suited for everyone.";
+
+    const int maxCollapsedChars = 170;
+    final isLong = text.length > maxCollapsedChars;
+    final displayText = (!_isDescriptionExpanded && isLong)
+        ? '${text.substring(0, maxCollapsedChars)}...'
+        : text;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text.rich(
+          TextSpan(
+            text: displayText,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF4B5563),
+              height: 1.5,
+            ),
             children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(12),
-                ),
-                child: AppCachedImage(
-                  imageUrl: artist.bannerUrl,
-                  height: 140,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              Container(
-                height: 140,
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(12),
-                  ),
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.75),
-                    ],
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 10,
-                left: 10,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF6A2777),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    'Featured',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
+              if (isLong) ...[
+                const TextSpan(text: ' '),
+                WidgetSpan(
+                  alignment: PlaceholderAlignment.middle,
+                  child: GestureDetector(
+                    onTap: () => setState(() => _isDescriptionExpanded = !_isDescriptionExpanded),
+                    child: Text(
+                      _isDescriptionExpanded
+                          ? 'Read Less'.trData(context)
+                          : 'Read More'.trData(context),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: _primaryPurple,
+                      ),
                     ),
                   ),
                 ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _getVenueDisplayName(ArtEventModel ev) {
+    if (ev.location.isEmpty) {
+      return ev.locationCity ?? 'Dubai, UAE';
+    }
+    final parts = ev.location.split(',');
+    if (parts.isNotEmpty && parts.first.trim().isNotEmpty) {
+      return parts.first.trim();
+    }
+    return ev.location;
+  }
+
+  Widget _buildMapPreviewWidget(ArtEventModel ev) {
+    final venueName = _getVenueDisplayName(ev);
+
+    return GestureDetector(
+      onTap: () => _openMapDirections(ev.location),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          height: 190,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF3F2EE),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
               ),
-              if (_isLoggedIn)
-              Positioned(
-                top: 10,
-                right: 10,
-                child: Row(
+            ],
+          ),
+          child: Stack(
+            children: [
+              // 1. Realistic Vector Map Canvas
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _MapCanvasPainter(),
+                ),
+              ),
+
+              // 2. Interactive Center Pin with Floating Venue Callout
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () => _shareArtist(artist),
-                        borderRadius: BorderRadius.circular(20),
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.5),
-                            shape: BoxShape.circle,
+                    // Floating Venue Badge Callout
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.16),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
                           ),
-                          child: const Icon(
-                            Icons.share_outlined,
-                            size: 16,
-                            color: Colors.white,
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: _primaryPurple,
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 6),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 200),
+                            child: Text(
+                              venueName.trData(context),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF1E293B),
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () => _toggleArtistLike(artist),
-                        borderRadius: BorderRadius.circular(20),
-                        child: Container(
-                          width: 32,
-                          height: 32,
+
+                    const SizedBox(height: 3),
+
+                    // Pointer Radar Pulse & Center Dot Marker
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Outer Radar Pulse
+                        Container(
+                          width: 42,
+                          height: 42,
                           decoration: BoxDecoration(
-                            color: _likedArtistIds.contains(artist.id)
-                                ? const Color(0xFFE11D48).withValues(alpha: 0.8)
-                                : Colors.black.withValues(alpha: 0.5),
+                            color: _primaryPurple.withValues(alpha: 0.16),
                             shape: BoxShape.circle,
                           ),
-                          child: Icon(
-                            _likedArtistIds.contains(artist.id)
-                                ? Icons.favorite
-                                : Icons.favorite_border,
-                            size: 16,
-                            color: Colors.white,
+                        ),
+                        // Inner Pulse
+                        Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: _primaryPurple.withValues(alpha: 0.32),
+                            shape: BoxShape.circle,
                           ),
                         ),
-                      ),
+                        // Center Core Pin
+                        Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: _primaryPurple,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.25),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 14),
                   ],
                 ),
               ),
+
+              // 3. Bottom Bar: Google Branding & Open Directions Action
               Positioned(
                 bottom: 10,
                 left: 12,
                 right: 12,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      artist.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                    // Google Logo Watermark
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'Google'.trData(context),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.blueGrey[700],
+                          letterSpacing: -0.3,
+                        ),
                       ),
                     ),
-                    Text(
-                      '${artist.category} • ${artist.location}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.white70,
+
+                    // Open Directions Pill Button
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.directions, size: 14, color: _primaryPurple),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Open Directions'.trData(context),
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w800,
+                              color: _primaryPurple,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -1120,933 +662,267 @@ class _EventDetailViewState extends State<EventDetailView> {
               ),
             ],
           ),
-          Padding(
-            padding: const EdgeInsets.all(14.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSimilarEventCard(ArtEventModel item) {
+    final isLiked = _likedEventIds.contains(item.id);
+
+    return GestureDetector(
+      onTap: () => context.push(RouteNames.eventDetailWithId(item.id), extra: item),
+      child: Container(
+        width: 245,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
               children: [
-                const Text(
-                  'About Artist',
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E1E1E),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    height: 145,
+                    width: double.infinity,
+                    child: item.imageUrl != null && item.imageUrl!.isNotEmpty
+                        ? AppCachedImage(imageUrl: item.imageUrl!, fit: BoxFit.cover)
+                        : Container(
+                            color: const Color(0xFFF1F5F9),
+                            child: const Center(
+                              child: Icon(Icons.palette_outlined, size: 42, color: Color(0xFF94A3B8)),
+                            ),
+                          ),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  artist.bio,
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    color: Color(0xFF64748B),
-                    height: 1.35,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                // Stats Row
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        children: [
-                          Text(
-                            '${artist.followersCount}',
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E1E1E),
-                            ),
-                          ),
-                          const Text(
-                            'Followers',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                        ],
+                // Category Chip on Top Left
+                if (item.category.isNotEmpty)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                    ),
-                    Container(
-                      height: 24,
-                      width: 1,
-                      color: const Color(0xFFE2E8F0),
-                    ),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          Text(
-                            '${artist.worksCount}',
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E1E1E),
-                            ),
-                          ),
-                          const Text(
-                            'Artworks',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      height: 24,
-                      width: 1,
-                      color: const Color(0xFFE2E8F0),
-                    ),
-                    Expanded(
-                      child: Column(
-                        children: const [
-                          Text(
-                            'Active',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF16A34A),
-                            ),
-                          ),
-                          Text(
-                            'Status',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                // Book Artist Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 40,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6A2777),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => ArtistDetailView(artist: artist),
+                      child: Text(
+                        item.localizedCategory(context),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
                         ),
-                      );
-                    },
-                    child: const Text(
-                      'View Profile',
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                // Heart Like Button on Top Right
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    onTap: () => _toggleFavorite(item),
+                    child: Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.18),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        isLiked ? Icons.favorite : Icons.favorite_border,
+                        color: isLiked ? Colors.red : _primaryPurple,
+                        size: 18,
                       ),
                     ),
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 10),
+
+            // Event Title (2 lines max for full readability)
+            Text(
+              item.localizedTitle(context),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF1E1E1E),
+                height: 1.25,
+              ),
+            ),
+            const SizedBox(height: 6),
+
+            // Date & Time
+            Row(
+              children: [
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  size: 13,
+                  color: _primaryPurple,
+                ),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    item.displaySchedule.trData(context),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: _primaryPurple,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+
+            // Location
+            Row(
+              children: [
+                const Icon(
+                  Icons.location_on_outlined,
+                  size: 13,
+                  color: Color(0xFF64748B),
+                ),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    item.localizedVenue(context),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
+}
 
-  void _showRsvpModal(BuildContext context, ArtEventModel event) {
-    String prefilledName = '';
-    String prefilledEmail = '';
-    try {
-      final storage = sl<StorageService>();
-      prefilledName = storage.getString('user_name') ?? '';
-      prefilledEmail = storage.getString('user_email') ?? '';
-    } catch (_) {}
+class _MapCanvasPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    // 1. Background Land (Google Maps cream tone)
+    final bgPaint = Paint()..color = const Color(0xFFF3F2EE);
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
 
-    final nameController = TextEditingController(text: prefilledName);
-    final emailController = TextEditingController(text: prefilledEmail);
-    final phoneController = TextEditingController();
-    final ticketsController = TextEditingController(text: '1');
+    // 2. Green Park Area (natural curved park)
+    final parkPaint = Paint()..color = const Color(0xFFD8F1D8);
+    final parkPath = Path()
+      ..moveTo(size.width * 0.72, size.height)
+      ..cubicTo(size.width * 0.74, size.height * 0.7, size.width * 0.85, size.height * 0.65, size.width, size.height * 0.62)
+      ..lineTo(size.width, size.height)
+      ..close();
+    canvas.drawPath(parkPath, parkPaint);
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          backgroundColor: Colors.white,
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 24,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Title Row with Close Button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'RSVP: ${event.title}',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1E1E1E),
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.close,
-                          color: Color(0xFF64748B),
-                          size: 20,
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Please provide your details to confirm your attendance.',
-                    style: TextStyle(fontSize: 13.5, color: Color(0xFF64748B)),
-                  ),
-                  const SizedBox(height: 18),
+    // 3. Water Body / Canal (soft Google Maps blue)
+    final waterPaint = Paint()..color = const Color(0xFFC7E4F0);
+    final waterPath = Path()
+      ..moveTo(0, size.height * 0.35)
+      ..cubicTo(size.width * 0.25, size.height * 0.32, size.width * 0.45, size.height * 0.2, size.width * 0.7, size.height * 0.12)
+      ..cubicTo(size.width * 0.85, size.height * 0.08, size.width * 0.95, size.height * 0.04, size.width, 0)
+      ..lineTo(0, 0)
+      ..close();
+    canvas.drawPath(waterPath, waterPaint);
 
-                  // Name Field
-                  const Text(
-                    'Name',
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E1E1E),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: nameController,
-                    style: const TextStyle(
-                      color: Color(0xFF1E293B),
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    cursorColor: const Color(0xFF6A2777),
-                    decoration: InputDecoration(
-                      hintText: 'Your full name',
-                      hintStyle: const TextStyle(
-                        color: Color(0xFF64748B),
-                        fontSize: 13.5,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(
-                          color: Color(0xFFCBD5E1),
-                          width: 1.2,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(
-                          color: Color(0xFFCBD5E1),
-                          width: 1.2,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(
-                          color: Color(0xFF5E227A),
-                          width: 1.8,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
+    // 4. Urban Minor Streets Grid (White with subtle borders)
+    final minorBorderPaint = Paint()
+      ..color = const Color(0xFFE8E5DF)
+      ..strokeWidth = 3.5
+      ..style = PaintingStyle.stroke;
+    final minorRoadPaint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 2.2
+      ..style = PaintingStyle.stroke;
 
-                  // Email Field
-                  const Text(
-                    'Email',
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E1E1E),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    style: const TextStyle(
-                      color: Color(0xFF1E293B),
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    cursorColor: const Color(0xFF6A2777),
-                    decoration: InputDecoration(
-                      hintText: 'you@example.com',
-                      hintStyle: const TextStyle(
-                        color: Color(0xFF64748B),
-                        fontSize: 13.5,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(
-                          color: Color(0xFFCBD5E1),
-                          width: 1.2,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(
-                          color: Color(0xFFCBD5E1),
-                          width: 1.2,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(
-                          color: Color(0xFF5E227A),
-                          width: 1.8,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
+    final gridPath = Path();
+    // Horizontal streets
+    gridPath.moveTo(0, size.height * 0.52);
+    gridPath.lineTo(size.width, size.height * 0.48);
+    gridPath.moveTo(0, size.height * 0.72);
+    gridPath.lineTo(size.width * 0.72, size.height * 0.74);
+    gridPath.moveTo(0, size.height * 0.88);
+    gridPath.lineTo(size.width, size.height * 0.88);
+    // Vertical streets
+    gridPath.moveTo(size.width * 0.18, size.height * 0.35);
+    gridPath.lineTo(size.width * 0.15, size.height);
+    gridPath.moveTo(size.width * 0.4, size.height * 0.22);
+    gridPath.lineTo(size.width * 0.38, size.height);
+    gridPath.moveTo(size.width * 0.62, size.height * 0.15);
+    gridPath.lineTo(size.width * 0.65, size.height);
+    gridPath.moveTo(size.width * 0.84, size.height * 0.1);
+    gridPath.lineTo(size.width * 0.82, size.height * 0.65);
 
-                  // Phone Field
-                  const Text(
-                    'Phone (optional)',
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E1E1E),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: phoneController,
-                    keyboardType: TextInputType.phone,
-                    style: const TextStyle(
-                      color: Color(0xFF1E293B),
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    cursorColor: const Color(0xFF6A2777),
-                    decoration: InputDecoration(
-                      hintText: '+971 ...',
-                      hintStyle: const TextStyle(
-                        color: Color(0xFF64748B),
-                        fontSize: 13.5,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(
-                          color: Color(0xFFCBD5E1),
-                          width: 1.2,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(
-                          color: Color(0xFFCBD5E1),
-                          width: 1.2,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(
-                          color: Color(0xFF5E227A),
-                          width: 1.8,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
+    canvas.drawPath(gridPath, minorBorderPaint);
+    canvas.drawPath(gridPath, minorRoadPaint);
 
-                  // Tickets Field
-                  const Text(
-                    'Tickets',
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E1E1E),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: ticketsController,
-                    keyboardType: TextInputType.number,
-                    style: const TextStyle(
-                      color: Color(0xFF1E293B),
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    cursorColor: const Color(0xFF6A2777),
-                    decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(
-                          color: Color(0xFFCBD5E1),
-                          width: 1.2,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(
-                          color: Color(0xFFCBD5E1),
-                          width: 1.2,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(
-                          color: Color(0xFF5E227A),
-                          width: 1.8,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
+    // 5. Major Arterial Highway (Yellow/Gold with amber borders)
+    final highwayBorderPaint = Paint()
+      ..color = const Color(0xFFE5CE82)
+      ..strokeWidth = 7.5
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+    final highwayPaint = Paint()
+      ..color = const Color(0xFFFDE896)
+      ..strokeWidth = 5.5
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
 
-                  // Admission Display
-                  const Text(
-                    'Admission: Free Community Entry',
-                    style: TextStyle(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF16A34A),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
+    final highwayPath = Path()
+      ..moveTo(0, size.height * 0.78)
+      ..cubicTo(size.width * 0.3, size.height * 0.75, size.width * 0.52, size.height * 0.55, size.width * 0.75, size.height * 0.38)
+      ..lineTo(size.width, size.height * 0.24);
 
-                  // Action Buttons: Cancel & Confirm RSVP
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF1E1E1E),
-                          side: const BorderSide(color: Color(0xFFCBD5E1)),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 12,
-                          ),
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text(
-                          'Cancel',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF6A2777),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 12,
-                          ),
-                        ),
-                        onPressed: () async {
-                          final name = nameController.text.trim();
-                          final email = emailController.text.trim();
-                          if (name.isEmpty || email.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Please enter your name and email.'),
-                                backgroundColor: Colors.redAccent,
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                            return;
-                          }
+    canvas.drawPath(highwayPath, highwayBorderPaint);
+    canvas.drawPath(highwayPath, highwayPaint);
 
-                          Navigator.pop(context);
+    // 6. Secondary Branch Avenue
+    final secondaryBorder = Paint()
+      ..color = const Color(0xFFDEDBD4)
+      ..strokeWidth = 6.0
+      ..style = PaintingStyle.stroke;
+    final secondaryRoad = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 4.2
+      ..style = PaintingStyle.stroke;
 
-                          sl<NotificationService>().addNotification(
-                            title: 'RSVP Confirmed!',
-                            body: 'Your attendance for ${event.title} is confirmed.',
-                            icon: Icons.event_available_outlined,
-                          );
+    final branchPath = Path()
+      ..moveTo(size.width * 0.46, size.height * 0.6)
+      ..cubicTo(size.width * 0.52, size.height * 0.75, size.width * 0.58, size.height * 0.88, size.width * 0.68, size.height);
 
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'RSVP confirmed for ${event.title}!',
-                                ),
-                                backgroundColor: const Color(0xFF6A2777),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          }
-                        },
-                        child: const Text(
-                          'Confirm RSVP',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
+    canvas.drawPath(branchPath, secondaryBorder);
+    canvas.drawPath(branchPath, secondaryRoad);
   }
 
-  void _showCreateGalleryModal(BuildContext context, String titleName) {
-    final titleController = TextEditingController();
-    final descController = TextEditingController();
-    final ImagePicker picker = ImagePicker();
-    final List<XFile> modalImages = [];
-    bool isUploading = false;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            Future<void> pickImages() async {
-              try {
-                final List<XFile> selected = await picker.pickMultiImage(imageQuality: 85);
-                if (selected.isNotEmpty) {
-                  setModalState(() {
-                    modalImages.addAll(selected);
-                  });
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error selecting images: $e'),
-                      backgroundColor: const Color(0xFFDC2626),
-                    ),
-                  );
-                }
-              }
-            }
-
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              backgroundColor: Colors.white,
-              insetPadding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 24,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Title Header with Close Button
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Create New Gallery for $titleName',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1E1E1E),
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.close,
-                              color: Color(0xFF64748B),
-                              size: 20,
-                            ),
-                            onPressed: () => Navigator.pop(context),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Gallery Title
-                      const Text(
-                        'Gallery Title',
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1E1E1E),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: titleController,
-                        style: const TextStyle(
-                          color: Color(0xFF0F172A),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        cursorColor: const Color(0xFF6A2777),
-                        decoration: InputDecoration(
-                          hintText: 'Enter gallery title...',
-                          hintStyle: const TextStyle(
-                            color: Color(0xFF94A3B8),
-                            fontSize: 13.5,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 12,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(
-                              color: Color(0xFF6A2777),
-                              width: 1.5,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Description (optional)
-                      const Text(
-                        'Description (optional)',
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1E1E1E),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: descController,
-                        maxLines: 3,
-                        style: const TextStyle(
-                          color: Color(0xFF0F172A),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        cursorColor: const Color(0xFF6A2777),
-                        decoration: InputDecoration(
-                          hintText: 'Describe this gallery...',
-                          hintStyle: const TextStyle(
-                            color: Color(0xFF94A3B8),
-                            fontSize: 13.5,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 12,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(
-                              color: Color(0xFF5E227A),
-                              width: 1.5,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Images Box
-                      const Text(
-                        'Images',
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1E1E1E),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      InkWell(
-                        onTap: pickImages,
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 24),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFAFAFA),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: const Color(0xFFCBD5E1),
-                              style: BorderStyle.solid,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.upload_outlined,
-                                size: 32,
-                                color: Color(0xFF64748B),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                modalImages.isEmpty
-                                    ? 'Click to select images or drag and drop'
-                                    : '${modalImages.length} image(s) selected (tap to add more)',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: modalImages.isNotEmpty
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                  color: modalImages.isNotEmpty
-                                      ? const Color(0xFF5E227A)
-                                      : const Color(0xFF64748B),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      if (modalImages.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          height: 70,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: modalImages.length,
-                            itemBuilder: (context, idx) {
-                              final img = modalImages[idx];
-                              return Container(
-                                margin: const EdgeInsets.only(right: 8),
-                                width: 70,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: const Color(0xFFCBD5E1)),
-                                ),
-                                child: Stack(
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: kIsWeb
-                                          ? Image.network(
-                                              img.path,
-                                              width: 70,
-                                              height: 70,
-                                              fit: BoxFit.cover,
-                                            )
-                                          : Image.file(
-                                              File(img.path),
-                                              width: 70,
-                                              height: 70,
-                                              fit: BoxFit.cover,
-                                            ),
-                                    ),
-                                    Positioned(
-                                      top: 2,
-                                      right: 2,
-                                      child: GestureDetector(
-                                        onTap: () {
-                                          setModalState(() {
-                                            modalImages.removeAt(idx);
-                                          });
-                                        },
-                                        child: Container(
-                                          padding: const EdgeInsets.all(3),
-                                          decoration: BoxDecoration(
-                                            color: Colors.black.withValues(alpha: 0.7),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(
-                                            Icons.close,
-                                            size: 12,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 20),
-
-                      // Action Buttons: Cancel & Create Gallery
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF1E1E1E),
-                              side: const BorderSide(color: Color(0xFFCBD5E1)),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 18,
-                                vertical: 12,
-                              ),
-                            ),
-                            onPressed: isUploading ? null : () => Navigator.pop(context),
-                            child: const Text(
-                              'Cancel',
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF5E227A),
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 18,
-                                vertical: 12,
-                              ),
-                            ),
-                            onPressed: isUploading
-                                ? null
-                                : () async {
-                                    final title = titleController.text.trim();
-                                    final desc = descController.text.trim();
-                                    if (title.isEmpty) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Please enter a gallery title')),
-                                      );
-                                      return;
-                                    }
-
-                                    setModalState(() {
-                                      isUploading = true;
-                                    });
-
-                                    List<String> finalUploadedUrls = [];
-
-                                    if (modalImages.isNotEmpty) {
-                                      for (final xfile in modalImages) {
-                                        try {
-                                          final bytes = await xfile.readAsBytes();
-                                          final nameParts = xfile.name.split('.');
-                                          final ext = nameParts.length > 1 ? nameParts.last : 'jpg';
-                                          final url = await sl<ApiService>().uploadImageBytes(
-                                            bytes,
-                                            ext: ext.isNotEmpty ? ext : 'jpg',
-                                          );
-                                          if (url != null && url.isNotEmpty) {
-                                            finalUploadedUrls.add(url);
-                                          }
-                                        } catch (_) {}
-                                      }
-                                    }
-
-                                    if (finalUploadedUrls.isEmpty) {
-                                      setModalState(() {
-                                        isUploading = false;
-                                      });
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Please select at least one photo to upload.'),
-                                            backgroundColor: Color(0xFFDC2626),
-                                          ),
-                                        );
-                                      }
-                                      return;
-                                    }
-
-                                    final coverUrl = finalUploadedUrls.first;
-
-                                    await sl<ApiService>().createGallery(
-                                      title: title,
-                                      description: desc.isNotEmpty ? desc : 'Curated collection for $titleName',
-                                      imageUrl: coverUrl,
-                                      images: finalUploadedUrls,
-                                      eventName: titleName,
-                                      eventId: widget.event.id,
-                                    );
-                                    _fetchEventGalleries(forceRefresh: true);
-
-                                    if (context.mounted) {
-                                      Navigator.pop(context);
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Gallery "$title" created successfully!'),
-                                          backgroundColor: const Color(0xFF5E227A),
-                                          behavior: SnackBarBehavior.floating,
-                                        ),
-                                      );
-                                    }
-                                  },
-                            child: isUploading
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Text(
-                                    'Create Gallery',
-                                    style: TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

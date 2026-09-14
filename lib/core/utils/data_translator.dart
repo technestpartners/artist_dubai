@@ -1,10 +1,14 @@
+import 'dart:convert';
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import '../di/injection_container.dart';
 import '../services/locale_provider.dart';
 import '../services/storage_service.dart';
 
 /// Ultra-fast client-side data translator for backend strings
-/// Provides instant localization & fallback translation for offline/cached responses.
+/// Combines instant dictionary lookups with automatic Google Translate caching
+/// for any arbitrary user-generated content (bios, custom locations, descriptions).
 class DataTranslator {
   static const Map<String, String> _enToAr = {
     // Categories (Artists, Events, Galleries)
@@ -74,6 +78,17 @@ class DataTranslator {
     'free admission': 'الدخول مجاني',
     'verified artist': 'فنان معتمد',
 
+    // Test & Sample Words
+    'test': 'اختبار',
+    'testing': 'اختبار',
+    'tezt': 'اختبار',
+    'demo': 'عرض تجريبي',
+    'sample': 'عينة',
+    'trial': 'تجربة',
+    'good': 'جيد',
+    'bad': 'سيء',
+    'abc': 'اي بي سي',
+
     // Experience Levels
     'beginner (1-2 years)': 'مبتدئ (١-٢ سنة)',
     'beginner 1-2 years': 'مبتدئ (١-٢ سنة)',
@@ -115,7 +130,7 @@ class DataTranslator {
     'wood': 'خشب',
     'metal': 'معدن',
 
-    // Cities & Locations
+    // Cities, Locations & Landmarks
     'dubai, uae': 'دبي، الإمارات',
     'abu dhabi, uae': 'أبوظبي، الإمارات',
     'sharjah, uae': 'الشارقة، الإمارات',
@@ -132,8 +147,47 @@ class DataTranslator {
     'umm al quwain': 'أم القيوين',
     'uae': 'الإمارات',
     'united arab emirates': 'الإمارات العربية المتحدة',
+    'al ain': 'العين',
+    'al ain, uae': 'العين، الإمارات',
+    'hatta': 'حتا',
+    'hata': 'حتا',
+    'khorfakkan': 'خورفكان',
+    'kalba': 'كلباء',
+    'dibba': 'دبا',
+    'hannover': 'هانوفر',
+    'braunschweig': 'براونشفايغ',
+    'burj': 'برج',
+    'burj khalifa': 'برج خليفة',
+    'at post kurunda': 'كوروندا',
+    'kurunda': 'كوروندا',
+    'germany': 'ألمانيا',
+    'berlin': 'برلين',
+    'munich': 'ميونخ',
+    'frankfurt': 'فرانكفورت',
+    'hamburg': 'هامبورغ',
+    'cologne': 'كولونيا',
+    'dusseldorf': 'دوسلدورف',
+    'stuttgart': 'شتوتغارت',
+    'london': 'لندن',
+    'paris': 'باريس',
+    'new york': 'نيويورك',
+    'tokyo': 'طوكيو',
+    'india': 'الهند',
+    'mumbai': 'مومباي',
+    'delhi': 'دلهي',
+    'riyadh': 'الرياض',
+    'jeddah': 'جدة',
+    'cairo': 'القاهرة',
+    'beirut': 'بيروت',
+    'amman': 'عمان',
+    'doha': 'الدوحة',
+    'kuwait': 'الكويت',
+    'manama': 'المنامة',
+    'muscat': 'مسقط',
     'dubai design district (d3)': 'حي دبي للتصميم (d3)',
     'dubai design district': 'حي دبي للتصميم',
+    'dubai design district, building 7': 'حي دبي للتصميم، مبنى 7',
+    'building 7': 'مبنى 7',
     'dubai design district (d3), dubai': 'حي دبي للتصميم (d3)، دبي',
     'alserkal avenue, al quoz, dubai': 'جادة السركال، القوز، دبي',
     'alserkal avenue': 'جادة السركال',
@@ -160,12 +214,32 @@ class DataTranslator {
     'business bay, dubai': 'الخليج التجاري، دبي',
     'business bay': 'الخليج التجاري',
     'dubai media city': 'مدينة دبي للإعلام',
+    'house of wisdom & arts, dubai': 'بيت الحكمة والفنون، دبي',
+    'house of wisdom & arts': 'بيت الحكمة والفنون',
+    'house of wisdom': 'بيت الحكمة',
+    'difc gate village, building 03, dubai': 'قرية البوابة، المبنى 03، مركز دبي المالي العالمي، دبي',
+    'difc gate village, building 03': 'قرية البوابة، المبنى 03، مركز دبي المالي العالمي',
+    'difc gate village': 'قرية البوابة، مركز دبي المالي العالمي',
+    'dubai mall, level 2, downtown dubai': 'دبي مول، الطابق 2، وسط مدينة دبي',
+    'dubai mall, level 2': 'دبي مول، الطابق 2',
+    'dubai mall': 'دبي مول',
+    'al fahidi historical neighbourhood, dubai': 'حي الفهيدي التاريخي، دبي',
+    'al fahidi historical neighbourhood': 'حي الفهيدي التاريخي',
+    'al fahidi': 'الفهيدي',
+    'jumeirah art center, jumeirah 1, dubai': 'مركز جميرا للفنون، جميرا 1، دبي',
+    'jumeirah art center': 'مركز جميرا للفنون',
+    'the pottery shed, warehouse 42, al quoz, dubai': 'ذا بوتري شيد، المستودع 42، القوز، دبي',
+    'the pottery shed': 'ذا بوتري شيد',
+    'hatta wadi hub, located off the dubai-hatta road, dubai': 'حتا وادي هب، طريق دبي-حتا، دبي',
+    'hatta wadi hub': 'حتا وادي هب',
+    'dubai opera gallery, downtown dubai': 'معرض دبي أوبرا، وسط مدينة دبي',
 
     // Government Entities & Cultural Centers
     'dubai culture & arts authority': 'هيئة الثقافة والفنون في دبي (دبي للثقافة)',
     'ministry of culture & youth': 'وزارة الثقافة والشباب',
     'art dubai': 'آرت دبي',
     'dubai opera': 'دبي أوبرا',
+
     'government · cultural authority': 'حكومي · هيئة ثقافية',
     'government · federal ministry': 'حكومي · وزارة اتحادية',
     'creative hub · design district': 'مركز إبداعي · حي التصميم',
@@ -173,22 +247,6 @@ class DataTranslator {
     'arts district · gallery hub': 'حي الفنون · مجمع معارض',
     'performing arts · venue': 'فنون أدائية · مسرح وفعاليات',
 
-    // Galleries
-    'custot gallery dubai': 'معرض كوستوت دبي',
-    'leila heller gallery': 'معرض ليلى هيلر',
-    'the third line': 'ذا ثيرد لاين',
-    'jameel arts centre': 'مركز جميل للفنون',
-    'contemporary art institution': 'مؤسسة للفن المعاصر',
-    'contemporary middle eastern': 'معاصر من الشرق الأوسط',
-    'modern & contemporary': 'حديث ومعاصر',
-    'contemporary art': 'فن معاصر',
-
-    // Events & Showcase Titles
-    'dubai modern art showcase': 'معرض دبي للفن الحديث',
-    'sharjah calligraphy biennial': 'بينالي الشارقة للخط العربي',
-    'al quoz bronze & sculpture gala': 'احتفالية القوز للنحت والبرونز',
-    'generative art & spatial 3d expo': 'معرض الفن التوليدي والأبعاد الثلاثية',
-    'emirates contemporary design expo 2026': 'معرض الإمارات للتصميم المعاصر 2026',
 
     // Pricing & Plans
     'weekly plan': 'الخطة الأسبوعية',
@@ -200,7 +258,7 @@ class DataTranslator {
     'gallery showcase': 'عرض المعرض الفني',
     'artist event publishing': 'نشر فعاليات الفنانين',
 
-    // Home Tiles
+    // Home Tiles & Common Words
     'about us': 'من نحن',
     'artists': 'الفنانون',
     'government': 'الجهات الحكومية',
@@ -210,26 +268,273 @@ class DataTranslator {
     'events photos': 'صور الفعاليات',
     'art venue registration': 'تسجيل المعارض الفنية',
     'art venue': 'معرض فني',
-    'artist': 'فنان',
-    'registration': 'تسجيل',
-    'events': 'فعاليات',
-    'competition': 'مسابقة',
-    'galleries': 'معارض فنية',
-    'art center': 'مركز فني',
     'photos': 'صور',
+
+    // Photo Galleries & Portfolio Details
+    'featured': 'مميز',
+    'photo galleries': 'معارض الصور',
+    'create gallery': 'إنشاء معرض',
+    'create new gallery': 'إنشاء معرض جديد',
+    'gallery title': 'عنوان المعرض',
+    'gallery photos': 'صور المعرض',
+    'edit gallery': 'تعديل المعرض',
+    'edit photo gallery': 'تعديل معرض الصور',
+    'delete gallery': 'حذف المعرض',
+    'save changes': 'حفظ التغييرات',
+    'no photo galleries available yet': 'لا توجد معارض صور متاحة حتى الآن',
+    'no artworks added yet': 'لم تتم إضافة أي أعمال فنية بعد',
+    'gallery options': 'خيارات المعرض',
+    'new': 'جديد',
+    'cancel': 'إلغاء',
+    'delete': 'حذف',
+    'click to select images or drag and drop': 'انقر لتحديد الصور أو اسحبها وأفلتها',
+    'please enter a gallery title': 'الرجاء إدخال عنوان المعرض',
+    'please select at least one photo from your gallery': 'الرجاء تحديد صورة واحدة على الأقل من معرضك',
+    'failed to delete gallery. please try again.': 'فشل حذف المعرض. يرجى المحاولة مرة أخرى.',
+    'profile picture updated successfully!': 'تم تحديث صورة الملف الشخصي بنجاح!',
+    'please have at least one photo in the gallery': 'يجب أن يحتوي المعرض على صورة واحدة على الأقل',
+    'a gallery must have at least 1 photo': 'يجب أن يحتوي المعرض على صورة واحدة على الأقل',
+    'required details missing': 'بيانات مطلوبة مفقودة',
+    'upload failed': 'فشل التحميل',
+    'failed to upload photos. please try again.': 'فشل تحميل الصور. يرجى المحاولة مرة أخرى.',
+    'ok': 'موافق',
+
+    // Events UI, Filters, Sorting & Dates
+    "what's on": 'الفعاليات الحالية',
+    'search events': 'البحث في الفعاليات',
+    'today': 'اليوم',
+    'this week': 'هذا الأسبوع',
+    'custom dates': 'تواريخ مخصصة',
+    'date': 'التاريخ',
+    'filter by date': 'تصفية حسب التاريخ',
+    'all dates': 'جميع التواريخ',
+    'category': 'الفئة',
+    'filter by category': 'تصفية حسب الفئة',
+    'search categories...': 'البحث في الفئات...',
+    'sort by': 'ترتيب حسب',
+    'sort events': 'ترتيب الفعاليات',
+    'soonest': 'الأقرب موعداً',
+    'title (a - z)': 'العنوان (أ - ي)',
+    'price: low to high': 'السعر: من الأقل إلى الأعلى',
+    'price: high to low': 'السعر: من الأعلى إلى الأقل',
+    'most popular': 'الأكثر شعبية',
+    'see all': 'عرض الكل',
+    'recommended for you': 'موصى به لك',
+    'search results': 'نتائج البحث',
+    'clear all': 'مسح الكل',
+    'clear all filters': 'مسح جميع الفلاتر',
+    'no events found matching your search.': 'لم يتم العثور على فعاليات تطابق بحثك.',
+    'try adjusting your dates, category, or price filters.': 'جرّب تعديل التاريخ أو الفئة أو فلاتر الأسعار.',
+    'reset': 'إعادة ضبط',
+    'register art event': 'تسجيل فعالية فنية',
+    'event details': 'تفاصيل الفعالية',
+    'about event': 'حول الفعالية',
+    'date & time': 'التاريخ والوقت',
+    'location': 'الموقع',
+    'organizer': 'المنظم',
+    'book now': 'احجز الآن',
+    'rsvp': 'تأكيد الحضور',
+    'get directions': 'الاتجاهات',
+    'share event': 'مشاركة الفعالية',
+
+    // Specific Known Events & Cultural Venues
+    'live api test exhibition 8831': 'معرض اختبار واجهة برمجة التطبيق المباشر 8831',
+    'live api test exhibition': 'معرض اختبار واجهة برمجة التطبيق المباشر',
+    'api test exhibition': 'معرض اختبار واجهة برمجة التطبيق',
+    'api testing exhibition': 'معرض اختبار واجهة برمجة التطبيق',
+    'sharjah calligraphy biennial': 'بينالي الشارقة للخط',
+    'sharjah calligraphy meeting': 'ملتقى الشارقة للخط',
+    'dubai modern art showcase': 'معرض دبي للفن الحديث',
+    'emirates contemporary design expo 2026': 'معرض الإمارات للتصميم المعاصر 2026',
+    'heart of sharjah heritage area': 'قلب الشارقة التراثي',
+    'dubai opera gallery': 'معرض دبي أوبرا',
+    'alserkal avenue, warehouse 42': 'جادة السركال، المستودع 42',
+
+    // Onboarding Strings
+    'welcome to dubai artists': 'مرحباً بكم في فنان دبي',
+    'discover the vibrant art scene of dubai and connect with talented local artists': 'اكتشف مشهد الفن النابض في دبي وتواصل مع فنانين محليين موهوبين',
+    'meet local artists': 'تعرف على الفنانين المحليين',
+    'connect directly with artists, learn about their stories and commission custom works': 'تواصل مباشرة مع الفنانين وتعرف على قصصهم واطلب أعمالاً خاصة',
+    'explore art galleries': 'استكشف المعارض الفنية',
+    'browse through curated collections and find your next favorite piece': 'تصفح المجموعات الفنية المختارة واعثر على عملك المفضل التالي',
+    'art events & exhibitions': 'الفعاليات والمعارض الفنية',
+    'stay updated with the latest art events, exhibitions and cultural happenings in dubai': 'ابقَ على اطلاع بأحدث الفعاليات والمعارض والأنشطة الثقافية في دبي',
+    'skip': 'تخطي',
+    'previous': 'السابق',
+    'next': 'التالي',
+    'get started': 'ابدأ الآن',
+
+    // Galleries & Art Centers
+    'no art centers listed yet': 'لا توجد مراكز فنية مدرجة حتى الآن',
+    'registered galleries and art centers will be shown here.': 'ستظهر المعارض والمراكز الفنية المسجلة هنا.',
+    'please log in to register an art gallery': 'يرجى تسجيل الدخول لتسجيل معرض فني',
+    'art space': 'مساحة فنية',
+    'art gallery': 'معرض فني',
+
+    // Events & My Events & Date Picker & Detail
+    'open directions': 'فتح الاتجاهات',
+    'google': 'جوجل',
+    'read more': 'قراءة المزيد',
+    'read less': 'قراءة أقل',
+    'select date range': 'تحديد النطاق الزمني',
+    'save': 'حفظ',
+    'submitted events are sent to the administrator for review and will be published once approved.': 'يتم إرسال الفعاليات المقدمة إلى المسؤول للمراجعة وسيتم نشرها بمجرد الموافقة عليها.',
+    'no images available': 'لا توجد صور متاحة',
+    'close': 'إغلاق',
+    'free community entry': 'دخول مجاني للمجتمع',
+    'pending review': 'قيد المراجعة',
+    'approved & live': 'معتمد ونشط',
+    'back': 'رجوع',
+    'home': 'الرئيسية',
+    'directions': 'الاتجاهات',
+    'share': 'مشاركة',
+    'music & concerts': 'الموسيقى والحفلات الغنائية',
+    'sports & fitness': 'الرياضة واللياقة',
+    'al quoz 1': 'القوز 1',
+    'al quoz industrial area 1': 'منطقة القوز الصناعية 1',
+    'jumeirah 1': 'جميرا 1',
+    'al barsha': 'البرشاء',
+    'al seef': 'السيف',
+    'city walk': 'سيتي ووك',
+    'al satwa': 'السطوة',
+    'deira': 'ديرة',
+    'bur dubai': 'بر دبي',
+    'tashkeel': 'تشكيل',
+    'the jamjar': 'ذا جم جار',
+    'jameel arts centre': 'مركز جميل للفنون',
+    'maraya art centre': 'مركز مرايا للفنون',
+    'sharjah art foundation': 'مؤسسة الشارقة للفنون',
+    'louvre abu dhabi': 'اللوفر أبوظبي',
   };
 
   // Lazy reversed map for Arabic to English lookups
   static Map<String, String>? _arToEn;
   static Map<String, String> get arToEn {
     if (_arToEn == null) {
-      final map = <String, String>{};
+      final map = <String, String>{
+        // Explicit Arabic to English lookups for event titles and variations
+        'معرض اختبار واجهة برمجة التطبيق المباشر 8831': 'Live API Test Exhibition 8831',
+        'معرض اختبار واجهة برمجة التطبيق المباشر': 'Live API Test Exhibition',
+        'معرض اختبار واجهة برمجة التطبيق': 'API Test Exhibition',
+        'بينالي الشارقة للخط': 'Sharjah Calligraphy Biennial',
+        'ملتقى الشارقة للخط': 'Sharjah Calligraphy Meeting',
+        'معرض دبي للفن الحديث': 'Dubai Modern Art Showcase',
+        'معرض الإمارات للتصميم المعاصر 2026': 'Emirates Contemporary Design Expo 2026',
+        'قلب الشارقة التراثي': 'Heart of Sharjah Heritage Area',
+        'معرض دبي أوبرا': 'Dubai Opera Gallery',
+        'جادة السركال، المستودع 42': 'Alserkal Avenue, Warehouse 42',
+        'الفعاليات الحالية': "What's On",
+        'المميزة': 'Featured',
+        'عرض الكل': 'SEE ALL',
+        'موصى به لك': 'Recommended for You',
+        'البحث في الفعاليات': 'Search Events',
+        'اليوم': 'Today',
+        'هذا الأسبوع': 'This Week',
+        'تواريخ مخصصة': 'Custom Dates',
+        'تاريخ مخصص': 'Custom Dates',
+        'التاريخ': 'Date',
+        'تصفية حسب التاريخ': 'Filter by Date',
+        'جميع التواريخ': 'All Dates',
+        'الفئة': 'Category',
+        'تصفية حسب الفئة': 'Filter by Category',
+        'جميع الفئات': 'All Categories',
+        'البحث في الفئات...': 'Search categories...',
+        'ترتيب حسب': 'Sort By',
+        'ترتيب الفعاليات': 'Sort Events',
+        'الأقرب موعداً': 'Soonest',
+        'العنوان (أ - ي)': 'Title (A - Z)',
+        'السعر: من الأقل إلى الأعلى': 'Price: Low to High',
+        'السعر: من الأعلى إلى الأقل': 'Price: High to Low',
+        'الأكثر شعبية': 'Most Popular',
+        'نتائج البحث': 'Search Results',
+        'مسح الكل': 'Clear All',
+        'مسح جميع الفلاتر': 'Clear All Filters',
+        'إعادة ضبط': 'Reset',
+        'تسجيل فعالية فنية': 'Register Art Event',
+        'معرض فني': 'Art Exhibition',
+        'معرض': 'Exhibition',
+        'دخول مجاني': 'Free Entry',
+        'مجاني': 'Free',
+        'نشط': 'Active',
+        'مرحباً بكم في فنان دبي': 'Welcome to Dubai Artists',
+        'اكتشف مشهد الفن النابض في دبي وتواصل مع فنانين محليين موهوبين': 'Discover the vibrant art scene of Dubai and connect with talented local artists',
+        'تعرف على الفنانين المحليين': 'Meet Local Artists',
+        'تواصل مباشرة مع الفنانين وتعرف على قصصهم واطلب أعمالاً خاصة': 'Connect directly with artists, learn about their stories and commission custom works',
+        'استكشف المعارض الفنية': 'Explore Art Galleries',
+        'تصفح المجموعات الفنية المختارة واعثر على عملك المفضل التالي': 'Browse through curated collections and find your next favorite piece',
+        'الفعاليات والمعارض الفنية': 'Art Events & Exhibitions',
+        'ابقَ على اطلاع بأحدث الفعاليات والمعارض والأنشطة الثقافية في دبي': 'Stay updated with the latest art events, exhibitions and cultural happenings in Dubai',
+        'تخطي': 'Skip',
+        'السابق': 'Previous',
+        'التالي': 'Next',
+        'ابدأ الآن': 'Get Started',
+        'تفاصيل الفعالية': 'Event Details',
+        'فتح الاتجاهات': 'Open Directions',
+        'جوجل': 'Google',
+        'قراءة المزيد': 'Read More',
+        'قراءة أقل': 'Read Less',
+        'بيت الحكمة والفنون، دبي': 'House of Wisdom & Arts, Dubai',
+        'بيت الحكمة والفنون': 'House of Wisdom & Arts',
+      };
       _enToAr.forEach((en, ar) {
-        map[ar.trim().toLowerCase()] = en;
+        map.putIfAbsent(ar.trim().toLowerCase(), () => en);
       });
       _arToEn = map;
     }
     return _arToEn!;
+  }
+
+  // Dynamic Cache for arbitrary live backend strings
+  static final Map<String, String> _dynamicCache = {};
+  static final Set<String> _pendingTranslations = {};
+  static final ValueNotifier<int> translationNotifier = ValueNotifier<int>(0);
+
+  static final Dio _dio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 4),
+      receiveTimeout: const Duration(seconds: 4),
+    ),
+  );
+
+  static bool _cacheInitialized = false;
+
+  /// Ensure persistent cache is loaded into memory
+  static void _ensureCacheLoaded() {
+    if (_cacheInitialized) return;
+    _cacheInitialized = true;
+    try {
+      if (sl.isRegistered<StorageService>()) {
+        final raw = sl<StorageService>().getString('cached_dynamic_translations_v1');
+        if (raw != null && raw.isNotEmpty) {
+          final decoded = jsonDecode(raw);
+          if (decoded is Map) {
+            decoded.forEach((k, v) {
+              if (k is String && v is String) {
+                final trimmedV = v.trim();
+                final isJunk = trimmedV.isEmpty ||
+                    !RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(trimmedV) ||
+                    (k.startsWith('en_ar:') && !RegExp(r'[\u0600-\u06FF]').hasMatch(trimmedV));
+                if (!isJunk) {
+                  _dynamicCache[k] = v;
+                }
+              }
+            });
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  /// Persist dynamic translations to storage
+  static void _saveCache() {
+    try {
+      if (sl.isRegistered<StorageService>()) {
+        sl<StorageService>().setString(
+          'cached_dynamic_translations_v1',
+          jsonEncode(_dynamicCache),
+        );
+      }
+    } catch (_) {}
   }
 
   /// Check whether the current app locale is Arabic.
@@ -277,7 +582,13 @@ class DataTranslator {
     final sText = text?.toString();
     if (sText == null || sText.trim().isEmpty) return '';
     final trimmed = sText.trim();
+    // Return early if text is pure punctuation or symbols
+    if (!RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(trimmed)) {
+      return trimmed;
+    }
     final lower = trimmed.toLowerCase();
+
+    _ensureCacheLoaded();
 
     if (ar) {
       // 1. Direct dictionary match
@@ -333,6 +644,41 @@ class DataTranslator {
         final days = trimmed.replaceAll(RegExp(r'[^0-9]'), '');
         return 'منذ $days يوم';
       }
+      if (lower.startsWith('today • ') || lower.startsWith('today · ') || lower.startsWith('today - ')) {
+        final timePart = trimmed.substring(7).trim();
+        return 'اليوم • ${_translateTimePart(timePart)}';
+      }
+      if (lower.startsWith('this week • ') || lower.startsWith('this week · ') || lower.startsWith('this week - ')) {
+        final timePart = trimmed.substring(11).trim();
+        return 'هذا الأسبوع • ${_translateTimePart(timePart)}';
+      }
+      if (lower.startsWith('explore ') && lower.contains('collection of artworks')) {
+        final name = trimmed
+            .substring(8, trimmed.toLowerCase().indexOf('collection of artworks'))
+            .replaceAll(RegExp(r"['’]s?\s*$"), '')
+            .trim();
+        final trName = _enToAr[name.toLowerCase()] ?? name;
+        return 'استكشف مجموعة أعمال $trName الفنية';
+      }
+
+      // 3. Dynamic cache lookup
+      final cacheKey = 'en_ar:$lower';
+      if (_dynamicCache.containsKey(cacheKey)) {
+        final cached = _dynamicCache[cacheKey]!;
+        if (_isValidCandidate(cached, targetLang: 'ar', originalLower: lower)) {
+          return cached;
+        }
+        _dynamicCache.remove(cacheKey);
+      }
+
+      // 4. If text already has Arabic and no Latin letters, return as is
+      if (RegExp(r'[\u0600-\u06FF]').hasMatch(trimmed) &&
+          !RegExp(r'[a-zA-Z]').hasMatch(trimmed)) {
+        return trimmed;
+      }
+
+      // 5. Trigger asynchronous translation in background
+      _fetchAndCacheTranslation(trimmed, targetLang: 'ar');
 
       return trimmed;
     } else {
@@ -340,7 +686,208 @@ class DataTranslator {
       if (arToEn.containsKey(lower)) {
         return _capitalize(arToEn[lower]!);
       }
+
+      // Dynamic cache lookup
+      final cacheKey = 'ar_en:$lower';
+      if (_dynamicCache.containsKey(cacheKey)) {
+        final cached = _dynamicCache[cacheKey]!;
+        if (_isValidCandidate(cached, targetLang: 'en', originalLower: lower)) {
+          return cached;
+        }
+        _dynamicCache.remove(cacheKey);
+      }
+
+      if (trimmed.startsWith('اليوم • ') || trimmed.startsWith('اليوم · ')) {
+        final timePart = trimmed.substring(7).trim();
+        final enTime = timePart
+            .replaceAll('صباحاً', 'AM')
+            .replaceAll('مساءً', 'PM');
+        return 'Today • $enTime';
+      }
+      if (trimmed.startsWith('هذا الأسبوع • ') || trimmed.startsWith('هذا الأسبوع · ')) {
+        final timePart = trimmed.substring(13).trim();
+        final enTime = timePart
+            .replaceAll('صباحاً', 'AM')
+            .replaceAll('مساءً', 'PM');
+        return 'This Week • $enTime';
+      }
+
+      // If no Arabic characters, it is already English/Latin
+      if (!RegExp(r'[\u0600-\u06FF]').hasMatch(trimmed)) {
+        return _capitalize(trimmed);
+      }
+
+      // Trigger asynchronous translation in background
+      _fetchAndCacheTranslation(trimmed, targetLang: 'en');
+
       return trimmed;
+    }
+  }
+
+  static String _translateTimePart(String time) {
+    return time
+        .replaceAll(RegExp(r'\bAM\b', caseSensitive: false), 'صباحاً')
+        .replaceAll(RegExp(r'\bPM\b', caseSensitive: false), 'مساءً');
+  }
+
+  static bool _isValidCandidate(
+    String candidate, {
+    required String targetLang,
+    required String originalLower,
+  }) {
+    if (candidate.isEmpty) return false;
+    if (candidate.toUpperCase().contains('MYMEMORY WARNING')) return false;
+    if (candidate.toLowerCase() == originalLower) return false;
+    // Reject pure punctuation or whitespace
+    if (!RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(candidate)) return false;
+
+    // For Arabic target, it must contain at least one Arabic letter
+    if (targetLang == 'ar' && !RegExp(r'[\u0600-\u06FF]').hasMatch(candidate)) {
+      return false;
+    }
+    return true;
+  }
+
+  /// Asynchronously fetch translation and notify listeners
+  static Future<String?> _fetchAndCacheTranslation(
+    String text, {
+    required String targetLang,
+  }) async {
+    final lower = text.trim().toLowerCase();
+    final cacheKey = '${targetLang == "ar" ? "en_ar" : "ar_en"}:$lower';
+
+    if (_dynamicCache.containsKey(cacheKey)) {
+      return _dynamicCache[cacheKey];
+    }
+    if (_pendingTranslations.contains(cacheKey)) {
+      return null;
+    }
+    _pendingTranslations.add(cacheKey);
+
+    try {
+      final encoded = Uri.encodeComponent(text.trim());
+      final sl = targetLang == 'ar' ? 'en' : 'ar';
+
+      // 1. Primary: MyMemory Translation API (reliable, no 429 rate limit)
+      try {
+        final myMemoryUrl =
+            'https://api.mymemory.translated.net/get?q=$encoded&langpair=$sl|$targetLang';
+        final response = await _dio.get(myMemoryUrl);
+        if (response.statusCode == 200 && response.data is Map) {
+          final data = response.data as Map;
+          final resData = data['responseData'];
+          String? bestCandidate;
+          if (resData is Map && resData['translatedText'] != null) {
+            final t = resData['translatedText'].toString().trim();
+            if (_isValidCandidate(t, targetLang: targetLang, originalLower: lower)) {
+              bestCandidate = t;
+            }
+          }
+          if (bestCandidate == null && data['matches'] is List) {
+            for (final m in data['matches']) {
+              if (m is Map && m['translation'] != null) {
+                final t = m['translation'].toString().trim();
+                if (_isValidCandidate(t, targetLang: targetLang, originalLower: lower)) {
+                  bestCandidate = t;
+                  break;
+                }
+              }
+            }
+          }
+          if (bestCandidate != null) {
+            _dynamicCache[cacheKey] = bestCandidate;
+            _saveCache();
+            translationNotifier.value++;
+            return bestCandidate;
+          }
+        }
+      } catch (_) {}
+
+      // 2. Secondary Fallback: Google Translate API with browser headers
+      final url =
+          'https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=$targetLang&dt=t&q=$encoded';
+      final response = await _dio.get(
+        url,
+        options: Options(
+          headers: kIsWeb
+              ? null
+              : {
+                  'User-Agent':
+                      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                },
+        ),
+      );
+      if (response.statusCode == 200 && response.data is List) {
+        final list = response.data as List;
+        if (list.isNotEmpty && list[0] is List) {
+          final chunks = list[0] as List;
+          final buffer = StringBuffer();
+          for (final chunk in chunks) {
+            if (chunk is List && chunk.isNotEmpty && chunk[0] != null) {
+              buffer.write(chunk[0].toString());
+            }
+          }
+          final translated = buffer.toString().trim();
+          if (_isValidCandidate(translated, targetLang: targetLang, originalLower: lower)) {
+            _dynamicCache[cacheKey] = translated;
+            _saveCache();
+            translationNotifier.value++;
+            return translated;
+          }
+        }
+      }
+    } catch (_) {
+      // Graceful fallback for offline mode
+    } finally {
+      _pendingTranslations.remove(cacheKey);
+    }
+    return null;
+  }
+
+
+  /// Batch prefetch translations for dynamic lists (e.g. from backend API)
+  static Future<void> prefetchBatch(
+    List<String?> texts, {
+    bool isArabic = true,
+  }) async {
+    _ensureCacheLoaded();
+    final targetLang = isArabic ? 'ar' : 'en';
+
+    final toFetch = <String>[];
+    for (final raw in texts) {
+      if (raw == null) continue;
+      final trimmed = raw.trim();
+      if (trimmed.isEmpty) continue;
+      final lower = trimmed.toLowerCase();
+      final cacheKey = '${isArabic ? "en_ar" : "ar_en"}:$lower';
+
+      if (isArabic) {
+        if (_enToAr.containsKey(lower)) continue;
+        if (_dynamicCache.containsKey(cacheKey)) continue;
+        if (_pendingTranslations.contains(cacheKey)) continue;
+        if (RegExp(r'[\u0600-\u06FF]').hasMatch(trimmed) &&
+            !RegExp(r'[a-zA-Z]').hasMatch(trimmed)) {
+          continue;
+        }
+      } else {
+        if (arToEn.containsKey(lower)) continue;
+        if (_dynamicCache.containsKey(cacheKey)) continue;
+        if (_pendingTranslations.contains(cacheKey)) continue;
+        if (!RegExp(r'[\u0600-\u06FF]').hasMatch(trimmed)) continue;
+      }
+      toFetch.add(trimmed);
+    }
+
+    if (toFetch.isEmpty) return;
+
+    // Process in batches of 4 concurrent requests
+    const batchSize = 4;
+    for (var i = 0; i < toFetch.length; i += batchSize) {
+      final end = (i + batchSize < toFetch.length) ? i + batchSize : toFetch.length;
+      final chunk = toFetch.sublist(i, end);
+      await Future.wait(
+        chunk.map((item) => _fetchAndCacheTranslation(item, targetLang: targetLang)),
+      );
     }
   }
 
@@ -359,12 +906,21 @@ class DataTranslator {
     if (specialCases.containsKey(s.toLowerCase().trim())) {
       return specialCases[s.toLowerCase().trim()]!;
     }
-    return s.split(' ').map((word) {
-      if (word.isEmpty) return word;
+    const minorWords = {'of', 'and', 'the', 'in', 'on', 'at', 'to', 'for', 'a', 'an'};
+    final words = s.split(' ');
+    for (var i = 0; i < words.length; i++) {
+      final word = words[i];
+      if (word.isEmpty) continue;
       final wClean = word.toLowerCase().replaceAll(RegExp(r'[^a-z]'), '');
-      if (wClean == 'uae') return word.toUpperCase();
-      return word[0].toUpperCase() + word.substring(1);
-    }).join(' ');
+      if (wClean == 'uae') {
+        words[i] = word.toUpperCase();
+      } else if (i > 0 && minorWords.contains(wClean)) {
+        words[i] = word.toLowerCase();
+      } else {
+        words[i] = word[0].toUpperCase() + word.substring(1);
+      }
+    }
+    return words.join(' ');
   }
 }
 

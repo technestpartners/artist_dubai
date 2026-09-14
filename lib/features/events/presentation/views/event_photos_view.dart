@@ -6,13 +6,13 @@ import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
-import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../domain/models/art_event_model.dart';
 import '../widgets/event_gallery_modal.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../../../core/utils/data_translator.dart';
 
 class EventPhotosView extends StatefulWidget {
   const EventPhotosView({super.key});
@@ -27,14 +27,6 @@ class _EventPhotosViewState extends State<EventPhotosView> {
   StreamSubscription<bool>? _authSub;
   StreamSubscription<List<ArtEventModel>>? _eventsSub;
   StreamSubscription<List<Map<String, dynamic>>>? _galleriesSub;
-
-  bool get _isLoggedIn {
-    try {
-      return sl<StorageService>().getBool('is_logged_in') ?? false;
-    } catch (_) {
-      return false;
-    }
-  }
 
   @override
   void initState() {
@@ -59,10 +51,16 @@ class _EventPhotosViewState extends State<EventPhotosView> {
     _galleriesSub = sl<LiveSyncService>().galleriesStream.listen((_) {
       _fetchEventPhotos(forceRefresh: true);
     });
+    DataTranslator.translationNotifier.addListener(_onTranslationChanged);
+  }
+
+  void _onTranslationChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
     _authSub?.cancel();
     _eventsSub?.cancel();
     _galleriesSub?.cancel();
@@ -232,6 +230,32 @@ class _EventPhotosViewState extends State<EventPhotosView> {
             child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Back Button Row
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white, size: 22),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go(RouteNames.events);
+                        }
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      AppLocalizations.of(context).back,
+                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+
               // 1. Header Section
               Padding(
                 padding: const EdgeInsets.only(left: 4, bottom: 4),
@@ -256,10 +280,8 @@ class _EventPhotosViewState extends State<EventPhotosView> {
                 ),
               ),
 
-              // 2. Galleries Card List or Auth Gate
-              if (!_isLoggedIn) ...[
-                _buildAuthGate(context),
-              ] else if (_isLoading)
+              // 2. Galleries Card List
+              if (_isLoading)
                 const Center(
                   child: Padding(
                     padding: EdgeInsets.all(32.0),
@@ -301,7 +323,7 @@ class _EventPhotosViewState extends State<EventPhotosView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            gallery.title,
+                            gallery.title.trData(context),
                             style: const TextStyle(
                               fontSize: 16.5,
                               fontWeight: FontWeight.bold,
@@ -309,9 +331,9 @@ class _EventPhotosViewState extends State<EventPhotosView> {
                             ),
                           ),
                           if (gallery.subtitle != null && gallery.subtitle!.isNotEmpty) ...[
-                            const SizedBox(height: 3),
-                            Text(
-                              gallery.subtitle!,
+                             const SizedBox(height: 3),
+                             Text(
+                              gallery.subtitle!.trData(context),
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Colors.white.withValues(alpha: 0.8),
@@ -364,158 +386,6 @@ class _EventPhotosViewState extends State<EventPhotosView> {
       ),
     ),
     bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
-    );
-  }
-
-  Widget _buildAuthGate(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(top: 8, bottom: 30),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 68,
-            height: 68,
-            decoration: BoxDecoration(
-              color: const Color(0xFF6B1C9B).withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.photo_library_rounded,
-                size: 34,
-                color: Color(0xFF6B1C9B),
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
-          const Text(
-            'Explore Dubai Event Photos',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF1E293B),
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Log in or sign up with your email to view high-resolution photo galleries, event highlights, and exhibition moments across Dubai.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13.5,
-              height: 1.45,
-              color: Color(0xFF64748B),
-            ),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            height: 46,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6B1C9B),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              onPressed: () async {
-                final loggedIn = await context.push(RouteNames.register, extra: 'user');
-                if (loggedIn == true || _isLoggedIn) {
-                  if (mounted) setState(() {});
-                }
-              },
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.person_add_outlined, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    AppLocalizations.of(context).signUpFree,
-                    style: const TextStyle(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            height: 46,
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF6B1C9B),
-                side: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              onPressed: () async {
-                final loggedIn = await context.push(RouteNames.login);
-                if (loggedIn == true || _isLoggedIn) {
-                  if (mounted) setState(() {});
-                }
-              },
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.login_rounded, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${AppLocalizations.of(context).alreadyHaveAccount}${AppLocalizations.of(context).signInNow}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.lock_outline_rounded, size: 16, color: Color(0xFF94A3B8)),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Access is free. Simply sign in so we can provide you with gallery opening and exhibition updates.',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

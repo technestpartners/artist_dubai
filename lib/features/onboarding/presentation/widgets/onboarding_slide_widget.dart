@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/data_translator.dart';
 import '../../domain/models/onboarding_item.dart';
 
 class OnboardingSlideWidget extends StatelessWidget {
@@ -15,20 +16,44 @@ class OnboardingSlideWidget extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const Spacer(flex: 3),
-          // Native 3D Emoji Icon matching the screenshots exactly
+          // App Icon or Emoji
           Center(
-            child: Text(
-              item.emoji,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 68, height: 1.1),
-            ),
+            child: item.imagePath != null
+                ? Container(
+                    width: 112,
+                    height: 112,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.35),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                        BoxShadow(
+                          color: const Color(0xFF6B1C9B).withValues(alpha: 0.35),
+                          blurRadius: 24,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: Image.asset(
+                      item.imagePath!,
+                      fit: BoxFit.contain,
+                    ),
+                  )
+                : Text(
+                    item.emoji,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 68, height: 1.1),
+                  ),
           ),
           const SizedBox(height: 38),
 
           // Title
           Center(
             child: Text(
-              item.title,
+              item.title.trData(context),
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.white,
@@ -46,7 +71,7 @@ class OnboardingSlideWidget extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
-                item.description,
+                item.description.trData(context),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Color(0xFFE0DBE5),

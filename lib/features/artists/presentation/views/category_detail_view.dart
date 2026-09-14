@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
@@ -11,6 +10,7 @@ import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/utils/data_translator.dart';
+import '../../../../core/utils/share_helper.dart';
 import '../../domain/models/artist_model.dart';
 import 'artist_detail_view.dart';
 
@@ -81,10 +81,17 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
         });
       }
     });
+
+    DataTranslator.translationNotifier.addListener(_onTranslationChanged);
+  }
+
+  void _onTranslationChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
     _artistSub?.cancel();
     _favSub?.cancel();
     _searchController.dispose();
@@ -124,31 +131,12 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
 
   void _shareArtist(ArtistModel artist) {
     final name = artist.name.isEmpty ? 'Artist' : artist.name;
-    final id = artist.id;
-    Clipboard.setData(
-      ClipboardData(
-        text: 'Check out $name on Artist Dubai: https://artistdubai.com/artists/$id',
-      ),
-    );
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Profile link for $name copied to clipboard!',
-                style: const TextStyle(fontWeight: FontWeight.w500),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: const Color(0xFF6A2777),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
+    ShareHelper.shareArtist(
+      context: context,
+      artistId: artist.id,
+      name: name,
+      category: artist.category,
+      avatarUrl: artist.avatarUrl,
     );
   }
 
@@ -1081,11 +1069,11 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
   }
 
   Widget _buildArtworkCard(Map<String, dynamic> item) {
-    final title = (item['title'] ?? 'Artwork').toString();
-    final artist = (item['artist_name'] ?? item['artist'] ?? 'Artist').toString();
-    final medium = (item['medium'] ?? '').toString();
-    final dimensions = (item['dimensions'] ?? '').toString();
-    final description = (item['description'] ?? '').toString();
+    final title = (item['title'] ?? 'Artwork').toString().trData(context);
+    final artist = (item['artist_name'] ?? item['artist'] ?? 'Artist').toString().trData(context);
+    final medium = (item['medium'] ?? '').toString().trData(context);
+    final dimensions = (item['dimensions'] ?? '').toString().trData(context);
+    final description = (item['description'] ?? '').toString().trData(context);
     final imageUrl = (item['image_url'] ?? item['image'] ?? '').toString();
     final isFeatured = item['is_featured'] == 1 ||
         item['is_featured'] == true ||

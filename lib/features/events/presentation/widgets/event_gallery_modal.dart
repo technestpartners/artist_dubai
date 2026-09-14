@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../domain/models/art_event_model.dart';
 import '../../../../core/widgets/app_cached_image.dart';
+import '../../../../core/utils/data_translator.dart';
 
 class EventGalleryModal extends StatefulWidget {
   final ArtEventModel event;
@@ -69,10 +70,16 @@ class _EventGalleryModalState extends State<EventGalleryModal> {
 
     _currentIndex = _images.isNotEmpty ? widget.initialIndex.clamp(0, _images.length - 1) : 0;
     _pageController = PageController(initialPage: _currentIndex);
+    DataTranslator.translationNotifier.addListener(_onTranslationChanged);
+  }
+
+  void _onTranslationChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
     _pageController.dispose();
     super.dispose();
   }
@@ -106,9 +113,9 @@ class _EventGalleryModalState extends State<EventGalleryModal> {
             children: [
               const Icon(Icons.broken_image_outlined, size: 64, color: Colors.white54),
               const SizedBox(height: 16),
-              const Text(
-                'No images available',
-                style: TextStyle(color: Colors.white70, fontSize: 16),
+              Text(
+                'No images available'.trData(context),
+                style: const TextStyle(color: Colors.white70, fontSize: 16),
               ),
               const SizedBox(height: 24),
               ElevatedButton(
@@ -117,7 +124,7 @@ class _EventGalleryModalState extends State<EventGalleryModal> {
                   foregroundColor: Colors.white,
                 ),
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
+                child: Text('Close'.trData(context)),
               ),
             ],
           ),
@@ -196,7 +203,7 @@ class _EventGalleryModalState extends State<EventGalleryModal> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                widget.gallery.title,
+                                widget.gallery.title.trData(context),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 16,
@@ -207,7 +214,7 @@ class _EventGalleryModalState extends State<EventGalleryModal> {
                               ),
                               if (widget.gallery.subtitle != null && widget.gallery.subtitle!.isNotEmpty)
                                 Text(
-                                  widget.gallery.subtitle!,
+                                  widget.gallery.subtitle!.trData(context),
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.75),
                                     fontSize: 12.5,
@@ -304,7 +311,7 @@ class _EventGalleryModalState extends State<EventGalleryModal> {
                       ),
                     ),
                     child: Text(
-                      currentImage.caption,
+                      currentImage.caption.trData(context),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 14,

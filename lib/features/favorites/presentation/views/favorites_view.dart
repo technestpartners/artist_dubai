@@ -13,6 +13,7 @@ import '../../../../core/widgets/app_top_bar.dart';
 import '../../../artists/domain/models/artist_model.dart';
 import '../../../events/domain/models/art_event_model.dart';
 import '../../../../core/utils/data_translator.dart';
+import '../../../../core/utils/share_helper.dart';
 import '../../../home/presentation/widgets/home_footer_widget.dart';
 
 class FavoritesView extends StatefulWidget {
@@ -45,6 +46,11 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
         });
       }
     });
+    DataTranslator.translationNotifier.addListener(_onTranslationChanged);
+  }
+
+  void _onTranslationChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _fetchFavorites({bool forceRefresh = false}) async {
@@ -67,6 +73,7 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
 
   @override
   void dispose() {
+    DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
     _favSub?.cancel();
     _tabController.dispose();
     super.dispose();
@@ -272,78 +279,98 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
       itemCount: _favoritedArtists.length,
       itemBuilder: (context, index) {
         final artist = _favoritedArtists[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 14),
-          decoration: BoxDecoration(
-            color: Colors.white,
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFCBD5E1)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
+            onTap: () => context.go(RouteNames.artistDetailWithId(artist.id)),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFCBD5E1)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                ClipOval(
-                  child: Container(
-                    width: 56,
-                    height: 56,
-                    color: const Color(0xFFF3E8FF),
-                    child: artist.avatarUrl.isNotEmpty
-                        ? AppCachedImage(
-                            imageUrl: artist.avatarUrl,
-                            width: 56,
-                            height: 56,
-                            fit: BoxFit.cover,
-                            errorWidget: Center(
-                              child: Text(
-                                artist.name.isNotEmpty ? artist.name[0].toUpperCase() : 'A',
-                                style: const TextStyle(color: Color(0xFF6A2777), fontWeight: FontWeight.bold, fontSize: 20),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    ClipOval(
+                      child: Container(
+                        width: 56,
+                        height: 56,
+                        color: const Color(0xFFF3E8FF),
+                        child: artist.avatarUrl.isNotEmpty
+                            ? AppCachedImage(
+                                imageUrl: artist.avatarUrl,
+                                width: 56,
+                                height: 56,
+                                fit: BoxFit.cover,
+                                errorWidget: Center(
+                                  child: Text(
+                                    artist.name.isNotEmpty ? artist.name[0].toUpperCase() : 'A',
+                                    style: const TextStyle(color: Color(0xFF6A2777), fontWeight: FontWeight.bold, fontSize: 20),
+                                  ),
+                                ),
+                              )
+                            : Center(
+                                child: Text(
+                                  artist.name.isNotEmpty ? artist.name[0].toUpperCase() : 'A',
+                                  style: const TextStyle(color: Color(0xFF6A2777), fontWeight: FontWeight.bold, fontSize: 20),
+                                ),
                               ),
-                            ),
-                          )
-                        : Center(
-                            child: Text(
-                              artist.name.isNotEmpty ? artist.name[0].toUpperCase() : 'A',
-                              style: const TextStyle(color: Color(0xFF6A2777), fontWeight: FontWeight.bold, fontSize: 20),
-                            ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            artist.localizedName(context),
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                           ),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        artist.localizedName(context),
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                          const SizedBox(height: 2),
+                          Text(
+                            artist.localizedCategory(context),
+                            style: const TextStyle(fontSize: 13, color: Color(0xFF6A2777), fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            artist.localizedLocation(context),
+                            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        artist.localizedCategory(context),
-                        style: const TextStyle(fontSize: 13, color: Color(0xFF6A2777), fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        artist.localizedLocation(context),
-                        style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                      ),
-                    ],
-                  ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.share_outlined, color: Color(0xFF6A2777), size: 20),
+                      onPressed: () {
+                        ShareHelper.shareArtist(
+                          context: context,
+                          artistId: artist.id,
+                          name: artist.name,
+                          category: artist.category,
+                          avatarUrl: artist.avatarUrl,
+                        );
+                      },
+                      tooltip: 'Share artist',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.favorite, color: Color(0xFFEF4444)),
+                      onPressed: () => _removeArtist(index),
+                      tooltip: 'Remove from favorites',
+                    ),
+                  ],
                 ),
-                IconButton(
-                  icon: const Icon(Icons.favorite, color: Color(0xFFEF4444)),
-                  onPressed: () => _removeArtist(index),
-                  tooltip: 'Remove from favorites',
-                ),
-              ],
+              ),
             ),
           ),
         );
@@ -367,95 +394,119 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
       itemCount: _favoritedEvents.length,
       itemBuilder: (context, index) {
         final event = _favoritedEvents[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 14),
-          decoration: BoxDecoration(
-            color: Colors.white,
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFCBD5E1)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (event.imageUrl != null && event.imageUrl!.isNotEmpty)
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-                  child: AppCachedImage(
-                    imageUrl: event.imageUrl!,
-                    height: 140,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
+            onTap: () => context.go(RouteNames.eventDetailWithId(event.id)),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFCBD5E1)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
                   ),
-                ),
-              Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF3E8FF),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            event.localizedCategory(context),
-                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF6A2777)),
-                          ),
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          icon: const Icon(Icons.favorite, color: Color(0xFFEF4444)),
-                          onPressed: () => _removeEvent(index),
-                          tooltip: 'Remove from favorites',
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      event.localizedTitle(context),
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${event.formattedDate} • ${event.localizedLocation(context)}',
-                      style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          event.localizedPrice(context),
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF6A2777),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          ),
-                          onPressed: () => context.go(RouteNames.events),
-                          child: Text(l10n.viewDetails, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                ],
               ),
-            ],
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (event.imageUrl != null && event.imageUrl!.isNotEmpty)
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                      child: AppCachedImage(
+                        imageUrl: event.imageUrl!,
+                        height: 140,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF3E8FF),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                event.localizedCategory(context),
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF6A2777)),
+                              ),
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              icon: const Icon(Icons.share_outlined, color: Color(0xFF6A2777), size: 20),
+                              onPressed: () {
+                                ShareHelper.shareEvent(
+                                  context: context,
+                                  eventId: event.id,
+                                  title: event.title,
+                                  dateTime: event.formattedDate,
+                                  location: event.location,
+                                  imageUrl: event.imageUrl,
+                                );
+                              },
+                              tooltip: 'Share event',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                            const SizedBox(width: 10),
+                            IconButton(
+                              icon: const Icon(Icons.favorite, color: Color(0xFFEF4444)),
+                              onPressed: () => _removeEvent(index),
+                              tooltip: 'Remove from favorites',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          event.localizedTitle(context),
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${event.formattedDate} • ${event.localizedLocation(context)}',
+                          style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              event.localizedPrice(context),
+                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                            ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF6A2777),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              ),
+                              onPressed: () => context.go(RouteNames.eventDetailWithId(event.id)),
+                              child: Text(l10n.viewDetails, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         );
       },
@@ -478,68 +529,93 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
       itemCount: _favoritedArtworks.length,
       itemBuilder: (context, index) {
         final item = _favoritedArtworks[index];
-        final title = item['title']?.toString() ?? 'Artwork';
+        final title = (item['title']?.toString() ?? 'Artwork').trData(context);
         final artist = (item['artist_name']?.toString() ?? item['artist']?.toString() ?? 'Artist').trData(context);
         final year = item['year']?.toString() ?? '2025';
         final medium = (item['medium']?.toString() ?? item['details']?.toString() ?? 'Mixed Media').trData(context);
         final dimensions = item['dimensions']?.toString() ?? '120 x 80 cm';
         final image = item['image_url']?.toString() ?? item['image']?.toString() ?? '';
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 14),
-          decoration: BoxDecoration(
-            color: Colors.white,
+        final artistId = item['artist_id']?.toString() ?? item['artistId']?.toString() ?? '';
+
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFCBD5E1)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
+            onTap: artistId.isNotEmpty
+                ? () => context.go('${RouteNames.artistDetailWithId(artistId)}?artwork=${item['id']}')
+                : null,
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFCBD5E1)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: AppCachedImage(
-                    imageUrl: image,
-                    width: 80,
-                    height: 80,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: AppCachedImage(
+                        imageUrl: image,
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        Localizations.localeOf(context).languageCode == 'ar' ? 'بواسطة $artist' : 'By $artist',
-                        style: const TextStyle(fontSize: 12.5, color: Color(0xFF6A2777), fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            Localizations.localeOf(context).languageCode == 'ar' ? 'بواسطة $artist' : 'By $artist',
+                            style: const TextStyle(fontSize: 12.5, color: Color(0xFF6A2777), fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '$year • $medium • $dimensions',
+                            style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '$year • $medium • $dimensions',
-                        style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
-                      ),
-                    ],
-                  ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.share_outlined, color: Color(0xFF6A2777), size: 20),
+                      onPressed: () {
+                        ShareHelper.shareArtwork(
+                          context: context,
+                          artworkId: item['id']?.toString() ?? '',
+                          title: title,
+                          artistName: artist,
+                          artistId: artistId.isNotEmpty ? artistId : null,
+                          imageUrl: image,
+                        );
+                      },
+                      tooltip: 'Share artwork',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.favorite, color: Color(0xFFEF4444)),
+                      onPressed: () => _removeArtwork(index),
+                      tooltip: 'Remove artwork',
+                    ),
+                  ],
                 ),
-                IconButton(
-                  icon: const Icon(Icons.favorite, color: Color(0xFFEF4444)),
-                  onPressed: () => _removeArtwork(index),
-                  tooltip: 'Remove artwork',
-                ),
-              ],
+              ),
             ),
           ),
         );

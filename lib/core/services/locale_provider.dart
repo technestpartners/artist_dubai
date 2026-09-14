@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../di/injection_container.dart';
+import '../utils/data_translator.dart';
 import 'api_service.dart';
 import 'live_sync_service.dart';
 import 'storage_service.dart';
@@ -47,6 +48,7 @@ class LocaleProvider extends ChangeNotifier {
 
     // 2. Rebuild UI with new locale
     notifyListeners();
+    DataTranslator.translationNotifier.value++;
 
     // 3. Force live sync stream refresh across all pages
     try {

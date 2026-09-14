@@ -34,4 +34,7 @@ class RouteNames {
   static const String adminDashboard = '/admin';
   static const String eventDetail = '/event-detail';
   static const String planPayment = '/plan-payment';
+
+  static String artistDetailWithId(String id) => '/artist/$id';
+  static String eventDetailWithId(String id) => '/event-detail?id=$id';
 }

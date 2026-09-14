@@ -1,6 +1,7 @@
 import 'dart:async';
+import 'dart:ui';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
@@ -14,6 +15,7 @@ import '../../../../core/widgets/app_top_bar.dart';
 import '../../domain/models/art_event_model.dart';
 import '../../../artists/domain/models/artist_model.dart';
 import '../../../../core/utils/data_translator.dart';
+import '../../../../core/utils/share_helper.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class EventsView extends StatefulWidget {
@@ -25,35 +27,63 @@ class EventsView extends StatefulWidget {
 }
 
 class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
-  late int _selectedTabIndex;
+  late int _selectedViewMode; // 0 = What's On hub, 1 = Discover / Filtered results, 2 = Favourites
+
+  final ScrollController _featuredScrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   String _selectedCategory = 'All Categories';
+  String _activeDateFilter = 'All'; // 'All', 'Today', 'This Week', 'Custom Dates'
+  DateTimeRange? _customDateRange;
+  String _activePriceFilter = 'All'; // 'All', 'Free', 'Paid'
+  String _sortBy = 'Soonest'; // 'Soonest', 'Title A-Z', 'Price'
+
+  static const List<String> _defaultCategories = [
+    'All Categories',
+    'Arabic Calligraphy',
+    'Calligraphy & Typography',
+    'Contemporary Painting',
+    'Art Exhibition',
+    'Digital Art & Sculpture',
+    'Photography',
+    'Abstract Painting',
+    'Ceramics & Pottery',
+    'Art Workshop',
+    'Cultural Festival',
+    'Gallery Opening',
+    'Music & Concerts',
+    'Sports & Fitness',
+  ];
+
   List<ArtEventModel> _allEvents = [];
-  List<String> _categories = ['All Categories'];
+  late List<String> _categories = List<String>.from(_defaultCategories);
   final Set<String> _likedEventIds = {};
-  final GlobalKey _categorySelectorKey = GlobalKey();
-  OverlayEntry? _categoryOverlayEntry;
-  bool _isCategoryListExpanded = false;
+
   StreamSubscription<List<ArtEventModel>>? _eventsSub;
   StreamSubscription<Map<String, dynamic>>? _favSub;
   StreamSubscription<List<CategoryInfo>>? _catSub;
   StreamSubscription<bool>? _authSub;
   Timer? _periodicSyncTimer;
 
+  // Artist Dubai Brand Palette
+  static const Color _primaryPurple = Color(0xFF6B1C9B);
+  static const Color _darkBg = Color(0xFF6B1C9B);
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _selectedTabIndex = widget.initialTabIndex;
+    _selectedViewMode = widget.initialTabIndex == 1 ? 1 : 0;
     _fetchEvents();
     _fetchCategories();
+
     if (!_isTesting) {
-      _periodicSyncTimer = Timer.periodic(const Duration(seconds: 8), (_) {
+      _periodicSyncTimer = Timer.periodic(const Duration(seconds: 12), (_) {
         if (mounted) {
           _fetchEvents(forceRefresh: true);
         }
       });
     }
+
     _authSub = sl<LiveSyncService>().authStream.listen((isLoggedIn) {
       if (mounted) {
         setState(() {});
@@ -62,6 +92,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
         }
       }
     });
+
     _eventsSub = sl<LiveSyncService>().eventsStream.listen((events) {
       if (mounted) {
         setState(() {
@@ -69,13 +100,21 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
         });
       }
     });
+
     _catSub = sl<LiveSyncService>().categoriesStream.listen((cats) {
       if (mounted && cats.isNotEmpty) {
+        final merged = <String>{..._defaultCategories};
+        for (final c in cats) {
+          if (c.name.trim().isNotEmpty) {
+            merged.add(c.name.trim());
+          }
+        }
         setState(() {
-          _categories = ['All Categories', ...cats.map((c) => c.name)];
+          _categories = merged.toList();
         });
       }
     });
+
     _favSub = sl<LiveSyncService>().favoritesStream.listen((favData) {
       if (mounted && favData.isNotEmpty) {
         final favEvents = (favData['events'] as List<ArtEventModel>?) ?? [];
@@ -86,6 +125,12 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
         });
       }
     });
+
+    DataTranslator.translationNotifier.addListener(_onTranslationChanged);
+  }
+
+  void _onTranslationChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -95,11 +140,28 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
     }
   }
 
-  void _hideCategoryOverlay() {
-    _categoryOverlayEntry?.remove();
-    _categoryOverlayEntry = null;
-    if (mounted) {
-      setState(() => _isCategoryListExpanded = false);
+  @override
+  void dispose() {
+    DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
+    WidgetsBinding.instance.removeObserver(this);
+    _periodicSyncTimer?.cancel();
+    _authSub?.cancel();
+    _eventsSub?.cancel();
+    _favSub?.cancel();
+    _catSub?.cancel();
+    _searchController.dispose();
+    _featuredScrollController.dispose();
+    super.dispose();
+  }
+
+  bool get _isTesting =>
+      WidgetsBinding.instance.runtimeType.toString().contains('Test');
+
+  bool get _isLoggedIn {
+    try {
+      return sl<StorageService>().getBool('is_logged_in') ?? false;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -129,32 +191,221 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
     } catch (_) {}
   }
 
-  void _shareEvent(ArtEventModel event) {
-    Clipboard.setData(
-      ClipboardData(
-        text: 'Check out ${event.title} on Artist Dubai: https://artistdubai.com/events/${event.id}',
-      ),
-    );
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Event link for "${event.title}" copied to clipboard!',
-                style: const TextStyle(fontWeight: FontWeight.w500),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: const Color(0xFF6A2777),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+  Future<void> _fetchCategories() async {
+    try {
+      final cats = await sl<ApiService>().getCategories(type: 'event');
+      if (mounted && cats.isNotEmpty) {
+        final merged = <String>{..._defaultCategories};
+        for (final c in cats) {
+          if (c.name.trim().isNotEmpty) {
+            merged.add(c.name.trim());
+          }
+        }
+        setState(() {
+          _categories = merged.toList();
+        });
+      }
+    } catch (_) {}
+  }
+
+  List<ArtEventModel> get _combinedEvents {
+    if (_allEvents.isEmpty) {
+      return ArtEventModel.mockEvents;
+    }
+    final list = List<ArtEventModel>.from(_allEvents);
+    final existingTitles = list.map((e) => e.title.toLowerCase().trim()).toSet();
+    for (final mock in ArtEventModel.mockEvents) {
+      if (!existingTitles.contains(mock.title.toLowerCase().trim())) {
+        list.add(mock);
+      }
+    }
+    return list;
+  }
+
+  bool get _isFilterActive =>
+      _searchController.text.isNotEmpty ||
+      _activeDateFilter != 'All' ||
+      _selectedCategory != 'All Categories' ||
+      _activePriceFilter != 'All';
+
+  void _clearAllFilters() {
+    setState(() {
+      _searchController.clear();
+      _activeDateFilter = 'All';
+      _customDateRange = null;
+      _activePriceFilter = 'All';
+      _selectedCategory = 'All Categories';
+      _sortBy = 'Soonest';
+      _selectedViewMode = 0;
+    });
+  }
+
+  double _extractPrice(String price) {
+    final lower = price.toLowerCase();
+    if (lower.contains('free') || lower.contains('مجاني')) return 0.0;
+    final match = RegExp(r'\d+(\.\d+)?').firstMatch(lower);
+    if (match != null) {
+      return double.tryParse(match.group(0)!) ?? 0.0;
+    }
+    return 0.0;
+  }
+
+  bool _matchesCategory(ArtEventModel e, String selectedCategory) {
+    final sel = selectedCategory.trim().toLowerCase();
+    if (sel == 'all categories' || sel == 'all' || sel == 'الكل' || sel == 'جميع الفئات' || sel.isEmpty) {
+      return true;
+    }
+
+    final cat = e.category.trim().toLowerCase();
+    if (cat == sel || cat.contains(sel) || sel.contains(cat)) return true;
+
+    // Tag matching
+    for (final tag in e.tags) {
+      final t = tag.trim().toLowerCase();
+      if (t == sel || t.contains(sel) || sel.contains(t)) return true;
+    }
+
+    // Token keyword match (tokens of length >= 4)
+    final selTokens = sel.split(RegExp(r'[\s&,/]+')).where((w) => w.length >= 4).toList();
+    for (final token in selTokens) {
+      if (cat.contains(token)) return true;
+      for (final tag in e.tags) {
+        if (tag.toLowerCase().contains(token)) return true;
+      }
+    }
+
+    // Title / Description matching
+    if (e.title.toLowerCase().contains(sel) || e.description.toLowerCase().contains(sel)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  bool _matchesDate(ArtEventModel e, String filter, DateTimeRange? customRange) {
+    if (filter == 'All') return true;
+
+    final rawDate = '${e.dateTime} ${e.formattedDate}'.toLowerCase();
+
+    if (filter == 'Today') {
+      if (rawDate.contains('today') || rawDate.contains('اليوم')) return true;
+      final now = DateTime.now();
+      final todayIso = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      if (rawDate.contains(todayIso)) return true;
+
+      final months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+      final mStr = months[now.month - 1];
+      final dayStr = now.day.toString();
+      if (rawDate.contains(mStr) && rawDate.contains(dayStr)) return true;
+
+      return _isEventActiveOnDate(e, now);
+    }
+
+    if (filter == 'This Week') {
+      if (rawDate.contains('today') || rawDate.contains('this week') || rawDate.contains('هذا الأسبوع') || rawDate.contains('tomorrow')) {
+        return true;
+      }
+      final now = DateTime.now();
+      for (int i = 0; i < 7; i++) {
+        final day = now.add(Duration(days: i));
+        final months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+        final mStr = months[day.month - 1];
+        final dayStr = day.day.toString();
+        if (rawDate.contains(mStr) && rawDate.contains(dayStr)) return true;
+        if (_isEventActiveOnDate(e, day)) return true;
+      }
+      return false;
+    }
+
+    if (filter == 'Custom Dates' && customRange != null) {
+      final start = customRange.start;
+      final end = customRange.end;
+      for (var d = start; !d.isAfter(end); d = d.add(const Duration(days: 1))) {
+        final months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+        final mStr = months[d.month - 1];
+        final dayStr = d.day.toString();
+        if (rawDate.contains(mStr) && rawDate.contains(dayStr)) return true;
+        if (_isEventActiveOnDate(e, d)) return true;
+      }
+      return false;
+    }
+
+    return true;
+  }
+
+  bool _isEventActiveOnDate(ArtEventModel e, DateTime target) {
+    final isoMatches = RegExp(r'\b\d{4}-\d{2}-\d{2}\b').allMatches(e.dateTime);
+    if (isoMatches.isNotEmpty) {
+      try {
+        final dates = isoMatches.map((m) => DateTime.parse(m.group(0)!)).toList();
+        if (dates.length == 1) {
+          final d = dates.first;
+          return d.year == target.year && d.month == target.month && d.day == target.day;
+        } else if (dates.length >= 2) {
+          final start = dates[0];
+          final end = dates[1];
+          return !target.isBefore(start) && !target.isAfter(end);
+        }
+      } catch (_) {}
+    }
+    return false;
+  }
+
+  bool _matchesPrice(ArtEventModel e, String filter) {
+    if (filter == 'All') return true;
+    final p = e.price.trim().toLowerCase();
+    final isFree = p == 'free' || p == '0' || p == '0 aed' || p.contains('مجاني') || p.isEmpty;
+    if (filter == 'Free') return isFree;
+    if (filter == 'Paid') return !isFree;
+    return true;
+  }
+
+  List<ArtEventModel> _getFilteredEvents() {
+    final query = _searchController.text.trim().toLowerCase();
+
+    var list = _combinedEvents.where((e) {
+      if (!e.isActive) return false;
+      final st = e.status.toLowerCase().trim();
+      if (st == 'cancelled' || st == 'inactive' || st == 'draft' || st == 'deleted' || st == 'pending') {
+        return false;
+      }
+
+      // 1. Category Filter
+      if (!_matchesCategory(e, _selectedCategory)) return false;
+
+      // 2. Query Filter
+      if (query.isNotEmpty) {
+        final matchesQuery = e.title.toLowerCase().contains(query) ||
+            e.localizedTitle(context).toLowerCase().contains(query) ||
+            e.description.toLowerCase().contains(query) ||
+            e.category.toLowerCase().contains(query) ||
+            e.organizer.toLowerCase().contains(query) ||
+            e.location.toLowerCase().contains(query) ||
+            e.tags.any((t) => t.toLowerCase().contains(query));
+        if (!matchesQuery) return false;
+      }
+
+      // 3. Price Filter
+      if (!_matchesPrice(e, _activePriceFilter)) return false;
+
+      // 4. Date Filter
+      if (!_matchesDate(e, _activeDateFilter, _customDateRange)) return false;
+
+      return true;
+    }).toList();
+
+    // Sorting
+    if (_sortBy == 'Title (A - Z)' || _sortBy == 'Title A-Z') {
+      list.sort((a, b) => a.title.compareTo(b.title));
+    } else if (_sortBy == 'Price: Low to High') {
+      list.sort((a, b) => _extractPrice(a.price).compareTo(_extractPrice(b.price)));
+    } else if (_sortBy == 'Price: High to Low' || _sortBy == 'Price') {
+      list.sort((a, b) => _extractPrice(b.price).compareTo(_extractPrice(a.price)));
+    } else if (_sortBy == 'Most Popular') {
+      list.sort((a, b) => b.attendeesCount.compareTo(a.attendeesCount));
+    }
+
+    return list;
   }
 
   void _toggleEventLike(ArtEventModel event) async {
@@ -186,7 +437,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                 ? 'Removed "${event.title}" from saved events'
                 : 'Saved "${event.title}" to favorites! ❤️',
           ),
-          backgroundColor: wasLiked ? null : const Color(0xFF6A2777),
+          backgroundColor: wasLiked ? null : _primaryPurple,
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
         ),
@@ -194,377 +445,72 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _fetchCategories() async {
-    try {
-      final cats = await sl<ApiService>().getCategories(type: 'event');
-      if (mounted && cats.isNotEmpty) {
-        setState(() {
-          _categories = ['All Categories', ...cats.map((c) => c.name)];
-        });
-      }
-    } catch (_) {}
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _periodicSyncTimer?.cancel();
-    _authSub?.cancel();
-    _eventsSub?.cancel();
-    _favSub?.cancel();
-    _catSub?.cancel();
-    _searchController.dispose();
-    _categoryOverlayEntry?.remove();
-    _categoryOverlayEntry = null;
-    super.dispose();
-  }
-
-  bool get _isTesting =>
-      WidgetsBinding.instance.runtimeType.toString().contains('Test');
-
-  bool get _isLoggedIn {
-    try {
-      return sl<StorageService>().getBool('is_logged_in') ?? false;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  void _handleProtectedAction({
-    required VoidCallback onAuthorized,
-    required String promptMessage,
-  }) {
-    if (_isLoggedIn) {
-      onAuthorized();
-    } else {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      if (mounted) {
-        context.push(RouteNames.login);
-      }
-    }
-  }
-
   void _showEventDetails(ArtEventModel event) {
-    context.push(RouteNames.eventDetail, extra: event);
+    context.push(RouteNames.eventDetailWithId(event.id), extra: event);
   }
 
-  String _getCategoryTitle(String cat, AppLocalizations l10n) {
-    switch (cat.trim().toLowerCase()) {
-      case 'all categories':
-        return l10n.categoryAll;
-      case 'art exhibition':
-        return l10n.categoryArtExhibition;
-      case 'gallery opening':
-        return l10n.categoryGalleryOpening;
-      case 'art workshop':
-        return l10n.categoryArtWorkshop;
-      case 'artist talk':
-        return l10n.categoryArtistTalk;
-      case 'art fair':
-        return l10n.categoryArtFair;
-      case 'sculpture installation':
-        return l10n.categorySculptureInstallation;
-      case 'photography exhibition':
-        return l10n.categoryPhotographyExhibition;
-      case 'cultural festival':
-        return l10n.categoryCulturalFestival;
-      case 'art competition':
-        return l10n.categoryArtCompetition;
-      case 'community art project':
-        return l10n.categoryCommunityArtProject;
-      default:
-        return cat.trData(context);
-    }
+  void _shareEvent(ArtEventModel event) {
+    ShareHelper.shareEvent(
+      context: context,
+      eventId: event.id,
+      title: event.title,
+      location: event.location,
+      imageUrl: event.imageUrl,
+      dateTime: event.dateTime,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final query = _searchController.text.trim().toLowerCase();
-
-    final filteredEvents =
-        _allEvents.where((e) {
-          if (!e.isActive) return false;
-          final st = e.status.toLowerCase().trim();
-          if (st == 'cancelled' || st == 'inactive' || st == 'draft' || st == 'deleted' || st == 'pending' || st == 'pending_approval') return false;
-
-          final selLower = _selectedCategory.toLowerCase().trim();
-          final eCatLower = e.category.toLowerCase().trim();
-          final matchesCategory =
-              selLower == 'all categories' ||
-              selLower == 'الكل' ||
-              selLower == 'جميع الفئات' ||
-              eCatLower == selLower ||
-              DataTranslator.translate(eCatLower, isArabic: false).toLowerCase() == DataTranslator.translate(selLower, isArabic: false).toLowerCase() ||
-              DataTranslator.translate(eCatLower, isArabic: true).toLowerCase() == DataTranslator.translate(selLower, isArabic: true).toLowerCase();
-
-          final matchesQuery =
-              query.isEmpty ||
-              e.title.toLowerCase().contains(query) ||
-              e.localizedTitle(context).toLowerCase().contains(query) ||
-              e.description.toLowerCase().contains(query) ||
-              e.localizedDescription(context).toLowerCase().contains(query) ||
-              e.organizer.toLowerCase().contains(query) ||
-              e.location.toLowerCase().contains(query) ||
-              e.localizedLocation(context).toLowerCase().contains(query);
-
-          return matchesCategory && matchesQuery;
-        }).toList();
-
     final rh = ResponsiveHelper.of(context);
-    final hPad = rh.horizontalPadding;
+    final filteredEvents = _getFilteredEvents();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF6B1C9B),
+      backgroundColor: _darkBg,
       appBar: const AppTopBar(),
       body: SafeArea(
         child: RefreshIndicator(
-          color: const Color(0xFF6A2777),
+          color: _primaryPurple,
           onRefresh: () => _fetchEvents(forceRefresh: true),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 12.0),
+            padding: EdgeInsets.symmetric(horizontal: rh.horizontalPadding, vertical: 12.0),
             child: Center(
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-              // Header Row (Back Arrow and Title matching reference)
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  InkWell(
-                    borderRadius: BorderRadius.circular(20),
-                    onTap: () {
-                      if (context.canPop()) {
-                        context.pop();
-                      } else {
-                        context.go(RouteNames.home);
-                      }
-                    },
-                    child: const Padding(
-                      padding: EdgeInsetsDirectional.only(end: 12.0, top: 4.0, bottom: 4.0),
-                      child: Icon(
-                        Icons.arrow_back,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.eventsTitle,
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          l10n.eventsSubtitle,
-                          style: const TextStyle(
-                            fontSize: 13.5,
-                            color: Color(0xFFE2D6F5),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
+                    // 1. Header with Title & Register Event Button (Artist Dubai Theme)
+                    _buildHeaderSection(),
+                    const SizedBox(height: 14),
 
-              // Action Row (Home Breadcrumb & Wide Create Event Button)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  InkWell(
-                    borderRadius: BorderRadius.circular(6),
-                    onTap: () => context.go(RouteNames.home),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.home_outlined,
-                            size: 18,
-                            color: Colors.white,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            l10n.home,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 40,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: const Color(0xFF6B1C9B),
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      onPressed: () {
-                        _handleProtectedAction(
-                          onAuthorized: () {
-                            context.push(RouteNames.createArtEvent);
-                          },
-                          promptMessage: 'Please log in to create an event',
-                        );
-                      },
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.add, size: 17, color: Color(0xFF6B1C9B)),
-                          const SizedBox(width: 5),
-                          Text(
-                            l10n.registerArtEvent,
-                            style: const TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF6B1C9B),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
+                    // 2. Search Field
+                    _buildSearchBar(),
+                    const SizedBox(height: 12),
 
-              if (!_isLoggedIn) ...[
-                _buildAuthGate(context),
-              ] else ...[
-                // Search Bar
-                TextField(
-                  controller: _searchController,
-                  onChanged: (_) => setState(() {}),
-                  style: const TextStyle(
-                    color: Color(0xFF1E293B),
-                    fontSize: 14.5,
-                  ),
-                  cursorColor: const Color(0xFF6B1C9B),
-                  decoration: InputDecoration(
-                    hintText: l10n.searchEventsHint,
-                    hintStyle: const TextStyle(
-                      color: Color(0xFF64748B),
-                      fontSize: 14.5,
-                    ),
-                    prefixIcon: const Icon(
-                      Icons.search,
-                      color: Color(0xFF64748B),
-                      size: 22,
-                    ),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? GestureDetector(
-                            onTap: () {
-                              _searchController.clear();
-                              setState(() {});
-                            },
-                            child: const Icon(
-                              Icons.close,
-                              color: Color(0xFF64748B),
-                              size: 20,
-                            ),
-                          )
-                        : null,
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(
-                        color: Color(0xFFCBD5E1),
-                        width: 1.0,
-                      ),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(
-                        color: Color(0xFFCBD5E1),
-                        width: 1.0,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(
-                        color: Color(0xFF6B1C9B),
-                        width: 1.5,
-                      ),
-                    ),
-                  ),
+                    // 3. Quick Date Filter Tabs: [ Today ] [ This Week ] [ Custom Dates ] (from reference)
+                    _buildQuickDateFilterTabs(),
+                    const SizedBox(height: 14),
+
+                    // 4. Secondary Filter Chips: [ Date ] [ Price ] [ Category ] [ Sort By ]
+                    _buildFilterChipsRow(),
+                    const SizedBox(height: 20),
+
+                    // 5. Active Filter Badges (if filtered)
+                    if (_isFilterActive)
+                      _buildActiveFilterBadges(),
+
+                    // 6. Main Content: If search/filter active or Discover mode selected, show Search Results; else show Featured + Recommended
+                    if (_selectedViewMode == 1 || _isFilterActive)
+                      _buildSearchResultsSection(filteredEvents)
+                    else
+                      _buildWhatsOnSections(filteredEvents),
+
+                    const SizedBox(height: 80),
+                  ],
                 ),
-                const SizedBox(height: 12),
-
-                // Category Selector Box (Floating Dropdown)
-                _buildCategorySelectorField(),
-                const SizedBox(height: 18),
-
-                // Events Cards List
-                if (filteredEvents.isEmpty)
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 40),
-                    alignment: Alignment.center,
-                    child: Column(
-                      children: [
-                        const Icon(
-                          Icons.event_busy_outlined,
-                          size: 48,
-                          color: Colors.white70,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          l10n.noEventsFound,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFFE2D6F5),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                else
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: filteredEvents.length,
-                    separatorBuilder:
-                        (context, index) => const SizedBox(height: 16),
-                    itemBuilder: (context, index) {
-                      final event = filteredEvents[index];
-                      return _buildEventCard(event);
-                    },
-                  ),
-                const SizedBox(height: 24),
-              ],
-              ],
-            ),
-            ),
+              ),
             ),
           ),
         ),
@@ -573,599 +519,1154 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildAuthGate(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(top: 16, bottom: 30),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 68,
-            height: 68,
-            decoration: BoxDecoration(
-              color: const Color(0xFF6B1C9B).withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.calendar_month_rounded,
-                size: 34,
-                color: Color(0xFF6B1C9B),
-              ),
+  // -------------------------------------------------------------
+  // Header Section (Artist Dubai Theme)
+  // -------------------------------------------------------------
+  Widget _buildHeaderSection() {
+    final l10n = AppLocalizations.of(context);
+    final canGoBack = Navigator.canPop(context);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        if (canGoBack)
+          InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: () => Navigator.pop(context),
+            child: const Padding(
+              padding: EdgeInsetsDirectional.only(end: 12.0, top: 4.0, bottom: 4.0),
+              child: Icon(Icons.arrow_back, color: Colors.white, size: 22),
             ),
           ),
-          const SizedBox(height: 18),
-          const Text(
-            'Explore Dubai Art Events',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF1E293B),
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Log in or sign up with your email to discover upcoming exhibitions, workshops, artist talks, and cultural events across Dubai.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13.5,
-              height: 1.45,
-              color: Color(0xFF64748B),
-            ),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            height: 46,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6B1C9B),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "What's On".trData(context),
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: -0.3,
                 ),
               ),
-              onPressed: () async {
-                final loggedIn = await context.push(RouteNames.register, extra: 'user');
-                if (loggedIn == true || _isLoggedIn) {
-                  if (mounted) setState(() {});
-                }
-              },
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.person_add_outlined, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    AppLocalizations.of(context).signUpFree,
-                    style: const TextStyle(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            height: 46,
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF6B1C9B),
-                side: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+              const SizedBox(height: 2),
+              Text(
+                l10n.eventsSubtitle,
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  color: Color(0xFFE2D6F5),
                 ),
               ),
-              onPressed: () async {
-                final loggedIn = await context.push(RouteNames.login);
-                if (loggedIn == true || _isLoggedIn) {
-                  if (mounted) setState(() {});
-                }
-              },
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.login_rounded, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${AppLocalizations.of(context).alreadyHaveAccount}${AppLocalizations.of(context).signInNow}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+            ],
+          ),
+        ),
+        // Create Event Button
+        SizedBox(
+          height: 38,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: _primaryPurple,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
               ),
             ),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: const Row(
+            onPressed: () {
+              if (_isLoggedIn) {
+                context.push(RouteNames.createArtEvent);
+              } else {
+                context.push(RouteNames.login);
+              }
+            },
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.lock_outline_rounded, size: 16, color: Color(0xFF94A3B8)),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Sign-in is completely free and only takes a moment so we can provide you with event updates.',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: Color(0xFF64748B),
-                    ),
+                const Icon(Icons.add, size: 16, color: _primaryPurple),
+                const SizedBox(width: 4),
+                Text(
+                  l10n.registerArtEvent,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: _primaryPurple,
                   ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildCategorySelectorField() {
+  // -------------------------------------------------------------
+  // Search Bar
+  // -------------------------------------------------------------
+  Widget _buildSearchBar() {
     return Container(
-      key: _categorySelectorKey,
-      child: InkWell(
-        onTap: () {
-          if (_isCategoryListExpanded) {
-            _hideCategoryOverlay();
-          } else {
-            _showCategoryOverlay();
-          }
-        },
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: _isCategoryListExpanded
-                  ? const Color(0xFF6A2777)
-                  : const Color(0xFF2E2E3E).withValues(alpha: 0.5),
-              width: _isCategoryListExpanded ? 1.5 : 1.0,
-            ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  _getCategoryTitle(_selectedCategory, AppLocalizations.of(context)),
-                  style: const TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF1E1E1E),
-                  ),
-                ),
-              ),
-              Icon(
-                _isCategoryListExpanded
-                    ? Icons.keyboard_arrow_up
-                    : Icons.keyboard_arrow_down,
-                color: const Color(0xFF5F6368),
-                size: 20,
-              ),
-            ],
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (_) => setState(() {}),
+        style: const TextStyle(color: Color(0xFF1E293B), fontSize: 14.5),
+        cursorColor: _primaryPurple,
+        decoration: InputDecoration(
+          hintText: 'Search Events'.trData(context),
+          hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 14.5),
+          prefixIcon: const Icon(Icons.search, color: Color(0xFF64748B), size: 22),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? GestureDetector(
+                  onTap: () {
+                    _searchController.clear();
+                    setState(() {});
+                  },
+                  child: const Icon(Icons.close, color: Color(0xFF64748B), size: 20),
+                )
+              : null,
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
           ),
         ),
       ),
     );
   }
 
-  void _showCategoryOverlay() {
-    _hideCategoryOverlay();
+  // -------------------------------------------------------------
+  // Quick Date Filter Tabs: [ Today ] [ This Week ] [ Custom Dates ] (Reference)
+  // -------------------------------------------------------------
+  Widget _buildQuickDateFilterTabs() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildDatePill(
+            title: 'Today'.trData(context),
+            isSelected: _activeDateFilter == 'Today',
+            onTap: () {
+              setState(() {
+                _activeDateFilter = _activeDateFilter == 'Today' ? 'All' : 'Today';
+              });
+            },
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _buildDatePill(
+            title: 'This Week'.trData(context),
+            isSelected: _activeDateFilter == 'This Week',
+            onTap: () {
+              setState(() {
+                _activeDateFilter = _activeDateFilter == 'This Week' ? 'All' : 'This Week';
+              });
+            },
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _buildDatePill(
+            title: 'Custom Dates'.trData(context),
+            isSelected: _activeDateFilter == 'Custom Dates',
+            onTap: () async {
+              final picked = await _pickDateRange();
+              if (picked != null) {
+                setState(() {
+                  _customDateRange = picked;
+                  _activeDateFilter = 'Custom Dates';
+                });
+              }
+            },
+          ),
+        ),
+      ],
+    );
+  }
 
-    final renderBox = _categorySelectorKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-
-    final size = renderBox.size;
-    final offset = renderBox.localToGlobal(Offset.zero);
-    final mediaQuery = MediaQuery.of(context);
-    final screenHeight = mediaQuery.size.height;
-    final screenWidth = mediaQuery.size.width;
-
-    final double neededHeight = _categories.length * 36.0 + 8.0;
-    final double spaceBelow = screenHeight - (offset.dy + size.height) - mediaQuery.padding.bottom - 16.0;
-    final double spaceAbove = offset.dy - mediaQuery.padding.top - 16.0;
-
-    final double availableSpace = (spaceBelow >= neededHeight || spaceBelow >= spaceAbove) ? spaceBelow : spaceAbove;
-    final double popupHeight = neededHeight.clamp(80.0, availableSpace.clamp(180.0, screenHeight - 60.0));
-
-    final bool showAbove = spaceBelow < popupHeight && spaceAbove > spaceBelow;
-
-    final double topPosition = showAbove
-        ? (offset.dy - popupHeight - 4).clamp(mediaQuery.padding.top + 8.0, screenHeight - popupHeight)
-        : (offset.dy + size.height + 4).clamp(0.0, screenHeight - popupHeight - mediaQuery.padding.bottom);
-
-    _categoryOverlayEntry = OverlayEntry(
-      builder: (overlayContext) {
-        return Stack(
-          children: [
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: _hideCategoryOverlay,
-                child: Container(color: Colors.transparent),
+  Future<DateTimeRange?> _pickDateRange() async {
+    final now = DateTime.now();
+    return showDateRangePicker(
+      context: context,
+      initialDateRange: _customDateRange,
+      firstDate: now.subtract(const Duration(days: 30)),
+      lastDate: now.add(const Duration(days: 365)),
+      helpText: 'Select Date Range'.trData(context),
+      saveText: 'Save'.trData(context),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: _primaryPurple,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Color(0xFF1E293B),
+              secondaryContainer: Color(0xFFF3E8FF),
+              onSecondaryContainer: Color(0xFF581C87),
+            ),
+            scaffoldBackgroundColor: Colors.white,
+            appBarTheme: const AppBarTheme(
+              backgroundColor: _primaryPurple,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              iconTheme: IconThemeData(color: Colors.white),
+              actionsIconTheme: IconThemeData(color: Colors.white),
+            ),
+            datePickerTheme: DatePickerThemeData(
+              backgroundColor: Colors.white,
+              surfaceTintColor: Colors.transparent,
+              headerBackgroundColor: _primaryPurple,
+              headerForegroundColor: Colors.white,
+              headerHeadlineStyle: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+              headerHelpStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.white70,
+              ),
+              rangePickerBackgroundColor: Colors.white,
+              rangePickerSurfaceTintColor: Colors.transparent,
+              rangePickerHeaderBackgroundColor: _primaryPurple,
+              rangePickerHeaderForegroundColor: Colors.white,
+              rangePickerHeaderHeadlineStyle: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+              rangePickerHeaderHelpStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.white70,
+              ),
+              rangeSelectionBackgroundColor: const Color(0xFFF3E8FF),
+              rangeSelectionOverlayColor: WidgetStateProperty.all(
+                _primaryPurple.withValues(alpha: 0.12),
+              ),
+              dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return Colors.white;
+                }
+                if (states.contains(WidgetState.disabled)) {
+                  return Colors.grey.shade400;
+                }
+                return const Color(0xFF1E293B);
+              }),
+              dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return _primaryPurple;
+                }
+                return null;
+              }),
+              todayForegroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return Colors.white;
+                }
+                return _primaryPurple;
+              }),
+              todayBorder: const BorderSide(color: _primaryPurple, width: 1.5),
+              weekdayStyle: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF64748B),
               ),
             ),
-            Positioned(
-              left: offset.dx.clamp(16.0, (screenWidth - size.width - 16.0).clamp(16.0, screenWidth)),
-              top: topPosition,
-              width: size.width,
-              height: popupHeight,
-              child: Material(
-                color: Colors.transparent,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.black.withValues(alpha: 0.18),
-                      width: 1.0,
+          ),
+          child: child!,
+        );
+      },
+    );
+  }
+
+  Widget _buildDatePill({
+    required String title,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.18),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.35),
+              width: 1.2,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: isSelected ? _primaryPurple : Colors.white,
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // -------------------------------------------------------------
+  // Filter Chips Row: [ Date ] [ Price ] [ Category ] [ Sort By ] (Reference)
+  // -------------------------------------------------------------
+  Widget _buildFilterChipsRow() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _buildFilterChip(
+            label: _activeDateFilter == 'All'
+                ? 'Date'.trData(context)
+                : (_activeDateFilter == 'Custom Dates' && _customDateRange != null
+                    ? '${_customDateRange!.start.day}/${_customDateRange!.start.month} - ${_customDateRange!.end.day}/${_customDateRange!.end.month}'
+                    : _activeDateFilter.trData(context)),
+            isActive: _activeDateFilter != 'All',
+            onTap: _showDateFilterDialog,
+          ),
+          const SizedBox(width: 8),
+          _buildFilterChip(
+            label: _selectedCategory == 'All Categories' ? 'Category'.trData(context) : _selectedCategory.trData(context),
+            isActive: _selectedCategory != 'All Categories',
+            onTap: _showCategoryFilterDialog,
+          ),
+          const SizedBox(width: 8),
+          _buildFilterChip(
+            label: _sortBy == 'Soonest' ? 'Sort By'.trData(context) : _sortBy.trData(context),
+            isActive: _sortBy != 'Soonest',
+            onTap: _showSortDialog,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.3),
+            width: 1.0,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: isActive ? _primaryPurple : Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActiveFilterBadges() {
+    if (!_isFilterActive) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          if (_activeDateFilter != 'All')
+            _buildActiveBadge(
+              label: _activeDateFilter == 'Custom Dates' && _customDateRange != null
+                  ? '${_customDateRange!.start.day}/${_customDateRange!.start.month} - ${_customDateRange!.end.day}/${_customDateRange!.end.month}'
+                  : _activeDateFilter.trData(context),
+              onRemove: () => setState(() {
+                _activeDateFilter = 'All';
+                _customDateRange = null;
+              }),
+            ),
+          if (_activePriceFilter != 'All')
+            _buildActiveBadge(
+              label: (_activePriceFilter == 'Free' ? 'Free Admission' : 'Paid').trData(context),
+              onRemove: () => setState(() => _activePriceFilter = 'All'),
+            ),
+          if (_selectedCategory != 'All Categories')
+            _buildActiveBadge(
+              label: _selectedCategory.trData(context),
+              onRemove: () => setState(() => _selectedCategory = 'All Categories'),
+            ),
+          if (_searchController.text.isNotEmpty)
+            _buildActiveBadge(
+              label: '"${_searchController.text}"',
+              onRemove: () => setState(() => _searchController.clear()),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActiveBadge({required String label, required VoidCallback onRemove}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: _primaryPurple),
+          ),
+          const SizedBox(width: 4),
+          GestureDetector(
+            onTap: onRemove,
+            child: const Icon(Icons.close, size: 15, color: _primaryPurple),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // -------------------------------------------------------------
+  // What's On Mode: "Featured" Carousel + "Recommended for You"
+  // -------------------------------------------------------------
+  Widget _buildWhatsOnSections(List<ArtEventModel> events) {
+    final featuredEvents = events.isNotEmpty ? events : ArtEventModel.mockEvents;
+    final recommendedEvents = events.length > 2
+        ? events.sublist(2)
+        : (events.isNotEmpty ? events : ArtEventModel.mockEvents);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section: "Featured"
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Featured'.trData(context),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (featuredEvents.length > 1) ...[
+                  // Scroll Left Button
+                  InkWell(
+                    onTap: () {
+                      if (_featuredScrollController.hasClients) {
+                        _featuredScrollController.animateTo(
+                          (_featuredScrollController.offset - 264)
+                              .clamp(0.0, _featuredScrollController.position.maxScrollExtent),
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOut,
+                        );
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.chevron_left, color: Colors.white, size: 20),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.12),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
+                  ),
+                  const SizedBox(width: 6),
+                  // Scroll Right Button
+                  InkWell(
+                    onTap: () {
+                      if (_featuredScrollController.hasClients) {
+                        _featuredScrollController.animateTo(
+                          (_featuredScrollController.offset + 264)
+                              .clamp(0.0, _featuredScrollController.position.maxScrollExtent),
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOut,
+                        );
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.chevron_right, color: Colors.white, size: 20),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                ],
+                GestureDetector(
+                  onTap: () => setState(() => _selectedViewMode = 1),
+                  child: Text(
+                    'SEE ALL'.trData(context),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFFF3E8F6),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // Horizontal Featured Carousel (Reference Screenshot 1)
+        SizedBox(
+          height: 270,
+          child: Listener(
+            onPointerSignal: (pointerSignal) {
+              if (pointerSignal is PointerScrollEvent && _featuredScrollController.hasClients) {
+                final target = (_featuredScrollController.offset + pointerSignal.scrollDelta.dy)
+                    .clamp(0.0, _featuredScrollController.position.maxScrollExtent);
+                _featuredScrollController.jumpTo(target);
+              }
+            },
+            child: ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(
+                dragDevices: {
+                  PointerDeviceKind.touch,
+                  PointerDeviceKind.mouse,
+                  PointerDeviceKind.trackpad,
+                  PointerDeviceKind.stylus,
+                },
+              ),
+              child: ListView.separated(
+                controller: _featuredScrollController,
+                physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                scrollDirection: Axis.horizontal,
+                itemCount: featuredEvents.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 14),
+                itemBuilder: (context, index) {
+                  return _buildHorizontalEventCard(featuredEvents[index]);
+                },
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 26),
+
+        // Section: "Recommended for You" (Reference Screenshot 2)
+        Text(
+          'Recommended for You'.trData(context),
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        for (final ev in recommendedEvents) ...[
+          _buildLargeEventCard(ev),
+          const SizedBox(height: 18),
+        ],
+      ],
+    );
+  }
+
+  // -------------------------------------------------------------
+  // Horizontal Featured Card (Screenshots 1 & 2 Layout in Purple Theme)
+  // -------------------------------------------------------------
+  Widget _buildHorizontalEventCard(ArtEventModel event) {
+    final isLiked = _likedEventIds.contains(event.id);
+
+    return GestureDetector(
+      onTap: () => _showEventDetails(event),
+      child: Container(
+        width: 250,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Rounded Image with top-right circular white heart button
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    height: 175,
+                    width: 226,
+                    child: event.imageUrl != null && event.imageUrl!.isNotEmpty
+                        ? AppCachedImage(imageUrl: event.imageUrl!, fit: BoxFit.cover)
+                        : Container(
+                            color: const Color(0xFFF1F5F9),
+                            child: const Icon(Icons.event, size: 48, color: Colors.grey),
+                          ),
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      GestureDetector(
+                        onTap: () => _shareEvent(event),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.18),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.share_outlined,
+                            color: _primaryPurple,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      GestureDetector(
+                        onTap: () => _toggleEventLike(event),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.18),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            isLiked ? Icons.favorite : Icons.favorite_border,
+                            color: isLiked ? Colors.red : _primaryPurple,
+                            size: 20,
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: ListView.separated(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      shrinkWrap: true,
-                      itemCount: _categories.length,
-                      separatorBuilder: (context, index) => const Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: Color(0xFFF1F5F9),
-                      ),
-                      itemBuilder: (context, index) {
-                        final cat = _categories[index];
-                        final isSelected = _selectedCategory == cat;
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
 
-                        return InkWell(
+            // Title
+            Text(
+              event.localizedTitle(context),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF1E1E1E),
+              ),
+            ),
+            const SizedBox(height: 3),
+
+            // Date
+            Text(
+              (event.dateTime.isNotEmpty ? event.dateTime : event.formattedDate).trData(context),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF64748B),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // -------------------------------------------------------------
+  // Large Event Card (Screenshots 2 & 3 Layout in Purple Theme)
+  // -------------------------------------------------------------
+  Widget _buildLargeEventCard(ArtEventModel event) {
+    final isLiked = _likedEventIds.contains(event.id);
+
+    return GestureDetector(
+      onTap: () => _showEventDetails(event),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    height: 190,
+                    width: double.infinity,
+                    child: event.imageUrl != null && event.imageUrl!.isNotEmpty
+                        ? AppCachedImage(imageUrl: event.imageUrl!, fit: BoxFit.cover)
+                        : Container(
+                            color: const Color(0xFFF1F5F9),
+                            child: const Icon(Icons.event, size: 50, color: Colors.grey),
+                          ),
+                  ),
+                ),
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      GestureDetector(
+                        onTap: () => _shareEvent(event),
+                        child: Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.18),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.share_outlined,
+                            color: _primaryPurple,
+                            size: 19,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () => _toggleEventLike(event),
+                        child: Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.18),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            isLiked ? Icons.favorite : Icons.favorite_border,
+                            color: isLiked ? Colors.red : _primaryPurple,
+                            size: 21,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            Text(
+              event.localizedTitle(context),
+              style: const TextStyle(
+                fontSize: 17.5,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF1E1E1E),
+              ),
+            ),
+            const SizedBox(height: 4),
+
+            Text(
+              (event.dateTime.isNotEmpty ? event.dateTime : event.formattedDate).trData(context),
+              style: const TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF64748B),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // -------------------------------------------------------------
+  // Filtered Search Results Mode (Reference Screenshot 3 Layout)
+  // -------------------------------------------------------------
+  Widget _buildSearchResultsSection(List<ArtEventModel> events) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Search Results'.trData(context),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
+            if (_isFilterActive || _selectedViewMode == 1)
+              TextButton(
+                onPressed: _clearAllFilters,
+                child: Text(
+                  'Clear All'.trData(context),
+                  style: const TextStyle(color: Color(0xFFE2D6F5), fontWeight: FontWeight.w700),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        if (events.isEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+            alignment: Alignment.center,
+            child: Column(
+              children: [
+                const Icon(Icons.event_busy_outlined, size: 52, color: Colors.white70),
+                const SizedBox(height: 14),
+                Text(
+                  'No events found matching your search.'.trData(context),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16, color: Color(0xFFE2D6F5), fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Try adjusting your dates, category, or price filters.'.trData(context),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 13, color: Colors.white60),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  onPressed: _clearAllFilters,
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label: Text('Clear All Filters'.trData(context), style: const TextStyle(fontWeight: FontWeight.w700)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: _primaryPurple,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: events.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 18),
+            itemBuilder: (context, index) => _buildLargeEventCard(events[index]),
+          ),
+      ],
+    );
+  }
+
+  // -------------------------------------------------------------
+  // Filter Bottom Sheets
+  // -------------------------------------------------------------
+  void _showDateFilterDialog() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Filter by Date'.trData(context),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
+                ),
+                const SizedBox(height: 16),
+                for (final opt in ['All', 'Today', 'This Week', 'Custom Dates']) ...[
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 6),
+                    title: Text(
+                      (opt == 'All' ? 'All Dates' : opt).trData(context),
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: _activeDateFilter == opt ? FontWeight.w800 : FontWeight.w500,
+                        color: _activeDateFilter == opt ? _primaryPurple : const Color(0xFF1E293B),
+                      ),
+                    ),
+                    trailing: _activeDateFilter == opt ? const Icon(Icons.check_circle, color: _primaryPurple, size: 20) : null,
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      if (opt == 'Custom Dates') {
+                        final picked = await _pickDateRange();
+                        if (picked != null) {
+                          setState(() {
+                            _customDateRange = picked;
+                            _activeDateFilter = 'Custom Dates';
+                          });
+                        }
+                      } else {
+                        setState(() {
+                          _activeDateFilter = opt;
+                          _customDateRange = null;
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showCategoryFilterDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (ctx) {
+        String catSearch = '';
+        return StatefulBuilder(
+          builder: (bottomCtx, setModalState) {
+            final displayCats = _categories.where((c) {
+              if (catSearch.isEmpty) return true;
+              return c.toLowerCase().contains(catSearch.toLowerCase()) ||
+                  c.trData(context).toLowerCase().contains(catSearch.toLowerCase());
+            }).toList();
+
+            return Container(
+              height: MediaQuery.of(ctx).size.height * 0.65,
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Filter by Category'.trData(context),
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
+                      ),
+                      if (_selectedCategory != 'All Categories')
+                        GestureDetector(
                           onTap: () {
-                            setState(() {
-                              _selectedCategory = cat;
-                            });
-                            _hideCategoryOverlay();
-                            _fetchEvents();
+                            Navigator.pop(ctx);
+                            setState(() => _selectedCategory = 'All Categories');
                           },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14.0,
-                              vertical: 8.5,
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    _getCategoryTitle(cat, AppLocalizations.of(context)),
-                                    style: TextStyle(
-                                      fontSize: 13.5,
-                                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                      color: isSelected ? const Color(0xFF6A2777) : const Color(0xFF1E1E1E),
-                                    ),
-                                  ),
-                                ),
-                                if (isSelected)
-                                  const Icon(
-                                    Icons.check,
-                                    size: 18,
-                                    color: Color(0xFF6A2777),
-                                  ),
-                              ],
+                          child: Text(
+                            'Reset'.trData(context),
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _primaryPurple),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Search within categories
+                  TextField(
+                    onChanged: (val) => setModalState(() => catSearch = val.trim()),
+                    decoration: InputDecoration(
+                      hintText: 'Search categories...'.trData(context),
+                      hintStyle: const TextStyle(fontSize: 13.5, color: Color(0xFF94A3B8)),
+                      prefixIcon: const Icon(Icons.search, size: 20, color: Color(0xFF94A3B8)),
+                      filled: true,
+                      fillColor: const Color(0xFFF1F5F9),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: ListView.separated(
+                      itemCount: displayCats.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                      itemBuilder: (context, index) {
+                        final cat = displayCats[index];
+                        final isSel = _selectedCategory == cat;
+                        return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          title: Text(
+                            cat.trData(context),
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: isSel ? FontWeight.w800 : FontWeight.w500,
+                              color: isSel ? _primaryPurple : const Color(0xFF1E293B),
                             ),
                           ),
+                          trailing: isSel ? const Icon(Icons.check_circle, color: _primaryPurple, size: 20) : null,
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            setState(() => _selectedCategory = cat);
+                          },
                         );
                       },
                     ),
                   ),
-                ),
+                ],
               ),
-            ),
-          ],
+            );
+          },
         );
       },
     );
-
-    Overlay.of(context).insert(_categoryOverlayEntry!);
-    setState(() {
-      _isCategoryListExpanded = true;
-    });
   }
 
-  Widget _buildEventCard(ArtEventModel event) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _showEventDetails(event),
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(16.0),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: const Color(0xFF2E2E3E).withValues(alpha: 0.2),
-              width: 1.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Event Cover Image
-              if (event.imageUrl != null && event.imageUrl!.isNotEmpty) ...[
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: AppCachedImage(
-                    imageUrl: event.imageUrl!,
-                    height: ResponsiveHelper.of(context).cardBannerHeight,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
+  void _showSortDialog() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 14),
-              ],
-
-              // Top Row: Category Tag, Price, Share & Heart buttons
-              Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+                Text(
+                  'Sort Events'.trData(context),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
                 ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3E8F6),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  _getCategoryTitle(event.category, AppLocalizations.of(context)),
-                  style: const TextStyle(
-                    color: Color(0xFF6A2777),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              if (_isLoggedIn) ...[
-                // Share button
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => _shareEvent(event),
-                    borderRadius: BorderRadius.circular(6),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Icon(
-                        Icons.share_outlined,
-                        size: 16,
-                        color: Color(0xFF64748B),
+                const SizedBox(height: 16),
+                for (final opt in ['Soonest', 'Title (A - Z)', 'Price: Low to High', 'Price: High to Low', 'Most Popular']) ...[
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 6),
+                    title: Text(
+                      opt.trData(context),
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: _sortBy == opt ? FontWeight.w800 : FontWeight.w500,
+                        color: _sortBy == opt ? _primaryPurple : const Color(0xFF1E293B),
                       ),
                     ),
+                    trailing: _sortBy == opt ? const Icon(Icons.check_circle, color: _primaryPurple, size: 20) : null,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      setState(() => _sortBy = opt);
+                    },
                   ),
-                ),
-                const SizedBox(width: 8),
-                // Like/Favorite ❤️ button
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => _toggleEventLike(event),
-                    borderRadius: BorderRadius.circular(6),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: _likedEventIds.contains(event.id)
-                            ? const Color(0xFFE11D48).withValues(alpha: 0.1)
-                            : Colors.transparent,
-                        border: Border.all(
-                          color: _likedEventIds.contains(event.id)
-                              ? const Color(0xFFE11D48)
-                              : const Color(0xFFE2E8F0),
-                        ),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Icon(
-                        _likedEventIds.contains(event.id)
-                            ? Icons.favorite
-                            : Icons.favorite_border,
-                        size: 16,
-                        color: _likedEventIds.contains(event.id)
-                            ? const Color(0xFFE11D48)
-                            : const Color(0xFF64748B),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Title
-          Text(
-            event.localizedTitle(context),
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF1E1E1E),
-            ),
-          ),
-          const SizedBox(height: 6),
-
-          // Description
-          Text(
-            event.localizedDescription(context),
-            style: const TextStyle(
-              fontSize: 13.5,
-              color: Color(0xFF64748B),
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // Date & Time
-          Row(
-            children: [
-              const Icon(
-                Icons.calendar_today_outlined,
-                size: 16,
-                color: Color(0xFF64748B),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  event.dateTime,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF4A4A4A),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // Location
-          Row(
-            children: [
-              const Icon(
-                Icons.location_on_outlined,
-                size: 16,
-                color: Color(0xFF64748B),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  event.localizedLocation(context),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF4A4A4A),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // Organized by
-          RichText(
-            text: TextSpan(
-              style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-              children: [
-                TextSpan(text: AppLocalizations.of(context).organizedBy),
-                TextSpan(
-                  text: event.organizer,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1E1E1E),
-                  ),
-                ),
+                ],
               ],
             ),
           ),
-          const SizedBox(height: 12),
-
-          // Tags
-          Wrap(
-            spacing: 6,
-            children:
-                event.tags
-                    .map(
-                      (tag) => Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                        ),
-                        child: Text(
-                          tag.trData(context),
-                          style: const TextStyle(
-                            fontSize: 11.5,
-                            color: Color(0xFF475569),
-                          ),
-                        ),
-                      ),
-                    )
-                    .toList(),
-          ),
-          const SizedBox(height: 16),
-
-          // Action Button: View Details
-          SizedBox(
-            width: double.infinity,
-            height: 42,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6A2777),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              onPressed: () => _showEventDetails(event),
-              child: Text(
-                _selectedTabIndex == 1
-                    ? 'Apply Now'
-                    : AppLocalizations.of(context).viewDetails,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-    ),
+        );
+      },
     );
   }
 }

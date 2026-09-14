@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../app/routes/app_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/live_sync_service.dart';
@@ -155,6 +156,12 @@ class _SplashScreenViewState extends State<SplashScreenView>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       try {
+        final deepLink = AppRouter.initialDeepLink;
+        if (deepLink != null && deepLink.isNotEmpty) {
+          context.go(deepLink);
+          return;
+        }
+
         final storage = sl<StorageService>();
         final hasCompleted =
             storage.getBool(StorageServiceImpl.keyHasCompletedOnboarding) ?? false;

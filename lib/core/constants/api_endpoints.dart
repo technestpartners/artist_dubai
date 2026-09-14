@@ -12,7 +12,7 @@ class ApiEndpoints {
   static String get baseUrl => liveProductionUrl;
 
   static const Duration connectionTimeout = Duration(seconds: 30);
-  static const Duration receiveTimeout = Duration(seconds: 30);
+  static const Duration receiveTimeout = Duration(seconds: 45);
 
   // Auth (MySQL Backend)
   static const String login = 'api.php?resource=login';

@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import '../constants/api_endpoints.dart';
 import '../errors/exceptions.dart';
 import 'dio_interceptor.dart';
@@ -60,7 +62,21 @@ class ApiClientImpl implements ApiClient {
       connectTimeout: ApiEndpoints.connectionTimeout,
       receiveTimeout: ApiEndpoints.receiveTimeout,
       responseType: ResponseType.json,
+      persistentConnection: false,
+      headers: {
+        'Accept': 'application/json',
+        'Connection': 'close',
+      },
     );
+
+    if (dio.httpClientAdapter is IOHttpClientAdapter) {
+      (dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
+        final client = HttpClient();
+        client.idleTimeout = const Duration(seconds: 2);
+        client.connectionTimeout = const Duration(seconds: 10);
+        return client;
+      };
+    }
 
     if (interceptor != null) {
       dio.interceptors.add(interceptor);
@@ -169,22 +185,49 @@ class ApiClientImpl implements ApiClient {
       final response = await request();
       return response.data;
     } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout) {
-        // Retry once on transient network/timeout error
-        try {
-          await Future.delayed(const Duration(milliseconds: 600));
-          final retryResponse = await request();
-          return retryResponse.data;
-        } on DioException catch (retryError) {
-          _handleDioError(retryError);
+      if (_isTransientNetworkError(e)) {
+        // Retry up to 2 times on transient network/timeout/connection abort error
+        for (int attempt = 1; attempt <= 2; attempt++) {
+          try {
+            await Future.delayed(Duration(milliseconds: 250 * attempt));
+            final retryResponse = await request();
+            return retryResponse.data;
+          } on DioException catch (retryError) {
+            if (attempt == 2 || !_isTransientNetworkError(retryError)) {
+              _handleDioError(retryError);
+            }
+          }
         }
       }
       _handleDioError(e);
     } catch (e) {
       throw ServerException(message: e.toString());
     }
+  }
+
+  bool _isTransientNetworkError(DioException error) {
+    if (error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.receiveTimeout ||
+        error.type == DioExceptionType.sendTimeout ||
+        error.type == DioExceptionType.connectionError) {
+      return true;
+    }
+
+    if (error.type == DioExceptionType.unknown) {
+      final message = '${error.error} ${error.message}'.toLowerCase();
+      if (message.contains('software caused connection abort') ||
+          message.contains('connection abort') ||
+          message.contains('httpexception') ||
+          message.contains('socketexception') ||
+          message.contains('connection closed') ||
+          message.contains('connection reset') ||
+          message.contains('broken pipe') ||
+          message.contains('clientexception')) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   void _handleDioError(DioException error) {
@@ -196,7 +239,8 @@ class ApiClientImpl implements ApiClient {
       );
     }
 
-    if (error.type == DioExceptionType.connectionError) {
+    if (error.type == DioExceptionType.connectionError ||
+        _isTransientNetworkError(error)) {
       throw const NetworkException(
         message: 'Unable to reach server. Please check your internet connection and try again.',
       );

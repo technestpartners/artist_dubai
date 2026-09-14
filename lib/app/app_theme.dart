@@ -28,11 +28,12 @@ class AppTheme {
       fontFamilyFallback: _fontFallback,
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primary,
-        onPrimary: Colors.black,
+        onPrimary: Colors.white,
         secondary: AppColors.accent,
         surface: AppColors.darkSurface,
         error: AppColors.error,
       ),
+      datePickerTheme: _buildDatePickerTheme(isDark: true),
       textTheme: _buildTextTheme(ThemeData.dark().textTheme),
       textSelectionTheme: const TextSelectionThemeData(
         cursorColor: Color(0xFF6A2777),
@@ -60,6 +61,75 @@ class AppTheme {
     );
   }
 
+  static DatePickerThemeData _buildDatePickerTheme({required bool isDark}) {
+    final surface = isDark ? const Color(0xFF1F142B) : Colors.white;
+    final onSurface = isDark ? Colors.white : const Color(0xFF1E293B);
+    final rangeBg = isDark ? const Color(0xFF4A1970) : const Color(0xFFF3E8FF);
+    final mutedText = isDark ? const Color(0xFFA19BA8) : const Color(0xFF64748B);
+
+    return DatePickerThemeData(
+      backgroundColor: surface,
+      surfaceTintColor: Colors.transparent,
+      headerBackgroundColor: AppColors.primary,
+      headerForegroundColor: Colors.white,
+      headerHeadlineStyle: GoogleFonts.outfit(
+        fontSize: 22,
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+      ),
+      headerHelpStyle: GoogleFonts.outfit(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: Colors.white.withValues(alpha: 0.8),
+      ),
+      rangePickerBackgroundColor: surface,
+      rangePickerSurfaceTintColor: Colors.transparent,
+      rangePickerHeaderBackgroundColor: AppColors.primary,
+      rangePickerHeaderForegroundColor: Colors.white,
+      rangePickerHeaderHeadlineStyle: GoogleFonts.outfit(
+        fontSize: 22,
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+      ),
+      rangePickerHeaderHelpStyle: GoogleFonts.outfit(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: Colors.white.withValues(alpha: 0.8),
+      ),
+      rangeSelectionBackgroundColor: rangeBg,
+      rangeSelectionOverlayColor: WidgetStateProperty.all(
+        AppColors.primary.withValues(alpha: 0.12),
+      ),
+      dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return Colors.white;
+        }
+        if (states.contains(WidgetState.disabled)) {
+          return mutedText.withValues(alpha: 0.4);
+        }
+        return onSurface;
+      }),
+      dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return AppColors.primary;
+        }
+        return null;
+      }),
+      todayForegroundColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return Colors.white;
+        }
+        return AppColors.primary;
+      }),
+      todayBorder: const BorderSide(color: AppColors.primary, width: 1.5),
+      weekdayStyle: GoogleFonts.outfit(
+        fontSize: 13,
+        fontWeight: FontWeight.w700,
+        color: mutedText,
+      ),
+    );
+  }
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
@@ -75,6 +145,7 @@ class AppTheme {
         surface: AppColors.lightSurface,
         error: AppColors.error,
       ),
+      datePickerTheme: _buildDatePickerTheme(isDark: false),
       textTheme: _buildTextTheme(ThemeData.light().textTheme),
       textSelectionTheme: const TextSelectionThemeData(
         cursorColor: Color(0xFF6A2777),

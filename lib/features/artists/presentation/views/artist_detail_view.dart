@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -16,17 +15,23 @@ import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/utils/data_translator.dart';
+import '../../../../core/utils/share_helper.dart';
+import '../../../../core/utils/ui_helpers.dart';
 import '../../domain/models/artist_model.dart';
 import 'create_artist_profile_view.dart';
 
 class ArtistDetailView extends StatefulWidget {
   final ArtistModel? artist;
+  final String? artistId;
+  final String? initialArtworkId;
   final bool? initialIsFavorited;
   final bool? initialIsFollowing;
 
   const ArtistDetailView({
     super.key,
     this.artist,
+    this.artistId,
+    this.initialArtworkId,
     this.initialIsFavorited,
     this.initialIsFollowing,
   });
@@ -36,6 +41,11 @@ class ArtistDetailView extends StatefulWidget {
 }
 
 class _ArtistDetailViewState extends State<ArtistDetailView> {
+  ArtistModel? _fetchedArtist;
+  bool _isLoadingArtist = false;
+
+  ArtistModel? get _effectiveArtist => widget.artist ?? _fetchedArtist;
+
   bool _isFollowing = false;
   bool _isGridView = true;
   bool _isArtistFavorited = false;
@@ -154,6 +164,28 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
     if (_isFollowing        && _followersCount == 0) _followersCount = 1;
     _loadAllData();
 
+    if (artist == null && widget.artistId != null && widget.artistId!.isNotEmpty) {
+      _isLoadingArtist = true;
+      sl<ApiService>().getArtistDetails(widget.artistId!, forceRefresh: true).then((loaded) {
+        if (mounted) {
+          setState(() {
+            _fetchedArtist = loaded;
+            _isLoadingArtist = false;
+            _likesCount = loaded.likesCount;
+            _followersCount = loaded.followersCount;
+            _worksCount = loaded.worksCount;
+            if (_isArtistFavorited && _likesCount == 0) _likesCount = 1;
+            if (_isFollowing && _followersCount == 0) _followersCount = 1;
+          });
+          _loadAllData();
+        }
+      }).catchError((_) {
+        if (mounted) {
+          setState(() => _isLoadingArtist = false);
+        }
+      });
+    }
+
     _artistLiveSub = sl<LiveSyncService>().artistsStream.listen((artists) {
       if (mounted && widget.artist != null) {
         final match = artists.where((a) => a.id == widget.artist!.id).firstOrNull;
@@ -190,12 +222,19 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
     _galleryLiveSub = sl<LiveSyncService>().galleriesStream.listen((_) {
       if (mounted) _loadAllData();
     });
+
+    DataTranslator.translationNotifier.addListener(_onTranslationChanged);
+  }
+
+  void _onTranslationChanged() {
+    if (mounted) setState(() {});
   }
 
   StreamSubscription<List<Map<String, dynamic>>>? _galleryLiveSub;
 
   @override
   void dispose() {
+    DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
     _artistLiveSub?.cancel();
     _favLiveSub?.cancel();
     _galleryLiveSub?.cancel();
@@ -217,7 +256,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
   }
 
   Future<void> _loadAllData() async {
-    final artist = widget.artist;
+    final artist = _effectiveArtist;
     final userEmail = _getEffectiveEmail();
     try {
       final results = await Future.wait([
@@ -289,39 +328,42 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
             }
           }
         });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _checkDeepLinkedArtwork();
+        });
       }
     } catch (_) {}
   }
 
+  bool _hasOpenedDeepLinkedArtwork = false;
+  void _checkDeepLinkedArtwork() {
+    if (_hasOpenedDeepLinkedArtwork || widget.initialArtworkId == null || !mounted) return;
+    final targetId = widget.initialArtworkId!.trim();
+    if (targetId.isEmpty) return;
+    for (int i = 0; i < _artworksList.length; i++) {
+      final item = _artworksList[i];
+      final itemId = (item['id'] is int) ? item['id'] as int : int.tryParse(item['id']?.toString() ?? '') ?? 0;
+      if (itemId.toString() == targetId || (item['id']?.toString() ?? '') == targetId) {
+        _hasOpenedDeepLinkedArtwork = true;
+        _showArtworkDetailModal(item, itemId);
+        break;
+      }
+    }
+  }
+
 
   void _shareArtist() {
-    final artist = widget.artist;
+    final artist = _effectiveArtist;
     final name = artist?.name ?? 'Artist';
-    final id = artist?.id ?? '';
-    Clipboard.setData(
-      ClipboardData(
-        text: 'Check out $name on Artist Dubai: https://artistdubai.com/artists/$id',
-      ),
-    );
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Link to $name copied to clipboard!',
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: const Color(0xFF1E1E1E),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
+    final id = artist?.id ?? widget.artistId ?? '';
+    final imageUrl = _avatarUrlOverride ?? artist?.avatarUrl;
+
+    ShareHelper.shareArtist(
+      context: context,
+      artistId: id,
+      name: name,
+      category: artist?.category ?? 'Artist',
+      avatarUrl: imageUrl,
     );
   }
 
@@ -464,15 +506,34 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                   ),
                                 ),
                               ),
-                              IconButton(
-                                icon: Icon(
-                                  isFav ? Icons.favorite : Icons.favorite_border,
-                                  color: isFav ? const Color(0xFFE11D48) : const Color(0xFF64748B),
-                                ),
-                                onPressed: () {
-                                  _toggleArtworkFavorite(itemId);
-                                  setModalState(() {});
-                                },
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.share_outlined, color: Color(0xFF64748B), size: 22),
+                                    tooltip: 'Share Artwork',
+                                    onPressed: () {
+                                      ShareHelper.shareArtwork(
+                                        context: context,
+                                        artworkId: itemId.toString(),
+                                        title: title,
+                                        artistName: _effectiveArtist?.name ?? widget.artist?.name ?? 'Artist',
+                                        artistId: _effectiveArtist?.id ?? widget.artist?.id ?? widget.artistId,
+                                        imageUrl: imageUrl,
+                                      );
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: Icon(
+                                      isFav ? Icons.favorite : Icons.favorite_border,
+                                      color: isFav ? const Color(0xFFE11D48) : const Color(0xFF64748B),
+                                    ),
+                                    onPressed: () {
+                                      _toggleArtworkFavorite(itemId);
+                                      setModalState(() {});
+                                    },
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -516,9 +577,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
 
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return StatefulBuilder(
-          builder: (context, setModalState) {
+          builder: (modalContext, setModalState) {
             Future<void> pickImages() async {
               try {
                 final List<XFile> selected = await picker.pickMultiImage(imageQuality: 85);
@@ -528,12 +589,11 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                   });
                 }
               } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error selecting images: $e'),
-                      backgroundColor: const Color(0xFFDC2626),
-                    ),
+                if (dialogContext.mounted) {
+                  UiHelpers.showErrorDialog(
+                    dialogContext,
+                    title: 'Error'.trData(dialogContext),
+                    message: 'Error selecting images: $e',
                   );
                 }
               }
@@ -561,7 +621,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                         children: [
                           Expanded(
                             child: Text(
-                              'Create New Gallery for $artistName',
+                              'Create New Gallery for $artistName'.trData(dialogContext),
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -575,7 +635,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                               color: Color(0xFF64748B),
                               size: 20,
                             ),
-                            onPressed: () => Navigator.pop(context),
+                            onPressed: () => Navigator.pop(dialogContext),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                           ),
@@ -584,9 +644,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                       const SizedBox(height: 20),
 
                       // Gallery Title
-                      const Text(
-                        'Gallery Title',
-                        style: TextStyle(
+                      Text(
+                        'Gallery Title'.trData(context),
+                        style: const TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF1E1E1E),
@@ -639,9 +699,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                       const SizedBox(height: 16),
 
                       // Description (optional)
-                      const Text(
-                        'Description (optional)',
-                        style: TextStyle(
+                      Text(
+                        'Description (optional)'.trData(context),
+                        style: const TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF1E1E1E),
@@ -658,7 +718,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                         ),
                         cursorColor: const Color(0xFF6A2777),
                         decoration: InputDecoration(
-                          hintText: 'Describe this gallery...',
+                          hintText: 'Describe this gallery...'.trData(context),
                           hintStyle: const TextStyle(
                             color: Color(0xFF94A3B8),
                             fontSize: 13.5,
@@ -686,9 +746,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                       const SizedBox(height: 16),
 
                       // Images Drag & Drop Box
-                      const Text(
-                        'Images',
-                        style: TextStyle(
+                      Text(
+                        'Images'.trData(context),
+                        style: const TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF1E1E1E),
@@ -723,9 +783,10 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                               ),
                               const SizedBox(height: 10),
                               Text(
-                                modalImages.isEmpty
-                                    ? 'Click to select images or drag and drop'
-                                    : '${modalImages.length} image(s) selected (tap to add more)',
+                                (modalImages.isEmpty
+                                        ? 'Click to select images or drag and drop'
+                                        : '${modalImages.length} image(s) selected (tap to add more)')
+                                    .trData(context),
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 13,
@@ -838,10 +899,10 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                   ),
                                   padding: const EdgeInsets.symmetric(horizontal: 20),
                                 ),
-                                onPressed: isUploading ? null : () => Navigator.pop(context),
-                                child: const Text(
-                                  'Cancel',
-                                  style: TextStyle(
+                                onPressed: isUploading ? null : () => Navigator.pop(dialogContext),
+                                child: Text(
+                                  'Cancel'.trData(dialogContext),
+                                  style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
                                     color: Color(0xFF1E1E1E),
@@ -870,8 +931,19 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                         final title = titleController.text.trim();
                                         final desc = descController.text.trim();
                                         if (title.isEmpty) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Please enter a gallery title')),
+                                          UiHelpers.showErrorDialog(
+                                            dialogContext,
+                                            title: 'Required Details Missing'.trData(dialogContext),
+                                            message: 'Please enter a gallery title'.trData(dialogContext),
+                                          );
+                                          return;
+                                        }
+
+                                        if (modalImages.isEmpty) {
+                                          UiHelpers.showErrorDialog(
+                                            dialogContext,
+                                            title: 'Required Details Missing'.trData(dialogContext),
+                                            message: 'Please select at least one photo from your gallery'.trData(dialogContext),
                                           );
                                           return;
                                         }
@@ -904,12 +976,11 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                           setModalState(() {
                                             isUploading = false;
                                           });
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(
-                                                content: Text('Please select at least one photo from your device.'),
-                                                backgroundColor: Color(0xFFDC2626),
-                                              ),
+                                          if (dialogContext.mounted) {
+                                            UiHelpers.showErrorDialog(
+                                              dialogContext,
+                                              title: 'Upload Failed'.trData(dialogContext),
+                                              message: 'Failed to upload selected images. Please try again.'.trData(dialogContext),
                                             );
                                           }
                                           return;
@@ -926,8 +997,11 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                           images: finalUploadedUrls,
                                         );
 
-                                        if (context.mounted) {
-                                          Navigator.pop(context);
+                                        if (dialogContext.mounted) {
+                                          Navigator.pop(dialogContext);
+                                        }
+
+                                        if (mounted) {
                                           ScaffoldMessenger.of(context).showSnackBar(
                                             SnackBar(
                                               content: Text('Gallery "$title" created successfully!'),
@@ -936,9 +1010,6 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                               behavior: SnackBarBehavior.floating,
                                             ),
                                           );
-                                        }
-
-                                        if (mounted) {
                                           final newGalleryItem = created ?? {
                                             'title': title,
                                             'name': title,
@@ -965,9 +1036,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                           color: Colors.white,
                                         ),
                                       )
-                                    : const Text(
-                                        'Create Gallery',
-                                        style: TextStyle(
+                                    : Text(
+                                        'Create Gallery'.trData(context),
+                                        style: const TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -1426,18 +1497,19 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                         final newTitle = titleController.text.trim();
                                         final newDesc = descController.text.trim();
                                         if (newTitle.isEmpty) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Please enter a gallery title')),
+                                          UiHelpers.showErrorDialog(
+                                            dialogContext,
+                                            title: 'Required Details Missing'.trData(dialogContext),
+                                            message: 'Please enter a gallery title'.trData(dialogContext),
                                           );
                                           return;
                                         }
 
                                         if (existingPhotos.isEmpty && newlyPickedImages.isEmpty) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('Please have at least one photo in the gallery.'),
-                                              backgroundColor: Color(0xFFDC2626),
-                                            ),
+                                          UiHelpers.showErrorDialog(
+                                            dialogContext,
+                                            title: 'Required Details Missing'.trData(dialogContext),
+                                            message: 'Please have at least one photo in the gallery.'.trData(dialogContext),
                                           );
                                           return;
                                         }
@@ -1539,9 +1611,18 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoadingArtist && _effectiveArtist == null) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF6B1C9B),
+        appBar: AppTopBar(backgroundColor: Colors.white),
+        body: Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        ),
+      );
+    }
     final l10n = AppLocalizations.of(context);
     final currentArtist =
-        widget.artist ??
+        _effectiveArtist ??
         const ArtistModel(
           id: '0',
           name: 'Artist',
@@ -2017,7 +2098,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Explore ${currentArtist.name}\'s collection of artworks',
+                          'Explore ${currentArtist.name}\'s collection of artworks'.trData(context),
                           style: const TextStyle(
                             fontSize: 13.5,
                             color: Color(0xFFE2D6F5),
@@ -2038,12 +2119,12 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                           border: Border.all(color: const Color(0xFFCBD5E1)),
                         ),
                         child: Column(
-                          children: const [
-                            Icon(Icons.palette_outlined, size: 36, color: Color(0xFF94A3B8)),
-                            SizedBox(height: 8),
+                          children: [
+                            const Icon(Icons.palette_outlined, size: 36, color: Color(0xFF94A3B8)),
+                            const SizedBox(height: 8),
                             Text(
-                              'No artworks added yet',
-                              style: TextStyle(
+                              'No artworks added yet'.trData(context),
+                              style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xFF1E1E1E),
@@ -2075,9 +2156,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                             spacing: 8,
                             runSpacing: 8,
                             children: [
-                              const Text(
-                                'Photo Galleries',
-                                style: TextStyle(
+                              Text(
+                                'Photo Galleries'.trData(context),
+                                style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFF1E1E1E),
@@ -2106,9 +2187,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                   size: 16,
                                   color: Color(0xFF1E1E1E),
                                 ),
-                                label: const Text(
-                                  'Create Gallery',
-                                  style: TextStyle(
+                                label: Text(
+                                  'Create Gallery'.trData(context),
+                                  style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                     color: Color(0xFF1E1E1E),
@@ -2123,16 +2204,16 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                           if (_photoGalleries.isEmpty)
                             Center(
                               child: Column(
-                                children: const [
-                                  Icon(
+                                children: [
+                                  const Icon(
                                     Icons.collections_outlined,
                                     size: 48,
                                     color: Color(0xFF64748B),
                                   ),
-                                  SizedBox(height: 10),
+                                  const SizedBox(height: 10),
                                   Text(
-                                    'No photo galleries available yet',
-                                    style: TextStyle(
+                                    'No photo galleries available yet'.trData(context),
+                                    style: const TextStyle(
                                       fontSize: 13.5,
                                       color: Color(0xFF64748B),
                                     ),
@@ -2231,10 +2312,11 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
             item['is_featured']?.toString() == '1' ||
             item['is_featured']?.toString() == 'true';
         final imageUrl = (item['image_url'] ?? item['image'] ?? '').toString();
-        final title = (item['title'] ?? 'Artwork ${index + 1}').toString();
+        final title = (item['title'] ?? 'Artwork ${index + 1}').toString().trData(context);
         final year = (item['year'] ?? '2024').toString();
         final medium = (item['medium'] ?? 'Mixed Media').toString().trData(context);
         final dimensions = (item['dimensions'] ?? '').toString();
+
 
         return InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -2291,9 +2373,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                 ),
                               ],
                             ),
-                            child: const Text(
-                              'Featured',
-                              style: TextStyle(
+                            child: Text(
+                              'Featured'.trData(context),
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
@@ -2388,10 +2470,11 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
             : int.tryParse(item['id']?.toString() ?? '') ?? (index + 1);
         final isFav = _favoritedArtworks.contains(itemId);
         final imageUrl = (item['image_url'] ?? item['image'] ?? '').toString();
-        final title = (item['title'] ?? 'Artwork ${index + 1}').toString();
+        final title = (item['title'] ?? 'Artwork ${index + 1}').toString().trData(context);
         final year = (item['year'] ?? '2024').toString();
         final medium = (item['medium'] ?? 'Mixed Media').toString().trData(context);
         final dimensions = (item['dimensions'] ?? '').toString();
+
 
         return InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -2540,9 +2623,10 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
 
   Widget _buildGalleryCard(Map<String, dynamic> gallery) {
     final image = (gallery['image'] ?? gallery['image_url'] ?? '').toString();
-    final title = (gallery['title'] ?? gallery['name'] ?? 'Photo Gallery').toString();
-    final subtitle = (gallery['subtitle'] ?? gallery['description'] ?? '').toString();
-    final count = (gallery['count'] ?? (gallery['photo_count'] != null ? '${gallery['photo_count']} photos' : '1 photos')).toString();
+    final title = (gallery['title'] ?? gallery['name'] ?? 'Photo Gallery').toString().trData(context);
+    final subtitle = (gallery['subtitle'] ?? gallery['description'] ?? '').toString().trData(context);
+    final count = (gallery['count'] ?? (gallery['photo_count'] != null ? '${gallery['photo_count']} photos' : '1 photos')).toString().trData(context);
+
     final cardFallbackIdx = _computeFallbackIndex(title, 0);
 
     return InkWell(
@@ -2654,23 +2738,23 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                       }
                     },
                     itemBuilder: (context) => [
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'edit',
                         child: Row(
                           children: [
-                            Icon(Icons.edit_outlined, size: 18, color: Color(0xFF0F172A)),
-                            SizedBox(width: 8),
-                            Text('Edit Gallery', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                            const Icon(Icons.edit_outlined, size: 18, color: Color(0xFF0F172A)),
+                            const SizedBox(width: 8),
+                            Text('Edit Gallery'.trData(context), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                           ],
                         ),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(Icons.delete_outline, size: 18, color: Color(0xFFDC2626)),
-                            SizedBox(width: 8),
-                            Text('Delete Gallery', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFDC2626))),
+                            const Icon(Icons.delete_outline, size: 18, color: Color(0xFFDC2626)),
+                            const SizedBox(width: 8),
+                            Text('Delete Gallery'.trData(context), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFDC2626))),
                           ],
                         ),
                       ),
@@ -2686,9 +2770,10 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
   }
 
   void _showPhotoGalleryModal(Map<String, dynamic> gallery) {
-    final title = (gallery['title'] ?? gallery['name'] ?? 'Photo Gallery').toString();
-    final subtitle = (gallery['subtitle'] ?? gallery['description'] ?? '').toString();
+    final title = (gallery['title'] ?? gallery['name'] ?? 'Photo Gallery').toString().trData(context);
+    final subtitle = (gallery['subtitle'] ?? gallery['description'] ?? '').toString().trData(context);
     final mainImage = (gallery['image'] ?? gallery['image_url'] ?? '').toString();
+
 
     // Extract images
     final List<String> images = [];
@@ -2791,6 +2876,21 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                             onPressed: () {
                               Navigator.pop(context);
                               _confirmDeleteGallery(gallery);
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.share_outlined, color: Colors.white, size: 20),
+                            tooltip: 'Share Artwork',
+                            onPressed: () {
+                              final currentImg = activeIdx < images.length ? images[activeIdx] : null;
+                              ShareHelper.shareArtwork(
+                                context: context,
+                                artworkId: gallery['id']?.toString() ?? '',
+                                title: title,
+                                artistName: _effectiveArtist?.name ?? widget.artist?.name ?? 'Artist',
+                                artistId: _effectiveArtist?.id ?? widget.artist?.id ?? widget.artistId,
+                                imageUrl: currentImg,
+                              );
                             },
                           ),
                           IconButton(

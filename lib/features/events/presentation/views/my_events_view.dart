@@ -12,6 +12,8 @@ import '../../../../core/widgets/app_cached_image.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../home/presentation/widgets/home_footer_widget.dart';
 import '../../domain/models/art_event_model.dart';
+import '../../../../core/utils/share_helper.dart';
+import '../../../../core/utils/data_translator.dart';
 
 class MyEventsView extends StatefulWidget {
   const MyEventsView({super.key});
@@ -39,10 +41,16 @@ class _MyEventsViewState extends State<MyEventsView> {
         setState(() => _myCreatedEvents = events);
       }
     });
+    DataTranslator.translationNotifier.addListener(_onTranslationChanged);
+  }
+
+  void _onTranslationChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
     _eventsSub?.cancel();
     _searchController.dispose();
     super.dispose();
@@ -194,13 +202,13 @@ class _MyEventsViewState extends State<MyEventsView> {
                             border: Border.all(color: const Color(0xFFFDE68A)),
                           ),
                           child: Row(
-                            children: const [
-                              Icon(Icons.hourglass_top_rounded, size: 20, color: Color(0xFFD97706)),
-                              SizedBox(width: 10),
+                            children: [
+                              const Icon(Icons.hourglass_top_rounded, size: 20, color: Color(0xFFD97706)),
+                              const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
-                                  'Submitted events are sent to the administrator for review and will be published once approved.',
-                                  style: TextStyle(fontSize: 12.5, color: Color(0xFF92400E), height: 1.35, fontWeight: FontWeight.w500),
+                                  'Submitted events are sent to the administrator for review and will be published once approved.'.trData(context),
+                                  style: const TextStyle(fontSize: 12.5, color: Color(0xFF92400E), height: 1.35, fontWeight: FontWeight.w500),
                                 ),
                               ),
                             ],
@@ -277,162 +285,234 @@ class _MyEventsViewState extends State<MyEventsView> {
                           itemBuilder: (context, index) {
                             final event = filtered[index];
 
-                            return Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
+                            return Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () => context.push(RouteNames.eventDetailWithId(event.id), extra: event),
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: const Color(0xFFCBD5E1)),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.04),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (event.imageUrl != null && event.imageUrl!.isNotEmpty)
-                                    ClipRRect(
-                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                                      child: AppCachedImage(
-                                        imageUrl: event.imageUrl!,
-                                        height: 140,
-                                        width: double.infinity,
-                                        fit: BoxFit.cover,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: const Color(0xFFCBD5E1)),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.04),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
                                       ),
-                                    ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(16),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      if (event.imageUrl != null && event.imageUrl!.isNotEmpty)
+                                        Stack(
                                           children: [
-                                            Expanded(
-                                              child: Text(
-                                                event.localizedTitle(context),
-                                                style: const TextStyle(
-                                                  fontSize: 17,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Color(0xFF0F172A),
+                                            ClipRRect(
+                                              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                                              child: AppCachedImage(
+                                                imageUrl: event.imageUrl!,
+                                                height: 140,
+                                                width: double.infinity,
+                                                fit: BoxFit.cover,
+                                              ),
+                                            ),
+                                            Positioned(
+                                              top: 8,
+                                              right: 8,
+                                              child: Material(
+                                                color: Colors.black.withValues(alpha: 0.5),
+                                                shape: const CircleBorder(),
+                                                child: InkWell(
+                                                  customBorder: const CircleBorder(),
+                                                  onTap: () {
+                                                    ShareHelper.shareEvent(
+                                                      context: context,
+                                                      eventId: event.id,
+                                                      title: event.title,
+                                                      location: event.location,
+                                                      imageUrl: event.imageUrl,
+                                                      dateTime: event.dateTime,
+                                                    );
+                                                  },
+                                                  child: const Padding(
+                                                    padding: EdgeInsets.all(6),
+                                                    child: Icon(Icons.share_outlined, color: Colors.white, size: 18),
+                                                  ),
                                                 ),
                                               ),
                                             ),
-                                            const SizedBox(width: 8),
-                                            Wrap(
-                                              spacing: 6,
-                                              runSpacing: 4,
-                                              crossAxisAlignment: WrapCrossAlignment.center,
+                                          ],
+                                        ),
+                                      Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                               children: [
-                                                Builder(
-                                                  builder: (context) {
-                                                    final isPending = event.status.toLowerCase().trim() == 'pending' ||
-                                                        (!event.isActive &&
-                                                            event.status.toLowerCase().trim() != 'cancelled' &&
-                                                            event.status.toLowerCase().trim() != 'inactive');
-                                                    return Container(
-                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                      decoration: BoxDecoration(
-                                                        color: isPending ? const Color(0xFFFEF3C7) : const Color(0xFFDCFCE7),
-                                                        borderRadius: BorderRadius.circular(10),
-                                                        border: Border.all(
-                                                          color: isPending ? const Color(0xFFFDE68A) : const Color(0xFFBBF7D0),
-                                                          width: 0.8,
-                                                        ),
-                                                      ),
-                                                      child: Row(
-                                                        mainAxisSize: MainAxisSize.min,
-                                                        children: [
-                                                          Icon(
-                                                            isPending ? Icons.hourglass_top_rounded : Icons.check_circle_outline_rounded,
-                                                            size: 11,
-                                                            color: isPending ? const Color(0xFFD97706) : const Color(0xFF16A34A),
-                                                          ),
-                                                          const SizedBox(width: 4),
-                                                          Text(
-                                                            isPending
-                                                                ? (l10n.localeName == 'ar' ? 'قيد المراجعة' : 'Pending Review')
-                                                                : (l10n.localeName == 'ar' ? 'معتمد ونشط' : 'Approved & Live'),
-                                                            style: TextStyle(
-                                                              color: isPending ? const Color(0xFFB45309) : const Color(0xFF15803D),
-                                                              fontSize: 10.5,
-                                                              fontWeight: FontWeight.bold,
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    );
-                                                  },
-                                                ),
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                  decoration: BoxDecoration(
-                                                    color: const Color(0xFFF3E8FF),
-                                                    borderRadius: BorderRadius.circular(10),
-                                                  ),
+                                                Expanded(
                                                   child: Text(
-                                                    event.localizedCategory(context),
+                                                    event.localizedTitle(context),
                                                     style: const TextStyle(
-                                                      color: Color(0xFF6A2777),
-                                                      fontSize: 11,
+                                                      fontSize: 17,
                                                       fontWeight: FontWeight.bold,
+                                                      color: Color(0xFF0F172A),
                                                     ),
                                                   ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Wrap(
+                                                  spacing: 6,
+                                                  runSpacing: 4,
+                                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                                  children: [
+                                                    Builder(
+                                                      builder: (context) {
+                                                        final isPending = event.status.toLowerCase().trim() == 'pending' ||
+                                                            (!event.isActive &&
+                                                                event.status.toLowerCase().trim() != 'cancelled' &&
+                                                                event.status.toLowerCase().trim() != 'inactive');
+                                                        return Container(
+                                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                          decoration: BoxDecoration(
+                                                            color: isPending ? const Color(0xFFFEF3C7) : const Color(0xFFDCFCE7),
+                                                            borderRadius: BorderRadius.circular(10),
+                                                            border: Border.all(
+                                                              color: isPending ? const Color(0xFFFDE68A) : const Color(0xFFBBF7D0),
+                                                              width: 0.8,
+                                                            ),
+                                                          ),
+                                                          child: Row(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            children: [
+                                                              Icon(
+                                                                isPending ? Icons.hourglass_top_rounded : Icons.check_circle_outline_rounded,
+                                                                size: 11,
+                                                                color: isPending ? const Color(0xFFD97706) : const Color(0xFF16A34A),
+                                                              ),
+                                                              const SizedBox(width: 4),
+                                                              Text(
+                                                                isPending
+                                                                    ? (l10n.localeName == 'ar' ? 'قيد المراجعة' : 'Pending Review')
+                                                                    : (l10n.localeName == 'ar' ? 'معتمد ونشط' : 'Approved & Live'),
+                                                                style: TextStyle(
+                                                                  color: isPending ? const Color(0xFFB45309) : const Color(0xFF15803D),
+                                                                  fontSize: 10.5,
+                                                                  fontWeight: FontWeight.bold,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        );
+                                                      },
+                                                    ),
+                                                    Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                      decoration: BoxDecoration(
+                                                        color: const Color(0xFFF3E8FF),
+                                                        borderRadius: BorderRadius.circular(10),
+                                                      ),
+                                                      child: Text(
+                                                        event.localizedCategory(context),
+                                                        style: const TextStyle(
+                                                          color: Color(0xFF6A2777),
+                                                          fontSize: 11,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Row(
+                                              children: [
+                                                const Icon(Icons.calendar_today_outlined, size: 14, color: Color(0xFF64748B)),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  event.dateTime,
+                                                  style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Row(
+                                              children: [
+                                                const Icon(Icons.location_on_outlined, size: 14, color: Color(0xFF64748B)),
+                                                const SizedBox(width: 6),
+                                                Expanded(
+                                                  child: Text(
+                                                    event.localizedLocation(context),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                    style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 12),
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text(
+                                                  l10n.localeName == 'ar' ? 'دخول مجاني للمجتمع' : 'Free Community Entry',
+                                                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                                                ),
+                                                Row(
+                                                  children: [
+                                                    Text(
+                                                      l10n.localeName == 'ar'
+                                                          ? 'السعة: ${event.maxAttendees} حاضر'
+                                                          : 'Capacity: ${event.maxAttendees} attendees',
+                                                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF6A2777)),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    InkWell(
+                                                      borderRadius: BorderRadius.circular(6),
+                                                      onTap: () {
+                                                        ShareHelper.shareEvent(
+                                                          context: context,
+                                                          eventId: event.id,
+                                                          title: event.title,
+                                                          location: event.location,
+                                                          imageUrl: event.imageUrl,
+                                                          dateTime: event.dateTime,
+                                                        );
+                                                      },
+                                                      child: Container(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                        decoration: BoxDecoration(
+                                                          color: const Color(0xFFF3E8FF),
+                                                          borderRadius: BorderRadius.circular(6),
+                                                        ),
+                                                        child: Row(
+                                                          mainAxisSize: MainAxisSize.min,
+                                                          children: [
+                                                            const Icon(Icons.share_outlined, size: 13, color: Color(0xFF6A2777)),
+                                                            const SizedBox(width: 4),
+                                                            Text(
+                                                              l10n.localeName == 'ar' ? 'مشاركة' : 'Share',
+                                                              style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF6A2777)),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ],
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 8),
-                                        Row(
-                                          children: [
-                                            const Icon(Icons.calendar_today_outlined, size: 14, color: Color(0xFF64748B)),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              event.dateTime,
-                                              style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          children: [
-                                            const Icon(Icons.location_on_outlined, size: 14, color: Color(0xFF64748B)),
-                                            const SizedBox(width: 6),
-                                            Expanded(
-                                              child: Text(
-                                                event.localizedLocation(context),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 12),
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              l10n.localeName == 'ar' ? 'دخول مجاني للمجتمع' : 'Free Community Entry',
-                                              style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                                            ),
-                                            Text(
-                                              l10n.localeName == 'ar'
-                                                  ? 'السعة: ${event.maxAttendees} حاضر'
-                                                  : 'Capacity: ${event.maxAttendees} attendees',
-                                              style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF6A2777)),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                ),
                               ),
                             );
                           },

@@ -6,19 +6,24 @@
  * Architecture: High-Performance Single-File OOP Controller-Router System
  */
 
-ob_start();
+// ob_start() removed — not needed for a direct JSON API; reduces output latency.
 
 if (!headers_sent()) {
     header("Access-Control-Allow-Origin: *");
-    header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, If-None-Match");
+    $allowedHeaders = "Content-Type, Authorization, X-Requested-With, If-None-Match, Accept, Accept-Language, Origin, Cache-Control, Pragma, User-Agent";
+    if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'])) {
+        $allowedHeaders .= ", " . $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'];
+    }
+    header("Access-Control-Allow-Headers: $allowedHeaders");
     header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+    header("Access-Control-Max-Age: 86400");
     header("Content-Type: application/json; charset=UTF-8");
     header("Cache-Control: no-cache, no-store, must-revalidate, max-age=0");
     header("Pragma: no-cache");
     header("Expires: 0");
 }
 
-if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+if (isset($_SERVER['REQUEST_METHOD']) && strtoupper($_SERVER['REQUEST_METHOD']) === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
@@ -62,6 +67,9 @@ class DatabaseManager {
 
             $this->provisionMySqlSchema();
         } catch (\PDOException $e) {
+            if (defined('CLI_TEST_MODE') || defined('SAFE_DB_MODE')) {
+                throw $e;
+            }
             http_response_code(500);
             echo json_encode([
                 'status' => 'error',
@@ -80,11 +88,39 @@ class DatabaseManager {
         return self::$instance;
     }
 
+    public static function getPdoOrNull(): ?PDO {
+        try {
+            if (self::$instance === null) {
+                self::$instance = new DatabaseManager();
+            }
+            return self::$instance->pdo;
+        } catch (\Throwable $t) {
+            return null;
+        }
+    }
+
     public function getConnection(): PDO {
         return $this->pdo;
     }
 
+
+    // Current schema version — increment this integer when adding new migrations
+    private const SCHEMA_VERSION = 9;
+
     private function provisionMySqlSchema(): void {
+        // ── Fast path: app_meta table + version check ─────────────────────────
+        // Create the meta table (cheap IF NOT EXISTS) then read the stored version.
+        // If schema is already up-to-date, we skip ALL ALTER TABLE migrations.
+        $this->pdo->exec("
+            CREATE TABLE IF NOT EXISTS app_meta (
+                meta_key   VARCHAR(100) PRIMARY KEY,
+                meta_value TEXT NOT NULL,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ");
+        $versionRow = $this->pdo->query("SELECT meta_value FROM app_meta WHERE meta_key = 'schema_version' LIMIT 1")->fetch();
+        $currentVersion = $versionRow ? (int)$versionRow['meta_value'] : 0;
+
         $this->pdo->exec("
             CREATE TABLE IF NOT EXISTS users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -264,6 +300,7 @@ class DatabaseManager {
                 item_name VARCHAR(100) NOT NULL,
                 weekly_price VARCHAR(50) DEFAULT 'AED 150',
                 monthly_price VARCHAR(50) DEFAULT 'AED 500',
+                six_month_price VARCHAR(50) DEFAULT 'AED 2,500',
                 yearly_price VARCHAR(50) DEFAULT 'AED 4,500',
                 currency VARCHAR(20) DEFAULT 'AED',
                 is_active TINYINT(1) DEFAULT 1,
@@ -281,78 +318,117 @@ class DatabaseManager {
                 is_active TINYINT(1) DEFAULT 1,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            CREATE TABLE IF NOT EXISTS translations_cache (
+                source_hash VARCHAR(64) PRIMARY KEY,
+                source_text TEXT NOT NULL,
+                lang VARCHAR(10) NOT NULL,
+                translated_text TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         ");
 
-        // Safe Column Migrations for Existing Tables
-        $migrations = [
-            "ALTER TABLE bookings ADD COLUMN event_id INT NULL",
-            "ALTER TABLE bookings ADD COLUMN event_title VARCHAR(255) NULL",
-            "ALTER TABLE bookings ADD COLUMN tickets_count INT DEFAULT 1",
-            "ALTER TABLE bookings ADD COLUMN total_price VARCHAR(50) DEFAULT 'Free'",
-            "ALTER TABLE bookings ADD COLUMN status VARCHAR(50) DEFAULT 'Confirmed'",
-            "ALTER TABLE bookings ADD COLUMN budget_range VARCHAR(100) NULL",
-            "ALTER TABLE bookings ADD COLUMN end_date VARCHAR(100) NULL",
-            "ALTER TABLE bookings ADD COLUMN requirements TEXT NULL",
-            "ALTER TABLE artists ADD COLUMN likes_count INT DEFAULT 0",
-            "ALTER TABLE artists ADD COLUMN experience_level VARCHAR(100) NULL",
-            "ALTER TABLE artists ADD COLUMN booking_rate VARCHAR(100) DEFAULT 'AED 1500+'",
-            "ALTER TABLE artists ADD COLUMN email VARCHAR(255) NULL",
-            "ALTER TABLE artists ADD COLUMN phone VARCHAR(50) NULL",
-            "ALTER TABLE artists ADD COLUMN website VARCHAR(255) NULL",
-            "ALTER TABLE artists ADD COLUMN instagram VARCHAR(255) NULL",
-            "ALTER TABLE galleries ADD COLUMN artist_id VARCHAR(100) NULL",
-            "ALTER TABLE galleries ADD COLUMN artist_name VARCHAR(255) NULL",
-            "ALTER TABLE galleries ADD COLUMN description TEXT NULL",
-            "ALTER TABLE galleries ADD COLUMN photo_count INT DEFAULT 1",
-            "ALTER TABLE galleries ADD COLUMN images_json TEXT NULL",
-            "ALTER TABLE galleries ADD COLUMN contact_person VARCHAR(255) NULL",
-            "ALTER TABLE galleries ADD COLUMN email VARCHAR(255) NULL",
-            "ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'user'",
-            "ALTER TABLE galleries ADD COLUMN phone VARCHAR(100) NULL",
-            "ALTER TABLE galleries ADD COLUMN about TEXT NULL",
-            "ALTER TABLE galleries ADD COLUMN status VARCHAR(50) DEFAULT 'approved'",
-            "ALTER TABLE galleries ADD COLUMN is_public TINYINT(1) DEFAULT 1",
-            "ALTER TABLE galleries ADD COLUMN is_approved TINYINT(1) DEFAULT 1",
-            "ALTER TABLE government_entities ADD COLUMN base_rating DECIMAL(3,1) DEFAULT 4.5",
-            "ALTER TABLE government_entities ADD COLUMN base_review_count INT DEFAULT 100",
-            "ALTER TABLE government_entities ADD COLUMN rating DECIMAL(3,1) DEFAULT 4.5",
-            "ALTER TABLE government_entities ADD COLUMN review_count INT DEFAULT 100",
-            "ALTER TABLE artists ADD INDEX idx_artist_cat (category)",
-            "ALTER TABLE artists ADD INDEX idx_artist_email (email)",
-            "ALTER TABLE events ADD INDEX idx_event_cat (category)",
-            "ALTER TABLE events ADD INDEX idx_event_contact (contact_email)",
-            "ALTER TABLE bookings ADD INDEX idx_booking_email (email)",
-            "ALTER TABLE bookings ADD INDEX idx_booking_status (status)",
-            "ALTER TABLE artworks ADD INDEX idx_artworks_artist (artist_id)",
-            "ALTER TABLE galleries ADD INDEX idx_gallery_cat (category)",
-            "ALTER TABLE galleries ADD INDEX idx_gallery_status (status)",
-            "ALTER TABLE events ADD COLUMN galleries_json LONGTEXT NULL",
-            "ALTER TABLE events ADD COLUMN status VARCHAR(50) DEFAULT 'active'",
-            "ALTER TABLE events ADD COLUMN is_active TINYINT(1) DEFAULT 1",
-            "ALTER TABLE events ADD COLUMN publishing_plan VARCHAR(50) DEFAULT 'weekly'",
-            "ALTER TABLE events ADD COLUMN publishing_amount VARCHAR(50) DEFAULT 'AED 150'",
-            "ALTER TABLE events ADD COLUMN payment_status VARCHAR(50) DEFAULT 'pending'",
-            "ALTER TABLE events ADD COLUMN payment_proof_url TEXT NULL",
-            "ALTER TABLE events ADD COLUMN payment_reference VARCHAR(100) NULL",
-            "ALTER TABLE galleries ADD COLUMN publishing_plan VARCHAR(50) DEFAULT 'weekly'",
-            "ALTER TABLE galleries ADD COLUMN publishing_amount VARCHAR(50) DEFAULT 'AED 200'",
-            "ALTER TABLE galleries ADD COLUMN payment_status VARCHAR(50) DEFAULT 'pending'",
-            "ALTER TABLE galleries ADD COLUMN payment_proof_url TEXT NULL",
-            "ALTER TABLE galleries ADD COLUMN payment_reference VARCHAR(100) NULL",
-            "ALTER TABLE artists ADD COLUMN status VARCHAR(50) DEFAULT 'active'",
-            "ALTER TABLE artists ADD COLUMN is_active TINYINT(1) DEFAULT 1",
-            "ALTER TABLE galleries ADD COLUMN event_name VARCHAR(255) NULL",
-            "ALTER TABLE galleries ADD COLUMN event_id VARCHAR(100) NULL",
-            "ALTER TABLE galleries ADD INDEX idx_gallery_event (event_name)",
-            "UPDATE artists SET banner_url = REPLACE(banner_url, 'api.php?resource=uploads&file=', 'uploads/') WHERE banner_url LIKE '%api.php?resource=uploads&file=%'",
-            "UPDATE artists SET avatar_url = REPLACE(avatar_url, 'api.php?resource=uploads&file=', 'uploads/') WHERE avatar_url LIKE '%api.php?resource=uploads&file=%'",
-            "UPDATE artworks SET image_url = REPLACE(image_url, 'api.php?resource=uploads&file=', 'uploads/') WHERE image_url LIKE '%api.php?resource=uploads&file=%'",
-            "UPDATE events SET image_url = REPLACE(image_url, 'api.php?resource=uploads&file=', 'uploads/') WHERE image_url LIKE '%api.php?resource=uploads&file=%'",
-            "UPDATE galleries SET image_url = REPLACE(image_url, 'api.php?resource=uploads&file=', 'uploads/') WHERE image_url LIKE '%api.php?resource=uploads&file=%'",
-            "UPDATE artists a SET works_count = (SELECT COUNT(*) FROM artworks WHERE artist_id = a.id OR (artist_id IS NULL AND artist_name IS NOT NULL AND LOWER(artist_name) = LOWER(a.name)))"
-        ];
-        foreach ($migrations as $m) {
-            try { $this->pdo->exec($m); } catch (\Throwable $t) {}
+        // ── Schema migration guard ─────────────────────────────────────────────
+        // Migrations only run when the stored schema_version is below SCHEMA_VERSION.
+        // On a fully-provisioned production server this block is skipped entirely,
+        // eliminating 35+ ALTER TABLE checks that previously ran on EVERY request.
+        if ($currentVersion < self::SCHEMA_VERSION) {
+            $migrations = [
+                // v1-v7: column additions & legacy indexes
+                "ALTER TABLE bookings ADD COLUMN event_id INT NULL",
+                "ALTER TABLE bookings ADD COLUMN event_title VARCHAR(255) NULL",
+                "ALTER TABLE bookings ADD COLUMN tickets_count INT DEFAULT 1",
+                "ALTER TABLE bookings ADD COLUMN total_price VARCHAR(50) DEFAULT 'Free'",
+                "ALTER TABLE bookings ADD COLUMN status VARCHAR(50) DEFAULT 'Confirmed'",
+                "ALTER TABLE bookings ADD COLUMN budget_range VARCHAR(100) NULL",
+                "ALTER TABLE bookings ADD COLUMN end_date VARCHAR(100) NULL",
+                "ALTER TABLE bookings ADD COLUMN requirements TEXT NULL",
+                "ALTER TABLE artists ADD COLUMN likes_count INT DEFAULT 0",
+                "ALTER TABLE artists ADD COLUMN experience_level VARCHAR(100) NULL",
+                "ALTER TABLE artists ADD COLUMN booking_rate VARCHAR(100) DEFAULT 'AED 1500+'",
+                "ALTER TABLE artists ADD COLUMN email VARCHAR(255) NULL",
+                "ALTER TABLE artists ADD COLUMN phone VARCHAR(50) NULL",
+                "ALTER TABLE artists ADD COLUMN website VARCHAR(255) NULL",
+                "ALTER TABLE artists ADD COLUMN instagram VARCHAR(255) NULL",
+                "ALTER TABLE galleries ADD COLUMN artist_id VARCHAR(100) NULL",
+                "ALTER TABLE galleries ADD COLUMN artist_name VARCHAR(255) NULL",
+                "ALTER TABLE galleries ADD COLUMN description TEXT NULL",
+                "ALTER TABLE galleries ADD COLUMN photo_count INT DEFAULT 1",
+                "ALTER TABLE galleries ADD COLUMN images_json TEXT NULL",
+                "ALTER TABLE galleries ADD COLUMN contact_person VARCHAR(255) NULL",
+                "ALTER TABLE galleries ADD COLUMN email VARCHAR(255) NULL",
+                "ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'user'",
+                "ALTER TABLE galleries ADD COLUMN phone VARCHAR(100) NULL",
+                "ALTER TABLE galleries ADD COLUMN about TEXT NULL",
+                "ALTER TABLE galleries ADD COLUMN status VARCHAR(50) DEFAULT 'approved'",
+                "ALTER TABLE galleries ADD COLUMN is_public TINYINT(1) DEFAULT 1",
+                "ALTER TABLE galleries ADD COLUMN is_approved TINYINT(1) DEFAULT 1",
+                "ALTER TABLE government_entities ADD COLUMN base_rating DECIMAL(3,1) DEFAULT 4.5",
+                "ALTER TABLE government_entities ADD COLUMN base_review_count INT DEFAULT 100",
+                "ALTER TABLE government_entities ADD COLUMN rating DECIMAL(3,1) DEFAULT 4.5",
+                "ALTER TABLE government_entities ADD COLUMN review_count INT DEFAULT 100",
+                "ALTER TABLE artists ADD INDEX idx_artist_cat (category)",
+                "ALTER TABLE artists ADD INDEX idx_artist_email (email)",
+                "ALTER TABLE events ADD INDEX idx_event_cat (category)",
+                "ALTER TABLE events ADD INDEX idx_event_contact (contact_email)",
+                "ALTER TABLE bookings ADD INDEX idx_booking_email (email)",
+                "ALTER TABLE bookings ADD INDEX idx_booking_status (status)",
+                "ALTER TABLE artworks ADD INDEX idx_artworks_artist (artist_id)",
+                "ALTER TABLE galleries ADD INDEX idx_gallery_cat (category)",
+                "ALTER TABLE galleries ADD INDEX idx_gallery_status (status)",
+                "ALTER TABLE events ADD COLUMN galleries_json LONGTEXT NULL",
+                "ALTER TABLE events ADD COLUMN status VARCHAR(50) DEFAULT 'active'",
+                "ALTER TABLE events ADD COLUMN is_active TINYINT(1) DEFAULT 1",
+                "ALTER TABLE events ADD COLUMN publishing_plan VARCHAR(50) DEFAULT 'weekly'",
+                "ALTER TABLE events ADD COLUMN publishing_amount VARCHAR(50) DEFAULT 'AED 150'",
+                "ALTER TABLE events ADD COLUMN payment_status VARCHAR(50) DEFAULT 'pending'",
+                "ALTER TABLE events ADD COLUMN payment_proof_url TEXT NULL",
+                "ALTER TABLE events ADD COLUMN payment_reference VARCHAR(100) NULL",
+                "ALTER TABLE galleries ADD COLUMN publishing_plan VARCHAR(50) DEFAULT 'weekly'",
+                "ALTER TABLE galleries ADD COLUMN publishing_amount VARCHAR(50) DEFAULT 'AED 200'",
+                "ALTER TABLE galleries ADD COLUMN payment_status VARCHAR(50) DEFAULT 'pending'",
+                "ALTER TABLE galleries ADD COLUMN payment_proof_url TEXT NULL",
+                "ALTER TABLE galleries ADD COLUMN payment_reference VARCHAR(100) NULL",
+                "ALTER TABLE artists ADD COLUMN status VARCHAR(50) DEFAULT 'active'",
+                "ALTER TABLE artists ADD COLUMN is_active TINYINT(1) DEFAULT 1",
+                "ALTER TABLE galleries ADD COLUMN event_name VARCHAR(255) NULL",
+                "ALTER TABLE galleries ADD COLUMN event_id VARCHAR(100) NULL",
+                "ALTER TABLE galleries ADD INDEX idx_gallery_event (event_name)",
+                "ALTER TABLE galleries ADD INDEX idx_gallery_event_id (event_id)",
+                "UPDATE artists SET banner_url = REPLACE(banner_url, 'api.php?resource=uploads&file=', 'uploads/') WHERE banner_url LIKE '%api.php?resource=uploads&file=%'",
+                "UPDATE artists SET avatar_url = REPLACE(avatar_url, 'api.php?resource=uploads&file=', 'uploads/') WHERE avatar_url LIKE '%api.php?resource=uploads&file=%'",
+                "UPDATE artworks SET image_url = REPLACE(image_url, 'api.php?resource=uploads&file=', 'uploads/') WHERE image_url LIKE '%api.php?resource=uploads&file=%'",
+                "UPDATE events SET image_url = REPLACE(image_url, 'api.php?resource=uploads&file=', 'uploads/') WHERE image_url LIKE '%api.php?resource=uploads&file=%'",
+                "UPDATE galleries SET image_url = REPLACE(image_url, 'api.php?resource=uploads&file=', 'uploads/') WHERE image_url LIKE '%api.php?resource=uploads&file=%'",
+                "UPDATE artists a SET works_count = (SELECT COUNT(*) FROM artworks WHERE artist_id = a.id OR (artist_id IS NULL AND artist_name IS NOT NULL AND LOWER(artist_name) = LOWER(a.name)))",
+                "DELETE FROM translations_cache WHERE translated_text = '.' OR translated_text = '..' OR translated_text = '...' OR TRIM(translated_text) = ''",
+                // v8: pricing columns
+                "ALTER TABLE publishing_pricing ADD COLUMN six_month_price VARCHAR(50) DEFAULT 'AED 2,500'",
+                "UPDATE publishing_pricing SET six_month_price = 'AED 3,800' WHERE item_type = 'gallery' AND (six_month_price IS NULL OR six_month_price = '' OR six_month_price = 'AED 2,500')",
+                "ALTER TABLE publishing_pricing ADD COLUMN six_month_badge VARCHAR(100) DEFAULT 'Save 15%'",
+                "ALTER TABLE publishing_pricing ADD COLUMN yearly_badge VARCHAR(100) DEFAULT 'Best Value'",
+                "UPDATE publishing_pricing SET six_month_badge = 'Save 17%' WHERE item_type = 'event' AND (six_month_badge IS NULL OR six_month_badge = '')",
+                "UPDATE publishing_pricing SET six_month_badge = 'Save 15%' WHERE item_type = 'gallery' AND (six_month_badge IS NULL OR six_month_badge = '')",
+                "UPDATE publishing_pricing SET yearly_badge = 'Best Value' WHERE yearly_badge IS NULL OR yearly_badge = ''",
+                // v9: performance indexes on hot filter columns
+                "ALTER TABLE events ADD INDEX idx_event_status (status)",
+                "ALTER TABLE events ADD INDEX idx_event_is_active (is_active)",
+                "ALTER TABLE events ADD INDEX idx_event_payment_status (payment_status)",
+                "ALTER TABLE galleries ADD INDEX idx_gallery_is_approved (is_approved)",
+                "ALTER TABLE galleries ADD INDEX idx_gallery_is_public (is_public)",
+                "ALTER TABLE galleries ADD INDEX idx_gallery_payment_status (payment_status)",
+                "ALTER TABLE artists ADD INDEX idx_artist_is_active (is_active)",
+                "ALTER TABLE artists ADD INDEX idx_artist_status (status)",
+            ];
+            foreach ($migrations as $m) {
+                try { $this->pdo->exec($m); } catch (\Throwable $t) {}
+            }
+
+            // Stamp the new schema version so migrations are skipped next request
+            $this->pdo->prepare(
+                "INSERT INTO app_meta (meta_key, meta_value) VALUES ('schema_version', ?)
+                 ON DUPLICATE KEY UPDATE meta_value = VALUES(meta_value)"
+            )->execute([self::SCHEMA_VERSION]);
         }
 
         $this->seedInitialData();
@@ -517,10 +593,10 @@ class DatabaseManager {
             $pricingCount = (int)$this->pdo->query("SELECT COUNT(*) FROM `publishing_pricing`")->fetchColumn();
             if ($pricingCount === 0) {
                 $pricingSeed = [
-                    [1, 'event', 'Event Publishing', 'AED 150', 'AED 500', 'AED 4,500', 'AED', 1, 'Standard rate for publishing art events, exhibitions, and symposiums on Artist Dubai.'],
-                    [2, 'gallery', 'Gallery Listing & Showcase', 'AED 200', 'AED 750', 'AED 6,500', 'AED', 1, 'Premier directory listing, verified status badge, and spotlight showcase for Dubai art galleries.'],
+                    [1, 'event', 'Event Publishing', 'AED 150', 'AED 500', 'AED 2,500', 'AED 4,500', 'AED', 1, 'Standard rate for publishing art events, exhibitions, and symposiums on Artist Dubai.'],
+                    [2, 'gallery', 'Gallery Listing & Showcase', 'AED 200', 'AED 750', 'AED 3,800', 'AED 6,500', 'AED', 1, 'Premier directory listing, verified status badge, and spotlight showcase for Dubai art galleries.'],
                 ];
-                $pStmt = $this->pdo->prepare("INSERT INTO publishing_pricing (id, item_type, item_name, weekly_price, monthly_price, yearly_price, currency, is_active, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $pStmt = $this->pdo->prepare("INSERT INTO publishing_pricing (id, item_type, item_name, weekly_price, monthly_price, six_month_price, yearly_price, currency, is_active, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 foreach ($pricingSeed as $ps) { $pStmt->execute($ps); }
             }
 
@@ -610,66 +686,22 @@ class BackendTranslator {
             'master' => 'فنان رائد',
             'beginner' => 'مبتدئ',
             'professional' => 'محترف',
-            'amateur' => 'هاوٍ',
-
-            // Artists
-            'renish artistry' => 'رينيش آرتيستري',
-            'fatima al-hashemi' => 'فاطمة الهاشمي',
-            'tariq mansoor' => 'طارق منصور',
-            'elena rostova' => 'إيلينا روستوفا',
-            'zayd al-nuaimi' => 'زايد النعيمي',
-
-            // Artist Bios
-            'celebrated uae visual artist specializing in modern abstract, fluid acrylics, and textured canvas commissions for luxury interiors.' => 'فنان بصري إماراتي مرموق متخصص في التجريد الحديث، الأكريليك السائل، والتكليفات القماشية الفاخرة للديكورات الراقية.',
-            'master calligrapher blending classical thuluth and diwani scripts with contemporary 24k gold leaf illumination.' => 'خطاطة قديرة تدمج خطي الثلث والديواني الكلاسيكيين مع التذهيب المعاصر بورق الذهب عيار 24 قيراط.',
-            'award-winning sculptor creating monumental bronze and marble installations celebrating uae maritime and falconry heritage.' => 'نحات حائز على جوائز ينحت تماثيل ومنحوتات برونزية ورخامية تحتفي بالتراث البحري وتراث الصيد بالصقور في الإمارات.',
-            'pioneer in immersive generative art, 3d projection mapping, and digital collectible artworks for tech and hospitality venues.' => 'رائدة في الفن التوليدي الغامر، ورسم الخرائط ثلاثية الأبعاد، والأعمال الفنية الرقمية للأماكن التقنية والفندقية.',
-            'documentary and landscape photographer capturing the architectural marvels and raw desert wilderness of the arabian peninsula.' => 'مصور وثائقي ومناظر طبيعية يوثق الروائع المعمارية وبراري الصحراء البكر في شبه الجزيرة العربية.',
-
-            // Events
-            'dubai modern art showcase' => 'معرض دبي للفن الحديث',
-            'sharjah calligraphy biennial' => 'بينالي الشارقة للخط العربي',
-            'al quoz bronze & sculpture gala' => 'احتفالية القوز للنحت والبرونز',
-            'generative art & spatial 3d expo' => 'معرض الفن التوليدي والأبعاد الثلاثية',
-            'a premier art gathering bringing together contemporary painters, sculptors, and digital creators in dubai.' => 'ملتقى فني رائد يجمع نخبة من الرسامين والنحاتين والمبدعين الرقميين المعاصرين في دبي.',
-            'celebrating classical and modern arabic calligraphy with master artists from across the islamic world.' => 'الاحتفاء بالخط العربي الكلاسيكي والحديث مع كبار الخطاطين من مختلف أرجاء العالم الإسلامي.',
-            'an open-air evening symposium featuring live bronze casting, marble chiseling, and curator-led walkthroughs.' => 'ندوة مسائية في الهواء الطلق تشمل سباكة البرونز الحية، نحت الرخام، وجولات تفاعلية بإشراف القيمين.',
-            'immersive spatial digital projections, interactive neural network art, and large-format dynamic leds.' => 'إسقاطات رقمية مكانية غامرة، فنون تفاعلية بالشبكات العصبية، وشاشات عرض ديناميكية كبيرة.',
-            'art exhibition' => 'معرض فني',
-            'calligraphy festival' => 'مهرجان الخط العربي',
-            'sculpture & heritage' => 'النحت والتراث',
-            'digital art & tech' => 'الفن الرقمي والتكنولوجيا',
-            'alserkal avenue, warehouse 42' => 'جادة السركال، المستودع 42',
-            'heart of sharjah heritage area' => 'منطقة قلب الشارقة التراثية',
-            'alserkal avenue, the yard' => 'جادة السركال، ذا يارد',
-            'amphitheatre pavilion' => 'جناح المسرح الروماني',
-
-            // Galleries
-            'custot gallery dubai' => 'معرض كوستوت دبي',
-            'leila heller gallery' => 'معرض ليلى هيلر',
-            'the third line' => 'ذا ثيرد لاين',
-            'jameel arts centre' => 'مركز جميل للفنون',
-            'contemporary art' => 'فن معاصر',
-            'modern & contemporary' => 'حديث ومعاصر',
-            'contemporary middle eastern' => 'معاصر من الشرق الأوسط',
-            'contemporary art institution' => 'مؤسسة للفن المعاصر',
-            'tue - sat: 10:00 am - 7:00 pm' => 'الثلاثاء - السبت: ١٠:٠٠ ص - ٠٧:٠٠ م',
-            'sun - thu: 10:00 am - 7:00 pm' => 'الأحد - الخميس: ١٠:٠٠ ص - ٠٧:٠٠ م',
-            'mon - sat: 11:00 am - 7:00 pm' => 'الإثنين - السبت: ١١:٠٠ ص - ٠٧:٠٠ م',
-            'daily: 10:00 am - 8:00 pm' => 'يومياً: ١٠:٠٠ ص - ٠٨:٠٠ م',
-
-            // Artworks
-            'burj horizon in ochre' => 'أفق البرج باللون المغري',
-            'desert mirage symphony' => 'سيمفونية سراب الصحراء',
-            'diwani calligraphic harmony' => 'هارموني الخط الديواني',
-            'a textured exploration of sunset gradients across modern dubai skyline.' => 'استكشاف ملمسي لتدرجات غروب الشمس عبر أفق دبي الحديث.',
-            'dynamic abstract flow reflecting golden hour in the arabian desert.' => 'تدفق تجريدي ديناميكي يعكس الساعة الذهبية في صحراء العرب.',
-            'sacred verses rendered in flowing diwani script with hand-beaten gold leaf.' => 'آيات كريمة بخط ديواني انسيابي مع ورق ذهب مطروق يدوياً.',
+            // Art Mediums
             'oil & acrylic on canvas' => 'زيت وأكريليك على قماش',
             'mixed media with gold flakes' => 'وسائط متعددة مع رقائق الذهب',
             '24k gold leaf & ink' => 'ورق ذهب عيار 24 وحبر',
+            'oil on canvas' => 'زيت على قماش',
+            'acrylic on canvas' => 'أكريليك على قماش',
+            'watercolor on paper' => 'ألوان مائية على ورق',
+            'watercolor' => 'ألوان مائية',
+            'digital painting' => 'رسم رقمي',
+            'bronze & marble' => 'برونز ورخام',
+            'canvas' => 'قماش',
+            'paper' => 'ورق',
+            'wood' => 'خشب',
+            'metal' => 'معدن',
 
-            // Government Entities
+            // Government Entities & Cultural Hubs
             'dubai culture & arts authority' => 'هيئة الثقافة والفنون في دبي (دبي للثقافة)',
             'ministry of culture & youth' => 'وزارة الثقافة والشباب',
             'dubai design district (d3)' => 'حي دبي للتصميم (d3)',
@@ -723,6 +755,17 @@ class BackendTranslator {
             'paid' => 'مدفوع',
             'free entry' => 'دخول مجاني',
             'free admission' => 'الدخول مجاني',
+
+            // Common test & sample entries
+            'test' => 'اختبار',
+            'testing' => 'اختبار',
+            'tezt' => 'اختبار',
+            'demo' => 'عرض تجريبي',
+            'sample' => 'عينة',
+            'trial' => 'تجربة',
+            'good' => 'جيد',
+            'bad' => 'سيء',
+            'abc' => 'اي بي سي',
 
             // API Messages
             'success' => 'تم بنجاح',
@@ -797,6 +840,111 @@ class BackendTranslator {
         ];
     }
 
+    private static array $runtimeCache = [];
+
+    public static function isValidTranslationCandidate(string $text, string $lang, string $sourceText): bool {
+        $trimmed = trim($text);
+        if ($trimmed === '') return false;
+        if (stripos($trimmed, 'MYMEMORY WARNING') !== false) return false;
+        if (strcasecmp($trimmed, $sourceText) === 0) return false;
+
+        // Reject pure punctuation
+        if (trim($trimmed, " \t\n\r\0\x0B.,!?:;\"'()[]{}/*#@$%^&~-_=+\\|<>`") === '') {
+            return false;
+        }
+
+        // If target is Arabic, ensure it contains at least one Arabic character
+        if ($lang === 'ar' && !preg_match('/[\x{0600}-\x{06FF}]/u', $trimmed)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static function fetchOnlineTranslation(string $text, string $lang = 'ar'): ?string {
+        try {
+            $url = 'https://api.mymemory.translated.net/get?q=' . urlencode($text) . '&langpair=en|' . $lang;
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+            curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            $res = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            if ($httpCode === 200 && !empty($res)) {
+                $data = json_decode($res, true);
+                if (isset($data['responseData']['translatedText'])) {
+                    $resText = html_entity_decode((string)$data['responseData']['translatedText'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                    if (self::isValidTranslationCandidate($resText, $lang, $text)) {
+                        return $resText;
+                    }
+                }
+                if (!empty($data['matches']) && is_array($data['matches'])) {
+                    foreach ($data['matches'] as $match) {
+                        if (!empty($match['translation'])) {
+                            $resText = html_entity_decode((string)$match['translation'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                            if (self::isValidTranslationCandidate($resText, $lang, $text)) {
+                                return $resText;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $t) {}
+
+        return null;
+    }
+
+    public static function translateDynamic(string $text, string $lang = 'ar'): string {
+        $trimmed = trim($text);
+        if ($trimmed === '' || $lang !== 'ar') return $text;
+
+        // If text already has Arabic and no Latin letters, return as is
+        if (preg_match('/[\x{0600}-\x{06FF}]/u', $trimmed) && !preg_match('/[a-zA-Z]/', $trimmed)) {
+            return $trimmed;
+        }
+
+        $cacheKey = $lang . ':' . strtolower($trimmed);
+        if (isset(self::$runtimeCache[$cacheKey])) {
+            return self::$runtimeCache[$cacheKey];
+        }
+
+        // Check persistent database cache
+        $hash = hash('sha256', $cacheKey);
+        $db = DatabaseManager::getPdoOrNull();
+        if ($db !== null) {
+            try {
+                $stmt = $db->prepare("SELECT translated_text FROM translations_cache WHERE source_hash = ? LIMIT 1");
+                $stmt->execute([$hash]);
+                $cached = $stmt->fetchColumn();
+                if ($cached !== false && !empty($cached)) {
+                    $cachedStr = (string)$cached;
+                    if (self::isValidTranslationCandidate($cachedStr, $lang, $trimmed)) {
+                        self::$runtimeCache[$cacheKey] = $cachedStr;
+                        return $cachedStr;
+                    }
+                }
+            } catch (\Throwable $t) {}
+        }
+
+        // Fetch dynamic translation online
+        $translated = self::fetchOnlineTranslation($trimmed, $lang);
+        if (!empty($translated) && self::isValidTranslationCandidate($translated, $lang, $trimmed)) {
+            self::$runtimeCache[$cacheKey] = $translated;
+            if ($db !== null) {
+                try {
+                    $ins = $db->prepare("INSERT INTO translations_cache (source_hash, source_text, lang, translated_text) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE translated_text = VALUES(translated_text)");
+                    $ins->execute([$hash, $trimmed, $lang, $translated]);
+                } catch (\Throwable $t) {}
+            }
+            return $translated;
+        }
+
+        self::$runtimeCache[$cacheKey] = $trimmed;
+        return $trimmed;
+    }
+
     public static function translateString(string $text, string $lang = 'ar'): string {
         if ($lang !== 'ar') return $text;
         $trimmed = trim($text);
@@ -812,6 +960,11 @@ class BackendTranslator {
             return $text;
         }
 
+        // If already pure Arabic
+        if (preg_match('/[\x{0600}-\x{06FF}]/u', $trimmed) && !preg_match('/[a-zA-Z]/', $trimmed)) {
+            return $trimmed;
+        }
+
         self::initDictionary();
 
         $lower = strtolower($trimmed);
@@ -825,14 +978,22 @@ class BackendTranslator {
 
         // Phrase replacements for composite strings
         $result = $trimmed;
+        $replaced = false;
         foreach (self::$phraseReplacements as $en => $ar) {
             if (stripos($result, $en) !== false) {
                 $result = str_ireplace($en, $ar, $result);
+                $replaced = true;
             }
+        }
+
+        // If still contains Latin words, dynamically translate arbitrary database text
+        if (preg_match('/[a-zA-Z]{2,}/', $result)) {
+            return self::translateDynamic($result, $lang);
         }
 
         return $result;
     }
+
 
     private static function isTranslatableKey(string $key): bool {
         $translatable = [
@@ -872,7 +1033,10 @@ class BackendTranslator {
                         if (!isset($data[$enKey]) && !isset($translated[$enKey])) {
                             $translated[$enKey] = $val;
                         }
-                        $translated[$key] = self::translateString($val, $lang);
+                        $trVal = self::translateString($val, $lang);
+                        $trimmedTr = trim($trVal);
+                        $isJunk = ($trimmedTr === '' || trim($trimmedTr, " \t\n\r\0\x0B.,!?:;\"'()[]{}/*#@$%^&~-_=+\\|<>`") === '');
+                        $translated[$key] = $isJunk ? $val : $trVal;
                     } else {
                         $translated[$key] = $val;
                     }
@@ -909,7 +1073,25 @@ class ApiResponse {
         if ($pagination !== null) {
             $payload['pagination'] = $pagination;
         }
-        echo json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        $json = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        // ── ETag + Conditional Caching for GET read-only requests ─────────────
+        // Safe read endpoints can be cached for 60s. Mutations bypass caching.
+        $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+        if ($method === 'GET' && !headers_sent()) {
+            $etag = '"' . md5($json) . '"';
+            $ifNoneMatch = $_SERVER['HTTP_IF_NONE_MATCH'] ?? '';
+            header('Cache-Control: public, max-age=60, stale-while-revalidate=120');
+            header('ETag: ' . $etag);
+            if ($ifNoneMatch === $etag) {
+                http_response_code(304);
+                if (!defined('CLI_TEST_MODE')) exit();
+                return;
+            }
+        }
+
+        echo $json;
         if (!defined('CLI_TEST_MODE')) {
             exit();
         }
@@ -1875,24 +2057,26 @@ class EventController {
             if (!empty($ev['galleries_json'])) {
                 $eventGalleries = json_decode($ev['galleries_json'], true) ?: [];
             }
-            try {
-                $gStmt = $this->db->prepare('SELECT * FROM galleries WHERE (event_id = ? OR event_name = ? OR (description LIKE ?)) AND (status = "approved" OR status = "active" OR is_public = 1 OR is_approved = 1) ORDER BY id DESC');
-                $gStmt->execute([$ev['id'], $ev['title'], "%{$ev['title']}%"]);
-                $dbGals = $gStmt->fetchAll();
-                foreach ($dbGals as $dg) {
-                    $imgs = !empty($dg['images_json']) ? json_decode($dg['images_json'], true) : [];
-                    if (empty($imgs) && !empty($dg['image_url'])) $imgs = [$dg['image_url']];
-                    $eventGalleries[] = [
-                        'id' => (int)$dg['id'],
-                        'title' => $dg['name'],
-                        'subtitle' => $dg['description'] ?: '',
-                        'image_url' => $dg['image_url'] ?: ($imgs[0] ?? ''),
-                        'photo_count' => count($imgs) ?: 1,
-                        'date' => $dg['created_at'] ?: '',
-                        'images' => $imgs,
-                    ];
-                }
-            } catch (\Throwable $t) {}
+            if (empty($eventGalleries) && !empty($ev['id'])) {
+                try {
+                    $gStmt = $this->db->prepare('SELECT * FROM galleries WHERE (event_id = ? OR event_name = ?) AND (status = "approved" OR status = "active" OR is_public = 1 OR is_approved = 1) ORDER BY id DESC LIMIT 10');
+                    $gStmt->execute([$ev['id'], $ev['title']]);
+                    $dbGals = $gStmt->fetchAll();
+                    foreach ($dbGals as $dg) {
+                        $imgs = !empty($dg['images_json']) ? json_decode($dg['images_json'], true) : [];
+                        if (empty($imgs) && !empty($dg['image_url'])) $imgs = [$dg['image_url']];
+                        $eventGalleries[] = [
+                            'id' => (int)$dg['id'],
+                            'title' => $dg['name'],
+                            'subtitle' => $dg['description'] ?: '',
+                            'image_url' => $dg['image_url'] ?: ($imgs[0] ?? ''),
+                            'photo_count' => count($imgs) ?: 1,
+                            'date' => $dg['created_at'] ?: '',
+                            'images' => $imgs,
+                        ];
+                    }
+                } catch (\Throwable $t) {}
+            }
             $ev['galleries'] = $eventGalleries;
         }
 
@@ -3428,10 +3612,10 @@ class PublishingPricingController {
             // If empty, auto-seed and reload
             if (empty($pricing)) {
                 $this->db->exec("
-                    INSERT INTO publishing_pricing (item_type, item_name, weekly_price, monthly_price, yearly_price, currency, is_active, description)
+                    INSERT INTO publishing_pricing (item_type, item_name, weekly_price, monthly_price, six_month_price, yearly_price, currency, is_active, description)
                     VALUES 
-                    ('event', 'Event Publishing', 'AED 150', 'AED 500', 'AED 4,500', 'AED', 1, 'Standard rate for publishing art events, exhibitions, and symposiums on Artist Dubai.'),
-                    ('gallery', 'Gallery Listing & Showcase', 'AED 200', 'AED 750', 'AED 6,500', 'AED', 1, 'Premier directory listing, verified status badge, and spotlight showcase for Dubai art galleries.')
+                    ('event', 'Event Publishing', 'AED 150', 'AED 500', 'AED 2,500', 'AED 4,500', 'AED', 1, 'Standard rate for publishing art events, exhibitions, and symposiums on Artist Dubai.'),
+                    ('gallery', 'Gallery Listing & Showcase', 'AED 200', 'AED 750', 'AED 3,800', 'AED 6,500', 'AED', 1, 'Premier directory listing, verified status badge, and spotlight showcase for Dubai art galleries.')
                     ON DUPLICATE KEY UPDATE item_name=VALUES(item_name)
                 ");
                 $pricing = $this->db->query("SELECT * FROM publishing_pricing ORDER BY id ASC")->fetchAll(PDO::FETCH_ASSOC);
@@ -3455,12 +3639,15 @@ class PublishingPricingController {
 
             $weeklyPrice = InputSanitizer::cleanString($input['weekly_price'] ?? $input['weekly'] ?? '');
             $monthlyPrice = InputSanitizer::cleanString($input['monthly_price'] ?? $input['monthly'] ?? '');
+            $sixMonthPrice = InputSanitizer::cleanString($input['six_month_price'] ?? $input['six_month'] ?? $input['sixMonthPrice'] ?? '');
             $yearlyPrice = InputSanitizer::cleanString($input['yearly_price'] ?? $input['yearly'] ?? '');
+            $sixMonthBadge = isset($input['six_month_badge']) ? InputSanitizer::cleanString($input['six_month_badge']) : (isset($input['sixMonthBadge']) ? InputSanitizer::cleanString($input['sixMonthBadge']) : null);
+            $yearlyBadge = isset($input['yearly_badge']) ? InputSanitizer::cleanString($input['yearly_badge']) : (isset($input['yearlyBadge']) ? InputSanitizer::cleanString($input['yearlyBadge']) : null);
             $description = isset($input['description']) ? InputSanitizer::cleanString($input['description']) : null;
             $currency = InputSanitizer::cleanString($input['currency'] ?? 'AED');
 
-            if (empty($weeklyPrice) && empty($monthlyPrice) && empty($yearlyPrice)) {
-                ApiResponse::error('At least one pricing rate (weekly, monthly, or yearly) must be provided.', 400);
+            if (empty($weeklyPrice) && empty($monthlyPrice) && empty($sixMonthPrice) && empty($yearlyPrice)) {
+                ApiResponse::error('At least one pricing rate (weekly, monthly, 6-month, or yearly) must be provided.', 400);
                 return;
             }
 
@@ -3481,16 +3668,19 @@ class PublishingPricingController {
 
             $finalWeekly = !empty($weeklyPrice) ? $weeklyPrice : $existing['weekly_price'];
             $finalMonthly = !empty($monthlyPrice) ? $monthlyPrice : $existing['monthly_price'];
+            $finalSixMonth = !empty($sixMonthPrice) ? $sixMonthPrice : ($existing['six_month_price'] ?? ($existing['item_type'] === 'gallery' ? 'AED 3,800' : 'AED 2,500'));
             $finalYearly = !empty($yearlyPrice) ? $yearlyPrice : $existing['yearly_price'];
+            $finalSixMonthBadge = $sixMonthBadge !== null ? $sixMonthBadge : ($existing['six_month_badge'] ?? ($existing['item_type'] === 'event' ? 'Save 17%' : 'Save 15%'));
+            $finalYearlyBadge = $yearlyBadge !== null ? $yearlyBadge : ($existing['yearly_badge'] ?? 'Best Value');
             $finalDesc = $description !== null ? $description : $existing['description'];
             $finalCurrency = !empty($currency) ? $currency : ($existing['currency'] ?? 'AED');
 
             $updateStmt = $this->db->prepare("
                 UPDATE publishing_pricing 
-                SET weekly_price = ?, monthly_price = ?, yearly_price = ?, currency = ?, description = ?
+                SET weekly_price = ?, monthly_price = ?, six_month_price = ?, yearly_price = ?, currency = ?, description = ?, six_month_badge = ?, yearly_badge = ?
                 WHERE id = ?
             ");
-            $updateStmt->execute([$finalWeekly, $finalMonthly, $finalYearly, $finalCurrency, $finalDesc, $existing['id']]);
+            $updateStmt->execute([$finalWeekly, $finalMonthly, $finalSixMonth, $finalYearly, $finalCurrency, $finalDesc, $finalSixMonthBadge, $finalYearlyBadge, $existing['id']]);
 
             // Return all updated pricing records
             $all = $this->db->query("SELECT * FROM publishing_pricing ORDER BY id ASC")->fetchAll(PDO::FETCH_ASSOC);
@@ -3581,6 +3771,313 @@ class PaymentSettingsController {
 }
 
 // -----------------------------------------------------------------------------
+// 4.10 Strictly Single-File Social Sharing & Deep Link Controller
+// -----------------------------------------------------------------------------
+class ShareController {
+    private ?PDO $db = null;
+
+    public function __construct() {
+        if (!defined('SAFE_DB_MODE')) {
+            define('SAFE_DB_MODE', true);
+        }
+        $this->db = DatabaseManager::getPdoOrNull();
+    }
+
+    public function handleShare(array $params): void {
+        header("Content-Type: text/html; charset=UTF-8");
+
+        $isLive = (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'technestpartners.com') !== false)
+               || (isset($_SERVER['SERVER_NAME']) && strpos($_SERVER['SERVER_NAME'], 'technestpartners.com') !== false)
+               || (getenv('APP_ENV') === 'production');
+
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443) ? 'https://' : 'http://';
+        $host = $_SERVER['HTTP_HOST'] ?? ($isLive ? 'technestpartners.com' : '127.0.0.1:8085');
+        $baseUrl = $isLive ? 'https://technestpartners.com/api' : ($protocol . $host);
+
+        $type = $params['type'] ?? '';
+        $id = $params['id'] ?? '';
+
+        if (isset($params['artist'])) {
+            $type = 'artist';
+            $id = $params['artist'];
+        } elseif (isset($params['event'])) {
+            $type = 'event';
+            $id = $params['event'];
+        } elseif (isset($params['artwork'])) {
+            $type = 'artwork';
+            $id = $params['artwork'];
+        } elseif (isset($params['gallery'])) {
+            $type = 'gallery';
+            $id = $params['gallery'];
+        } elseif (isset($params['profile'])) {
+            $type = 'profile';
+            $id = $params['profile'];
+        }
+
+        $id = trim((string)$id);
+
+        $metaTitle = 'Artist Dubai - UAE Art & Creative Community';
+        $metaDescription = 'Discover talented artists, explore exhibitions, and connect with the vibrant Dubai art scene.';
+        $metaImage = 'https://technestpartners.com/icons/Icon-512.png';
+        $appScheme = 'artistdubai://home';
+        $androidIntent = 'intent://home#Intent;scheme=artistdubai;end';
+
+        // Initialize target deep-links and app scheme for given entity
+        if (!empty($id)) {
+            switch ($type) {
+                case 'artist':
+                    $metaTitle = "Artist Profile - Artist Dubai";
+                    $appScheme = 'artistdubai://artist/' . urlencode($id);
+                    $androidIntent = 'intent://artist/' . urlencode($id) . '#Intent;scheme=artistdubai;end';
+                    break;
+                case 'event':
+                    $metaTitle = "Art Event - Artist Dubai";
+                    $appScheme = 'artistdubai://event/' . urlencode($id);
+                    $androidIntent = 'intent://event/' . urlencode($id) . '#Intent;scheme=artistdubai;end';
+                    break;
+                case 'artwork':
+                    $metaTitle = "Artwork - Artist Dubai";
+                    $appScheme = 'artistdubai://artwork/' . urlencode($id);
+                    $androidIntent = 'intent://artwork/' . urlencode($id) . '#Intent;scheme=artistdubai;end';
+                    break;
+                case 'gallery':
+                    $metaTitle = "Art Gallery - Artist Dubai";
+                    $appScheme = 'artistdubai://gallery/' . urlencode($id);
+                    $androidIntent = 'intent://gallery/' . urlencode($id) . '#Intent;scheme=artistdubai;end';
+                    break;
+                case 'profile':
+                    $metaTitle = "Member Profile - Artist Dubai";
+                    $appScheme = 'artistdubai://profile';
+                    $androidIntent = 'intent://profile#Intent;scheme=artistdubai;end';
+                    break;
+            }
+        }
+
+        $resolveShareImage = function(?string $url, string $baseUrl): string {
+            if (empty($url)) return 'https://technestpartners.com/icons/Icon-512.png';
+            $trimmed = trim($url);
+            if (strpos($trimmed, 'http://') === 0 || strpos($trimmed, 'https://') === 0) return $trimmed;
+            return rtrim($baseUrl, '/') . '/' . ltrim($trimmed, '/');
+        };
+
+        $sanitizeText = function(?string $text, int $maxLen = 200): string {
+            if (empty($text)) return '';
+            $clean = strip_tags(trim($text));
+            $clean = preg_replace('/\s+/', ' ', $clean);
+            return mb_strlen($clean) > $maxLen ? mb_substr($clean, 0, $maxLen - 3) . '...' : $clean;
+        };
+
+        if ($this->db !== null && !empty($id)) {
+            try {
+                switch ($type) {
+                    case 'artist':
+                        $stmt = $this->db->prepare('SELECT id, name, bio, category, avatar_url, banner_url, location FROM artists WHERE id = ? OR LOWER(name) = LOWER(?) LIMIT 1');
+                        $stmt->execute([$id, $id]);
+                        if ($artist = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                            $artistId = $artist['id'];
+                            $name = htmlspecialchars($artist['name'] ?? 'Artist');
+                            $category = $artist['category'] ?? 'Contemporary Artist';
+                            $location = $artist['location'] ?? 'Dubai, UAE';
+                            $bio = $sanitizeText($artist['bio'] ?? '');
+
+                            $metaTitle = "$name | $category - Artist Dubai";
+                            $metaDescription = $bio ?: "Discover $name, a $category based in $location on Artist Dubai.";
+                            $metaImage = $resolveShareImage($artist['avatar_url'] ?: $artist['banner_url'], $baseUrl);
+                            $appScheme = 'artistdubai://artist/' . urlencode($artistId);
+                            $androidIntent = 'intent://artist/' . urlencode($artistId) . '#Intent;scheme=artistdubai;end';
+                        }
+                        break;
+
+                    case 'event':
+                        $stmt = $this->db->prepare('SELECT id, title, description, category, location, event_date, image_url FROM events WHERE id = ? LIMIT 1');
+                        $stmt->execute([$id]);
+                        if ($event = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                            $title = htmlspecialchars($event['title'] ?? 'Art Event');
+                            $category = $event['category'] ?? 'Exhibition';
+                            $location = $event['location'] ?? 'Dubai';
+                            $desc = $sanitizeText($event['description'] ?? '');
+
+                            $metaTitle = "$title - Dubai Art Event";
+                            $metaDescription = $desc ?: "Join us for $title ($category) in $location. Explore details and RSVP on Artist Dubai.";
+                            $metaImage = $resolveShareImage($event['image_url'], $baseUrl);
+                            $appScheme = 'artistdubai://event/' . urlencode($event['id']);
+                            $androidIntent = 'intent://event/' . urlencode($event['id']) . '#Intent;scheme=artistdubai;end';
+                        }
+                        break;
+
+                    case 'artwork':
+                        $stmt = $this->db->prepare('SELECT a.id, a.artist_id, a.title, a.description, a.image_url, a.medium, a.year, a.artist_name FROM artworks a WHERE a.id = ? LIMIT 1');
+                        $stmt->execute([$id]);
+                        if ($artwork = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                            $title = htmlspecialchars($artwork['title'] ?? 'Artwork');
+                            $artistName = htmlspecialchars($artwork['artist_name'] ?? 'Featured Artist');
+                            $medium = $artwork['medium'] ?? '';
+                            $year = $artwork['year'] ?? '';
+                            $desc = $sanitizeText($artwork['description'] ?? '');
+
+                            $metaTitle = "\"$title\" by $artistName - Artist Dubai";
+                            $details = array_filter([$medium, $year]);
+                            $detailsStr = !empty($details) ? ' (' . implode(', ', $details) . ')' : '';
+                            $metaDescription = $desc ?: "View \"$title\"$detailsStr by $artistName on Artist Dubai.";
+                            $metaImage = $resolveShareImage($artwork['image_url'], $baseUrl);
+
+                            if (!empty($artwork['artist_id'])) {
+                                $appScheme = 'artistdubai://artist/' . urlencode($artwork['artist_id']) . '?artwork=' . urlencode($artwork['id']);
+                                $androidIntent = 'intent://artist/' . urlencode($artwork['artist_id']) . '?artwork=' . urlencode($artwork['id']) . '#Intent;scheme=artistdubai;end';
+                            } else {
+                                $appScheme = 'artistdubai://artworks?id=' . urlencode($artwork['id']);
+                                $androidIntent = 'intent://artworks?id=' . urlencode($artwork['id']) . '#Intent;scheme=artistdubai;end';
+                            }
+                        }
+                        break;
+
+                    case 'gallery':
+                        $stmt = $this->db->prepare('SELECT id, name, category, location, timing, image_url FROM galleries WHERE id = ? LIMIT 1');
+                        $stmt->execute([$id]);
+                        if ($gallery = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                            $name = htmlspecialchars($gallery['name'] ?? 'Art Gallery');
+                            $location = $gallery['location'] ?? 'Dubai, UAE';
+                            $cat = $gallery['category'] ?? 'Contemporary Art Gallery';
+
+                            $metaTitle = "$name | $cat Dubai";
+                            $metaDescription = "Explore exhibitions, collections, and contemporary art at $name in $location.";
+                            $metaImage = $resolveShareImage($gallery['image_url'], $baseUrl);
+                            $appScheme = 'artistdubai://gallery/' . urlencode($gallery['id']);
+                            $androidIntent = 'intent://gallery/' . urlencode($gallery['id']) . '#Intent;scheme=artistdubai;end';
+                        }
+                        break;
+
+                    case 'profile':
+                        $stmt = $this->db->prepare('SELECT id, name, bio, avatar_url, banner_url FROM artists WHERE user_id = ? OR id = ? OR email = ? LIMIT 1');
+                        $stmt->execute([$id, $id, $id]);
+                        if ($artist = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                            $name = htmlspecialchars($artist['name'] ?? 'Artist');
+                            $bio = $sanitizeText($artist['bio'] ?? '');
+                            $metaTitle = "$name - Artist Profile";
+                            $metaDescription = $bio ?: "Connect with $name on Artist Dubai.";
+                            $metaImage = $resolveShareImage($artist['avatar_url'] ?: $artist['banner_url'], $baseUrl);
+                            $appScheme = 'artistdubai://artist/' . urlencode($artist['id']);
+                            $androidIntent = 'intent://artist/' . urlencode($artist['id']) . '#Intent;scheme=artistdubai;end';
+                        } else {
+                            $appScheme = 'artistdubai://profile';
+                            $androidIntent = 'intent://profile#Intent;scheme=artistdubai;end';
+                        }
+                        break;
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        $sharePageUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'technestpartners.com') . ($_SERVER['REQUEST_URI'] ?? '');
+
+        echo '<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>' . htmlspecialchars($metaTitle) . '</title>
+
+    <meta name="description" content="' . htmlspecialchars($metaDescription) . '">
+    <meta name="author" content="Artist Dubai">
+
+    <!-- Open Graph (WhatsApp, Facebook, LinkedIn, Telegram) -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Artist Dubai">
+    <meta property="og:title" content="' . htmlspecialchars($metaTitle) . '">
+    <meta property="og:description" content="' . htmlspecialchars($metaDescription) . '">
+    <meta property="og:image" content="' . htmlspecialchars($metaImage) . '">
+    <meta property="og:image:secure_url" content="' . htmlspecialchars($metaImage) . '">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:url" content="' . htmlspecialchars($sharePageUrl) . '">
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@ArtistDubai">
+    <meta name="twitter:title" content="' . htmlspecialchars($metaTitle) . '">
+    <meta name="twitter:description" content="' . htmlspecialchars($metaDescription) . '">
+    <meta name="twitter:image" content="' . htmlspecialchars($metaImage) . '">
+
+    <!-- App Links -->
+    <meta property="al:android:url" content="' . htmlspecialchars($appScheme) . '">
+    <meta property="al:android:package" content="com.artistdubai.artist_dubai">
+    <meta property="al:android:app_name" content="Artist Dubai">
+    <meta property="al:ios:url" content="' . htmlspecialchars($appScheme) . '">
+    <meta property="al:ios:app_store_id" content="com.artistdubai.artist_dubai">
+    <meta property="al:ios:app_name" content="Artist Dubai">
+
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(145deg, #12031c 0%, #300d45 45%, #6A2777 100%);
+            color: #ffffff;
+            display: flex; align-items: center; justify-content: center;
+            min-height: 100vh; text-align: center;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 24px; padding: 36px 28px;
+            max-width: 440px; width: 90%; margin: 20px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+        }
+        .preview-img {
+            width: 100px; height: 100px; border-radius: 50%;
+            object-fit: cover; border: 3px solid rgba(255, 255, 255, 0.6);
+            margin-bottom: 20px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+        }
+        h1 { font-size: 20px; font-weight: 700; margin: 0 0 10px 0; line-height: 1.35; }
+        p { font-size: 14px; color: rgba(255, 255, 255, 0.85); margin: 0 0 24px 0; line-height: 1.5; }
+        .actions { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+        .btn-app {
+            display: block; background: #ffffff; color: #6A2777;
+            text-decoration: none; font-weight: 700; font-size: 15px;
+            padding: 14px 24px; border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+            transition: transform 0.15s ease, background-color 0.15s ease;
+        }
+        .btn-app:active, .btn-app:hover { transform: scale(0.98); background: #f3e8ff; }
+        .hint { font-size: 11.5px; color: rgba(255, 255, 255, 0.6); margin-top: 14px; }
+    </style>
+</head>
+<body>
+    <div class="card">';
+        if (!empty($metaImage)) {
+            echo '<img src="' . htmlspecialchars($metaImage) . '" alt="Preview" class="preview-img" onerror="this.style.display=\'none\'">';
+        }
+        echo '<h1>' . htmlspecialchars($metaTitle) . '</h1>
+        <p>' . htmlspecialchars($metaDescription) . '</p>
+        <div class="actions">
+            <a href="' . htmlspecialchars($appScheme) . '" id="appIntentBtn" class="btn-app">🚀 Open in Artist Dubai App</a>
+        </div>
+        <div class="hint">Tap above to open directly in the Artist Dubai app.</div>
+    </div>
+    <script>
+        var appScheme = ' . json_encode($appScheme) . ';
+        var androidIntent = ' . json_encode($androidIntent) . ';
+        var btn = document.getElementById("appIntentBtn");
+        if (btn) {
+            btn.addEventListener("click", function(e) {
+                var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+                var isAndroid = /android/i.test(userAgent);
+                if (isAndroid && androidIntent) {
+                    window.location.href = androidIntent;
+                } else {
+                    window.location.href = appScheme;
+                }
+            });
+        }
+    </script>
+</body>
+</html>';
+        exit;
+    }
+}
+
+// -----------------------------------------------------------------------------
 // 5. Strictly Pure MySQL API Router Class
 // -----------------------------------------------------------------------------
 class UnifiedMySqlApiRouter {
@@ -3603,6 +4100,11 @@ class UnifiedMySqlApiRouter {
         $resource = trim($_GET['resource'] ?? $input['resource'] ?? '', '/');
         $action = strtolower(trim($_GET['action'] ?? $input['action'] ?? $input['action_type'] ?? ''));
 
+        // Check for share triggers
+        if ($resource === 'share' || isset($_GET['share']) || strpos($uri, 'share') !== false || (empty($resource) && (isset($_GET['artist']) || isset($_GET['event']) || isset($_GET['artwork']) || isset($_GET['gallery']) || isset($_GET['profile'])))) {
+            $resource = 'share';
+        }
+
         if (empty($resource)) {
             if (strpos($uri, 'login') !== false || in_array($action, ['login', 'register', 'signup', 'profile', 'change_password', 'delete_account'])) $resource = 'login';
             elseif (strpos($uri, 'categories') !== false) $resource = 'categories';
@@ -3622,6 +4124,10 @@ class UnifiedMySqlApiRouter {
         }
 
         switch ($resource) {
+            case 'share':
+                $shareCtrl = new ShareController();
+                $shareCtrl->handleShare(array_merge($_GET, $input));
+                break;
             case 'uploads':
             case 'upload':
                 $uploadCtrl = new UploadController();
@@ -3922,5 +4428,7 @@ class UnifiedMySqlApiRouter {
 
 // Execute Strictly Pure MySQL API Router
 if (!defined('CLI_TEST_MODE')) {
-    UnifiedMySqlApiRouter::execute();
+    UnifiedMyS
+    
+    qlApiRouter::execute();
 }

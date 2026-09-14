@@ -13,6 +13,7 @@ import '../../domain/models/publishing_pricing_model.dart';
 import '../../domain/models/payment_settings_model.dart';
 import '../../../events/domain/models/art_event_model.dart';
 import '../../../government/domain/models/government_entity.dart';
+import '../../../../core/utils/data_translator.dart';
 
 enum AdminTab {
   artists,
@@ -1517,7 +1518,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               final isActive = artist.isActive;
               return _buildListItemCard(
                 title: artist.name,
-                subtitle: '${artist.category} · ${artist.location.isNotEmpty ? artist.location : 'Dubai, UAE'}',
+                subtitle: '${artist.localizedCategory(context)} · ${artist.localizedLocation(context).isNotEmpty ? artist.localizedLocation(context) : 'Dubai, UAE'.trData(context)}',
                 badgeText: isActive ? 'Active' : 'Inactive',
                 isPurpleBadge: isActive,
                 onToggleStatus: () => _toggleArtistStatus(artist, index),
@@ -2530,7 +2531,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           const SizedBox(height: 4),
 
           Text(
-            entity.location,
+            entity.localizedLocation(context),
             style: const TextStyle(
               fontSize: 12.5,
               color: Color(0xFF334155),
@@ -4017,6 +4018,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               itemName: 'Event Publishing',
               weeklyPrice: 'AED 150',
               monthlyPrice: 'AED 500',
+              sixMonthPrice: 'AED 2,500',
               yearlyPrice: 'AED 4,500',
               currency: 'AED',
               description: 'Standard rate for publishing art events, exhibitions, and symposiums on Artist Dubai.',
@@ -4027,6 +4029,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               itemName: 'Gallery Listing & Showcase',
               weeklyPrice: 'AED 200',
               monthlyPrice: 'AED 750',
+              sixMonthPrice: 'AED 3,800',
               yearlyPrice: 'AED 6,500',
               currency: 'AED',
               description: 'Premier directory listing, verified status badge, and spotlight showcase for Dubai art galleries.',
@@ -4152,46 +4155,34 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       final isCompact = constraints.maxWidth < 500;
                       final cards = [
                         _buildRateBadge(
-                          title: 'Weekly Rate',
-                          duration: '7 Days Exposure',
-                          amount: pricing.weeklyPrice,
-                          accentColor: const Color(0xFF6A2777),
-                          badgeText: 'Standard',
-                        ),
-                        _buildRateBadge(
-                          title: 'Monthly Rate',
-                          duration: '30 Days Exposure',
-                          amount: pricing.monthlyPrice,
-                          accentColor: const Color(0xFFD97706),
-                          badgeText: 'Popular',
+                          title: '6 Months Rate',
+                          duration: '180 Days Exposure',
+                          amount: pricing.sixMonthPrice,
+                          accentColor: const Color(0xFFE11D48),
                         ),
                         _buildRateBadge(
                           title: 'Yearly Rate',
                           duration: '365 Days Featured',
                           amount: pricing.yearlyPrice,
                           accentColor: const Color(0xFF059669),
-                          badgeText: 'Best Value',
                         ),
                       ];
 
                       if (isCompact) {
                         return Column(
-                          children: cards
-                              .map((c) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 8),
-                                    child: c,
-                                  ))
-                              .toList(),
+                          children: [
+                            cards[0],
+                            const SizedBox(height: 10),
+                            cards[1],
+                          ],
                         );
                       }
 
                       return Row(
                         children: [
                           Expanded(child: cards[0]),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 12),
                           Expanded(child: cards[1]),
-                          const SizedBox(width: 10),
-                          Expanded(child: cards[2]),
                         ],
                       );
                     },
@@ -4835,10 +4826,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     required String duration,
     required String amount,
     required Color accentColor,
-    required String badgeText,
+    String? badgeText,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(10),
@@ -4853,26 +4844,27 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               Text(
                 title,
                 style: const TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF64748B),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF475569),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  badgeText,
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w700,
-                    color: accentColor,
+              if (badgeText != null && badgeText.trim().isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    badgeText,
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                      color: accentColor,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 6),
@@ -4899,8 +4891,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   }
 
   void _showEditPricingDialog(PublishingPricingModel pricing) {
-    final weeklyCtrl = TextEditingController(text: pricing.weeklyPrice);
-    final monthlyCtrl = TextEditingController(text: pricing.monthlyPrice);
+    final sixMonthCtrl = TextEditingController(text: pricing.sixMonthPrice);
     final yearlyCtrl = TextEditingController(text: pricing.yearlyPrice);
     final descCtrl = TextEditingController(text: pricing.description ?? '');
 
@@ -4913,7 +4904,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             surfaceTintColor: Colors.transparent,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: Container(
-              width: 500,
+              width: 480,
               padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -4962,41 +4953,16 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     ),
                     const SizedBox(height: 18),
 
-                    // Weekly Rate Field
-                    const Text('Weekly Rate *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                    // 6 Months Rate Field
+                    const Text('6 Months Rate *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
                     const SizedBox(height: 6),
                     TextField(
-                      controller: weeklyCtrl,
+                      controller: sixMonthCtrl,
                       style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
                       decoration: InputDecoration(
-                        hintText: 'e.g. AED 150',
+                        hintText: 'e.g. AED 2,500',
                         hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
-                        prefixIcon: const Icon(Icons.calendar_view_week_rounded, size: 18, color: Color(0xFF6B1C9B)),
-                        filled: true,
-                        fillColor: const Color(0xFFF8FAFC),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Monthly Rate Field
-                    const Text('Monthly Rate *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: monthlyCtrl,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
-                      decoration: InputDecoration(
-                        hintText: 'e.g. AED 500',
-                        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
-                        prefixIcon: const Icon(Icons.calendar_month_rounded, size: 18, color: Color(0xFF6B1C9B)),
+                        prefixIcon: const Icon(Icons.date_range_rounded, size: 18, color: Color(0xFF6B1C9B)),
                         filled: true,
                         fillColor: const Color(0xFFF8FAFC),
                         enabledBorder: OutlineInputBorder(
@@ -5079,14 +5045,13 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           ),
                           onPressed: () async {
-                            final weekly = weeklyCtrl.text.trim();
-                            final monthly = monthlyCtrl.text.trim();
+                            final sixMonth = sixMonthCtrl.text.trim();
                             final yearly = yearlyCtrl.text.trim();
 
-                            if (weekly.isEmpty || monthly.isEmpty || yearly.isEmpty) {
+                            if (sixMonth.isEmpty || yearly.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Please enter weekly, monthly, and yearly amounts'),
+                                  content: Text('Please enter 6-month and yearly amounts'),
                                   backgroundColor: Colors.redAccent,
                                 ),
                               );
@@ -5098,9 +5063,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
 
                             final success = await sl<ApiService>().updatePublishingPricing(
                               itemType: pricing.itemType,
-                              weeklyPrice: weekly,
-                              monthlyPrice: monthly,
+                              weeklyPrice: pricing.weeklyPrice,
+                              monthlyPrice: pricing.monthlyPrice,
+                              sixMonthPrice: sixMonth,
                               yearlyPrice: yearly,
+                              sixMonthBadge: '',
+                              yearlyBadge: '',
                               description: descCtrl.text.trim().isNotEmpty ? descCtrl.text.trim() : null,
                             );
 

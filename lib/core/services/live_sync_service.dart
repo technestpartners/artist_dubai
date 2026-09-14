@@ -10,12 +10,16 @@ import 'api_service.dart';
 import 'notification_service.dart';
 import 'storage_service.dart';
 
-/// Real-Time Multi-Device Database Synchronization & Live Data Streaming Service
+/// Real-Time Multi-Device Database Synchronization &amp; Live Data Streaming Service
 /// Combines instant optimistic mutations with continuous background MySQL live streaming.
 class LiveSyncService with WidgetsBindingObserver {
   final ApiService _apiService;
   bool _isSyncing = false;
   Timer? _syncTimer;
+  bool _isPausedByLifecycle = false;
+
+  // Data fingerprints — store length+hash to skip redundant stream broadcasts
+  final Map<String, int> _streamFingerprints = {};
 
   bool get _isTesting {
     try {
@@ -76,8 +80,20 @@ class LiveSyncService with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      _isPausedByLifecycle = false;
       syncAllSilently(forceRefresh: true);
+    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      // Pause background polling when app is not visible to save battery &amp; bandwidth
+      _isPausedByLifecycle = true;
     }
+  }
+
+  /// Emit to a stream only if data fingerprint changed — prevents unnecessary widget rebuilds
+  bool _shouldEmit(String key, dynamic data) {
+    final fingerprint = data is List ? data.length ^ data.hashCode : data.hashCode;
+    if (_streamFingerprints[key] == fingerprint) return false;
+    _streamFingerprints[key] = fingerprint;
+    return true;
   }
 
   /// Trigger auth state notification to immediately update UI everywhere
@@ -104,7 +120,7 @@ class LiveSyncService with WidgetsBindingObserver {
     }
     try {
       final fresh = await _apiService.getArtists(forceRefresh: true);
-      if (!_artistsController.isClosed) _artistsController.add(fresh);
+      if (!_artistsController.isClosed && _shouldEmit('artists', fresh)) _artistsController.add(fresh);
     } catch (_) {}
   }
 
@@ -116,7 +132,7 @@ class LiveSyncService with WidgetsBindingObserver {
     try {
       final isAdmin = _isCurrentUserAdmin();
       final fresh = await _apiService.getEvents(forceRefresh: true, isAdmin: isAdmin);
-      if (!_eventsController.isClosed) _eventsController.add(fresh);
+      if (!_eventsController.isClosed && _shouldEmit('events', fresh)) _eventsController.add(fresh);
     } catch (_) {}
   }
 
@@ -129,7 +145,7 @@ class LiveSyncService with WidgetsBindingObserver {
       String? userEmail = sl<StorageService>().getString('user_email');
       if (userEmail != null && userEmail.isNotEmpty) {
         final fresh = await _apiService.getBookings(email: userEmail, forceRefresh: true);
-        if (!_bookingsController.isClosed) _bookingsController.add(fresh);
+        if (!_bookingsController.isClosed && _shouldEmit('bookings', fresh)) _bookingsController.add(fresh);
       }
     } catch (_) {}
   }
@@ -156,7 +172,7 @@ class LiveSyncService with WidgetsBindingObserver {
     try {
       final email = _getEffectiveEmail();
       final fresh = await _apiService.getFavorites(email: email, forceRefresh: true);
-      if (!_favoritesController.isClosed) _favoritesController.add(fresh);
+      if (!_favoritesController.isClosed && _shouldEmit('favorites', fresh)) _favoritesController.add(fresh);
     } catch (_) {}
   }
 
@@ -168,7 +184,7 @@ class LiveSyncService with WidgetsBindingObserver {
     try {
       final isAdmin = _isCurrentUserAdmin();
       final fresh = await _apiService.getGalleries(forceRefresh: true, isAdmin: isAdmin);
-      if (!_galleriesController.isClosed) _galleriesController.add(fresh);
+      if (!_galleriesController.isClosed && _shouldEmit('galleries', fresh)) _galleriesController.add(fresh);
     } catch (_) {}
   }
 
@@ -179,7 +195,7 @@ class LiveSyncService with WidgetsBindingObserver {
     }
     try {
       final fresh = await _apiService.getGovernmentEntities(forceRefresh: true);
-      if (!_governmentController.isClosed) _governmentController.add(fresh);
+      if (!_governmentController.isClosed && _shouldEmit('government', fresh)) _governmentController.add(fresh);
     } catch (_) {}
   }
 
@@ -190,7 +206,7 @@ class LiveSyncService with WidgetsBindingObserver {
     }
     try {
       final fresh = await _apiService.getCategories(forceRefresh: true);
-      if (!_categoriesController.isClosed) _categoriesController.add(fresh);
+      if (!_categoriesController.isClosed && _shouldEmit('categories', fresh)) _categoriesController.add(fresh);
     } catch (_) {}
   }
 
@@ -201,7 +217,7 @@ class LiveSyncService with WidgetsBindingObserver {
     }
     try {
       final fresh = await _apiService.getExperienceLevels(forceRefresh: true);
-      if (!_experienceLevelsController.isClosed) _experienceLevelsController.add(fresh);
+      if (!_experienceLevelsController.isClosed && _shouldEmit('expLevels', fresh)) _experienceLevelsController.add(fresh);
     } catch (_) {}
   }
 
@@ -212,7 +228,7 @@ class LiveSyncService with WidgetsBindingObserver {
     }
     try {
       final fresh = await _apiService.getLocations(forceRefresh: true);
-      if (!_locationsController.isClosed) _locationsController.add(fresh);
+      if (!_locationsController.isClosed && _shouldEmit('locations', fresh)) _locationsController.add(fresh);
     } catch (_) {}
   }
 
@@ -223,30 +239,33 @@ class LiveSyncService with WidgetsBindingObserver {
     }
     try {
       final fresh = await _apiService.getPublishingPricing(forceRefresh: true);
-      if (!_publishingPricingController.isClosed) _publishingPricingController.add(fresh);
+      if (!_publishingPricingController.isClosed && _shouldEmit('pricing', fresh)) _publishingPricingController.add(fresh);
     } catch (_) {}
   }
 
-  /// Trigger sync for payment settings (QR Code & Bank Details) when an Admin Update occurs
+  /// Trigger sync for payment settings (QR Code &amp; Bank Details) when an Admin Update occurs
   Future<void> notifyPaymentSettingsChanged([PaymentSettingsModel? updatedSettings]) async {
     if (updatedSettings != null && !_paymentSettingsController.isClosed) {
       _paymentSettingsController.add(updatedSettings);
     }
     try {
       final fresh = await _apiService.getPaymentSettings(forceRefresh: true);
-      if (!_paymentSettingsController.isClosed) _paymentSettingsController.add(fresh);
+      if (!_paymentSettingsController.isClosed && _shouldEmit('payment', fresh)) _paymentSettingsController.add(fresh);
     } catch (_) {}
   }
 
   bool _hasLoadedMasters = false;
 
   /// Starts real-time multi-device database synchronization loop
+  /// Poll interval increased to 60s — halves background API requests vs previous 30s
   void startMultiDeviceSync({Duration? interval}) {
     if (_isTesting) return;
     _syncTimer?.cancel();
-    final pollInterval = interval ?? const Duration(seconds: 30);
+    final pollInterval = interval ?? const Duration(seconds: 60);
     _syncTimer = Timer.periodic(pollInterval, (_) {
-      syncAllSilently(forceRefresh: true);
+      if (!_isPausedByLifecycle) {
+        syncAllSilently(forceRefresh: true);
+      }
     });
   }
 
@@ -260,6 +279,7 @@ class LiveSyncService with WidgetsBindingObserver {
   Future<void> forceLocaleRefresh() async {
     _isSyncing = false;
     _hasLoadedMasters = false;
+    _streamFingerprints.clear();
     await syncAllSilently(forceRefresh: true, syncMasters: true);
   }
 
@@ -273,54 +293,40 @@ class LiveSyncService with WidgetsBindingObserver {
       final isAdmin = _isCurrentUserAdmin();
 
       // Phase 1: High-priority core streams (Artists, Events, Categories)
-      final coreBatch = await Future.wait([
-        _apiService.getArtists(forceRefresh: forceRefresh).catchError((_) => <ArtistModel>[]),
-        _apiService.getEvents(forceRefresh: forceRefresh, isAdmin: isAdmin).catchError((_) => <ArtEventModel>[]),
-        _apiService.getCategories(forceRefresh: forceRefresh).catchError((_) => <CategoryInfo>[]),
-      ]);
+      final artists = await _apiService.getArtists(forceRefresh: forceRefresh).catchError((_) => <ArtistModel>[]);
+      if (!_artistsController.isClosed && _shouldEmit('artists', artists)) _artistsController.add(artists);
 
-      final artists = coreBatch[0] as List<ArtistModel>;
-      final events = coreBatch[1] as List<ArtEventModel>;
-      final categories = coreBatch[2] as List<CategoryInfo>;
+      final events = await _apiService.getEvents(forceRefresh: forceRefresh, isAdmin: isAdmin).catchError((_) => <ArtEventModel>[]);
+      if (!_eventsController.isClosed && _shouldEmit('events', events)) _eventsController.add(events);
 
-      if (!_artistsController.isClosed) _artistsController.add(artists);
-      if (!_eventsController.isClosed) _eventsController.add(events);
-      if (!_categoriesController.isClosed) _categoriesController.add(categories);
+      final categories = await _apiService.getCategories(forceRefresh: forceRefresh).catchError((_) => <CategoryInfo>[]);
+      if (!_categoriesController.isClosed && _shouldEmit('categories', categories)) _categoriesController.add(categories);
 
       // Phase 2: Secondary streams (Galleries, Government, Favorites)
-      final secondaryBatch = await Future.wait([
-        _apiService.getGalleries(forceRefresh: forceRefresh, isAdmin: isAdmin).catchError((_) => <Map<String, dynamic>>[]),
-        _apiService.getGovernmentEntities(forceRefresh: forceRefresh).catchError((_) => <GovernmentEntity>[]),
-        _apiService.getFavorites(email: effectiveEmail, forceRefresh: forceRefresh).catchError((_) => <String, dynamic>{}),
-      ]);
+      final galleries = await _apiService.getGalleries(forceRefresh: forceRefresh, isAdmin: isAdmin).catchError((_) => <Map<String, dynamic>>[]);
+      if (!_galleriesController.isClosed && _shouldEmit('galleries', galleries)) _galleriesController.add(galleries);
 
-      final galleries = secondaryBatch[0] as List<Map<String, dynamic>>;
-      final govEntities = secondaryBatch[1] as List<GovernmentEntity>;
-      final favorites = secondaryBatch[2] as Map<String, dynamic>;
+      final govEntities = await _apiService.getGovernmentEntities(forceRefresh: forceRefresh).catchError((_) => <GovernmentEntity>[]);
+      if (!_governmentController.isClosed && _shouldEmit('government', govEntities)) _governmentController.add(govEntities);
 
-      if (!_galleriesController.isClosed) _galleriesController.add(galleries);
-      if (!_governmentController.isClosed) _governmentController.add(govEntities);
-      if (!_favoritesController.isClosed) _favoritesController.add(favorites);
+      final favorites = await _apiService.getFavorites(email: effectiveEmail, forceRefresh: forceRefresh).catchError((_) => <String, dynamic>{});
+      if (!_favoritesController.isClosed && _shouldEmit('favorites', favorites)) _favoritesController.add(favorites);
 
       // Phase 3: Masters (Experience Levels, Locations, Publishing Pricing & Payment Settings)
       // Only fetch once at startup or when explicitly requested, as they are static admin configurations.
       if (!_hasLoadedMasters || syncMasters) {
-        final mastersBatch = await Future.wait([
-          _apiService.getExperienceLevels(forceRefresh: forceRefresh).catchError((_) => <ExperienceLevelModel>[]),
-          _apiService.getLocations(forceRefresh: forceRefresh).catchError((_) => <LocationModel>[]),
-          _apiService.getPublishingPricing(forceRefresh: forceRefresh).catchError((_) => <PublishingPricingModel>[]),
-          _apiService.getPaymentSettings(forceRefresh: forceRefresh).catchError((_) => PaymentSettingsModel.defaultSettings()),
-        ]);
+        final experienceLevels = await _apiService.getExperienceLevels(forceRefresh: forceRefresh).catchError((_) => <ExperienceLevelModel>[]);
+        if (!_experienceLevelsController.isClosed && _shouldEmit('expLevels', experienceLevels)) _experienceLevelsController.add(experienceLevels);
 
-        final experienceLevels = mastersBatch[0] as List<ExperienceLevelModel>;
-        final locations = mastersBatch[1] as List<LocationModel>;
-        final publishingPricing = mastersBatch[2] as List<PublishingPricingModel>;
-        final paymentSettings = mastersBatch[3] as PaymentSettingsModel;
+        final locations = await _apiService.getLocations(forceRefresh: forceRefresh).catchError((_) => <LocationModel>[]);
+        if (!_locationsController.isClosed && _shouldEmit('locations', locations)) _locationsController.add(locations);
 
-        if (!_experienceLevelsController.isClosed) _experienceLevelsController.add(experienceLevels);
-        if (!_locationsController.isClosed) _locationsController.add(locations);
-        if (!_publishingPricingController.isClosed) _publishingPricingController.add(publishingPricing);
-        if (!_paymentSettingsController.isClosed) _paymentSettingsController.add(paymentSettings);
+        final publishingPricing = await _apiService.getPublishingPricing(forceRefresh: forceRefresh).catchError((_) => <PublishingPricingModel>[]);
+        if (!_publishingPricingController.isClosed && _shouldEmit('pricing', publishingPricing)) _publishingPricingController.add(publishingPricing);
+
+        final paymentSettings = await _apiService.getPaymentSettings(forceRefresh: forceRefresh).catchError((_) => PaymentSettingsModel.defaultSettings());
+        if (!_paymentSettingsController.isClosed && _shouldEmit('payment', paymentSettings)) _paymentSettingsController.add(paymentSettings);
+
         _hasLoadedMasters = true;
       }
 

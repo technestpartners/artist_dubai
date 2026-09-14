@@ -16,6 +16,7 @@ import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/utils/data_translator.dart';
+import '../../../../core/utils/ui_helpers.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../domain/models/artist_model.dart';
 
@@ -629,23 +630,19 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
   void _submitProfile() async {
     final name = _fullNameController.text.trim();
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter your full name or stage name.'),
-          backgroundColor: Colors.redAccent,
-          behavior: SnackBarBehavior.floating,
-        ),
+      UiHelpers.showErrorDialog(
+        context,
+        title: 'Required Details Missing',
+        message: 'Please enter your full name or stage name.',
       );
       return;
     }
 
     if (_emailController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter your email address.'),
-          backgroundColor: Colors.redAccent,
-          behavior: SnackBarBehavior.floating,
-        ),
+      UiHelpers.showErrorDialog(
+        context,
+        title: 'Required Details Missing',
+        message: 'Please enter your email address.',
       );
       return;
     }
@@ -654,12 +651,10 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     if (rawPhone.isNotEmpty) {
       final digits = rawPhone.replaceAll(RegExp(r'[^0-9]'), '');
       if (digits.length < 7 || digits.length > 15 || RegExp(r'[^0-9]').hasMatch(rawPhone)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please enter a valid phone number (7-15 digits) or leave it empty.'),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-          ),
+        UiHelpers.showErrorDialog(
+          context,
+          title: 'Invalid Phone Number',
+          message: 'Please enter a valid phone number (7-15 digits) or leave it empty.',
         );
         return;
       }
@@ -673,14 +668,26 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
         : 'Professional (5+ years)';
 
     if (!_agreedToTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Please agree to the Privacy Policy and Terms & Conditions.',
-          ),
-          backgroundColor: Colors.redAccent,
-          behavior: SnackBarBehavior.floating,
-        ),
+      UiHelpers.showErrorDialog(
+        context,
+        title: 'Agreement Required',
+        message: 'Please agree to the Privacy Policy and Terms & Conditions.',
+      );
+      return;
+    }
+
+    if (!_isAllCriteriaMet) {
+      final missing = <String>[];
+      if (_fullNameController.text.trim().isEmpty) missing.add('• Full Name');
+      if (_emailController.text.trim().isEmpty) missing.add('• Email');
+      if (_profilePhotoFile == null && (_existingAvatarUrl == null || _existingAvatarUrl!.isEmpty)) missing.add('• Profile Photo');
+      if (_portfolioArtworks.isEmpty) missing.add('• At least one artwork');
+      if (!_agreedToTerms) missing.add('• Agree to Terms & Conditions');
+
+      UiHelpers.showErrorDialog(
+        context,
+        title: 'Required Details Missing',
+        message: 'Please complete all required fields before proceeding:\n\n${missing.join('\n')}',
       );
       return;
     }
@@ -903,12 +910,10 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
             }
           } else {
             if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Failed to update profile. Please check your inputs.'),
-                backgroundColor: Colors.redAccent,
-                behavior: SnackBarBehavior.floating,
-              ),
+            UiHelpers.showErrorDialog(
+              context,
+              title: 'Update Failed',
+              message: 'Failed to update profile. Please check your inputs.',
             );
           }
         }
@@ -987,12 +992,10 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
           context.go(RouteNames.artists);
         } else {
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to save profile. Please check your inputs.'),
-              backgroundColor: Colors.redAccent,
-              behavior: SnackBarBehavior.floating,
-            ),
+          UiHelpers.showErrorDialog(
+            context,
+            title: 'Save Failed',
+            message: 'Failed to save profile. Please check your inputs.',
           );
         }
       }
@@ -1002,12 +1005,10 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
           _isSubmitting = false;
           _submissionStatus = '';
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save profile: ${e.toString()}'),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-          ),
+        UiHelpers.showErrorDialog(
+          context,
+          title: 'Error',
+          message: 'Failed to save profile: ${e.toString()}',
         );
       }
     }
@@ -1968,7 +1969,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                           ),
                                   ),
                                 ),
-                                onPressed: _isSubmitting ? null : _submitProfile,
+                                onPressed: (_isSubmitting || !_isAllCriteriaMet) ? null : _submitProfile,
                                 child: _isSubmitting
                                     ? Row(
                                         mainAxisAlignment: MainAxisAlignment.center,

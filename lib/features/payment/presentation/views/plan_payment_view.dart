@@ -10,6 +10,7 @@ import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../admin/domain/models/payment_settings_model.dart';
+import '../../../../core/utils/data_translator.dart';
 
 /// Standalone Payment & Checkout Screen for Event and Gallery Publishing Plans.
 /// Displays selected plan summary, Admin Payment QR code, Bank Transfer (IBAN)
@@ -55,17 +56,17 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     _subtitle = widget.args['subtitle']?.toString().trim().isNotEmpty == true
         ? widget.args['subtitle'].toString().trim()
         : 'Dubai, UAE';
-    _planId = (widget.args['planId'] ?? 'monthly').toString();
+    _planId = (widget.args['planId'] ?? 'six_month').toString();
     _planName = widget.args['planName']?.toString().trim().isNotEmpty == true
         ? widget.args['planName'].toString().trim()
-        : (_planId == 'weekly'
-            ? 'Weekly Plan (7 Days)'
-            : (_planId == 'yearly' ? 'Yearly Plan (365 Days)' : 'Monthly Plan (30 Days)'));
+        : (_planId == 'yearly'
+            ? 'Yearly Plan (365 Days)'
+            : '6 Months Plan (180 Days)');
     _planAmount = widget.args['planAmount']?.toString().trim().isNotEmpty == true
         ? widget.args['planAmount'].toString().trim()
         : (_itemType == 'gallery'
-            ? (_planId == 'monthly' ? 'AED 750' : (_planId == 'yearly' ? 'AED 6,500' : 'AED 200'))
-            : (_planId == 'monthly' ? 'AED 500' : (_planId == 'yearly' ? 'AED 4,500' : 'AED 150')));
+            ? (_planId == 'yearly' ? 'AED 6,500' : 'AED 3,800')
+            : (_planId == 'yearly' ? 'AED 4,500' : 'AED 2,500'));
     _formData = widget.args['formData'] is Map<String, dynamic>
         ? Map<String, dynamic>.from(widget.args['formData'] as Map)
         : (widget.args['formData'] is Map
@@ -346,7 +347,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Plan: $_planName ($_planAmount)',
+                      'Plan: ${_planName.trData(context)} ($_planAmount)',
                       style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF334155)),
                     ),
                   ),
@@ -548,14 +549,14 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           ),
           const SizedBox(height: 12),
           Text(
-            _title,
+            _title.trData(context),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
           ),
           const SizedBox(height: 4),
           Text(
-            _subtitle,
+            _subtitle.trData(context),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
@@ -569,7 +570,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                 style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
               ),
               Text(
-                _planName,
+                _planName.trData(context),
                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
               ),
             ],

@@ -823,14 +823,26 @@
   "yearly": "Yearly",
   "@yearly": {},
 
+  "sixMonths": "6 Months",
+  "@sixMonths": {},
+
   "daysActive7": "7 days active",
   "@daysActive7": {},
 
   "daysActive30": "30 days active",
   "@daysActive30": {},
 
+  "daysActive180": "180 days active",
+  "@daysActive180": {},
+
   "daysActive365": "365 days active",
   "@daysActive365": {},
+
+  "save17Tag": "SAVE 17%",
+  "@save17Tag": {},
+
+  "save15Tag": "SAVE 15%",
+  "@save15Tag": {},
 
   "popularTag": "POPULAR",
   "@popularTag": {},
@@ -860,5 +872,11 @@
   "@descriptionLabel": {},
 
   "categoryLabel": "Category",
-  "@categoryLabel": {}
+  "@categoryLabel": {},
+
+  "eventDetails": "Event Details",
+  "@eventDetails": {},
+
+  "back": "Back",
+  "@back": {}
 }

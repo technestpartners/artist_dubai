@@ -192,9 +192,9 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
                         ),
                         onPressed: _showCreateCategoryModal,
                         icon: const Icon(Icons.add, size: 18, color: Color(0xFF6B1C9B)),
-                        label: const Text(
-                          'Create Category',
-                          style: TextStyle(
+                        label: Text(
+                          'Create Category'.trData(context),
+                          style: const TextStyle(
                             fontSize: 14.5,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF6B1C9B),

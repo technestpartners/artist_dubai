@@ -221,30 +221,35 @@ class _AppTopBarState extends State<AppTopBar> {
             const SizedBox(width: 8),
 
             // Brand Titles
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Artist',
-                  style: TextStyle(
-                    color: const Color(0xFF1E1E1E),
-                    fontSize: brandFontSize,
-                    fontWeight: FontWeight.w700,
-                    height: 1.15,
-                  ),
-                ),
-                Text(
-                  'Dubai',
-                  style: TextStyle(
-                    color: const Color(0xFF1E1E1E),
-                    fontSize: brandFontSize,
-                    fontWeight: FontWeight.w700,
-                    height: 1.15,
-                  ),
-                ),
-              ],
+            Consumer<LocaleProvider>(
+              builder: (context, localeProvider, _) {
+                final isArabic = localeProvider.isArabic;
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      isArabic ? 'فنان' : 'Artist',
+                      style: TextStyle(
+                        color: const Color(0xFF1E1E1E),
+                        fontSize: brandFontSize,
+                        fontWeight: FontWeight.w700,
+                        height: 1.15,
+                      ),
+                    ),
+                    Text(
+                      isArabic ? 'دبي' : 'Dubai',
+                      style: TextStyle(
+                        color: const Color(0xFF1E1E1E),
+                        fontSize: brandFontSize,
+                        fontWeight: FontWeight.w700,
+                        height: 1.15,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -436,16 +441,18 @@ class _AppTopBarState extends State<AppTopBar> {
                     PopupMenuItem<TopBarMenuItem>(
                       value: TopBarMenuItem.adminDashboard,
                       child: Row(
-                        children: const [
-                          Icon(
+                        children: [
+                          const Icon(
                             Icons.admin_panel_settings_outlined,
                             size: 18,
                             color: Color(0xFF6A2777),
                           ),
-                          SizedBox(width: 10),
+                          const SizedBox(width: 10),
                           Text(
-                            'Admin Dashboard',
-                            style: TextStyle(
+                            Localizations.localeOf(ctx).languageCode == 'ar'
+                                ? 'لوحة تحكم المسؤول'
+                                : 'Admin Dashboard',
+                            style: const TextStyle(
                               fontSize: 14.5,
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF6A2777),

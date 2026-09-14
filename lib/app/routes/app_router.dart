@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/about_us/presentation/views/about_us_view.dart';
@@ -26,7 +27,6 @@ import '../../features/legal/presentation/views/privacy_policy_view.dart';
 import '../../features/legal/presentation/views/terms_view.dart';
 import '../../features/onboarding/presentation/views/onboarding_view.dart';
 import '../../features/payment/presentation/views/plan_payment_view.dart';
-import '../../features/placeholder/presentation/views/coming_soon_view.dart';
 import '../../features/profile/presentation/views/profile_view.dart';
 import '../../features/settings/presentation/views/settings_view.dart';
 import '../../features/splash/presentation/views/splash_screen_view.dart';
@@ -37,7 +37,116 @@ class AppRouter {
 
   static final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
-  static String get initialLocation => RouteNames.splash;
+  static String? parseDeepLink(Uri uri) {
+    // 1. Direct query parameter inspection (e.g. ?artist=18, ?event=5, ?artwork=10)
+    final artistId = uri.queryParameters['artist'] ?? uri.queryParameters['artist_id'];
+    final artworkId = uri.queryParameters['artwork'] ?? uri.queryParameters['artwork_id'];
+    if (artistId != null && artistId.isNotEmpty) {
+      if (artworkId != null && artworkId.isNotEmpty) {
+        return '/artist/$artistId?artwork=$artworkId';
+      }
+      return '/artist/$artistId';
+    }
+    if (artworkId != null && artworkId.isNotEmpty) {
+      final aId = uri.queryParameters['artist_id'] ?? uri.queryParameters['artist'];
+      if (aId != null && aId.isNotEmpty) {
+        return '/artist/$aId?artwork=$artworkId';
+      }
+      return '/artworks?id=$artworkId';
+    }
+    final eventId = uri.queryParameters['event'] ?? uri.queryParameters['event_id'];
+    if (eventId != null && eventId.isNotEmpty) {
+      return '/event-detail?id=$eventId';
+    }
+    final galleryId = uri.queryParameters['gallery'] ?? uri.queryParameters['gallery_id'];
+    if (galleryId != null && galleryId.isNotEmpty) {
+      return '/galleries?id=$galleryId';
+    }
+    final profileId = uri.queryParameters['profile'] ?? uri.queryParameters['user_id'];
+    if (profileId != null && profileId.isNotEmpty) {
+      return RouteNames.profile;
+    }
+
+    // 2. Hash fragment inspection (e.g. #/artist/18)
+    var frag = uri.fragment;
+    if (frag.isNotEmpty) {
+      if (!frag.startsWith('/')) frag = '/$frag';
+      if (frag != '/' && frag != '/splash' && frag != '/home' && frag != '/onboarding') {
+        return frag;
+      }
+    }
+
+    // 3. Custom scheme inspection (e.g. artistdubai://artist/18 or artistdubai://event/55)
+    if (uri.scheme == 'artistdubai') {
+      final host = uri.host;
+      final p = uri.path;
+      final query = uri.hasQuery ? '?${uri.query}' : '';
+      if (host.isNotEmpty) {
+        if (host == 'artist' || host == 'artists') {
+          if (p.isNotEmpty && p != '/') {
+            return '/artist${p.startsWith('/') ? p : '/$p'}$query';
+          }
+          return RouteNames.artists;
+        }
+        if (host == 'event' || host == 'events') {
+          final id = p.replaceAll('/', '').trim();
+          if (id.isNotEmpty) {
+            return '/event-detail?id=$id';
+          }
+          return RouteNames.events;
+        }
+        if (host == 'gallery' || host == 'galleries') {
+          final id = p.replaceAll('/', '').trim();
+          if (id.isNotEmpty) {
+            return '/galleries?id=$id';
+          }
+          return RouteNames.galleries;
+        }
+        if (host == 'artwork' || host == 'artworks') {
+          final id = p.replaceAll('/', '').trim();
+          if (id.isNotEmpty) {
+            return '/artworks?id=$id';
+          }
+          return '/artworks';
+        }
+        if (host == 'profile') {
+          return RouteNames.profile;
+        }
+        return '/$host$p$query';
+      }
+    }
+
+    // 4. Standard path inspection (e.g. /artist/18)
+    final path = uri.path;
+    if (path.isNotEmpty && path != '/' && !path.endsWith('index.html')) {
+      if (path.contains('share.php') || path.contains('share')) {
+        return null;
+      }
+      final query = uri.hasQuery ? '?${uri.query}' : '';
+      return '$path$query';
+    }
+
+    return null;
+  }
+
+  static String? get initialDeepLink {
+    try {
+      if (kIsWeb) {
+        return parseDeepLink(Uri.base);
+      } else {
+        final defaultRoute = WidgetsBinding.instance.platformDispatcher.defaultRouteName;
+        if (defaultRoute.isNotEmpty && defaultRoute != '/' && defaultRoute != '/splash') {
+          final uri = Uri.tryParse(defaultRoute);
+          if (uri != null) {
+            return parseDeepLink(uri);
+          }
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  static String get initialLocation => initialDeepLink ?? RouteNames.splash;
 
   static Page<dynamic> _buildFadePage({
     required BuildContext context,
@@ -94,6 +203,13 @@ class AppRouter {
   static final GoRouter router = GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: initialLocation,
+    redirect: (context, state) {
+      final parsed = parseDeepLink(state.uri);
+      if (parsed != null && parsed != state.matchedLocation && parsed != state.uri.toString()) {
+        return parsed;
+      }
+      return null;
+    },
     routes: [
       GoRoute(
         path: RouteNames.splash,
@@ -146,8 +262,80 @@ class AppRouter {
         pageBuilder: (context, state) => _buildSlidePage(
           context: context,
           state: state,
-          child: ArtistDetailView(artist: state.extra as ArtistModel?),
+          child: ArtistDetailView(
+            artist: state.extra as ArtistModel?,
+            artistId: state.pathParameters['id'],
+            initialArtworkId: state.uri.queryParameters['artwork'] ?? state.uri.queryParameters['artwork_id'],
+          ),
         ),
+      ),
+      GoRoute(
+        path: '/artists/:id',
+        redirect: (context, state) => '/artist/${state.pathParameters['id']}',
+      ),
+      GoRoute(
+        path: '/artist',
+        redirect: (context, state) {
+          final id = state.uri.queryParameters['id'] ?? state.uri.queryParameters['artist'];
+          if (id != null && id.isNotEmpty) {
+            return '/artist/$id';
+          }
+          return RouteNames.artists;
+        },
+      ),
+      GoRoute(
+        path: '/event/:id',
+        redirect: (context, state) => '/event-detail?id=${state.pathParameters['id']}',
+      ),
+      GoRoute(
+        path: '/events/:id',
+        redirect: (context, state) => '/event-detail?id=${state.pathParameters['id']}',
+      ),
+      GoRoute(
+        path: '/artworks',
+        redirect: (context, state) {
+          final artistId = state.uri.queryParameters['artist_id'] ?? state.uri.queryParameters['artist'];
+          final artworkId = state.uri.queryParameters['id'] ?? state.uri.queryParameters['artwork'];
+          if (artistId != null && artistId.isNotEmpty) {
+            if (artworkId != null && artworkId.isNotEmpty) {
+              return '/artist/$artistId?artwork=$artworkId';
+            }
+            return '/artist/$artistId';
+          }
+          return RouteNames.artists;
+        },
+      ),
+      GoRoute(
+        path: '/artwork/:id',
+        redirect: (context, state) => '/artworks?id=${state.pathParameters['id']}',
+      ),
+      GoRoute(
+        path: '/artworks/:id',
+        redirect: (context, state) => '/artworks?id=${state.pathParameters['id']}',
+      ),
+      GoRoute(
+        path: '/api.php',
+        redirect: (context, state) => parseDeepLink(state.uri) ?? RouteNames.home,
+      ),
+      GoRoute(
+        path: '/api/api.php',
+        redirect: (context, state) => parseDeepLink(state.uri) ?? RouteNames.home,
+      ),
+      GoRoute(
+        path: '/share.php',
+        redirect: (context, state) => parseDeepLink(state.uri) ?? RouteNames.home,
+      ),
+      GoRoute(
+        path: '/api/share.php',
+        redirect: (context, state) => parseDeepLink(state.uri) ?? RouteNames.home,
+      ),
+      GoRoute(
+        path: '/share',
+        redirect: (context, state) => parseDeepLink(state.uri) ?? RouteNames.home,
+      ),
+      GoRoute(
+        path: '/api/share',
+        redirect: (context, state) => parseDeepLink(state.uri) ?? RouteNames.home,
       ),
       GoRoute(
         path: RouteNames.government,
@@ -200,7 +388,9 @@ class AppRouter {
         pageBuilder: (context, state) => _buildSlidePage(
           context: context,
           state: state,
-          child: const GalleriesView(),
+          child: GalleriesView(
+            initialGalleryId: state.uri.queryParameters['id'] ?? state.uri.queryParameters['gallery'],
+          ),
         ),
       ),
       GoRoute(
@@ -399,11 +589,33 @@ class AppRouter {
         path: RouteNames.eventDetail,
         name: 'eventDetail',
         parentNavigatorKey: rootNavigatorKey,
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: EventDetailView(event: state.extra as ArtEventModel),
-        ),
+        pageBuilder: (context, state) {
+          ArtEventModel? event;
+          String? eventId = state.uri.queryParameters['id'];
+          if (state.extra is ArtEventModel) {
+            event = state.extra as ArtEventModel;
+          } else if (state.extra is Map) {
+            final map = state.extra as Map;
+            if (map['event'] is ArtEventModel) {
+              event = map['event'] as ArtEventModel;
+            } else if (map['event'] is Map<String, dynamic>) {
+              event = ArtEventModel.fromJson(map['event'] as Map<String, dynamic>);
+            }
+            if (map['id'] != null) {
+              eventId = map['id'].toString();
+            }
+          } else if (state.extra is String) {
+            eventId = state.extra as String;
+          }
+          if ((eventId == null || eventId.isEmpty) && event != null) {
+            eventId = event.id;
+          }
+          return _buildSlidePage(
+            context: context,
+            state: state,
+            child: EventDetailView(event: event, eventId: eventId),
+          );
+        },
       ),
       GoRoute(
         path: RouteNames.planPayment,
@@ -420,6 +632,49 @@ class AppRouter {
         },
       ),
     ],
-    errorBuilder: (context, state) => const ComingSoonView(),
+    errorBuilder: (context, state) {
+      final target = parseDeepLink(state.uri);
+      if (target != null) {
+        if (target.startsWith('/artist/')) {
+          final afterArtist = target.substring('/artist/'.length);
+          final artistId = afterArtist.split('?').first;
+          final uri = Uri.tryParse(target) ?? state.uri;
+          final artworkId = uri.queryParameters['artwork'] ?? uri.queryParameters['artwork_id'];
+          return ArtistDetailView(
+            artistId: artistId.isNotEmpty ? artistId : null,
+            initialArtworkId: artworkId,
+          );
+        }
+        if (target.startsWith('/event-detail')) {
+          final uri = Uri.tryParse(target) ?? state.uri;
+          final eventId = uri.queryParameters['id'] ?? uri.queryParameters['event'] ?? uri.queryParameters['event_id'];
+          return EventDetailView(eventId: eventId);
+        }
+        if (target.startsWith('/galleries')) {
+          final uri = Uri.tryParse(target) ?? state.uri;
+          final galleryId = uri.queryParameters['id'] ?? uri.queryParameters['gallery'] ?? uri.queryParameters['gallery_id'];
+          return GalleriesView(initialGalleryId: galleryId);
+        }
+        if (target.startsWith('/artworks')) {
+          final uri = Uri.tryParse(target) ?? state.uri;
+          final artworkId = uri.queryParameters['id'] ?? uri.queryParameters['artwork'];
+          final artistId = uri.queryParameters['artist_id'] ?? uri.queryParameters['artist'];
+          if (artistId != null && artistId.isNotEmpty) {
+            return ArtistDetailView(artistId: artistId, initialArtworkId: artworkId);
+          }
+          return const ArtistsView();
+        }
+        if (target == RouteNames.profile) {
+          return const ProfileView();
+        }
+        if (target == RouteNames.events) {
+          return const EventsView();
+        }
+        if (target == RouteNames.artists) {
+          return const ArtistsView();
+        }
+      }
+      return const HomeView();
+    },
   );
 }

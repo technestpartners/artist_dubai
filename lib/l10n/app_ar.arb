@@ -270,9 +270,13 @@
   "weekly": "أسبوعي",
   "monthly": "شهري",
   "yearly": "سنوي",
+  "sixMonths": "٦ أشهر",
   "daysActive7": "نشط لمدة 7 أيام",
   "daysActive30": "نشط لمدة 30 يوماً",
+  "daysActive180": "نشط لمدة 180 يوماً",
   "daysActive365": "نشط لمدة 365 يوماً",
+  "save17Tag": "وفر ١٧٪",
+  "save15Tag": "وفر ١٥٪",
   "popularTag": "شائع",
   "bestValueTag": "أفضل قيمة",
   "paymentOnNextStep": "الدفع في الخطوة التالية: ",
@@ -282,5 +286,7 @@
   "proceedToPayment": "المتابعة إلى الدفع",
   "uploadImage": "تحميل صورة",
   "descriptionLabel": "الوصف",
-  "categoryLabel": "الفئة"
+  "categoryLabel": "الفئة",
+  "eventDetails": "تفاصيل الفعالية",
+  "back": "رجوع"
 }

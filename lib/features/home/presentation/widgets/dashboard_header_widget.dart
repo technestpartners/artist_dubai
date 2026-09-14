@@ -46,25 +46,36 @@ class DashboardHeaderWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'ARTIST DUBAI',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: titleFontSize,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
-                    height: 1.15,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'COMMUNITY PLATFORM',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.85),
-                    fontSize: subtitleFontSize,
-                    fontWeight: FontWeight.w400,
-                    letterSpacing: 2.2,
-                  ),
+                Builder(
+                  builder: (context) {
+                    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          isArabic ? 'فنان دبي' : 'ARTIST DUBAI',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: titleFontSize,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: isArabic ? 0.0 : 0.8,
+                            height: 1.15,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          isArabic ? 'منصة المجتمع الثقافي الفني' : 'COMMUNITY PLATFORM',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.85),
+                            fontSize: subtitleFontSize,
+                            fontWeight: FontWeight.w400,
+                            letterSpacing: isArabic ? 0.0 : 2.2,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ],
             ),

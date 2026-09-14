@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
@@ -11,6 +10,7 @@ import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
+import '../../../../core/utils/share_helper.dart';
 import '../../domain/models/artist_model.dart';
 import 'artist_detail_view.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -39,31 +39,13 @@ class _ArtistsViewState extends State<ArtistsView> {
   StreamSubscription<bool>? _authSub;
 
   void _shareArtist(ArtistModel artist) {
-    Clipboard.setData(
-      ClipboardData(
-        text:
-            'Discover ${artist.name} (${artist.category}) on Artist Dubai!\nExplore their portfolio: https://artistdubai.com/artists/${artist.id}',
-      ),
-    );
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Profile link for ${artist.name} copied to clipboard!',
-                style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13.5),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: const Color(0xFF6A2777),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
+    final name = artist.name.isEmpty ? 'Artist' : artist.name;
+    ShareHelper.shareArtist(
+      context: context,
+      artistId: artist.id,
+      name: name,
+      category: artist.category,
+      avatarUrl: artist.avatarUrl,
     );
   }
 
@@ -199,10 +181,17 @@ class _ArtistsViewState extends State<ArtistsView> {
         }
       }
     });
+
+    DataTranslator.translationNotifier.addListener(_onTranslationChanged);
+  }
+
+  void _onTranslationChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
     _artistsSub?.cancel();
     _favSub?.cancel();
     _catSub?.cancel();
@@ -368,13 +357,11 @@ class _ArtistsViewState extends State<ArtistsView> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        !_isLoggedIn
-                            ? l10n.noArtistProfilesAvailable
-                            : _isLoading && filteredArtists.isEmpty
-                                ? l10n.loadingArtists
-                                : filteredArtists.isEmpty
-                                    ? l10n.noArtistProfilesAvailable
-                                    : l10n.discoverArtistsCount(filteredArtists.length),
+                        _isLoading && filteredArtists.isEmpty
+                            ? l10n.loadingArtists
+                            : filteredArtists.isEmpty
+                                ? l10n.noArtistProfilesAvailable
+                                : l10n.discoverArtistsCount(filteredArtists.length),
                         style: const TextStyle(
                           fontSize: 13.5,
                           color: Color(0xFFE2D6F5),
@@ -385,65 +372,8 @@ class _ArtistsViewState extends State<ArtistsView> {
                 ),
                 const SizedBox(height: 16),
 
-                // 2. Artists List OR Without Login State OR Empty State
-                if (!_isLoggedIn) ...[
-                  // Without login state: exact match to media_1788359809419.png
-                  Center(
-                    child: Column(
-                      children: [
-                        Text(
-                          l10n.noArtistsYet,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          l10n.beTheFirstToCreateArtistProfile,
-                          style: const TextStyle(fontSize: 13.5, color: Color(0xFFE2D6F5)),
-                        ),
-                        const SizedBox(height: 14),
-                        SizedBox(
-                          height: 40,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: const Color(0xFF6B1C9B),
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 8,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            onPressed: () async {
-                              await context.push(RouteNames.login);
-                              if (mounted) {
-                                setState(() {});
-                                if (_isLoggedIn) {
-                                   _fetchData(silent: false);
-                                }
-                              }
-                            },
-                            child: Text(
-                              l10n.createArtistProfile,
-                              style: const TextStyle(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF6B1C9B),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ] else if (_isLoading && filteredArtists.isEmpty) ...[
+                // 2. Artists List OR Loading State OR Empty State
+                if (_isLoading && filteredArtists.isEmpty) ...[
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 48.0),
                     child: Center(
@@ -486,7 +416,13 @@ class _ArtistsViewState extends State<ArtistsView> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            onPressed: () => context.push(RouteNames.artistRegistration),
+                            onPressed: () {
+                              if (_isLoggedIn) {
+                                context.push(RouteNames.artistRegistration);
+                              } else {
+                                context.push(RouteNames.login);
+                              }
+                            },
                             child: Text(
                               l10n.createArtistProfile,
                               style: const TextStyle(
@@ -792,7 +728,6 @@ class _ArtistsViewState extends State<ArtistsView> {
                   fit: BoxFit.cover,
                 ),
               ),
-              if (_isLoggedIn)
               Positioned(
                 top: 10,
                 right: 10,
