@@ -6,7 +6,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:artist_dubai/l10n/app_localizations.dart';
 import '../../../admin/domain/models/publishing_pricing_model.dart';
 
 class GalleryRegistrationView extends StatefulWidget {

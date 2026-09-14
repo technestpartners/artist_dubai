@@ -9,7 +9,7 @@ import 'package:artist_dubai/features/events/domain/models/art_event_model.dart'
 import 'package:artist_dubai/features/events/presentation/views/events_view.dart';
 import 'package:artist_dubai/features/events/presentation/views/event_detail_view.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:artist_dubai/l10n/app_localizations.dart';
 
 class _TestHttpOverrides extends HttpOverrides {}
 

@@ -17,7 +17,7 @@ import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/utils/data_translator.dart';
 import '../../../../core/utils/ui_helpers.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:artist_dubai/l10n/app_localizations.dart';
 import '../../domain/models/artist_model.dart';
 
 class CreateArtistProfileView extends StatefulWidget {

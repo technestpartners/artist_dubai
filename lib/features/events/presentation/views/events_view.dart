@@ -16,7 +16,7 @@ import '../../domain/models/art_event_model.dart';
 import '../../../artists/domain/models/artist_model.dart';
 import '../../../../core/utils/data_translator.dart';
 import '../../../../core/utils/share_helper.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:artist_dubai/l10n/app_localizations.dart';
 
 class EventsView extends StatefulWidget {
   final int initialTabIndex;

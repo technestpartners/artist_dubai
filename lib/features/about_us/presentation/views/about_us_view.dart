@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:artist_dubai/l10n/app_localizations.dart';
 
 class AboutUsView extends StatelessWidget {
   const AboutUsView({super.key});

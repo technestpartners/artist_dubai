@@ -9,7 +9,7 @@ import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:artist_dubai/l10n/app_localizations.dart';
 import '../../../home/presentation/widgets/home_footer_widget.dart';
 import '../../domain/models/art_event_model.dart';
 import '../../../../core/utils/share_helper.dart';

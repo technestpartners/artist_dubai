@@ -11,7 +11,7 @@ import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/utils/data_translator.dart';
 import '../../../../core/utils/share_helper.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:artist_dubai/l10n/app_localizations.dart';
 
 class GalleriesView extends StatefulWidget {
   final String? initialGalleryId;

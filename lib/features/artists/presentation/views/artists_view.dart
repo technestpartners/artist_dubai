@@ -13,7 +13,7 @@ import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/utils/share_helper.dart';
 import '../../domain/models/artist_model.dart';
 import 'artist_detail_view.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:artist_dubai/l10n/app_localizations.dart';
 import '../../../../core/utils/data_translator.dart';
 
 class ArtistsView extends StatefulWidget {
