@@ -61,12 +61,12 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
         ? widget.args['planName'].toString().trim()
         : (_planId == 'yearly'
             ? 'Yearly Plan (365 Days)'
-            : '6 Months Plan (180 Days)');
+            : (_planId == 'monthly' ? 'Monthly Plan (30 Days)' : '6 Months Plan (180 Days)'));
     _planAmount = widget.args['planAmount']?.toString().trim().isNotEmpty == true
         ? widget.args['planAmount'].toString().trim()
         : (_itemType == 'gallery'
-            ? (_planId == 'yearly' ? 'AED 6,500' : 'AED 3,800')
-            : (_planId == 'yearly' ? 'AED 4,500' : 'AED 2,500'));
+            ? (_planId == 'yearly' ? 'AED 6,500' : (_planId == 'monthly' ? 'AED 750' : 'AED 3,800'))
+            : (_planId == 'yearly' ? 'AED 4,500' : (_planId == 'monthly' ? 'AED 500' : 'AED 2,500')));
     _formData = widget.args['formData'] is Map<String, dynamic>
         ? Map<String, dynamic>.from(widget.args['formData'] as Map)
         : (widget.args['formData'] is Map
@@ -116,9 +116,9 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           });
           if (url != null) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Payment receipt attached successfully!'),
-                backgroundColor: Color(0xFF6A2777),
+              SnackBar(
+                content: Text('Payment receipt attached successfully!'.trData(context)),
+                backgroundColor: const Color(0xFF6A2777),
                 behavior: SnackBarBehavior.floating,
               ),
             );
@@ -142,20 +142,20 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
-            children: const [
-              Icon(Icons.info_outline_rounded, color: Color(0xFFD97706), size: 24),
-              SizedBox(width: 10),
+            children: [
+              const Icon(Icons.info_outline_rounded, color: Color(0xFFD97706), size: 24),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'No Payment Proof Attached',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                  'No Payment Proof Attached'.trData(context),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
                 ),
               ),
             ],
           ),
-          content: const Text(
-            'You haven\'t attached a receipt screenshot or entered a transaction reference number.\n\nYou can attach your proof now for faster verification, or submit anyway as pending transfer.',
-            style: TextStyle(fontSize: 13, height: 1.4, color: Color(0xFF475569)),
+          content: Text(
+            'You haven\'t attached a receipt screenshot or entered a transaction reference number.\n\nYou can attach your proof now for faster verification, or submit anyway as pending transfer.'.trData(context),
+            style: const TextStyle(fontSize: 13, height: 1.4, color: Color(0xFF475569)),
           ),
           actions: [
             TextButton(
@@ -163,7 +163,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                 Navigator.of(ctx).pop();
                 _pickReceiptImage();
               },
-              child: const Text('Attach Receipt', style: TextStyle(color: Color(0xFF6A2777), fontWeight: FontWeight.bold)),
+              child: Text('Attach Receipt'.trData(context), style: const TextStyle(color: Color(0xFF6A2777), fontWeight: FontWeight.bold)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -175,7 +175,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                 Navigator.of(ctx).pop();
                 _submitPaymentAndListing();
               },
-              child: const Text('Submit Anyway'),
+              child: Text('Submit Anyway'.trData(context)),
             ),
           ],
         ),
@@ -287,8 +287,8 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
       _showSuccessDialog();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to submit listing. Please verify your connection and try again.'),
+        SnackBar(
+          content: Text('Failed to submit listing. Please verify your connection and try again.'.trData(context)),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
         ),
@@ -320,15 +320,15 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
             ),
             const SizedBox(height: 18),
             Text(
-              _itemType == 'gallery' ? 'Gallery Submitted for Review!' : 'Event Submitted for Review!',
+              (_itemType == 'gallery' ? 'Gallery Submitted for Review!' : 'Event Submitted for Review!').trData(context),
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
             ),
             const SizedBox(height: 10),
             Text(
-              _itemType == 'gallery'
+              (_itemType == 'gallery'
                   ? 'Your gallery registration and payment proof have been submitted. Once verified by our administration team, your gallery will appear publicly.'
-                  : 'Your event listing and payment proof have been submitted. Our team will verify your transfer and publish your event within 24 hours.',
+                  : 'Your event listing and payment proof have been submitted. Our team will verify your transfer and publish your event within 24 hours.').trData(context),
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 13, height: 1.45, color: Color(0xFF475569)),
             ),
@@ -347,7 +347,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Plan: ${_planName.trData(context)} ($_planAmount)',
+                      '${'Plan'.trData(context)}: ${_planName.trData(context)} ($_planAmount)',
                       style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF334155)),
                     ),
                   ),
@@ -373,7 +373,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                   }
                 },
                 child: Text(
-                  _itemType == 'gallery' ? 'Back to Galleries' : 'View My Events',
+                  (_itemType == 'gallery' ? 'Back to Galleries' : 'View My Events').trData(context),
                   style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                 ),
               ),
@@ -394,9 +394,9 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF0F172A),
         elevation: 0.5,
-        title: const Text(
-          'Payment & Checkout',
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+        title: Text(
+          'Payment & Checkout'.trData(context),
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
@@ -475,14 +475,14 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
-                  'Step 2 of 2: Payment & Verification',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF6A2777)),
+                  'Step 2 of 2: Payment & Verification'.trData(context),
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF6A2777)),
                 ),
                 Text(
-                  'Scan the QR code or transfer via IBAN, then attach your receipt',
-                  style: TextStyle(fontSize: 11, color: Color(0xFF7E22CE)),
+                  'Scan the QR code or transfer via IBAN, then attach your receipt'.trData(context),
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF7E22CE)),
                 ),
               ],
             ),
@@ -522,7 +522,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  _itemType == 'gallery' ? 'GALLERY REGISTRATION' : 'EVENT PUBLISHING',
+                  (_itemType == 'gallery' ? 'GALLERY REGISTRATION' : 'EVENT PUBLISHING').trData(context),
                   style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF6A2777), letterSpacing: 0.5),
                 ),
               ),
@@ -565,9 +565,9 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Selected Plan Duration:',
-                style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+              Text(
+                'Selected Plan Duration:'.trData(context),
+                style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
               ),
               Text(
                 _planName.trData(context),
@@ -579,9 +579,9 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Total Payable:',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+              Text(
+                'Total Payable:'.trData(context),
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
               ),
               Text(
                 _planAmount,
@@ -614,12 +614,12 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Row(
-            children: const [
-              Icon(Icons.qr_code_scanner_rounded, color: Color(0xFF6A2777), size: 22),
-              SizedBox(width: 10),
+            children: [
+              const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFF6A2777), size: 22),
+              const SizedBox(width: 10),
               Text(
-                'Scan QR to Pay',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                'Scan QR to Pay'.trData(context),
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
               ),
             ],
           ),
@@ -653,10 +653,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                   ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Scan using your UAE Banking app, Apple Pay, Google Pay, or QR reader',
+          Text(
+            'Scan using your UAE Banking app, Apple Pay, Google Pay, or QR reader'.trData(context),
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B), height: 1.3),
+            style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B), height: 1.3),
           ),
         ],
       ),
@@ -683,12 +683,12 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: const [
-              Icon(Icons.account_balance_rounded, color: Color(0xFF6A2777), size: 20),
-              SizedBox(width: 8),
+            children: [
+              const Icon(Icons.account_balance_rounded, color: Color(0xFF6A2777), size: 20),
+              const SizedBox(width: 8),
               Text(
-                'Direct Bank Transfer Details',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                'Direct Bank Transfer Details'.trData(context),
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
               ),
             ],
           ),
@@ -714,7 +714,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      settings.instructions,
+                      settings.instructions.trData(context),
                       style: const TextStyle(fontSize: 11.5, color: Color(0xFF92400E), height: 1.35),
                     ),
                   ),
@@ -728,6 +728,8 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
   }
 
   Widget _buildInfoRow(String label, String value, IconData icon, {bool isCopyable = false}) {
+    final trLabel = label.trData(context);
+    final trValue = isCopyable ? value : value.trData(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
@@ -740,14 +742,16 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           Icon(icon, size: 16, color: const Color(0xFF64748B)),
           const SizedBox(width: 8),
           Text(
-            '$label: ',
+            '$trLabel: ',
             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
           ),
           Expanded(
             child: Text(
-              value,
+              trValue,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              textDirection: isCopyable ? TextDirection.ltr : null,
+              textAlign: isCopyable ? TextAlign.start : null,
               style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
             ),
           ),
@@ -757,7 +761,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                 Clipboard.setData(ClipboardData(text: value));
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Copied $label to clipboard!'),
+                    content: Text('Copied $trLabel to clipboard!'.trData(context)),
                     backgroundColor: const Color(0xFF6A2777),
                     duration: const Duration(seconds: 2),
                     behavior: SnackBarBehavior.floating,
@@ -772,10 +776,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(Icons.copy_rounded, size: 13, color: Color(0xFF6A2777)),
-                    SizedBox(width: 4),
-                    Text('Copy', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF6A2777))),
+                  children: [
+                    const Icon(Icons.copy_rounded, size: 13, color: Color(0xFF6A2777)),
+                    const SizedBox(width: 4),
+                    Text('Copy'.trData(context), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF6A2777))),
                   ],
                 ),
               ),
@@ -805,32 +809,32 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: const [
-              Icon(Icons.verified_outlined, color: Color(0xFF6A2777), size: 20),
-              SizedBox(width: 8),
+            children: [
+              const Icon(Icons.verified_outlined, color: Color(0xFF6A2777), size: 20),
+              const SizedBox(width: 8),
               Text(
-                'Payment Verification & Proof',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                'Payment Verification & Proof'.trData(context),
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
               ),
             ],
           ),
           const SizedBox(height: 6),
-          const Text(
-            'Attach your transfer receipt screenshot and/or enter transaction ID for instant verification.',
-            style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+          Text(
+            'Attach your transfer receipt screenshot and/or enter transaction ID for instant verification.'.trData(context),
+            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
           ),
           const SizedBox(height: 14),
 
           // Transaction ID Field
-          const Text(
-            'Transaction Reference / ID (Optional)',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF334155)),
+          Text(
+            'Transaction Reference / ID (Optional)'.trData(context),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF334155)),
           ),
           const SizedBox(height: 6),
           TextFormField(
             controller: _transactionIdController,
             decoration: InputDecoration(
-              hintText: 'e.g. TXN-98472918 or Bank Ref #',
+              hintText: 'e.g. TXN-98472918 or Bank Ref #'.trData(context),
               hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF94A3B8)),
               prefixIcon: const Icon(Icons.receipt_long_rounded, size: 18, color: Color(0xFF64748B)),
               filled: true,
@@ -879,21 +883,21 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Payment Proof Attached',
+                              'Payment Proof Attached'.trData(context),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF15803D)),
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF15803D)),
                             ),
                             Text(
-                              'Receipt screenshot ready for review',
+                              'Receipt screenshot ready for review'.trData(context),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 11, color: Color(0xFF166534)),
+                              style: const TextStyle(fontSize: 11, color: Color(0xFF166534)),
                             ),
                           ],
                         ),
@@ -909,21 +913,21 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                         child: const Icon(Icons.upload_file_rounded, color: Color(0xFF6A2777), size: 22),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Attach Transfer Receipt',
+                              'Attach Transfer Receipt'.trData(context),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF334155)),
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF334155)),
                             ),
                             Text(
-                              'Upload screenshot (PNG, JPG up to 10MB)',
+                              'Upload screenshot (PNG, JPG up to 10MB)'.trData(context),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                              style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                             ),
                           ],
                         ),
@@ -950,8 +954,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                           ),
                     label: Text(
                       _isUploadingReceipt
-                          ? 'Uploading...'
-                          : (_receiptUrl != null ? 'Change Receipt Screenshot' : 'Upload Receipt Screenshot'),
+                          ? 'Uploading...'.trData(context)
+                          : (_receiptUrl != null
+                              ? 'Change Receipt Screenshot'.trData(context)
+                              : 'Upload Receipt Screenshot'.trData(context)),
                       style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF6A2777)),
                     ),
                     style: TextButton.styleFrom(
@@ -994,7 +1000,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                       const Icon(Icons.check_circle_outline_rounded, size: 20),
                       const SizedBox(width: 8),
                       Text(
-                        'Confirm & Submit Listing ($_planAmount)',
+                        '${'Confirm & Submit Listing'.trData(context)} ($_planAmount)',
                         style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
                       ),
                     ],
@@ -1018,7 +1024,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                 context.go(_itemType == 'gallery' ? RouteNames.galleryRegistration : RouteNames.createArtEvent);
               }
             },
-            child: const Text('Back to Edit Details', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
+            child: Text('Back to Edit Details'.trData(context), style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
           ),
         ),
       ],

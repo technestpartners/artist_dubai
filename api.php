@@ -10,7 +10,7 @@
 
 if (!headers_sent()) {
     header("Access-Control-Allow-Origin: *");
-    $allowedHeaders = "Content-Type, Authorization, X-Requested-With, If-None-Match, Accept, Accept-Language, Origin, Cache-Control, Pragma, User-Agent";
+    $allowedHeaders = "Content-Type, Authorization, X-Requested-With, If-None-Match, Accept, Accept-Language, Origin, Cache-Control, Pragma, User-Agent, Connection";
     if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'])) {
         $allowedHeaders .= ", " . $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'];
     }
@@ -70,13 +70,23 @@ class DatabaseManager {
             if (defined('CLI_TEST_MODE') || defined('SAFE_DB_MODE')) {
                 throw $e;
             }
+            // Inline language detection (BackendTranslator not yet defined at this point)
+            $reqLang = strtolower(trim((string)($_GET['lang'] ?? $_POST['lang'] ?? '')));
+            if ($reqLang !== 'ar' && $reqLang !== 'en') {
+                $accept = strtolower((string)($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? ''));
+                $reqLang = (strpos($accept, 'ar') === 0 || strpos($accept, ',ar') !== false) ? 'ar' : 'en';
+            }
+            $errMsg = ($reqLang === 'ar')
+                ? 'خطأ في الاتصال بقاعدة البيانات. يرجى المحاولة مرة أخرى لاحقاً.'
+                : 'Database connection error. Please try again later.';
             http_response_code(500);
             echo json_encode([
-                'status' => 'error',
-                'success' => false,
-                'message' => 'MySQL Connection Error: ' . $e->getMessage(),
-                'database' => 'MySQL'
-            ]);
+                'status'   => 'error',
+                'success'  => false,
+                'message'  => $errMsg,
+                'database' => 'MySQL',
+                'lang'     => $reqLang
+            ], JSON_UNESCAPED_UNICODE);
             exit();
         }
     }
@@ -209,7 +219,7 @@ class DatabaseManager {
                 user_id INT NULL,
                 user_email VARCHAR(255) NOT NULL,
                 item_type VARCHAR(50) NOT NULL,
-                item_id INT NOT NULL,
+                item_id VARCHAR(100) NOT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE KEY unique_favorite (user_email, item_type, item_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -611,6 +621,11 @@ class DatabaseManager {
                 $payStmt = $this->pdo->prepare("INSERT INTO payment_settings (id, qr_code_url, account_name, account_number, bank_name, instructions, is_active) VALUES (1, ?, ?, ?, ?, ?, 1)");
                 $payStmt->execute([$defaultQr, $defaultAccName, $defaultIban, $defaultBank, $defaultNote]);
             }
+
+            // Ensure favorites.item_id supports non-integer/mock/string IDs
+            try {
+                $this->pdo->exec("ALTER TABLE `favorites` MODIFY `item_id` VARCHAR(100) NOT NULL");
+            } catch (\Throwable $t) {}
         } catch (\Throwable $t) {}
     }
 }
@@ -787,7 +802,22 @@ class BackendTranslator {
             'user registered successfully' => 'تم تسجيل المستخدم بنجاح',
             'login successful' => 'تم تسجيل الدخول بنجاح',
             'invalid credentials' => 'بيانات الاعتماد غير صالحة',
-            'validation error' => 'خطأ في التحقق من البيانات'
+            'validation error' => 'خطأ في التحقق من البيانات',
+            // Server & DB error messages
+            'database connection error. please try again later.' => 'خطأ في الاتصال بقاعدة البيانات. يرجى المحاولة مرة أخرى لاحقاً.',
+            'database connection error' => 'خطأ في الاتصال بقاعدة البيانات',
+            'database connection failed' => 'فشل الاتصال بقاعدة البيانات',
+            'mysql connection error' => 'خطأ في الاتصال بـ MySQL',
+            'server error' => 'خطأ في الخادم',
+            'internal server error' => 'خطأ داخلي في الخادم',
+            'something went wrong' => 'حدث خطأ ما',
+            'something went wrong. please try again.' => 'حدث خطأ ما. يرجى المحاولة مرة أخرى.',
+            'service temporarily unavailable' => 'الخدمة غير متاحة مؤقتاً',
+            'please try again later' => 'يرجى المحاولة مرة أخرى لاحقاً',
+            'request failed' => 'فشل الطلب',
+            'network error' => 'خطأ في الشبكة',
+            'timeout' => 'انتهت مهلة الطلب',
+            'connection refused' => 'تم رفض الاتصال'
         ];
 
         self::$phraseReplacements = [
@@ -3251,7 +3281,10 @@ class FavoriteController {
                 ApiResponse::success([
                     'artists' => $artists,
                     'events' => $events,
-                    'artworks' => $artworks
+                    'artworks' => $artworks,
+                    'artist_ids' => array_values(array_unique(array_map('strval', $artistIds))),
+                    'event_ids' => array_values(array_unique(array_map('strval', $eventIds))),
+                    'artwork_ids' => array_values(array_unique(array_map('strval', $artworkIds))),
                 ], 'Favorites retrieved successfully');
                 return;
             }
@@ -3260,7 +3293,10 @@ class FavoriteController {
         ApiResponse::success([
             'artists' => [],
             'events' => [],
-            'artworks' => []
+            'artworks' => [],
+            'artist_ids' => [],
+            'event_ids' => [],
+            'artwork_ids' => [],
         ], 'Favorites retrieved successfully');
     }
 
@@ -4230,16 +4266,20 @@ class UnifiedMySqlApiRouter {
                 break;
 
             case 'events':
-                $event = new EventController();
-                $evAction = strtolower(trim($_GET['action'] ?? $input['action'] ?? ''));
-                if ($evAction === 'delete') {
-                    $event->deleteEvent(array_merge($input, $_GET));
-                } elseif ($evAction === 'update' || $method === 'PUT') {
-                    $event->updateEvent(array_merge($input, $_GET));
-                } elseif ($method === 'POST') {
-                    $event->createEvent($input);
-                } else {
-                    $event->getEvents($_GET);
+                try {
+                    $event = new EventController();
+                    $evAction = strtolower(trim($_GET['action'] ?? $input['action'] ?? ''));
+                    if ($evAction === 'delete') {
+                        $event->deleteEvent(array_merge($input, $_GET));
+                    } elseif ($evAction === 'update' || $method === 'PUT') {
+                        $event->updateEvent(array_merge($input, $_GET));
+                    } elseif ($method === 'POST') {
+                        $event->createEvent($input);
+                    } else {
+                        $event->getEvents($_GET);
+                    }
+                } catch (\Throwable $e) {
+                    ApiResponse::error('Events error: ' . $e->getMessage(), 500);
                 }
                 break;
 
@@ -4428,7 +4468,5 @@ class UnifiedMySqlApiRouter {
 
 // Execute Strictly Pure MySQL API Router
 if (!defined('CLI_TEST_MODE')) {
-    UnifiedMyS
-    
-    qlApiRouter::execute();
+    UnifiedMySqlApiRouter::execute();
 }

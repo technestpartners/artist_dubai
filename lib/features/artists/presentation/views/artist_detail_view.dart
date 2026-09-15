@@ -11,6 +11,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/services/live_sync_service.dart';
+import '../../../../core/services/favorites_service.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
@@ -57,7 +58,6 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
   late int _worksCount;
   StreamSubscription<List<ArtistModel>>? _artistLiveSub;
   StreamSubscription<Map<String, dynamic>>? _favLiveSub;
-  DateTime? _lastUserFavoriteActionTime;
   DateTime? _lastUserFollowActionTime;
 
   List<Map<String, dynamic>> _photoGalleries = [];
@@ -148,13 +148,19 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
     }
   }
 
+  late final FavoritesService _favService;
+
   @override
   void initState() {
     super.initState();
+    _favService = sl<FavoritesService>();
     final artist = widget.artist;
+    final aId = artist?.id ?? widget.artistId ?? '';
+    final localIsFav = aId.isNotEmpty && _favService.isArtistFavorite(aId);
 
-    // Initialise instantly from parent-passed DB state — zero flicker
-    _isArtistFavorited = widget.initialIsFavorited ?? false;
+    // Initialise instantly from parent-passed DB state & local FavoritesService — zero flicker
+    _isArtistFavorited = widget.initialIsFavorited ?? localIsFav;
+    if (localIsFav) _isArtistFavorited = true;
     _isFollowing       = widget.initialIsFollowing  ?? false;
 
     _likesCount     = artist?.likesCount     ?? 0;
@@ -162,6 +168,13 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
     _worksCount     = artist?.worksCount     ?? 0;
     if (_isArtistFavorited && _likesCount == 0)   _likesCount     = 1;
     if (_isFollowing        && _followersCount == 0) _followersCount = 1;
+
+    _favoritedArtworks.addAll(
+      _favService.artworkIds
+        .map((e) => int.tryParse(e) ?? 0)
+        .where((e) => e > 0),
+    );
+    _favService.addListener(_onFavoritesUpdated);
     _loadAllData();
 
     if (artist == null && widget.artistId != null && widget.artistId!.isNotEmpty) {
@@ -206,16 +219,8 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
     });
 
     _favLiveSub = sl<LiveSyncService>().favoritesStream.listen((favData) {
-      if (mounted && widget.artist != null) {
-        if (_lastUserFavoriteActionTime != null && DateTime.now().difference(_lastUserFavoriteActionTime!).inSeconds < 3) {
-          return;
-        }
-        final favArtists = (favData['artists'] as List<ArtistModel>?) ?? [];
-        final isFav = favArtists.any((a) => a.id == widget.artist!.id);
-        setState(() {
-          _isArtistFavorited = isFav;
-          if (_isArtistFavorited && _likesCount == 0) _likesCount = 1;
-        });
+      if (mounted) {
+        _favService.updateFromServer(favData);
       }
     });
 
@@ -226,6 +231,26 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
     DataTranslator.translationNotifier.addListener(_onTranslationChanged);
   }
 
+  void _onFavoritesUpdated() {
+    if (mounted) {
+      final currentArtist = _effectiveArtist;
+      final currentId = currentArtist?.id ?? widget.artistId ?? '';
+      setState(() {
+        if (currentId.isNotEmpty) {
+          _isArtistFavorited = _favService.isArtistFavorite(currentId);
+          if (_isArtistFavorited && _likesCount == 0) _likesCount = 1;
+        }
+        _favoritedArtworks
+          ..clear()
+          ..addAll(
+            _favService.artworkIds
+              .map((e) => int.tryParse(e) ?? 0)
+              .where((e) => e > 0),
+          );
+      });
+    }
+  }
+
   void _onTranslationChanged() {
     if (mounted) setState(() {});
   }
@@ -234,6 +259,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
 
   @override
   void dispose() {
+    _favService.removeListener(_onFavoritesUpdated);
     DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
     _artistLiveSub?.cancel();
     _favLiveSub?.cancel();
@@ -304,7 +330,12 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
             _worksCount = artworks.length;
           }
           if (status != null) {
-            _isArtistFavorited = status['is_liked'] == true;
+            final isServerLiked = status['is_liked'] == true;
+            final currentId = artist?.id ?? widget.artistId ?? '';
+            if (isServerLiked && currentId.isNotEmpty) {
+              _favService.addServerArtistIds([currentId]);
+            }
+            _isArtistFavorited = _favService.isArtistFavorite(currentId) || isServerLiked;
             _isFollowing = status['is_following'] == true;
             if (status['likes_count'] != null) {
               _likesCount = (status['likes_count'] as num).toInt();
@@ -322,7 +353,8 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
               _worksCount = (status['works_count'] as num).toInt();
             }
           } else {
-            _isArtistFavorited = isFavInBackend;
+            final currentId = artist?.id ?? widget.artistId ?? '';
+            _isArtistFavorited = _favService.isArtistFavorite(currentId) || isFavInBackend;
             if (_isArtistFavorited && _likesCount == 0) {
               _likesCount = 1;
             }
@@ -368,11 +400,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
   }
 
   void _toggleArtistFavorite() async {
-    final artist = widget.artist;
+    final artist = _effectiveArtist;
     if (artist == null) return;
-    final userEmail = _getEffectiveEmail();
     final wasFav = _isArtistFavorited;
-    _lastUserFavoriteActionTime = DateTime.now();
 
     setState(() {
       _isArtistFavorited = !wasFav;
@@ -382,25 +412,8 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         if (_likesCount > 0) _likesCount -= 1;
       }
     });
-    // Patch in-memory cache instantly so directory cards reflect immediately
-    sl<ApiService>().patchInteractionsCache(artistId: artist.id, isLiked: !wasFav);
 
-    final res = await sl<ApiService>().likeArtist(
-      artistId: artist.id,
-      userEmail: userEmail,
-      action: wasFav ? 'unlike' : 'like',
-    );
-    if (res != null && mounted) {
-      final confirmed = res['is_liked'] == true;
-      sl<ApiService>().patchInteractionsCache(artistId: artist.id, isLiked: confirmed);
-      setState(() {
-        if (res['likes_count'] != null) {
-          _likesCount = (res['likes_count'] as num).toInt();
-        }
-        _isArtistFavorited = confirmed;
-        if (_isArtistFavorited && _likesCount == 0) _likesCount = 1;
-      });
-    }
+    await _favService.toggleArtistFavorite(artist.id);
 
     if (mounted) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -420,7 +433,6 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
   }
 
   void _toggleArtworkFavorite(int itemId) async {
-    final userEmail = sl<StorageService>().getString('user_email') ?? '';
     final wasFav = _favoritedArtworks.contains(itemId);
     setState(() {
       if (wasFav) {
@@ -430,13 +442,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
       }
     });
 
-    if (userEmail.isNotEmpty) {
-      await sl<ApiService>().toggleFavorite(
-        email: userEmail,
-        itemType: 'artwork',
-        itemId: itemId.toString(),
-      );
-    }
+    await _favService.toggleArtworkFavorite(itemId.toString());
   }
 
   void _showArtworkDetailModal(Map<String, dynamic> item, int itemId) {

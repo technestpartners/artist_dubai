@@ -616,6 +616,9 @@
   "maxArtworksReached": "Maximum 6 artworks reached",
   "@maxArtworksReached": {},
 
+  "maxArtworkUploadsAllowed": "Maximum 6 artwork uploads allowed.",
+  "@maxArtworkUploadsAllowed": {},
+
   "markAsFeaturedArtwork": "Mark as Featured Artwork",
   "@markAsFeaturedArtwork": {},
 
@@ -878,5 +881,77 @@
   "@eventDetails": {},
 
   "back": "Back",
-  "@back": {}
+  "@back": {},
+
+  "loginSuccess": "Signed in successfully!",
+  "@loginSuccess": {},
+  "signedInAsAdmin": "Signed in as Admin!",
+  "@signedInAsAdmin": {},
+  "userNotAvailable": "User is not available. Please create an account first.",
+  "@userNotAvailable": {},
+  "enterEmail": "Please enter your email address",
+  "@enterEmail": {},
+  "enterValidEmail": "Please enter a valid email address",
+  "@enterValidEmail": {},
+  "enterPassword": "Please enter your password",
+  "@enterPassword": {},
+  "accountCreatedEnthusiast": "Account created! You now have full access to Dubai events & galleries.",
+  "@accountCreatedEnthusiast": {},
+  "accountCreatedArtist": "Account created successfully! Welcome to Artist Dubai.",
+  "@accountCreatedArtist": {},
+  "unableToRegister": "Unable to register account. Please check your details.",
+  "@unableToRegister": {},
+  "accountEmailExists": "An account with this email already exists.",
+  "@accountEmailExists": {},
+  "privacyPolicyDetails": "Privacy Policy details",
+  "@privacyPolicyDetails": {},
+  "termsOfServiceDetails": "Terms of Service details",
+  "@termsOfServiceDetails": {},
+  "artistProfileUpdatedSuccess": "Artist Profile updated successfully!",
+  "@artistProfileUpdatedSuccess": {},
+  "artistProfileCreatedSuccess": "Artist Profile created successfully!",
+  "@artistProfileCreatedSuccess": {},
+  "artistProfileSaveFailed": "Failed to save profile. Please check your inputs.",
+  "@artistProfileSaveFailed": {},
+  "artistProfileUpdateFailed": "Failed to update profile. Please check your inputs.",
+  "@artistProfileUpdateFailed": {},
+  "maxArtworksAllowed": "Maximum 6 artwork uploads allowed.",
+  "@maxArtworksAllowed": {},
+  "eventCreatedSuccess": "Event created and published successfully!",
+  "@eventCreatedSuccess": {},
+  "eventUpdatedSuccess": "Event updated successfully!",
+  "@eventUpdatedSuccess": {},
+  "calendarEventUpdatedSuccess": "Calendar event updated successfully!",
+  "@calendarEventUpdatedSuccess": {},
+  "eventScheduledSuccess": "Event scheduled on calendar successfully!",
+  "@eventScheduledSuccess": {},
+  "eventImageUploadedSuccess": "Event image uploaded successfully!",
+  "@eventImageUploadedSuccess": {},
+  "enterEventTitle": "Please enter the event title.",
+  "@enterEventTitle": {},
+  "selectEventDate": "Please select the event date.",
+  "@selectEventDate": {},
+  "failedToSaveEvent": "Failed to save event. Please check inputs.",
+  "@failedToSaveEvent": {},
+  "galleryPhotoUploadedSuccess": "Gallery photo uploaded successfully!",
+  "@galleryPhotoUploadedSuccess": {},
+
+  "notifications": "Notifications",
+  "@notifications": {},
+  "markAllAsRead": "Mark all read",
+  "@markAllAsRead": {},
+  "noNotifications": "No new notifications",
+  "@noNotifications": {},
+  "clearAll": "Clear all",
+  "@clearAll": {},
+  "close": "Close",
+  "@close": {},
+  "newCount": "{count} new",
+  "@newCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -8,6 +8,7 @@ import '../network/api_client.dart';
 import '../network/dio_interceptor.dart';
 import '../network/network_info.dart';
 import '../services/api_service.dart';
+import '../services/favorites_service.dart';
 import '../services/live_sync_service.dart';
 import '../services/locale_provider.dart';
 import '../services/logger_service.dart';
@@ -69,6 +70,14 @@ Future<void> initDependencyInjection() async {
 
   sl.registerLazySingleton<NotificationService>(
     () => NotificationService(),
+  );
+
+  sl.registerLazySingleton<FavoritesService>(
+    () => FavoritesService(
+      storage: sl<StorageService>(),
+      api: sl<ApiService>(),
+      liveSync: sl<LiveSyncService>(),
+    ),
   );
 
   final localeProvider = LocaleProvider();

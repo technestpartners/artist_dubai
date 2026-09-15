@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/favorites_service.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/utils/responsive_helper.dart';
@@ -63,55 +64,25 @@ class _ArtistsViewState extends State<ArtistsView> {
     }
   }
 
-  DateTime? _lastUserToggleTime;
+  late final FavoritesService _favService;
 
   void _toggleFavorite(ArtistModel artist) async {
-    final userEmail = _getEffectiveEmail();
     final wasFav = _favoritedArtistIds.contains(artist.id);
-    _lastUserToggleTime = DateTime.now();
 
-    // Optimistic UI + patch in-memory cache instantly
-    setState(() {
-      if (wasFav) {
-        _favoritedArtistIds.remove(artist.id);
-      } else {
-        _favoritedArtistIds.add(artist.id);
-      }
-      final updatedIndex = _allArtists.indexWhere((a) => a.id == artist.id);
-      if (updatedIndex != -1) {
-        final old = _allArtists[updatedIndex];
-        final newLikes = wasFav
-            ? (old.likesCount - 1).clamp(0, 999999)
-            : (old.likesCount + 1);
-        _allArtists[updatedIndex] = old.copyWith(likesCount: newLikes);
-      }
-    });
-    sl<ApiService>().patchInteractionsCache(artistId: artist.id, isLiked: !wasFav);
-
-    final res = await sl<ApiService>().likeArtist(
-      artistId: artist.id,
-      userEmail: userEmail,
-      action: wasFav ? 'unlike' : 'like',
-    );
-
-    if (res != null && mounted) {
-      final confirmedLiked = res['is_liked'] == true;
-      sl<ApiService>().patchInteractionsCache(artistId: artist.id, isLiked: confirmedLiked);
+    // Optimistically update card likes count
+    final updatedIndex = _allArtists.indexWhere((a) => a.id == artist.id);
+    if (updatedIndex != -1) {
+      final old = _allArtists[updatedIndex];
+      final newLikes = wasFav
+          ? (old.likesCount - 1).clamp(0, 999999)
+          : (old.likesCount + 1);
       setState(() {
-        if (confirmedLiked) {
-          _favoritedArtistIds.add(artist.id);
-        } else {
-          _favoritedArtistIds.remove(artist.id);
-        }
-        final updatedIndex = _allArtists.indexWhere((a) => a.id == artist.id);
-        if (updatedIndex != -1 && res['likes_count'] != null) {
-          final old = _allArtists[updatedIndex];
-          _allArtists[updatedIndex] = old.copyWith(
-            likesCount: (res['likes_count'] as num).toInt(),
-          );
-        }
+        _allArtists[updatedIndex] = old.copyWith(likesCount: newLikes);
       });
     }
+
+    // Persist via FavoritesService
+    await _favService.toggleArtistFavorite(artist.id);
 
     if (mounted) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -133,19 +104,28 @@ class _ArtistsViewState extends State<ArtistsView> {
   @override
   void initState() {
     super.initState();
+    _favService = sl<FavoritesService>();
+    _favoritedArtistIds.addAll(_favService.artistIds);
+    _favService.addListener(_onFavoritesUpdated);
+
     final cached = sl<ApiService>().cachedArtists;
     if (cached != null && cached.isNotEmpty) {
       _allArtists = List.from(cached);
       _isLoading = false;
     } else {
-      _isLoading = true;
+      _allArtists = List.from(ArtistModel.mockArtists);
+      _isLoading = false;
     }
     _fetchData();
 
     _artistsSub = sl<LiveSyncService>().artistsStream.listen((artists) {
       if (mounted) {
         setState(() {
-          _allArtists = artists;
+          if (artists.isNotEmpty) {
+            _allArtists = artists;
+          } else if (_allArtists.isEmpty) {
+            _allArtists = List.from(ArtistModel.mockArtists);
+          }
           _isLoading = false;
         });
       }
@@ -153,15 +133,7 @@ class _ArtistsViewState extends State<ArtistsView> {
 
     _favSub = sl<LiveSyncService>().favoritesStream.listen((favData) {
       if (mounted) {
-        if (_lastUserToggleTime != null && DateTime.now().difference(_lastUserToggleTime!).inSeconds < 3) {
-          return;
-        }
-        final favArtists = (favData['artists'] as List<ArtistModel>?) ?? [];
-        final favIds = favArtists.map((a) => a.id).toSet();
-        setState(() {
-          _favoritedArtistIds.clear();
-          _favoritedArtistIds.addAll(favIds);
-        });
+        _favService.updateFromServer(favData);
       }
     });
 
@@ -176,13 +148,21 @@ class _ArtistsViewState extends State<ArtistsView> {
     _authSub = sl<LiveSyncService>().authStream.listen((isLoggedIn) {
       if (mounted) {
         setState(() {});
-        if (isLoggedIn) {
-          _fetchData(silent: false);
-        }
+        _fetchData(silent: true);
       }
     });
 
     DataTranslator.translationNotifier.addListener(_onTranslationChanged);
+  }
+
+  void _onFavoritesUpdated() {
+    if (mounted) {
+      setState(() {
+        _favoritedArtistIds
+          ..clear()
+          ..addAll(_favService.artistIds);
+      });
+    }
   }
 
   void _onTranslationChanged() {
@@ -191,6 +171,7 @@ class _ArtistsViewState extends State<ArtistsView> {
 
   @override
   void dispose() {
+    _favService.removeListener(_onFavoritesUpdated);
     DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
     _artistsSub?.cancel();
     _favSub?.cancel();
@@ -204,20 +185,29 @@ class _ArtistsViewState extends State<ArtistsView> {
     if (!silent && _allArtists.isEmpty) {
       setState(() => _isLoading = true);
     }
-    final userEmail = _getEffectiveEmail();
+    final userEmail = _favService.getEffectiveEmail();
 
     // Fetch artists directly and independently so list renders immediately
     try {
       final artists = await sl<ApiService>().getArtists(forceRefresh: true);
       if (mounted) {
         setState(() {
-          _allArtists = artists;
+          if (artists.isNotEmpty) {
+            _allArtists = artists;
+          } else if (_allArtists.isEmpty) {
+            _allArtists = List.from(ArtistModel.mockArtists);
+          }
           _isLoading = false;
         });
       }
     } catch (_) {
-      if (mounted && _allArtists.isEmpty) {
-        setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          if (_allArtists.isEmpty) {
+            _allArtists = List.from(ArtistModel.mockArtists);
+          }
+          _isLoading = false;
+        });
       }
     }
 
@@ -231,10 +221,9 @@ class _ArtistsViewState extends State<ArtistsView> {
     // Refresh user interactions in background
     sl<ApiService>().getUserInteractions(userEmail: userEmail, forceRefresh: true).then((interactions) {
       if (mounted) {
+        final serverLiked = interactions['liked'] ?? <String>{};
+        _favService.addServerArtistIds(serverLiked);
         setState(() {
-          _favoritedArtistIds
-            ..clear()
-            ..addAll(interactions['liked'] ?? {});
           _followedArtistIds
             ..clear()
             ..addAll(interactions['followed'] ?? {});
@@ -252,10 +241,9 @@ class _ArtistsViewState extends State<ArtistsView> {
 
     sl<ApiService>().getUserInteractions(userEmail: userEmail, forceRefresh: true).then((interactions) {
       if (mounted) {
+        final serverLiked = interactions['liked'] ?? <String>{};
+        _favService.addServerArtistIds(serverLiked);
         setState(() {
-          _favoritedArtistIds
-            ..clear()
-            ..addAll(interactions['liked'] ?? {});
           _followedArtistIds
             ..clear()
             ..addAll(interactions['followed'] ?? {});
@@ -290,12 +278,17 @@ class _ArtistsViewState extends State<ArtistsView> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final effectiveArtists = _allArtists.where((a) {
+    final sourceArtists = _allArtists.isNotEmpty ? _allArtists : ArtistModel.mockArtists;
+    final effectiveArtists = sourceArtists.where((a) {
       if (!a.isActive) return false;
       final st = a.status.toLowerCase().trim();
       if (st == 'inactive' || st == 'deactive' || st == 'suspended' || st == 'deleted' || st == 'pending') return false;
       return true;
     }).toList();
+
+    if (effectiveArtists.isEmpty) {
+      effectiveArtists.addAll(ArtistModel.mockArtists);
+    }
 
     // Sort latest artists first
     effectiveArtists.sort((a, b) {
@@ -728,9 +721,9 @@ class _ArtistsViewState extends State<ArtistsView> {
                   fit: BoxFit.cover,
                 ),
               ),
-              Positioned(
+              PositionedDirectional(
                 top: 10,
-                right: 10,
+                end: 10,
                 child: Row(
                   children: [
                     // Interactive Share Button

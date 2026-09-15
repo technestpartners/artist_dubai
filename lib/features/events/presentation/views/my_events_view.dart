@@ -318,9 +318,9 @@ class _MyEventsViewState extends State<MyEventsView> {
                                                 fit: BoxFit.cover,
                                               ),
                                             ),
-                                            Positioned(
+                                            PositionedDirectional(
                                               top: 8,
-                                              right: 8,
+                                              end: 8,
                                               child: Material(
                                                 color: Colors.black.withValues(alpha: 0.5),
                                                 shape: const CircleBorder(),

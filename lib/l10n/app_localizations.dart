@@ -62,8 +62,7 @@ import 'app_localizations_en.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale)
-    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -71,8 +70,7 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate =
-      _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -84,18 +82,17 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
-      <LocalizationsDelegate<dynamic>>[
-        delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-      ];
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
+    delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+  ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('ar'),
-    Locale('en'),
+    Locale('en')
   ];
 
   /// The name of the application
@@ -1298,6 +1295,12 @@ abstract class AppLocalizations {
   /// **'Maximum 6 artworks reached'**
   String get maxArtworksReached;
 
+  /// No description provided for @maxArtworkUploadsAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum 6 artwork uploads allowed.'**
+  String get maxArtworkUploadsAllowed;
+
   /// No description provided for @markAsFeaturedArtwork.
   ///
   /// In en, this message translates to:
@@ -1571,7 +1574,7 @@ abstract class AppLocalizations {
   /// No description provided for @enterEventTitle.
   ///
   /// In en, this message translates to:
-  /// **'Enter event title'**
+  /// **'Please enter the event title.'**
   String get enterEventTitle;
 
   /// No description provided for @describeYourEvent.
@@ -1801,10 +1804,195 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Event Details'**
   String get eventDetails;
+
+  /// No description provided for @loginSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in successfully!'**
+  String get loginSuccess;
+
+  /// No description provided for @signedInAsAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in as Admin!'**
+  String get signedInAsAdmin;
+
+  /// No description provided for @userNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'User is not available. Please create an account first.'**
+  String get userNotAvailable;
+
+  /// No description provided for @enterEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your email address'**
+  String get enterEmail;
+
+  /// No description provided for @enterValidEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid email address'**
+  String get enterValidEmail;
+
+  /// No description provided for @enterPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your password'**
+  String get enterPassword;
+
+  /// No description provided for @accountCreatedEnthusiast.
+  ///
+  /// In en, this message translates to:
+  /// **'Account created! You now have full access to Dubai events & galleries.'**
+  String get accountCreatedEnthusiast;
+
+  /// No description provided for @accountCreatedArtist.
+  ///
+  /// In en, this message translates to:
+  /// **'Account created successfully! Welcome to Artist Dubai.'**
+  String get accountCreatedArtist;
+
+  /// No description provided for @unableToRegister.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to register account. Please check your details.'**
+  String get unableToRegister;
+
+  /// No description provided for @accountEmailExists.
+  ///
+  /// In en, this message translates to:
+  /// **'An account with this email already exists.'**
+  String get accountEmailExists;
+
+  /// No description provided for @privacyPolicyDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy details'**
+  String get privacyPolicyDetails;
+
+  /// No description provided for @termsOfServiceDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Service details'**
+  String get termsOfServiceDetails;
+
+  /// No description provided for @artistProfileUpdatedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Artist Profile updated successfully!'**
+  String get artistProfileUpdatedSuccess;
+
+  /// No description provided for @artistProfileCreatedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Artist Profile created successfully!'**
+  String get artistProfileCreatedSuccess;
+
+  /// No description provided for @artistProfileSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save profile. Please check your inputs.'**
+  String get artistProfileSaveFailed;
+
+  /// No description provided for @artistProfileUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update profile. Please check your inputs.'**
+  String get artistProfileUpdateFailed;
+
+  /// No description provided for @maxArtworksAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum 6 artwork uploads allowed.'**
+  String get maxArtworksAllowed;
+
+  /// No description provided for @eventCreatedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Event created and published successfully!'**
+  String get eventCreatedSuccess;
+
+  /// No description provided for @eventUpdatedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Event updated successfully!'**
+  String get eventUpdatedSuccess;
+
+  /// No description provided for @calendarEventUpdatedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar event updated successfully!'**
+  String get calendarEventUpdatedSuccess;
+
+  /// No description provided for @eventScheduledSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Event scheduled on calendar successfully!'**
+  String get eventScheduledSuccess;
+
+  /// No description provided for @eventImageUploadedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Event image uploaded successfully!'**
+  String get eventImageUploadedSuccess;
+
+  /// No description provided for @selectEventDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select the event date.'**
+  String get selectEventDate;
+
+  /// No description provided for @failedToSaveEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save event. Please check inputs.'**
+  String get failedToSaveEvent;
+
+  /// No description provided for @galleryPhotoUploadedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery photo uploaded successfully!'**
+  String get galleryPhotoUploadedSuccess;
+
+  /// No description provided for @notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notifications;
+
+  /// No description provided for @markAllAsRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark all read'**
+  String get markAllAsRead;
+
+  /// No description provided for @noNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'No new notifications'**
+  String get noNotifications;
+
+  /// No description provided for @clearAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get clearAll;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @newCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} new'**
+  String newCount(int count);
 }
 
-class _AppLocalizationsDelegate
-    extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -1813,26 +2001,25 @@ class _AppLocalizationsDelegate
   }
 
   @override
-  bool isSupported(Locale locale) =>
-      <String>['ar', 'en'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>['ar', 'en'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
+
+
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'ar':
-      return AppLocalizationsAr();
-    case 'en':
-      return AppLocalizationsEn();
+    case 'ar': return AppLocalizationsAr();
+    case 'en': return AppLocalizationsEn();
   }
 
   throw FlutterError(
     'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
     'an issue with the localizations generation tool. Please file an issue '
     'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.',
+    'that was used.'
   );
 }

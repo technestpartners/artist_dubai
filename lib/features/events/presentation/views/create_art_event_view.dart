@@ -194,10 +194,11 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
             _isUploadingImage = false;
           });
           if (url != null) {
+            final l10n = AppLocalizations.of(context);
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Event image uploaded successfully!'),
-                backgroundColor: Color(0xFF6A2777),
+              SnackBar(
+                content: Text(l10n.eventImageUploadedSuccess),
+                backgroundColor: const Color(0xFF6A2777),
                 behavior: SnackBarBehavior.floating,
               ),
             );
@@ -505,11 +506,12 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
   }
 
   void _submitEvent() async {
+    final l10n = AppLocalizations.of(context);
     final title = _eventTitleController.text.trim();
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter the event title.'),
+        SnackBar(
+          content: Text(l10n.enterEventTitle),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
         ),
@@ -520,8 +522,8 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     final eventDate = _eventDateController.text.trim();
     if (eventDate.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select the event date.'),
+        SnackBar(
+          content: Text(l10n.selectEventDate),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
         ),
@@ -649,12 +651,13 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           sl<LiveSyncService>().notifyEventsChanged();
 
           if (isEdit || isAdmin) {
+            final l10n = AppLocalizations.of(context);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
                   widget.isCalendar
-                      ? (isEdit ? 'Calendar event updated successfully!' : 'Event scheduled on calendar successfully!')
-                      : (isEdit ? 'Event updated successfully!' : 'Event created and published successfully!'),
+                      ? (isEdit ? l10n.calendarEventUpdatedSuccess : l10n.eventScheduledSuccess)
+                      : (isEdit ? l10n.eventUpdatedSuccess : l10n.eventCreatedSuccess),
                 ),
                 backgroundColor: const Color(0xFF6A2777),
                 behavior: SnackBarBehavior.floating,
@@ -747,9 +750,10 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
             );
           }
         } else {
+          final l10n = AppLocalizations.of(context);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to save event. Please check inputs.'),
+            SnackBar(
+              content: Text(l10n.failedToSaveEvent),
               backgroundColor: Colors.redAccent,
               behavior: SnackBarBehavior.floating,
             ),

@@ -189,19 +189,26 @@ class ApiService {
           if (aId != bId) return bId.compareTo(aId);
           return b.createdAt.compareTo(a.createdAt);
         });
-        if (page == 1 && category == null && (query == null || query.isEmpty) && featured == null) {
+        if (page == 1 && category == null && (query == null || query.isEmpty) && featured == null && result.data.isNotEmpty) {
           _cachedArtists = result.data;
         }
         DataTranslator.prefetchBatch(
           result.data.expand((a) => [a.location, a.bio, a.category, a.experienceLevel]).toList(),
           isArabic: DataTranslator.isAppArabic,
         );
-        return result;
+        if (result.data.isNotEmpty) {
+          return result;
+        }
       }
     } catch (_) {}
+    final fallbackList = (_cachedArtists != null && _cachedArtists!.isNotEmpty)
+        ? _cachedArtists!
+        : ((category == null || category == 'All') && (query == null || query.isEmpty)
+            ? ArtistModel.mockArtists
+            : <ArtistModel>[]);
     return PagedResult<ArtistModel>(
-      data: page == 1 ? (_cachedArtists ?? []) : [],
-      page: page, limit: limit, total: 0, totalPages: 1, hasMore: false,
+      data: page == 1 ? fallbackList : [],
+      page: page, limit: limit, total: fallbackList.length, totalPages: 1, hasMore: false,
     );
   }
 
@@ -244,18 +251,23 @@ class ApiService {
           if (aId != bId) return bId.compareTo(aId);
           return b.createdAt.compareTo(a.createdAt);
         });
-        if (isDefaultQuery) {
+        if (isDefaultQuery && artists.isNotEmpty) {
           _cachedArtists = artists;
         }
         DataTranslator.prefetchBatch(
           artists.expand((a) => [a.location, a.bio, a.category, a.experienceLevel]).toList(),
           isArabic: DataTranslator.isAppArabic,
         );
-        return artists;
+        if (artists.isNotEmpty) {
+          return artists;
+        }
       }
     } catch (_) {}
 
-    return _cachedArtists ?? [];
+    if (_cachedArtists != null && _cachedArtists!.isNotEmpty) {
+      return _cachedArtists!;
+    }
+    return isDefaultQuery ? ArtistModel.mockArtists : [];
   }
 
 
@@ -419,11 +431,16 @@ class ApiService {
           events.expand((e) => [e.title, e.description, e.location, e.category, e.price]).toList(),
           isArabic: DataTranslator.isAppArabic,
         );
-        return events;
+        if (events.isNotEmpty) {
+          return events;
+        }
       }
     } catch (_) {}
 
-    return _cachedEvents ?? [];
+    if (_cachedEvents != null && _cachedEvents!.isNotEmpty) {
+      return _cachedEvents!;
+    }
+    return isDefaultQuery ? ArtEventModel.mockEvents : [];
   }
 
   // 5b. Event Details (Instant Cache-First)
@@ -447,6 +464,13 @@ class ApiService {
 
     if (_cachedEventDetails.containsKey(id)) {
       return _cachedEventDetails[id]!;
+    }
+    final mockMatch = ArtEventModel.mockEvents.where((e) => e.id == id).firstOrNull;
+    if (mockMatch != null) {
+      return mockMatch;
+    }
+    if (ArtEventModel.mockEvents.isNotEmpty) {
+      return ArtEventModel.mockEvents.first;
     }
     throw Exception('Event not found in database');
   }
@@ -1695,10 +1719,20 @@ class ApiService {
         final events = eventsRaw.map((e) => ArtEventModel.fromJson(e as Map<String, dynamic>)).toList();
         final artworks = artworksRaw.map((e) => e as Map<String, dynamic>).toList();
 
+        final artistIds = (data['artist_ids'] as List<dynamic>?)?.map((e) => e.toString().trim()).toList() ??
+            artists.map((a) => a.id).toList();
+        final eventIds = (data['event_ids'] as List<dynamic>?)?.map((e) => e.toString().trim()).toList() ??
+            events.map((e) => e.id).toList();
+        final artworkIds = (data['artwork_ids'] as List<dynamic>?)?.map((e) => e.toString().trim()).toList() ??
+            artworks.map((a) => (a['id'] ?? '').toString().trim()).toList();
+
         return {
           'artists': artists,
           'events': events,
           'artworks': artworks,
+          'artist_ids': artistIds,
+          'event_ids': eventIds,
+          'artwork_ids': artworkIds,
         };
       }
     } catch (_) {}
@@ -1706,6 +1740,9 @@ class ApiService {
       'artists': <ArtistModel>[],
       'events': <ArtEventModel>[],
       'artworks': <Map<String, dynamic>>[],
+      'artist_ids': <String>[],
+      'event_ids': <String>[],
+      'artwork_ids': <String>[],
     };
   }
 

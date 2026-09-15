@@ -96,8 +96,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noArtistProfile => 'لا يوجد ملف فني';
 
   @override
-  String get noArtistProfileBody =>
-      'أنشئ ملفك الفني ليتمكن الآخرون من اكتشافك على المنصة وعرض محفظتك.';
+  String get noArtistProfileBody => 'أنشئ ملفك الفني ليتمكن الآخرون من اكتشافك على المنصة وعرض محفظتك.';
 
   @override
   String get pleaseSignIn => 'يرجى تسجيل الدخول لإدارة إعدادات حسابك.';
@@ -106,8 +105,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get changePasswordTitle => 'تغيير كلمة المرور';
 
   @override
-  String get changePasswordSubtitle =>
-      'أدخل كلمة المرور الجديدة. تأكد من أنها آمنة ولا تقل عن 6 أحرف.';
+  String get changePasswordSubtitle => 'أدخل كلمة المرور الجديدة. تأكد من أنها آمنة ولا تقل عن 6 أحرف.';
 
   @override
   String get newPassword => 'كلمة المرور الجديدة';
@@ -128,8 +126,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get updatePassword => 'تحديث كلمة المرور';
 
   @override
-  String get passwordMinLength =>
-      'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل';
+  String get passwordMinLength => 'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل';
 
   @override
   String get passwordsDoNotMatch => 'كلمتا المرور غير متطابقتين';
@@ -138,15 +135,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get passwordUpdatedSuccess => 'تم تحديث كلمة المرور بنجاح!';
 
   @override
-  String get passwordUpdateFailed =>
-      'فشل تحديث كلمة المرور. يرجى التحقق من اتصال الخادم.';
+  String get passwordUpdateFailed => 'فشل تحديث كلمة المرور. يرجى التحقق من اتصال الخادم.';
 
   @override
   String get deleteAccountTitle => 'هل أنت متأكد تمامًا؟';
 
   @override
-  String get deleteAccountBody =>
-      'لا يمكن التراجع عن هذا الإجراء. سيؤدي هذا إلى حذف حسابك نهائيًا وإزالة جميع بياناتك من خوادمنا. يشمل ذلك:';
+  String get deleteAccountBody => 'لا يمكن التراجع عن هذا الإجراء. سيؤدي هذا إلى حذف حسابك نهائيًا وإزالة جميع بياناتك من خوادمنا. يشمل ذلك:';
 
   @override
   String get deleteAccountItem1 => 'ملفك الفني (إن وجد)';
@@ -173,8 +168,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get accountDeletedSuccess => 'تم حذف الحساب بنجاح.';
 
   @override
-  String get deleteAccountNote =>
-      'ملاحظة: حذف الحساب يزيل حسابك وجميع البيانات المرتبطة به بشكل دائم.';
+  String get deleteAccountNote => 'ملاحظة: حذف الحساب يزيل حسابك وجميع البيانات المرتبطة به بشكل دائم.';
 
   @override
   String get retry => 'إعادة المحاولة';
@@ -252,8 +246,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get governmentPortal => 'بوابة الجهات الحكومية';
 
   @override
-  String get governmentPortalSubtitle =>
-      'فرص الشراكة مع الجهات الحكومية في دبي';
+  String get governmentPortalSubtitle => 'فرص الشراكة مع الجهات الحكومية في دبي';
 
   @override
   String get openStatus => 'مفتوح';
@@ -295,8 +288,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get eventsTitle => 'الفعاليات';
 
   @override
-  String get eventsSubtitle =>
-      'معارض فنية وورش عمل وافتتاحات فنية مختارة في دبي';
+  String get eventsSubtitle => 'معارض فنية وورش عمل وافتتاحات فنية مختارة في دبي';
 
   @override
   String get tabAll => 'الكل';
@@ -320,8 +312,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noEventsFound => 'لم يتم العثور على فعاليات';
 
   @override
-  String get noEventsDescription =>
-      'تحقق مرة أخرى قريباً من الفعاليات الفنية القادمة والمميزة';
+  String get noEventsDescription => 'تحقق مرة أخرى قريباً من الفعاليات الفنية القادمة والمميزة';
 
   @override
   String get registerArtEvent => 'تسجيل فعالية فنية';
@@ -357,15 +348,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get aboutUsTitle => 'من نحن';
 
   @override
-  String get aboutUsDescription =>
-      'منصة مجتمع الفنون والثقافة VIP تربط بين الفنانين والمعارض وعشاق الفن في الإمارات.';
+  String get aboutUsDescription => 'منصة مجتمع الفنون والثقافة VIP تربط بين الفنانين والمعارض وعشاق الفن في الإمارات.';
 
   @override
   String get eventsCompetitionTitle => 'مسابقات الفعاليات';
 
   @override
-  String get eventsCompetitionSubtitle =>
-      'مسابقات ومنافسات ودعوات مفتوحة للفنانين في الإمارات';
+  String get eventsCompetitionSubtitle => 'مسابقات ومنافسات ودعوات مفتوحة للفنانين في الإمارات';
 
   @override
   String get noCompetitionsAvailable => 'لا توجد مسابقات متاحة بعد';
@@ -374,8 +363,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get eventsPhotosTitle => 'صور الفعاليات';
 
   @override
-  String get eventsPhotosSubtitle =>
-      'تغطية فوتوغرافية عالية الدقة للمعارض الفنية والحفلات';
+  String get eventsPhotosSubtitle => 'تغطية فوتوغرافية عالية الدقة للمعارض الفنية والحفلات';
 
   @override
   String get noPhotosAvailable => 'لا توجد صور فعاليات متاحة بعد';
@@ -384,8 +372,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get registerAccountTitle => 'إنشاء حسابك';
 
   @override
-  String get registerAccountSubtitle =>
-      'انضم إلى مجتمع الفنون والثقافة الرائد في دبي';
+  String get registerAccountSubtitle => 'انضم إلى مجتمع الفنون والثقافة الرائد في دبي';
 
   @override
   String get confirmPasswordLabel => 'تأكيد كلمة المرور';
@@ -427,8 +414,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get andWord => ' و ';
 
   @override
-  String get myFavoritesSubtitle =>
-      'ملفاتك الفنية المحفوظة وفعالياتك المفضلة وأعمالك الفنية المعجب بها';
+  String get myFavoritesSubtitle => 'ملفاتك الفنية المحفوظة وفعالياتك المفضلة وأعمالك الفنية المعجب بها';
 
   @override
   String get artworks => 'الأعمال الفنية';
@@ -485,8 +471,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get exploreCategories => 'استكشف الفئات';
 
   @override
-  String get exploreCategoriesSubtitle =>
-      'اكتشف الفنانين عبر مختلف أشكال وأساليب الفن';
+  String get exploreCategoriesSubtitle => 'اكتشف الفنانين عبر مختلف أشكال وأساليب الفن';
 
   @override
   String get loadingArtists => 'جارٍ تحميل الفنانين...';
@@ -556,8 +541,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get editYourArtistProfile => 'عدّل ملفك الفني';
 
   @override
-  String get createArtistSubtitle =>
-      'انضم إلى مجتمع فناني دبي واعرض أعمالك الفنية';
+  String get createArtistSubtitle => 'انضم إلى مجتمع فناني دبي واعرض أعمالك الفنية';
 
   @override
   String get editArtistSubtitle => 'حدّث ملفك الفني واعرض أعمالك الفنية';
@@ -611,8 +595,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get artworkPortfolio => 'معرض الأعمال الفنية';
 
   @override
-  String get artworkPortfolioDesc =>
-      'حمّل صور أعمالك الفنية (بحد أقصى 6). يمكنك قص الخلفيات وإدارتها.';
+  String get artworkPortfolioDesc => 'حمّل صور أعمالك الفنية (بحد أقصى 6). يمكنك قص الخلفيات وإدارتها.';
 
   @override
   String get dragDropImages => 'اسحب الصور وأفلتها هنا أو اضغط للاختيار';
@@ -630,14 +613,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get maxArtworksReached => 'تم الوصول للحد الأقصى (6 أعمال)';
 
   @override
+  String get maxArtworkUploadsAllowed => 'الحد الأقصى المسموح به هو 6 أعمال فنية.';
+
+  @override
   String get markAsFeaturedArtwork => 'تعيين كعمل فني مميز';
 
   @override
   String get agreeToTermsPrefix => 'أوافق على ';
 
   @override
-  String get consentPrivacyTermsDesc =>
-      'بتحديد هذا المربع، فإنك توافق على جمع بياناتك الشخصية ومعالجتها وتخزينها وفقاً لسياسة الخصوصية الخاصة بنا. ويشمل ذلك معلومات ملفك الشخصي وصور أعمالك الفنية وتفاصيل الاتصال المستخدمة لعرض أعمالك على منصة فناني دبي.';
+  String get consentPrivacyTermsDesc => 'بتحديد هذا المربع، فإنك توافق على جمع بياناتك الشخصية ومعالجتها وتخزينها وفقاً لسياسة الخصوصية الخاصة بنا. ويشمل ذلك معلومات ملفك الشخصي وصور أعمالك الفنية وتفاصيل الاتصال المستخدمة لعرض أعمالك على منصة فناني دبي.';
 
   @override
   String get createProfile => 'إنشاء الملف الشخصي';
@@ -655,8 +640,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get artVenue => 'مساحة فنية';
 
   @override
-  String get artVenueSubtitle =>
-      'سجّل مساحتك الفنية أو معرضك للإدراج في التطبيق';
+  String get artVenueSubtitle => 'سجّل مساحتك الفنية أو معرضك للإدراج في التطبيق';
 
   @override
   String get galleryCenterName => 'اسم المعرض / المركز الفني';
@@ -692,8 +676,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get myCreatedEvents => 'فعالياتي المنشأة';
 
   @override
-  String get myCreatedEventsSubtitle =>
-      'إدارة فعالياتك الفنية ومعارضك المنشورة';
+  String get myCreatedEventsSubtitle => 'إدارة فعالياتك الفنية ومعارضك المنشورة';
 
   @override
   String get createEvent => 'إنشاء فعالية';
@@ -714,8 +697,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noCreatedEventsYet => 'لا توجد فعاليات منشأة بعد';
 
   @override
-  String get createFirstEventPrompt =>
-      'انشر أول فعالية فنية لك لإدارة التذاكر وعرض الحضور هنا.';
+  String get createFirstEventPrompt => 'انشر أول فعالية فنية لك لإدارة التذاكر وعرض الحضور هنا.';
 
   @override
   String get editCalendarEvent => 'تعديل فعالية التقويم';
@@ -739,20 +721,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get headerEditArtEvent => 'تعديل الفعالية الفنية';
 
   @override
-  String get headerSubtitleCalendarEdit =>
-      'تحديث المعرض المجدول أو تاريخ التقويم.';
+  String get headerSubtitleCalendarEdit => 'تحديث المعرض المجدول أو تاريخ التقويم.';
 
   @override
-  String get headerSubtitleCalendarCreate =>
-      'جدولة معرض قادم أو عرض أو موعد ثقافي في التقويم.';
+  String get headerSubtitleCalendarCreate => 'جدولة معرض قادم أو عرض أو موعد ثقافي في التقويم.';
 
   @override
-  String get headerSubtitleEventEdit =>
-      'تحديث التفاصيل والتذاكر والصور لهذه الفعالية.';
+  String get headerSubtitleEventEdit => 'تحديث التفاصيل والتذاكر والصور لهذه الفعالية.';
 
   @override
-  String get headerSubtitleEventCreate =>
-      'نشر معرض جديد أو ورشة عمل أو تجمع ثقافي.';
+  String get headerSubtitleEventCreate => 'نشر معرض جديد أو ورشة عمل أو تجمع ثقافي.';
 
   @override
   String get featuredImage => 'الصورة البارزة';
@@ -764,8 +742,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get uploaded => 'تم الرفع';
 
   @override
-  String get uploadImagePrompt =>
-      'حدد صورة الغلاف من المعرض أو التقط صورة (JPG, PNG, WebP).';
+  String get uploadImagePrompt => 'حدد صورة الغلاف من المعرض أو التقط صورة (JPG, PNG, WebP).';
 
   @override
   String get eventInformation => 'معلومات الفعالية';
@@ -774,7 +751,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get eventTitle => 'عنوان الفعالية';
 
   @override
-  String get enterEventTitle => 'أدخل عنوان الفعالية';
+  String get enterEventTitle => 'يرجى إدخال عنوان الفعالية.';
 
   @override
   String get describeYourEvent => 'صف فعاليتك..';
@@ -825,8 +802,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get choosePublishingPlan => 'اختر خطة النشر';
 
   @override
-  String get paidPublishingDesc =>
-      'نشر الفعاليات خدمة مدفوعة على فنان دبي. اختر مدة الترويج المفضلة لديك. بمجرد المراجعة والموافقة من قِبل المسؤول، سيتم نشر فعاليتك لعشاق الفن في جميع أنحاء دبي.';
+  String get paidPublishingDesc => 'نشر الفعاليات خدمة مدفوعة على فنان دبي. اختر مدة الترويج المفضلة لديك. بمجرد المراجعة والموافقة من قِبل المسؤول، سيتم نشر فعاليتك لعشاق الفن في جميع أنحاء دبي.';
 
   @override
   String get weekly => 'أسبوعي';
@@ -868,8 +844,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get paymentOnNextStep => 'الدفع في الخطوة التالية: ';
 
   @override
-  String get paymentDetailsNotice =>
-      'رمز الاستجابة السريعة وتفاصيل التحويل المصرفي في صفحة الدفع.';
+  String get paymentDetailsNotice => 'رمز الاستجابة السريعة وتفاصيل التحويل المصرفي في صفحة الدفع.';
 
   @override
   String get updateCalendarEvent => 'تحديث فعالية التقويم';
@@ -891,4 +866,99 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get eventDetails => 'تفاصيل الفعالية';
+
+  @override
+  String get loginSuccess => 'تم تسجيل الدخول بنجاح!';
+
+  @override
+  String get signedInAsAdmin => 'تم تسجيل الدخول كمسؤول!';
+
+  @override
+  String get userNotAvailable => 'المستخدم غير موجود. يرجى إنشاء حساب أولاً.';
+
+  @override
+  String get enterEmail => 'يرجى إدخال عنوان بريدك الإلكتروني';
+
+  @override
+  String get enterValidEmail => 'يرجى إدخال عنوان بريد إلكتروني صالح';
+
+  @override
+  String get enterPassword => 'يرجى إدخال كلمة المرور';
+
+  @override
+  String get accountCreatedEnthusiast => 'تم إنشاء الحساب! لديك الآن وصول كامل إلى فعاليات ومعارض دبي.';
+
+  @override
+  String get accountCreatedArtist => 'تم إنشاء الحساب بنجاح! مرحباً بك في فنان دبي.';
+
+  @override
+  String get unableToRegister => 'تعذر تسجيل الحساب. يرجى التحقق من بياناتك.';
+
+  @override
+  String get accountEmailExists => 'يوجد حساب مسجل بهذا البريد الإلكتروني بالفعل.';
+
+  @override
+  String get privacyPolicyDetails => 'تفاصيل سياسة الخصوصية';
+
+  @override
+  String get termsOfServiceDetails => 'تفاصيل شروط الخدمة';
+
+  @override
+  String get artistProfileUpdatedSuccess => 'تم تحديث الملف الفني بنجاح!';
+
+  @override
+  String get artistProfileCreatedSuccess => 'تم إنشاء الملف الفني بنجاح!';
+
+  @override
+  String get artistProfileSaveFailed => 'فشل حفظ الملف الفني. يرجى التحقق من المدخلات.';
+
+  @override
+  String get artistProfileUpdateFailed => 'فشل تحديث الملف الفني. يرجى التحقق من المدخلات.';
+
+  @override
+  String get maxArtworksAllowed => 'الحد الأقصى المسموح به هو 6 أعمال فنية.';
+
+  @override
+  String get eventCreatedSuccess => 'تم إنشاء الفعالية ونشرها بنجاح!';
+
+  @override
+  String get eventUpdatedSuccess => 'تم تحديث الفعالية بنجاح!';
+
+  @override
+  String get calendarEventUpdatedSuccess => 'تم تحديث فعالية التقويم بنجاح!';
+
+  @override
+  String get eventScheduledSuccess => 'تمت جدولة الفعالية في التقويم بنجاح!';
+
+  @override
+  String get eventImageUploadedSuccess => 'تم تحميل صورة الفعالية بنجاح!';
+
+  @override
+  String get selectEventDate => 'يرجى تحديد تاريخ الفعالية.';
+
+  @override
+  String get failedToSaveEvent => 'فشل حفظ الفعالية. يرجى التحقق من المدخلات.';
+
+  @override
+  String get galleryPhotoUploadedSuccess => 'تم تحميل صورة المعرض بنجاح!';
+
+  @override
+  String get notifications => 'الإشعارات';
+
+  @override
+  String get markAllAsRead => 'تحديد الكل كمقروء';
+
+  @override
+  String get noNotifications => 'لا توجد إشعارات جديدة';
+
+  @override
+  String get clearAll => 'مسح الكل';
+
+  @override
+  String get close => 'إغلاق';
+
+  @override
+  String newCount(int count) {
+    return '$count جديد';
+  }
 }

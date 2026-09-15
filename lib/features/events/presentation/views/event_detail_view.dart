@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/favorites_service.dart';
 import '../../../../core/services/live_sync_service.dart';
-import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/utils/share_helper.dart';
@@ -45,15 +45,13 @@ class _EventDetailViewState extends State<EventDetailView> {
   void initState() {
     super.initState();
     _loadEventDetails();
+    _likedEventIds.addAll(sl<FavoritesService>().eventIds);
+    sl<FavoritesService>().addListener(_onFavoritesChanged);
     _checkInitialFavorite();
 
     _favSub = sl<LiveSyncService>().favoritesStream.listen((favData) {
       if (mounted && favData.isNotEmpty) {
-        final favEvents = (favData['events'] as List<ArtEventModel>?) ?? [];
-        setState(() {
-          _likedEventIds.clear();
-          _likedEventIds.addAll(favEvents.map((e) => e.id));
-        });
+        sl<FavoritesService>().updateFromServer(favData);
       }
     });
 
@@ -72,6 +70,15 @@ class _EventDetailViewState extends State<EventDetailView> {
     DataTranslator.translationNotifier.addListener(_onTranslationChanged);
   }
 
+  void _onFavoritesChanged() {
+    if (mounted) {
+      setState(() {
+        _likedEventIds.clear();
+        _likedEventIds.addAll(sl<FavoritesService>().eventIds);
+      });
+    }
+  }
+
   void _onTranslationChanged() {
     _loadEventDetails();
     if (mounted) setState(() {});
@@ -79,6 +86,7 @@ class _EventDetailViewState extends State<EventDetailView> {
 
   @override
   void dispose() {
+    sl<FavoritesService>().removeListener(_onFavoritesChanged);
     DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
     _favSub?.cancel();
     _eventsSub?.cancel();
@@ -86,19 +94,17 @@ class _EventDetailViewState extends State<EventDetailView> {
   }
 
   Future<void> _checkInitialFavorite() async {
-    final userEmail = sl<StorageService>().getString('user_email');
-    if (userEmail != null && userEmail.isNotEmpty) {
-      try {
-        final favData = await sl<ApiService>().getFavorites(email: userEmail);
-        final favEvents = (favData['events'] as List<ArtEventModel>?) ?? [];
-        if (mounted) {
-          setState(() {
-            _likedEventIds.clear();
-            _likedEventIds.addAll(favEvents.map((e) => e.id));
-          });
-        }
-      } catch (_) {}
-    }
+    try {
+      final effectiveEmail = sl<FavoritesService>().getEffectiveEmail();
+      final favData = await sl<ApiService>().getFavorites(email: effectiveEmail);
+      sl<FavoritesService>().updateFromServer(favData);
+      if (mounted) {
+        setState(() {
+          _likedEventIds.clear();
+          _likedEventIds.addAll(sl<FavoritesService>().eventIds);
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadEventDetails() async {
@@ -135,24 +141,17 @@ class _EventDetailViewState extends State<EventDetailView> {
 
   void _toggleFavorite(ArtEventModel ev) async {
     final wasLiked = _likedEventIds.contains(ev.id);
-    setState(() {
-      if (wasLiked) {
-        _likedEventIds.remove(ev.id);
-      } else {
-        _likedEventIds.add(ev.id);
-      }
-    });
-
-    final userEmail = sl<StorageService>().getString('user_email') ?? '';
-    if (userEmail.isNotEmpty) {
-      await sl<ApiService>().toggleFavorite(
-        email: userEmail,
-        itemType: 'event',
-        itemId: ev.id,
-      );
-    }
+    final nowLiked = await sl<FavoritesService>().toggleEventFavorite(ev.id);
 
     if (mounted) {
+      setState(() {
+        if (nowLiked) {
+          _likedEventIds.add(ev.id);
+        } else {
+          _likedEventIds.remove(ev.id);
+        }
+      });
+
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -706,11 +705,11 @@ class _EventDetailViewState extends State<EventDetailView> {
                           ),
                   ),
                 ),
-                // Category Chip on Top Left
+                // Category Chip on Top Start
                 if (item.category.isNotEmpty)
-                  Positioned(
+                  PositionedDirectional(
                     top: 8,
-                    left: 8,
+                    start: 8,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
@@ -727,10 +726,10 @@ class _EventDetailViewState extends State<EventDetailView> {
                       ),
                     ),
                   ),
-                // Heart Like Button on Top Right
-                Positioned(
+                // Heart Like Button on Top End
+                PositionedDirectional(
                   top: 8,
-                  right: 8,
+                  end: 8,
                   child: GestureDetector(
                     onTap: () => _toggleFavorite(item),
                     child: Container(

@@ -204,5 +204,28 @@ void main() {
       expect(arTitle, equals('اختبار'));
       expect(arDesc, equals('اختبار'));
     });
+
+    test('Translates artwork upload limits and profile messages to Arabic', () {
+      expect(
+        DataTranslator.translate('Maximum 6 artwork uploads allowed.', isArabic: true),
+        equals('الحد الأقصى المسموح به هو 6 أعمال فنية.'),
+      );
+      expect(
+        DataTranslator.translate('Maximum 6 artwork uploads allowed', isArabic: true),
+        equals('الحد الأقصى المسموح به هو 6 أعمال فنية.'),
+      );
+      expect(
+        DataTranslator.translate('.Maximum 6 artwork uploads allowed', isArabic: true),
+        equals('الحد الأقصى المسموح به هو 6 أعمال فنية.'),
+      );
+      expect(
+        DataTranslator.translate('Artist Profile updated successfully!', isArabic: true),
+        equals('تم تحديث الملف الفني بنجاح!'),
+      );
+      expect(
+        DataTranslator.translate('Artist Profile & 4 Artworks created successfully!', isArabic: true),
+        equals('تم إنشاء الملف الفني وإضافة 4 عمل فني بنجاح!'),
+      );
+    });
   });
 }

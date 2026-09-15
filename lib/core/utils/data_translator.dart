@@ -405,6 +405,156 @@ class DataTranslator {
     'maraya art centre': 'مركز مرايا للفنون',
     'sharjah art foundation': 'مؤسسة الشارقة للفنون',
     'louvre abu dhabi': 'اللوفر أبوظبي',
+
+    // Artist Profile Creation, Artwork Uploads & Validation
+    'maximum 6 artwork uploads allowed.': 'الحد الأقصى المسموح به هو 6 أعمال فنية.',
+    'maximum 6 artwork uploads allowed': 'الحد الأقصى المسموح به هو 6 أعمال فنية.',
+    'maximum 6 artworks allowed.': 'الحد الأقصى المسموح به هو 6 أعمال فنية.',
+    'maximum 6 artworks allowed': 'الحد الأقصى المسموح به هو 6 أعمال فنية.',
+    'maximum 6 artworks reached': 'تم الوصول للحد الأقصى (6 أعمال)',
+    'error selecting profile picture': 'خطأ أثناء اختيار صورة الملف الشخصي',
+    'error selecting banner picture': 'خطأ أثناء اختيار صورة الغلاف',
+    'error selecting images': 'خطأ أثناء اختيار الصور',
+    'error taking photo': 'خطأ أثناء التقاط الصورة',
+    'artist profile updated successfully!': 'تم تحديث الملف الفني بنجاح!',
+    'artist profile updated successfully': 'تم تحديث الملف الفني بنجاح',
+    'update failed': 'فشل التحديث',
+    'failed to update profile. please check your inputs.': 'فشل تحديث الملف الشخصي. يرجى التحقق من المدخلات.',
+    'failed to update profile.': 'فشل تحديث الملف الشخصي.',
+    'failed to update profile': 'فشل تحديث الملف الشخصي',
+    'save failed': 'فشل الحفظ',
+    'failed to save profile. please check your inputs.': 'فشل حفظ الملف الشخصي. يرجى التحقق من المدخلات.',
+    'failed to save profile.': 'فشل حفظ الملف الشخصي.',
+    'failed to save profile': 'فشل حفظ الملف الشخصي',
+    'please enter your full name or stage name.': 'يرجى إدخال اسمك الكامل أو اسمك الفني.',
+    'please enter your full name or stage name': 'يرجى إدخال اسمك الكامل أو اسمك الفني',
+    'please enter your email address.': 'يرجى إدخال بريدك الإلكتروني.',
+    'please enter your email address': 'يرجى إدخال بريدك الإلكتروني',
+    'invalid phone number': 'رقم الهاتف غير صالح',
+    'please enter a valid phone number (7-15 digits) or leave it empty.': 'يرجى إدخال رقم هاتف صالح (7-15 رقماً) أو تركه فارغاً.',
+    'please enter a valid phone number (7-15 digits) or leave it empty': 'يرجى إدخال رقم هاتف صالح (7-15 رقماً) أو تركه فارغاً',
+    'agreement required': 'الموافقة مطلوبة',
+    'please agree to the privacy policy and terms & conditions.': 'يرجى الموافقة على سياسة الخصوصية والشروط والأحكام.',
+    'please agree to the privacy policy and terms & conditions': 'يرجى الموافقة على سياسة الخصوصية والشروط والأحكام',
+    'please complete all required fields before proceeding:': 'يرجى إكمال جميع الحقول المطلوبة قبل المتابعة:',
+    'please complete all required fields before proceeding': 'يرجى إكمال جميع الحقول المطلوبة قبل المتابعة',
+    '• full name': '• الاسم الكامل',
+    '• email': '• البريد الإلكتروني',
+    '• profile photo': '• صورة الملف الشخصي',
+    '• at least one artwork': '• عمل فني واحد على الأقل',
+    '• agree to terms & conditions': '• الموافقة على الشروط والأحكام',
+    'saving artist profile...': 'جاري حفظ الملف الفني...',
+    'saving artist profile': 'جاري حفظ الملف الفني',
+    'uploading media files...': 'جاري رفع ملفات الوسائط...',
+    'uploading media files': 'جاري رفع ملفات الوسائط',
+    'at least one artwork is required': 'يلزم إضافة عمل فني واحد على الأقل',
+
+    // Payment & Checkout (Step 2)
+    'payment & checkout': 'الدفع وإتمام الطلب',
+    'step 2 of 2: payment & verification': 'الخطوة 2 من 2: الدفع والتحقق',
+    'scan the qr code or transfer via iban, then attach your receipt': 'امسح رمز QR أو حوّل عبر الآيبان، ثم أرفق إيصالك',
+    'scan the qr code or transfer via iban, then attach your receipt.': 'امسح رمز QR أو حوّل عبر الآيبان، ثم أرفق إيصالك.',
+    'event publishing': 'نشر الفعالية',
+    'gallery registration': 'تسجيل المعرض',
+    'art event listing': 'إعلان فعالية فنية',
+    'art gallery registration': 'تسجيل معرض فني',
+    'selected plan duration:': 'مدة الخطة المحددة:',
+    'selected plan duration': 'مدة الخطة المحددة',
+    'total payable:': 'إجمالي المبلغ المستحق:',
+    'total payable': 'إجمالي المبلغ المستحق',
+    'yearly plan (365 days)': 'الخطة السنوية (365 يوماً)',
+    '6 months plan (180 days)': 'خطة 6 أشهر (180 يوماً)',
+    'monthly plan (30 days)': 'الخطة الشهرية (30 يوماً)',
+    'single event plan': 'خطة فعالية واحدة',
+    'single event listing': 'إعلان فعالية واحدة',
+    'plan:': 'الخطة:',
+    'plan': 'الخطة',
+    'scan qr to pay': 'امسح رمز QR للدفع',
+    'scan using your uae banking app, apple pay, google pay, or qr reader': 'امسح باستخدام تطبيقك المصرفي الإماراتي، Apple Pay، Google Pay، أو قارئ QR',
+    'scan using your uae banking app, apple pay, google pay, or qr reader.': 'امسح باستخدام تطبيقك المصرفي الإماراتي، Apple Pay، Google Pay، أو قارئ QR.',
+    'direct bank transfer details': 'تفاصيل التحويل المصرفي المباشر',
+    'bank name': 'اسم البنك',
+    'bank name:': 'اسم البنك:',
+    'account title': 'اسم الحساب',
+    'account title:': 'اسم الحساب:',
+    'account title / beneficiary': 'اسم الحساب / المستفيد',
+    'account title / beneficiary:': 'اسم الحساب / المستفيد:',
+    'iban / account #': 'الآيبان / رقم الحساب',
+    'iban / account #:': 'الآيبان / رقم الحساب:',
+    'copy': 'نسخ',
+    'copied to clipboard!': 'تم النسخ إلى الحافظة!',
+    'emirates nbd, dubai': 'بنك الإمارات دبي الوطني، دبي',
+    'artist dubai cultural services llc': 'خدمات فنان دبي الثقافية ش.ذ.م.م',
+    'please scan the qr code with your mobile banking or payment app, or transfer directly via iban. once paid, enter your transaction reference number and upload the receipt screenshot.': 'يرجى مسح رمز QR باستخدام تطبيقك المصرفي أو تطبيق الدفع، أو التحويل مباشرة عبر الآيبان. بمجرد الدفع، أدخل الرقم المرجعي للمعاملة وارفع لقطة شاشة للإيصال.',
+    'please scan the qr code with your banking app or transfer via iban. once completed, enter the transaction reference and upload your receipt screenshot.': 'يرجى مسح رمز QR باستخدام تطبيقك المصرفي أو التحويل عبر الآيبان. بمجرد الانتهاء، أدخل الرقم المرجعي للمعاملة وارفع لقطة شاشة للإيصال.',
+    'payment verification & proof': 'إثبات وتأكيد الدفع',
+    'attach your transfer receipt screenshot and/or enter transaction id for instant verification.': 'أرفق لقطة شاشة لإيصال التحويل و/أو أدخل معرف المعاملة للتحقق الفوري.',
+    'attach your transfer receipt screenshot and/or enter transaction id for instant verification': 'أرفق لقطة شاشة لإيصال التحويل و/أو أدخل معرف المعاملة للتحقق الفوري',
+    'transaction reference / id (optional)': 'الرقم المرجعي للمعاملة / المعرف (اختياري)',
+    '# e.g. txn-98472918 or bank ref': 'مثال: TXN-98472918 أو المرجع البنكي #',
+    '# e.g. txn-98472918 or bank ref #': 'مثال: TXN-98472918 أو المرجع البنكي #',
+    'e.g. txn-98472918 or bank ref #': 'مثال: TXN-98472918 أو المرجع البنكي #',
+    'payment proof attached': 'تم إرفاق إثبات الدفع',
+    'receipt screenshot ready for review': 'لقطة شاشة الإيصال جاهزة للمراجعة',
+    'attach transfer receipt': 'إرفاق إيصال التحويل',
+    'upload screenshot (png, jpg up to 10mb)': 'رفع لقطة شاشة (PNG، JPG حتى 10 ميغابايت)',
+    'upload receipt screenshot': 'رفع لقطة شاشة الإيصال',
+    'change receipt screenshot': 'تغيير لقطة شاشة الإيصال',
+    'uploading...': 'جارٍ الرفع...',
+    'payment receipt attached successfully!': 'تم إرفاق إيصال الدفع بنجاح!',
+    'confirm & submit listing': 'تأكيد وإرسال الإعلان',
+    'back to edit details': 'العودة لتعديل التفاصيل',
+    'failed to submit listing. please verify your connection and try again.': 'فشل إرسال الإعلان. يرجى التحقق من اتصالك والمحاولة مرة أخرى.',
+    'failed to submit listing. please verify your connection and try again': 'فشل إرسال الإعلان. يرجى التحقق من اتصالك والمحاولة مرة أخرى',
+    'no payment proof attached': 'لم يتم إرفاق إثبات الدفع',
+    "you haven't attached a receipt screenshot or entered a transaction reference number.\n\nyou can attach your proof now for faster verification, or submit anyway as pending transfer.": "لم تقم بإرفاق لقطة شاشة للإيصال أو إدخال رقم مرجعي للمعاملة.\n\nيمكنك إرفاق الإثبات الآن لتسريع التحقق، أو الإرسال على أي حال كتحويل معلق.",
+    'attach receipt': 'إرفاق الإيصال',
+    'submit anyway': 'إرسال على أي حال',
+    'gallery submitted for review!': 'تم تقديم المعرض للمراجعة!',
+    'event submitted for review!': 'تم تقديم الفعالية للمراجعة!',
+    'your gallery registration and payment proof have been submitted. once verified by our administration team, your gallery will appear publicly.': 'تم تقديم تسجيل معرضك وإثبات الدفع. بمجرد التحقق من قبل فريق الإدارة، سيظهر معرضك للجمهور.',
+    'your event listing and payment proof have been submitted. our team will verify your transfer and publish your event within 24 hours.': 'تم تقديم إعلان فعاليتك وإثبات الدفع. سيقوم فريقنا بالتحقق من التحويل ونشر فعاليتك خلال 24 ساعة.',
+    'back to galleries': 'العودة إلى المعارض',
+    'view my events': 'عرض فعالياتي',
+
+    // Server, network & API error messages
+    'database connection error. please try again later.': 'خطأ في الاتصال بقاعدة البيانات. يرجى المحاولة مرة أخرى لاحقاً.',
+    'database connection error': 'خطأ في الاتصال بقاعدة البيانات',
+    'database connection failed': 'فشل الاتصال بقاعدة البيانات',
+    'mysql connection error': 'خطأ في الاتصال بـ MySQL',
+    'server error': 'خطأ في الخادم',
+    'internal server error': 'خطأ داخلي في الخادم',
+    'something went wrong': 'حدث خطأ ما',
+    'something went wrong. please try again.': 'حدث خطأ ما. يرجى المحاولة مرة أخرى.',
+    'something went wrong. please try again': 'حدث خطأ ما. يرجى المحاولة مرة أخرى',
+    'service temporarily unavailable': 'الخدمة غير متاحة مؤقتاً',
+    'please try again later': 'يرجى المحاولة مرة أخرى لاحقاً',
+    'request failed': 'فشل الطلب',
+    'network error': 'خطأ في الشبكة',
+    'no internet connection': 'لا يوجد اتصال بالإنترنت',
+    'connection timeout': 'انتهت مهلة الاتصال',
+    'timeout': 'انتهت مهلة الطلب',
+    'connection refused': 'تم رفض الاتصال',
+    'failed to load data': 'فشل تحميل البيانات',
+    'failed to load data. please check your connection.': 'فشل تحميل البيانات. يرجى التحقق من اتصالك.',
+    'failed to load data. please check your connection': 'فشل تحميل البيانات. يرجى التحقق من اتصالك',
+    'unable to reach the server': 'تعذّر الوصول إلى الخادم',
+    'unauthorized access': 'وصول غير مصرح به',
+    'session expired. please log in again.': 'انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.',
+    'session expired. please log in again': 'انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى',
+    'access denied': 'تم رفض الوصول',
+    'not found': 'غير موجود',
+    'invalid response from server': 'استجابة غير صالحة من الخادم',
+    'error': 'خطأ',
+    'validation error': 'خطأ في التحقق من البيانات',
+    'invalid credentials': 'بيانات الاعتماد غير صالحة',
+    'unauthorized': 'غير مصرح به',
+    'invalid request': 'طلب غير صالح',
+    'email already in use': 'البريد الإلكتروني مستخدم بالفعل',
+    'user registered successfully': 'تم تسجيل المستخدم بنجاح',
+    'login successful': 'تم تسجيل الدخول بنجاح',
+    'data retrieved successfully': 'تم جلب البيانات بنجاح',
+    'profile updated successfully': 'تم تحديث الملف الشخصي بنجاح',
   };
 
   // Lazy reversed map for Arabic to English lookups
@@ -595,6 +745,10 @@ class DataTranslator {
       if (_enToAr.containsKey(lower)) {
         return _enToAr[lower]!;
       }
+      final strippedDots = lower.replaceAll(RegExp(r'^\.+|\.+$'), '').trim();
+      if (strippedDots.isNotEmpty && _enToAr.containsKey(strippedDots)) {
+        return _enToAr[strippedDots]!;
+      }
 
       // 2. Pattern matching for compound status and timing strings
       if (lower.startsWith('open · closes at ')) {
@@ -661,6 +815,84 @@ class DataTranslator {
         return 'استكشف مجموعة أعمال $trName الفنية';
       }
 
+      // Bullet & dot separated composite strings (e.g. "Art Exhibition • Dubai, UAE")
+      if (trimmed.contains(' • ')) {
+        final parts = trimmed.split(' • ');
+        final trParts = parts.map((p) => translate(p, isArabic: true)).toList();
+        return trParts.join(' • ');
+      }
+      if (trimmed.contains(' · ')) {
+        final parts = trimmed.split(' · ');
+        final trParts = parts.map((p) => translate(p, isArabic: true)).toList();
+        return trParts.join(' · ');
+      }
+
+      // Trailing colon lookups
+      if (lower.endsWith(':')) {
+        final withoutColon = lower.substring(0, lower.length - 1).trim();
+        if (_enToAr.containsKey(withoutColon)) {
+          return '${_enToAr[withoutColon]}:';
+        }
+      }
+
+      // Copied notification
+      if (lower.startsWith('copied ') && lower.endsWith(' to clipboard!')) {
+        final inner = trimmed.substring(7, trimmed.length - 14).trim();
+        final trInner = translate(inner, isArabic: true);
+        return 'تم نسخ $trInner إلى الحافظة!';
+      }
+
+      // Confirm & submit listing
+      if (lower.startsWith('confirm & submit listing')) {
+        final rest = trimmed.substring(24).trim();
+        return ('تأكيد وإرسال الإعلان $rest').trim();
+      }
+
+      // Plan prefix
+      if (lower.startsWith('plan:')) {
+        final rest = trimmed.substring(5).trim();
+        return 'الخطة: ${translate(rest, isArabic: true)}';
+      }
+
+      // Dynamic profile creation & upload error patterns
+      if (lower.startsWith('maximum 6 artworks allowed. added ') && lower.contains('artwork(s)')) {
+        final count = trimmed.replaceAll(RegExp(r'[^0-9]'), '').replaceFirst('6', '');
+        return 'الحد الأقصى المسموح به هو 6 أعمال فنية. تمت إضافة $count عمل (أعمال).';
+      }
+      if (lower.startsWith('artist profile & ') && lower.contains('artworks created successfully!')) {
+        final count = trimmed.replaceAll(RegExp(r'[^0-9]'), '');
+        return 'تم إنشاء الملف الفني وإضافة $count عمل فني بنجاح!';
+      }
+      if (lower.startsWith('error selecting profile picture: ')) {
+        final err = trimmed.substring(32).trim();
+        return 'خطأ أثناء اختيار صورة الملف الشخصي: $err';
+      }
+      if (lower.startsWith('error selecting banner picture: ')) {
+        final err = trimmed.substring(31).trim();
+        return 'خطأ أثناء اختيار صورة الغلاف: $err';
+      }
+      if (lower.startsWith('error selecting images: ')) {
+        final err = trimmed.substring(24).trim();
+        return 'خطأ أثناء اختيار الصور: $err';
+      }
+      if (lower.startsWith('error taking photo: ')) {
+        final err = trimmed.substring(20).trim();
+        return 'خطأ أثناء التقاط الصورة: $err';
+      }
+      if (lower.startsWith('failed to save profile: ')) {
+        final err = trimmed.substring(24).trim();
+        return 'فشل حفظ الملف الشخصي: $err';
+      }
+      if (lower.startsWith('failed to update profile: ')) {
+        final err = trimmed.substring(26).trim();
+        return 'فشل تحديث الملف الشخصي: $err';
+      }
+      if (trimmed.contains('\n')) {
+        final lines = trimmed.split('\n');
+        final trLines = lines.map((l) => translate(l, isArabic: true)).toList();
+        return trLines.join('\n');
+      }
+
       // 3. Dynamic cache lookup
       final cacheKey = 'en_ar:$lower';
       if (_dynamicCache.containsKey(cacheKey)) {
@@ -714,7 +946,10 @@ class DataTranslator {
 
       // If no Arabic characters, it is already English/Latin
       if (!RegExp(r'[\u0600-\u06FF]').hasMatch(trimmed)) {
-        return _capitalize(trimmed);
+        if (trimmed.length < 25 && !trimmed.contains(':') && !trimmed.contains('.') && !trimmed.contains('\n')) {
+          return _capitalize(trimmed);
+        }
+        return trimmed;
       }
 
       // Trigger asynchronous translation in background

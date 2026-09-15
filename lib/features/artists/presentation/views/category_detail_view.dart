@@ -5,7 +5,7 @@ import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
-import '../../../../core/services/storage_service.dart';
+import '../../../../core/services/favorites_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
@@ -49,10 +49,15 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
   final Set<String> _likedArtistIds = {};
   StreamSubscription<List<ArtistModel>>? _artistSub;
   StreamSubscription<Map<String, dynamic>>? _favSub;
+  late final FavoritesService _favService;
 
   @override
   void initState() {
     super.initState();
+    _favService = sl<FavoritesService>();
+    _likedArtistIds.addAll(_favService.artistIds);
+    _favService.addListener(_onFavoritesUpdated);
+
     _title = widget.categoryName ?? 'Calligraphy & Typography';
     _categoryEmoji = widget.emoji ?? '✍️';
     _fetchCategoryArtists();
@@ -74,15 +79,21 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
     });
     _favSub = sl<LiveSyncService>().favoritesStream.listen((favData) {
       if (mounted && favData.isNotEmpty) {
-        final favArtists = (favData['artists'] as List<ArtistModel>?) ?? [];
-        setState(() {
-          _likedArtistIds.clear();
-          _likedArtistIds.addAll(favArtists.map((a) => a.id));
-        });
+        _favService.updateFromServer(favData);
       }
     });
 
     DataTranslator.translationNotifier.addListener(_onTranslationChanged);
+  }
+
+  void _onFavoritesUpdated() {
+    if (mounted) {
+      setState(() {
+        _likedArtistIds
+          ..clear()
+          ..addAll(_favService.artistIds);
+      });
+    }
   }
 
   void _onTranslationChanged() {
@@ -91,6 +102,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
 
   @override
   void dispose() {
+    _favService.removeListener(_onFavoritesUpdated);
     DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
     _artistSub?.cancel();
     _favSub?.cancel();
@@ -100,10 +112,27 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
 
   Future<void> _fetchCategoryArtists() async {
     try {
-      final artists = await sl<ApiService>().getArtists(
+      var artists = await sl<ApiService>().getArtists(
         category: _title,
         forceRefresh: true,
       );
+      if (artists.isEmpty) {
+        final all = await sl<ApiService>().getArtists(forceRefresh: false);
+        artists = all.where((a) {
+          final aCat = a.category.toLowerCase().trim();
+          final tCat = _title.toLowerCase().trim();
+          final aCatEn = DataTranslator.translate(aCat, isArabic: false).toLowerCase();
+          final tCatEn = DataTranslator.translate(tCat, isArabic: false).toLowerCase();
+          final aCatAr = DataTranslator.translate(aCat, isArabic: true).toLowerCase();
+          final tCatAr = DataTranslator.translate(tCat, isArabic: true).toLowerCase();
+          return aCat.contains(tCat) ||
+              tCat.contains(aCat) ||
+              aCatEn.contains(tCatEn) ||
+              tCatEn.contains(aCatEn) ||
+              aCatAr.contains(tCatAr) ||
+              tCatAr.contains(aCatAr);
+        }).toList();
+      }
       final artworks = await sl<ApiService>().getArtworks(forceRefresh: true);
       final categoryArtistNames = artists.map((a) => a.name.toLowerCase().trim()).toSet();
       final filteredArtworks = artworks.where((aw) {
@@ -111,21 +140,17 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
         return categoryArtistNames.contains(awArtist);
       }).toList();
 
-      final userEmail = sl<StorageService>().getString('user_email');
-      Set<String> favIds = {};
-      if (userEmail != null && userEmail.isNotEmpty) {
-        final favData = await sl<ApiService>().getFavorites(email: userEmail, forceRefresh: true);
-        final favArtists = (favData['artists'] as List<ArtistModel>?) ?? [];
-        favIds = favArtists.map((a) => a.id).toSet();
-      }
       if (mounted) {
         setState(() {
-          _categoryArtists = artists;
-          _categoryArtworks = filteredArtworks;
-          _likedArtistIds.clear();
-          _likedArtistIds.addAll(favIds);
+          if (artists.isNotEmpty) {
+            _categoryArtists = artists;
+          }
+          if (filteredArtworks.isNotEmpty) {
+            _categoryArtworks = filteredArtworks;
+          }
         });
       }
+      _favService.refreshFromServer();
     } catch (_) {}
   }
 
@@ -141,23 +166,16 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
   }
 
   void _toggleLike(ArtistModel artist) async {
-    final userEmail = sl<StorageService>().getString('user_email') ?? '';
     final wasLiked = _likedArtistIds.contains(artist.id);
     final artistName = artist.name.isEmpty ? 'Artist' : artist.name;
 
-    setState(() {
-      if (wasLiked) {
-        _likedArtistIds.remove(artist.id);
-      } else {
-        _likedArtistIds.add(artist.id);
-      }
-
-      final idx = _categoryArtists.indexWhere((a) => a.id == artist.id);
-      if (idx != -1) {
-        final old = _categoryArtists[idx];
-        final newLikes = wasLiked
-            ? (old.followersCount - 1).clamp(0, 999999)
-            : (old.followersCount + 1);
+    final idx = _categoryArtists.indexWhere((a) => a.id == artist.id);
+    if (idx != -1) {
+      final old = _categoryArtists[idx];
+      final newLikes = wasLiked
+          ? (old.followersCount - 1).clamp(0, 999999)
+          : (old.followersCount + 1);
+      setState(() {
         _categoryArtists[idx] = ArtistModel(
           id: old.id,
           name: old.name,
@@ -171,15 +189,10 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
           worksCount: old.worksCount,
           followersCount: newLikes,
         );
-      }
-    });
-
-    if (userEmail.isNotEmpty) {
-      await sl<ApiService>().likeArtist(
-        artistId: artist.id,
-        userEmail: userEmail,
-      );
+      });
     }
+
+    await _favService.toggleArtistFavorite(artist.id);
 
     if (mounted) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();

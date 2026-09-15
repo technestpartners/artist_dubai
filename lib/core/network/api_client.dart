@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import '../constants/api_endpoints.dart';
 import '../errors/exceptions.dart';
+import 'package:flutter/foundation.dart';
 import 'dio_interceptor.dart';
 import 'network_info.dart';
 
@@ -62,10 +63,10 @@ class ApiClientImpl implements ApiClient {
       connectTimeout: ApiEndpoints.connectionTimeout,
       receiveTimeout: ApiEndpoints.receiveTimeout,
       responseType: ResponseType.json,
-      persistentConnection: false,
+      persistentConnection: !kIsWeb ? false : true,
       headers: {
         'Accept': 'application/json',
-        'Connection': 'close',
+        if (!kIsWeb) 'Connection': 'close',
       },
     );
 

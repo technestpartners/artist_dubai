@@ -101,10 +101,11 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
             _isUploadingImage = false;
           });
           if (url != null) {
+            final l10n = AppLocalizations.of(context);
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Gallery photo uploaded successfully!'),
-                backgroundColor: Color(0xFF6A2777),
+              SnackBar(
+                content: Text(l10n.galleryPhotoUploadedSuccess),
+                backgroundColor: const Color(0xFF6A2777),
                 behavior: SnackBarBehavior.floating,
               ),
             );

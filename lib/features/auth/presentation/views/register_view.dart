@@ -154,21 +154,23 @@ class _RegisterViewState extends State<RegisterView> {
         } catch (_) {}
 
         if (mounted) {
+          final l10n = AppLocalizations.of(context);
           if (_selectedRole == 'user') {
-            _showSnackBar('Account created! You now have full access to Dubai events & galleries.');
+            _showSnackBar(l10n.accountCreatedEnthusiast);
             if (context.canPop()) {
               context.pop(true);
             } else {
               context.go(RouteNames.events);
             }
           } else {
-            _showSnackBar('Account created successfully! Welcome to Artist Dubai.');
+            _showSnackBar(l10n.accountCreatedArtist);
             context.go(RouteNames.artistRegistration);
           }
         }
       } else {
         if (mounted) {
-          _showSnackBar('Unable to register account. Please check your details.');
+          final l10n = AppLocalizations.of(context);
+          _showSnackBar(l10n.unableToRegister);
         }
       }
     } on ServerException catch (e) {
@@ -190,8 +192,9 @@ class _RegisterViewState extends State<RegisterView> {
       }
     } catch (_) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         setState(() {
-          _emailError = 'An account with this email already exists.';
+          _emailError = l10n.accountEmailExists;
         });
       }
     } finally {
@@ -614,7 +617,7 @@ class _RegisterViewState extends State<RegisterView> {
                                       recognizer: TapGestureRecognizer()
                                         ..onTap = () {
                                           _showSnackBar(
-                                            'Privacy Policy details',
+                                            l10n.privacyPolicyDetails,
                                           );
                                         },
                                     ),
@@ -628,7 +631,7 @@ class _RegisterViewState extends State<RegisterView> {
                                       recognizer: TapGestureRecognizer()
                                         ..onTap = () {
                                           _showSnackBar(
-                                            'Terms of Service details',
+                                            l10n.termsOfServiceDetails,
                                           );
                                         },
                                     ),

@@ -41,6 +41,7 @@ class _LoginViewState extends State<LoginView> {
   }
 
   void _onSignIn() async {
+    final l10n = AppLocalizations.of(context);
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
@@ -52,15 +53,15 @@ class _LoginViewState extends State<LoginView> {
     bool hasError = false;
 
     if (email.isEmpty) {
-      _emailError = 'Please enter your email address';
+      _emailError = l10n.enterEmail;
       hasError = true;
     } else if (!email.contains('@') || !email.contains('.')) {
-      _emailError = 'Please enter a valid email address';
+      _emailError = l10n.enterValidEmail;
       hasError = true;
     }
 
     if (password.isEmpty) {
-      _passwordError = 'Please enter your password';
+      _passwordError = l10n.enterPassword;
       hasError = true;
     }
 
@@ -129,11 +130,12 @@ class _LoginViewState extends State<LoginView> {
         } catch (_) {}
 
         if (mounted) {
+          final currentL10n = AppLocalizations.of(context);
           if (isAdmin) {
-            _showSnackBar('Signed in as Admin!');
+            _showSnackBar(currentL10n.signedInAsAdmin);
             context.go(RouteNames.adminDashboard);
           } else {
-            _showSnackBar('Signed in successfully!');
+            _showSnackBar(currentL10n.loginSuccess);
             if (context.canPop()) {
               context.pop(true);
             } else {
@@ -143,8 +145,9 @@ class _LoginViewState extends State<LoginView> {
         }
       } else {
         if (mounted) {
+          final currentL10n = AppLocalizations.of(context);
           setState(() {
-            _emailError = 'User is not available. Please create an account first.';
+            _emailError = currentL10n.userNotAvailable;
           });
         }
       }
@@ -176,8 +179,9 @@ class _LoginViewState extends State<LoginView> {
       }
     } catch (e) {
       if (mounted) {
+        final currentL10n = AppLocalizations.of(context);
         setState(() {
-          _emailError = 'User is not available. Please create an account first.';
+          _emailError = currentL10n.userNotAvailable;
         });
       }
     } finally {

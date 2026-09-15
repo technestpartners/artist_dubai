@@ -6,7 +6,7 @@ import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
-import '../../../../core/services/storage_service.dart';
+import '../../../../core/services/favorites_service.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
@@ -38,12 +38,8 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
     _fetchFavorites();
     _favSub = sl<LiveSyncService>().favoritesStream.listen((data) {
       if (mounted) {
-        setState(() {
-          _favoritedArtists = data['artists'] as List<ArtistModel>? ?? [];
-          _favoritedEvents = data['events'] as List<ArtEventModel>? ?? [];
-          _favoritedArtworks = data['artworks'] as List<Map<String, dynamic>>? ?? [];
-          _isLoading = false;
-        });
+        sl<FavoritesService>().updateFromServer(data);
+        _mergeAndSetFavorites(data);
       }
     });
     DataTranslator.translationNotifier.addListener(_onTranslationChanged);
@@ -53,18 +49,57 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
     if (mounted) setState(() {});
   }
 
+  void _mergeAndSetFavorites(Map<String, dynamic> data) {
+    final favService = sl<FavoritesService>();
+    final serverEvents = List<ArtEventModel>.from(data['events'] as List<ArtEventModel>? ?? []);
+    final serverArtists = List<ArtistModel>.from(data['artists'] as List<ArtistModel>? ?? []);
+    final serverArtworks = List<Map<String, dynamic>>.from(data['artworks'] as List<Map<String, dynamic>>? ?? []);
+
+    // Also include any locally favorited events that might not be in DB response yet
+    final existingEventIds = serverEvents.map((e) => e.id).toSet();
+    final allAvailableEvents = ArtEventModel.mockEvents;
+    for (final id in favService.eventIds) {
+      if (!existingEventIds.contains(id)) {
+        final match = allAvailableEvents.where((e) => e.id == id).firstOrNull;
+        if (match != null) {
+          serverEvents.add(match);
+          existingEventIds.add(id);
+        }
+      }
+    }
+
+    // Also include any locally favorited artists
+    final existingArtistIds = serverArtists.map((a) => a.id).toSet();
+    final allAvailableArtists = [
+      ...sl<ApiService>().cachedArtists ?? [],
+      ...ArtistModel.mockArtists,
+    ];
+    for (final id in favService.artistIds) {
+      if (!existingArtistIds.contains(id)) {
+        final match = allAvailableArtists.where((a) => a.id == id).firstOrNull;
+        if (match != null) {
+          serverArtists.add(match);
+          existingArtistIds.add(id);
+        }
+      }
+    }
+
+    setState(() {
+      _favoritedArtists = serverArtists;
+      _favoritedEvents = serverEvents;
+      _favoritedArtworks = serverArtworks;
+      _isLoading = false;
+    });
+  }
+
   Future<void> _fetchFavorites({bool forceRefresh = false}) async {
     setState(() => _isLoading = _favoritedArtists.isEmpty && _favoritedEvents.isEmpty && _favoritedArtworks.isEmpty);
     try {
-      final userEmail = sl<StorageService>().getString('user_email');
+      final userEmail = sl<FavoritesService>().getEffectiveEmail();
       final data = await sl<ApiService>().getFavorites(email: userEmail, forceRefresh: forceRefresh);
       if (mounted) {
-        setState(() {
-          _favoritedArtists = data['artists'] as List<ArtistModel>? ?? [];
-          _favoritedEvents = data['events'] as List<ArtEventModel>? ?? [];
-          _favoritedArtworks = data['artworks'] as List<Map<String, dynamic>>? ?? [];
-          _isLoading = false;
-        });
+        sl<FavoritesService>().updateFromServer(data);
+        _mergeAndSetFavorites(data);
       }
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
@@ -82,17 +117,10 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
   void _removeArtist(int index) async {
     if (index >= _favoritedArtists.length) return;
     final artist = _favoritedArtists[index];
-    final userEmail = sl<StorageService>().getString('user_email') ?? '';
     setState(() {
       _favoritedArtists.removeAt(index);
     });
-    if (userEmail.isNotEmpty) {
-      await sl<ApiService>().toggleFavorite(
-        email: userEmail,
-        itemType: 'artist',
-        itemId: artist.id,
-      );
-    }
+    await sl<FavoritesService>().toggleArtistFavorite(artist.id);
     if (mounted) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -108,17 +136,10 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
   void _removeEvent(int index) async {
     if (index >= _favoritedEvents.length) return;
     final event = _favoritedEvents[index];
-    final userEmail = sl<StorageService>().getString('user_email') ?? '';
     setState(() {
       _favoritedEvents.removeAt(index);
     });
-    if (userEmail.isNotEmpty) {
-      await sl<ApiService>().toggleFavorite(
-        email: userEmail,
-        itemType: 'event',
-        itemId: event.id,
-      );
-    }
+    await sl<FavoritesService>().toggleEventFavorite(event.id);
     if (mounted) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -134,16 +155,12 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
   void _removeArtwork(int index) async {
     if (index >= _favoritedArtworks.length) return;
     final artwork = _favoritedArtworks[index];
-    final userEmail = sl<StorageService>().getString('user_email') ?? '';
+    final id = (artwork['id'] ?? '').toString();
     setState(() {
       _favoritedArtworks.removeAt(index);
     });
-    if (userEmail.isNotEmpty && artwork['id'] != null) {
-      await sl<ApiService>().toggleFavorite(
-        email: userEmail,
-        itemType: 'artwork',
-        itemId: artwork['id'].toString(),
-      );
+    if (id.isNotEmpty) {
+      await sl<FavoritesService>().toggleArtworkFavorite(id);
     }
     if (mounted) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();

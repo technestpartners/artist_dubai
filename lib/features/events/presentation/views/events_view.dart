@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/favorites_service.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/utils/responsive_helper.dart';
@@ -73,6 +74,8 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _selectedViewMode = widget.initialTabIndex == 1 ? 1 : 0;
+    _likedEventIds.addAll(sl<FavoritesService>().eventIds);
+    sl<FavoritesService>().addListener(_onFavoritesChanged);
     _fetchEvents();
     _fetchCategories();
 
@@ -117,16 +120,20 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
 
     _favSub = sl<LiveSyncService>().favoritesStream.listen((favData) {
       if (mounted && favData.isNotEmpty) {
-        final favEvents = (favData['events'] as List<ArtEventModel>?) ?? [];
-        final favIds = favEvents.map((e) => e.id).toSet();
-        setState(() {
-          _likedEventIds.clear();
-          _likedEventIds.addAll(favIds);
-        });
+        sl<FavoritesService>().updateFromServer(favData);
       }
     });
 
     DataTranslator.translationNotifier.addListener(_onTranslationChanged);
+  }
+
+  void _onFavoritesChanged() {
+    if (mounted) {
+      setState(() {
+        _likedEventIds.clear();
+        _likedEventIds.addAll(sl<FavoritesService>().eventIds);
+      });
+    }
   }
 
   void _onTranslationChanged() {
@@ -142,6 +149,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    sl<FavoritesService>().removeListener(_onFavoritesChanged);
     DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
     WidgetsBinding.instance.removeObserver(this);
     _periodicSyncTimer?.cancel();
@@ -167,25 +175,21 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
 
   Future<void> _fetchEvents({bool forceRefresh = false}) async {
     try {
-      final userEmail = sl<StorageService>().getString('user_email');
+      final effectiveEmail = sl<FavoritesService>().getEffectiveEmail();
       final results = await Future.wait([
         sl<ApiService>().getEvents(forceRefresh: forceRefresh),
-        if (userEmail != null && userEmail.isNotEmpty)
-          sl<ApiService>().getFavorites(email: userEmail, forceRefresh: forceRefresh)
-        else
-          Future.value(<String, dynamic>{'events': <ArtEventModel>[]}),
+        sl<ApiService>().getFavorites(email: effectiveEmail, forceRefresh: forceRefresh),
       ]);
 
       final events = results[0] as List<ArtEventModel>;
       final favData = results[1] as Map<String, dynamic>;
-      final favEvents = (favData['events'] as List<ArtEventModel>?) ?? [];
-      final favIds = favEvents.map((e) => e.id).toSet();
+      sl<FavoritesService>().updateFromServer(favData);
 
       if (mounted) {
         setState(() {
           _allEvents = events.where((e) => e.isActive && e.status.toLowerCase() != 'pending').toList();
           _likedEventIds.clear();
-          _likedEventIds.addAll(favIds);
+          _likedEventIds.addAll(sl<FavoritesService>().eventIds);
         });
       }
     } catch (_) {}
@@ -409,26 +413,18 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
   }
 
   void _toggleEventLike(ArtEventModel event) async {
-    final userEmail = sl<StorageService>().getString('user_email') ?? '';
     final wasLiked = _likedEventIds.contains(event.id);
-
-    setState(() {
-      if (wasLiked) {
-        _likedEventIds.remove(event.id);
-      } else {
-        _likedEventIds.add(event.id);
-      }
-    });
-
-    if (userEmail.isNotEmpty) {
-      await sl<ApiService>().toggleFavorite(
-        email: userEmail,
-        itemType: 'event',
-        itemId: event.id,
-      );
-    }
+    final nowLiked = await sl<FavoritesService>().toggleEventFavorite(event.id);
 
     if (mounted) {
+      setState(() {
+        if (nowLiked) {
+          _likedEventIds.add(event.id);
+        } else {
+          _likedEventIds.remove(event.id);
+        }
+      });
+
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -493,7 +489,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                     _buildQuickDateFilterTabs(),
                     const SizedBox(height: 14),
 
-                    // 4. Secondary Filter Chips: [ Date ] [ Price ] [ Category ] [ Sort By ]
+                    // 4. Secondary Filter Chips: [ Category ] [ Sort By ]
                     _buildFilterChipsRow(),
                     const SizedBox(height: 20),
 
@@ -831,23 +827,13 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
   }
 
   // -------------------------------------------------------------
-  // Filter Chips Row: [ Date ] [ Price ] [ Category ] [ Sort By ] (Reference)
+  // Filter Chips Row: [ Category ] [ Sort By ] (Reference)
   // -------------------------------------------------------------
   Widget _buildFilterChipsRow() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _buildFilterChip(
-            label: _activeDateFilter == 'All'
-                ? 'Date'.trData(context)
-                : (_activeDateFilter == 'Custom Dates' && _customDateRange != null
-                    ? '${_customDateRange!.start.day}/${_customDateRange!.start.month} - ${_customDateRange!.end.day}/${_customDateRange!.end.month}'
-                    : _activeDateFilter.trData(context)),
-            isActive: _activeDateFilter != 'All',
-            onTap: _showDateFilterDialog,
-          ),
-          const SizedBox(width: 8),
           _buildFilterChip(
             label: _selectedCategory == 'All Categories' ? 'Category'.trData(context) : _selectedCategory.trData(context),
             isActive: _selectedCategory != 'All Categories',
@@ -1145,9 +1131,9 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                           ),
                   ),
                 ),
-                Positioned(
+                PositionedDirectional(
                   top: 8,
-                  right: 8,
+                  end: 8,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -1274,9 +1260,9 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                           ),
                   ),
                 ),
-                Positioned(
+                PositionedDirectional(
                   top: 10,
-                  right: 10,
+                  end: 10,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -1438,79 +1424,11 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
   // -------------------------------------------------------------
   // Filter Bottom Sheets
   // -------------------------------------------------------------
-  void _showDateFilterDialog() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  'Filter by Date'.trData(context),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
-                ),
-                const SizedBox(height: 16),
-                for (final opt in ['All', 'Today', 'This Week', 'Custom Dates']) ...[
-                  ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 6),
-                    title: Text(
-                      (opt == 'All' ? 'All Dates' : opt).trData(context),
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: _activeDateFilter == opt ? FontWeight.w800 : FontWeight.w500,
-                        color: _activeDateFilter == opt ? _primaryPurple : const Color(0xFF1E293B),
-                      ),
-                    ),
-                    trailing: _activeDateFilter == opt ? const Icon(Icons.check_circle, color: _primaryPurple, size: 20) : null,
-                    onTap: () async {
-                      Navigator.pop(ctx);
-                      if (opt == 'Custom Dates') {
-                        final picked = await _pickDateRange();
-                        if (picked != null) {
-                          setState(() {
-                            _customDateRange = picked;
-                            _activeDateFilter = 'Custom Dates';
-                          });
-                        }
-                      } else {
-                        setState(() {
-                          _activeDateFilter = opt;
-                          _customDateRange = null;
-                        });
-                      }
-                    },
-                  ),
-                ],
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   void _showCategoryFilterDialog() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: const Color(0xFF551478),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
@@ -1535,7 +1453,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.grey[300],
+                        color: Colors.white.withValues(alpha: 0.4),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -1546,7 +1464,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                     children: [
                       Text(
                         'Filter by Category'.trData(context),
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
                       ),
                       if (_selectedCategory != 'All Categories')
                         GestureDetector(
@@ -1556,7 +1474,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                           },
                           child: Text(
                             'Reset'.trData(context),
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _primaryPurple),
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFFE2D6F5)),
                           ),
                         ),
                     ],
@@ -1565,12 +1483,14 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                   // Search within categories
                   TextField(
                     onChanged: (val) => setModalState(() => catSearch = val.trim()),
+                    style: const TextStyle(fontSize: 14, color: Color(0xFF1E293B)),
+                    cursorColor: _primaryPurple,
                     decoration: InputDecoration(
                       hintText: 'Search categories...'.trData(context),
-                      hintStyle: const TextStyle(fontSize: 13.5, color: Color(0xFF94A3B8)),
-                      prefixIcon: const Icon(Icons.search, size: 20, color: Color(0xFF94A3B8)),
+                      hintStyle: const TextStyle(fontSize: 13.5, color: Color(0xFF64748B)),
+                      prefixIcon: const Icon(Icons.search, size: 20, color: Color(0xFF64748B)),
                       filled: true,
-                      fillColor: const Color(0xFFF1F5F9),
+                      fillColor: Colors.white,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -1582,7 +1502,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                   Expanded(
                     child: ListView.separated(
                       itemCount: displayCats.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                      separatorBuilder: (_, __) => Divider(height: 1, color: Colors.white.withValues(alpha: 0.15)),
                       itemBuilder: (context, index) {
                         final cat = displayCats[index];
                         final isSel = _selectedCategory == cat;
@@ -1593,10 +1513,10 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: isSel ? FontWeight.w800 : FontWeight.w500,
-                              color: isSel ? _primaryPurple : const Color(0xFF1E293B),
+                              color: isSel ? Colors.white : const Color(0xFFE2D6F5),
                             ),
                           ),
-                          trailing: isSel ? const Icon(Icons.check_circle, color: _primaryPurple, size: 20) : null,
+                          trailing: isSel ? const Icon(Icons.check_circle, color: Colors.white, size: 20) : null,
                           onTap: () {
                             Navigator.pop(ctx);
                             setState(() => _selectedCategory = cat);
@@ -1617,6 +1537,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
   void _showSortDialog() {
     showModalBottomSheet(
       context: context,
+      backgroundColor: const Color(0xFF551478),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -1633,7 +1554,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: Colors.white.withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -1641,7 +1562,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                 const SizedBox(height: 14),
                 Text(
                   'Sort Events'.trData(context),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
                 ),
                 const SizedBox(height: 16),
                 for (final opt in ['Soonest', 'Title (A - Z)', 'Price: Low to High', 'Price: High to Low', 'Most Popular']) ...[
@@ -1652,10 +1573,10 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: _sortBy == opt ? FontWeight.w800 : FontWeight.w500,
-                        color: _sortBy == opt ? _primaryPurple : const Color(0xFF1E293B),
+                        color: _sortBy == opt ? Colors.white : const Color(0xFFE2D6F5),
                       ),
                     ),
-                    trailing: _sortBy == opt ? const Icon(Icons.check_circle, color: _primaryPurple, size: 20) : null,
+                    trailing: _sortBy == opt ? const Icon(Icons.check_circle, color: Colors.white, size: 20) : null,
                     onTap: () {
                       Navigator.pop(ctx);
                       setState(() => _sortBy = opt);

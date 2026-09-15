@@ -294,13 +294,19 @@ class LiveSyncService with WidgetsBindingObserver {
 
       // Phase 1: High-priority core streams (Artists, Events, Categories)
       final artists = await _apiService.getArtists(forceRefresh: forceRefresh).catchError((_) => <ArtistModel>[]);
-      if (!_artistsController.isClosed && _shouldEmit('artists', artists)) _artistsController.add(artists);
+      if (artists.isNotEmpty && !_artistsController.isClosed && _shouldEmit('artists', artists)) {
+        _artistsController.add(artists);
+      }
 
       final events = await _apiService.getEvents(forceRefresh: forceRefresh, isAdmin: isAdmin).catchError((_) => <ArtEventModel>[]);
-      if (!_eventsController.isClosed && _shouldEmit('events', events)) _eventsController.add(events);
+      if (events.isNotEmpty && !_eventsController.isClosed && _shouldEmit('events', events)) {
+        _eventsController.add(events);
+      }
 
       final categories = await _apiService.getCategories(forceRefresh: forceRefresh).catchError((_) => <CategoryInfo>[]);
-      if (!_categoriesController.isClosed && _shouldEmit('categories', categories)) _categoriesController.add(categories);
+      if (categories.isNotEmpty && !_categoriesController.isClosed && _shouldEmit('categories', categories)) {
+        _categoriesController.add(categories);
+      }
 
       // Phase 2: Secondary streams (Galleries, Government, Favorites)
       final galleries = await _apiService.getGalleries(forceRefresh: forceRefresh, isAdmin: isAdmin).catchError((_) => <Map<String, dynamic>>[]);

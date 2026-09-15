@@ -141,11 +141,10 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error selecting profile picture: $e'),
-            backgroundColor: const Color(0xFFDC2626),
-          ),
+        UiHelpers.showSnackBar(
+          context,
+          message: 'Error selecting profile picture: $e',
+          isError: true,
         );
       }
     }
@@ -155,12 +154,10 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     final currentCount = _portfolioArtworks.length;
     if (currentCount >= kMaxArtworks) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Maximum 6 artwork uploads allowed.'),
-            backgroundColor: Color(0xFF6A2777),
-            behavior: SnackBarBehavior.floating,
-          ),
+        UiHelpers.showSnackBar(
+          context,
+          message: 'Maximum 6 artwork uploads allowed.',
+          backgroundColor: const Color(0xFF6A2777),
         );
       }
       return;
@@ -185,22 +182,19 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
           }
         });
         if (images.length > remainingSlots && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Maximum 6 artworks allowed. Added $remainingSlots artwork(s).'),
-              backgroundColor: const Color(0xFF6A2777),
-              behavior: SnackBarBehavior.floating,
-            ),
+          UiHelpers.showSnackBar(
+            context,
+            message: 'Maximum 6 artworks allowed. Added $remainingSlots artwork(s).',
+            backgroundColor: const Color(0xFF6A2777),
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error selecting images: $e'),
-            backgroundColor: const Color(0xFFDC2626),
-          ),
+        UiHelpers.showSnackBar(
+          context,
+          message: 'Error selecting images: $e',
+          isError: true,
         );
       }
     }
@@ -209,12 +203,11 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
   Future<void> _pickImageFromCamera() async {
     if (_portfolioArtworks.length >= kMaxArtworks) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Maximum 6 artwork uploads allowed.'),
-            backgroundColor: Color(0xFF6A2777),
-            behavior: SnackBarBehavior.floating,
-          ),
+        final l10n = AppLocalizations.of(context);
+        UiHelpers.showSnackBar(
+          context,
+          message: l10n.maxArtworksAllowed,
+          backgroundColor: const Color(0xFF6A2777),
         );
       }
       return;
@@ -237,11 +230,10 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error capturing photo: $e'),
-            backgroundColor: const Color(0xFFDC2626),
-          ),
+        UiHelpers.showSnackBar(
+          context,
+          message: 'Error capturing photo: $e',
+          isError: true,
         );
       }
     }
@@ -896,12 +888,11 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
             sl<LiveSyncService>().notifyArtistsChanged();
 
             if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Artist Profile updated successfully!'),
-                backgroundColor: Color(0xFF6A2777),
-                behavior: SnackBarBehavior.floating,
-              ),
+            final l10n = AppLocalizations.of(context);
+            UiHelpers.showSnackBar(
+              context,
+              message: l10n.artistProfileUpdatedSuccess,
+              backgroundColor: const Color(0xFF6A2777),
             );
             if (context.canPop()) {
               context.pop(true);
@@ -910,10 +901,11 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
             }
           } else {
             if (!mounted) return;
+            final l10n = AppLocalizations.of(context);
             UiHelpers.showErrorDialog(
               context,
-              title: 'Update Failed',
-              message: 'Failed to update profile. Please check your inputs.',
+              title: l10n.artistProfileUpdateFailed,
+              message: l10n.artistProfileUpdateFailed,
             );
           }
         }
@@ -982,20 +974,20 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
           await storage.setString('artist_profile_name', name);
           sl<LiveSyncService>().notifyArtistsChanged();
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Artist Profile & ${uploadedArtworksData.length} Artworks created successfully!'),
-              backgroundColor: const Color(0xFF6A2777),
-              behavior: SnackBarBehavior.floating,
-            ),
+          final l10n = AppLocalizations.of(context);
+          UiHelpers.showSnackBar(
+            context,
+            message: l10n.artistProfileCreatedSuccess,
+            backgroundColor: const Color(0xFF6A2777),
           );
           context.go(RouteNames.artists);
         } else {
           if (!mounted) return;
+          final l10n = AppLocalizations.of(context);
           UiHelpers.showErrorDialog(
             context,
-            title: 'Save Failed',
-            message: 'Failed to save profile. Please check your inputs.',
+            title: l10n.artistProfileSaveFailed,
+            message: l10n.artistProfileSaveFailed,
           );
         }
       }
@@ -1513,19 +1505,37 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                               style: const TextStyle(
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF1E1E1E),
+                                color: Colors.white,
                               ),
                             ),
                             if (_portfolioArtworks.length < kMaxArtworks)
-                              TextButton.icon(
+                              ElevatedButton.icon(
                                 onPressed: _pickImagesFromGallery,
-                                icon: const Icon(Icons.add_photo_alternate_outlined, size: 16, color: Color(0xFF6A2777)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: const Color(0xFF6B1C9B),
+                                  elevation: 1.5,
+                                  shadowColor: Colors.black26,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  minimumSize: const Size(0, 32),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                ),
+                                icon: const Icon(
+                                  Icons.add_photo_alternate_outlined,
+                                  size: 16,
+                                  color: Color(0xFF6B1C9B),
+                                ),
                                 label: Text(
                                   l10n.chooseFiles,
                                   style: const TextStyle(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF6A2777),
+                                    color: Color(0xFF6B1C9B),
                                   ),
                                 ),
                               )
