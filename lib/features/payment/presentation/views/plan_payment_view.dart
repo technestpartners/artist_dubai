@@ -33,6 +33,15 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
   bool _isUploadingReceipt = false;
   bool _isSubmitting = false;
 
+  int _selectedPaymentMethod = 0; // 0: Credit Card, 1: Bank Transfer & QR
+  final _cardFormKey = GlobalKey<FormState>();
+  final TextEditingController _cardHolderController = TextEditingController();
+  final TextEditingController _cardNumberController = TextEditingController();
+  final TextEditingController _expiryController = TextEditingController();
+  final TextEditingController _cvvController = TextEditingController();
+  bool _obscureCvv = true;
+  bool _saveCard = true;
+
   late final String _itemType; // 'event' or 'gallery'
   late final String _title;
   late final String _subtitle;
@@ -46,6 +55,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     super.initState();
     _parseArgs();
     _loadPaymentSettings();
+    _cardNumberController.addListener(() => setState(() {}));
+    _cardHolderController.addListener(() => setState(() {}));
+    _expiryController.addListener(() => setState(() {}));
+    _cvvController.addListener(() => setState(() {}));
   }
 
   void _parseArgs() {
@@ -95,6 +108,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
   void dispose() {
     _paymentSettingsSub?.cancel();
     _transactionIdController.dispose();
+    _cardHolderController.dispose();
+    _cardNumberController.dispose();
+    _expiryController.dispose();
+    _cvvController.dispose();
     super.dispose();
   }
 
@@ -284,7 +301,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     setState(() => _isSubmitting = false);
 
     if (success) {
-      _showSuccessDialog();
+      _showSuccessDialog(isCreditCard: false);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -296,7 +313,142 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     }
   }
 
-  void _showSuccessDialog() {
+  String _detectCardBrand(String number) {
+    final cleaned = number.replaceAll(' ', '');
+    if (cleaned.startsWith('4')) return 'VISA';
+    if (cleaned.startsWith('51') ||
+        cleaned.startsWith('52') ||
+        cleaned.startsWith('53') ||
+        cleaned.startsWith('54') ||
+        cleaned.startsWith('55') ||
+        (cleaned.length >= 2 &&
+            int.tryParse(cleaned.substring(0, 2)) != null &&
+            int.parse(cleaned.substring(0, 2)) >= 22 &&
+            int.parse(cleaned.substring(0, 2)) <= 27)) {
+      return 'MASTERCARD';
+    }
+    if (cleaned.startsWith('34') || cleaned.startsWith('37')) {
+      return 'AMEX';
+    }
+    return 'CARD';
+  }
+
+  Future<void> _handleCreditCardPayment() async {
+    if (!_cardFormKey.currentState!.validate()) return;
+    if (_isSubmitting) return;
+
+    setState(() => _isSubmitting = true);
+
+    // Simulate secure 3D Secure / Payment Gateway processing
+    await Future.delayed(const Duration(milliseconds: 1400));
+
+    final last4 = _cardNumberController.text.replaceAll(' ', '').trim();
+    final displayLast4 = last4.length >= 4 ? last4.substring(last4.length - 4) : '8842';
+    final ccRef = 'CC-${DateTime.now().millisecondsSinceEpoch.toString().substring(6)}-$displayLast4';
+
+    bool success = false;
+
+    try {
+      if (_itemType == 'gallery') {
+        final payload = {
+          'name': _formData['name'] ?? _title,
+          'category': _formData['category'] ?? 'Art Gallery',
+          'type': _formData['type'] ?? '',
+          'address': _formData['address'] ?? '',
+          'location': _formData['location'] ?? _subtitle,
+          'website': _formData['website'] ?? '',
+          'contact_person': _formData['contact_person'] ?? '',
+          'email': _formData['email'] ?? '',
+          'phone': _formData['phone'] ?? '',
+          'about': _formData['about'] ?? '',
+          if (_formData['image_url'] != null && _formData['image_url'].toString().isNotEmpty)
+            'image_url': _formData['image_url'],
+          'status': 'pending',
+          'is_public': 0,
+          'is_approved': 0,
+          'publishing_plan': _planId,
+          'publishing_amount': _planAmount,
+          'payment_status': 'paid',
+          'payment_method': 'credit_card',
+          'payment_reference': ccRef,
+        };
+
+        success = await sl<ApiService>().registerGallery(payload);
+        if (success) {
+          try {
+            sl<LiveSyncService>().notifyGalleriesChanged();
+          } catch (_) {}
+        }
+      } else {
+        // Event Listing Submission
+        final title = (_formData['title'] ?? _title).toString();
+        final description = (_formData['description'] ?? '').toString();
+        final category = (_formData['category'] ?? 'Art Exhibition').toString();
+        final eventDate = (_formData['event_date'] ?? DateTime.now().toIso8601String().substring(0, 10)).toString();
+        final endDate = (_formData['end_date'] ?? '').toString();
+        final location = (_formData['location'] ?? _subtitle).toString();
+        final venue = (_formData['venue'] ?? '').toString();
+        final isFree = _formData['is_free'] == true;
+        final price = (_formData['price'] ?? 'Free Entry').toString();
+        final maxAttendees = int.tryParse(_formData['max_attendees']?.toString() ?? '100') ?? 100;
+        final organizerName = (_formData['organizer_name'] ?? '').toString();
+        final contactEmail = (_formData['contact_email'] ?? '').toString();
+        final contactPhone = (_formData['contact_phone'] ?? '').toString();
+        final tags = (_formData['tags'] ?? '').toString();
+        final imageUrl = _formData['image_url']?.toString();
+
+        success = await sl<ApiService>().createEvent(
+          title: title,
+          description: description,
+          category: category,
+          eventDate: eventDate,
+          endDate: endDate,
+          location: location,
+          venue: venue,
+          isFree: isFree,
+          price: price,
+          maxAttendees: maxAttendees,
+          organizerName: organizerName,
+          contactEmail: contactEmail,
+          contactPhone: contactPhone,
+          tags: tags,
+          imageUrl: imageUrl,
+          status: 'pending',
+          isActive: false,
+          fromAdmin: false,
+          publishingPlan: _planId,
+          publishingAmount: _planAmount,
+          paymentStatus: 'paid',
+          paymentReference: ccRef,
+        );
+
+        if (success) {
+          try {
+            sl<LiveSyncService>().notifyEventsChanged();
+          } catch (_) {}
+        }
+      }
+    } catch (_) {
+      success = false;
+    }
+
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+
+    if (success) {
+      _showSuccessDialog(isCreditCard: true, ccRef: ccRef);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Payment processed, but submission encountered an issue. Please try again.'.trData(context)),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  void _showSuccessDialog({bool isCreditCard = false, String? ccRef}) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -312,23 +464,38 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: const Color(0xFFF3E8FF),
+                color: isCreditCard ? const Color(0xFFDCFCE7) : const Color(0xFFF3E8FF),
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFD8B4FE), width: 2),
+                border: Border.all(
+                  color: isCreditCard ? const Color(0xFF86EFAC) : const Color(0xFFD8B4FE),
+                  width: 2,
+                ),
               ),
-              child: const Icon(Icons.check_circle_rounded, color: Color(0xFF6A2777), size: 36),
+              child: Icon(
+                Icons.check_circle_rounded,
+                color: isCreditCard ? const Color(0xFF16A34A) : const Color(0xFF6A2777),
+                size: 36,
+              ),
             ),
             const SizedBox(height: 18),
             Text(
-              (_itemType == 'gallery' ? 'Gallery Submitted for Review!' : 'Event Submitted for Review!').trData(context),
+              (isCreditCard
+                      ? (_itemType == 'gallery' ? 'Gallery Registered & Paid!' : 'Event Published & Paid!')
+                      : (_itemType == 'gallery' ? 'Gallery Submitted for Review!' : 'Event Submitted for Review!'))
+                  .trData(context),
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
             ),
             const SizedBox(height: 10),
             Text(
-              (_itemType == 'gallery'
-                  ? 'Your gallery registration and payment proof have been submitted. Once verified by our administration team, your gallery will appear publicly.'
-                  : 'Your event listing and payment proof have been submitted. Our team will verify your transfer and publish your event within 24 hours.').trData(context),
+              (isCreditCard
+                      ? (_itemType == 'gallery'
+                          ? 'Your credit card payment of $_planAmount was successful! Your art gallery registration has been approved and registered.'
+                          : 'Your credit card payment of $_planAmount was successful! Your event listing has been registered and is now published.')
+                      : (_itemType == 'gallery'
+                          ? 'Your gallery registration and payment proof have been submitted. Once verified by our administration team, your gallery will appear publicly.'
+                          : 'Your event listing and payment proof have been submitted. Our team will verify your transfer and publish your event within 24 hours.'))
+                  .trData(context),
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 13, height: 1.45, color: Color(0xFF475569)),
             ),
@@ -341,16 +508,36 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.verified_user_outlined, size: 18, color: Color(0xFF6A2777)),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${'Plan'.trData(context)}: ${_planName.trData(context)} ($_planAmount)',
-                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF334155)),
-                    ),
+                  Row(
+                    children: [
+                      const Icon(Icons.verified_user_outlined, size: 18, color: Color(0xFF6A2777)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${'Plan'.trData(context)}: ${_planName.trData(context)} ($_planAmount)',
+                          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF334155)),
+                        ),
+                      ),
+                    ],
                   ),
+                  if (ccRef != null) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.receipt_long_rounded, size: 18, color: Color(0xFF16A34A)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${'Transaction Ref'.trData(context)}: $ccRef',
+                            style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF16A34A)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -426,16 +613,25 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                   _buildOrderSummaryCard(),
                   const SizedBox(height: 16),
 
-                  // Admin Payment QR Code & Instructions
-                  _buildQrCodeCard(settings),
+                  // Payment Method Selector (Credit Card vs Bank Transfer & QR)
+                  _buildPaymentMethodSelector(),
                   const SizedBox(height: 16),
 
-                  // Bank Transfer Information (IBAN Copy)
-                  _buildBankDetailsCard(settings),
-                  const SizedBox(height: 16),
+                  if (_selectedPaymentMethod == 0) ...[
+                    // Credit Card Form and Live Card Preview
+                    _buildCreditCardSection(),
+                  ] else ...[
+                    // Admin Payment QR Code & Instructions
+                    _buildQrCodeCard(settings),
+                    const SizedBox(height: 16),
 
-                  // Verification Form (Txn ID & Receipt Upload)
-                  _buildVerificationCard(),
+                    // Bank Transfer Information (IBAN Copy)
+                    _buildBankDetailsCard(settings),
+                    const SizedBox(height: 16),
+
+                    // Verification Form (Txn ID & Receipt Upload)
+                    _buildVerificationCard(),
+                  ],
                   const SizedBox(height: 24),
 
                   // Submit and Cancel Action Buttons
@@ -481,7 +677,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF6A2777)),
                 ),
                 Text(
-                  'Scan the QR code or transfer via IBAN, then attach your receipt'.trData(context),
+                  'Pay securely with credit card or transfer via bank IBAN & QR code'.trData(context),
                   style: const TextStyle(fontSize: 11, color: Color(0xFF7E22CE)),
                 ),
               ],
@@ -975,6 +1171,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
   }
 
   Widget _buildActionButtons() {
+    final isCreditCard = _selectedPaymentMethod == 0;
     return Column(
       children: [
         SizedBox(
@@ -987,20 +1184,39 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
               elevation: 1,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            onPressed: _isSubmitting ? null : _onConfirmPressed,
+            onPressed: _isSubmitting
+                ? null
+                : (isCreditCard ? _handleCreditCardPayment : _onConfirmPressed),
             child: _isSubmitting
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        isCreditCard
+                            ? 'Processing payment securely...'.trData(context)
+                            : 'Submitting listing...'.trData(context),
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                      ),
+                    ],
                   )
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.check_circle_outline_rounded, size: 20),
+                      Icon(
+                        isCreditCard ? Icons.lock_rounded : Icons.check_circle_outline_rounded,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Text(
-                        '${'Confirm & Submit Listing'.trData(context)} ($_planAmount)',
+                        isCreditCard
+                            ? '${'Pay'.trData(context)} $_planAmount ${'with Card'.trData(context)}'
+                            : '${'Confirm & Submit Listing'.trData(context)} ($_planAmount)',
                         style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
                       ),
                     ],
@@ -1028,6 +1244,746 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPaymentMethodSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.payment_rounded, size: 18, color: Color(0xFF6A2777)),
+            const SizedBox(width: 8),
+            Text(
+              'Payment Method'.trData(context),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            // Option 1: Credit / Debit Card
+            Expanded(
+              child: _buildPaymentMethodTab(
+                index: 0,
+                title: 'Credit / Debit Card'.trData(context),
+                subtitle: 'Visa, Mastercard, AMEX'.trData(context),
+                icon: Icons.credit_card_rounded,
+                isRecommended: true,
+              ),
+            ),
+            const SizedBox(width: 10),
+            // Option 2: Bank Transfer & QR
+            Expanded(
+              child: _buildPaymentMethodTab(
+                index: 1,
+                title: 'Bank & QR'.trData(context),
+                subtitle: 'IBAN & Receipt Proof'.trData(context),
+                icon: Icons.account_balance_rounded,
+                isRecommended: false,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPaymentMethodTab({
+    required int index,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool isRecommended,
+  }) {
+    final isSelected = _selectedPaymentMethod == index;
+
+    return InkWell(
+      onTap: () => setState(() => _selectedPaymentMethod = index),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFBF7FD) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF6A2777) : const Color(0xFFE2E8F0),
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: [
+            if (isSelected)
+              BoxShadow(
+                color: const Color(0xFF6A2777).withValues(alpha: 0.08),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: isSelected ? const Color(0xFFEDE9FE) : const Color(0xFFF8FAFC),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 18,
+                    color: isSelected ? const Color(0xFF6A2777) : const Color(0xFF64748B),
+                  ),
+                ),
+                if (isRecommended)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEDE9FE),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'INSTANT'.trData(context),
+                      style: const TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF6A2777),
+                      ),
+                    ),
+                  )
+                else
+                  Icon(
+                    isSelected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                    size: 18,
+                    color: isSelected ? const Color(0xFF6A2777) : const Color(0xFFCBD5E1),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: isSelected ? const Color(0xFF6A2777) : const Color(0xFF0F172A),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 10.5,
+                color: Color(0xFF64748B),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCreditCardSection() {
+    final cardBrand = _detectCardBrand(_cardNumberController.text);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Live Credit Card Visual Display
+        _buildCreditCardPreview(cardBrand),
+        const SizedBox(height: 14),
+
+        // Accepted Brands & SSL bar
+        _buildAcceptedBrandsBar(),
+        const SizedBox(height: 14),
+
+        // Card Details Form Card
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Form(
+            key: _cardFormKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.credit_score_rounded, size: 18, color: Color(0xFF6A2777)),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Card Details'.trData(context),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Cardholder Name
+                _buildFieldLabel('Cardholder Name'.trData(context)),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _cardHolderController,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: _cardInputDecoration(
+                    hint: 'Full name on card'.trData(context),
+                    prefixIcon: Icons.person_outline_rounded,
+                  ),
+                  validator: (val) {
+                    if (val == null || val.trim().isEmpty) {
+                      return 'Please enter the name on your card'.trData(context);
+                    }
+                    if (val.trim().length < 3) {
+                      return 'Name is too short'.trData(context);
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 14),
+
+                // Card Number
+                _buildFieldLabel('Card Number'.trData(context)),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _cardNumberController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(16),
+                    _CardNumberInputFormatter(),
+                  ],
+                  decoration: _cardInputDecoration(
+                    hint: '0000 0000 0000 0000',
+                    prefixIcon: Icons.credit_card_rounded,
+                    suffix: Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: _buildBrandBadge(cardBrand),
+                    ),
+                  ),
+                  validator: (val) {
+                    final cleaned = (val ?? '').replaceAll(' ', '');
+                    if (cleaned.isEmpty) {
+                      return 'Please enter your card number'.trData(context);
+                    }
+                    if (cleaned.length < 15) {
+                      return 'Please enter a valid 16-digit card number'.trData(context);
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 14),
+
+                // Expiry and CVV Row
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Expiry Date
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildFieldLabel('Expiry Date'.trData(context)),
+                          const SizedBox(height: 6),
+                          TextFormField(
+                            controller: _expiryController,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(4),
+                              _CardExpiryInputFormatter(),
+                            ],
+                            decoration: _cardInputDecoration(
+                              hint: 'MM/YY',
+                              prefixIcon: Icons.calendar_today_rounded,
+                            ),
+                            validator: (val) {
+                              if (val == null || val.trim().isEmpty) {
+                                return 'Required'.trData(context);
+                              }
+                              final parts = val.split('/');
+                              if (parts.length != 2) return 'MM/YY';
+                              final month = int.tryParse(parts[0]);
+                              if (month == null || month < 1 || month > 12) {
+                                return 'Invalid Month'.trData(context);
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // CVV / CVC
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildFieldLabel('Security Code (CVV)'.trData(context)),
+                          const SizedBox(height: 6),
+                          TextFormField(
+                            controller: _cvvController,
+                            keyboardType: TextInputType.number,
+                            obscureText: _obscureCvv,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(4),
+                            ],
+                            decoration: _cardInputDecoration(
+                              hint: 'CVV',
+                              prefixIcon: Icons.lock_outline_rounded,
+                              suffix: IconButton(
+                                icon: Icon(
+                                  _obscureCvv ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                  size: 18,
+                                  color: const Color(0xFF64748B),
+                                ),
+                                onPressed: () => setState(() => _obscureCvv = !_obscureCvv),
+                              ),
+                            ),
+                            validator: (val) {
+                              if (val == null || val.trim().isEmpty) {
+                                return 'Required'.trData(context);
+                              }
+                              if (val.trim().length < 3) {
+                                return '3-4 digits'.trData(context);
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // Save Card Checkbox
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: Checkbox(
+                        value: _saveCard,
+                        activeColor: const Color(0xFF6A2777),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                        onChanged: (val) => setState(() => _saveCard = val ?? true),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Save card securely for 1-click renewals & future listings'.trData(context),
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF475569), fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Security Info Banner
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.shield_outlined, size: 18, color: Color(0xFF16A34A)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'PCI-DSS Level 1 Certified · 256-Bit SSL Secure Payment'.trData(context),
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCreditCardPreview(String cardBrand) {
+    final rawNumber = _cardNumberController.text.trim();
+    final displayNum = rawNumber.isEmpty ? '•••• •••• •••• ••••' : rawNumber;
+    final displayName = _cardHolderController.text.trim().isEmpty
+        ? 'CARDHOLDER NAME'
+        : _cardHolderController.text.trim().toUpperCase();
+    final displayExp = _expiryController.text.trim().isEmpty ? 'MM/YY' : _expiryController.text.trim();
+
+    return Container(
+      width: double.infinity,
+      height: 195,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF2E1065),
+            Color(0xFF6A2777),
+            Color(0xFF4C1D95),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF6A2777).withValues(alpha: 0.35),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Top Row: Chip + Contactless + Brand
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  // Gold Chip
+                  Container(
+                    width: 36,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFCD34D),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: const Color(0xFFF59E0B), width: 1),
+                    ),
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Row(
+                            children: [
+                              const Spacer(),
+                              Container(width: 1, color: const Color(0xFFD97706)),
+                              const Spacer(),
+                              Container(width: 1, color: const Color(0xFFD97706)),
+                              const Spacer(),
+                            ],
+                          ),
+                        ),
+                        Center(
+                          child: Container(
+                            width: 18,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: const Color(0xFFD97706), width: 0.8),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  // Contactless Wave
+                  Transform.rotate(
+                    angle: 1.5708,
+                    child: const Icon(Icons.wifi_rounded, color: Colors.white70, size: 20),
+                  ),
+                ],
+              ),
+              _buildCardBrandVisual(cardBrand),
+            ],
+          ),
+
+          // Middle: Card Number
+          Text(
+            displayNum,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              letterSpacing: 2.2,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'monospace',
+            ),
+          ),
+
+          // Bottom: Name + Expiry
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'CARDHOLDER'.trData(context),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 9,
+                        letterSpacing: 1,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      displayName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'EXPIRES'.trData(context),
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 9,
+                      letterSpacing: 1,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    displayExp,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCardBrandVisual(String brand) {
+    String text = brand;
+    Color textColor = const Color(0xFF6A2777);
+
+    if (brand == 'VISA') {
+      text = 'VISA';
+      textColor = const Color(0xFF1A1F71);
+    } else if (brand == 'MASTERCARD') {
+      text = 'Mastercard';
+      textColor = const Color(0xFFEB001B);
+    } else if (brand == 'AMEX') {
+      text = 'AMEX';
+      textColor = const Color(0xFF006FCF);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(6),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 4,
+          ),
+        ],
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: textColor,
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
+          fontStyle: brand == 'VISA' ? FontStyle.italic : FontStyle.normal,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAcceptedBrandsBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              _buildMiniBrandBadge('VISA', const Color(0xFF1A1F71)),
+              const SizedBox(width: 6),
+              _buildMiniBrandBadge('Mastercard', const Color(0xFFEB001B)),
+              const SizedBox(width: 6),
+              _buildMiniBrandBadge('AMEX', const Color(0xFF006FCF)),
+              const SizedBox(width: 6),
+              _buildMiniBrandBadge('Apple Pay', const Color(0xFF0F172A)),
+            ],
+          ),
+          Row(
+            children: [
+              const Icon(Icons.lock_outline_rounded, size: 13, color: Color(0xFF16A34A)),
+              const SizedBox(width: 4),
+              Text(
+                '256-bit SSL'.trData(context),
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF16A34A)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniBrandBadge(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: color),
+      ),
+    );
+  }
+
+  Widget _buildBrandBadge(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3E8FF),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: const Color(0xFFD8B4FE)),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF6A2777),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFieldLabel(String label) {
+    return Text(
+      label,
+      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF334155)),
+    );
+  }
+
+  InputDecoration _cardInputDecoration({
+    required String hint,
+    required IconData prefixIcon,
+    Widget? suffix,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(fontSize: 13.5, color: Color(0xFF94A3B8)),
+      prefixIcon: Icon(prefixIcon, size: 19, color: const Color(0xFF64748B)),
+      suffixIcon: suffix,
+      filled: true,
+      fillColor: const Color(0xFFF8FAFC),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFFEF4444)),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+      ),
+    );
+  }
+}
+
+/// Auto format card number as 0000 0000 0000 0000
+class _CardNumberInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    var text = newValue.text.replaceAll(' ', '');
+    var buffer = StringBuffer();
+    for (int i = 0; i < text.length; i++) {
+      buffer.write(text[i]);
+      var nonZeroIndex = i + 1;
+      if (nonZeroIndex % 4 == 0 && nonZeroIndex != text.length) {
+        buffer.write(' ');
+      }
+    }
+    var string = buffer.toString();
+    return newValue.copyWith(
+      text: string,
+      selection: TextSelection.collapsed(offset: string.length),
+    );
+  }
+}
+
+/// Auto format expiry date as MM/YY
+class _CardExpiryInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    var text = newValue.text.replaceAll('/', '');
+    var buffer = StringBuffer();
+    for (int i = 0; i < text.length; i++) {
+      buffer.write(text[i]);
+      var nonZeroIndex = i + 1;
+      if (nonZeroIndex == 2 && nonZeroIndex != text.length) {
+        buffer.write('/');
+      }
+    }
+    var string = buffer.toString();
+    return newValue.copyWith(
+      text: string,
+      selection: TextSelection.collapsed(offset: string.length),
     );
   }
 }

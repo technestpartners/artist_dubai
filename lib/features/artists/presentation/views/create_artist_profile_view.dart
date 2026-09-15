@@ -2082,6 +2082,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
       keyboardType: keyboardType,
       maxLines: maxLines,
       maxLength: maxLength,
+      onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
       style: const TextStyle(
         fontSize: 14.5,
         color: Color(0xFF0F172A),

@@ -78,6 +78,15 @@ class _ArtistDubaiAppState extends State<ArtistDubaiApp> with WidgetsBindingObse
               }
               return supportedLocales.first;
             },
+            builder: (context, child) {
+              return GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: () {
+                  FocusManager.instance.primaryFocus?.unfocus();
+                },
+                child: child ?? const SizedBox.shrink(),
+              );
+            },
           );
         },
       ),

@@ -1410,6 +1410,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       readOnly: onTap != null,
       enableInteractiveSelection: onTap == null,
       onTap: onTap,
+      onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
       style: const TextStyle(
         fontSize: 14.5,
         color: Color(0xFF0F172A),
