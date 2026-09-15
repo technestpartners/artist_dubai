@@ -39,16 +39,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountInformation => 'Account Information';
 
   @override
-  String get accountInformationSubtitle => 'Manage your account settings and preferences';
+  String get accountInformationSubtitle =>
+      'Manage your account settings and preferences';
 
   @override
   String get artistProfile => 'Artist Profile';
 
   @override
-  String get artistProfileSubtitle => 'Your active artist profile details on Artist Dubai';
+  String get artistProfileSubtitle =>
+      'Your active artist profile details on Artist Dubai';
 
   @override
-  String get artistProfileCreateSubtitle => 'Create your artist profile to showcase your work';
+  String get artistProfileCreateSubtitle =>
+      'Create your artist profile to showcase your work';
 
   @override
   String get accountActions => 'Account Actions';
@@ -96,7 +99,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noArtistProfile => 'No Artist Profile';
 
   @override
-  String get noArtistProfileBody => 'Create your artist profile to be discoverable on the platform and showcase your portfolio.';
+  String get noArtistProfileBody =>
+      'Create your artist profile to be discoverable on the platform and showcase your portfolio.';
 
   @override
   String get pleaseSignIn => 'Please sign in to manage your account settings.';
@@ -105,7 +109,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get changePasswordTitle => 'Change Password';
 
   @override
-  String get changePasswordSubtitle => 'Enter your new password. Make sure it\'s secure and at least 6 characters long.';
+  String get changePasswordSubtitle =>
+      'Enter your new password. Make sure it\'s secure and at least 6 characters long.';
 
   @override
   String get newPassword => 'New Password';
@@ -135,13 +140,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordUpdatedSuccess => 'Password updated successfully!';
 
   @override
-  String get passwordUpdateFailed => 'Failed to update password. Please check backend connection.';
+  String get passwordUpdateFailed =>
+      'Failed to update password. Please check backend connection.';
 
   @override
   String get deleteAccountTitle => 'Are you absolutely sure?';
 
   @override
-  String get deleteAccountBody => 'This action cannot be undone. This will permanently delete your account and remove all your data from our servers. This includes:';
+  String get deleteAccountBody =>
+      'This action cannot be undone. This will permanently delete your account and remove all your data from our servers. This includes:';
 
   @override
   String get deleteAccountItem1 => 'Your artist profile (if any)';
@@ -168,7 +175,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountDeletedSuccess => 'Account deleted successfully.';
 
   @override
-  String get deleteAccountNote => 'Note: Account deletion permanently removes your account and all associated data.';
+  String get deleteAccountNote =>
+      'Note: Account deletion permanently removes your account and all associated data.';
 
   @override
   String get retry => 'Retry';
@@ -183,13 +191,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginTitle => 'VIP Sign In';
 
   @override
-  String get loginSubtitle => 'Access world-class artists and talent across UAE';
+  String get loginSubtitle =>
+      'Access world-class artists and talent across UAE';
 
   @override
   String get registerTitle => 'Create VIP Account';
 
   @override
-  String get registerSubtitle => 'Join Dubai\'s premier artist & cultural community';
+  String get registerSubtitle =>
+      'Join Dubai\'s premier artist & cultural community';
 
   @override
   String get communityPlatform => 'Community Platform';
@@ -237,7 +247,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noArtistsYet => 'No Artists Yet';
 
   @override
-  String get beTheFirstToCreateArtistProfile => 'Be the first to create an artist profile!';
+  String get beTheFirstToCreateArtistProfile =>
+      'Be the first to create an artist profile!';
 
   @override
   String get selectCategory => 'Select category';
@@ -246,7 +257,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get governmentPortal => 'Government Portal';
 
   @override
-  String get governmentPortalSubtitle => 'Partnership opportunities with Dubai\'s government entities';
+  String get governmentPortalSubtitle =>
+      'Partnership opportunities with Dubai\'s government entities';
 
   @override
   String get openStatus => 'Open';
@@ -264,7 +276,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginToYourAccount => 'Login to Your Account';
 
   @override
-  String get welcomeBackLogin => 'Welcome back! Enter your credentials to access your account';
+  String get welcomeBackLogin =>
+      'Welcome back! Enter your credentials to access your account';
 
   @override
   String get emailAddress => 'Email Address';
@@ -288,7 +301,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventsTitle => 'Events';
 
   @override
-  String get eventsSubtitle => 'Curated art exhibitions, workshops & gallery openings in Dubai';
+  String get eventsSubtitle =>
+      'Curated art exhibitions, workshops & gallery openings in Dubai';
 
   @override
   String get tabAll => 'All';
@@ -312,7 +326,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noEventsFound => 'No Events Found';
 
   @override
-  String get noEventsDescription => 'Check back soon for exciting upcoming art events';
+  String get noEventsDescription =>
+      'Check back soon for exciting upcoming art events';
 
   @override
   String get registerArtEvent => 'Register Art Event';
@@ -330,7 +345,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paid => 'Paid';
 
   @override
-  String get galleriesSubtitle => 'Physical galleries and art spaces across Dubai';
+  String get galleriesSubtitle =>
+      'Physical galleries and art spaces across Dubai';
 
   @override
   String get loginRequired => 'Login Required';
@@ -348,13 +364,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutUsTitle => 'ABOUT US';
 
   @override
-  String get aboutUsDescription => 'VIP Art & Cultural Community Platform connecting artists, galleries, and art enthusiasts across the UAE.';
+  String get aboutUsDescription =>
+      'VIP Art & Cultural Community Platform connecting artists, galleries, and art enthusiasts across the UAE.';
 
   @override
   String get eventsCompetitionTitle => 'Events Competition';
 
   @override
-  String get eventsCompetitionSubtitle => 'Competitions, contests, and open calls for artists in UAE';
+  String get eventsCompetitionSubtitle =>
+      'Competitions, contests, and open calls for artists in UAE';
 
   @override
   String get noCompetitionsAvailable => 'No competitions available yet';
@@ -363,7 +381,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventsPhotosTitle => 'Events Photos';
 
   @override
-  String get eventsPhotosSubtitle => 'High-resolution photo coverage from art exhibitions and galas';
+  String get eventsPhotosSubtitle =>
+      'High-resolution photo coverage from art exhibitions and galas';
 
   @override
   String get noPhotosAvailable => 'No event photos available yet';
@@ -372,7 +391,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get registerAccountTitle => 'Create Your Account';
 
   @override
-  String get registerAccountSubtitle => 'Join Dubai\'s premier art & cultural community';
+  String get registerAccountSubtitle =>
+      'Join Dubai\'s premier art & cultural community';
 
   @override
   String get confirmPasswordLabel => 'Confirm Password';
@@ -414,7 +434,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get andWord => ' and ';
 
   @override
-  String get myFavoritesSubtitle => 'Your saved artist profiles, favorited events, and liked artworks';
+  String get myFavoritesSubtitle =>
+      'Your saved artist profiles, favorited events, and liked artworks';
 
   @override
   String get artworks => 'Artworks';
@@ -471,7 +492,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exploreCategories => 'Explore Categories';
 
   @override
-  String get exploreCategoriesSubtitle => 'Discover artists across various art forms and styles';
+  String get exploreCategoriesSubtitle =>
+      'Discover artists across various art forms and styles';
 
   @override
   String get loadingArtists => 'Loading artists...';
@@ -541,10 +563,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editYourArtistProfile => 'Edit Your Artist Profile';
 
   @override
-  String get createArtistSubtitle => 'Join Dubai\'s Artist Community and Showcase Your Portfolio';
+  String get createArtistSubtitle =>
+      'Join Dubai\'s Artist Community and Showcase Your Portfolio';
 
   @override
-  String get editArtistSubtitle => 'Update your artist profile and showcase your portfolio';
+  String get editArtistSubtitle =>
+      'Update your artist profile and showcase your portfolio';
 
   @override
   String get basicInformation => 'Basic Information';
@@ -586,7 +610,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get artistBio => 'Artist Bio';
 
   @override
-  String get bioHint => 'Tell us about your artistic journey, style, and inspiration...';
+  String get bioHint =>
+      'Tell us about your artistic journey, style, and inspiration...';
 
   @override
   String get socialMediaOptional => 'Social Media (Optional)';
@@ -595,7 +620,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get artworkPortfolio => 'Artwork Portfolio';
 
   @override
-  String get artworkPortfolioDesc => 'Upload your artwork images (Max 6). You can crop, remove backgrounds, and manage your portfolio.';
+  String get artworkPortfolioDesc =>
+      'Upload your artwork images (Max 6). You can crop, remove backgrounds, and manage your portfolio.';
 
   @override
   String get dragDropImages => 'Drag & drop images here or click to select';
@@ -622,7 +648,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agreeToTermsPrefix => 'I agree to the ';
 
   @override
-  String get consentPrivacyTermsDesc => 'By checking this box, you consent to the collection, processing, and storage of your personal data as described in our privacy policy. This includes your profile information, artwork images, and contact details which will be used to showcase your work on the Dubai Artist platform.';
+  String get consentPrivacyTermsDesc =>
+      'By checking this box, you consent to the collection, processing, and storage of your personal data as described in our privacy policy. This includes your profile information, artwork images, and contact details which will be used to showcase your work on the Dubai Artist platform.';
 
   @override
   String get createProfile => 'Create Profile';
@@ -640,7 +667,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get artVenue => 'ART VENUE';
 
   @override
-  String get artVenueSubtitle => 'Register your art venue or gallery to be listed in the app';
+  String get artVenueSubtitle =>
+      'Register your art venue or gallery to be listed in the app';
 
   @override
   String get galleryCenterName => 'Gallery / center name';
@@ -676,7 +704,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myCreatedEvents => 'MY CREATED EVENTS';
 
   @override
-  String get myCreatedEventsSubtitle => 'Manage your published art events and community exhibitions';
+  String get myCreatedEventsSubtitle =>
+      'Manage your published art events and community exhibitions';
 
   @override
   String get createEvent => 'Create Event';
@@ -697,7 +726,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noCreatedEventsYet => 'No created events yet';
 
   @override
-  String get createFirstEventPrompt => 'Publish your first art event to manage tickets and view attendees here.';
+  String get createFirstEventPrompt =>
+      'Publish your first art event to manage tickets and view attendees here.';
 
   @override
   String get editCalendarEvent => 'Edit Calendar Event';
@@ -721,16 +751,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get headerEditArtEvent => 'EDIT ART EVENT';
 
   @override
-  String get headerSubtitleCalendarEdit => 'Update scheduled exhibition or calendar date.';
+  String get headerSubtitleCalendarEdit =>
+      'Update scheduled exhibition or calendar date.';
 
   @override
-  String get headerSubtitleCalendarCreate => 'Schedule an upcoming exhibition, showcase, or cultural date on the calendar.';
+  String get headerSubtitleCalendarCreate =>
+      'Schedule an upcoming exhibition, showcase, or cultural date on the calendar.';
 
   @override
-  String get headerSubtitleEventEdit => 'Update details, tickets, and photos for this event.';
+  String get headerSubtitleEventEdit =>
+      'Update details, tickets, and photos for this event.';
 
   @override
-  String get headerSubtitleEventCreate => 'Publish a new exhibition, workshop, or cultural gathering.';
+  String get headerSubtitleEventCreate =>
+      'Publish a new exhibition, workshop, or cultural gathering.';
 
   @override
   String get featuredImage => 'Featured Image';
@@ -742,7 +776,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uploaded => 'Uploaded';
 
   @override
-  String get uploadImagePrompt => 'Select banner from device gallery or take a photo (JPG, PNG, WebP).';
+  String get uploadImagePrompt =>
+      'Select banner from device gallery or take a photo (JPG, PNG, WebP).';
 
   @override
   String get eventInformation => 'Event Information';
@@ -775,7 +810,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addressLocation => 'Address/Location';
 
   @override
-  String get searchLocationHint => 'Search or select location (e.g. Dubai, UAE)';
+  String get searchLocationHint =>
+      'Search or select location (e.g. Dubai, UAE)';
 
   @override
   String get additionalDetails => 'Additional Details';
@@ -787,7 +823,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get requirementsOptional => 'Requirements (Optional)';
 
   @override
-  String get requirementsHint => 'Any special requirements or instructions for attendees..';
+  String get requirementsHint =>
+      'Any special requirements or instructions for attendees..';
 
   @override
   String get tagsOptional => 'Tags (Optional)';
@@ -802,7 +839,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get choosePublishingPlan => 'Choose Publishing Plan';
 
   @override
-  String get paidPublishingDesc => 'Publishing events is a paid service on Artist Dubai. Select your preferred promotion duration. Once reviewed and approved by the admin, your event will be broadcasted to art enthusiasts across Dubai.';
+  String get paidPublishingDesc =>
+      'Publishing events is a paid service on Artist Dubai. Select your preferred promotion duration. Once reviewed and approved by the admin, your event will be broadcasted to art enthusiasts across Dubai.';
 
   @override
   String get weekly => 'Weekly';
@@ -844,7 +882,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paymentOnNextStep => 'Payment on Next Step: ';
 
   @override
-  String get paymentDetailsNotice => 'Admin Payment QR code & bank transfer details on checkout page.';
+  String get paymentDetailsNotice =>
+      'Admin Payment QR code & bank transfer details on checkout page.';
 
   @override
   String get updateCalendarEvent => 'Update Calendar Event';
@@ -874,7 +913,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signedInAsAdmin => 'Signed in as Admin!';
 
   @override
-  String get userNotAvailable => 'User is not available. Please create an account first.';
+  String get userNotAvailable =>
+      'User is not available. Please create an account first.';
 
   @override
   String get enterEmail => 'Please enter your email address';
@@ -886,13 +926,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterPassword => 'Please enter your password';
 
   @override
-  String get accountCreatedEnthusiast => 'Account created! You now have full access to Dubai events & galleries.';
+  String get accountCreatedEnthusiast =>
+      'Account created! You now have full access to Dubai events & galleries.';
 
   @override
-  String get accountCreatedArtist => 'Account created successfully! Welcome to Artist Dubai.';
+  String get accountCreatedArtist =>
+      'Account created successfully! Welcome to Artist Dubai.';
 
   @override
-  String get unableToRegister => 'Unable to register account. Please check your details.';
+  String get unableToRegister =>
+      'Unable to register account. Please check your details.';
 
   @override
   String get accountEmailExists => 'An account with this email already exists.';
@@ -904,16 +947,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get termsOfServiceDetails => 'Terms of Service details';
 
   @override
-  String get artistProfileUpdatedSuccess => 'Artist Profile updated successfully!';
+  String get artistProfileUpdatedSuccess =>
+      'Artist Profile updated successfully!';
 
   @override
-  String get artistProfileCreatedSuccess => 'Artist Profile created successfully!';
+  String get artistProfileCreatedSuccess =>
+      'Artist Profile created successfully!';
 
   @override
-  String get artistProfileSaveFailed => 'Failed to save profile. Please check your inputs.';
+  String get artistProfileSaveFailed =>
+      'Failed to save profile. Please check your inputs.';
 
   @override
-  String get artistProfileUpdateFailed => 'Failed to update profile. Please check your inputs.';
+  String get artistProfileUpdateFailed =>
+      'Failed to update profile. Please check your inputs.';
 
   @override
   String get maxArtworksAllowed => 'Maximum 6 artwork uploads allowed.';
@@ -925,10 +972,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventUpdatedSuccess => 'Event updated successfully!';
 
   @override
-  String get calendarEventUpdatedSuccess => 'Calendar event updated successfully!';
+  String get calendarEventUpdatedSuccess =>
+      'Calendar event updated successfully!';
 
   @override
-  String get eventScheduledSuccess => 'Event scheduled on calendar successfully!';
+  String get eventScheduledSuccess =>
+      'Event scheduled on calendar successfully!';
 
   @override
   String get eventImageUploadedSuccess => 'Event image uploaded successfully!';
@@ -940,7 +989,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get failedToSaveEvent => 'Failed to save event. Please check inputs.';
 
   @override
-  String get galleryPhotoUploadedSuccess => 'Gallery photo uploaded successfully!';
+  String get galleryPhotoUploadedSuccess =>
+      'Gallery photo uploaded successfully!';
 
   @override
   String get notifications => 'Notifications';
