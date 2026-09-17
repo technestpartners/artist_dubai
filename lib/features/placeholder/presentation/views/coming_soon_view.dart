@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
+import '../../../../core/utils/responsive_helper.dart';
 
 class ComingSoonView extends StatelessWidget {
   const ComingSoonView({super.key});
@@ -9,6 +10,8 @@ class ComingSoonView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final rh = ResponsiveHelper.of(context);
+    final logoSize = rh.isDesktop ? 260.0 : rh.isTablet ? 230.0 : 200.0;
 
     return Scaffold(
       backgroundColor: const Color(0xFF5D1F8E),
@@ -20,8 +23,8 @@ class ComingSoonView extends StatelessWidget {
             // Top Circular Artist Dubai Logo
             Center(
               child: Container(
-                width: 200,
-                height: 200,
+                width: logoSize,
+                height: logoSize,
                 decoration: const BoxDecoration(shape: BoxShape.circle),
                 child: ClipOval(
                   child: Image.asset(
@@ -46,19 +49,19 @@ class ComingSoonView extends StatelessWidget {
                   Text(
                     l10n.activelyFrom,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 32,
+                    style: TextStyle(
+                      fontSize: rh.adaptiveFont(32),
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                       letterSpacing: -0.3,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     '06.2026',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 38,
+                      fontSize: rh.adaptiveFont(38),
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
                       letterSpacing: 0.2,
@@ -72,7 +75,7 @@ class ComingSoonView extends StatelessWidget {
             // "back to home" Pill Button
             Center(
               child: SizedBox(
-                height: 48,
+                height: rh.buttonHeight,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF230078),

@@ -6,6 +6,7 @@ import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
+import '../../../../core/utils/responsive_helper.dart';
 
 class SplashScreenView extends StatefulWidget {
   const SplashScreenView({super.key});
@@ -178,6 +179,8 @@ class _SplashScreenViewState extends State<SplashScreenView>
 
   @override
   Widget build(BuildContext context) {
+    final rh = ResponsiveHelper.of(context);
+    final logoSize = rh.isDesktop ? 260.0 : rh.isTablet ? 230.0 : 210.0;
     return Scaffold(
       body: GestureDetector(
         onTap: _navigateToNext,
@@ -213,8 +216,8 @@ class _SplashScreenViewState extends State<SplashScreenView>
                         child: Opacity(
                           opacity: _logoFade.value,
                           child: Container(
-                            width: 210,
-                            height: 210,
+                            width: logoSize,
+                            height: logoSize,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: Colors.white,
@@ -245,45 +248,45 @@ class _SplashScreenViewState extends State<SplashScreenView>
                 // 2. Staggered Animated Typography
                 SlideTransition(
                   position: _titleSlide,
-                  child: FadeTransition(
-                    opacity: _titleFade,
-                    child: const Text(
-                      'ARTIST DUBAI',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 27,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: 4.0,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black38,
-                            blurRadius: 10,
-                            offset: Offset(0, 4),
-                          ),
-                        ],
+                    child: FadeTransition(
+                      opacity: _titleFade,
+                      child: Text(
+                        'ARTIST DUBAI',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: rh.adaptiveFont(27),
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 4.0,
+                          shadows: const [
+                            Shadow(
+                              color: Colors.black38,
+                              blurRadius: 10,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
                 ),
 
                 const SizedBox(height: 10),
 
                 SlideTransition(
                   position: _subtitleSlide,
-                  child: FadeTransition(
-                    opacity: _subtitleFade,
-                    child: const Text(
-                      'COMMUNITY PLATFORM',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white70,
-                        letterSpacing: 3.5,
+                    child: FadeTransition(
+                      opacity: _subtitleFade,
+                      child: Text(
+                        'COMMUNITY PLATFORM',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: rh.adaptiveFont(12),
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white70,
+                          letterSpacing: 3.5,
+                        ),
                       ),
                     ),
-                  ),
                 ),
 
                 const Spacer(flex: 3),

@@ -245,6 +245,33 @@ class _RegisterViewState extends State<RegisterView> {
     );
   }
 
+  Widget _buildFieldLabel(String label, {bool isRequired = true}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6.0),
+      child: RichText(
+        text: TextSpan(
+          text: label,
+          style: const TextStyle(
+            color: Color(0xFF1F2937),
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+          children: isRequired
+              ? const [
+                  TextSpan(
+                    text: ' *',
+                    style: TextStyle(
+                      color: Color(0xFFDC2626),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ]
+              : null,
+        ),
+      ),
+    );
+  }
+
   InputDecoration _buildInputDecoration({
     required String hintText,
     Widget? suffixIcon,
@@ -408,14 +435,7 @@ class _RegisterViewState extends State<RegisterView> {
                       const SizedBox(height: 24),
 
                       // Full Name Field
-                      Text(
-                        l10n.fullName,
-                        style: const TextStyle(
-                          color: Color(0xFF1F2937),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      _buildFieldLabel(l10n.fullName),
                       const SizedBox(height: 6),
                       TextField(
                         controller: _fullNameController,
@@ -439,14 +459,7 @@ class _RegisterViewState extends State<RegisterView> {
                       const SizedBox(height: 18),
 
                       // Email Field
-                      Text(
-                        l10n.email,
-                        style: const TextStyle(
-                          color: Color(0xFF1F2937),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      _buildFieldLabel(l10n.email),
                       const SizedBox(height: 6),
                       TextField(
                         controller: _emailController,
@@ -471,14 +484,7 @@ class _RegisterViewState extends State<RegisterView> {
                       const SizedBox(height: 18),
 
                       // Password Field
-                      Text(
-                        l10n.passwordLabel,
-                        style: const TextStyle(
-                          color: Color(0xFF1F2937),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      _buildFieldLabel(l10n.passwordLabel),
                       const SizedBox(height: 6),
                       TextField(
                         controller: _passwordController,
@@ -517,14 +523,7 @@ class _RegisterViewState extends State<RegisterView> {
                       const SizedBox(height: 18),
 
                       // Confirm Password Field
-                      Text(
-                        l10n.confirmPasswordLabel,
-                        style: const TextStyle(
-                          color: Color(0xFF1F2937),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      _buildFieldLabel(l10n.confirmPasswordLabel),
                       const SizedBox(height: 6),
                       TextField(
                         controller: _confirmPasswordController,
@@ -634,6 +633,13 @@ class _RegisterViewState extends State<RegisterView> {
                                             l10n.termsOfServiceDetails,
                                           );
                                         },
+                                    ),
+                                    const TextSpan(
+                                      text: ' *',
+                                      style: TextStyle(
+                                        color: Color(0xFFDC2626),
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ],
                                 ),

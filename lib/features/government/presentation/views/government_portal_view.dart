@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
+import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../domain/models/government_entity.dart';
@@ -98,44 +99,50 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
 
   @override
   Widget build(BuildContext context) {
+    final rh = ResponsiveHelper.of(context);
     final List<GovernmentEntity> entities = _entities;
 
     return Scaffold(
       backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
-        child: RefreshIndicator(
-          color: const Color(0xFF6A2777),
-          onRefresh: _fetchEntities,
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-            children: [
-              // Page Header
-              Text(
-                AppLocalizations.of(context).governmentPortal,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  letterSpacing: 0.3,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                AppLocalizations.of(context).governmentPortalSubtitle,
-                style: const TextStyle(
-                  fontSize: 14.5,
-                  color: Color(0xFFE2D6F5),
-                  fontWeight: FontWeight.w400,
-                  height: 1.35,
-                ),
-              ),
-              const SizedBox(height: 18),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
+            child: RefreshIndicator(
+              color: const Color(0xFF6A2777),
+              onRefresh: _fetchEntities,
+              child: ListView(
+                padding: EdgeInsets.symmetric(horizontal: rh.horizontalPadding, vertical: rh.verticalPadding),
+                children: [
+                  // Page Header
+                  Text(
+                    AppLocalizations.of(context).governmentPortal,
+                    style: TextStyle(
+                      fontSize: rh.adaptiveFont(24),
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    AppLocalizations.of(context).governmentPortalSubtitle,
+                    style: TextStyle(
+                      fontSize: rh.adaptiveFont(14.5),
+                      color: const Color(0xFFE2D6F5),
+                      fontWeight: FontWeight.w400,
+                      height: 1.35,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
 
-              // Government Entity Cards List
-              ...entities.map((entity) => _buildEntityCard(context, entity)),
-              const SizedBox(height: 16),
-            ],
+                  // Government Entity Cards List
+                  ...entities.map((entity) => _buildEntityCard(context, entity)),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
           ),
         ),
       ),

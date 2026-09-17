@@ -43,7 +43,6 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
   }
 
   void _onTabSelected(BuildContext context, int index) {
-    if (widget.currentIndex == index) return;
     switch (index) {
       case 0:
         context.go(RouteNames.home);

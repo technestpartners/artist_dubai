@@ -7,6 +7,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/favorites_service.dart';
+import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
@@ -177,27 +178,31 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final rh = ResponsiveHelper.of(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
-        child: Column(
-          children: [
-            // 1. Header Title & Subtitle
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.myFavorites.toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      letterSpacing: 0.5,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
+            child: Column(
+              children: [
+                // 1. Header Title & Subtitle
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.fromLTRB(rh.horizontalPadding, 16, rh.horizontalPadding, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.myFavorites.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: rh.adaptiveFont(22),
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -274,6 +279,8 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
               child: HomeFooterWidget(),
             ),
           ],
+            ),
+          ),
         ),
       ),
       bottomNavigationBar: const AppBottomNavBar(currentIndex: -1),

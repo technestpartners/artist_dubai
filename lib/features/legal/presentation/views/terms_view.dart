@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
+import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 
@@ -11,14 +12,18 @@ class TermsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final rh = ResponsiveHelper.of(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-          child: Column(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(horizontal: rh.horizontalPadding, vertical: 16.0),
+              child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Back Button
@@ -136,6 +141,8 @@ class TermsView extends StatelessWidget {
             ],
           ),
         ),
+      ),
+      ),
       ),
       bottomNavigationBar: const AppBottomNavBar(currentIndex: -1),
     );

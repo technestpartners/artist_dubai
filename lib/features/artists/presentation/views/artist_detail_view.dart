@@ -650,12 +650,23 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                       const SizedBox(height: 20),
 
                       // Gallery Title
-                      Text(
-                        'Gallery Title'.trData(context),
-                        style: const TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1E1E1E),
+                      RichText(
+                        text: TextSpan(
+                          text: 'Gallery Title'.trData(context),
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1E1E1E),
+                          ),
+                          children: const [
+                            TextSpan(
+                              text: ' *',
+                              style: TextStyle(
+                                color: Color(0xFFDC2626),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -752,12 +763,23 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                       const SizedBox(height: 16),
 
                       // Images Drag & Drop Box
-                      Text(
-                        'Images'.trData(context),
-                        style: const TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1E1E1E),
+                      RichText(
+                        text: TextSpan(
+                          text: 'Images'.trData(context),
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1E1E1E),
+                          ),
+                          children: const [
+                            TextSpan(
+                              text: ' *',
+                              style: TextStyle(
+                                color: Color(0xFFDC2626),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -1072,31 +1094,64 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.delete_outline, color: Color(0xFFDC2626), size: 24),
-            SizedBox(width: 8),
-            Text('Delete Gallery', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEE2E2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.delete_outline, color: Color(0xFFDC2626), size: 22),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Delete Gallery'.trData(context),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+            ),
           ],
         ),
         content: Text(
-          'Are you sure you want to delete "$title"? This action will remove the gallery and its photos and cannot be undone.',
-          style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+          'Are you sure you want to delete "$title"? This action will remove the gallery and its photos and cannot be undone.'.trData(context),
+          style: const TextStyle(
+            fontSize: 14,
+            color: Color(0xFF334155),
+            height: 1.5,
+          ),
         ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         actions: [
           OutlinedButton(
             style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Color(0xFF1E1E1E), fontWeight: FontWeight.bold)),
+            child: Text(
+              'Cancel'.trData(context),
+              style: const TextStyle(
+                color: Color(0xFF475569),
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFDC2626),
               foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: () async {
@@ -1702,8 +1757,8 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                            color: Colors.white.withValues(alpha: 0.25),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Icon(
@@ -1978,33 +2033,35 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF6A2777),
                                   foregroundColor: Colors.white,
+                                  iconColor: Colors.white,
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
                                 onPressed: () {
-                                   Navigator.push(
-                                     context,
-                                     MaterialPageRoute(
-                                       builder: (context) => CreateArtistProfileView(
-                                         isEditing: true,
-                                         artist: currentArtist.copyWith(
-                                           avatarUrl: (_avatarUrlOverride != null && _avatarUrlOverride!.isNotEmpty)
-                                               ? _avatarUrlOverride
-                                               : currentArtist.avatarUrl,
-                                         ),
-                                         artistId: currentArtist.id,
-                                       ),
-                                     ),
-                                   );
-                                 },
-                                icon: const Icon(Icons.edit_outlined, size: 18),
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => CreateArtistProfileView(
+                                        isEditing: true,
+                                        artist: currentArtist.copyWith(
+                                          avatarUrl: (_avatarUrlOverride != null && _avatarUrlOverride!.isNotEmpty)
+                                              ? _avatarUrlOverride
+                                              : currentArtist.avatarUrl,
+                                        ),
+                                        artistId: currentArtist.id,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.edit_outlined, size: 18, color: Colors.white),
                                 label: Text(
                                   l10n.editProfile,
                                   style: const TextStyle(
                                     fontSize: 14.5,
                                     fontWeight: FontWeight.bold,
+                                    color: Colors.white,
                                   ),
                                 ),
                               ),

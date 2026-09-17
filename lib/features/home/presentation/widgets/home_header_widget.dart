@@ -40,13 +40,25 @@ class HomeHeaderWidget extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Responsive Logo Image
-              SizedBox(
+              // Responsive Logo Image with White Border
+              Container(
                 width: logoSize,
                 height: logoSize,
-                child: Image.asset(
-                  'assets/images/header_logo.png',
-                  fit: BoxFit.contain,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/images/header_logo.png',
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
               SizedBox(width: rh.isWide ? 16.0 : 10.0),

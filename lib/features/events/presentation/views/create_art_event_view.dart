@@ -1003,13 +1003,13 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildLabel(l10n.eventTitle),
+                            _buildLabel(l10n.eventTitle, isRequired: true),
                             _buildTextField(
                               controller: _eventTitleController,
                               hintText: l10n.enterEventTitle,
                             ),
                             const SizedBox(height: 12),
-                            _buildLabel(l10n.categoryLabel),
+                            _buildLabel(l10n.categoryLabel, isRequired: true),
                             _buildDropdownField(
                               value: _selectedCategory,
                               hintText: l10n.selectCategory,
@@ -1040,7 +1040,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildLabel(l10n.startDateTime),
+                            _buildLabel(l10n.startDateTime, isRequired: true),
                             _buildTextField(
                               controller: _eventDateController,
                               hintText: 'dd-mm-yyyy --:--',
@@ -1377,15 +1377,28 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
 
 
-  Widget _buildLabel(String label) {
+  Widget _buildLabel(String label, {bool isRequired = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6.0),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFF1E1E1E),
+      child: RichText(
+        text: TextSpan(
+          text: label,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1E1E1E),
+          ),
+          children: isRequired
+              ? const [
+                  TextSpan(
+                    text: ' *',
+                    style: TextStyle(
+                      color: Color(0xFFDC2626),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ]
+              : null,
         ),
       ),
     );

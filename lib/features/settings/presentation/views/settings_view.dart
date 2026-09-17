@@ -8,6 +8,7 @@ import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/locale_provider.dart';
 import '../../../../core/services/storage_service.dart';
+import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_top_bar.dart';
@@ -423,16 +424,20 @@ class _SettingsViewState extends State<SettingsView> {
     final storage = sl<StorageService>();
     final isLoggedIn = storage.getBool('is_logged_in') ?? false;
     final l10n = AppLocalizations.of(context);
+    final rh = ResponsiveHelper.of(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
-        child: Column(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
+            child: Column(
           children: [
             // "Account Settings" Sub-Header with Back Arrow & Home Action
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: rh.horizontalPadding, vertical: 8),
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
@@ -504,7 +509,7 @@ class _SettingsViewState extends State<SettingsView> {
                 backgroundColor: Colors.white,
                 onRefresh: _loadUserProfile,
                 child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                  padding: EdgeInsets.symmetric(horizontal: rh.horizontalPadding, vertical: rh.verticalPadding),
                   children: [
                     // ── Card 0: Language Preference ─────────────────────────
                     Container(
@@ -1023,6 +1028,8 @@ class _SettingsViewState extends State<SettingsView> {
               ),
             ),
           ],
+        ),
+          ),
         ),
       ),
       bottomNavigationBar: const AppBottomNavBar(currentIndex: -1),

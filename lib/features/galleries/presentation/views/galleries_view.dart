@@ -6,6 +6,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
+import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
@@ -145,38 +146,42 @@ class _GalleriesViewState extends State<GalleriesView> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final rh = ResponsiveHelper.of(context);
     return Scaffold(
       backgroundColor: _screenBg,
       appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
         top: false,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 1. Header Title & Subtitle
-                Text(
-                  l10n.galleriesArtCenter,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  l10n.galleriesSubtitle,
-                  style: const TextStyle(
-                    fontSize: 14.5,
-                    color: Colors.white70,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-                const SizedBox(height: 18),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(rh.horizontalPadding, 24, rh.horizontalPadding, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 1. Header Title & Subtitle
+                    Text(
+                      l10n.galleriesArtCenter,
+                      style: TextStyle(
+                        fontSize: rh.adaptiveFont(24),
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      l10n.galleriesSubtitle,
+                      style: TextStyle(
+                        fontSize: rh.adaptiveFont(14.5),
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
 
                 // Action Row (Home Breadcrumb & Register Gallery Button)
                 Row(
@@ -520,6 +525,8 @@ class _GalleriesViewState extends State<GalleriesView> {
                 ],
               ],
             ),
+          ),
+        ),
           ),
         ),
       ),

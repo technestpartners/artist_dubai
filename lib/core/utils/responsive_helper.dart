@@ -56,10 +56,31 @@ class ResponsiveHelper {
     return (width * 0.04).clamp(12.0, 20.0);
   }
 
+  /// Vertical padding between sections.
+  double get verticalPadding {
+    if (isDesktop) return 32.0;
+    if (isTablet) return 24.0;
+    return 16.0;
+  }
+
+  /// Spacing between major sections on a page.
+  double get sectionSpacing {
+    if (isDesktop) return 48.0;
+    if (isTablet) return 36.0;
+    return 24.0;
+  }
+
   /// Maximum content width — centres content on large screens.
   double get contentMaxWidth {
     if (isDesktop) return 1100.0;
     if (isTablet) return 800.0;
+    return double.infinity;
+  }
+
+  /// Max width for dialogs/modals.
+  double get dialogMaxWidth {
+    if (isDesktop) return 560.0;
+    if (isTablet) return 480.0;
     return double.infinity;
   }
 
@@ -68,6 +89,13 @@ class ResponsiveHelper {
     if (isDesktop) return 3;
     if (isTablet) return 2;
     return 1;
+  }
+
+  /// Number of columns for photo/gallery grids.
+  int get photoGridCrossAxisCount {
+    if (isDesktop) return 4;
+    if (isTablet) return 3;
+    return 2;
   }
 
   /// Number of columns for the home menu card grid.
@@ -81,6 +109,43 @@ class ResponsiveHelper {
   int get menuGridRowCount {
     if (isWide) return 2;
     return 4;
+  }
+
+  // ── Sizing helpers ─────────────────────────────────────────────────────────
+
+  /// Standard button height.
+  double get buttonHeight {
+    if (isDesktop) return 56.0;
+    if (isTablet) return 52.0;
+    return 48.0;
+  }
+
+  /// Card border radius.
+  double get cardBorderRadius {
+    if (isDesktop) return 16.0;
+    if (isTablet) return 14.0;
+    return 12.0;
+  }
+
+  /// Standard list item / tile height.
+  double get listItemHeight {
+    if (isDesktop) return 76.0;
+    if (isTablet) return 70.0;
+    return 64.0;
+  }
+
+  /// Avatar / profile image size.
+  double get avatarSize {
+    if (isDesktop) return 110.0;
+    if (isTablet) return 96.0;
+    return 84.0;
+  }
+
+  /// Onboarding illustration height.
+  double get onboardingImageHeight {
+    if (isDesktop) return 400.0;
+    if (isTablet) return 320.0;
+    return (height * 0.38).clamp(200.0, 300.0);
   }
 
   // ── Scaling helpers ────────────────────────────────────────────────────────
@@ -147,5 +212,43 @@ class ResponsiveHelper {
     if (isDesktop) return 36.0;
     if (isTablet) return 33.0;
     return 30.0;
+  }
+}
+
+// ── ResponsiveWrapper ───────────────────────────────────────────────────────
+
+/// Wraps [child] with centred, max-width content and horizontal padding.
+///
+/// Drop this around any page body to get consistent responsive margins:
+/// ```dart
+/// ResponsiveWrapper(child: Column(...))
+/// ```
+class ResponsiveWrapper extends StatelessWidget {
+  const ResponsiveWrapper({
+    super.key,
+    required this.child,
+    this.addHorizontalPadding = true,
+    this.addVerticalPadding = false,
+  });
+
+  final Widget child;
+  final bool addHorizontalPadding;
+  final bool addVerticalPadding;
+
+  @override
+  Widget build(BuildContext context) {
+    final rh = ResponsiveHelper.of(context);
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: addHorizontalPadding ? rh.horizontalPadding : 0,
+            vertical: addVerticalPadding ? rh.verticalPadding : 0,
+          ),
+          child: child,
+        ),
+      ),
+    );
   }
 }

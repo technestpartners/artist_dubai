@@ -33,6 +33,21 @@ class AppTheme {
         surface: AppColors.darkSurface,
         error: AppColors.error,
       ),
+      dialogTheme: DialogTheme(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        titleTextStyle: GoogleFonts.outfit(
+          color: const Color(0xFF0F172A),
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+        contentTextStyle: GoogleFonts.outfit(
+          color: const Color(0xFF334155),
+          fontSize: 14,
+          height: 1.5,
+        ),
+      ),
       datePickerTheme: _buildDatePickerTheme(isDark: true),
       textTheme: _buildTextTheme(ThemeData.dark().textTheme),
       textSelectionTheme: const TextSelectionThemeData(
