@@ -8,6 +8,7 @@ import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
+import '../../../../core/services/stripe_payment_service.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../admin/domain/models/payment_settings_model.dart';
 import '../../../../core/utils/data_translator.dart';
@@ -339,12 +340,40 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
 
     setState(() => _isSubmitting = true);
 
-    // Simulate secure 3D Secure / Payment Gateway processing
-    await Future.delayed(const Duration(milliseconds: 1400));
+    // Extract numeric price from planAmount (e.g., 'AED 2,500' -> 2500.0)
+    final cleanedAmountStr = _planAmount.replaceAll(RegExp(r'[^0-9.]'), '');
+    final amount = double.tryParse(cleanedAmountStr) ?? 2500.0;
 
-    final last4 = _cardNumberController.text.replaceAll(' ', '').trim();
-    final displayLast4 = last4.length >= 4 ? last4.substring(last4.length - 4) : '8842';
-    final ccRef = 'CC-${DateTime.now().millisecondsSinceEpoch.toString().substring(6)}-$displayLast4';
+    // Process payment securely via Stripe Gateway
+    final stripeResult = await StripePaymentService().processCardPayment(
+      cardNumber: _cardNumberController.text,
+      expiryDate: _expiryController.text,
+      cvc: _cvvController.text,
+      cardHolderName: _cardHolderController.text,
+      amount: amount,
+      currency: 'AED',
+      itemTitle: _title,
+      metadata: {
+        'itemType': _itemType,
+        'planId': _planId,
+        'planName': _planName,
+      },
+    );
+
+    if (!stripeResult.isSuccess) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text((stripeResult.errorMessage ?? 'Payment authorization failed.').trData(context)),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final ccRef = stripeResult.transactionId ?? 'pi_${DateTime.now().millisecondsSinceEpoch}';
 
     bool success = false;
 
@@ -369,7 +398,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           'publishing_plan': _planId,
           'publishing_amount': _planAmount,
           'payment_status': 'paid',
-          'payment_method': 'credit_card',
+          'payment_method': 'stripe_card',
           'payment_reference': ccRef,
         };
 
@@ -1601,22 +1630,38 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
 
                 // Security Info Banner
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.shield_outlined, size: 18, color: Color(0xFF16A34A)),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'PCI-DSS Level 1 Certified · 256-Bit SSL Secure Payment'.trData(context),
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF635BFF),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'stripe',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 12,
+                            letterSpacing: -0.3,
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Guaranteed safe & secure checkout powered by Stripe'.trData(context),
+                          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+                        ),
+                      ),
+                      const Icon(Icons.lock_rounded, size: 16, color: Color(0xFF16A34A)),
                     ],
                   ),
                 ),

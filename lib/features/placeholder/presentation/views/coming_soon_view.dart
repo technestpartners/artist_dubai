@@ -20,24 +20,21 @@ class ComingSoonView extends StatelessWidget {
           children: [
             const Spacer(flex: 2),
 
-            // Top Circular Artist Dubai Logo
+            // Top Artist Dubai Logo as per original image shape
             Center(
-              child: Container(
+              child: Image.asset(
+                'assets/images/header_logo.png',
                 width: logoSize,
                 height: logoSize,
-                decoration: const BoxDecoration(shape: BoxShape.circle),
-                child: ClipOval(
-                  child: Image.asset(
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return Image.asset(
                     'assets/images/header_logo.png',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Image.asset(
-                        'assets/images/header_logo.png',
-                        fit: BoxFit.cover,
-                      );
-                    },
-                  ),
-                ),
+                    width: logoSize,
+                    height: logoSize,
+                    fit: BoxFit.contain,
+                  );
+                },
               ),
             ),
             const Spacer(flex: 3),

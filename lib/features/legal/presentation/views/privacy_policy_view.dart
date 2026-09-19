@@ -41,8 +41,10 @@ class PrivacyPolicyView extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.arrow_back,
+                      Icon(
+                        Directionality.of(context) == TextDirection.rtl
+                            ? Icons.arrow_forward
+                            : Icons.arrow_back,
                         size: 20,
                         color: Colors.white,
                       ),
@@ -74,9 +76,9 @@ class PrivacyPolicyView extends StatelessWidget {
               const SizedBox(height: 10),
 
               // Last Updated Date
-              const Text(
-                'Last updated: 22/8/2026',
-                style: TextStyle(
+              Text(
+                l10n.privacyPolicyLastUpdated,
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
                   color: Color(0xFFE2D6F5),
@@ -85,18 +87,18 @@ class PrivacyPolicyView extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Section: Introduction
-              const Text(
-                'Introduction',
-                style: TextStyle(
+              Text(
+                l10n.privacyIntroTitle,
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Welcome to Dubai Artist. We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you about how we look after your personal data when you visit our website and tell you about your privacy rights.',
-                style: TextStyle(
+              Text(
+                l10n.privacyIntroText,
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w400,
                   color: Color(0xFFE2D6F5),
@@ -106,18 +108,18 @@ class PrivacyPolicyView extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Section: Information We Collect
-              const Text(
-                'Information We Collect',
-                style: TextStyle(
+              Text(
+                l10n.privacyCollectTitle,
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'We may collect, use, store and transfer different kinds of personal data about you:',
-                style: TextStyle(
+              Text(
+                l10n.privacyCollectSubtitle,
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w400,
                   color: Color(0xFFE2D6F5),
@@ -128,26 +130,24 @@ class PrivacyPolicyView extends StatelessWidget {
 
               // Bullet Points
               _buildBulletPoint(
-                label: 'Identity Data: ',
-                text: 'first name, last name, username',
+                label: l10n.privacyBulletIdentityLabel,
+                text: l10n.privacyBulletIdentityText,
               ),
               _buildBulletPoint(
-                label: 'Contact Data: ',
-                text: 'email address, telephone numbers, postal address',
+                label: l10n.privacyBulletContactLabel,
+                text: l10n.privacyBulletContactText,
               ),
               _buildBulletPoint(
-                label: 'Technical Data: ',
-                text:
-                    'internet protocol (IP) address, browser type and version',
+                label: l10n.privacyBulletTechLabel,
+                text: l10n.privacyBulletTechText,
               ),
               _buildBulletPoint(
-                label: 'Usage Data: ',
-                text: 'information about how you use our website and services',
+                label: l10n.privacyBulletUsageLabel,
+                text: l10n.privacyBulletUsageText,
               ),
               _buildBulletPoint(
-                label: 'Profile Data: ',
-                text:
-                    'your interests, preferences, feedback and survey responses',
+                label: l10n.privacyBulletProfileLabel,
+                text: l10n.privacyBulletProfileText,
               ),
               const SizedBox(height: 32),
             ],
@@ -162,12 +162,12 @@ class PrivacyPolicyView extends StatelessWidget {
 
   Widget _buildBulletPoint({required String label, required String text}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10.0, left: 4.0),
+      padding: const EdgeInsetsDirectional.only(bottom: 10.0, start: 4.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Padding(
-            padding: EdgeInsets.only(top: 6.0, right: 10.0),
+            padding: EdgeInsetsDirectional.only(top: 6.0, end: 10.0),
             child: Icon(Icons.circle, size: 6, color: Color(0xFFE2D6F5)),
           ),
           Expanded(

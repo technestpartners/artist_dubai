@@ -41,8 +41,10 @@ class TermsView extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.arrow_back,
+                      Icon(
+                        Directionality.of(context) == TextDirection.rtl
+                            ? Icons.arrow_forward
+                            : Icons.arrow_back,
                         size: 20,
                         color: Colors.white,
                       ),
@@ -74,9 +76,9 @@ class TermsView extends StatelessWidget {
               const SizedBox(height: 10),
 
               // Last Updated Date
-              const Text(
-                'Last updated: 22/8/2026',
-                style: TextStyle(
+              Text(
+                l10n.termsLastUpdated,
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
                   color: Color(0xFFE2D6F5),
@@ -85,18 +87,18 @@ class TermsView extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Section: Agreement to Terms
-              const Text(
-                'Agreement to Terms',
-                style: TextStyle(
+              Text(
+                l10n.termsAgreementTitle,
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'By accessing and using Dubai Artist, you accept and agree to be bound by the terms and provision of this agreement. These Terms and Conditions apply to all visitors, users and others who access or use the Service.',
-                style: TextStyle(
+              Text(
+                l10n.termsAgreementText,
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w400,
                   color: Color(0xFFE2D6F5),
@@ -106,18 +108,18 @@ class TermsView extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Section: Use License
-              const Text(
-                'Use License',
-                style: TextStyle(
+              Text(
+                l10n.termsLicenseTitle,
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Permission is granted to temporarily download one copy of Dubai Artist materials for personal, non-commercial transitory viewing only. Under this license you may not:',
-                style: TextStyle(
+              Text(
+                l10n.termsLicenseSubtitle,
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w400,
                   color: Color(0xFFE2D6F5),
@@ -127,16 +129,10 @@ class TermsView extends StatelessWidget {
               const SizedBox(height: 14),
 
               // Bullet Points
-              _buildBulletPoint('modify or copy the materials'),
-              _buildBulletPoint(
-                'use the materials for any commercial purpose or for any public display',
-              ),
-              _buildBulletPoint(
-                'attempt to reverse engineer any software contained on the website',
-              ),
-              _buildBulletPoint(
-                'remove any copyright or other proprietary notations from the materials',
-              ),
+              _buildBulletPoint(l10n.termsBullet1),
+              _buildBulletPoint(l10n.termsBullet2),
+              _buildBulletPoint(l10n.termsBullet3),
+              _buildBulletPoint(l10n.termsBullet4),
               const SizedBox(height: 32),
             ],
           ),
@@ -150,12 +146,12 @@ class TermsView extends StatelessWidget {
 
   Widget _buildBulletPoint(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10.0, left: 4.0),
+      padding: const EdgeInsetsDirectional.only(bottom: 10.0, start: 4.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Padding(
-            padding: EdgeInsets.only(top: 7.0, right: 10.0),
+            padding: EdgeInsetsDirectional.only(top: 7.0, end: 10.0),
             child: Icon(Icons.circle, size: 5.5, color: Color(0xFFE2D6F5)),
           ),
           Expanded(

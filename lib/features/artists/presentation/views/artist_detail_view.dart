@@ -2220,7 +2220,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                             runSpacing: 8,
                             children: [
                               Text(
-                                'Photo Galleries'.trData(context),
+                                'Galleries'.trData(context),
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -2275,7 +2275,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                   ),
                                   const SizedBox(height: 10),
                                   Text(
-                                    'No photo galleries available yet'.trData(context),
+                                    'No galleries available yet'.trData(context),
                                     style: const TextStyle(
                                       fontSize: 13.5,
                                       color: Color(0xFF64748B),

@@ -153,6 +153,10 @@ void main() {
 
     test('Translates gallery strings and explore pattern matching', () {
       expect(
+        DataTranslator.translate('Galleries', isArabic: true),
+        equals('المعارض'),
+      );
+      expect(
         DataTranslator.translate('Photo Galleries', isArabic: true),
         equals('معارض الصور'),
       );

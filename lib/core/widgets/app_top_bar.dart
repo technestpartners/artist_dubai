@@ -200,23 +200,20 @@ class _AppTopBarState extends State<AppTopBar> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Circular Logo Badge — scales with screen class
-            Container(
+            // Logo Badge as per original image shape
+            Image.asset(
+              'assets/images/header_logo.png',
               width: logoSize,
               height: logoSize,
-              decoration: const BoxDecoration(shape: BoxShape.circle),
-              child: ClipOval(
-                child: Image.asset(
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                return Image.asset(
                   'assets/images/header_logo.png',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Image.asset(
-                      'assets/images/header_logo.png',
-                      fit: BoxFit.cover,
-                    );
-                  },
-                ),
-              ),
+                  width: logoSize,
+                  height: logoSize,
+                  fit: BoxFit.contain,
+                );
+              },
             ),
             const SizedBox(width: 8),
 

@@ -215,28 +215,12 @@ class _SplashScreenViewState extends State<SplashScreenView>
                         scale: _logoScale.value,
                         child: Opacity(
                           opacity: _logoFade.value,
-                          child: Container(
-                            width: logoSize,
-                            height: logoSize,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.35),
-                                  blurRadius: 32,
-                                  offset: const Offset(0, 14),
-                                ),
-                              ],
+                            child: Image.asset(
+                              'assets/images/header_logo.png',
+                              width: logoSize,
+                              height: logoSize,
+                              fit: BoxFit.contain,
                             ),
-                            padding: const EdgeInsets.all(4),
-                            child: ClipOval(
-                              child: Image.asset(
-                                'assets/images/header_logo.png',
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
                         ),
                       ),
                     );

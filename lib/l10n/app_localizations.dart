@@ -1990,6 +1990,180 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} new'**
   String newCount(int count);
+
+  /// No description provided for @privacyPolicyLastUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated: 22 August 2026'**
+  String get privacyPolicyLastUpdated;
+
+  /// No description provided for @privacyIntroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Introduction'**
+  String get privacyIntroTitle;
+
+  /// No description provided for @privacyIntroText.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Dubai Artist. We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you about how we look after your personal data when you visit our website and tell you about your privacy rights.'**
+  String get privacyIntroText;
+
+  /// No description provided for @privacyCollectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Information We Collect'**
+  String get privacyCollectTitle;
+
+  /// No description provided for @privacyCollectSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We may collect, use, store and transfer different kinds of personal data about you:'**
+  String get privacyCollectSubtitle;
+
+  /// No description provided for @privacyBulletIdentityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity Data: '**
+  String get privacyBulletIdentityLabel;
+
+  /// No description provided for @privacyBulletIdentityText.
+  ///
+  /// In en, this message translates to:
+  /// **'first name, last name, username'**
+  String get privacyBulletIdentityText;
+
+  /// No description provided for @privacyBulletContactLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Data: '**
+  String get privacyBulletContactLabel;
+
+  /// No description provided for @privacyBulletContactText.
+  ///
+  /// In en, this message translates to:
+  /// **'email address, telephone numbers, postal address'**
+  String get privacyBulletContactText;
+
+  /// No description provided for @privacyBulletTechLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical Data: '**
+  String get privacyBulletTechLabel;
+
+  /// No description provided for @privacyBulletTechText.
+  ///
+  /// In en, this message translates to:
+  /// **'internet protocol (IP) address, browser type and version'**
+  String get privacyBulletTechText;
+
+  /// No description provided for @privacyBulletUsageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage Data: '**
+  String get privacyBulletUsageLabel;
+
+  /// No description provided for @privacyBulletUsageText.
+  ///
+  /// In en, this message translates to:
+  /// **'information about how you use our website and services'**
+  String get privacyBulletUsageText;
+
+  /// No description provided for @privacyBulletProfileLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile Data: '**
+  String get privacyBulletProfileLabel;
+
+  /// No description provided for @privacyBulletProfileText.
+  ///
+  /// In en, this message translates to:
+  /// **'your interests, preferences, feedback and survey responses'**
+  String get privacyBulletProfileText;
+
+  /// No description provided for @termsLastUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated: 22 August 2026'**
+  String get termsLastUpdated;
+
+  /// No description provided for @termsAgreementTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agreement to Terms'**
+  String get termsAgreementTitle;
+
+  /// No description provided for @termsAgreementText.
+  ///
+  /// In en, this message translates to:
+  /// **'By accessing and using Dubai Artist, you accept and agree to be bound by the terms and provision of this agreement. These Terms and Conditions apply to all visitors, users and others who access or use the Service.'**
+  String get termsAgreementText;
+
+  /// No description provided for @termsLicenseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use License'**
+  String get termsLicenseTitle;
+
+  /// No description provided for @termsLicenseSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission is granted to temporarily download one copy of Dubai Artist materials for personal, non-commercial transitory viewing only. Under this license you may not:'**
+  String get termsLicenseSubtitle;
+
+  /// No description provided for @termsBullet1.
+  ///
+  /// In en, this message translates to:
+  /// **'modify or copy the materials'**
+  String get termsBullet1;
+
+  /// No description provided for @termsBullet2.
+  ///
+  /// In en, this message translates to:
+  /// **'use the materials for any commercial purpose or for any public display'**
+  String get termsBullet2;
+
+  /// No description provided for @termsBullet3.
+  ///
+  /// In en, this message translates to:
+  /// **'attempt to reverse engineer any software contained on the website'**
+  String get termsBullet3;
+
+  /// No description provided for @termsBullet4.
+  ///
+  /// In en, this message translates to:
+  /// **'remove any copyright or other proprietary notations from the materials'**
+  String get termsBullet4;
+
+  /// No description provided for @poweredByStripe.
+  ///
+  /// In en, this message translates to:
+  /// **'Guaranteed safe & secure checkout powered by Stripe'**
+  String get poweredByStripe;
+
+  /// No description provided for @stripePaymentProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing payment securely via Stripe...'**
+  String get stripePaymentProcessing;
+
+  /// No description provided for @stripePaymentSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment verified and approved via Stripe'**
+  String get stripePaymentSuccess;
+
+  /// No description provided for @stripeCardDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Your card was declined. Please try another card.'**
+  String get stripeCardDeclined;
+
+  /// No description provided for @stripeSecurityNote.
+  ///
+  /// In en, this message translates to:
+  /// **'End-to-end 256-bit encrypted. Card details are processed securely by Stripe and are never stored on our servers.'**
+  String get stripeSecurityNote;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

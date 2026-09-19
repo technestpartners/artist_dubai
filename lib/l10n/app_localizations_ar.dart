@@ -961,4 +961,91 @@ class AppLocalizationsAr extends AppLocalizations {
   String newCount(int count) {
     return '$count جديد';
   }
+
+  @override
+  String get privacyPolicyLastUpdated => 'آخر تحديث: 22 أغسطس 2026';
+
+  @override
+  String get privacyIntroTitle => 'المقدمة';
+
+  @override
+  String get privacyIntroText => 'مرحباً بكم في فنان دبي. نحن نحترم خصوصيتكم وملتزمون بحماية بياناتكم الشخصية. ستوضح لكم سياسة الخصوصية هذه كيفية تعاملنا مع بياناتكم الشخصية عند زيارة موقعنا وتخبركم بحقوق الخصوصية الخاصة بكم.';
+
+  @override
+  String get privacyCollectTitle => 'المعلومات التي نجمعها';
+
+  @override
+  String get privacyCollectSubtitle => 'قد نقوم بجمع واستخدام وتخزين ونقل أنواع مختلفة من البيانات الشخصية المتعلقة بكم:';
+
+  @override
+  String get privacyBulletIdentityLabel => 'بيانات الهوية: ';
+
+  @override
+  String get privacyBulletIdentityText => 'الاسم الأول، اسم العائلة، اسم المستخدم';
+
+  @override
+  String get privacyBulletContactLabel => 'بيانات الاتصال: ';
+
+  @override
+  String get privacyBulletContactText => 'عنوان البريد الإلكتروني، أرقام الهواتف، العنوان البريدي';
+
+  @override
+  String get privacyBulletTechLabel => 'البيانات التقنية: ';
+
+  @override
+  String get privacyBulletTechText => 'عنوان بروتوكول الإنترنت (IP)، نوع المتصفح وإصداره';
+
+  @override
+  String get privacyBulletUsageLabel => 'بيانات الاستخدام: ';
+
+  @override
+  String get privacyBulletUsageText => 'معلومات حول كيفية استخدامك للتطبيق والخدمات';
+
+  @override
+  String get privacyBulletProfileLabel => 'بيانات الملف الشخصي: ';
+
+  @override
+  String get privacyBulletProfileText => 'اهتماماتك، تفضيلاتك، ملاحظاتك واستجابات الاستبيانات';
+
+  @override
+  String get termsLastUpdated => 'آخر تحديث: 22 أغسطس 2026';
+
+  @override
+  String get termsAgreementTitle => 'الموافقة على الشروط';
+
+  @override
+  String get termsAgreementText => 'من خلال الوصول إلى فنان دبي واستخدامه، فإنك تقبل وتوافق على الالتزام ببنود وأحكام هذه الاتفاقية. تنطبق هذه الشروط والأحكام على جميع الزوار والمستخدمين وغيرهم ممن يصلون إلى الخدمة أو يستخدمونها.';
+
+  @override
+  String get termsLicenseTitle => 'ترخيص الاستخدام';
+
+  @override
+  String get termsLicenseSubtitle => 'يتم منح الإذن لتنزيل نسخة واحدة مؤقتاً من مواد فنان دبي للاستخدام الشخصي وغير التجاري وللمعاينة المؤقتة فقط. بموجب هذا الترخيص، لا يجوز لك:';
+
+  @override
+  String get termsBullet1 => 'تعديل المواد أو نسخها';
+
+  @override
+  String get termsBullet2 => 'استخدام المواد لأي غرض تجاري أو لأي عرض عام';
+
+  @override
+  String get termsBullet3 => 'محاولة إجراء هندسة عكسية لأي برنامج موجود على الموقع';
+
+  @override
+  String get termsBullet4 => 'إزالة أي إشعارات لحقوق النشر أو غيرها من إشعارات الملكية من المواد';
+
+  @override
+  String get poweredByStripe => 'دفع آمن ومضمون 100% مدعوم من Stripe';
+
+  @override
+  String get stripePaymentProcessing => 'جارٍ معالجة الدفع بأمان عبر Stripe...';
+
+  @override
+  String get stripePaymentSuccess => 'تم التحقق من الدفع واعتماده بنجاح عبر Stripe';
+
+  @override
+  String get stripeCardDeclined => 'تم رفض بطاقتك. يُرجى التحقق من البيانات أو تجربة بطاقة أخرى.';
+
+  @override
+  String get stripeSecurityNote => 'تشفير شامل بتقنية 256 بت. تتم معالجة بيانات البطاقة بأمان عبر Stripe ولا يتم تخزينها على خوادمنا أبداً.';
 }

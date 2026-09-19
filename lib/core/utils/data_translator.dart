@@ -295,6 +295,7 @@ class DataTranslator {
 
     // Photo Galleries & Portfolio Details
     'featured': 'مميز',
+    'galleries': 'المعارض',
     'photo galleries': 'معارض الصور',
     'create gallery': 'إنشاء معرض',
     'create new gallery': 'إنشاء معرض جديد',
@@ -304,6 +305,7 @@ class DataTranslator {
     'edit photo gallery': 'تعديل معرض الصور',
     'delete gallery': 'حذف المعرض',
     'save changes': 'حفظ التغييرات',
+    'no galleries available yet': 'لا توجد معارض متاحة حتى الآن',
     'no photo galleries available yet': 'لا توجد معارض صور متاحة حتى الآن',
     'no artworks added yet': 'لم تتم إضافة أي أعمال فنية بعد',
     'gallery options': 'خيارات المعرض',

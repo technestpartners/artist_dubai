@@ -17,26 +17,12 @@ class DashboardHeaderWidget extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Compact Circular Logo
-          Container(
+          // Logo as per original image shape
+          Image.asset(
+            'assets/images/header_logo.png',
             width: logoSize,
             height: logoSize,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                'assets/images/header_logo.png',
-                fit: BoxFit.cover,
-              ),
-            ),
+            fit: BoxFit.contain,
           ),
           SizedBox(width: spacing),
 

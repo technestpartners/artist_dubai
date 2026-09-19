@@ -46,6 +46,7 @@ class _ArtistDubaiAppState extends State<ArtistDubaiApp> with WidgetsBindingObse
     final target = AppRouter.parseDeepLink(uri);
     if (target != null && target.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return; // guard: don't navigate into a disposed view
         AppRouter.router.go(target);
       });
       return true;

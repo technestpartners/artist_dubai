@@ -961,4 +961,91 @@ class AppLocalizationsEn extends AppLocalizations {
   String newCount(int count) {
     return '$count new';
   }
+
+  @override
+  String get privacyPolicyLastUpdated => 'Last updated: 22 August 2026';
+
+  @override
+  String get privacyIntroTitle => 'Introduction';
+
+  @override
+  String get privacyIntroText => 'Welcome to Dubai Artist. We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you about how we look after your personal data when you visit our website and tell you about your privacy rights.';
+
+  @override
+  String get privacyCollectTitle => 'Information We Collect';
+
+  @override
+  String get privacyCollectSubtitle => 'We may collect, use, store and transfer different kinds of personal data about you:';
+
+  @override
+  String get privacyBulletIdentityLabel => 'Identity Data: ';
+
+  @override
+  String get privacyBulletIdentityText => 'first name, last name, username';
+
+  @override
+  String get privacyBulletContactLabel => 'Contact Data: ';
+
+  @override
+  String get privacyBulletContactText => 'email address, telephone numbers, postal address';
+
+  @override
+  String get privacyBulletTechLabel => 'Technical Data: ';
+
+  @override
+  String get privacyBulletTechText => 'internet protocol (IP) address, browser type and version';
+
+  @override
+  String get privacyBulletUsageLabel => 'Usage Data: ';
+
+  @override
+  String get privacyBulletUsageText => 'information about how you use our website and services';
+
+  @override
+  String get privacyBulletProfileLabel => 'Profile Data: ';
+
+  @override
+  String get privacyBulletProfileText => 'your interests, preferences, feedback and survey responses';
+
+  @override
+  String get termsLastUpdated => 'Last updated: 22 August 2026';
+
+  @override
+  String get termsAgreementTitle => 'Agreement to Terms';
+
+  @override
+  String get termsAgreementText => 'By accessing and using Dubai Artist, you accept and agree to be bound by the terms and provision of this agreement. These Terms and Conditions apply to all visitors, users and others who access or use the Service.';
+
+  @override
+  String get termsLicenseTitle => 'Use License';
+
+  @override
+  String get termsLicenseSubtitle => 'Permission is granted to temporarily download one copy of Dubai Artist materials for personal, non-commercial transitory viewing only. Under this license you may not:';
+
+  @override
+  String get termsBullet1 => 'modify or copy the materials';
+
+  @override
+  String get termsBullet2 => 'use the materials for any commercial purpose or for any public display';
+
+  @override
+  String get termsBullet3 => 'attempt to reverse engineer any software contained on the website';
+
+  @override
+  String get termsBullet4 => 'remove any copyright or other proprietary notations from the materials';
+
+  @override
+  String get poweredByStripe => 'Guaranteed safe & secure checkout powered by Stripe';
+
+  @override
+  String get stripePaymentProcessing => 'Processing payment securely via Stripe...';
+
+  @override
+  String get stripePaymentSuccess => 'Payment verified and approved via Stripe';
+
+  @override
+  String get stripeCardDeclined => 'Your card was declined. Please try another card.';
+
+  @override
+  String get stripeSecurityNote => 'End-to-end 256-bit encrypted. Card details are processed securely by Stripe and are never stored on our servers.';
 }

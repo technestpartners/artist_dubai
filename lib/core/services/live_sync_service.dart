@@ -83,8 +83,14 @@ class LiveSyncService with WidgetsBindingObserver {
       _isPausedByLifecycle = false;
       syncAllSilently(forceRefresh: true);
     } else if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
-      // Pause background polling when app is not visible to save battery &amp; bandwidth
+      // Pause background polling when app is not visible to save battery & bandwidth
       _isPausedByLifecycle = true;
+    } else if (state == AppLifecycleState.detached) {
+      // Engine view is being torn down (hot-restart, tab close, process kill).
+      // Stop the timer immediately so no async callbacks can schedule frames
+      // against a disposed EngineFlutterView.
+      _isPausedByLifecycle = true;
+      stopMultiDeviceSync();
     }
   }
 
