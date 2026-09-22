@@ -15,19 +15,19 @@ class HomeHeaderWidget extends StatelessWidget {
     final logoSize = rh.isDesktop
         ? 120.0
         : rh.isTablet
-            ? 100.0
-            : (rh.width * 0.22).clamp(64.0, 110.0);
+            ? 95.0
+            : (rh.width * 0.165).clamp(52.0, 68.0);
     final titleFontSize = rh.isDesktop
         ? 26.0
         : rh.isTablet
             ? 22.0
-            : (rh.width * 0.048).clamp(16.0, 22.0);
+            : (rh.width * 0.045).clamp(15.0, 19.0);
     final subtitleFontSize = rh.isDesktop
         ? 14.0
         : rh.isTablet
-            ? 12.5
-            : (rh.width * 0.026).clamp(9.5, 12.5);
-    final hPad = rh.isWide ? 16.0 : 10.0;
+            ? 12.0
+            : (rh.width * 0.024).clamp(9.0, 11.5);
+    final hPad = rh.isWide ? 16.0 : 8.0;
     final vPad = rh.isWide ? 8.0 : 4.0;
 
     return Padding(
@@ -47,7 +47,7 @@ class HomeHeaderWidget extends StatelessWidget {
                 height: logoSize,
                 fit: BoxFit.contain,
               ),
-              SizedBox(width: rh.isWide ? 16.0 : 10.0),
+              SizedBox(width: rh.isWide ? 16.0 : 8.0),
 
               // Header Titles
               Flexible(
@@ -55,34 +55,40 @@ class HomeHeaderWidget extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      l10n.appName.toUpperCase(),
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: titleFontSize,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.4,
-                        height: 1.1,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Text(
+                        l10n.appName.toUpperCase(),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: titleFontSize,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.4,
+                          height: 1.1,
+                        ),
+                        maxLines: 1,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 3),
-                    Text(
-                      l10n.communityPlatform.toUpperCase(),
-                      style: TextStyle(
-                        color: const Color(0xFFD4C2F0),
-                        fontSize: subtitleFontSize,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.8,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Text(
+                        l10n.communityPlatform.toUpperCase(),
+                        style: TextStyle(
+                          color: const Color(0xFFD4C2F0),
+                          fontSize: subtitleFontSize,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.8,
+                        ),
+                        maxLines: 1,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: rh.isWide ? 8.0 : 6.0),
 
               // Home Header Language Toggle Button
               Consumer<LocaleProvider>(
@@ -94,7 +100,10 @@ class HomeHeaderWidget extends StatelessWidget {
                       onTap: () => localeProvider.toggleLocale(),
                       borderRadius: BorderRadius.circular(20),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: rh.isWide ? 10.0 : 8.0,
+                          vertical: rh.isWide ? 6.0 : 5.0,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.18),
                           border: Border.all(

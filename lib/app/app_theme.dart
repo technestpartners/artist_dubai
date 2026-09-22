@@ -48,6 +48,32 @@ class AppTheme {
           height: 1.5,
         ),
       ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 8,
+        shadowColor: Colors.black.withValues(alpha: 0.15),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.0),
+        ),
+        textStyle: GoogleFonts.outfit(
+          color: const Color(0xFF0F172A),
+          fontSize: 13.5,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      checkboxTheme: CheckboxThemeData(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+        checkColor: WidgetStateProperty.all(Colors.white),
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const Color(0xFF6A2777);
+          }
+          return Colors.white;
+        }),
+        side: const BorderSide(color: Color(0xFF6A2777), width: 1.8),
+      ),
       datePickerTheme: _buildDatePickerTheme(isDark: true),
       textTheme: _buildTextTheme(ThemeData.dark().textTheme),
       textSelectionTheme: const TextSelectionThemeData(
@@ -159,6 +185,32 @@ class AppTheme {
         secondary: AppColors.accent,
         surface: AppColors.lightSurface,
         error: AppColors.error,
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 8,
+        shadowColor: Colors.black.withValues(alpha: 0.15),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.0),
+        ),
+        textStyle: GoogleFonts.outfit(
+          color: const Color(0xFF0F172A),
+          fontSize: 13.5,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      checkboxTheme: CheckboxThemeData(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+        checkColor: WidgetStateProperty.all(Colors.white),
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const Color(0xFF6A2777);
+          }
+          return Colors.white;
+        }),
+        side: const BorderSide(color: Color(0xFF6A2777), width: 1.8),
       ),
       datePickerTheme: _buildDatePickerTheme(isDark: false),
       textTheme: _buildTextTheme(ThemeData.light().textTheme),

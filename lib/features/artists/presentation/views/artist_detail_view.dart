@@ -1165,23 +1165,23 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Gallery "$title" deleted successfully'),
+                      content: Text('Gallery "$title" deleted successfully'.trData(context)),
                       backgroundColor: const Color(0xFFDC2626),
                       behavior: SnackBarBehavior.floating,
                     ),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Failed to delete gallery. Please try again.'),
-                      backgroundColor: Color(0xFFDC2626),
+                    SnackBar(
+                      content: Text('Failed to delete gallery. Please try again.'.trData(context)),
+                      backgroundColor: const Color(0xFFDC2626),
                       behavior: SnackBarBehavior.floating,
                     ),
                   );
                 }
               }
             },
-            child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text('Delete'.trData(context), style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -1265,10 +1265,10 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Expanded(
+                          Expanded(
                             child: Text(
-                              'Edit Photo Gallery',
-                              style: TextStyle(
+                              'Edit Photo Gallery'.trData(dialogContext),
+                              style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF1E1E1E),
@@ -1286,9 +1286,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                       const SizedBox(height: 18),
 
                       // Title field
-                      const Text(
-                        'Gallery Title',
-                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Color(0xFF1E1E1E)),
+                      Text(
+                        'Gallery Title'.trData(dialogContext),
+                        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Color(0xFF1E1E1E)),
                       ),
                       const SizedBox(height: 6),
                       TextField(
@@ -1296,7 +1296,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                         style: const TextStyle(color: Color(0xFF0F172A), fontSize: 14, fontWeight: FontWeight.w500),
                         cursorColor: const Color(0xFF6A2777),
                         decoration: InputDecoration(
-                          hintText: 'Enter gallery title...',
+                          hintText: 'Enter gallery title...'.trData(dialogContext),
                           hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
                           filled: true,
                           fillColor: Colors.white,
@@ -1318,9 +1318,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                       const SizedBox(height: 16),
 
                       // Description
-                      const Text(
-                        'Description (optional)',
-                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Color(0xFF1E1E1E)),
+                      Text(
+                        'Description (optional)'.trData(dialogContext),
+                        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Color(0xFF1E1E1E)),
                       ),
                       const SizedBox(height: 6),
                       TextField(
@@ -1329,7 +1329,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                         style: const TextStyle(color: Color(0xFF0F172A), fontSize: 14, fontWeight: FontWeight.w500),
                         cursorColor: const Color(0xFF6A2777),
                         decoration: InputDecoration(
-                          hintText: 'Describe this gallery...',
+                          hintText: 'Describe this gallery...'.trData(dialogContext),
                           hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
                           filled: true,
                           fillColor: Colors.white,
@@ -1354,12 +1354,12 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Gallery Photos',
-                            style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Color(0xFF1E1E1E)),
+                          Text(
+                            'Gallery Photos'.trData(dialogContext),
+                            style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Color(0xFF1E1E1E)),
                           ),
                           Text(
-                            '${existingPhotos.length + newlyPickedImages.length} photo(s)',
+                            '${existingPhotos.length + newlyPickedImages.length} photo(s)'.trData(dialogContext),
                             style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
                           ),
                         ],
@@ -1405,9 +1405,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                               : () {
                                                   if (existingPhotos.length + newlyPickedImages.length <= 1) {
                                                     ScaffoldMessenger.of(context).showSnackBar(
-                                                      const SnackBar(
-                                                        content: Text('A gallery must have at least 1 photo.'),
-                                                        backgroundColor: Color(0xFFDC2626),
+                                                      SnackBar(
+                                                        content: Text('A gallery must have at least 1 photo.'.trData(context)),
+                                                        backgroundColor: const Color(0xFFDC2626),
                                                         behavior: SnackBarBehavior.floating,
                                                       ),
                                                     );
@@ -1482,7 +1482,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                             color: const Color(0xFF6A2777),
                                             borderRadius: BorderRadius.circular(3),
                                           ),
-                                          child: const Text('NEW', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                                          child: Text('NEW'.trData(dialogContext), style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
                                         ),
                                       ),
                                     ],
@@ -1507,14 +1507,14 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: const Color(0xFFCBD5E1)),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.add_photo_alternate_outlined, size: 20, color: Color(0xFF6A2777)),
-                              SizedBox(width: 8),
+                              const Icon(Icons.add_photo_alternate_outlined, size: 20, color: Color(0xFF6A2777)),
+                              const SizedBox(width: 8),
                               Text(
-                                'Add More Photos',
-                                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF6A2777)),
+                                'Add More Photos'.trData(dialogContext),
+                                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF6A2777)),
                               ),
                             ],
                           ),
@@ -1534,9 +1534,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                 ),
                                 onPressed: isSaving ? null : () => Navigator.pop(dialogContext),
-                                child: const Text(
-                                  'Cancel',
-                                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E1E1E)),
+                                child: Text(
+                                  'Cancel'.trData(dialogContext),
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E1E1E)),
                                 ),
                               ),
                             ),
@@ -1635,7 +1635,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
 
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
-                                            content: Text('Gallery "$newTitle" updated successfully!'),
+                                            content: Text('Gallery "$newTitle" updated successfully!'.trData(context)),
                                             backgroundColor: const Color(0xFF6A2777),
                                             behavior: SnackBarBehavior.floating,
                                           ),
@@ -1650,9 +1650,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                           color: Colors.white,
                                         ),
                                       )
-                                    : const Text(
-                                        'Save Changes',
-                                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                    : Text(
+                                        'Save Changes'.trData(dialogContext),
+                                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                                       ),
                               ),
                             ),
@@ -2792,7 +2792,14 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     tooltip: 'Gallery options',
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    color: Colors.white,
+                    surfaceTintColor: Colors.transparent,
+                    elevation: 8,
+                    shadowColor: Colors.black.withValues(alpha: 0.15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.0),
+                    ),
                     onSelected: (val) {
                       if (val == 'edit') {
                         _showEditGalleryModal(gallery);
@@ -2805,9 +2812,16 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                         value: 'edit',
                         child: Row(
                           children: [
-                            const Icon(Icons.edit_outlined, size: 18, color: Color(0xFF0F172A)),
+                            const Icon(Icons.edit_outlined, size: 18, color: Color(0xFF1E293B)),
                             const SizedBox(width: 8),
-                            Text('Edit Gallery'.trData(context), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                            Text(
+                              'Edit Gallery'.trData(context),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1E293B),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -2817,7 +2831,14 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                           children: [
                             const Icon(Icons.delete_outline, size: 18, color: Color(0xFFDC2626)),
                             const SizedBox(width: 8),
-                            Text('Delete Gallery'.trData(context), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFDC2626))),
+                            Text(
+                              'Delete Gallery'.trData(context),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFFDC2626),
+                              ),
+                            ),
                           ],
                         ),
                       ),

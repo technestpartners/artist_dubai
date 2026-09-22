@@ -7,6 +7,7 @@ import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
+import '../../../../core/utils/data_translator.dart';
 import '../../../admin/domain/models/publishing_pricing_model.dart';
 
 class GalleryRegistrationView extends StatefulWidget {
@@ -145,9 +146,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Select Image Source',
-                    style: TextStyle(
+                  Text(
+                    'Select Image Source'.trData(context),
+                    style: const TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF0F172A),
@@ -188,22 +189,22 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                         ),
                       ),
                       const SizedBox(width: 14),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Choose from Gallery',
-                              style: TextStyle(
+                              'Choose from Gallery'.trData(context),
+                              style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xFF0F172A),
                               ),
                             ),
-                            SizedBox(height: 2),
+                            const SizedBox(height: 2),
                             Text(
-                              'Select a photo from your device library',
-                              style: TextStyle(
+                              'Select a photo from your device library'.trData(context),
+                              style: const TextStyle(
                                 fontSize: 12,
                                 color: Color(0xFF64748B),
                               ),
@@ -245,22 +246,22 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                         ),
                       ),
                       const SizedBox(width: 14),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Take a Photo',
-                              style: TextStyle(
+                              'Take a Photo'.trData(context),
+                              style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xFF0F172A),
                               ),
                             ),
-                            SizedBox(height: 2),
+                            const SizedBox(height: 2),
                             Text(
-                              'Use your camera to capture space photo',
-                              style: TextStyle(
+                              'Use your camera to capture space photo'.trData(context),
+                              style: const TextStyle(
                                 fontSize: 12,
                                 color: Color(0xFF64748B),
                               ),
@@ -409,7 +410,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                   controller: _nameController,
                   style: const TextStyle(color: Color(0xFF1E1E1E), fontSize: 14),
                   decoration: _whiteInputDecoration(),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter gallery name' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter gallery name'.trData(context) : null,
                   textInputAction: TextInputAction.next,
                 ),
                 const SizedBox(height: 14),
@@ -483,8 +484,8 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                   keyboardType: TextInputType.emailAddress,
                   decoration: _whiteInputDecoration(),
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Please enter email';
-                    if (!v.contains('@')) return 'Please enter valid email';
+                    if (v == null || v.trim().isEmpty) return 'Please enter email'.trData(context);
+                    if (!v.contains('@')) return 'Please enter valid email'.trData(context);
                     return null;
                   },
                   textInputAction: TextInputAction.next,
@@ -601,13 +602,13 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               ),
                               icon: const Icon(Icons.refresh, size: 16),
-                              label: const Text('Change Photo', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                              label: Text('Change Photo'.trData(context), style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
                               onPressed: () => _showImageSourceActionSheet(context),
                             ),
                             const SizedBox(width: 8),
                             const Icon(Icons.check_circle, color: Color(0xFF4ADE80), size: 16),
                             const SizedBox(width: 4),
-                            const Text('Uploaded', style: TextStyle(fontSize: 12, color: Color(0xFF4ADE80), fontWeight: FontWeight.w600)),
+                            Text('Uploaded'.trData(context), style: const TextStyle(fontSize: 12, color: Color(0xFF4ADE80), fontWeight: FontWeight.w600)),
                           ],
                         ),
                       ] else ...[
@@ -621,14 +622,14 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               ),
                               icon: const Icon(Icons.upload_outlined, size: 16),
-                              label: const Text('Upload Photo', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                              label: Text('Upload Photo'.trData(context), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                               onPressed: () => _showImageSourceActionSheet(context),
                             ),
                             const SizedBox(width: 12),
-                            const Expanded(
+                            Expanded(
                               child: Text(
-                                'Select showcase photo of the gallery/space (JPG, PNG, WebP).',
-                                style: TextStyle(fontSize: 11, color: Colors.white70),
+                                'Select showcase photo of the gallery/space (JPG, PNG, WebP).'.trData(context),
+                                style: const TextStyle(fontSize: 11, color: Colors.white70),
                               ),
                             ),
                           ],
@@ -655,10 +656,10 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                         children: [
                           const Icon(Icons.stars_rounded, color: Colors.amberAccent, size: 18),
                           const SizedBox(width: 8),
-                          const Expanded(
+                          Expanded(
                             child: Text(
-                              'Paid Gallery Publishing • Choose Plan',
-                              style: TextStyle(
+                              'Paid Gallery Publishing • Choose Plan'.trData(context),
+                              style: const TextStyle(
                                 color: Colors.amberAccent,
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
@@ -669,9 +670,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                         ],
                       ),
                       const SizedBox(height: 6),
-                      const Text(
-                        'Publishing your gallery on Artist Dubai is a premium feature. Select your preferred showcase plan. Once verified by the admin, your gallery will be featured prominently to art lovers across the UAE.',
-                        style: TextStyle(
+                      Text(
+                        'Publishing your gallery on Artist Dubai is a premium feature. Select your preferred showcase plan. Once verified by the admin, your gallery will be featured prominently to art lovers across the UAE.'.trData(context),
+                        style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 12,
                           height: 1.35,
@@ -687,17 +688,17 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                           final cards = [
                             _buildGalleryPricingCard(
                               id: 'six_month',
-                              title: '6 Months',
+                              title: '6 Months'.trData(context),
                               price: sixMonthPrice,
-                              period: '/ 6 mo',
-                              subtitle: '180 days showcase',
+                              period: '/ 6 mo'.trData(context),
+                              subtitle: '180 days showcase'.trData(context),
                             ),
                             _buildGalleryPricingCard(
                               id: 'yearly',
-                              title: 'Yearly',
+                              title: 'Yearly'.trData(context),
                               price: yearlyPrice,
-                              period: '/ year',
-                              subtitle: '365 days showcase',
+                              period: '/ year'.trData(context),
+                              subtitle: '365 days showcase'.trData(context),
                             ),
                           ];
 
@@ -755,10 +756,10 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
           const SizedBox(height: 24),
 
           // 3. Footer Attribution
-          const Center(
+          Center(
             child: Text(
-              'Hosted by Nizar Fahem',
-              style: TextStyle(
+              'Hosted by Nizar Fahem'.trData(context),
+              style: const TextStyle(
                 color: Colors.white70,
                 fontSize: 13.5,
                 fontWeight: FontWeight.w500,
@@ -772,13 +773,14 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
   }
 
   Widget _buildSubmittedView() {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 1. Header Title & Subtitle
-        const Text(
-          'ART VENUE',
-          style: TextStyle(
+        Text(
+          l10n.artVenue,
+          style: const TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w900,
             color: Colors.white,
@@ -786,9 +788,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
           ),
         ),
         const SizedBox(height: 6),
-        const Text(
-          'Registration',
-          style: TextStyle(
+        Text(
+          'Registration'.trData(context),
+          style: const TextStyle(
             fontSize: 14.5,
             color: Colors.white70,
             fontWeight: FontWeight.w400,
@@ -821,9 +823,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 ),
               ),
               const SizedBox(height: 18),
-              const Text(
-                'Registration received',
-                style: TextStyle(
+              Text(
+                'Registration received'.trData(context),
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -831,10 +833,10 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 10),
-              const Text(
-                'Thank you. Our team will review your gallery or art center and get in touch by email.',
+              Text(
+                'Thank you. Our team will review your gallery or art center and get in touch by email.'.trData(context),
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
                   color: Colors.white70,
                   height: 1.45,
@@ -852,9 +854,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                   elevation: 0,
                 ),
                 onPressed: () => context.go(RouteNames.home),
-                child: const Text(
-                  'Back to home',
-                  style: TextStyle(
+                child: Text(
+                  'Back to home'.trData(context),
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF1E1E1E),
@@ -867,10 +869,10 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
         const SizedBox(height: 36),
 
         // 3. Footer
-        const Center(
+        Center(
           child: Text(
-            'Hosted by Nizar Fahem',
-            style: TextStyle(
+            'Hosted by Nizar Fahem'.trData(context),
+            style: const TextStyle(
               color: Colors.white70,
               fontSize: 13.5,
               fontWeight: FontWeight.w500,
@@ -1027,7 +1029,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
               children: [
                 Text.rich(
                   TextSpan(
-                    text: 'Payment on Next Step: ',
+                    text: 'Payment on Next Step: '.trData(context),
                     style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Colors.white),
                     children: [
                       TextSpan(
@@ -1038,9 +1040,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                   ),
                 ),
                 const SizedBox(height: 2),
-                const Text(
-                  'Admin Payment QR code & bank transfer details on checkout page.',
-                  style: TextStyle(fontSize: 11, color: Colors.white70),
+                Text(
+                  'Admin Payment QR code & bank transfer details on checkout page.'.trData(context),
+                  style: const TextStyle(fontSize: 11, color: Colors.white70),
                 ),
               ],
             ),

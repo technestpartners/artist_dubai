@@ -243,9 +243,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Upload Featured Image',
-                    style: TextStyle(
+                  Text(
+                    'Upload Featured Image'.trData(context),
+                    style: const TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF0F172A),
@@ -291,22 +291,22 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                         ),
                       ),
                       const SizedBox(width: 14),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Choose from Gallery',
-                              style: TextStyle(
+                              'Choose from Gallery'.trData(context),
+                              style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xFF0F172A),
                               ),
                             ),
-                            SizedBox(height: 2),
+                            const SizedBox(height: 2),
                             Text(
-                              'Select a banner or photo from your device',
-                              style: TextStyle(
+                              'Select a banner or photo from your device'.trData(context),
+                              style: const TextStyle(
                                 fontSize: 12,
                                 color: Color(0xFF64748B),
                               ),
@@ -350,22 +350,22 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                         ),
                       ),
                       const SizedBox(width: 14),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Take a Photo',
-                              style: TextStyle(
+                              'Take a Photo'.trData(context),
+                              style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xFF0F172A),
                               ),
                             ),
-                            SizedBox(height: 2),
+                            const SizedBox(height: 2),
                             Text(
-                              'Use your camera to capture an event image',
-                              style: TextStyle(
+                              'Use your camera to capture an event image'.trData(context),
+                              style: const TextStyle(
                                 fontSize: 12,
                                 color: Color(0xFF64748B),
                               ),

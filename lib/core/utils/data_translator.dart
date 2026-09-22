@@ -278,8 +278,43 @@ class DataTranslator {
     'weekly': 'أسبوعي',
     'monthly': 'شهري',
     'yearly': 'سنوي',
+    '6 months': '٦ أشهر',
+    '/ 6 mo': '/ ٦ أشهر',
+    '180 days showcase': 'عرض لمدة ١٨٠ يوماً',
+    '/ year': '/ سنة',
+    '365 days showcase': 'عرض لمدة ٣٦٥ يوماً',
     'gallery showcase': 'عرض المعرض الفني',
     'artist event publishing': 'نشر فعاليات الفنانين',
+    'paid gallery publishing • choose plan': 'نشر المعارض المدفوع • اختر خطة',
+    'paid gallery publishing': 'نشر المعارض المدفوع',
+    'choose plan': 'اختر خطة',
+    'publishing your gallery on artist dubai is a premium feature. select your preferred showcase plan. once verified by the admin, your gallery will be featured prominently to art lovers across the uae.': 'نشر معرضك على منصة فنان دبي ميزة متميزة. اختر خطة العرض المناسبة. بمجرد التحقق من قِبل الإدارة، سيتم إبراز معرضك لعشاق الفن في جميع أنحاء الإمارات.',
+    'payment on next step:': 'الدفع في الخطوة التالية:',
+    'payment on next step: ': 'الدفع في الخطوة التالية: ',
+    'payment on next step': 'الدفع في الخطوة التالية',
+    'admin payment qr code & bank transfer details on checkout page.': 'رمز الاستجابة السريعة (QR) وتفاصيل التحويل المصرفي في صفحة إتمام الدفع.',
+    'admin payment qr code & bank transfer details on checkout page': 'رمز الاستجابة السريعة (QR) وتفاصيل التحويل المصرفي في صفحة إتمام الدفع',
+    'select image source': 'تحديد مصدر الصورة',
+    'choose from gallery': 'اختيار من المعرض',
+    'select a photo from your device library': 'اختر صورة من مكتبة جهازك',
+    'take a photo': 'التقاط صورة',
+    'use your camera to capture space photo': 'استخدم الكاميرا لالتقاط صورة للمساحة',
+    'upload featured image': 'رفع الصورة البارزة',
+    'select a banner or photo from your device': 'اختر صورة غلاف أو صورة من جهازك',
+    'use your camera to capture an event image': 'استخدم الكاميرا لالتقاط صورة للفعالية',
+    'upload photo': 'رفع صورة',
+    'change photo': 'تغيير الصورة',
+    'uploaded': 'تم الرفع',
+    'select showcase photo of the gallery/space (jpg, png, webp).': 'حدد صورة المعرض / المساحة الفنية (JPG, PNG, WebP).',
+    'select showcase photo of the gallery/space (jpg, png, .webp)': 'حدد صورة المعرض / المساحة الفنية (JPG, PNG, WebP)',
+    'please enter gallery name': 'الرجاء إدخال اسم المعرض',
+    'please enter email': 'الرجاء إدخال البريد الإلكتروني',
+    'please enter valid email': 'الرجاء إدخال بريد إلكتروني صحيح',
+    'registration received': 'تم استلام طلب التسجيل',
+    'thank you. our team will review your gallery or art center and get in touch by email.': 'شكراً لك. سيقوم فريقنا بمراجعة معرضك أو مركزك الفني والتواصل معك عبر البريد الإلكتروني.',
+    'back to home': 'العودة إلى الرئيسية',
+    'registration': 'التسجيل',
+    'hosted by nizar fahem': 'استضافة نزار فاهم',
 
     // Home Tiles & Common Words
     'about us': 'من نحن',
@@ -300,11 +335,17 @@ class DataTranslator {
     'create gallery': 'إنشاء معرض',
     'create new gallery': 'إنشاء معرض جديد',
     'gallery title': 'عنوان المعرض',
+    'enter gallery title...': 'أدخل عنوان المعرض...',
+    'description (optional)': 'الوصف (اختياري)',
+    'describe this gallery...': 'صف هذا المعرض...',
     'gallery photos': 'صور المعرض',
+    'photo(s)': 'صور',
+    'add more photos': 'إضافة المزيد من الصور',
     'edit gallery': 'تعديل المعرض',
     'edit photo gallery': 'تعديل معرض الصور',
     'delete gallery': 'حذف المعرض',
     'save changes': 'حفظ التغييرات',
+    'saving...': 'جارٍ الحفظ...',
     'no galleries available yet': 'لا توجد معارض متاحة حتى الآن',
     'no photo galleries available yet': 'لا توجد معارض صور متاحة حتى الآن',
     'no artworks added yet': 'لم تتم إضافة أي أعمال فنية بعد',
@@ -318,11 +359,18 @@ class DataTranslator {
     'failed to delete gallery. please try again.': 'فشل حذف المعرض. يرجى المحاولة مرة أخرى.',
     'profile picture updated successfully!': 'تم تحديث صورة الملف الشخصي بنجاح!',
     'please have at least one photo in the gallery': 'يجب أن يحتوي المعرض على صورة واحدة على الأقل',
+    'please have at least one photo in the gallery.': 'الرجاء إدراج صورة واحدة على الأقل في المعرض.',
     'a gallery must have at least 1 photo': 'يجب أن يحتوي المعرض على صورة واحدة على الأقل',
+    'a gallery must have at least 1 photo.': 'يجب أن يحتوي المعرض على صورة واحدة على الأقل.',
     'required details missing': 'بيانات مطلوبة مفقودة',
     'upload failed': 'فشل التحميل',
-    'failed to upload photos. please try again.': 'فشل تحميل الصور. يرجى المحاولة مرة أخرى.',
     'ok': 'موافق',
+    'edit photo': 'تعديل الصورة',
+    'delete photo': 'حذف الصورة',
+    'remove photo': 'إزالة الصورة',
+    'delete profile picture': 'حذف الصورة الشخصية',
+    'are you sure you want to remove your profile photo?': 'هل أنت متأكد أنك تريد إزالة صورتك الشخصية؟',
+    'profile photo removed': 'تمت إزالة صورة الملف الشخصي',
 
     // Events UI, Filters, Sorting & Dates
     "what's on": 'الفعاليات الحالية',
@@ -877,6 +925,20 @@ class DataTranslator {
       if (lower.startsWith('plan:')) {
         final rest = trimmed.substring(5).trim();
         return 'الخطة: ${translate(rest, isArabic: true)}';
+      }
+
+      // Gallery & Photo count dynamic patterns
+      if (lower.startsWith('gallery "') && lower.contains('" updated successfully')) {
+        final title = trimmed.split('"').length > 1 ? trimmed.split('"')[1] : '';
+        return 'تم تحديث المعرض "$title" بنجاح!';
+      }
+      if (lower.startsWith('gallery "') && lower.contains('" deleted successfully')) {
+        final title = trimmed.split('"').length > 1 ? trimmed.split('"')[1] : '';
+        return 'تم حذف المعرض "$title" بنجاح';
+      }
+      if (RegExp(r'^\d+\s+photo\(s\)$', caseSensitive: false).hasMatch(trimmed)) {
+        final count = trimmed.split(' ').first;
+        return '$count صور';
       }
 
       // Dynamic profile creation & upload error patterns

@@ -1058,6 +1058,8 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           const SizedBox(height: 6),
           TextFormField(
             controller: _transactionIdController,
+            style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+            cursorColor: const Color(0xFF6A2777),
             decoration: InputDecoration(
               hintText: 'e.g. TXN-98472918 or Bank Ref #'.trData(context),
               hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF94A3B8)),
@@ -1471,9 +1473,16 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                 TextFormField(
                   controller: _cardHolderController,
                   textCapitalization: TextCapitalization.words,
+                  style: const TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF0F172A),
+                  ),
+                  cursorColor: const Color(0xFF6A2777),
                   decoration: _cardInputDecoration(
                     hint: 'Full name on card'.trData(context),
                     prefixIcon: Icons.person_outline_rounded,
+                    hasValue: _cardHolderController.text.trim().isNotEmpty,
                   ),
                   validator: (val) {
                     if (val == null || val.trim().isEmpty) {
@@ -1493,6 +1502,13 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                 TextFormField(
                   controller: _cardNumberController,
                   keyboardType: TextInputType.number,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF0F172A),
+                    letterSpacing: 1.5,
+                  ),
+                  cursorColor: const Color(0xFF6A2777),
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
                     LengthLimitingTextInputFormatter(16),
@@ -1501,6 +1517,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                   decoration: _cardInputDecoration(
                     hint: '0000 0000 0000 0000',
                     prefixIcon: Icons.credit_card_rounded,
+                    hasValue: _cardNumberController.text.trim().isNotEmpty,
                     suffix: Padding(
                       padding: const EdgeInsets.only(right: 10),
                       child: _buildBrandBadge(cardBrand),
@@ -1533,6 +1550,13 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                           TextFormField(
                             controller: _expiryController,
                             keyboardType: TextInputType.number,
+                            style: const TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF0F172A),
+                              letterSpacing: 1.2,
+                            ),
+                            cursorColor: const Color(0xFF6A2777),
                             inputFormatters: [
                               FilteringTextInputFormatter.digitsOnly,
                               LengthLimitingTextInputFormatter(4),
@@ -1541,6 +1565,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                             decoration: _cardInputDecoration(
                               hint: 'MM/YY',
                               prefixIcon: Icons.calendar_today_rounded,
+                              hasValue: _expiryController.text.trim().isNotEmpty,
                             ),
                             validator: (val) {
                               if (val == null || val.trim().isEmpty) {
@@ -1571,6 +1596,13 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                             controller: _cvvController,
                             keyboardType: TextInputType.number,
                             obscureText: _obscureCvv,
+                            style: const TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF0F172A),
+                              letterSpacing: 2.0,
+                            ),
+                            cursorColor: const Color(0xFF6A2777),
                             inputFormatters: [
                               FilteringTextInputFormatter.digitsOnly,
                               LengthLimitingTextInputFormatter(4),
@@ -1578,6 +1610,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                             decoration: _cardInputDecoration(
                               hint: 'CVV',
                               prefixIcon: Icons.lock_outline_rounded,
+                              hasValue: _cvvController.text.trim().isNotEmpty,
                               suffix: IconButton(
                                 icon: Icon(
                                   _obscureCvv ? Icons.visibility_outlined : Icons.visibility_off_outlined,
@@ -1605,26 +1638,46 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                 const SizedBox(height: 14),
 
                 // Save Card Checkbox
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: Checkbox(
-                        value: _saveCard,
-                        activeColor: const Color(0xFF6A2777),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                        onChanged: (val) => setState(() => _saveCard = val ?? true),
-                      ),
+                InkWell(
+                  onTap: () => setState(() => _saveCard = !_saveCard),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: Checkbox(
+                            value: _saveCard,
+                            activeColor: const Color(0xFF6A2777),
+                            checkColor: Colors.white,
+                            fillColor: WidgetStateProperty.resolveWith((states) {
+                              if (states.contains(WidgetState.selected)) {
+                                return const Color(0xFF6A2777);
+                              }
+                              return Colors.white;
+                            }),
+                            side: const BorderSide(
+                              color: Color(0xFF6A2777),
+                              width: 1.8,
+                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            visualDensity: VisualDensity.compact,
+                            onChanged: (val) => setState(() => _saveCard = val ?? true),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Save card securely for 1-click renewals & future listings'.trData(context),
+                            style: const TextStyle(fontSize: 12, color: Color(0xFF475569), fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Save card securely for 1-click renewals & future listings'.trData(context),
-                        style: const TextStyle(fontSize: 12, color: Color(0xFF475569), fontWeight: FontWeight.w500),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
                 const SizedBox(height: 12),
 
@@ -1956,18 +2009,28 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     required String hint,
     required IconData prefixIcon,
     Widget? suffix,
+    bool hasValue = false,
   }) {
+    final bool filled = hasValue;
     return InputDecoration(
       hintText: hint,
       hintStyle: const TextStyle(fontSize: 13.5, color: Color(0xFF94A3B8)),
-      prefixIcon: Icon(prefixIcon, size: 19, color: const Color(0xFF64748B)),
+      prefixIcon: Icon(
+        prefixIcon,
+        size: 19,
+        color: filled ? const Color(0xFF6A2777) : const Color(0xFF64748B),
+      ),
       suffixIcon: suffix,
       filled: true,
-      fillColor: const Color(0xFFF8FAFC),
+      fillColor: filled ? const Color(0xFFFAF5FF) : const Color(0xFFF8FAFC),
+      focusColor: const Color(0xFFFAF5FF),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        borderSide: BorderSide(
+          color: filled ? const Color(0xFFD8B4FE) : const Color(0xFFE2E8F0),
+          width: filled ? 1.2 : 1.0,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),

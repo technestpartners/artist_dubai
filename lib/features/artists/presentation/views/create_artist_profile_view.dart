@@ -150,6 +150,77 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     }
   }
 
+  void _confirmDeleteProfilePhoto() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEE2E2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.delete_outline, color: Color(0xFFDC2626), size: 22),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Delete Profile Picture'.trData(context),
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to remove your profile photo?'.trData(context),
+          style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel'.trData(context),
+              style: const TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              setState(() {
+                _profilePhotoFile = null;
+                _profilePhotoBytes = null;
+                _existingAvatarUrl = null;
+              });
+              UiHelpers.showSnackBar(
+                context,
+                message: 'Profile photo removed'.trData(context),
+              );
+            },
+            child: Text(
+              'Delete'.trData(context),
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _pickImagesFromGallery() async {
     final currentCount = _portfolioArtworks.length;
     if (currentCount >= kMaxArtworks) {
@@ -1219,23 +1290,92 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                     ),
                                   ),
                                 ),
+                                if (_profilePhotoBytes != null ||
+                                    _profilePhotoFile != null ||
+                                    (_existingAvatarUrl != null && _existingAvatarUrl!.isNotEmpty))
+                                  Positioned(
+                                    top: 0,
+                                    right: 0,
+                                    child: InkWell(
+                                      onTap: _confirmDeleteProfilePhoto,
+                                      borderRadius: BorderRadius.circular(20),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(5),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFDC2626),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(color: Colors.white, width: 2),
+                                        ),
+                                        child: const Icon(
+                                          Icons.close,
+                                          size: 14,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                            TextButton.icon(
-                              onPressed: _pickProfilePhoto,
-                              icon: const Icon(Icons.add_a_photo_outlined, size: 16, color: Colors.white),
-                              label: Text(
-                                _profilePhotoFile != null || (_existingAvatarUrl != null && _existingAvatarUrl!.isNotEmpty)
-                                    ? l10n.changeProfilePicture
-                                    : l10n.uploadArtistPhotoOptional,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
+                            const SizedBox(height: 10),
+                            if (_profilePhotoBytes != null ||
+                                _profilePhotoFile != null ||
+                                (_existingAvatarUrl != null && _existingAvatarUrl!.isNotEmpty)) ...[
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  OutlinedButton.icon(
+                                    onPressed: _pickProfilePhoto,
+                                    icon: const Icon(Icons.edit_outlined, size: 15, color: Colors.white),
+                                    label: Text(
+                                      'Edit Photo'.trData(context),
+                                      style: const TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      side: BorderSide(color: Colors.white.withValues(alpha: 0.8), width: 1.0),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  OutlinedButton.icon(
+                                    onPressed: _confirmDeleteProfilePhoto,
+                                    icon: const Icon(Icons.delete_outline, size: 15, color: Color(0xFFFCA5A5)),
+                                    label: Text(
+                                      'Delete Photo'.trData(context),
+                                      style: const TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFFFCA5A5),
+                                      ),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      side: const BorderSide(color: Color(0xFFF87171), width: 1.0),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ] else ...[
+                              TextButton.icon(
+                                onPressed: _pickProfilePhoto,
+                                icon: const Icon(Icons.add_a_photo_outlined, size: 16, color: Colors.white),
+                                label: Text(
+                                  l10n.uploadArtistPhotoOptional,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
-                            ),
+                            ],
                           ],
                         ),
                       ),
