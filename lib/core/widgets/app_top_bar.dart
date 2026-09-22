@@ -182,7 +182,7 @@ class _AppTopBarState extends State<AppTopBar> {
 
     final rh = ResponsiveHelper.of(context);
     final logoSize = rh.appBarLogoSize;
-    final brandFontSize = rh.isWide ? 16.0 : 14.0;
+    final brandFontSize = rh.isCompact ? 12.5 : (rh.isWide ? 16.0 : 14.0);
     final avatarSize = rh.appBarAvatarSize;
 
     return AppBar(
@@ -192,7 +192,7 @@ class _AppTopBarState extends State<AppTopBar> {
       surfaceTintColor: Colors.transparent,
       automaticallyImplyLeading: false,
       centerTitle: false,
-      titleSpacing: rh.isWide ? 20.0 : 12.0,
+      titleSpacing: rh.isCompact ? 6.0 : (rh.isWide ? 20.0 : 12.0),
       title: InkWell(
         onTap: () => context.go(RouteNames.home),
         borderRadius: BorderRadius.circular(8),
@@ -215,7 +215,7 @@ class _AppTopBarState extends State<AppTopBar> {
                 );
               },
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: rh.isCompact ? 4 : 8),
 
             // Brand Titles
             Consumer<LocaleProvider>(
@@ -256,29 +256,36 @@ class _AppTopBarState extends State<AppTopBar> {
         Consumer<LocaleProvider>(
           builder: (context, localeProvider, _) {
             final isArabic = localeProvider.isArabic;
+            final isCompact = rh.isCompact;
             return Tooltip(
               message: isArabic ? 'Switch to English' : 'التبديل إلى العربية',
               child: InkWell(
                 onTap: () => localeProvider.toggleLocale(),
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  margin: EdgeInsets.symmetric(
+                    vertical: isCompact ? 12 : 10,
+                    horizontal: isCompact ? 2 : 4,
+                  ),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isCompact ? 6 : 10,
+                    vertical: isCompact ? 3 : 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF5E227A).withValues(alpha: 0.08),
-                    border: Border.all(color: const Color(0xFF5E227A), width: 1.4),
+                    border: Border.all(color: const Color(0xFF5E227A), width: isCompact ? 1.0 : 1.4),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.language, size: 15, color: Color(0xFF5E227A)),
-                      const SizedBox(width: 4),
+                      Icon(Icons.language, size: isCompact ? 13 : 15, color: const Color(0xFF5E227A)),
+                      SizedBox(width: isCompact ? 2 : 4),
                       Text(
                         isArabic ? 'English' : 'عربي',
-                        style: const TextStyle(
-                          color: Color(0xFF5E227A),
-                          fontSize: 12.5,
+                        style: TextStyle(
+                          color: const Color(0xFF5E227A),
+                          fontSize: isCompact ? 11.0 : 12.5,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -289,7 +296,7 @@ class _AppTopBarState extends State<AppTopBar> {
             );
           },
         ),
-        const SizedBox(width: 2),
+        SizedBox(width: rh.isCompact ? 1 : 2),
 
         if (loggedIn) ...[
           // Dynamic Notification Bell with live unread badge
@@ -297,6 +304,7 @@ class _AppTopBarState extends State<AppTopBar> {
             listenable: sl<NotificationService>(),
             builder: (context, _) {
               final unreadCount = sl<NotificationService>().unreadCount;
+              final isCompact = rh.isCompact;
 
               return Stack(
                 alignment: Alignment.center,
@@ -304,13 +312,16 @@ class _AppTopBarState extends State<AppTopBar> {
                 children: [
                   IconButton(
                     key: _bellKey,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.notifications_none_rounded,
-                      color: Color(0xFF1E1E1E),
-                      size: 24,
+                      color: const Color(0xFF1E1E1E),
+                      size: isCompact ? 20 : 24,
                     ),
-                    padding: const EdgeInsets.all(4),
-                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                    padding: EdgeInsets.all(isCompact ? 2 : 4),
+                    constraints: BoxConstraints(
+                      minWidth: isCompact ? 30 : 36,
+                      minHeight: isCompact ? 30 : 36,
+                    ),
                     onPressed: () => showNotificationsPanel(context, _bellKey),
                   ),
                   if (unreadCount > 0)
@@ -346,7 +357,7 @@ class _AppTopBarState extends State<AppTopBar> {
               );
             },
           ),
-          const SizedBox(width: 2),
+          SizedBox(width: rh.isCompact ? 1 : 2),
 
           // User Avatar Circle (dynamic first letter) - Tap opens Account Settings
           GestureDetector(
@@ -374,7 +385,7 @@ class _AppTopBarState extends State<AppTopBar> {
                       avatarLetter,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: rh.isWide ? 16.0 : 14.0,
+                        fontSize: rh.isCompact ? 12.0 : (rh.isWide ? 16.0 : 14.0),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -383,7 +394,7 @@ class _AppTopBarState extends State<AppTopBar> {
               ),
             ),
           ),
-          const SizedBox(width: 2),
+          SizedBox(width: rh.isCompact ? 1 : 2),
         ],
 
         // Popup Menu — wrapped in Builder so itemBuilder can call AppLocalizations.of(context)

@@ -41,9 +41,33 @@ class HomeView extends StatelessWidget {
               final horizontalPadding = rh.horizontalPadding;
               final gap = (constraints.maxHeight * 0.014).clamp(8.0, 16.0);
 
-              // Tablet/Desktop: 2 rows × 4 cols  |  Mobile: 4 rows × 2 cols
+              // Tablet/Desktop/Fold: 2 rows × 4 cols  |  Mobile: 4 rows × 2 cols
               final rowCount = rh.isWide ? 2 : 4;
               final colCount = rh.isWide ? 4 : 2;
+              final isShort = constraints.maxHeight < 560 || rh.isShortScreen;
+
+              if (isShort) {
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const HomeHeaderWidget(),
+                      SizedBox(height: gap * 0.5),
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                            child: _buildScrollableGrid(context, rowCount, colCount, gap),
+                          ),
+                        ),
+                      ),
+                      const HomeFooterWidget(),
+                    ],
+                  ),
+                );
+              }
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -86,6 +110,35 @@ class HomeView extends StatelessWidget {
       children: [
         for (int row = 0; row < rowCount; row++) ...[
           Expanded(
+            child: Row(
+              children: [
+                for (int col = 0; col < colCount; col++) ...[
+                  if (col > 0) SizedBox(width: gap),
+                  Expanded(
+                    child: _buildCard(context, row * colCount + col),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (row < rowCount - 1) SizedBox(height: gap),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildScrollableGrid(
+    BuildContext context,
+    int rowCount,
+    int colCount,
+    double gap,
+  ) {
+    final cardHeight = (ResponsiveHelper.of(context).isCompact ? 95.0 : 110.0);
+    return Column(
+      children: [
+        for (int row = 0; row < rowCount; row++) ...[
+          SizedBox(
+            height: cardHeight,
             child: Row(
               children: [
                 for (int col = 0; col < colCount; col++) ...[

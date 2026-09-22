@@ -443,16 +443,16 @@ class _ArtistsViewState extends State<ArtistsView> {
                     },
                   )
                   else
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: rh.gridCrossAxisCount,
-                      crossAxisSpacing: 14,
-                      mainAxisSpacing: 14,
-                      childAspectRatio: 0.72,
-                    ),
-                    itemCount: filteredArtists.length,
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: rh.gridCrossAxisCount,
+                        crossAxisSpacing: 14,
+                        mainAxisSpacing: 14,
+                        childAspectRatio: rh.isDesktop ? 0.74 : (rh.isFold ? 0.66 : 0.68),
+                      ),
+                      itemCount: filteredArtists.length,
                     itemBuilder: (context, index) {
                       return _buildArtistCard(filteredArtists[index]);
                     },
@@ -812,6 +812,7 @@ class _ArtistsViewState extends State<ArtistsView> {
                 const SizedBox(height: 8),
 
                 // Location
+                // Location
                 Row(
                   children: [
                     const Icon(
@@ -820,11 +821,15 @@ class _ArtistsViewState extends State<ArtistsView> {
                       color: Color(0xFF757575),
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      artist.localizedLocation(context),
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        color: Color(0xFF757575),
+                    Expanded(
+                      child: Text(
+                        artist.localizedLocation(context),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          color: Color(0xFF757575),
+                        ),
                       ),
                     ),
                   ],
@@ -877,24 +882,32 @@ class _ArtistsViewState extends State<ArtistsView> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.people_outline,
-                          size: 18,
-                          color: Color(0xFF757575),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          l10n.artistCardStats(artist.likesCount, artist.worksCount),
-                          style: const TextStyle(
-                            fontSize: 13,
+                    Expanded(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.people_outline,
+                            size: 18,
                             color: Color(0xFF757575),
-                            fontWeight: FontWeight.w500,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              l10n.artistCardStats(artist.likesCount, artist.worksCount),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF757575),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     SizedBox(
                       height: 40,
                       child: ElevatedButton(
@@ -902,17 +915,20 @@ class _ArtistsViewState extends State<ArtistsView> {
                           backgroundColor: const Color(0xFF5E227A),
                           foregroundColor: Colors.white,
                           elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          padding: EdgeInsets.symmetric(horizontal: rh.isCompact ? 10 : 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                         onPressed: () => _openArtistDetail(artist),
-                        child: Text(
-                          AppLocalizations.of(context).viewProfile,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            AppLocalizations.of(context).viewProfile,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),

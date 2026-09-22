@@ -10,6 +10,7 @@ import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/utils/data_translator.dart';
+import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 
 import '../../../../core/widgets/app_cached_image.dart';
@@ -771,6 +772,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
   @override
   Widget build(BuildContext context) {
+    final rh = ResponsiveHelper.of(context);
     final l10n = AppLocalizations.of(context);
     final isEdit = widget.event != null;
 
@@ -810,9 +812,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
         titleSpacing: 0,
         title: Text(
           appBarTitle,
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.white,
-            fontSize: 18,
+            fontSize: rh.sp(18),
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -822,10 +824,13 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           children: [
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
+                padding: EdgeInsets.symmetric(horizontal: rh.horizontalPadding, vertical: 16.0),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Header Card
@@ -1278,10 +1283,12 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                 ),
               ),
             ),
-          ],
+          ),
         ),
-      ),
-      bottomNavigationBar: (!widget.fromAdmin && !widget.isCalendar && widget.showBottomBar)
+      ],
+    ),
+  ),
+  bottomNavigationBar: (!widget.fromAdmin && !widget.isCalendar && widget.showBottomBar)
           ? const AppBottomNavBar(currentIndex: 2)
           : null,
     );

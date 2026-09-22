@@ -563,24 +563,27 @@ class _SettingsViewState extends State<SettingsView> {
                                             width: !isArabic ? 1.8 : 1.0,
                                           ),
                                         ),
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            const Text('🇬🇧', style: TextStyle(fontSize: 18)),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              l10n.english,
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: !isArabic ? FontWeight.bold : FontWeight.w500,
-                                                color: !isArabic ? const Color(0xFF5E227A) : const Color(0xFF1E1E1E),
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              const Text('🇬🇧', style: TextStyle(fontSize: 18)),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                l10n.english,
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: !isArabic ? FontWeight.bold : FontWeight.w500,
+                                                  color: !isArabic ? const Color(0xFF5E227A) : const Color(0xFF1E1E1E),
+                                                ),
                                               ),
-                                            ),
-                                            if (!isArabic) ...[
-                                              const SizedBox(width: 6),
-                                              const Icon(Icons.check_circle, size: 16, color: Color(0xFF5E227A)),
+                                              if (!isArabic) ...[
+                                                const SizedBox(width: 6),
+                                                const Icon(Icons.check_circle, size: 16, color: Color(0xFF5E227A)),
+                                              ],
                                             ],
-                                          ],
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -600,24 +603,27 @@ class _SettingsViewState extends State<SettingsView> {
                                             width: isArabic ? 1.8 : 1.0,
                                           ),
                                         ),
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            const Text('🇦🇪', style: TextStyle(fontSize: 18)),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              l10n.arabic,
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: isArabic ? FontWeight.bold : FontWeight.w500,
-                                                color: isArabic ? const Color(0xFF5E227A) : const Color(0xFF1E1E1E),
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              const Text('🇦🇪', style: TextStyle(fontSize: 18)),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                l10n.arabic,
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: isArabic ? FontWeight.bold : FontWeight.w500,
+                                                  color: isArabic ? const Color(0xFF5E227A) : const Color(0xFF1E1E1E),
+                                                ),
                                               ),
-                                            ),
-                                            if (isArabic) ...[
-                                              const SizedBox(width: 6),
-                                              const Icon(Icons.check_circle, size: 16, color: Color(0xFF5E227A)),
+                                              if (isArabic) ...[
+                                                const SizedBox(width: 6),
+                                                const Icon(Icons.check_circle, size: 16, color: Color(0xFF5E227A)),
+                                              ],
                                             ],
-                                          ],
+                                          ),
                                         ),
                                       ),
                                     ),

@@ -8,6 +8,7 @@ import '../../../../core/services/favorites_service.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/utils/share_helper.dart';
 import '../../../../core/utils/data_translator.dart';
 import '../../domain/models/art_event_model.dart';
@@ -194,6 +195,7 @@ class _EventDetailViewState extends State<EventDetailView> {
       );
     }
 
+    final rh = ResponsiveHelper.of(context);
     final ev = event;
     final isLiked = _likedEventIds.contains(ev.id);
     final similarEvents = ArtEventModel.mockEvents.where((e) => e.id != ev.id).toList();
@@ -203,10 +205,13 @@ class _EventDetailViewState extends State<EventDetailView> {
       appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+          padding: EdgeInsets.fromLTRB(rh.horizontalPadding, 6, rh.horizontalPadding, 24),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
               // 1. Sub-Header: Back button, Title, Actions (Heart, Calendar, Share)
               _buildSubHeader(isLiked, ev),
               const SizedBox(height: 12),
@@ -326,7 +331,7 @@ class _EventDetailViewState extends State<EventDetailView> {
 
               // Horizontal list of similar events
               SizedBox(
-                height: 270,
+                height: 290,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: similarEvents.length,
@@ -340,7 +345,9 @@ class _EventDetailViewState extends State<EventDetailView> {
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 
   // Sub-header with back button and top action icons (Reference Screenshot 4)

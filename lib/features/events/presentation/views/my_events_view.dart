@@ -14,6 +14,7 @@ import '../../../home/presentation/widgets/home_footer_widget.dart';
 import '../../domain/models/art_event_model.dart';
 import '../../../../core/utils/share_helper.dart';
 import '../../../../core/utils/data_translator.dart';
+import '../../../../core/utils/responsive_helper.dart';
 
 class MyEventsView extends StatefulWidget {
   const MyEventsView({super.key});
@@ -91,6 +92,7 @@ class _MyEventsViewState extends State<MyEventsView> {
 
   @override
   Widget build(BuildContext context) {
+    final rh = ResponsiveHelper.of(context);
     final l10n = AppLocalizations.of(context);
     final totalCreated = _myCreatedEvents.length;
     final totalCategories = _myCreatedEvents.map((e) => e.category).toSet().length;
@@ -109,23 +111,26 @@ class _MyEventsViewState extends State<MyEventsView> {
                 onRefresh: _fetchMyEvents,
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 1. Header Title & Create Event Button
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  padding: EdgeInsets.symmetric(horizontal: rh.horizontalPadding, vertical: 20.0),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // 1. Header Title & Create Event Button
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   l10n.myCreatedEvents,
-                                  style: const TextStyle(
-                                    fontSize: 22,
+                                  style: TextStyle(
+                                    fontSize: rh.sp(21),
                                     fontWeight: FontWeight.w900,
                                     color: Colors.white,
                                     letterSpacing: 0.5,
@@ -134,9 +139,9 @@ class _MyEventsViewState extends State<MyEventsView> {
                                 const SizedBox(height: 4),
                                 Text(
                                   l10n.myCreatedEventsSubtitle,
-                                  style: const TextStyle(
-                                    fontSize: 13.5,
-                                    color: Color(0xFFE2D6F5),
+                                  style: TextStyle(
+                                    fontSize: rh.sp(13),
+                                    color: const Color(0xFFE2D6F5),
                                     fontWeight: FontWeight.w400,
                                   ),
                                 ),
@@ -147,12 +152,18 @@ class _MyEventsViewState extends State<MyEventsView> {
                           ElevatedButton.icon(
                             onPressed: () => context.push(RouteNames.createArtEvent),
                             icon: const Icon(Icons.add, size: 16, color: Color(0xFF6B1C9B)),
-                            label: Text(l10n.createEvent, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF6B1C9B))),
+                            label: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                l10n.createEvent,
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF6B1C9B)),
+                              ),
+                            ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.white,
                               foregroundColor: const Color(0xFF6B1C9B),
                               elevation: 0,
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              padding: EdgeInsets.symmetric(horizontal: rh.isCompact ? 10 : 14, vertical: 10),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
@@ -459,17 +470,27 @@ class _MyEventsViewState extends State<MyEventsView> {
                                             Row(
                                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                               children: [
-                                                Text(
-                                                  l10n.localeName == 'ar' ? 'دخول مجاني للمجتمع' : 'Free Community Entry',
-                                                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                                                Expanded(
+                                                  child: Text(
+                                                    l10n.localeName == 'ar' ? 'دخول مجاني للمجتمع' : 'Free Community Entry',
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                                                  ),
                                                 ),
+                                                const SizedBox(width: 8),
                                                 Row(
+                                                  mainAxisSize: MainAxisSize.min,
                                                   children: [
-                                                    Text(
-                                                      l10n.localeName == 'ar'
-                                                          ? 'السعة: ${event.maxAttendees} حاضر'
-                                                          : 'Capacity: ${event.maxAttendees} attendees',
-                                                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF6A2777)),
+                                                    Flexible(
+                                                      child: Text(
+                                                        l10n.localeName == 'ar'
+                                                            ? 'السعة: ${event.maxAttendees} حاضر'
+                                                            : 'Capacity: ${event.maxAttendees} attendees',
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF6A2777)),
+                                                      ),
                                                     ),
                                                     const SizedBox(width: 8),
                                                     InkWell(
@@ -526,6 +547,8 @@ class _MyEventsViewState extends State<MyEventsView> {
                   ),
                 ),
               ),
+            ),
+          ),
       ),
       bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
     );
@@ -555,21 +578,30 @@ class _MyEventsViewState extends State<MyEventsView> {
         children: [
           Icon(icon, color: const Color(0xFF6A2777), size: 20),
           const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              color: Color(0xFF0F172A),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF0F172A),
+              ),
             ),
           ),
           const SizedBox(height: 2),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 11,
-              color: Color(0xFF64748B),
-              fontWeight: FontWeight.w500,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              title,
+              maxLines: 1,
+              style: const TextStyle(
+                fontSize: 11,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],

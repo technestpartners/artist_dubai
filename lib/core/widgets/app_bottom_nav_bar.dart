@@ -67,8 +67,10 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
     required String label,
     required VoidCallback onTap,
   }) {
+    final rh = ResponsiveHelper.of(context);
     final isSelected = widget.currentIndex == index;
     final color = isSelected ? Colors.white : Colors.white.withValues(alpha: 0.72);
+    final isCompact = rh.isCompact;
 
     return Expanded(
       child: Center(
@@ -84,13 +86,16 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeInOut,
-                constraints: const BoxConstraints(
-                  minWidth: 50,
-                  maxWidth: 68,
-                  minHeight: 46,
-                  maxHeight: 48,
+                constraints: BoxConstraints(
+                  minWidth: isCompact ? 36 : 50,
+                  maxWidth: isCompact ? 54 : 68,
+                  minHeight: rh.isShortScreen ? 40 : 46,
+                  maxHeight: rh.isShortScreen ? 44 : 48,
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: EdgeInsets.symmetric(
+                  horizontal: isCompact ? 3 : 8,
+                  vertical: isCompact || rh.isShortScreen ? 2 : 3,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? Colors.white.withValues(alpha: 0.20)
@@ -110,7 +115,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                     Icon(
                       isSelected ? selectedIcon : unselectedIcon,
                       color: color,
-                      size: 20,
+                      size: isCompact ? 18 : 20,
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -120,9 +125,9 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: color,
-                        fontSize: 10.5,
+                        fontSize: isCompact ? 9.0 : 10.5,
                         fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                        letterSpacing: 0.1,
+                        letterSpacing: isCompact ? -0.1 : 0.1,
                       ),
                     ),
                   ],
@@ -144,21 +149,24 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
     return SafeArea(
       top: false,
       child: Container(
-        height: 90,
+        height: rh.isShortScreen ? 72 : 90,
         padding: EdgeInsets.only(
-          left: rh.horizontalPadding,
-          right: rh.horizontalPadding,
-          bottom: 20.0,
-          top: 6.0,
+          left: rh.isCompact ? 8.0 : rh.horizontalPadding,
+          right: rh.isCompact ? 8.0 : rh.horizontalPadding,
+          bottom: rh.isShortScreen ? 6.0 : 20.0,
+          top: 4.0,
         ),
         child: Center(
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxWidth: rh.isWide ? 560.0 : double.infinity,
+              maxWidth: rh.bottomNavMaxWidth,
             ),
             child: Container(
-              height: 64,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              height: rh.isShortScreen ? 54 : 64,
+              padding: EdgeInsets.symmetric(
+                horizontal: rh.isCompact ? 8 : 16,
+                vertical: rh.isShortScreen ? 3 : 6,
+              ),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,

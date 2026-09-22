@@ -80,12 +80,22 @@ class _ArtistDubaiAppState extends State<ArtistDubaiApp> with WidgetsBindingObse
               return supportedLocales.first;
             },
             builder: (context, child) {
-              return GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: () {
-                  FocusManager.instance.primaryFocus?.unfocus();
-                },
-                child: child ?? const SizedBox.shrink(),
+              final mediaQuery = MediaQuery.of(context);
+              final clampedTextScaler = mediaQuery.textScaler.clamp(
+                minScaleFactor: 0.80,
+                maxScaleFactor: 1.15,
+              );
+              return MediaQuery(
+                data: mediaQuery.copyWith(
+                  textScaler: clampedTextScaler,
+                ),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: () {
+                    FocusManager.instance.primaryFocus?.unfocus();
+                  },
+                  child: child ?? const SizedBox.shrink(),
+                ),
               );
             },
           );

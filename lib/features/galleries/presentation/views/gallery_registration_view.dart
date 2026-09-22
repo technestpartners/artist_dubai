@@ -8,6 +8,7 @@ import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
 import '../../../../core/utils/data_translator.dart';
+import '../../../../core/utils/responsive_helper.dart';
 import '../../../admin/domain/models/publishing_pricing_model.dart';
 
 class GalleryRegistrationView extends StatefulWidget {
@@ -341,6 +342,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
 
   @override
   Widget build(BuildContext context) {
+    final rh = ResponsiveHelper.of(context);
     return Scaffold(
       backgroundColor: _screenBg,
       appBar: const AppTopBar(backgroundColor: Colors.white),
@@ -349,8 +351,13 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-            child: _isSubmitted ? _buildSubmittedView() : _buildFormView(),
+            padding: EdgeInsets.fromLTRB(rh.horizontalPadding, 24, rh.horizontalPadding, 24),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
+                child: _isSubmitted ? _buildSubmittedView() : _buildFormView(),
+              ),
+            ),
           ),
         ),
       ),

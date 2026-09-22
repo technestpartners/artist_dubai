@@ -10,6 +10,7 @@ import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/utils/share_helper.dart';
+import '../../../../core/utils/responsive_helper.dart';
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -693,6 +694,7 @@ class _ProfileViewState extends State<ProfileView> {
 
   @override
   Widget build(BuildContext context) {
+    final rh = ResponsiveHelper.of(context);
     return Scaffold(
       backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(backgroundColor: Colors.white),
@@ -731,12 +733,12 @@ class _ProfileViewState extends State<ProfileView> {
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                         ),
-                        const SizedBox(width: 12),
-                        const Expanded(
+                        const SizedBox(width: 10),
+                        Expanded(
                           child: Text(
                             'Account Settings',
                             style: TextStyle(
-                              fontSize: 20,
+                              fontSize: rh.sp(18),
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
@@ -747,67 +749,86 @@ class _ProfileViewState extends State<ProfileView> {
                       ],
                     ),
                   ),
-                  OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: Colors.white.withValues(alpha: 0.15),
-                      side: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.3),
-                        width: 1.0,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                    ),
-                    onPressed: _onShareProfile,
-                    icon: const Icon(
-                      Icons.share_outlined,
-                      size: 16,
-                      color: Colors.white,
-                    ),
-                    label: const Text(
-                      'Share',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
                   const SizedBox(width: 8),
-                  OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: Colors.white.withValues(alpha: 0.15),
-                      side: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.3),
-                        width: 1.0,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
+                  if (rh.isCompact) ...[
+                    IconButton(
+                      icon: const Icon(Icons.share_outlined, color: Colors.white, size: 20),
+                      onPressed: _onShareProfile,
+                      tooltip: 'Share',
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(6),
                     ),
-                    onPressed: () => context.go(RouteNames.home),
-                    icon: const Icon(
-                      Icons.home_outlined,
-                      size: 16,
-                      color: Colors.white,
+                    const SizedBox(width: 4),
+                    IconButton(
+                      icon: const Icon(Icons.home_outlined, color: Colors.white, size: 20),
+                      onPressed: () => context.go(RouteNames.home),
+                      tooltip: 'Home',
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(6),
                     ),
-                    label: const Text(
-                      'Home',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                  ] else ...[
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: Colors.white.withValues(alpha: 0.15),
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          width: 1.0,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                      ),
+                      onPressed: _onShareProfile,
+                      icon: const Icon(
+                        Icons.share_outlined,
+                        size: 16,
                         color: Colors.white,
                       ),
+                      label: const Text(
+                        'Share',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: Colors.white.withValues(alpha: 0.15),
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          width: 1.0,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                      ),
+                      onPressed: () => context.go(RouteNames.home),
+                      icon: const Icon(
+                        Icons.home_outlined,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                      label: const Text(
+                        'Home',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -815,10 +836,13 @@ class _ProfileViewState extends State<ProfileView> {
             // Main Body Content
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                padding: EdgeInsets.symmetric(horizontal: rh.horizontalPadding, vertical: 16.0),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                     // Card 1: Account Information (Dynamic from MySQL)
                     _buildSectionCard(
                       icon: Icons.person_outline,
@@ -1192,11 +1216,13 @@ class _ProfileViewState extends State<ProfileView> {
                 ),
               ),
             ),
-          ],
+          ),
         ),
-      ),
-      bottomNavigationBar: const AppBottomNavBar(currentIndex: -1),
-    );
+      ],
+    ),
+  ),
+  bottomNavigationBar: const AppBottomNavBar(currentIndex: -1),
+);
   }
 
   Widget _buildSectionCard({

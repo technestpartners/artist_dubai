@@ -10,6 +10,7 @@ import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import '../../../../core/utils/responsive_helper.dart';
 
 class RegisterView extends StatefulWidget {
   const RegisterView({super.key, this.initialRole = 'user'});
@@ -322,21 +323,25 @@ class _RegisterViewState extends State<RegisterView> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final rh = ResponsiveHelper.of(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
         child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Top Action Row
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 12.0,
-                ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: rh.isWide ? 520.0 : double.infinity),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Top Action Row
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: rh.horizontalPadding,
+                      vertical: 12.0,
+                    ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -713,7 +718,9 @@ class _RegisterViewState extends State<RegisterView> {
           ),
         ),
       ),
-      bottomNavigationBar: const AppBottomNavBar(currentIndex: 3),
+    ),
+  ),
+  bottomNavigationBar: const AppBottomNavBar(currentIndex: 3),
     );
   }
 }

@@ -230,18 +230,19 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                     ),
                     child: TabBar(
                       controller: _tabController,
+                      isScrollable: rh.isCompact,
                       indicator: BoxDecoration(
                         color: const Color(0xFF6B1C9B),
                         borderRadius: BorderRadius.circular(9),
                       ),
                       labelColor: Colors.white,
                       unselectedLabelColor: const Color(0xFF64748B),
-                      labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                      labelStyle: TextStyle(fontSize: rh.sp(12.5), fontWeight: FontWeight.bold),
                       padding: const EdgeInsets.all(3),
                       tabs: [
-                        Tab(text: '${l10n.artists} (${_favoritedArtists.length})'),
-                        Tab(text: '${l10n.events} (${_favoritedEvents.length})'),
-                        Tab(text: '${l10n.artworks} (${_favoritedArtworks.length})'),
+                        Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text('${l10n.artists} (${_favoritedArtists.length})'))),
+                        Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text('${l10n.events} (${_favoritedEvents.length})'))),
+                        Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text('${l10n.artworks} (${_favoritedArtworks.length})'))),
                       ],
                     ),
                   ),

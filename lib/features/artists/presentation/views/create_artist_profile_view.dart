@@ -16,6 +16,7 @@ import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/utils/data_translator.dart';
+import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/utils/ui_helpers.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
 import '../../domain/models/artist_model.dart';
@@ -1079,6 +1080,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
 
   @override
   Widget build(BuildContext context) {
+    final rh = ResponsiveHelper.of(context);
     final l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: const Color(0xFF6B1C9B),
@@ -1087,85 +1089,93 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
         child: Column(
           children: [
             // "Create Artist Profile" Sub-Header with Back Arrow & Home Action
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.18),
-                    width: 1,
-                  ),
-                ),
-              ),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => context.pop(),
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      _isEditMode
-                          ? l10n.editArtistProfileTitle
-                          : l10n.createArtistProfileTitle,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+            Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: rh.horizontalPadding, vertical: 8),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        width: 1,
                       ),
                     ),
                   ),
-                  InkWell(
-                    onTap: () => context.go(RouteNames.home),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () => context.pop(),
                       ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3),
-                          width: 1,
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          _isEditMode
+                              ? l10n.editArtistProfileTitle
+                              : l10n.createArtistProfileTitle,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: rh.isCompact ? 17 : 20,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.home_outlined,
-                            color: Colors.white,
-                            size: 18,
+                      InkWell(
+                        onTap: () => context.go(RouteNames.home),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            l10n.home,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.3),
+                              width: 1,
                             ),
                           ),
-                        ],
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.home_outlined,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                l10n.home,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
 
             // Form Body Content
             Expanded(
-              child: SingleChildScrollView(
-                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 48),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
+                  child: SingleChildScrollView(
+                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: EdgeInsets.fromLTRB(rh.horizontalPadding, 24, rh.horizontalPadding, 48),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                       // Header Avatar Badge (Matching Screenshot media_1787731751692.png)
                       Center(
                         child: Container(
@@ -2169,7 +2179,9 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                 ),
               ),
             ),
-          ],
+          ),
+        ),
+      ],
         ),
       ),
       bottomNavigationBar: widget.fromAdmin ? null : const AppBottomNavBar(currentIndex: 1),

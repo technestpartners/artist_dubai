@@ -16,6 +16,7 @@ import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/utils/data_translator.dart';
+import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/utils/share_helper.dart';
 import '../../../../core/utils/ui_helpers.dart';
 import '../../domain/models/artist_model.dart';
@@ -1682,6 +1683,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
       );
     }
     final l10n = AppLocalizations.of(context);
+    final rh = ResponsiveHelper.of(context);
     final currentArtist =
         _effectiveArtist ??
         const ArtistModel(
@@ -1705,134 +1707,150 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         child: Column(
           children: [
             // 1. Sub-Header with Back Button & Share/Favorite Actions
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                    onPressed: () {
-                      if (context.canPop()) {
-                        context.pop(_isArtistFavorited);
-                      } else {
-                        context.go(RouteNames.home);
-                      }
-                    },
+            Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: rh.horizontalPadding,
+                    vertical: 10,
                   ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      l10n.artistProfile,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (_isMyProfile(currentArtist)) ...[
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => CreateArtistProfileView(
-                                isEditing: true,
-                                artist: currentArtist,
-                                artistId: currentArtist.id,
-                              ),
-                            ),
-                          );
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(
+                          Icons.arrow_back,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                        onPressed: () {
+                          if (context.canPop()) {
+                            context.pop(_isArtistFavorited);
+                          } else {
+                            context.go(RouteNames.home);
+                          }
                         },
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.25),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.edit_outlined,
-                            size: 18,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          l10n.artistProfile,
+                          style: TextStyle(
+                            fontSize: rh.isCompact ? 16 : 18,
+                            fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: _shareArtist,
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.share_outlined,
-                          size: 18,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: _toggleArtistFavorite,
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: _isArtistFavorited
-                              ? const Color(0xFFE11D48).withValues(alpha: 0.8)
-                              : Colors.white.withValues(alpha: 0.15),
-                          border: Border.all(
-                            color: _isArtistFavorited
-                                ? const Color(0xFFE11D48)
-                                : Colors.white.withValues(alpha: 0.3),
+                      if (_isMyProfile(currentArtist)) ...[
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CreateArtistProfileView(
+                                    isEditing: true,
+                                    artist: currentArtist,
+                                    artistId: currentArtist.id,
+                                  ),
+                                ),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.25),
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.edit_outlined,
+                                size: 18,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
-                          borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(
-                          _isArtistFavorited
-                              ? Icons.favorite
-                              : Icons.favorite_border,
-                          size: 18,
-                          color: Colors.white,
+                        const SizedBox(width: 8),
+                      ],
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _shareArtist,
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.share_outlined,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _toggleArtistFavorite,
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: _isArtistFavorited
+                                  ? const Color(0xFFE11D48).withValues(alpha: 0.8)
+                                  : Colors.white.withValues(alpha: 0.15),
+                              border: Border.all(
+                                color: _isArtistFavorited
+                                    ? const Color(0xFFE11D48)
+                                    : Colors.white.withValues(alpha: 0.3),
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              _isArtistFavorited
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
 
             // Main Body Scroll Content
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(
+                      rh.horizontalPadding,
+                      12,
+                      rh.horizontalPadding,
+                      40,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                     // 2. Artist Main Information Card (Matching Screenshots)
                     Container(
                       padding: const EdgeInsets.all(20),
@@ -2306,7 +2324,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                 ),
               ),
             ),
-          ],
+          ),
+        ),
+      ],
         ),
       ),
       bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),

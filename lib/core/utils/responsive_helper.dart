@@ -47,12 +47,27 @@ class ResponsiveHelper {
   bool get isDesktop => screenClass == ScreenClass.desktop;
   bool get isWide => !isMobile; // tablet OR desktop
 
+  /// Compact / narrow screen (e.g. Galaxy Z Fold outer cover screen ~320-340dp,
+  /// Galaxy Z Flip outer display ~280-340dp).
+  bool get isCompact => width < 360.0;
+
+  /// Foldable unfolded inner display (width 560-900dp with near-square aspect ratio 0.7-1.45).
+  bool get isFold =>
+      width >= 560.0 &&
+      width < 900.0 &&
+      (height / width >= 0.70 && height / width <= 1.45);
+
+  /// Short height viewport (e.g. tabletop / Flex Mode when half-folded,
+  /// landscape orientation, or small flip cover screens).
+  bool get isShortScreen => height < 560.0;
+
   // ── Layout helpers ─────────────────────────────────────────────────────────
 
-  /// Horizontal padding that grows with screen width.
+  /// Horizontal padding that grows with screen width, while remaining compact on flip/fold outer screens.
   double get horizontalPadding {
     if (isDesktop) return 40.0;
     if (isTablet) return 24.0;
+    if (isCompact) return 8.0;
     return (width * 0.04).clamp(12.0, 20.0);
   }
 
@@ -70,10 +85,18 @@ class ResponsiveHelper {
     return 24.0;
   }
 
-  /// Maximum content width — centres content on large screens.
+  /// Maximum content width — centres content on large screens and foldables.
   double get contentMaxWidth {
     if (isDesktop) return 1100.0;
-    if (isTablet) return 800.0;
+    if (isTablet) return isFold ? 680.0 : 800.0;
+    return double.infinity;
+  }
+
+  /// Optimal maximum width for floating bottom navigation bar.
+  /// Constrained to 480-540dp on foldables and tablets for ergonomic thumb reach.
+  double get bottomNavMaxWidth {
+    if (isDesktop) return 560.0;
+    if (isTablet) return isFold ? 480.0 : 540.0;
     return double.infinity;
   }
 
@@ -161,13 +184,21 @@ class ResponsiveHelper {
   // ── Typography ─────────────────────────────────────────────────────────────
 
   double get fontScaleFactor {
-    if (isDesktop) return 1.18;
-    if (isTablet) return 1.08;
+    if (isDesktop) return 1.15;
+    if (isTablet) return 1.06;
+    if (isCompact) return 0.90;
     return 1.0;
   }
 
   double adaptiveFont(double base) {
-    return (base * fontScaleFactor).clamp(base * 0.85, base * 1.5);
+    return (base * fontScaleFactor).clamp(base * 0.80, base * 1.35);
+  }
+
+  /// Responsive font sizing helper: smoothly scales [base] font size relative to screen size,
+  /// ensuring text remains legible and never cuts across small or wide displays.
+  double sp(double base) {
+    final factor = (width / 390.0).clamp(0.85, 1.25);
+    return (base * factor * fontScaleFactor).clamp(base * 0.80, base * 1.35);
   }
 
   // ── Image heights ──────────────────────────────────────────────────────────
@@ -176,6 +207,7 @@ class ResponsiveHelper {
   double get cardBannerHeight {
     if (isDesktop) return 220.0;
     if (isTablet) return 200.0;
+    if (isCompact) return 145.0;
     return 165.0;
   }
 
@@ -183,6 +215,7 @@ class ResponsiveHelper {
   double get heroBannerHeight {
     if (isDesktop) return 340.0;
     if (isTablet) return 280.0;
+    if (isCompact) return 180.0;
     return 220.0;
   }
 
@@ -191,12 +224,14 @@ class ResponsiveHelper {
   double get bottomNavHeight {
     if (isDesktop) return 78.0;
     if (isTablet) return 72.0;
+    if (isShortScreen) return 56.0;
     return 68.0;
   }
 
   double get bottomNavIconSize {
     if (isDesktop) return 30.0;
     if (isTablet) return 28.0;
+    if (isCompact) return 22.0;
     return 26.0;
   }
 
@@ -205,12 +240,14 @@ class ResponsiveHelper {
   double get appBarLogoSize {
     if (isDesktop) return 44.0;
     if (isTablet) return 40.0;
+    if (isCompact) return 30.0;
     return 36.0;
   }
 
   double get appBarAvatarSize {
     if (isDesktop) return 36.0;
     if (isTablet) return 33.0;
+    if (isCompact) return 26.0;
     return 30.0;
   }
 }

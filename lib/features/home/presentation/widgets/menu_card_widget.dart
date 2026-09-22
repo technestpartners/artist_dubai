@@ -21,12 +21,16 @@ class MenuCardWidget extends StatelessWidget {
         final maxTitleFont = rh.isDesktop ? 18.0 : rh.isTablet ? 16.5 : 16.5;
         final maxSubFont = rh.isDesktop ? 14.0 : rh.isTablet ? 13.0 : 12.5;
 
-        final iconSize = (cardHeight * 0.42).clamp(46.0, maxIconSize);
+        final minIcon = (rh.isCompact || rh.isShortScreen) ? 32.0 : 42.0;
+        final minTitle = (rh.isCompact || rh.isShortScreen) ? 9.5 : 12.0;
+        final minSub = (rh.isCompact || rh.isShortScreen) ? 8.0 : 10.0;
+
+        final iconSize = (cardHeight * 0.40).clamp(minIcon, maxIconSize);
         final titleFontSize = item.isLongTitle
-            ? (cardHeight * 0.110).clamp(11.5, maxTitleFont - 2)
-            : (cardHeight * 0.125).clamp(13.0, maxTitleFont);
-        final subtitleFontSize = (cardHeight * 0.095).clamp(10.5, maxSubFont);
-        final cornerRadius = (cardWidth * 0.14).clamp(16.0, 28.0);
+            ? (cardHeight * 0.105).clamp(minTitle, maxTitleFont - 2)
+            : (cardHeight * 0.120).clamp(minTitle + 1.0, maxTitleFont);
+        final subtitleFontSize = (cardHeight * 0.090).clamp(minSub, maxSubFont);
+        final cornerRadius = (cardWidth * 0.12).clamp(12.0, 26.0);
 
         return Material(
           color: Colors.transparent,
@@ -72,7 +76,7 @@ class MenuCardWidget extends StatelessWidget {
                               return Icon(
                                 Icons.image,
                                 color: Colors.white,
-                                size: (iconSize * 0.55).clamp(28.0, 42.0),
+                                size: (iconSize * 0.55).clamp(20.0, 42.0),
                               );
                             },
                           ),

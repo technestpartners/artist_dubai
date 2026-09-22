@@ -12,6 +12,7 @@ import '../../../../core/services/stripe_payment_service.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../admin/domain/models/payment_settings_model.dart';
 import '../../../../core/utils/data_translator.dart';
+import '../../../../core/utils/responsive_helper.dart';
 
 /// Standalone Payment & Checkout Screen for Event and Gallery Publishing Plans.
 /// Displays selected plan summary, Admin Payment QR code, Bank Transfer (IBAN)
@@ -602,6 +603,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
 
   @override
   Widget build(BuildContext context) {
+    final rh = ResponsiveHelper.of(context);
     final settings = _paymentSettings ?? PaymentSettingsModel.defaultSettings();
 
     return Scaffold(
@@ -612,7 +614,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
         elevation: 0.5,
         title: Text(
           'Payment & Checkout'.trData(context),
-          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+          style: TextStyle(fontSize: rh.sp(17), fontWeight: FontWeight.w800, color: const Color(0xFF0F172A)),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
@@ -627,10 +629,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          padding: EdgeInsets.symmetric(horizontal: rh.horizontalPadding, vertical: 20),
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 680),
+              constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

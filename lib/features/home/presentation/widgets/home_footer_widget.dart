@@ -8,15 +8,18 @@ class HomeFooterWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Center(
-        child: Text(
-          l10n.hostedBy,
-          style: const TextStyle(
-            color: Color(0xFFE2D6F5),
-            fontSize: 12.5,
-            fontWeight: FontWeight.w400,
-            letterSpacing: 0.2,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            l10n.hostedBy,
+            style: const TextStyle(
+              color: Color(0xFFE2D6F5),
+              fontSize: 12.5,
+              fontWeight: FontWeight.w400,
+              letterSpacing: 0.2,
+            ),
           ),
         ),
       ),

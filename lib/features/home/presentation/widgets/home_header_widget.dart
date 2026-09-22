@@ -16,19 +16,27 @@ class HomeHeaderWidget extends StatelessWidget {
         ? 120.0
         : rh.isTablet
             ? 95.0
-            : (rh.width * 0.165).clamp(52.0, 68.0);
+            : rh.isShortScreen
+                ? 44.0
+                : rh.isCompact
+                    ? 46.0
+                    : (rh.width * 0.165).clamp(52.0, 68.0);
     final titleFontSize = rh.isDesktop
         ? 26.0
         : rh.isTablet
             ? 22.0
-            : (rh.width * 0.045).clamp(15.0, 19.0);
+            : rh.isCompact
+                ? 14.5
+                : (rh.width * 0.045).clamp(15.0, 19.0);
     final subtitleFontSize = rh.isDesktop
         ? 14.0
         : rh.isTablet
             ? 12.0
-            : (rh.width * 0.024).clamp(9.0, 11.5);
-    final hPad = rh.isWide ? 16.0 : 8.0;
-    final vPad = rh.isWide ? 8.0 : 4.0;
+            : rh.isCompact
+                ? 8.5
+                : (rh.width * 0.024).clamp(9.0, 11.5);
+    final hPad = rh.isWide ? 16.0 : (rh.isCompact ? 4.0 : 8.0);
+    final vPad = rh.isShortScreen ? 2.0 : (rh.isWide ? 8.0 : 4.0);
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
@@ -94,6 +102,7 @@ class HomeHeaderWidget extends StatelessWidget {
               Consumer<LocaleProvider>(
                 builder: (context, localeProvider, _) {
                   final isArabic = localeProvider.isArabic;
+                  final isCompact = rh.isCompact;
                   return Tooltip(
                     message: isArabic ? 'Switch to English' : 'التبديل إلى العربية',
                     child: InkWell(
@@ -101,27 +110,27 @@ class HomeHeaderWidget extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                       child: Container(
                         padding: EdgeInsets.symmetric(
-                          horizontal: rh.isWide ? 10.0 : 8.0,
-                          vertical: rh.isWide ? 6.0 : 5.0,
+                          horizontal: isCompact ? 6.0 : (rh.isWide ? 10.0 : 8.0),
+                          vertical: isCompact || rh.isShortScreen ? 3.5 : (rh.isWide ? 6.0 : 5.0),
                         ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.18),
                           border: Border.all(
                             color: Colors.white.withValues(alpha: 0.45),
-                            width: 1.2,
+                            width: isCompact ? 1.0 : 1.2,
                           ),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.language, size: 15, color: Colors.white),
-                            const SizedBox(width: 4),
+                            Icon(Icons.language, size: isCompact ? 13 : 15, color: Colors.white),
+                            SizedBox(width: isCompact ? 2 : 4),
                             Text(
                               isArabic ? 'English' : 'عربي',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 12,
+                                fontSize: isCompact ? 10.5 : 12,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
