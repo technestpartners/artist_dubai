@@ -67,8 +67,10 @@ jobs:
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD || 'temporary_keychain_password' }}
         run: |
           if [ -z "$BUILD_CERTIFICATE_BASE64" ] || [ -z "$BUILD_PROVISION_PROFILE_BASE64" ]; then
-            echo "::warning ::Apple certificate or provisioning profile secrets not set. Skipping keychain setup."
-            exit 0
+            echo "::error ::Missing Apple signing credentials in GitHub Secrets!"
+            echo "Please configure APPLE_CERTIFICATE_BASE64, APPLE_CERTIFICATE_PASSWORD, and APPLE_PROVISIONING_PROFILE_BASE64 in repository Settings -> Secrets."
+            echo "See docs/TESTFLIGHT_PIPELINE_SETUP.md for step-by-step guidance."
+            exit 1
           fi
 
           # Create variables
