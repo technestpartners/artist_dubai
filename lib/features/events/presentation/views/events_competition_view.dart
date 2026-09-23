@@ -261,9 +261,9 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 8),
-                        const Text(
-                          'New competitions will appear here as soon as they are published.',
-                          style: TextStyle(
+                        Text(
+                          'New competitions will appear here as soon as they are published.'.trData(context),
+                          style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 13.5,
                             height: 1.4,
@@ -274,10 +274,10 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                     ),
                   ),
                   const SizedBox(height: 36),
-                  const Center(
+                  Center(
                     child: Text(
-                      'Hosted by Nizar Fahem',
-                      style: TextStyle(
+                      'Hosted by Nizar Fahem'.trData(context),
+                      style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 13.5,
                         fontWeight: FontWeight.w500,
@@ -287,10 +287,10 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                 ] else ...[
                   ..._competitions.map((c) => _buildCard(c)),
                   const SizedBox(height: 24),
-                  const Center(
+                  Center(
                     child: Text(
-                      'Hosted by Nizar Fahem',
-                      style: TextStyle(
+                      'Hosted by Nizar Fahem'.trData(context),
+                      style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 13.5,
                         fontWeight: FontWeight.w500,
@@ -500,11 +500,11 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '$entriesCount / $maxEntries entries',
+                          '$entriesCount / $maxEntries entries'.trData(context),
                           style: const TextStyle(color: Colors.white54, fontSize: 11.5),
                         ),
                         Text(
-                          '${(fillRatio * 100).toInt()}% full',
+                          '${(fillRatio * 100).toInt()}% full'.trData(context),
                           style: TextStyle(
                             color: fillRatio > 0.9 ? _closedBadge : Colors.white54,
                             fontSize: 11.5,
@@ -564,11 +564,11 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       child: Text(
-                        status == 'closed'
+                        (status == 'closed'
                             ? 'Competition Closed'
                             : status == 'upcoming'
                                 ? 'View Details'
-                                : 'Apply Now',
+                                : 'Apply Now').trData(context),
                         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                       ),
                     ),
@@ -665,15 +665,15 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                           onPressed: () {
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Application submitted! We will contact you shortly.'),
-                                backgroundColor: Color(0xFF22C55E),
+                              SnackBar(
+                                content: Text('Application submitted! We will contact you shortly.'.trData(context)),
+                                backgroundColor: const Color(0xFF22C55E),
                                 behavior: SnackBarBehavior.floating,
                               ),
                             );
                           },
                           icon: const Icon(Icons.send_rounded, size: 18),
-                          label: const Text('Submit Application', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                          label: Text('Submit Application'.trData(context), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _purpleLight,
                             foregroundColor: Colors.white,

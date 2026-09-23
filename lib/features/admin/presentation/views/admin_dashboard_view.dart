@@ -1074,7 +1074,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       keyboardType: keyboardType,
       readOnly: readOnly || onTap != null,
       enableInteractiveSelection: onTap == null,
-      style: const TextStyle(fontSize: 13.5, color: Color(0xFF1E293B)),
+      style: const TextStyle(fontSize: 13.5, color: Colors.black, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
@@ -4586,7 +4586,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         Expanded(
                           child: TextField(
                             controller: qrCtrl,
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF0F172A)),
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black),
                             decoration: InputDecoration(
                               hintText: 'https://... or upload image',
                               hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
@@ -4659,7 +4659,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     const SizedBox(height: 6),
                     TextField(
                       controller: nameCtrl,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black),
                       decoration: InputDecoration(
                         hintText: 'e.g. Artist Dubai Cultural Services LLC',
                         hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
@@ -4684,7 +4684,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     const SizedBox(height: 6),
                     TextField(
                       controller: ibanCtrl,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black),
                       decoration: InputDecoration(
                         hintText: 'e.g. AE28 0330 0000 0001 2345 678',
                         hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
@@ -4709,7 +4709,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     const SizedBox(height: 6),
                     TextField(
                       controller: bankCtrl,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black),
                       decoration: InputDecoration(
                         hintText: 'e.g. Emirates NBD, Dubai',
                         hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
@@ -4735,7 +4735,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     TextField(
                       controller: instructionsCtrl,
                       maxLines: 3,
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF0F172A)),
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black),
                       decoration: InputDecoration(
                         hintText: 'Enter steps for user to follow when transferring and submitting receipt...',
                         hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
@@ -4958,7 +4958,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     const SizedBox(height: 6),
                     TextField(
                       controller: sixMonthCtrl,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black),
                       decoration: InputDecoration(
                         hintText: 'e.g. AED 2,500',
                         hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
@@ -4983,7 +4983,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     const SizedBox(height: 6),
                     TextField(
                       controller: yearlyCtrl,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black),
                       decoration: InputDecoration(
                         hintText: 'e.g. AED 4,500',
                         hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
@@ -5009,7 +5009,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     TextField(
                       controller: descCtrl,
                       maxLines: 2,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF0F172A)),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black),
                       decoration: InputDecoration(
                         hintText: 'Brief summary of what this plan covers',
                         hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),

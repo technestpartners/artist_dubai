@@ -11,6 +11,7 @@ import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/utils/share_helper.dart';
 import '../../../../core/utils/responsive_helper.dart';
+import '../../../../core/utils/data_translator.dart';
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -147,13 +148,13 @@ class _ProfileViewState extends State<ProfileView> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header with Close Button (Matching Screenshot media_1787735877633.png)
+                // Header with Close Button
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Change Password',
-                      style: TextStyle(
+                    Text(
+                      'Change Password'.trData(context),
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF1E1E1E),
@@ -172,9 +173,9 @@ class _ProfileViewState extends State<ProfileView> {
                   ],
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Enter your new password. Make sure it\'s secure and at least 6 characters long.',
-                  style: TextStyle(
+                Text(
+                  'Enter your new password. Make sure it\'s secure and at least 6 characters long.'.trData(context),
+                  style: const TextStyle(
                     fontSize: 13,
                     color: Color(0xFF64748B),
                     height: 1.35,
@@ -183,9 +184,9 @@ class _ProfileViewState extends State<ProfileView> {
                 const SizedBox(height: 20),
 
                 // New Password
-                const Text(
-                  'New Password',
-                  style: TextStyle(
+                Text(
+                  'New Password'.trData(context),
+                  style: const TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF1E1E1E),
@@ -195,8 +196,13 @@ class _ProfileViewState extends State<ProfileView> {
                 TextField(
                   controller: newPasswordController,
                   obscureText: true,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                   decoration: InputDecoration(
-                    hintText: 'Enter new password',
+                    hintText: 'Enter new password'.trData(context),
                     hintStyle: const TextStyle(
                       color: Color(0xFF64748B),
                       fontSize: 13.5,
@@ -226,9 +232,9 @@ class _ProfileViewState extends State<ProfileView> {
                 const SizedBox(height: 16),
 
                 // Confirm New Password
-                const Text(
-                  'Confirm New Password',
-                  style: TextStyle(
+                Text(
+                  'Confirm New Password'.trData(context),
+                  style: const TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF1E1E1E),
@@ -238,8 +244,13 @@ class _ProfileViewState extends State<ProfileView> {
                 TextField(
                   controller: confirmPasswordController,
                   obscureText: true,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                   decoration: InputDecoration(
-                    hintText: 'Confirm new password',
+                    hintText: 'Confirm new password'.trData(context),
                     hintStyle: const TextStyle(
                       color: Color(0xFF64748B),
                       fontSize: 13.5,
@@ -280,9 +291,9 @@ class _ProfileViewState extends State<ProfileView> {
                           padding: const EdgeInsets.symmetric(horizontal: 18),
                         ),
                         onPressed: () => Navigator.pop(context),
-                        child: const Text(
-                          'Cancel',
-                          style: TextStyle(
+                        child: Text(
+                          'Cancel'.trData(context),
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF1E1E1E),
@@ -309,18 +320,18 @@ class _ProfileViewState extends State<ProfileView> {
 
                           if (newPass.length < 6) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Password must be at least 6 characters.'),
-                                backgroundColor: Color(0xFFEF4444),
+                              SnackBar(
+                                content: Text('Password must be at least 6 characters.'.trData(context)),
+                                backgroundColor: const Color(0xFFEF4444),
                               ),
                             );
                             return;
                           }
                           if (newPass != confirmPass) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Passwords do not match.'),
-                                backgroundColor: Color(0xFFEF4444),
+                              SnackBar(
+                                content: Text('Passwords do not match.'.trData(context)),
+                                backgroundColor: const Color(0xFFEF4444),
                               ),
                             );
                             return;
@@ -337,9 +348,10 @@ class _ProfileViewState extends State<ProfileView> {
                             messenger.showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  success
-                                      ? 'Password updated successfully!'
-                                      : 'Failed to update password.',
+                                  (success
+                                          ? 'Password updated successfully!'
+                                          : 'Failed to update password.')
+                                      .trData(context),
                                 ),
                                 backgroundColor:
                                     success ? const Color(0xFF6A2777) : const Color(0xFFEF4444),
@@ -347,9 +359,9 @@ class _ProfileViewState extends State<ProfileView> {
                             );
                           }
                         },
-                        child: const Text(
-                          'Update Password',
-                          style: TextStyle(
+                        child: Text(
+                          'Update Password'.trData(context),
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
@@ -390,9 +402,9 @@ class _ProfileViewState extends State<ProfileView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Edit Profile Details',
-                      style: TextStyle(
+                    Text(
+                      'Edit Profile Details'.trData(context),
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF1E1E1E),
@@ -411,18 +423,18 @@ class _ProfileViewState extends State<ProfileView> {
                   ],
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Update your full display name across Artist Dubai.',
-                  style: TextStyle(
+                Text(
+                  'Update your full display name across Artist Dubai.'.trData(context),
+                  style: const TextStyle(
                     fontSize: 13,
                     color: Color(0xFF64748B),
                     height: 1.35,
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Text(
-                  'Full Name',
-                  style: TextStyle(
+                Text(
+                  'Full Name'.trData(context),
+                  style: const TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF1E1E1E),
@@ -431,8 +443,13 @@ class _ProfileViewState extends State<ProfileView> {
                 const SizedBox(height: 6),
                 TextField(
                   controller: nameController,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                   decoration: InputDecoration(
-                    hintText: 'Enter your full name',
+                    hintText: 'Enter your full name'.trData(context),
                     hintStyle: const TextStyle(
                       color: Color(0xFF64748B),
                       fontSize: 13.5,
@@ -477,9 +494,9 @@ class _ProfileViewState extends State<ProfileView> {
                           padding: const EdgeInsets.symmetric(horizontal: 18),
                         ),
                         onPressed: () => Navigator.pop(context),
-                        child: const Text(
-                          'Cancel',
-                          style: TextStyle(
+                        child: Text(
+                          'Cancel'.trData(context),
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF1E1E1E),
@@ -504,9 +521,9 @@ class _ProfileViewState extends State<ProfileView> {
                           final newName = nameController.text.trim();
                           if (newName.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Full name cannot be empty.'),
-                                backgroundColor: Color(0xFFEF4444),
+                              SnackBar(
+                                content: Text('Full name cannot be empty.'.trData(context)),
+                                backgroundColor: const Color(0xFFEF4444),
                               ),
                             );
                             return;
@@ -527,26 +544,26 @@ class _ProfileViewState extends State<ProfileView> {
                                 _userName = newName;
                               });
                               messenger.showSnackBar(
-                                const SnackBar(
-                                  content: Text('Profile updated successfully!'),
-                                  backgroundColor: Color(0xFF6A2777),
+                                SnackBar(
+                                  content: Text('Profile updated successfully!'.trData(context)),
+                                  backgroundColor: const Color(0xFF6A2777),
                                 ),
                               );
                             }
                           } else {
                             if (mounted) {
                               messenger.showSnackBar(
-                                const SnackBar(
-                                  content: Text('Failed to update profile.'),
-                                  backgroundColor: Color(0xFFEF4444),
+                                SnackBar(
+                                  content: Text('Failed to update profile.'.trData(context)),
+                                  backgroundColor: const Color(0xFFEF4444),
                                 ),
                               );
                             }
                           }
                         },
-                        child: const Text(
-                          'Save Changes',
-                          style: TextStyle(
+                        child: Text(
+                          'Save Changes'.trData(context),
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
@@ -582,21 +599,21 @@ class _ProfileViewState extends State<ProfileView> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Header (Matching Screenshot media_1787735895539.png)
-                const Text(
-                  'Are you absolutely sure?',
+                // Header
+                Text(
+                  'Are you absolutely sure?'.trData(context),
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF1E1E1E),
                   ),
                 ),
                 const SizedBox(height: 10),
-                const Text(
-                  'This action cannot be undone. This will permanently delete your account and remove all your data from our servers. This includes:',
+                Text(
+                  'This action cannot be undone. This will permanently delete your account and remove all your data from our servers. This includes:'.trData(context),
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 13,
                     color: Color(0xFF64748B),
                     height: 1.4,
@@ -643,16 +660,16 @@ class _ProfileViewState extends State<ProfileView> {
                       _onSignOut();
                       if (mounted) {
                         messenger.showSnackBar(
-                          const SnackBar(
-                            content: Text('Account deleted successfully.'),
-                            backgroundColor: Color(0xFFEF4444),
+                          SnackBar(
+                            content: Text('Account deleted successfully.'.trData(context)),
+                            backgroundColor: const Color(0xFFEF4444),
                           ),
                         );
                       }
                     },
-                    child: const Text(
-                      'Yes, delete my account',
-                      style: TextStyle(
+                    child: Text(
+                      'Yes, delete my account'.trData(context),
+                      style: const TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.bold,
                       ),
@@ -674,9 +691,9 @@ class _ProfileViewState extends State<ProfileView> {
                       ),
                     ),
                     onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(
+                    child: Text(
+                      'Cancel'.trData(context),
+                      style: const TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF1E1E1E),
@@ -736,7 +753,7 @@ class _ProfileViewState extends State<ProfileView> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'Account Settings',
+                            'Account Settings'.trData(context),
                             style: TextStyle(
                               fontSize: rh.sp(18),
                               fontWeight: FontWeight.bold,
@@ -754,7 +771,7 @@ class _ProfileViewState extends State<ProfileView> {
                     IconButton(
                       icon: const Icon(Icons.share_outlined, color: Colors.white, size: 20),
                       onPressed: _onShareProfile,
-                      tooltip: 'Share',
+                      tooltip: 'Share'.trData(context),
                       constraints: const BoxConstraints(),
                       padding: const EdgeInsets.all(6),
                     ),
@@ -762,7 +779,7 @@ class _ProfileViewState extends State<ProfileView> {
                     IconButton(
                       icon: const Icon(Icons.home_outlined, color: Colors.white, size: 20),
                       onPressed: () => context.go(RouteNames.home),
-                      tooltip: 'Home',
+                      tooltip: 'Home'.trData(context),
                       constraints: const BoxConstraints(),
                       padding: const EdgeInsets.all(6),
                     ),
@@ -788,9 +805,9 @@ class _ProfileViewState extends State<ProfileView> {
                         size: 16,
                         color: Colors.white,
                       ),
-                      label: const Text(
-                        'Share',
-                        style: TextStyle(
+                      label: Text(
+                        'Share'.trData(context),
+                        style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
@@ -819,9 +836,9 @@ class _ProfileViewState extends State<ProfileView> {
                         size: 16,
                         color: Colors.white,
                       ),
-                      label: const Text(
-                        'Home',
-                        style: TextStyle(
+                      label: Text(
+                        'Home'.trData(context),
+                        style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
@@ -846,20 +863,20 @@ class _ProfileViewState extends State<ProfileView> {
                     // Card 1: Account Information (Dynamic from MySQL)
                     _buildSectionCard(
                       icon: Icons.person_outline,
-                      title: 'Account Information',
-                      subtitle: 'Manage your account settings and preferences',
+                      title: 'Account Information'.trData(context),
+                      subtitle: 'Manage your account settings and preferences'.trData(context),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildInfoRow('Email', _userEmail.isNotEmpty ? _userEmail : 'No email provided'),
+                          _buildInfoRow('Email'.trData(context), _userEmail.isNotEmpty ? _userEmail : 'No email provided'.trData(context)),
                           const SizedBox(height: 14),
-                          _buildInfoRow('Member Since', _memberSince.isNotEmpty ? _memberSince : 'Recently Joined'),
+                          _buildInfoRow('Member Since'.trData(context), _memberSince.isNotEmpty ? _memberSince : 'Recently Joined'.trData(context)),
                           const SizedBox(height: 14),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Expanded(
-                                child: _buildInfoRow('Full Name', _userName.isNotEmpty ? _userName : 'User'),
+                                child: _buildInfoRow('Full Name'.trData(context), _userName.isNotEmpty ? _userName : 'User'.trData(context)),
                               ),
                               OutlinedButton.icon(
                                 style: OutlinedButton.styleFrom(
@@ -871,9 +888,9 @@ class _ProfileViewState extends State<ProfileView> {
                                 ),
                                 onPressed: _showEditProfileModal,
                                 icon: const Icon(Icons.edit_outlined, size: 15, color: Color(0xFF6A2777)),
-                                label: const Text(
-                                  'Edit',
-                                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF6A2777)),
+                                label: Text(
+                                  'Edit'.trData(context),
+                                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF6A2777)),
                                 ),
                               ),
                             ],
@@ -886,10 +903,10 @@ class _ProfileViewState extends State<ProfileView> {
                     // Card 2: Artist Profile (Dynamic from MySQL)
                     _buildSectionCard(
                       icon: Icons.palette_outlined,
-                      title: 'Artist Profile',
+                      title: 'Artist Profile'.trData(context),
                       subtitle: _artistProfile != null
-                          ? 'Your active artist profile details on Artist Dubai'
-                          : 'Create your artist profile to showcase your work',
+                          ? 'Your active artist profile details on Artist Dubai'.trData(context)
+                          : 'Create your artist profile to showcase your work'.trData(context),
                       child: _artistProfile != null
                           ? Column(
                               children: [
@@ -927,12 +944,12 @@ class _ProfileViewState extends State<ProfileView> {
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
-                                            _artistProfile!['category']?.toString() ?? 'Contemporary Art',
+                                            _artistProfile!['category']?.toString().trData(context) ?? 'Contemporary Art'.trData(context),
                                             style: const TextStyle(fontSize: 13, color: Color(0xFF6A2777), fontWeight: FontWeight.w600),
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
-                                            _artistProfile!['location']?.toString() ?? 'Dubai, UAE',
+                                            _artistProfile!['location']?.toString().trData(context) ?? 'Dubai, UAE'.trData(context),
                                             style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
                                           ),
                                         ],
@@ -964,7 +981,7 @@ class _ProfileViewState extends State<ProfileView> {
                                             );
                                           },
                                           icon: const Icon(Icons.edit_outlined, size: 15),
-                                          label: const Text('Edit', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                          label: Text('Edit'.trData(context), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                                         ),
                                       ),
                                     ),
@@ -982,7 +999,7 @@ class _ProfileViewState extends State<ProfileView> {
                                           ),
                                           onPressed: _onShareProfile,
                                           icon: const Icon(Icons.share_outlined, size: 15),
-                                          label: const Text('Share', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                          label: Text('Share'.trData(context), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                                         ),
                                       ),
                                     ),
@@ -1028,19 +1045,19 @@ class _ProfileViewState extends State<ProfileView> {
                                   ),
                                 ),
                                 const SizedBox(height: 12),
-                                const Text(
-                                  'No Artist Profile',
-                                  style: TextStyle(
+                                Text(
+                                  'No Artist Profile'.trData(context),
+                                  style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                     color: Color(0xFF1E1E1E),
                                   ),
                                 ),
                                 const SizedBox(height: 6),
-                                const Text(
-                                  'Create your artist profile to be discoverable on the platform and showcase your portfolio.',
+                                Text(
+                                  'Create your artist profile to be discoverable on the platform and showcase your portfolio.'.trData(context),
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 13,
                                     color: Color(0xFF64748B),
                                     height: 1.35,
@@ -1062,9 +1079,9 @@ class _ProfileViewState extends State<ProfileView> {
                                       ),
                                     ),
                                     onPressed: () => context.push(RouteNames.artistRegistration),
-                                    child: const Text(
-                                      'Create Artist Profile',
-                                      style: TextStyle(
+                                    child: Text(
+                                      'Create Artist Profile'.trData(context),
+                                      style: const TextStyle(
                                         fontSize: 13.5,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -1080,8 +1097,8 @@ class _ProfileViewState extends State<ProfileView> {
                     // Card 3: Account Actions
                     _buildSectionCard(
                       icon: Icons.shield_outlined,
-                      title: 'Account Actions',
-                      subtitle: 'Sign out or delete your account',
+                      title: 'Account Actions'.trData(context),
+                      subtitle: 'Sign out or delete your account'.trData(context),
                       child: Column(
                         children: [
                           const SizedBox(height: 6),
@@ -1105,9 +1122,9 @@ class _ProfileViewState extends State<ProfileView> {
                                 size: 18,
                                 color: Color(0xFF1E1E1E),
                               ),
-                              label: const Text(
-                                'Change Password',
-                                style: TextStyle(
+                              label: Text(
+                                'Change Password'.trData(context),
+                                style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFF1E1E1E),
@@ -1137,9 +1154,9 @@ class _ProfileViewState extends State<ProfileView> {
                                 size: 18,
                                 color: Color(0xFF1E1E1E),
                               ),
-                              label: const Text(
-                                'Sign Out',
-                                style: TextStyle(
+                              label: Text(
+                                'Sign Out'.trData(context),
+                                style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFF1E1E1E),
@@ -1164,9 +1181,9 @@ class _ProfileViewState extends State<ProfileView> {
                               ),
                               onPressed: _showDeleteAccountModal,
                               icon: const Icon(Icons.delete_outline, size: 18),
-                              label: const Text(
-                                'Delete Account',
-                                style: TextStyle(
+                              label: Text(
+                                'Delete Account'.trData(context),
+                                style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -1186,23 +1203,23 @@ class _ProfileViewState extends State<ProfileView> {
                               ),
                             ),
                             child: RichText(
-                              text: const TextSpan(
-                                style: TextStyle(
+                              text: TextSpan(
+                                style: const TextStyle(
                                   fontSize: 12,
                                   color: Color(0xFF64748B),
                                   height: 1.4,
                                 ),
                                 children: [
                                   TextSpan(
-                                    text: 'Note: ',
-                                    style: TextStyle(
+                                    text: 'Note: '.trData(context),
+                                    style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                       color: Color(0xFF1E1E1E),
                                     ),
                                   ),
                                   TextSpan(
                                     text:
-                                        'Account deletion requests are processed manually for security reasons. After clicking "Delete Account", you\'ll be signed out and our team will process your request within 7 business days. You\'ll receive a confirmation email once the deletion is complete.',
+                                        'Account deletion requests are processed manually for security reasons. After clicking "Delete Account", you\'ll be signed out and our team will process your request within 7 business days. You\'ll receive a confirmation email once the deletion is complete.'.trData(context),
                                   ),
                                 ],
                               ),
@@ -1247,7 +1264,7 @@ class _ProfileViewState extends State<ProfileView> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  title,
+                  title.trData(context),
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -1259,7 +1276,7 @@ class _ProfileViewState extends State<ProfileView> {
           ),
           const SizedBox(height: 2),
           Text(
-            subtitle,
+            subtitle.trData(context),
             style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
           ),
           const SizedBox(height: 16),
@@ -1274,12 +1291,12 @@ class _ProfileViewState extends State<ProfileView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          label,
+          label.trData(context),
           style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
         ),
         const SizedBox(height: 2),
         Text(
-          value,
+          value.trData(context),
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -1306,7 +1323,7 @@ class _BulletPointText extends StatelessWidget {
         ),
         Expanded(
           child: Text(
-            text,
+            text.trData(context),
             style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
           ),
         ),

@@ -1060,7 +1060,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           const SizedBox(height: 6),
           TextFormField(
             controller: _transactionIdController,
-            style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+            style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.black),
             cursorColor: const Color(0xFF6A2777),
             decoration: InputDecoration(
               hintText: 'e.g. TXN-98472918 or Bank Ref #'.trData(context),
@@ -1478,7 +1478,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                   style: const TextStyle(
                     fontSize: 14.5,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF0F172A),
+                    color: Colors.black,
                   ),
                   cursorColor: const Color(0xFF6A2777),
                   decoration: _cardInputDecoration(
@@ -1507,7 +1507,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF0F172A),
+                    color: Colors.black,
                     letterSpacing: 1.5,
                   ),
                   cursorColor: const Color(0xFF6A2777),
@@ -1555,7 +1555,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                             style: const TextStyle(
                               fontSize: 14.5,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF0F172A),
+                              color: Colors.black,
                               letterSpacing: 1.2,
                             ),
                             cursorColor: const Color(0xFF6A2777),
@@ -1601,7 +1601,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                             style: const TextStyle(
                               fontSize: 14.5,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF0F172A),
+                              color: Colors.black,
                               letterSpacing: 2.0,
                             ),
                             cursorColor: const Color(0xFF6A2777),

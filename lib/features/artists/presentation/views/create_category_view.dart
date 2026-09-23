@@ -6,6 +6,7 @@ import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import '../../../../core/utils/data_translator.dart';
 
 class CreateCategoryView extends StatefulWidget {
   const CreateCategoryView({super.key});
@@ -99,7 +100,7 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Category "${_nameController.text}" created successfully!',
+                'Category "${_nameController.text}" created successfully!'.trData(context),
               ),
               backgroundColor: const Color(0xFF6A2777),
               behavior: SnackBarBehavior.floating,
@@ -112,8 +113,8 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to save category. Please check your inputs.'),
+            SnackBar(
+              content: Text('Failed to save category. Please check your inputs.'.trData(context)),
               backgroundColor: Colors.redAccent,
               behavior: SnackBarBehavior.floating,
             ),
@@ -158,9 +159,9 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                       }
                     },
                   ),
-                  const Text(
-                    'Back',
-                    style: TextStyle(
+                  Text(
+                    'Back'.trData(context),
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
@@ -170,18 +171,18 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         Text(
-                          'Create New Category',
-                          style: TextStyle(
+                          'Create New Category'.trData(context),
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
                         ),
                         Text(
-                          'Add a new category for artists to showcase their work',
-                          style: TextStyle(
+                          'Add a new category for artists to showcase their work'.trData(context),
+                          style: const TextStyle(
                             fontSize: 12,
                             color: Color(0xFFE2D6F5),
                           ),
@@ -215,17 +216,17 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                       children: [
                         // Card Header
                         Row(
-                          children: const [
-                            Icon(
+                          children: [
+                            const Icon(
                               Icons.palette_outlined,
                               size: 22,
                               color: Color(0xFF1E1E1E),
                             ),
-                            SizedBox(width: 10),
+                            const SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                'Category Details',
-                                style: TextStyle(
+                                'Category Details'.trData(context),
+                                style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFF1E1E1E),
@@ -235,9 +236,9 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                           ],
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Fill in the information below to create a new category',
-                          style: TextStyle(
+                        Text(
+                          'Fill in the information below to create a new category'.trData(context),
+                          style: const TextStyle(
                             fontSize: 13,
                             color: Color(0xFF64748B),
                           ),
@@ -245,9 +246,9 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                         const SizedBox(height: 20),
 
                         // Category Name *
-                        const Text(
-                          'Category Name *',
-                          style: TextStyle(
+                        Text(
+                          'Category Name *'.trData(context),
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: Color(0xFF1E1E1E),
@@ -256,15 +257,20 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                         const SizedBox(height: 6),
                         TextFormField(
                           controller: _nameController,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
                           onChanged: (_) => setState(() {}),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'Please enter category name';
+                              return 'Please enter category name'.trData(context);
                             }
                             return null;
                           },
                           decoration: InputDecoration(
-                            hintText: 'e.g., Digital Photography',
+                            hintText: 'e.g., Digital Photography'.trData(context),
                             hintStyle: const TextStyle(
                               color: Color(0xFF64748B),
                               fontSize: 14,
@@ -292,9 +298,9 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                         const SizedBox(height: 18),
 
                         // Description
-                        const Text(
-                          'Description',
-                          style: TextStyle(
+                        Text(
+                          'Description'.trData(context),
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: Color(0xFF1E1E1E),
@@ -304,9 +310,14 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                         TextFormField(
                           controller: _descriptionController,
                           maxLines: 3,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
                           onChanged: (_) => setState(() {}),
                           decoration: InputDecoration(
-                            hintText: 'Describe what this category includes...',
+                            hintText: 'Describe what this category includes...'.trData(context),
                             hintStyle: const TextStyle(
                               color: Color(0xFF64748B),
                               fontSize: 14,
@@ -331,9 +342,9 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                         const SizedBox(height: 18),
 
                         // Category Icon
-                        const Text(
-                          'Category Icon',
-                          style: TextStyle(
+                        Text(
+                          'Category Icon'.trData(context),
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: Color(0xFF1E1E1E),
@@ -366,9 +377,9 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                         const SizedBox(height: 18),
 
                         // Category Color
-                        const Text(
-                          'Category Color',
-                          style: TextStyle(
+                        Text(
+                          'Category Color'.trData(context),
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: Color(0xFF1E1E1E),
@@ -403,9 +414,9 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                         const SizedBox(height: 18),
 
                         // Tags
-                        const Text(
-                          'Tags',
-                          style: TextStyle(
+                        Text(
+                          'Tags'.trData(context),
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: Color(0xFF1E1E1E),
@@ -417,9 +428,14 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                             Expanded(
                               child: TextField(
                                 controller: _tagInputController,
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
                                 onSubmitted: (_) => _addTag(),
                                 decoration: InputDecoration(
-                                  hintText: 'Add a tag...',
+                                  hintText: 'Add a tag...'.trData(context),
                                   hintStyle: const TextStyle(
                                     color: Color(0xFF64748B),
                                     fontSize: 14,
@@ -533,10 +549,10 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                                   });
                                 },
                               ),
-                              const Expanded(
+                              Expanded(
                                 child: Text(
-                                  'Mark as Featured Category',
-                                  style: TextStyle(
+                                  'Mark as Featured Category'.trData(context),
+                                  style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                     color: Color(0xFF1E1E1E),
@@ -549,9 +565,9 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                         const SizedBox(height: 18),
 
                         // Preview Box (Matching Screenshot media_1787732826497.png)
-                        const Text(
-                          'Preview',
-                          style: TextStyle(
+                        Text(
+                          'Preview'.trData(context),
+                          style: const TextStyle(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w600,
                             color: Color(0xFF1E1E1E),
@@ -603,7 +619,7 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                                     const SizedBox(height: 2),
                                     Text(
                                       _descriptionController.text.trim().isEmpty
-                                          ? 'Category description'
+                                          ? 'Category description'.trData(context)
                                           : _descriptionController.text.trim(),
                                       style: const TextStyle(
                                         fontSize: 12.5,
@@ -613,9 +629,9 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     const SizedBox(height: 2),
-                                    const Text(
-                                      '0 Artists',
-                                      style: TextStyle(
+                                    Text(
+                                      '0 Artists'.trData(context),
+                                      style: const TextStyle(
                                         fontSize: 12,
                                         color: Color(0xFF94A3B8),
                                       ),
@@ -651,9 +667,9 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                                       context.go(RouteNames.categories);
                                     }
                                   },
-                                  child: const Text(
-                                    'Cancel',
-                                    style: TextStyle(
+                                  child: Text(
+                                    'Cancel'.trData(context),
+                                    style: const TextStyle(
                                       fontSize: 14.5,
                                       fontWeight: FontWeight.bold,
                                       color: Color(0xFF1E1E1E),
@@ -687,9 +703,9 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                                               strokeWidth: 2,
                                             ),
                                           )
-                                          : const Text(
-                                            'Create Category',
-                                            style: TextStyle(
+                                          : Text(
+                                            'Create Category'.trData(context),
+                                            style: const TextStyle(
                                               fontSize: 14.5,
                                               fontWeight: FontWeight.bold,
                                             ),

@@ -127,9 +127,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
             _isUploadingPhoto = false;
           });
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Profile picture updated successfully!'),
-              backgroundColor: Color(0xFF6A2777),
+            SnackBar(
+              content: Text('Profile picture updated successfully!'.trData(context)),
+              backgroundColor: const Color(0xFF6A2777),
             ),
           );
         }
@@ -141,7 +141,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         setState(() => _isUploadingPhoto = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error updating photo: $e'),
+            content: Text('Error updating photo: $e'.trData(context)),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );
@@ -422,8 +422,8 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         SnackBar(
           content: Text(
             wasFav
-                ? 'Unliked ${artist.name}\'s profile'
-                : 'Liked ${artist.name}\'s profile ❤️',
+                ? 'Unliked ${artist.name}\'s profile'.trData(context)
+                : 'Liked ${artist.name}\'s profile ❤️'.trData(context),
           ),
           backgroundColor: wasFav ? const Color(0xFF475569) : const Color(0xFFE11D48),
           duration: const Duration(seconds: 2),
@@ -518,7 +518,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                 children: [
                                   IconButton(
                                     icon: const Icon(Icons.share_outlined, color: Color(0xFF64748B), size: 22),
-                                    tooltip: 'Share Artwork',
+                                    tooltip: 'Share Artwork'.trData(context),
                                     onPressed: () {
                                       ShareHelper.shareArtwork(
                                         context: context,
@@ -674,13 +674,13 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                       TextField(
                         controller: titleController,
                         style: const TextStyle(
-                          color: Color(0xFF0F172A),
+                          color: Colors.black,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
                         cursorColor: const Color(0xFF6A2777),
                         decoration: InputDecoration(
-                          hintText: 'Enter gallery title...',
+                          hintText: 'Enter gallery title...'.trData(context),
                           hintStyle: const TextStyle(
                             color: Color(0xFF94A3B8),
                             fontSize: 13.5,
@@ -730,7 +730,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                         controller: descController,
                         maxLines: 3,
                         style: const TextStyle(
-                          color: Color(0xFF0F172A),
+                          color: Colors.black,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -1033,7 +1033,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                         if (mounted) {
                                           ScaffoldMessenger.of(context).showSnackBar(
                                             SnackBar(
-                                              content: Text('Gallery "$title" created successfully!'),
+                                              content: Text('Gallery "$title" created successfully!'.trData(context)),
                                               backgroundColor: const Color(0xFF6A2777),
                                               duration: const Duration(seconds: 2),
                                               behavior: SnackBarBehavior.floating,
@@ -1224,8 +1224,13 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
       existingPhotos.add(coverImg);
     }
 
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    final initialDesc = subtitle.trim().toLowerCase() == 'curated collection by artist'
+        ? (isArabic ? 'مجموعة منسقة من قبل الفنان' : 'Curated collection by Artist')
+        : subtitle;
+
     final titleController = TextEditingController(text: title);
-    final descController = TextEditingController(text: subtitle);
+    final descController = TextEditingController(text: initialDesc);
     final List<XFile> newlyPickedImages = [];
     bool isSaving = false;
 
@@ -1268,7 +1273,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                         children: [
                           Expanded(
                             child: Text(
-                              'Edit Photo Gallery'.trData(dialogContext),
+                              'Edit Photo Gallery'.trData(context),
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -1287,17 +1292,32 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                       const SizedBox(height: 18),
 
                       // Title field
-                      Text(
-                        'Gallery Title'.trData(dialogContext),
-                        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Color(0xFF1E1E1E)),
+                      RichText(
+                        text: TextSpan(
+                          text: 'Gallery Title'.trData(context),
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1E1E1E),
+                          ),
+                          children: const [
+                            TextSpan(
+                              text: ' *',
+                              style: TextStyle(
+                                color: Color(0xFFDC2626),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 6),
                       TextField(
                         controller: titleController,
-                        style: const TextStyle(color: Color(0xFF0F172A), fontSize: 14, fontWeight: FontWeight.w500),
+                        style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500),
                         cursorColor: const Color(0xFF6A2777),
                         decoration: InputDecoration(
-                          hintText: 'Enter gallery title...'.trData(dialogContext),
+                          hintText: 'Enter gallery title...'.trData(context),
                           hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
                           filled: true,
                           fillColor: Colors.white,
@@ -1320,17 +1340,17 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
 
                       // Description
                       Text(
-                        'Description (optional)'.trData(dialogContext),
+                        'Description (optional)'.trData(context),
                         style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Color(0xFF1E1E1E)),
                       ),
                       const SizedBox(height: 6),
                       TextField(
                         controller: descController,
                         maxLines: 3,
-                        style: const TextStyle(color: Color(0xFF0F172A), fontSize: 14, fontWeight: FontWeight.w500),
+                        style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500),
                         cursorColor: const Color(0xFF6A2777),
                         decoration: InputDecoration(
-                          hintText: 'Describe this gallery...'.trData(dialogContext),
+                          hintText: 'Describe this gallery...'.trData(context),
                           hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
                           filled: true,
                           fillColor: Colors.white,
@@ -1356,11 +1376,11 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Gallery Photos'.trData(dialogContext),
+                            'Gallery Photos'.trData(context),
                             style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Color(0xFF1E1E1E)),
                           ),
                           Text(
-                            '${existingPhotos.length + newlyPickedImages.length} photo(s)'.trData(dialogContext),
+                            '${existingPhotos.length + newlyPickedImages.length} photo(s)'.trData(context),
                             style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
                           ),
                         ],
@@ -1483,7 +1503,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                             color: const Color(0xFF6A2777),
                                             borderRadius: BorderRadius.circular(3),
                                           ),
-                                          child: Text('NEW'.trData(dialogContext), style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                                          child: Text('NEW'.trData(context), style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
                                         ),
                                       ),
                                     ],
@@ -1514,7 +1534,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                               const Icon(Icons.add_photo_alternate_outlined, size: 20, color: Color(0xFF6A2777)),
                               const SizedBox(width: 8),
                               Text(
-                                'Add More Photos'.trData(dialogContext),
+                                'Add More Photos'.trData(context),
                                 style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF6A2777)),
                               ),
                             ],
@@ -1536,7 +1556,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                 ),
                                 onPressed: isSaving ? null : () => Navigator.pop(dialogContext),
                                 child: Text(
-                                  'Cancel'.trData(dialogContext),
+                                  'Cancel'.trData(context),
                                   style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E1E1E)),
                                 ),
                               ),
@@ -1605,7 +1625,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                           await sl<ApiService>().updateGallery(
                                             id: galleryId,
                                             title: newTitle,
-                                            description: newDesc.isNotEmpty ? newDesc : 'Curated collection by Artist',
+                                            description: newDesc.isNotEmpty
+                                                ? newDesc
+                                                : (isArabic ? 'مجموعة منسقة من قبل الفنان' : 'Curated collection by Artist'),
                                             imageUrl: updatedCover,
                                             images: finalUploadedUrls,
                                           );
@@ -1652,7 +1674,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                         ),
                                       )
                                     : Text(
-                                        'Save Changes'.trData(dialogContext),
+                                        'Save Changes'.trData(context),
                                         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                                       ),
                               ),
@@ -2024,16 +2046,16 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                           Wrap(
                             alignment: WrapAlignment.center,
                             crossAxisAlignment: WrapCrossAlignment.center,
-                            children: const [
-                              Icon(
+                            children: [
+                              const Icon(
                                 Icons.verified_user_outlined,
                                 size: 15,
                                 color: Color(0xFF6A2777),
                               ),
-                              SizedBox(width: 6),
+                              const SizedBox(width: 6),
                               Text(
-                                'Verified Artist • Dubai, UAE',
-                                style: TextStyle(
+                                'Verified Artist • Dubai, UAE'.trData(context),
+                                style: const TextStyle(
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w600,
                                   color: Color(0xFF6A2777),
@@ -2800,7 +2822,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                         if (subtitle.isNotEmpty) ...[
                           const SizedBox(height: 2),
                           Text(
-                            subtitle,
+                            subtitle.trData(context),
                             style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
                           ),
                         ],
@@ -2811,14 +2833,14 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                     icon: const Icon(Icons.more_vert, size: 20, color: Color(0xFF64748B)),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
-                    tooltip: 'Gallery options',
-                    color: Colors.white,
+                    tooltip: 'Gallery options'.trData(context),
+                    color: const Color(0xFF551478),
                     surfaceTintColor: Colors.transparent,
                     elevation: 8,
-                    shadowColor: Colors.black.withValues(alpha: 0.15),
+                    shadowColor: Colors.black.withValues(alpha: 0.35),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
-                      side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.0),
+                      side: BorderSide(color: Colors.white.withValues(alpha: 0.15), width: 1.0),
                     ),
                     onSelected: (val) {
                       if (val == 'edit') {
@@ -2832,14 +2854,14 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                         value: 'edit',
                         child: Row(
                           children: [
-                            const Icon(Icons.edit_outlined, size: 18, color: Color(0xFF1E293B)),
+                            const Icon(Icons.edit_outlined, size: 18, color: Colors.white),
                             const SizedBox(width: 8),
                             Text(
                               'Edit Gallery'.trData(context),
                               style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF1E293B),
+                                color: Colors.white,
                               ),
                             ),
                           ],
@@ -2849,14 +2871,14 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                         value: 'delete',
                         child: Row(
                           children: [
-                            const Icon(Icons.delete_outline, size: 18, color: Color(0xFFDC2626)),
+                            const Icon(Icons.delete_outline, size: 18, color: Color(0xFFEF4444)),
                             const SizedBox(width: 8),
                             Text(
                               'Delete Gallery'.trData(context),
                               style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFFDC2626),
+                                color: Color(0xFFEF4444),
                               ),
                             ),
                           ],
@@ -2957,7 +2979,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  'Photo ${activeIdx + 1} of ${images.length} • ${widget.artist?.name ?? 'Artist'}',
+                                  'Photo ${activeIdx + 1} of ${images.length} • ${widget.artist?.name ?? 'Artist'}'.trData(context),
                                   style: const TextStyle(
                                     fontSize: 12,
                                     color: Color(0xFF94A3B8),
@@ -2968,7 +2990,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.edit_outlined, color: Colors.white, size: 20),
-                            tooltip: 'Edit Gallery / Photos',
+                            tooltip: 'Edit Gallery / Photos'.trData(context),
                             onPressed: () {
                               Navigator.pop(context);
                               _showEditGalleryModal(gallery);
@@ -2976,7 +2998,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.delete_outline, color: Color(0xFFEF4444), size: 20),
-                            tooltip: 'Delete Gallery',
+                            tooltip: 'Delete Gallery'.trData(context),
                             onPressed: () {
                               Navigator.pop(context);
                               _confirmDeleteGallery(gallery);
@@ -2984,7 +3006,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.share_outlined, color: Colors.white, size: 20),
-                            tooltip: 'Share Artwork',
+                            tooltip: 'Share Artwork'.trData(context),
                             onPressed: () {
                               final currentImg = activeIdx < images.length ? images[activeIdx] : null;
                               ShareHelper.shareArtwork(
@@ -2999,6 +3021,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.close, color: Colors.white, size: 22),
+                            tooltip: 'Close'.trData(context),
                             onPressed: () => Navigator.pop(context),
                           ),
                         ],

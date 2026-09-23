@@ -200,8 +200,8 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
         SnackBar(
           content: Text(
             wasLiked
-                ? 'Unliked $artistName'
-                : 'Liked $artistName\'s profile! ❤️',
+                ? 'Unliked $artistName'.trData(context)
+                : 'Liked $artistName\'s profile ❤️'.trData(context),
           ),
           backgroundColor: wasLiked ? null : const Color(0xFF6A2777),
           duration: const Duration(seconds: 2),
@@ -248,9 +248,9 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                       }
                     },
                   ),
-                  const Text(
-                    'Back',
-                    style: TextStyle(
+                  Text(
+                    'Back'.trData(context),
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
@@ -407,8 +407,13 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                     // 4. Search Bar
                     TextField(
                       controller: _searchController,
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                       decoration: InputDecoration(
-                        hintText: 'Search artists or artworks...',
+                        hintText: 'Search artists or artworks...'.trData(context),
                         hintStyle: const TextStyle(
                           color: Color(0xFF64748B),
                           fontSize: 14,
@@ -721,7 +726,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                     const SizedBox(width: 6),
                                     Flexible(
                                       child: Text(
-                                        'Artists (${activeArtists.length})',
+                                        'Artists (${activeArtists.length})'.trData(context),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
@@ -775,7 +780,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                     const SizedBox(width: 6),
                                     Flexible(
                                       child: Text(
-                                        'Artworks (${_categoryArtworks.length})',
+                                        'Artworks (${_categoryArtworks.length})'.trData(context),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
@@ -1034,9 +1039,9 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                   ),
                 );
               },
-              child: const Text(
-                'View Portfolio',
-                style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
+              child: Text(
+                'View Portfolio'.trData(context),
+                style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -1129,9 +1134,9 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                         color: const Color(0xFFEF4444),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Text(
-                        'Featured',
-                        style: TextStyle(
+                      child: Text(
+                        'Featured'.trData(context),
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 11.5,
                           fontWeight: FontWeight.bold,
@@ -1158,7 +1163,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'by $artist',
+                  'by $artist'.trData(context),
                   style: const TextStyle(fontSize: 13.5, color: Color(0xFF64748B)),
                 ),
                 if (medium.isNotEmpty) ...[
@@ -1196,29 +1201,30 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                         ),
                         onPressed: () {
+                          final isArabic = DataTranslator.isArabic(context);
                           showDialog(
                             context: context,
                             builder:
                                 (context) => AlertDialog(
-                                  title: Text(title),
+                                  title: Text(title.trData(context)),
                                   content: Text(
-                                    '$title by $artist\n\n'
-                                    '${medium.isNotEmpty ? 'Medium: $medium\n' : ''}'
-                                    '${dimensions.isNotEmpty ? 'Dimensions: $dimensions\n\n' : '\n'}'
-                                    '$description',
+                                    '${title.trData(context)} ${isArabic ? 'بواسطة' : 'by'} ${artist.trData(context)}\n\n'
+                                    '${medium.isNotEmpty ? '${'Medium'.trData(context)}: ${medium.trData(context)}\n' : ''}'
+                                    '${dimensions.isNotEmpty ? '${'Dimensions'.trData(context)}: $dimensions\n\n' : '\n'}'
+                                    '${description.trData(context)}',
                                   ),
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.pop(context),
-                                      child: const Text('Close'),
+                                      child: Text('Close'.trData(context)),
                                     ),
                                   ],
                                 ),
                           );
                         },
-                        child: const Text(
-                          'View Details',
-                          style: TextStyle(
+                        child: Text(
+                          'View Details'.trData(context),
+                          style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
                           ),

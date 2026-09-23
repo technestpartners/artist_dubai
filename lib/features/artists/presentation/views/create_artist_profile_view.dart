@@ -1804,7 +1804,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                                 style: const TextStyle(
                                                   fontSize: 13.5,
                                                   fontWeight: FontWeight.w600,
-                                                  color: Color(0xFF0F172A),
+                                                  color: Colors.black,
                                                 ),
                                                 decoration: InputDecoration(
                                                   hintText: l10n.localeName == 'ar' ? 'عنوان العمل الفني' : 'Artwork Title',
@@ -2237,7 +2237,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
       onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
       style: const TextStyle(
         fontSize: 14.5,
-        color: Color(0xFF0F172A),
+        color: Colors.black,
         fontWeight: FontWeight.w500,
       ),
       decoration: InputDecoration(
@@ -2415,7 +2415,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
             },
             style: const TextStyle(
               fontSize: 14.5,
-              color: Color(0xFF0F172A),
+              color: Colors.black,
               fontWeight: FontWeight.w500,
             ),
             decoration: InputDecoration(
@@ -2497,11 +2497,11 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
           focusNode: fieldFocusNode,
           style: const TextStyle(
             fontSize: 14,
-            color: Color(0xFF1E293B),
+            color: Colors.black,
             fontWeight: FontWeight.w500,
           ),
           decoration: InputDecoration(
-            hintText: 'Search or select your location',
+            hintText: 'Search or select your location'.trData(context),
             hintStyle: const TextStyle(
               fontSize: 13.5,
               color: Color(0xFF64748B),

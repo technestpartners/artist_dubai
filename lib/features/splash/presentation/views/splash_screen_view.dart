@@ -6,6 +6,7 @@ import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
+import '../../../../core/utils/data_translator.dart';
 import '../../../../core/utils/responsive_helper.dart';
 
 class SplashScreenView extends StatefulWidget {
@@ -286,7 +287,7 @@ class _SplashScreenViewState extends State<SplashScreenView>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Hosted by',
+                          'Hosted by'.trData(context),
                           style: TextStyle(
                             fontSize: 12.5,
                             color: Colors.white.withValues(alpha: 0.65),

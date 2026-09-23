@@ -238,7 +238,7 @@ class _MyEventsViewState extends State<MyEventsView> {
                         ),
                         child: TextField(
                           controller: _searchController,
-                          style: const TextStyle(color: Color(0xFF0F172A), fontSize: 14),
+                          style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500),
                           cursorColor: const Color(0xFF6A2777),
                           decoration: InputDecoration(
                             hintText: l10n.searchCreatedEvents,

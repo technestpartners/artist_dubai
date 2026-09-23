@@ -158,8 +158,8 @@ class _EventDetailViewState extends State<EventDetailView> {
         SnackBar(
           content: Text(
             wasLiked
-                ? 'Removed "${ev.title}" from favorites'
-                : 'Saved "${ev.title}" to favorites! ❤️',
+                ? 'Removed "${ev.title}" from favorites'.trData(context)
+                : 'Saved "${ev.title}" to favorites'.trData(context),
           ),
           backgroundColor: wasLiked ? null : _primaryPurple,
           duration: const Duration(seconds: 2),

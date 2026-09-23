@@ -679,13 +679,13 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                 surfaceTintColor: Colors.transparent,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 title: Row(
-                  children: const [
-                    Icon(Icons.mark_email_read_outlined, color: Color(0xFF6A2777), size: 26),
-                    SizedBox(width: 10),
+                  children: [
+                    const Icon(Icons.mark_email_read_outlined, color: Color(0xFF6A2777), size: 26),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Request Sent to Admin',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                        'Request Sent to Admin'.trData(context),
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                       ),
                     ),
                   ],
@@ -695,7 +695,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Your event "$title" has been successfully submitted for administrative review.',
+                      'Your event "$title" has been successfully submitted for administrative review.'.trData(context),
                       style: const TextStyle(fontSize: 14, color: Color(0xFF334155), height: 1.4),
                     ),
                     const SizedBox(height: 12),
@@ -707,13 +707,13 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                         border: Border.all(color: const Color(0xFFFDE68A)),
                       ),
                       child: Row(
-                        children: const [
-                          Icon(Icons.info_outline, size: 18, color: Color(0xFFD97706)),
-                          SizedBox(width: 8),
+                        children: [
+                          const Icon(Icons.info_outline, size: 18, color: Color(0xFFD97706)),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Once approved by the admin, it will be published in the public directory.',
-                              style: TextStyle(fontSize: 12, color: Color(0xFFB45309)),
+                              'Once approved by the admin, it will be published in the public directory.'.trData(context),
+                              style: const TextStyle(fontSize: 12, color: Color(0xFFB45309)),
                             ),
                           ),
                         ],
@@ -731,7 +731,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                         context.go(RouteNames.myEvents);
                       }
                     },
-                    child: const Text('Close', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                    child: Text('Close'.trData(context), style: const TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
                   ),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
@@ -744,7 +744,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                       Navigator.of(ctx).pop();
                       context.go(RouteNames.myEvents);
                     },
-                    child: const Text('View My Events', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: Text('View My Events'.trData(context), style: const TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
@@ -1433,7 +1433,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
       style: const TextStyle(
         fontSize: 14.5,
-        color: Color(0xFF0F172A),
+        color: Colors.black,
         fontWeight: FontWeight.w500,
       ),
       decoration: InputDecoration(
@@ -1610,7 +1610,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
               focusNode: fieldFocusNode,
               style: const TextStyle(
                 fontSize: 14.5,
-                color: Color(0xFF0F172A),
+                color: Colors.black,
                 fontWeight: FontWeight.w500,
               ),
               decoration: InputDecoration(

@@ -64,7 +64,7 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
     if (!success && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Could not open $url'),
+          content: Text('Could not open $url'.trData(context)),
           duration: const Duration(seconds: 2),
         ),
       );

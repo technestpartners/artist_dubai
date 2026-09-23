@@ -125,9 +125,9 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
     if (mounted) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Removed artist from favorites'),
-          duration: Duration(seconds: 1),
+        SnackBar(
+          content: Text('Removed artist from favorites'.trData(context)),
+          duration: const Duration(seconds: 1),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -144,9 +144,9 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
     if (mounted) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Removed event from favorites'),
-          duration: Duration(seconds: 1),
+        SnackBar(
+          content: Text('Removed event from favorites'.trData(context)),
+          duration: const Duration(seconds: 1),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -166,9 +166,9 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
     if (mounted) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Removed artwork from favorites'),
-          duration: Duration(seconds: 1),
+        SnackBar(
+          content: Text('Removed artwork from favorites'.trData(context)),
+          duration: const Duration(seconds: 1),
           behavior: SnackBarBehavior.floating,
         ),
       );

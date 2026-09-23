@@ -176,6 +176,11 @@ class _SettingsViewState extends State<SettingsView> {
                         TextFormField(
                           controller: newPasswordController,
                           obscureText: true,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
                           decoration: InputDecoration(
                             hintText: l10n.newPasswordHint,
                             hintStyle: const TextStyle(fontSize: 13.5, color: Color(0xFF94A3B8)),
@@ -213,6 +218,11 @@ class _SettingsViewState extends State<SettingsView> {
                         TextFormField(
                           controller: confirmPasswordController,
                           obscureText: true,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
                           decoration: InputDecoration(
                             hintText: l10n.confirmNewPasswordHint,
                             hintStyle: const TextStyle(fontSize: 13.5, color: Color(0xFF94A3B8)),

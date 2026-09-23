@@ -415,7 +415,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _nameController,
-                  style: const TextStyle(color: Color(0xFF1E1E1E), fontSize: 14),
+                  style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500),
                   decoration: _whiteInputDecoration(),
                   validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter gallery name'.trData(context) : null,
                   textInputAction: TextInputAction.next,
@@ -430,7 +430,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _typeController,
-                  style: const TextStyle(color: Color(0xFF1E1E1E), fontSize: 14),
+                  style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500),
                   decoration: _whiteInputDecoration(hintText: l10n.venueTypeHint),
                   textInputAction: TextInputAction.next,
                 ),
@@ -444,7 +444,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _addressController,
-                  style: const TextStyle(color: Color(0xFF1E1E1E), fontSize: 14),
+                  style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500),
                   decoration: _whiteInputDecoration(),
                   textInputAction: TextInputAction.next,
                 ),
@@ -458,7 +458,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _websiteController,
-                  style: const TextStyle(color: Color(0xFF1E1E1E), fontSize: 14),
+                  style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500),
                   keyboardType: TextInputType.url,
                   decoration: _whiteInputDecoration(hintText: 'https://...'),
                   textInputAction: TextInputAction.next,
@@ -473,7 +473,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _contactPersonController,
-                  style: const TextStyle(color: Color(0xFF1E1E1E), fontSize: 14),
+                  style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500),
                   decoration: _whiteInputDecoration(),
                   textInputAction: TextInputAction.next,
                 ),
@@ -487,7 +487,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _emailController,
-                  style: const TextStyle(color: Color(0xFF1E1E1E), fontSize: 14),
+                  style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500),
                   keyboardType: TextInputType.emailAddress,
                   decoration: _whiteInputDecoration(),
                   validator: (v) {
@@ -507,7 +507,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _phoneController,
-                  style: const TextStyle(color: Color(0xFF1E1E1E), fontSize: 14),
+                  style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500),
                   keyboardType: TextInputType.phone,
                   decoration: _whiteInputDecoration(),
                   textInputAction: TextInputAction.next,
@@ -522,7 +522,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _aboutController,
-                  style: const TextStyle(color: Color(0xFF1E1E1E), fontSize: 14),
+                  style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500),
                   maxLines: 4,
                   decoration: _whiteInputDecoration(),
                 ),

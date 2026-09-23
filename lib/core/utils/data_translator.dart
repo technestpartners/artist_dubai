@@ -77,6 +77,7 @@ class DataTranslator {
     'free entry': 'دخول مجاني',
     'free admission': 'الدخول مجاني',
     'verified artist': 'فنان معتمد',
+    'verified artist • dubai, uae': 'فنان معتمد • دبي، الإمارات',
 
     // Test & Sample Words
     'test': 'اختبار',
@@ -290,7 +291,6 @@ class DataTranslator {
     'choose plan': 'اختر خطة',
     'publishing your gallery on artist dubai is a premium feature. select your preferred showcase plan. once verified by the admin, your gallery will be featured prominently to art lovers across the uae.': 'نشر معرضك على منصة فنان دبي ميزة متميزة. اختر خطة العرض المناسبة. بمجرد التحقق من قِبل الإدارة، سيتم إبراز معرضك لعشاق الفن في جميع أنحاء الإمارات.',
     'payment on next step:': 'الدفع في الخطوة التالية:',
-    'payment on next step: ': 'الدفع في الخطوة التالية: ',
     'payment on next step': 'الدفع في الخطوة التالية',
     'admin payment qr code & bank transfer details on checkout page.': 'رمز الاستجابة السريعة (QR) وتفاصيل التحويل المصرفي في صفحة إتمام الدفع.',
     'admin payment qr code & bank transfer details on checkout page': 'رمز الاستجابة السريعة (QR) وتفاصيل التحويل المصرفي في صفحة إتمام الدفع',
@@ -335,11 +335,16 @@ class DataTranslator {
     'create gallery': 'إنشاء معرض',
     'create new gallery': 'إنشاء معرض جديد',
     'gallery title': 'عنوان المعرض',
+    'enter gallery title': 'أدخل عنوان المعرض',
     'enter gallery title...': 'أدخل عنوان المعرض...',
     'description (optional)': 'الوصف (اختياري)',
     'describe this gallery...': 'صف هذا المعرض...',
     'gallery photos': 'صور المعرض',
     'photo(s)': 'صور',
+    '1 photo(s)': 'صورة واحدة',
+    '2 photo(s)': 'صورتان',
+    'curated collection by artist': 'مجموعة منسقة من قبل الفنان',
+    'curated collection': 'مجموعة منسقة',
     'add more photos': 'إضافة المزيد من الصور',
     'edit gallery': 'تعديل المعرض',
     'edit photo gallery': 'تعديل معرض الصور',
@@ -373,7 +378,6 @@ class DataTranslator {
     'profile photo removed': 'تمت إزالة صورة الملف الشخصي',
 
     // Events UI, Filters, Sorting & Dates
-    "what's on": 'الفعاليات الحالية',
     'search events': 'البحث في الفعاليات',
     'today': 'اليوم',
     'this week': 'هذا الأسبوع',
@@ -580,7 +584,6 @@ class DataTranslator {
     'failed to submit listing. please verify your connection and try again.': 'فشل إرسال الإعلان. يرجى التحقق من اتصالك والمحاولة مرة أخرى.',
     'failed to submit listing. please verify your connection and try again': 'فشل إرسال الإعلان. يرجى التحقق من اتصالك والمحاولة مرة أخرى',
     'no payment proof attached': 'لم يتم إرفاق إثبات الدفع',
-    "you haven't attached a receipt screenshot or entered a transaction reference number.\n\nyou can attach your proof now for faster verification, or submit anyway as pending transfer.": "لم تقم بإرفاق لقطة شاشة للإيصال أو إدخال رقم مرجعي للمعاملة.\n\nيمكنك إرفاق الإثبات الآن لتسريع التحقق، أو الإرسال على أي حال كتحويل معلق.",
     'attach receipt': 'إرفاق الإيصال',
     'submit anyway': 'إرسال على أي حال',
     'gallery submitted for review!': 'تم تقديم المعرض للمراجعة!',
@@ -628,6 +631,193 @@ class DataTranslator {
     'login successful': 'تم تسجيل الدخول بنجاح',
     'data retrieved successfully': 'تم جلب البيانات بنجاح',
     'profile updated successfully': 'تم تحديث الملف الشخصي بنجاح',
+
+    // Popups, Sheets, Modals, Placeholders & Profile
+    'use camera to capture a new photo': 'استخدم الكاميرا لالتقاط صورة جديدة',
+    'create new gallery for': 'إنشاء معرض جديد لـ',
+    'images': 'الصور',
+    'failed to upload selected images. please try again.': 'فشل رفع الصور المحددة. يرجى المحاولة مرة أخرى.',
+    'share artwork': 'مشاركة العمل الفني',
+    'edit gallery / photos': 'تعديل المعرض / الصور',
+    'view details': 'عرض التفاصيل',
+    'dimensions': 'الأبعاد',
+    'medium': 'الوسيط الفني',
+    'request sent to admin': 'تم إرسال الطلب إلى الإدارة',
+    'once approved by the admin, it will be published in the public directory.': 'بمجرد موافقة الإدارة، سيتم نشرها في الدليل العام.',
+    'account settings': 'إعدادات الحساب',
+    'account information': 'معلومات الحساب',
+    'manage your account settings and preferences': 'إدارة إعدادات حسابك وتفضيلاتك',
+    'member since': 'عضو منذ',
+    'recently joined': 'انضم حديثاً',
+    'no email provided': 'لم يتم تقديم بريد إلكتروني',
+    'your active artist profile details on artist dubai': 'تفاصيل ملفك الفني النشط على فنان دبي',
+    'create your artist profile to showcase your work': 'أنشئ ملفك الفني لعرض أعمالك',
+    'no artist profile': 'لا يوجد ملف فني',
+    'create your artist profile to be discoverable on the platform and showcase your portfolio.': 'أنشئ ملفك الفني لتكون قابلاً للاكتشاف على المنصة واستعراض معرض أعمالك.',
+    'create artist profile': 'إنشاء ملف فني',
+    'account actions': 'إجراءات الحساب',
+    'sign out or delete your account': 'تسجيل الخروج أو حذف حسابك',
+    'change password': 'تغيير كلمة المرور',
+    'enter your new password. make sure it\'s secure and at least 6 characters long.': 'أدخل كلمة المرور الجديدة. تأكد من أنها آمنة ولا تقل عن 6 أحرف.',
+    'new password': 'كلمة المرور الجديدة',
+    'enter new password': 'أدخل كلمة المرور الجديدة',
+    'confirm new password': 'تأكيد كلمة المرور الجديدة',
+    'update password': 'تحديث كلمة المرور',
+    'password must be at least 6 characters.': 'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل.',
+    'passwords do not match.': 'كلمتا المرور غير متطابقتين.',
+    'password updated successfully!': 'تم تحديث كلمة المرور بنجاح!',
+    'failed to update password.': 'فشل تحديث كلمة المرور.',
+    'edit profile details': 'تعديل بيانات الملف الشخصي',
+    'update your full display name across artist dubai.': 'تحديث اسم العرض الكامل الخاص بك في فنان دبي.',
+    'enter your full name': 'أدخل اسمك الكامل',
+    'full name cannot be empty.': 'لا يمكن أن يكون الاسم الكامل فارغاً.',
+    'profile updated successfully!': 'تم تحديث الملف الشخصي بنجاح!',
+    'are you absolutely sure?': 'هل أنت متأكد تماماً؟',
+    'this action cannot be undone. this will permanently delete your account and remove all your data from our servers. this includes:': 'لا يمكن التراجع عن هذا الإجراء. سيؤدي هذا إلى حذف حسابك نهائياً وإزالة جميع بياناتك من خوادمنا. يشمل ذلك:',
+    'your artist profile (if any)': 'ملفك الفني الشخصي (إن وجد)',
+    'all your artwork images': 'جميع صور أعمالك الفنية',
+    'your account information': 'معلومات حسابك',
+    'all your event history': 'سجل فعالياتك بالكامل',
+    'any saved preferences': 'أي تفضيلات محفوظة',
+    'your liked artists and galleries': 'الفنانين والمعارض التي أعجبتك',
+    'yes, delete my account': 'نعم، احذف حسابي',
+    'account deleted successfully.': 'تم حذف الحساب بنجاح.',
+    'note: ': 'ملاحظة: ',
+    'please enter category name': 'يرجى إدخال اسم الفئة',
+    'e.g., digital photography': 'مثال: التصوير الفوتوغرافي الرقمي',
+    'describe what this category includes...': 'صف ما تتضمنه هذه الفئة...',
+    'add a tag...': 'أضف وسماً...',
+    'search artists or artworks...': 'ابحث عن فنانين أو أعمال فنية...',
+    'search or select your location': 'ابحث أو اختر موقعك',
+    'done': 'تم',
+    'submit': 'إرسال',
+    'confirm': 'تأكيد',
+    'edit': 'تعديل',
+    'view': 'عرض',
+    'sign out': 'تسجيل الخروج',
+    'delete account': 'حذف الحساب',
+    'contemporary art': 'الفن المعاصر',
+    'user': 'مستخدم',
+    'artist profile': 'الملف الفني الشخصي',
+    'full name': 'الاسم الكامل',
+    'email': 'البريد الإلكتروني',
+    'phone': 'رقم الهاتف',
+    'phone number': 'رقم الهاتف',
+    'bio': 'السيرة الذاتية',
+    'website': 'الموقع الإلكتروني',
+    'instagram': 'إنستغرام',
+    'details': 'التفاصيل',
+    'artworks': 'الأعمال الفنية',
+    'artwork': 'العمل الفني',
+    'gallery': 'المعرض',
+    'events': 'الفعاليات',
+    'event': 'الفعالية',
+    'price': 'السعر',
+    'aed': 'درهم',
+    'title': 'العنوان',
+    'description': 'الوصف',
+    'time': 'الوقت',
+    'status': 'الحالة',
+    'actions': 'الإجراءات',
+    'yes': 'نعم',
+    'no': 'لا',
+    'success': 'نجاح',
+    'loading...': 'جارٍ التحميل...',
+    'please wait...': 'يرجى الانتظار...',
+    'create category': 'إنشاء فئة',
+    'create new category': 'إنشاء فئة جديدة',
+    'add a new category for artists to showcase their work': 'إضافة فئة جديدة للفنانين لعرض أعمالهم',
+    'category details': 'تفاصيل الفئة',
+    'fill in the information below to create a new category': 'املأ المعلومات أدناه لإنشاء فئة جديدة',
+    'category name *': 'اسم الفئة *',
+    'category name': 'اسم الفئة',
+    'category description': 'وصف الفئة',
+    'mark as featured category': 'تمييز كفئة مميزة',
+    'preview': 'معاينة',
+    '0 artists': '0 فنانين',
+    'choose category icon': 'اختر أيقونة الفئة',
+    'category icon': 'أيقونة الفئة',
+    'category color': 'لون الفئة',
+    'category color theme': 'سمة لون الفئة',
+    'tags': 'الوسوم',
+
+    // Popups, Dialogs & Modals
+    'you haven\'t attached a receipt screenshot or entered a transaction reference number.\n\nyou can attach your proof now for faster verification, or submit anyway as pending transfer.':
+        'لم تقم بإرفاق لقطة شاشة للإيصال أو إدخال رقم مرجع المعاملة.\n\nيمكنك إرفاق الإثبات الآن لتسريع التحقق، أو الإرسال على أي حال كتحويل معلق.',
+    'you haven\'t attached a receipt screenshot or entered a transaction reference number.':
+        'لم تقم بإرفاق لقطة شاشة للإيصال أو إدخال رقم مرجع المعاملة.',
+    'you can attach your proof now for faster verification, or submit anyway as pending transfer.':
+        'يمكنك إرفاق الإثبات الآن لتسريع التحقق، أو الإرسال على أي حال كتحويل معلق.',
+    'what\'s on': 'الفعاليات الحالية',
+    'this action is permanent and cannot be undone.': 'هذا الإجراء نهائي ولا يمكن التراجع عنه.',
+
+    // SnackBars & Toast Messages
+    'category created successfully!': 'تم إنشاء الفئة بنجاح!',
+    'failed to save category. please check your inputs.': 'فشل حفظ الفئة. يرجى التحقق من المدخلات.',
+    'application submitted! we will contact you shortly.': 'تم تقديم الطلب! سنتواصل معك قريباً.',
+    'removed artist from favorites': 'تمت إزالة الفنان من المفضلة',
+    'removed event from favorites': 'تمت إزالة الفعالية من المفضلة',
+    'removed artwork from favorites': 'تمت إزالة العمل الفني من المفضلة',
+    'payment authorization failed.': 'فشل تفويض الدفع.',
+    'payment processed, but submission encountered an issue. please try again.':
+        'تمت معالجة الدفع، ولكن واجه الإرسال مشكلة. يرجى المحاولة مرة أخرى.',
+    'submitting listing...': 'جاري إرسال القائمة...',
+    'failed to update password': 'فشل تحديث كلمة المرور',
+
+    // Titles, Badges, Placeholders & Labels
+    'hosted by': 'استضافة',
+    'view portfolio': 'عرض المعرض الفني',
+    'submit application': 'تقديم الطلب',
+    'prize': 'الجائزة',
+    'deadline': 'الموعد النهائي',
+    'entry fee': 'رسوم الدخول',
+    'about this competition': 'حول هذه المسابقة',
+    'eligibility': 'شروط الأهلية',
+    'rules & submission': 'القواعد والتقديم',
+    'similar events you might like': 'فعاليات مشابهة قد تعجبك',
+    'pay securely with credit card or transfer via bank iban & qr code':
+        'ادفع بأمان عبر بطاقة الائتمان أو التحويل البنكي عبر الآيبان ورمز الاستجابة السريعة (QR)',
+    'with card': 'بالبطاقة',
+    'visa, mastercard, amex': 'فيزا، ماستركارد، أمريكان إكسبريس',
+    'bank & qr': 'البنك ورمز QR',
+    'iban & receipt proof': 'الآيبان وإثبات الإيصال',
+    'card details': 'بيانات البطاقة',
+    'name is too short': 'الاسم قصير جداً',
+    'please enter your card number': 'يرجى إدخال رقم بطاقتك',
+    'required': 'مطلوب',
+    'invalid month': 'الشهر غير صالح',
+    'security code (cvv)': 'رمز الأمان (CVV)',
+    '3-4 digits': '٣-٤ أرقام',
+    'guaranteed safe & secure checkout powered by stripe': 'دفع آمن ومضمون مدعوم من Stripe',
+    'cardholder': 'حامل البطاقة',
+    'expires': 'تاريخ الانتهاء',
+    '256-bit ssl': 'تشفير 256-بت SSL',
+    'new competitions will appear here as soon as they are published.':
+        'ستظهر المسابقات الجديدة هنا بمجرد نشرها.',
+    'theme': 'الموضوع',
+    'due': 'تاريخ الاستحقاق',
+    'pay': 'دفع',
+    'transaction ref': 'مرجع المعاملة',
+    'competition closed': 'المسابقة مغلقة',
+    'apply now': 'التقديم الآن',
+    'entries': 'مشاركات',
+    'full': 'مكتمل',
+    'connection timed out. please check your internet connection and try again.':
+        'انتهت مهلة الاتصال. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.',
+    'unable to reach server. please check your internet connection and try again.':
+        'تعذر الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.',
+    'payment settings and qr code updated successfully!':
+        'تم تحديث إعدادات الدفع ورمز QR بنجاح!',
+    'failed to update payment settings.': 'فشل تحديث إعدادات الدفع.',
+    'please enter 6-month and yearly amounts': 'يرجى إدخال مبالغ 6 أشهر والسنوية',
+    'failed to update rates. please check connection.': 'فشل تحديث الأسعار. يرجى التحقق من الاتصال.',
+    'publishing pricing rates refreshed from database':
+        'تم تحديث أسعار النشر من قاعدة البيانات',
+    'enter steps for user to follow when transferring and submitting receipt...':
+        'أدخل الخطوات التي يجب على المستخدم اتباعها عند التحويل وإرسال الإيصال...',
+    'brief summary of what this plan covers': 'ملخص موجز لما تغطيه هذه الخطة',
+    'account deletion requests are processed manually for security reasons. after clicking "delete account", you\'ll be signed out and our team will process your request within 7 business days. you\'ll receive a confirmation email once the deletion is complete.':
+        'تتم معالجة طلبات حذف الحساب يدويًا لأسباب أمنية. بعد النقر على "حذف الحساب"، سيتم تسجيل خروجك وسيقوم فريقنا بمعالجة طلبك في غضون 7 أيام عمل. ستتلقى رسالة تأكيد بالبريد الإلكتروني بمجرد اكتمال الحذف.',
   };
 
   // Lazy reversed map for Arabic to English lookups
@@ -705,6 +895,15 @@ class DataTranslator {
       _arToEn = map;
     }
     return _arToEn!;
+  }
+
+  /// Convenience helper to check if the current context's locale is Arabic
+  static bool isArabic(BuildContext context) {
+    try {
+      return Localizations.localeOf(context).languageCode == 'ar';
+    } catch (_) {
+      return false;
+    }
   }
 
   // Dynamic Cache for arbitrary live backend strings
@@ -936,8 +1135,41 @@ class DataTranslator {
         final title = trimmed.split('"').length > 1 ? trimmed.split('"')[1] : '';
         return 'تم حذف المعرض "$title" بنجاح';
       }
+      if (lower.startsWith('gallery "') && lower.contains('" created successfully!')) {
+        final title = trimmed.split('"').length > 1 ? trimmed.split('"')[1] : '';
+        return 'تم إنشاء المعرض "$title" بنجاح!';
+      }
+      if (lower.startsWith('create new gallery for ')) {
+        final artist = trimmed.substring(23).trim();
+        return 'إنشاء معرض جديد لـ $artist';
+      }
+      if (lower.startsWith('are you sure you want to delete "') && lower.contains('"? this action will remove')) {
+        final title = trimmed.split('"').length > 1 ? trimmed.split('"')[1] : '';
+        return 'هل أنت متأكد أنك تريد حذف "$title"؟ سيؤدي هذا الإجراء إلى إزالة المعرض وصوره ولا يمكن التراجع عنه.';
+      }
+      if (lower.startsWith('your event "') && lower.contains('" has been successfully submitted for administrative review')) {
+        final title = trimmed.split('"').length > 1 ? trimmed.split('"')[1] : '';
+        return 'تم تقديم فعاليتك "$title" بنجاح للمراجعة الإدارية.';
+      }
+      if (lower.startsWith('photo ') && lower.contains(' of ') && lower.contains(' • ')) {
+        final parts = trimmed.split(' • ');
+        final counter = parts[0]; // Photo X of Y
+        final artistPart = parts.length > 1 ? parts[1] : '';
+        final countParts = counter.toLowerCase().replaceFirst('photo ', '').split(' of ');
+        if (countParts.length == 2) {
+          final cur = countParts[0].trim();
+          final total = countParts[1].trim();
+          final trArtist = translate(artistPart, isArabic: true);
+          return 'صورة $cur من $total • $trArtist';
+        }
+      }
       if (RegExp(r'^\d+\s+photo\(s\)$', caseSensitive: false).hasMatch(trimmed)) {
         final count = trimmed.split(' ').first;
+        if (count == '1') {
+          return 'صورة واحدة';
+        } else if (count == '2') {
+          return 'صورتان';
+        }
         return '$count صور';
       }
 
@@ -974,6 +1206,109 @@ class DataTranslator {
         final err = trimmed.substring(26).trim();
         return 'فشل تحديث الملف الشخصي: $err';
       }
+
+      // Dynamic gallery & event notifications & popups
+      if (lower.startsWith('gallery "') && lower.endsWith('" created successfully!')) {
+        final title = trimmed.substring(9, trimmed.length - 21);
+        return 'تم إنشاء معرض "$title" بنجاح!';
+      }
+      if (lower.startsWith('gallery "') && lower.endsWith('" deleted successfully')) {
+        final title = trimmed.substring(9, trimmed.length - 21);
+        return 'تم حذف معرض "$title" بنجاح';
+      }
+      if (lower.startsWith('gallery "') && lower.endsWith('" updated successfully!')) {
+        final title = trimmed.substring(9, trimmed.length - 21);
+        return 'تم تحديث معرض "$title" بنجاح!';
+      }
+      if (lower.startsWith('are you sure you want to delete "') && lower.contains('this action will remove the gallery')) {
+        final match = RegExp(r'^are you sure you want to delete "(.*?)"\?', caseSensitive: false).firstMatch(trimmed);
+        final title = match != null ? match.group(1) : '';
+        return 'هل أنت متأكد أنك تريد حذف "$title"؟ سيؤدي هذا الإجراء إلى حذف المعرض وصوره ولا يمكن التراجع عنه.';
+      }
+      if (lower.startsWith('your event "') && lower.contains('submitted for administrative review')) {
+        final match = RegExp(r'^your event "(.*?)" has been successfully submitted', caseSensitive: false).firstMatch(trimmed);
+        final title = match != null ? match.group(1) : '';
+        return 'تم إرسال فعاليتك "$title" بنجاح للمراجعة الإدارية.';
+      }
+      if (lower.startsWith('category "') && lower.endsWith('" created successfully!')) {
+        final name = trimmed.substring(10, trimmed.length - 21);
+        return 'تم إنشاء فئة "$name" بنجاح!';
+      }
+      if (lower.startsWith('unliked ') && lower.endsWith("'s profile")) {
+        final name = trimmed.substring(8, trimmed.length - 10);
+        return 'تم إلغاء الإعجاب بملف $name الشخصي';
+      }
+      if (lower.startsWith('liked ') && lower.contains("'s profile")) {
+        final name = trimmed.substring(6, trimmed.toLowerCase().indexOf("'s profile"));
+        return 'تم الإعجاب بملف $name الشخصي ❤️';
+      }
+      if (lower.startsWith('unliked ')) {
+        final name = trimmed.substring(8);
+        return 'تم إلغاء الإعجاب بـ $name';
+      }
+      if (lower.startsWith('removed "') && lower.endsWith('" from saved')) {
+        final title = trimmed.substring(9, trimmed.length - 12);
+        return 'تمت إزالة "$title" من المحفوظات';
+      }
+      if (lower.startsWith('saved "') && lower.endsWith('" to saved')) {
+        final title = trimmed.substring(7, trimmed.length - 10);
+        return 'تم حفظ "$title" في المحفوظات';
+      }
+      if (lower.startsWith('removed "') && lower.endsWith('" from favorites')) {
+        final title = trimmed.substring(9, trimmed.length - 16);
+        return 'تمت إزالة "$title" من المفضلة';
+      }
+      if (lower.startsWith('saved "') && lower.endsWith('" to favorites')) {
+        final title = trimmed.substring(7, trimmed.length - 14);
+        return 'تم حفظ "$title" في المفضلة';
+      }
+      if (lower.startsWith('could not open ')) {
+        final url = trimmed.substring(15);
+        return 'تعذر فتح الرابط $url';
+      }
+      if (lower.startsWith('error updating photo: ')) {
+        final err = trimmed.substring(22);
+        return 'خطأ أثناء تحديث الصورة: $err';
+      }
+      if (lower.startsWith('artists (') && lower.endsWith(')')) {
+        final count = trimmed.substring(9, trimmed.length - 1);
+        return 'الفنانون ($count)';
+      }
+      if (lower.startsWith('artworks (') && lower.endsWith(')')) {
+        final count = trimmed.substring(10, trimmed.length - 1);
+        return 'الأعمال الفنية ($count)';
+      }
+      if (lower.startsWith('by ') && lower.length < 50) {
+        final author = trimmed.substring(3);
+        return 'بواسطة $author';
+      }
+      if (lower.startsWith('hosted by ')) {
+        final host = trimmed.substring(10);
+        return 'استضافة $host';
+      }
+      if (lower.startsWith('create new gallery for ')) {
+        final name = trimmed.substring(23);
+        return 'إنشاء معرض جديد لـ $name';
+      }
+      if (RegExp(r'^\d+\s*/\s*\d+\s+entries$', caseSensitive: false).hasMatch(trimmed)) {
+        final parts = trimmed.split(' ');
+        final fraction = parts.first;
+        return '$fraction مشاركة';
+      }
+      if (RegExp(r'^\d+%\s+full$', caseSensitive: false).hasMatch(trimmed)) {
+        final pct = trimmed.split(' ').first;
+        return 'مكتمل بنسبة $pct';
+      }
+      if (lower.startsWith('copied ') && lower.contains(' to clipboard')) {
+        final item = trimmed.substring(7, trimmed.toLowerCase().indexOf(' to clipboard')).trim();
+        final trItem = translate(item, isArabic: true);
+        return 'تم نسخ $trItem إلى الحافظة!';
+      }
+      if (lower.startsWith('explore ') && lower.contains('\'s collection of artworks')) {
+        final artist = trimmed.substring(8, trimmed.toLowerCase().indexOf('\'s collection of artworks')).trim();
+        return 'استكشف مجموعة أعمال $artist الفنية';
+      }
+
       if (trimmed.contains('\n')) {
         final lines = trimmed.split('\n');
         final trLines = lines.map((l) => translate(l, isArabic: true)).toList();

@@ -113,7 +113,7 @@ class _GalleriesViewState extends State<GalleriesView> {
           ],
         ),
         content: Text(
-          promptMessage,
+          promptMessage.trData(context),
           style: const TextStyle(fontSize: 14, color: Color(0xFF64748B), height: 1.4),
         ),
         actions: [
@@ -310,10 +310,10 @@ class _GalleriesViewState extends State<GalleriesView> {
                     ),
                   ),
                   const SizedBox(height: 36),
-                  const Center(
+                  Center(
                     child: Text(
-                      'Hosted by Nizar Fahem',
-                      style: TextStyle(
+                      'Hosted by Nizar Fahem'.trData(context),
+                      style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 13.5,
                         fontWeight: FontWeight.w500,

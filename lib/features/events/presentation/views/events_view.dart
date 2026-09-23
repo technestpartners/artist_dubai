@@ -430,8 +430,8 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
         SnackBar(
           content: Text(
             wasLiked
-                ? 'Removed "${event.title}" from saved events'
-                : 'Saved "${event.title}" to favorites! ❤️',
+                ? 'Removed "${event.title}" from saved'.trData(context)
+                : 'Saved "${event.title}" to saved'.trData(context),
           ),
           backgroundColor: wasLiked ? null : _primaryPurple,
           duration: const Duration(seconds: 2),
@@ -618,7 +618,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
       child: TextField(
         controller: _searchController,
         onChanged: (_) => setState(() {}),
-        style: const TextStyle(color: Color(0xFF1E293B), fontSize: 14.5),
+        style: const TextStyle(color: Colors.black, fontSize: 14.5, fontWeight: FontWeight.w500),
         cursorColor: _primaryPurple,
         decoration: InputDecoration(
           hintText: 'Search Events'.trData(context),
@@ -1483,7 +1483,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                   // Search within categories
                   TextField(
                     onChanged: (val) => setModalState(() => catSearch = val.trim()),
-                    style: const TextStyle(fontSize: 14, color: Color(0xFF1E293B)),
+                    style: const TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.w500),
                     cursorColor: _primaryPurple,
                     decoration: InputDecoration(
                       hintText: 'Search categories...'.trData(context),
