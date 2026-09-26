@@ -435,6 +435,7 @@ class _SettingsViewState extends State<SettingsView> {
     final isLoggedIn = storage.getBool('is_logged_in') ?? false;
     final l10n = AppLocalizations.of(context);
     final rh = ResponsiveHelper.of(context);
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
     return Scaffold(
       backgroundColor: const Color(0xFF6B1C9B),
@@ -1030,11 +1031,26 @@ class _SettingsViewState extends State<SettingsView> {
                     ],
                     const SizedBox(height: 20),
                     Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            width: 0.8,
+                          ),
+                        ),
                         child: Text(
-                          'Artist Dubai · v1.0.0',
-                          style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.7)),
+                          isArabic
+                              ? '${l10n.appName} · الإصدار 1.0.0'
+                              : '${l10n.appName} · v1.0.0',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.85),
+                            letterSpacing: isArabic ? 0.0 : 0.4,
+                          ),
                         ),
                       ),
                     ),

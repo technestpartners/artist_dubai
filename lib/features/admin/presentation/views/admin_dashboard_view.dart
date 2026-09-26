@@ -1176,6 +1176,39 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             ),
           ],
         ),
+        actions: [
+          Tooltip(
+            message: 'Recycle Bin',
+            child: InkWell(
+              onTap: () => context.push(RouteNames.adminRecycleBin),
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFFECACA)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.delete_outline_rounded, color: Color(0xFFDC2626), size: 18),
+                    SizedBox(width: 5),
+                    Text(
+                      'Bin',
+                      style: TextStyle(
+                        color: Color(0xFFDC2626),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: RefreshIndicator(
         color: const Color(0xFF6A2777),
@@ -2234,12 +2267,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               return _buildListItemCard(
                 title: name,
                 subtitle: subtitle,
-                badgeText: isPending ? 'Pending' : (isCurrentlyOpen ? 'Open' : 'Closed'),
-                isPurpleBadge: !isPending && isCurrentlyOpen,
-                isAmberBadge: isPending,
-                isRedBadge: !isPending && !isCurrentlyOpen,
+                customStatusToggle: _buildOpenClosedToggle(
+                  isOpen: isCurrentlyOpen,
+                  isPending: isPending,
+                  onToggle: () => _toggleArtCenterStatus(center, index),
+                ),
                 onApprove: isPending ? () => _approveGallery(center, index) : null,
-                onToggleStatus: () => _toggleArtCenterStatus(center, index),
                 onEdit: () => _showArtCenterDialog(existing: center, index: index),
                 onDelete: () {
                   _confirmDelete(
@@ -2432,7 +2465,11 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     );
 
     setState(() {
-      _govEntities[index] = updated;
+      final list = List<GovernmentEntity>.from(_govEntities);
+      if (index >= 0 && index < list.length) {
+        list[index] = updated;
+      }
+      _govEntities = list;
     });
 
     await sl<ApiService>().updateGovernmentEntity({
@@ -2455,6 +2492,126 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         ),
       );
     }
+  }
+
+  // Sleek segmented Open / Closed toggle matching modern UI standards
+  Widget _buildOpenClosedToggle({
+    required bool isOpen,
+    required VoidCallback onToggle,
+    bool isPending = false,
+  }) {
+    if (isPending) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFEF3C7),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFFDE68A), width: 0.8),
+        ),
+        child: const Text(
+          'Pending',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFFD97706),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFCBD5E1), width: 0.8),
+      ),
+      padding: const EdgeInsets.all(2.5),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Open segment
+          InkWell(
+            key: const Key('admin_toggle_open_btn'),
+            borderRadius: BorderRadius.circular(16),
+            onTap: isOpen ? null : onToggle,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: isOpen ? const Color(0xFF16A34A) : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: isOpen
+                    ? const [
+                        BoxShadow(
+                          color: Color(0x3316A34A),
+                          blurRadius: 4,
+                          offset: Offset(0, 1),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isOpen) ...[
+                    const Icon(Icons.check_rounded, size: 12, color: Colors.white),
+                    const SizedBox(width: 3),
+                  ],
+                  Text(
+                    'Open',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: isOpen ? FontWeight.w700 : FontWeight.w500,
+                      color: isOpen ? Colors.white : const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Closed segment
+          InkWell(
+            key: const Key('admin_toggle_close_btn'),
+            borderRadius: BorderRadius.circular(16),
+            onTap: !isOpen ? null : onToggle,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: !isOpen ? const Color(0xFFEF4444) : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: !isOpen
+                    ? const [
+                        BoxShadow(
+                          color: Color(0x33EF4444),
+                          blurRadius: 4,
+                          offset: Offset(0, 1),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!isOpen) ...[
+                    const Icon(Icons.close_rounded, size: 12, color: Colors.white),
+                    const SizedBox(width: 3),
+                  ],
+                  Text(
+                    'Closed',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: !isOpen ? FontWeight.w700 : FontWeight.w500,
+                      color: !isOpen ? Colors.white : const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // Government Card matching Screenshot 2
@@ -2494,27 +2651,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   ),
                 ),
               ),
-              MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => _toggleGovernmentOpen(entity, index),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: entity.defaultIsOpen ? const Color(0xFF6A2777) : const Color(0xFF64748B),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      entity.defaultIsOpen ? 'Open' : 'Closed',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
+              _buildOpenClosedToggle(
+                isOpen: entity.defaultIsOpen,
+                onToggle: () => _toggleGovernmentOpen(entity, index),
               ),
             ],
           ),
@@ -2579,6 +2718,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   Widget _buildListItemCard({
     required String title,
     required String subtitle,
+    Widget? customStatusToggle,
     String? badgeText,
     bool isPurpleBadge = false,
     bool isAmberBadge = false,
@@ -2592,6 +2732,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     String? paymentReference,
     String? paymentStatus,
     VoidCallback? onViewReceipt,
+    String? actionButtonText,
+    Color? actionButtonColor,
+    VoidCallback? onAction,
   }) {
     Color badgeBg;
     Color badgeFg;
@@ -2737,40 +2880,60 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             ),
             const SizedBox(width: 6),
           ],
-          if (badgeText != null) ...[
-            MouseRegion(
-              cursor: onToggleStatus != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: onToggleStatus,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: badgeBg,
-                    borderRadius: BorderRadius.circular(12),
-                    border: badgeBorder,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (onToggleStatus != null && (isPurpleBadge || isGreenBadge)) ...[
-                        const Icon(Icons.check, size: 11, color: Colors.white),
-                        const SizedBox(width: 3),
-                      ],
-                      Text(
-                        badgeText,
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w600,
-                          color: badgeFg,
+          if (customStatusToggle != null) ...[
+            customStatusToggle,
+            const SizedBox(width: 8),
+          ] else ...[
+            if (badgeText != null) ...[
+              MouseRegion(
+                cursor: onToggleStatus != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onToggleStatus,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: badgeBg,
+                      borderRadius: BorderRadius.circular(12),
+                      border: badgeBorder,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (onToggleStatus != null && (isPurpleBadge || isGreenBadge)) ...[
+                          const Icon(Icons.check, size: 11, color: Colors.white),
+                          const SizedBox(width: 3),
+                        ],
+                        Text(
+                          badgeText,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: badgeFg,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
+              const SizedBox(width: 8),
+            ],
+            if (actionButtonText != null && onAction != null) ...[
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: actionButtonColor ?? const Color(0xFF6A2777),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  minimumSize: const Size(54, 28),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                ),
+                onPressed: onAction,
+                child: Text(actionButtonText, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(width: 6),
+            ],
           ],
           if (onApprove != null) ...[
             ElevatedButton(

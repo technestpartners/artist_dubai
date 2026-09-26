@@ -42,7 +42,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
       'medium': 'Gold leaf & ink on handmade linen',
       'dimensions': '120 x 80 cm',
       'price': 'AED 18,500',
-      'image_url': 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675',
+      'image_url': 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119',
       'likes_count': 142,
     }
   ];

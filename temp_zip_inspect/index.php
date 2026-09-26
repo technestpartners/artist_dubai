@@ -1,4 +1,6 @@
 <?php
-// Fallback redirect for Laragon if Apache mod_rewrite is disabled
-header("Location: ./build/web/");
-exit;
+/**
+ * Artist Dubai - Unified Single-File Backend Entry Point
+ * Seamlessly forwards all root, REST, and direct requests to api.php
+ */
+require_once __DIR__ . '/api.php';

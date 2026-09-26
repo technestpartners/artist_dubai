@@ -444,7 +444,7 @@ class ArtEventModel {
     attendeesCount: 1450,
     maxAttendees: 3000,
     organizer: 'Dubai Culture & Arts Authority',
-    imageUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=800&auto=format&fit=crop&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=800&auto=format&fit=crop&q=80',
     tags: const ['Arabic Calligraphy', 'Calligraphy', 'Islamic Art', 'Typography', 'Alserkal Avenue'],
   );
 

@@ -35,6 +35,10 @@ import 'package:artist_dubai/features/profile/presentation/views/profile_view.da
 import 'package:artist_dubai/features/settings/presentation/views/settings_view.dart';
 import 'package:artist_dubai/features/splash/presentation/views/splash_screen_view.dart';
 
+import 'package:artist_dubai/core/services/locale_provider.dart';
+import 'package:artist_dubai/l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
+
 class _TestHttpOverrides extends HttpOverrides {}
 
 void main() {
@@ -52,9 +56,14 @@ void main() {
   });
 
   Widget testApp(Widget child) {
-    return MaterialApp(
-      home: child,
-      theme: ThemeData(useMaterial3: true),
+    return ChangeNotifierProvider<LocaleProvider>.value(
+      value: sl<LocaleProvider>(),
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: child,
+        theme: ThemeData(useMaterial3: true),
+      ),
     );
   }
 

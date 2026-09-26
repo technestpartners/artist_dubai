@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/about_us/presentation/views/about_us_view.dart';
 import '../../features/admin/presentation/views/admin_dashboard_view.dart';
+import '../../features/admin/presentation/views/admin_recycle_bin_view.dart';
 import '../../features/artists/domain/models/artist_model.dart';
 import '../../features/artists/presentation/views/artist_detail_view.dart';
 import '../../features/artists/presentation/views/artists_view.dart';
@@ -583,6 +584,15 @@ class AppRouter {
           context: context,
           state: state,
           child: const AdminDashboardView(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.adminRecycleBin,
+        name: 'adminRecycleBin',
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const AdminRecycleBinView(),
         ),
       ),
       GoRoute(

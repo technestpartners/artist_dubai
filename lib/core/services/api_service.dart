@@ -2229,4 +2229,96 @@ class ApiService {
     } catch (_) {}
     return _cachedAbout;
   }
-}
+
+  // -------------------------------------------------------------------------
+  // 36. Recycle Bin — Soft-Delete Recovery APIs
+  // -------------------------------------------------------------------------
+
+  /// Fetch all soft-deleted items across all entity types
+  Future<List<Map<String, dynamic>>> getTrash() async {
+    try {
+      final res = await _client.get('api.php?resource=trash');
+      if (_isSuccess(res) && res['data'] is List) {
+        return List<Map<String, dynamic>>.from(
+          (res['data'] as List).map((e) => Map<String, dynamic>.from(e as Map)),
+        );
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  /// Restore a soft-deleted item back to active state
+  Future<bool> restoreFromTrash({required dynamic id, required String type}) async {
+    try {
+      final res = await _client.post(
+        'api.php?resource=trash&action=restore',
+        data: {'id': id, 'type': type},
+      );
+      if (_isSuccess(res)) {
+        // Invalidate relevant caches
+        _invalidateCacheForType(type);
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  /// Permanently delete an item from the recycle bin (irreversible)
+  Future<bool> permanentlyDeleteFromTrash({required dynamic id, required String type}) async {
+    try {
+      final res = await _client.post(
+        'api.php?resource=trash&action=permanent_delete',
+        data: {'id': id, 'type': type},
+      );
+      if (_isSuccess(res)) {
+        _invalidateCacheForType(type);
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  /// Empty the entire recycle bin — permanently destroys all trashed items
+  Future<bool> emptyTrash() async {
+    try {
+      final res = await _client.post(
+        'api.php?resource=trash&action=empty',
+        data: {},
+      );
+      if (_isSuccess(res)) {
+        // Invalidate all caches since everything may have been wiped
+        _cachedArtists = null;
+        _cachedEvents = null;
+        _cachedGalleries = null;
+        _cachedGovEntities = null;
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  void _invalidateCacheForType(String type) {
+    switch (type) {
+      case 'artists':
+        _cachedArtists = null;
+        _cachedArtistDetails.clear();
+        try { sl<LiveSyncService>().notifyArtistsChanged(); } catch (_) {}
+        break;
+      case 'events':
+        _cachedEvents = null;
+        try { sl<LiveSyncService>().notifyEventsChanged(); } catch (_) {}
+        break;
+      case 'galleries':
+        _cachedGalleries = null;
+        try { sl<LiveSyncService>().notifyGalleriesChanged(); } catch (_) {}
+        break;
+      case 'government_entities':
+        _cachedGovEntities = null;
+        try { sl<LiveSyncService>().notifyGovernmentChanged(); } catch (_) {}
+        break;
+      default:
+        break;
+    }
+  }
+}
+

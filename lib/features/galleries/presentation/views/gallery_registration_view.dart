@@ -32,7 +32,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
   String? _uploadedImageUrl;
   bool _isUploadingImage = false;
 
+  bool _hasValidated = false;
   final bool _isSubmitted = false;
+  Locale? _lastLocale;
 
   String _selectedPublishingPlan = 'six_month';
   PublishingPricingModel? _galleryPricing;
@@ -44,6 +46,22 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
   void initState() {
     super.initState();
     _loadPublishingPricing();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final currentLocale = Localizations.localeOf(context);
+    if (_lastLocale != null && _lastLocale?.languageCode != currentLocale.languageCode) {
+      if (_hasValidated) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _hasValidated) {
+            _formKey.currentState?.validate();
+          }
+        });
+      }
+    }
+    _lastLocale = currentLocale;
   }
 
   Future<void> _loadPublishingPricing() async {
@@ -283,6 +301,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
   }
 
   void _submitForm() {
+    setState(() => _hasValidated = true);
     if (!_formKey.currentState!.validate()) return;
 
     final publishingAmount = _galleryPricing?.getPriceForPlan(_selectedPublishingPlan) ??
@@ -417,7 +436,13 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                   controller: _nameController,
                   style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500),
                   decoration: _whiteInputDecoration(),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter gallery name'.trData(context) : null,
+                  validator: (v) {
+                    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+                    if (v == null || v.trim().isEmpty) {
+                      return isAr ? 'الرجاء إدخال اسم المعرض' : 'Please enter gallery name';
+                    }
+                    return null;
+                  },
                   textInputAction: TextInputAction.next,
                 ),
                 const SizedBox(height: 14),
@@ -491,8 +516,13 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                   keyboardType: TextInputType.emailAddress,
                   decoration: _whiteInputDecoration(),
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Please enter email'.trData(context);
-                    if (!v.contains('@')) return 'Please enter valid email'.trData(context);
+                    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+                    if (v == null || v.trim().isEmpty) {
+                      return isAr ? 'الرجاء إدخال البريد الإلكتروني' : 'Please enter email';
+                    }
+                    if (!v.contains('@')) {
+                      return isAr ? 'الرجاء إدخال بريد إلكتروني صالح' : 'Please enter valid email';
+                    }
                     return null;
                   },
                   textInputAction: TextInputAction.next,
@@ -603,13 +633,14 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                           children: [
                             OutlinedButton.icon(
                               style: OutlinedButton.styleFrom(
+                                backgroundColor: Colors.white.withValues(alpha: 0.18),
                                 foregroundColor: Colors.white,
-                                side: const BorderSide(color: Colors.white70),
+                                side: const BorderSide(color: Colors.white, width: 1.2),
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               ),
-                              icon: const Icon(Icons.refresh, size: 16),
-                              label: Text('Change Photo'.trData(context), style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                              icon: const Icon(Icons.add_photo_alternate_rounded, size: 18, color: Colors.white),
+                              label: Text('Change Photo'.trData(context), style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Colors.white)),
                               onPressed: () => _showImageSourceActionSheet(context),
                             ),
                             const SizedBox(width: 8),
@@ -623,13 +654,14 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                           children: [
                             OutlinedButton.icon(
                               style: OutlinedButton.styleFrom(
+                                backgroundColor: Colors.white.withValues(alpha: 0.18),
                                 foregroundColor: Colors.white,
-                                side: const BorderSide(color: Colors.white70),
+                                side: const BorderSide(color: Colors.white, width: 1.2),
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               ),
-                              icon: const Icon(Icons.upload_outlined, size: 16),
-                              label: Text('Upload Photo'.trData(context), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                              icon: const Icon(Icons.add_photo_alternate_rounded, size: 20, color: Colors.white),
+                              label: Text('Upload Photo'.trData(context), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
                               onPressed: () => _showImageSourceActionSheet(context),
                             ),
                             const SizedBox(width: 12),

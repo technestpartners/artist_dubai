@@ -18,6 +18,9 @@ import 'package:artist_dubai/features/government/presentation/views/government_p
 import 'package:artist_dubai/features/home/presentation/views/home_view.dart';
 import 'package:artist_dubai/features/onboarding/presentation/views/onboarding_view.dart';
 import 'package:artist_dubai/features/settings/presentation/views/settings_view.dart';
+import 'package:artist_dubai/core/services/locale_provider.dart';
+import 'package:artist_dubai/l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
 
 class _TestHttpOverrides extends HttpOverrides {}
 
@@ -36,9 +39,14 @@ void main() {
   });
 
   Widget wrapTestApp(Widget view) {
-    return MaterialApp(
-      home: view,
-      theme: ThemeData(useMaterial3: true),
+    return ChangeNotifierProvider<LocaleProvider>.value(
+      value: sl<LocaleProvider>(),
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: view,
+        theme: ThemeData(useMaterial3: true),
+      ),
     );
   }
 
@@ -242,7 +250,7 @@ void main() {
     });
 
     testWidgets('Step 14: Settings and Profile Preferences', (tester) async {
-      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.physicalSize = const Size(800, 2400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 

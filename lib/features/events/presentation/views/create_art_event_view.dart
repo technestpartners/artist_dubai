@@ -437,12 +437,59 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
 
 
+  DateTime? _parseDateTimeString(String text) {
+    if (text.trim().isEmpty) return null;
+    try {
+      final parts = text.trim().split(' ');
+      final dateParts = parts[0].split('-');
+      if (dateParts.length == 3) {
+        final day = int.parse(dateParts[0]);
+        final month = int.parse(dateParts[1]);
+        final year = int.parse(dateParts[2]);
+        int hour = 0;
+        int minute = 0;
+        if (parts.length > 1) {
+          final timeParts = parts[1].split(':');
+          if (timeParts.length >= 2) {
+            hour = int.parse(timeParts[0]);
+            minute = int.parse(timeParts[1]);
+          }
+        }
+        return DateTime(year, month, day, hour, minute);
+      }
+    } catch (_) {}
+    return null;
+  }
+
   Future<void> _pickDateTime(TextEditingController controller) async {
     final now = DateTime.now();
+    DateTime firstDate = now.subtract(const Duration(days: 1));
+    DateTime initialDate = now;
+    final isEndDate = controller == _endDateController;
+    DateTime? startDate;
+
+    if (isEndDate) {
+      startDate = _parseDateTimeString(_eventDateController.text);
+      if (startDate != null) {
+        firstDate = DateTime(startDate.year, startDate.month, startDate.day);
+        final currentEndDate = _parseDateTimeString(_endDateController.text);
+        if (currentEndDate != null && !currentEndDate.isBefore(firstDate)) {
+          initialDate = currentEndDate;
+        } else {
+          initialDate = firstDate;
+        }
+      }
+    } else {
+      final currentStartDate = _parseDateTimeString(_eventDateController.text);
+      if (currentStartDate != null && !currentStartDate.isBefore(firstDate)) {
+        initialDate = currentStartDate;
+      }
+    }
+
     final pickedDate = await showDatePicker(
       context: context,
-      initialDate: now,
-      firstDate: now.subtract(const Duration(days: 1)),
+      initialDate: initialDate.isBefore(firstDate) ? firstDate : initialDate,
+      firstDate: firstDate,
       lastDate: now.add(const Duration(days: 730)),
       builder: (context, child) {
         return Theme(
@@ -460,9 +507,17 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
     if (pickedDate == null || !mounted) return;
 
+    TimeOfDay initialTime = const TimeOfDay(hour: 18, minute: 0);
+    if (isEndDate && startDate != null &&
+        pickedDate.year == startDate.year &&
+        pickedDate.month == startDate.month &&
+        pickedDate.day == startDate.day) {
+      initialTime = TimeOfDay(hour: startDate.hour, minute: startDate.minute);
+    }
+
     final pickedTime = await showTimePicker(
       context: context,
-      initialTime: const TimeOfDay(hour: 18, minute: 0),
+      initialTime: initialTime,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -485,6 +540,34 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
     setState(() {
       controller.text = formatted;
+      // If start date changed and is now after existing end date, sync end date to match start date
+      if (!isEndDate && _endDateController.text.isNotEmpty) {
+        final newStart = _parseDateTimeString(formatted);
+        final currentEnd = _parseDateTimeString(_endDateController.text);
+        if (newStart != null && currentEnd != null && currentEnd.isBefore(newStart)) {
+          _endDateController.text = formatted;
+        }
+      }
+      // If end date was picked and is earlier than start date/time, adjust and inform user
+      if (isEndDate && _eventDateController.text.isNotEmpty) {
+        final currentStart = _parseDateTimeString(_eventDateController.text);
+        final newEnd = _parseDateTimeString(formatted);
+        if (currentStart != null && newEnd != null && newEnd.isBefore(currentStart)) {
+          controller.text = _eventDateController.text;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                Localizations.localeOf(context).languageCode == 'ar'
+                    ? 'تاريخ ووقت الانتهاء يجب أن يكون في أو بعد تاريخ البدء'
+                    : 'End date and time must be on or after the start date and time',
+              ),
+              backgroundColor: const Color(0xFFEF4444),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
     });
   }
 
@@ -525,6 +608,23 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.selectEventDate),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final startDt = _parseDateTimeString(eventDate);
+    final endDt = _parseDateTimeString(_endDateController.text.trim());
+    if (startDt != null && endDt != null && endDt.isBefore(startDt)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            Localizations.localeOf(context).languageCode == 'ar'
+                ? 'تاريخ ووقت الانتهاء يجب أن يكون في أو بعد تاريخ البدء'
+                : 'End date and time must be on or after the start date and time',
+          ),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
         ),
@@ -983,7 +1083,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                     ),
-                                    icon: const Icon(Icons.upload_outlined, size: 16),
+                                    icon: const Icon(Icons.add_photo_alternate_rounded, size: 20, color: Color(0xFF6A2777)),
                                     label: Text(l10n.uploadImage, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                                     onPressed: () => _showImageSourceActionSheet(context),
                                   ),

@@ -51,7 +51,10 @@ class _ArtistDubaiAppState extends State<ArtistDubaiApp> with WidgetsBindingObse
       });
       return true;
     }
-    return super.didPushRouteInformation(routeInformation);
+    // Prevent platform/OS from pushing root ('/') or empty routes on app resume or
+    // device lock/unlock, which would cause GoRouter to reset the active navigation
+    // stack and discard the user's active session or in-progress forms.
+    return true;
   }
 
   @override
