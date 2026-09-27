@@ -44,3 +44,24 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Security & Secrets Prevention
+*.p8
+*.p12
+*.pem
+*.key
+*.cer
+*.crt
+*.der
+*.mobileprovision
+*.provisionprofile
+AuthKey_*
+*.env
+*.env.*
+.env
+.env.*
+secrets.*
+credentials.json
+export_options.plist
+ExportOptions.plist
+

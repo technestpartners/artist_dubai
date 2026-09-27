@@ -11,7 +11,7 @@ This repository is configured with two complete automated pipelines to build and
 ## 1. App Identifiers & Project Configuration
 - **App Name**: Dubai Artists
 - **Bundle ID**: `com.imbu.Dubai-Artists`
-- **Apple Developer Team ID**: `VDL4YWPJJ2`
+- **Apple Developer Team ID**: `<YOUR_APPLE_TEAM_ID>`
 - **Xcode Project**: `ios/Runner.xcworkspace`
 - **Xcode Cloud Scripts**: `ios/ci_scripts/ci_post_clone.sh`
 - **Export Options**: `ios/ExportOptions.plist`
@@ -84,7 +84,7 @@ Add these 6 secrets:
 
 #### B. Distribution Certificate (.p12)
 1. Open **Keychain Access** on your Mac.
-2. Under "login" / "My Certificates", locate **Apple Distribution: ... (VDL4YWPJJ2)**.
+2. Under "login" / "My Certificates", locate **Apple Distribution: ... (<YOUR_APPLE_TEAM_ID>)**.
 3. Expand to ensure private key is attached, right-click, and select **Export "..."**.
 4. Select `.p12` format and enter an export password.
 5. Base64 encode:

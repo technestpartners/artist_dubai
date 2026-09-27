@@ -61,7 +61,7 @@ workflows:
               <key>signingStyle</key>
               <string>manual</string>
               <key>teamID</key>
-              <string>VDL4YWPJJ2</string>
+              <string>$APP_STORE_CONNECT_TEAM_ID</string>
           </dict>
           </plist>
           EOF
