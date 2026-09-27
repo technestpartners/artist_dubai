@@ -1,45 +1,65 @@
 #!/bin/sh
 
 # ==============================================================================
-# Xcode Cloud CI Post-Clone Script for Flutter iOS
+# Xcode Cloud CI Post-Clone Script for Flutter iOS (Artist Dubai)
 # ==============================================================================
-# This script is executed automatically by Xcode Cloud immediately after cloning
-# the repository. It installs the Flutter SDK, precaches iOS build tools, fetches
-# dependencies, and installs CocoaPods.
+# Runs automatically on Apple's Xcode Cloud servers right after clone.
+# Installs Flutter SDK, fetches dependencies, and runs pod install.
 # ==============================================================================
 
-# Fail script if any subcommand fails
 set -e
 
 echo "🚀 [Xcode Cloud] Starting ci_post_clone setup for Flutter..."
+echo "📂 CI_PRIMARY_REPOSITORY_PATH: $CI_PRIMARY_REPOSITORY_PATH"
+echo "📂 HOME: $HOME"
 
-# Navigate to the root of the cloned repository
+# Navigate to the project root
 cd "$CI_PRIMARY_REPOSITORY_PATH"
-echo "📂 Project root: $(pwd)"
+echo "📂 Working directory: $(pwd)"
 
-# 1. Install Flutter SDK
-echo "⬇️ [1/4] Cloning Flutter SDK (stable branch)..."
-git clone https://github.com/flutter/flutter.git --depth 1 -b stable "$HOME/flutter"
-export PATH="$PATH:$HOME/flutter/bin"
+# ----------------------------------------------------------------
+# 1. Install Flutter SDK (stable channel)
+# ----------------------------------------------------------------
+echo "⬇️  [1/4] Installing Flutter SDK (stable)..."
+FLUTTER_HOME="$HOME/flutter"
 
-# Verify Flutter installation
+if [ ! -d "$FLUTTER_HOME" ]; then
+  git clone https://github.com/flutter/flutter.git --depth 1 -b stable "$FLUTTER_HOME"
+else
+  echo "⚡ Flutter already cached — skipping clone."
+fi
+
+export PATH="$PATH:$FLUTTER_HOME/bin"
+
+# Verify Flutter
 flutter --version
 
+# ----------------------------------------------------------------
 # 2. Pre-cache iOS engine artifacts
-echo "⚙️ [2/4] Pre-caching Flutter iOS engine artifacts..."
+# ----------------------------------------------------------------
+echo "⚙️  [2/4] Pre-caching Flutter iOS artifacts..."
 flutter precache --ios
 
-# 3. Fetch Flutter dependencies
+# ----------------------------------------------------------------
+# 3. Install Flutter dependencies
+# ----------------------------------------------------------------
 echo "📦 [3/4] Running flutter pub get..."
 flutter pub get
 
-# 4. Install CocoaPods and run pod install
-echo "🍎 [4/4] Setting up CocoaPods..."
-HOMEBREW_NO_AUTO_UPDATE=1 brew install cocoapods
+# ----------------------------------------------------------------
+# 4. Install CocoaPods dependencies
+# ----------------------------------------------------------------
+echo "🍎 [4/4] Running pod install..."
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+export HOMEBREW_NO_AUTO_UPDATE=1
 
-cd ios
-echo "📥 Running pod install..."
-pod install
+# Use system Ruby to avoid brew permission issues on Xcode Cloud
+gem install cocoapods --user-install 2>/dev/null || true
+export PATH="$PATH:$(ruby -e 'puts Gem.user_bin_dir')"
 
-echo "✅ [Xcode Cloud] ci_post_clone completed successfully! Ready for Xcode archive & build."
+cd "$CI_PRIMARY_REPOSITORY_PATH/ios"
+pod install --repo-update
+
+echo "✅ [Xcode Cloud] ci_post_clone completed! Ready for Xcode archive."
 exit 0
