@@ -33,7 +33,7 @@ class AppTheme {
         surface: AppColors.darkSurface,
         error: AppColors.error,
       ),
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

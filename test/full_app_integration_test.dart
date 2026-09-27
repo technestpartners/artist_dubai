@@ -11,6 +11,10 @@ import 'package:artist_dubai/features/events/presentation/views/my_events_view.d
 import 'package:artist_dubai/features/government/presentation/views/government_portal_view.dart';
 import 'package:artist_dubai/features/about_us/presentation/views/about_us_view.dart';
 
+import 'package:artist_dubai/core/services/locale_provider.dart';
+import 'package:artist_dubai/l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
+
 class _TestHttpOverrides extends HttpOverrides {}
 
 void main() {
@@ -22,13 +26,25 @@ void main() {
     await initDependencyInjection();
   });
 
+  Widget testApp(Widget child) {
+    return ChangeNotifierProvider<LocaleProvider>.value(
+      value: sl<LocaleProvider>(),
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: child,
+        theme: ThemeData(useMaterial3: true),
+      ),
+    );
+  }
+
   group('Full App Feature & Integration UI Test Suite', () {
     testWidgets('1. Login View rendering test', (WidgetTester tester) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(const MaterialApp(home: LoginView()));
+      await tester.pumpWidget(testApp(const LoginView()));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Login'), findsWidgets);
@@ -40,10 +56,10 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(const MaterialApp(home: RegisterView(initialRole: 'artist')));
+      await tester.pumpWidget(testApp(const RegisterView(initialRole: 'artist')));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining("Join Dubai's Artist Community"), findsOneWidget);
+      expect(find.textContaining('Create Your Account'), findsOneWidget);
       expect(find.byType(TextField), findsNWidgets(4));
     });
 
@@ -52,10 +68,11 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(const MaterialApp(home: EventsView()));
+      await tester.pumpWidget(testApp(const EventsView()));
       await tester.pumpAndSettle();
 
-      expect(find.text('Art Events'), findsOneWidget);
+      expect(find.byType(EventsView), findsOneWidget);
+      expect(find.text('Today'), findsOneWidget);
       expect(find.byIcon(Icons.add), findsOneWidget);
     });
 
@@ -64,7 +81,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(const MaterialApp(home: CreateArtEventView()));
+      await tester.pumpWidget(testApp(const CreateArtEventView()));
       await tester.pumpAndSettle();
 
       expect(find.text('Create Event'), findsWidgets);
@@ -75,7 +92,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(const MaterialApp(home: MyEventsView()));
+      await tester.pumpWidget(testApp(const MyEventsView()));
       await tester.pump(const Duration(milliseconds: 500));
 
       expect(find.text('MY CREATED EVENTS'), findsOneWidget);
@@ -86,7 +103,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(const MaterialApp(home: GovernmentPortalView()));
+      await tester.pumpWidget(testApp(const GovernmentPortalView()));
       await tester.pumpAndSettle();
 
       expect(find.text('Government Portal'), findsOneWidget);
@@ -98,7 +115,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(const MaterialApp(home: AboutUsView()));
+      await tester.pumpWidget(testApp(const AboutUsView()));
       expect(find.text('ABOUT US'), findsOneWidget);
     });
   });

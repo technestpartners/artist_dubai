@@ -450,7 +450,7 @@ class _ArtistsViewState extends State<ArtistsView> {
                         crossAxisCount: rh.gridCrossAxisCount,
                         crossAxisSpacing: 14,
                         mainAxisSpacing: 14,
-                        childAspectRatio: rh.isDesktop ? 0.74 : (rh.isFold ? 0.66 : 0.68),
+                        childAspectRatio: rh.isDesktop ? 0.62 : (rh.isFold ? 0.64 : 0.66),
                       ),
                       itemCount: filteredArtists.length,
                     itemBuilder: (context, index) {

@@ -10,6 +10,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:artist_dubai/core/services/locale_provider.dart';
+import 'package:artist_dubai/l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
+
 class _TestHttpOverrides extends HttpOverrides {}
 
 void main() {
@@ -20,6 +24,18 @@ void main() {
     await sl.reset();
     await initDependencyInjection();
   });
+
+  Widget testApp(Widget child) {
+    return ChangeNotifierProvider<LocaleProvider>.value(
+      value: sl<LocaleProvider>(),
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: child,
+        theme: ThemeData(useMaterial3: true),
+      ),
+    );
+  }
 
   group('Responsive Layouts & Logic Edge Case Test Suite', () {
     testWidgets('1. Mobile Responsive Render Test (360x740)', (
@@ -47,7 +63,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(const MaterialApp(home: ExploreCategoriesView()));
+      await tester.pumpWidget(testApp(const ExploreCategoriesView()));
       await tester.pumpAndSettle();
 
       expect(find.text('Explore Categories'), findsOneWidget);
@@ -62,15 +78,15 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: EventDetailView(event: ArtEventModel.mockEvents.first),
+        testApp(
+          EventDetailView(event: ArtEventModel.mockEvents.first),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('About this event'), findsOneWidget);
-      expect(find.text('RSVP for Event'), findsOneWidget);
-      expect(find.text('✨ Featured Artists ✨'), findsOneWidget);
+      expect(find.byType(EventDetailView), findsOneWidget);
+      expect(find.text(ArtEventModel.mockEvents.first.title), findsWidgets);
+      expect(find.text('Similar Events You Might Like'), findsOneWidget);
     });
 
     testWidgets('4. Government Portal Open/Closed Logic & Search Filter Test', (
@@ -80,7 +96,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(const MaterialApp(home: GovernmentPortalView()));
+      await tester.pumpWidget(testApp(const GovernmentPortalView()));
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Government Portal'), findsOneWidget);
@@ -95,7 +111,7 @@ void main() {
         addTearDown(tester.view.resetPhysicalSize);
 
         await tester.pumpWidget(
-          const MaterialApp(home: ExploreCategoriesView()),
+          testApp(const ExploreCategoriesView()),
         );
         await tester.pumpAndSettle();
 

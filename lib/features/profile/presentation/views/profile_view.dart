@@ -132,7 +132,7 @@ class _ProfileViewState extends State<ProfileView> {
 
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -166,7 +166,7 @@ class _ProfileViewState extends State<ProfileView> {
                         color: Color(0xFF64748B),
                         size: 20,
                       ),
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () => Navigator.pop(dialogContext),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     ),
@@ -290,7 +290,7 @@ class _ProfileViewState extends State<ProfileView> {
                           ),
                           padding: const EdgeInsets.symmetric(horizontal: 18),
                         ),
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () => Navigator.pop(dialogContext),
                         child: Text(
                           'Cancel'.trData(context),
                           style: const TextStyle(
@@ -338,7 +338,7 @@ class _ProfileViewState extends State<ProfileView> {
                           }
 
                           final messenger = ScaffoldMessenger.of(context);
-                          Navigator.pop(context);
+                          Navigator.pop(dialogContext);
                           final success = await sl<ApiService>().changePassword(
                             email: _userEmail,
                             newPassword: newPass,
@@ -383,7 +383,7 @@ class _ProfileViewState extends State<ProfileView> {
 
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -416,7 +416,7 @@ class _ProfileViewState extends State<ProfileView> {
                         color: Color(0xFF64748B),
                         size: 20,
                       ),
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () => Navigator.pop(dialogContext),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     ),
@@ -493,7 +493,7 @@ class _ProfileViewState extends State<ProfileView> {
                           ),
                           padding: const EdgeInsets.symmetric(horizontal: 18),
                         ),
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () => Navigator.pop(dialogContext),
                         child: Text(
                           'Cancel'.trData(context),
                           style: const TextStyle(
@@ -530,7 +530,7 @@ class _ProfileViewState extends State<ProfileView> {
                           }
 
                           final messenger = ScaffoldMessenger.of(context);
-                          Navigator.pop(context);
+                          Navigator.pop(dialogContext);
                           final success = await sl<ApiService>().updateProfile(
                             email: _userEmail,
                             fullName: newName,
@@ -583,7 +583,7 @@ class _ProfileViewState extends State<ProfileView> {
   void _showDeleteAccountModal() {
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -655,7 +655,7 @@ class _ProfileViewState extends State<ProfileView> {
                     ),
                     onPressed: () async {
                       final messenger = ScaffoldMessenger.of(context);
-                      Navigator.pop(context);
+                      Navigator.pop(dialogContext);
                       await sl<ApiService>().deleteAccount(_userEmail);
                       _onSignOut();
                       if (mounted) {
@@ -690,7 +690,7 @@ class _ProfileViewState extends State<ProfileView> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => Navigator.pop(dialogContext),
                     child: Text(
                       'Cancel'.trData(context),
                       style: const TextStyle(

@@ -49,7 +49,7 @@ class ResponsiveHelper {
 
   /// Compact / narrow screen (e.g. Galaxy Z Fold outer cover screen ~320-340dp,
   /// Galaxy Z Flip outer display ~280-340dp).
-  bool get isCompact => width < 360.0;
+  bool get isCompact => width <= 380.0;
 
   /// Foldable unfolded inner display (width 560-900dp with near-square aspect ratio 0.7-1.45).
   bool get isFold =>

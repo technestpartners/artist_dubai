@@ -1,8 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:artist_dubai/core/di/injection_container.dart';
+import 'package:artist_dubai/core/services/locale_provider.dart';
+import 'package:artist_dubai/l10n/app_localizations.dart';
 import 'package:artist_dubai/features/auth/presentation/views/register_view.dart';
 import 'package:artist_dubai/features/auth/presentation/views/login_view.dart';
 import 'package:artist_dubai/features/artists/presentation/views/create_artist_profile_view.dart';
@@ -29,9 +32,14 @@ void main() {
   });
 
   Widget createTestWidget(Widget child) {
-    return MaterialApp(
-      home: child,
-      theme: ThemeData(useMaterial3: true),
+    return ChangeNotifierProvider<LocaleProvider>.value(
+      value: sl<LocaleProvider>(),
+      child: MaterialApp(
+        home: child,
+        theme: ThemeData(useMaterial3: true),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+      ),
     );
   }
 
@@ -45,7 +53,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(TextField), findsNWidgets(4));
-      expect(find.text('Sign Up & Access Events'), findsWidgets);
+      expect(find.text('Create Account'), findsWidgets);
 
       await tester.enterText(find.byType(TextField).at(0), 'Fatima Calligrapher');
       await tester.enterText(find.byType(TextField).at(1), 'fatima.new@artistdubai.com');
@@ -103,8 +111,8 @@ void main() {
       await tester.pumpWidget(createTestWidget(const CreateArtEventView()));
       await tester.pumpAndSettle();
 
-      expect(find.text('Event Title'), findsOneWidget);
-      expect(find.text('Description'), findsOneWidget);
+      expect(find.text('Featured Image'), findsOneWidget);
+      expect(find.text('Event Information'), findsOneWidget);
 
       final textFields = find.byType(TextField);
       if (textFields.evaluate().isNotEmpty) {
@@ -143,7 +151,7 @@ void main() {
 
       expect(find.text('ART VENUE'), findsOneWidget);
       expect(find.text('Gallery / center name *'), findsOneWidget);
-      expect(find.text('Submit registration'), findsOneWidget);
+      expect(find.text('Register Venue'), findsOneWidget);
 
       final textFields = find.byType(TextFormField);
       if (textFields.evaluate().isNotEmpty) {

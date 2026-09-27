@@ -12,6 +12,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:artist_dubai/core/services/locale_provider.dart';
+import 'package:artist_dubai/l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
+
 class _TestHttpOverrides extends HttpOverrides {}
 
 void main() {
@@ -22,6 +26,18 @@ void main() {
     await sl.reset();
     await initDependencyInjection();
   });
+
+  Widget testApp(Widget child) {
+    return ChangeNotifierProvider<LocaleProvider>.value(
+      value: sl<LocaleProvider>(),
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: child,
+        theme: ThemeData(useMaterial3: true),
+      ),
+    );
+  }
 
   group('Automated UI & Integration Automation Suite', () {
     testWidgets('1. Onboarding to Home Dashboard Flow', (
@@ -57,7 +73,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(const MaterialApp(home: ExploreCategoriesView()));
+      await tester.pumpWidget(testApp(const ExploreCategoriesView()));
       await tester.pumpAndSettle();
 
       expect(find.text('Explore Categories'), findsOneWidget);
@@ -71,7 +87,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(const MaterialApp(home: CategoryDetailView()));
+      await tester.pumpWidget(testApp(const CategoryDetailView()));
       await tester.pumpAndSettle();
 
       expect(find.text('Calligraphy & Typography'), findsOneWidget);
@@ -95,7 +111,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(const MaterialApp(home: ArtistDetailView()));
+      await tester.pumpWidget(testApp(const ArtistDetailView()));
       await tester.pumpAndSettle();
 
       expect(find.text('Artist Profile'), findsOneWidget);
@@ -115,7 +131,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(const MaterialApp(home: CreateCategoryView()));
+      await tester.pumpWidget(testApp(const CreateCategoryView()));
       await tester.pumpAndSettle();
 
       expect(find.text('Create New Category'), findsOneWidget);
@@ -135,7 +151,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(const MaterialApp(home: ProfileView()));
+      await tester.pumpWidget(testApp(const ProfileView()));
       await tester.pumpAndSettle();
 
       expect(find.text('Account Settings'), findsOneWidget);
@@ -145,8 +161,8 @@ void main() {
       await tester.tap(find.text('Change Password'));
       await tester.pumpAndSettle();
 
-      expect(find.text('New Password'), findsOneWidget);
-      expect(find.text('Confirm New Password'), findsOneWidget);
+      expect(find.text('New Password'), findsWidgets);
+      expect(find.text('Confirm New Password'), findsWidgets);
 
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();

@@ -6,6 +6,10 @@ import 'package:artist_dubai/core/di/injection_container.dart';
 import 'package:artist_dubai/features/admin/presentation/views/admin_dashboard_view.dart';
 import 'package:artist_dubai/features/artists/presentation/views/create_artist_profile_view.dart';
 
+import 'package:artist_dubai/core/services/locale_provider.dart';
+import 'package:artist_dubai/l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
+
 class _TestHttpOverrides extends HttpOverrides {}
 
 void main() {
@@ -22,16 +26,24 @@ void main() {
     await initDependencyInjection();
   });
 
+  Widget testApp(Widget child) {
+    return ChangeNotifierProvider<LocaleProvider>.value(
+      value: sl<LocaleProvider>(),
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: child,
+        theme: ThemeData(useMaterial3: true),
+      ),
+    );
+  }
+
   testWidgets('Admin Masters tab renders Categories and Experience Levels with CRUD', (tester) async {
     tester.view.physicalSize = const Size(800, 1400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: AdminDashboardView(),
-      ),
-    );
+    await tester.pumpWidget(testApp(const AdminDashboardView()));
     await tester.pump(const Duration(milliseconds: 100));
 
     // Verify Masters tab button exists
@@ -71,8 +83,8 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
 
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(body: CreateArtistProfileView()),
+      testApp(
+        const Scaffold(body: CreateArtistProfileView()),
       ),
     );
     await tester.pumpAndSettle();

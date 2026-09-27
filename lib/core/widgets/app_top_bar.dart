@@ -196,59 +196,63 @@ class _AppTopBarState extends State<AppTopBar> {
       title: InkWell(
         onTap: () => context.go(RouteNames.home),
         borderRadius: BorderRadius.circular(8),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Logo Badge as per original image shape
-            Image.asset(
-              'assets/images/header_logo.png',
-              width: logoSize,
-              height: logoSize,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) {
-                return Image.asset(
-                  'assets/images/header_logo.png',
-                  width: logoSize,
-                  height: logoSize,
-                  fit: BoxFit.contain,
-                );
-              },
-            ),
-            SizedBox(width: rh.isCompact ? 4 : 8),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: AlignmentDirectional.centerStart,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Logo Badge as per original image shape
+              Image.asset(
+                'assets/images/header_logo.png',
+                width: logoSize,
+                height: logoSize,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return Image.asset(
+                    'assets/images/header_logo.png',
+                    width: logoSize,
+                    height: logoSize,
+                    fit: BoxFit.contain,
+                  );
+                },
+              ),
+              SizedBox(width: rh.isCompact ? 4 : 8),
 
-            // Brand Titles
-            Consumer<LocaleProvider>(
-              builder: (context, localeProvider, _) {
-                final isArabic = localeProvider.isArabic;
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      isArabic ? 'فنان' : 'Artist',
-                      style: TextStyle(
-                        color: const Color(0xFF1E1E1E),
-                        fontSize: brandFontSize,
-                        fontWeight: FontWeight.w700,
-                        height: 1.15,
+              // Brand Titles
+              Consumer<LocaleProvider>(
+                builder: (context, localeProvider, _) {
+                  final isArabic = localeProvider.isArabic;
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        isArabic ? 'فنان' : 'Artist',
+                        style: TextStyle(
+                          color: const Color(0xFF1E1E1E),
+                          fontSize: brandFontSize,
+                          fontWeight: FontWeight.w700,
+                          height: 1.15,
+                        ),
                       ),
-                    ),
-                    Text(
-                      isArabic ? 'دبي' : 'Dubai',
-                      style: TextStyle(
-                        color: const Color(0xFF1E1E1E),
-                        fontSize: brandFontSize,
-                        fontWeight: FontWeight.w700,
-                        height: 1.15,
+                      Text(
+                        isArabic ? 'دبي' : 'Dubai',
+                        style: TextStyle(
+                          color: const Color(0xFF1E1E1E),
+                          fontSize: brandFontSize,
+                          fontWeight: FontWeight.w700,
+                          height: 1.15,
+                        ),
                       ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ],
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
       actions: [
