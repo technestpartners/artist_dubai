@@ -101,7 +101,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('ABOUT US'), findsOneWidget);
-      expect(find.text('Content to be provided.'), findsOneWidget);
+      expect(find.text('What does it mean to be an artist?'), findsOneWidget);
     });
 
     testWidgets('4. ArtistsView renders category selector and directory', (tester) async {

@@ -779,6 +779,96 @@ abstract class AppLocalizations {
   /// **'VIP Art & Cultural Community Platform connecting artists, galleries, and art enthusiasts across the UAE.'**
   String get aboutUsDescription;
 
+  /// No description provided for @aboutWhatMeansArtistTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What does it mean to be an artist?'**
+  String get aboutWhatMeansArtistTitle;
+
+  /// No description provided for @aboutWhatMeansArtistBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The word artist has a long history. It is rooted in the idea of art and originally described people with exceptional knowledge, skills and abilities. Today, an artist is someone who creates, interprets and gives expression to ideas, emotions and visions.\n\nBut we believe art can be more.'**
+  String get aboutWhatMeansArtistBody;
+
+  /// No description provided for @aboutQuoteText.
+  ///
+  /// In en, this message translates to:
+  /// **'“Art does not reproduce the visible; rather, it makes visible.”'**
+  String get aboutQuoteText;
+
+  /// No description provided for @aboutConnectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting Across Disciplines'**
+  String get aboutConnectTitle;
+
+  /// No description provided for @aboutConnectBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Our platform was created to connect artists across disciplines, cultures, languages and levels of experience. From photography, painting and music to sculpture, digital art and many other creative forms, our platform gives artists a place to discover, share, connect and collaborate.'**
+  String get aboutConnectBody;
+
+  /// No description provided for @aboutOpportunitiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore, Showcase & Collaborate'**
+  String get aboutOpportunitiesTitle;
+
+  /// No description provided for @aboutOpportunitiesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Artists can explore different forms of art, discover galleries and art associations, connect directly with them, showcase their work and take part in events, competitions and creative challenges. Most importantly, the platform creates opportunities for meaningful exchange, inspiration and collaboration.'**
+  String get aboutOpportunitiesBody;
+
+  /// No description provided for @aboutFusionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Where Perspectives Meet'**
+  String get aboutFusionTitle;
+
+  /// No description provided for @aboutFusionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Because when different artists, cultures and creative perspectives come together, something new can emerge.\n\nPerhaps even a form of art that has never existed before.'**
+  String get aboutFusionBody;
+
+  /// No description provided for @aboutDubaiVisionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dubai: The Cultural Crossroads'**
+  String get aboutDubaiVisionTitle;
+
+  /// No description provided for @aboutDubaiVisionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Dubai is a unique place for this vision. With people from more than 180 nationalities, countless cultures, languages and perspectives meet here. Art has the power to connect these differences and create something that belongs to everyone.\n\nOur digital world allows us to bring these creative forces together beyond borders and distances.'**
+  String get aboutDubaiVisionBody;
+
+  /// No description provided for @aboutOurVisionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Our Vision'**
+  String get aboutOurVisionTitle;
+
+  /// No description provided for @aboutOurVisionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Our vision is more than simply creating a platform for artists.\n\nWe want to create a space where encounters become inspiration, inspiration becomes collaboration, and collaboration becomes new art.'**
+  String get aboutOurVisionBody;
+
+  /// No description provided for @aboutClosingBorders.
+  ///
+  /// In en, this message translates to:
+  /// **'Because art has no borders.'**
+  String get aboutClosingBorders;
+
+  /// No description provided for @aboutClosingImpossible.
+  ///
+  /// In en, this message translates to:
+  /// **'And when people, ideas and talents come together, artists have the power to make the impossible possible.'**
+  String get aboutClosingImpossible;
+
   /// No description provided for @eventsCompetitionTitle.
   ///
   /// In en, this message translates to:

@@ -351,6 +351,51 @@ class AppLocalizationsAr extends AppLocalizations {
   String get aboutUsDescription => 'منصة مجتمع الفنون والثقافة VIP تربط بين الفنانين والمعارض وعشاق الفن في الإمارات.';
 
   @override
+  String get aboutWhatMeansArtistTitle => 'ماذا يعني أن تكون فناناً؟';
+
+  @override
+  String get aboutWhatMeansArtistBody => 'كلمة \"فنان\" لها تاريخ طويل. إنها متجذرة في فكرة الفن وكانت تصف في الأصل الأشخاص ذوي المعرفة والمهارات والقدرات الاستثنائية. واليوم، الفنان هو شخص يبدع ويفسر ويعبر عن الأفكار والمشاعر والرؤى.\n\nولكننا نؤمن بأن الفن يمكن أن يكون أكثر من ذلك.';
+
+  @override
+  String get aboutQuoteText => '«الفن لا يعيد إنتاج ما هو مرئي، بل يجعله مرئياً.»';
+
+  @override
+  String get aboutConnectTitle => 'التواصل عبر مختلف التخصصات';
+
+  @override
+  String get aboutConnectBody => 'أُنشئت منصتنا لربط الفنانين عبر مختلف التخصصات والثقافات واللغات ومستويات الخبرة. من التصوير الفوتوغرافي والرسم والموسيقى إلى النحت والفن الرقمي والعديد من الأشكال الإبداعية الأخرى، تمنح منصتنا الفنانين مساحة للاكتشاف والمشاركة والتواصل والتعاون.';
+
+  @override
+  String get aboutOpportunitiesTitle => 'استكشف، اعرض وتعاون';
+
+  @override
+  String get aboutOpportunitiesBody => 'يمكن للفنانين استكشاف أشكال مختلفة من الفن، واكتشاف المعارض والجمعيات الفنية، والتواصل معها مباشرة، وعرض أعمالهم والمشاركة في الفعاليات والمسابقات والتحديات الإبداعية. والأهم من ذلك، تخلق المنصة فرصاً للتبادل الهادف والإلهام والتعاون.';
+
+  @override
+  String get aboutFusionTitle => 'حيث تلتقي الرؤى الإبداعية';
+
+  @override
+  String get aboutFusionBody => 'لأنه عندما تلتقي مواهب وثقافات ورؤى إبداعية متنوعة، يمكن أن يولد شيء جديد تماماً.\n\nربما حتى شكل فني لم يوجد من قبل.';
+
+  @override
+  String get aboutDubaiVisionTitle => 'دبي: ملتقى الإبداع العالمي';
+
+  @override
+  String get aboutDubaiVisionBody => 'دبي هي المكان المثالي لهذه الرؤية. مع وجود أشخاص من أكثر من 180 جنسية، تلتقي هنا ثقافات ولغات ووجهات نظر لا حصر لها. يمتلك الفن القدرة على ردم هذه الاختلافات وخلق شيء ينتمي إلى الجميع.\n\nعالمنا الرقمي يتيح لنا جمع هذه القوى الإبداعية معاً متجاوزين كل الحدود والمسافات.';
+
+  @override
+  String get aboutOurVisionTitle => 'رؤيتنا';
+
+  @override
+  String get aboutOurVisionBody => 'رؤيتنا تتجاوز مجرد إنشاء منصة للفنانين.\n\nنريد خلق مساحة يتحول فيها اللقاء إلى إلهام، والإلهام إلى تعاون، والتعاون إلى فن جديد.';
+
+  @override
+  String get aboutClosingBorders => 'لأن الفن لا يعرف حدوداً.';
+
+  @override
+  String get aboutClosingImpossible => 'وعندما تلتقي العقول والأفكار والمواهب، يمتلك الفنانون القوة لجعل المستحيل ممكناً.';
+
+  @override
   String get eventsCompetitionTitle => 'مسابقات الفعاليات';
 
   @override

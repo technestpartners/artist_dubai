@@ -351,6 +351,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutUsDescription => 'VIP Art & Cultural Community Platform connecting artists, galleries, and art enthusiasts across the UAE.';
 
   @override
+  String get aboutWhatMeansArtistTitle => 'What does it mean to be an artist?';
+
+  @override
+  String get aboutWhatMeansArtistBody => 'The word artist has a long history. It is rooted in the idea of art and originally described people with exceptional knowledge, skills and abilities. Today, an artist is someone who creates, interprets and gives expression to ideas, emotions and visions.\n\nBut we believe art can be more.';
+
+  @override
+  String get aboutQuoteText => '“Art does not reproduce the visible; rather, it makes visible.”';
+
+  @override
+  String get aboutConnectTitle => 'Connecting Across Disciplines';
+
+  @override
+  String get aboutConnectBody => 'Our platform was created to connect artists across disciplines, cultures, languages and levels of experience. From photography, painting and music to sculpture, digital art and many other creative forms, our platform gives artists a place to discover, share, connect and collaborate.';
+
+  @override
+  String get aboutOpportunitiesTitle => 'Explore, Showcase & Collaborate';
+
+  @override
+  String get aboutOpportunitiesBody => 'Artists can explore different forms of art, discover galleries and art associations, connect directly with them, showcase their work and take part in events, competitions and creative challenges. Most importantly, the platform creates opportunities for meaningful exchange, inspiration and collaboration.';
+
+  @override
+  String get aboutFusionTitle => 'Where Perspectives Meet';
+
+  @override
+  String get aboutFusionBody => 'Because when different artists, cultures and creative perspectives come together, something new can emerge.\n\nPerhaps even a form of art that has never existed before.';
+
+  @override
+  String get aboutDubaiVisionTitle => 'Dubai: The Cultural Crossroads';
+
+  @override
+  String get aboutDubaiVisionBody => 'Dubai is a unique place for this vision. With people from more than 180 nationalities, countless cultures, languages and perspectives meet here. Art has the power to connect these differences and create something that belongs to everyone.\n\nOur digital world allows us to bring these creative forces together beyond borders and distances.';
+
+  @override
+  String get aboutOurVisionTitle => 'Our Vision';
+
+  @override
+  String get aboutOurVisionBody => 'Our vision is more than simply creating a platform for artists.\n\nWe want to create a space where encounters become inspiration, inspiration becomes collaboration, and collaboration becomes new art.';
+
+  @override
+  String get aboutClosingBorders => 'Because art has no borders.';
+
+  @override
+  String get aboutClosingImpossible => 'And when people, ideas and talents come together, artists have the power to make the impossible possible.';
+
+  @override
   String get eventsCompetitionTitle => 'Events Competition';
 
   @override
