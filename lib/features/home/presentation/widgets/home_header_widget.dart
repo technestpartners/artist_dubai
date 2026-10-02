@@ -13,30 +13,30 @@ class HomeHeaderWidget extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     final logoSize = rh.isDesktop
-        ? 120.0
+        ? 110.0
         : rh.isTablet
-            ? 95.0
+            ? 85.0
             : rh.isShortScreen
-                ? 44.0
+                ? 40.0
                 : rh.isCompact
-                    ? 46.0
-                    : (rh.width * 0.165).clamp(52.0, 68.0);
+                    ? 44.0
+                    : (rh.height * 0.070).clamp(46.0, 58.0);
     final titleFontSize = rh.isDesktop
         ? 26.0
         : rh.isTablet
             ? 22.0
             : rh.isCompact
-                ? 14.5
-                : (rh.width * 0.045).clamp(15.0, 19.0);
+                ? 14.0
+                : (rh.width * 0.043).clamp(14.5, 18.0);
     final subtitleFontSize = rh.isDesktop
         ? 14.0
         : rh.isTablet
             ? 12.0
             : rh.isCompact
                 ? 8.5
-                : (rh.width * 0.024).clamp(9.0, 11.5);
+                : (rh.width * 0.023).clamp(8.5, 11.0);
     final hPad = rh.isWide ? 16.0 : (rh.isCompact ? 4.0 : 8.0);
-    final vPad = rh.isShortScreen ? 2.0 : (rh.isWide ? 8.0 : 4.0);
+    final vPad = rh.isShortScreen ? 1.5 : (rh.isWide ? 6.0 : 2.5);
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),

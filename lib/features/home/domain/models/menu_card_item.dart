@@ -37,6 +37,10 @@ class MenuCardItem {
           return l10n.eventsPhotos;
         case '/gallery-registration':
           return l10n.galleryRegistration;
+        case '/ai':
+          return 'الذكاء الاصطناعي';
+        case '/login':
+          return l10n.logIn;
         default:
           return title;
       }
@@ -100,10 +104,23 @@ class MenuCardItem {
       routeName: '/events-photos',
     ),
     MenuCardItem(
-      title: 'ART VENUE',
+      title: 'GALLERIES | ART CENTERS',
       subtitle: 'REGISTRATION',
       imagePath: 'assets/images/gallery-registration-DU8u0zfk.jpg',
       routeName: '/gallery-registration',
+    ),
+
+    // Row 5
+    MenuCardItem(
+      title: 'LOGIN',
+      imagePath: 'assets/images/login-portal.png',
+      routeName: '/login',
+    ),
+    MenuCardItem(
+      title: 'AI',
+      subtitle: 'Art | Artist',
+      imagePath: 'assets/images/ai-hub.png',
+      routeName: '/ai',
     ),
   ];
 }

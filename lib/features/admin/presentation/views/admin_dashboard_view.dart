@@ -485,7 +485,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         ),
                         Switch(
                           value: isCurrentlyOpen,
-                          activeThumbColor: const Color(0xFF6A2777),
+                          activeColor: const Color(0xFF6A2777),
                           activeTrackColor: const Color(0xFFD8B4E2),
                           onChanged: (val) {
                             setModalState(() => isCurrentlyOpen = val);
@@ -705,7 +705,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         ),
                         Switch(
                           value: isCurrentlyOpen,
-                          activeThumbColor: const Color(0xFF6A2777),
+                          activeColor: const Color(0xFF6A2777),
                           activeTrackColor: const Color(0xFFD8B4E2),
                           onChanged: (val) {
                             setModalState(() => isCurrentlyOpen = val);
@@ -745,7 +745,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         ),
                         Switch(
                           value: isApproved,
-                          activeThumbColor: const Color(0xFF16A34A),
+                          activeColor: const Color(0xFF16A34A),
                           activeTrackColor: const Color(0xFFBBF7D0),
                           onChanged: (val) {
                             setModalState(() => isApproved = val);
@@ -985,7 +985,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         ),
                         Switch(
                           value: isVisibleToEveryone,
-                          activeThumbColor: const Color(0xFF6A2777),
+                          activeColor: const Color(0xFF6A2777),
                           activeTrackColor: const Color(0xFFD8B4E2),
                           onChanged: (val) {
                             setModalState(() => isVisibleToEveryone = val);

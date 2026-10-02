@@ -181,139 +181,265 @@ class _SplashScreenViewState extends State<SplashScreenView>
   @override
   Widget build(BuildContext context) {
     final rh = ResponsiveHelper.of(context);
-    final logoSize = rh.isDesktop ? 260.0 : rh.isTablet ? 230.0 : 210.0;
     return Scaffold(
+      backgroundColor: const Color(0xFF160424),
       body: GestureDetector(
         onTap: _navigateToNext,
         behavior: HitTestBehavior.opaque,
-        child: Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF3B0D4A), // Rich Dark Purple Header
-                Color(0xFF5E227A), // Signature Royal Dubai Purple
-                Color(0xFF23072E), // Midnight Velvet Base
-              ],
-              stops: [0.0, 0.5, 1.0],
-            ),
-          ),
-          child: SafeArea(
-            child: Column(
-              children: [
-                const Spacer(flex: 3),
-
-                // 1. Animated Pulsing Central Logo Badge
-                AnimatedBuilder(
-                  animation: Listenable.merge([_mainController, _pulseController]),
-                  builder: (context, child) {
-                    return Transform.rotate(
-                      angle: _logoRotate.value,
-                      child: Transform.scale(
-                        scale: _logoScale.value,
-                        child: Opacity(
-                          opacity: _logoFade.value,
-                            child: Image.asset(
-                              'assets/images/header_logo.png',
-                              width: logoSize,
-                              height: logoSize,
-                              fit: BoxFit.contain,
-                            ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 36),
-
-                // 2. Staggered Animated Typography
-                SlideTransition(
-                  position: _titleSlide,
-                    child: FadeTransition(
-                      opacity: _titleFade,
-                      child: Text(
-                        'ARTIST DUBAI',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: rh.adaptiveFont(27),
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          letterSpacing: 4.0,
-                          shadows: const [
-                            Shadow(
-                              color: Colors.black38,
-                              blurRadius: 10,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                ),
-
-                const SizedBox(height: 10),
-
-                SlideTransition(
-                  position: _subtitleSlide,
-                    child: FadeTransition(
-                      opacity: _subtitleFade,
-                      child: Text(
-                        'COMMUNITY PLATFORM',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: rh.adaptiveFont(12),
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white70,
-                          letterSpacing: 3.5,
-                        ),
-                      ),
-                    ),
-                ),
-
-                const Spacer(flex: 3),
-
-                const SizedBox(height: 28),
-
-                // 4. Animated "Hosted by Nizar Fahem" Footer
-                SlideTransition(
-                  position: _footerSlide,
-                  child: FadeTransition(
-                    opacity: _footerFade,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Hosted by'.trData(context),
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            color: Colors.white.withValues(alpha: 0.65),
-                            fontWeight: FontWeight.w400,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Nizar Fahem',
-                          style: TextStyle(
-                            fontSize: 17.5,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                      ],
-                    ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Luxury Ambient Gradient Background
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: const Alignment(0.0, -0.2),
+                    radius: 1.15,
+                    colors: const [
+                      Color(0xFF2C0B47),
+                      Color(0xFF160424),
+                      Color(0xFF0D0216),
+                    ],
+                    stops: const [0.0, 0.55, 1.0],
                   ),
                 ),
-
-                const SizedBox(height: 28),
-              ],
+              ),
             ),
-          ),
+
+            // 2. Foreground Content in SafeArea
+            SafeArea(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final logoSize = rh.isDesktop
+                      ? 300.0
+                      : rh.isTablet
+                          ? 270.0
+                          : (constraints.maxHeight * 0.34).clamp(210.0, 260.0);
+
+                  return Column(
+                    children: [
+                      const Spacer(flex: 3),
+
+                      // 1. Animated Central Logo with Swirling Neon Aura (GIF)
+                      AnimatedBuilder(
+                        animation: Listenable.merge([_mainController, _pulseController]),
+                        builder: (context, child) {
+                          return Transform.rotate(
+                            angle: _logoRotate.value,
+                            child: Transform.scale(
+                              scale: _logoScale.value,
+                              child: Opacity(
+                                opacity: _logoFade.value,
+                                child: SizedBox(
+                                  width: logoSize,
+                                  height: logoSize,
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      // Central Brand Medallion Logo (rendered below aura)
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: const Color(0xFFD03BF7).withValues(alpha: 0.45),
+                                              blurRadius: 24,
+                                              spreadRadius: 4,
+                                            ),
+                                            BoxShadow(
+                                              color: const Color(0xFFFFB300).withValues(alpha: 0.30),
+                                              blurRadius: 36,
+                                              spreadRadius: 2,
+                                            ),
+                                          ],
+                                        ),
+                                        child: Image.asset(
+                                          'assets/images/header_logo.png',
+                                          width: logoSize * 0.58,
+                                          height: logoSize * 0.58,
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ),
+                                      // Swirling Neon Energy Ring (GIF) with BlendMode.screen
+                                      // Black background becomes invisible; only neon glow shows
+                                      Image.asset(
+                                        'assets/images/splash_bg.gif',
+                                        width: logoSize,
+                                        height: logoSize,
+                                        fit: BoxFit.contain,
+                                        color: Colors.white,
+                                        colorBlendMode: BlendMode.screen,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+
+                      const SizedBox(height: 28),
+
+                      // 2. Staggered Animated Typography
+                      SlideTransition(
+                        position: _titleSlide,
+                        child: FadeTransition(
+                          opacity: _titleFade,
+                          child: Text(
+                            'ARTIST DUBAI',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: rh.adaptiveFont(27),
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: 4.5,
+                              shadows: const [
+                                Shadow(
+                                  color: Color(0xFFD03BF7),
+                                  blurRadius: 18,
+                                  offset: Offset(0, 0),
+                                ),
+                                Shadow(
+                                  color: Color(0xFFFFB300),
+                                  blurRadius: 28,
+                                  offset: Offset(0, 2),
+                                ),
+                                Shadow(
+                                  color: Colors.black54,
+                                  blurRadius: 10,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      SlideTransition(
+                        position: _subtitleSlide,
+                        child: FadeTransition(
+                          opacity: _subtitleFade,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 28,
+                                height: 1.5,
+                                decoration: const BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [Colors.transparent, Color(0xFFFFD54F)],
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                child: Text(
+                                  'COMMUNITY PLATFORM',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: rh.adaptiveFont(12),
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFFF3E5F5),
+                                    letterSpacing: 4.0,
+                                    shadows: [
+                                      Shadow(
+                                        color: const Color(0xFFFFD54F)
+                                            .withValues(alpha: 0.5),
+                                        blurRadius: 10,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                width: 28,
+                                height: 1.5,
+                                decoration: const BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [Color(0xFFFFD54F), Colors.transparent],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const Spacer(flex: 3),
+
+                      const SizedBox(height: 24),
+
+                      // 4. Animated "Hosted by Nizar Fahem" Luxury Footer
+                      SlideTransition(
+                        position: _footerSlide,
+                        child: FadeTransition(
+                          opacity: _footerFade,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 9,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.07),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: const Color(0xFFFFD54F).withValues(alpha: 0.28),
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.3),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Hosted by'.trData(context),
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    color: Colors.white.withValues(alpha: 0.72),
+                                    fontWeight: FontWeight.w400,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  'Nizar Fahem',
+                                  style: TextStyle(
+                                    fontSize: 16.5,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 1.4,
+                                    shadows: [
+                                      Shadow(
+                                        color: const Color(0xFFFFD54F)
+                                            .withValues(alpha: 0.45),
+                                        blurRadius: 8,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 28),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

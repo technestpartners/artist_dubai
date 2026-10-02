@@ -123,15 +123,15 @@ class ResponsiveHelper {
 
   /// Number of columns for the home menu card grid.
   int get menuGridCrossAxisCount {
-    if (isDesktop) return 4;
-    if (isTablet) return 4;
-    return 2; // 4 rows × 2 cols on mobile
+    if (isDesktop) return 5;
+    if (isTablet) return 5;
+    return 2; // 5 rows × 2 cols on mobile
   }
 
   /// Number of card rows in home menu grid.
   int get menuGridRowCount {
     if (isWide) return 2;
-    return 4;
+    return 5;
   }
 
   // ── Sizing helpers ─────────────────────────────────────────────────────────

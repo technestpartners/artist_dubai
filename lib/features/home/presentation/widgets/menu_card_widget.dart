@@ -17,20 +17,20 @@ class MenuCardWidget extends StatelessWidget {
         final cardWidth = constraints.maxWidth;
 
         // Widen clamp maximums on tablet / desktop
-        final maxIconSize = rh.isDesktop ? 96.0 : rh.isTablet ? 84.0 : 72.0;
-        final maxTitleFont = rh.isDesktop ? 18.0 : rh.isTablet ? 16.5 : 16.5;
-        final maxSubFont = rh.isDesktop ? 14.0 : rh.isTablet ? 13.0 : 12.5;
+        final maxIconSize = rh.isDesktop ? 96.0 : rh.isTablet ? 84.0 : 66.0;
+        final maxTitleFont = rh.isDesktop ? 18.0 : rh.isTablet ? 16.5 : 15.0;
+        final maxSubFont = rh.isDesktop ? 14.0 : rh.isTablet ? 13.0 : 12.0;
 
-        final minIcon = (rh.isCompact || rh.isShortScreen) ? 32.0 : 42.0;
-        final minTitle = (rh.isCompact || rh.isShortScreen) ? 9.5 : 12.0;
-        final minSub = (rh.isCompact || rh.isShortScreen) ? 8.0 : 10.0;
+        final minIcon = rh.isWide ? 44.0 : 26.0;
+        final minTitle = rh.isWide ? 12.0 : 9.0;
+        final minSub = rh.isWide ? 10.0 : 7.5;
 
-        final iconSize = (cardHeight * 0.40).clamp(minIcon, maxIconSize);
+        final iconSize = (cardHeight * 0.36).clamp(minIcon, maxIconSize);
         final titleFontSize = item.isLongTitle
-            ? (cardHeight * 0.105).clamp(minTitle, maxTitleFont - 2)
-            : (cardHeight * 0.120).clamp(minTitle + 1.0, maxTitleFont);
-        final subtitleFontSize = (cardHeight * 0.090).clamp(minSub, maxSubFont);
-        final cornerRadius = (cardWidth * 0.12).clamp(12.0, 26.0);
+            ? (cardHeight * 0.095).clamp(minTitle, maxTitleFont - 2)
+            : (cardHeight * 0.112).clamp(minTitle, maxTitleFont);
+        final subtitleFontSize = (cardHeight * 0.082).clamp(minSub, maxSubFont);
+        final cornerRadius = (cardWidth * 0.12).clamp(10.0, 24.0);
 
         return Material(
           color: Colors.transparent,
@@ -54,7 +54,7 @@ class MenuCardWidget extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 6.0,
-                  vertical: 3.0,
+                  vertical: 2.5,
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -76,14 +76,14 @@ class MenuCardWidget extends StatelessWidget {
                               return Icon(
                                 Icons.image,
                                 color: Colors.white,
-                                size: (iconSize * 0.55).clamp(20.0, 42.0),
+                                size: (iconSize * 0.55).clamp(18.0, 42.0),
                               );
                             },
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 2),
 
                     // 2. Flexible Text Container
                     Flexible(
@@ -95,6 +95,7 @@ class MenuCardWidget extends StatelessWidget {
                           return Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             crossAxisAlignment: CrossAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               Flexible(
                                 child: FittedBox(

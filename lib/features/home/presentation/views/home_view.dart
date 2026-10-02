@@ -39,44 +39,22 @@ class HomeView extends StatelessWidget {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final horizontalPadding = rh.horizontalPadding;
-              final gap = (constraints.maxHeight * 0.014).clamp(8.0, 16.0);
+              final gap = rh.isWide
+                  ? 12.0
+                  : (constraints.maxHeight * 0.009).clamp(5.0, 10.0);
 
-              // Tablet/Desktop/Fold: 2 rows × 4 cols  |  Mobile: 4 rows × 2 cols
-              final rowCount = rh.isWide ? 2 : 4;
-              final colCount = rh.isWide ? 4 : 2;
-              final isShort = constraints.maxHeight < 560 || rh.isShortScreen;
-
-              if (isShort) {
-                return SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const HomeHeaderWidget(),
-                      SizedBox(height: gap * 0.5),
-                      Center(
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                            child: _buildScrollableGrid(context, rowCount, colCount, gap),
-                          ),
-                        ),
-                      ),
-                      const HomeFooterWidget(),
-                    ],
-                  ),
-                );
-              }
+              // Tablet/Desktop/Fold: 2 rows × 5 cols  |  Mobile: 5 rows × 2 cols
+              final rowCount = rh.isWide ? 2 : 5;
+              final colCount = rh.isWide ? 5 : 2;
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // 1. Top Header
                   const HomeHeaderWidget(),
-                  SizedBox(height: gap * 0.5),
+                  SizedBox(height: gap * 0.3),
 
-                  // 2. Adaptive Grid — centred on wide screens
+                  // 2. Adaptive Grid — fills remaining screen height perfectly
                   Expanded(
                     child: Center(
                       child: ConstrainedBox(
@@ -110,35 +88,6 @@ class HomeView extends StatelessWidget {
       children: [
         for (int row = 0; row < rowCount; row++) ...[
           Expanded(
-            child: Row(
-              children: [
-                for (int col = 0; col < colCount; col++) ...[
-                  if (col > 0) SizedBox(width: gap),
-                  Expanded(
-                    child: _buildCard(context, row * colCount + col),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          if (row < rowCount - 1) SizedBox(height: gap),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildScrollableGrid(
-    BuildContext context,
-    int rowCount,
-    int colCount,
-    double gap,
-  ) {
-    final cardHeight = (ResponsiveHelper.of(context).isCompact ? 95.0 : 110.0);
-    return Column(
-      children: [
-        for (int row = 0; row < rowCount; row++) ...[
-          SizedBox(
-            height: cardHeight,
             child: Row(
               children: [
                 for (int col = 0; col < colCount; col++) ...[

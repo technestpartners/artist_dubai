@@ -17,6 +17,7 @@ class RouteNames {
   static const String galleries = '/galleries';
   static const String eventsPhotos = '/events-photos';
   static const String galleryRegistration = '/gallery-registration';
+  static const String ai = '/ai';
   static const String bookings = '/bookings';
   static const String myBookings = '/bookings';
   static const String profile = '/profile';

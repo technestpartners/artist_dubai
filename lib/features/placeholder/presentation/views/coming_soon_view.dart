@@ -5,7 +5,8 @@ import '../../../../app/routes/route_names.dart';
 import '../../../../core/utils/responsive_helper.dart';
 
 class ComingSoonView extends StatelessWidget {
-  const ComingSoonView({super.key});
+  final String? featureName;
+  const ComingSoonView({super.key, this.featureName});
 
   @override
   Widget build(BuildContext context) {
@@ -39,10 +40,30 @@ class ComingSoonView extends StatelessWidget {
             ),
             const Spacer(flex: 3),
 
-            // "Actively from" & "06.2026"
+            // Feature Name & "Actively from" & "06.2026"
             Center(
               child: Column(
                 children: [
+                  if (featureName != null) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                      ),
+                      child: Text(
+                        featureName!,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                    ),
+                  ],
                   Text(
                     l10n.activelyFrom,
                     textAlign: TextAlign.center,
