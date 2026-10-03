@@ -32,6 +32,8 @@ import '../../features/payment/presentation/views/plan_payment_view.dart';
 import '../../features/profile/presentation/views/profile_view.dart';
 import '../../features/settings/presentation/views/settings_view.dart';
 import '../../features/splash/presentation/views/splash_screen_view.dart';
+import '../../features/chat/presentation/views/artist_chat_view.dart';
+import '../../features/chat/presentation/views/listing_plans_view.dart';
 import 'route_names.dart';
 
 class AppRouter {
@@ -650,6 +652,29 @@ class AppRouter {
             child: PlanPaymentView(args: extra),
           );
         },
+      ),
+      GoRoute(
+        path: RouteNames.artistChat,
+        name: 'artistChat',
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const ArtistChatView(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.listingPlans,
+        name: 'listingPlans',
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const ListingPlansView(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.myListings,
+        name: 'myListings',
+        redirect: (context, state) => RouteNames.myEvents,
       ),
     ],
     errorBuilder: (context, state) {

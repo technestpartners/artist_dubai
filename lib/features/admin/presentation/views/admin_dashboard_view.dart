@@ -11,6 +11,7 @@ import '../../../../core/utils/responsive_helper.dart';
 import '../../../artists/domain/models/artist_model.dart';
 import '../../domain/models/publishing_pricing_model.dart';
 import '../../domain/models/payment_settings_model.dart';
+import '../../../chat/domain/models/listing_plan_model.dart';
 import '../../../events/domain/models/art_event_model.dart';
 import '../../../government/domain/models/government_entity.dart';
 import '../../../../core/utils/data_translator.dart';
@@ -44,6 +45,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   List<ExperienceLevelModel> _experienceLevels = [];
   List<LocationModel> _locations = [];
   List<PublishingPricingModel> _publishingPricing = [];
+  List<ListingPlanItem> _listingPlans = [];
   // ignore: unused_field
   PaymentSettingsModel _paymentSettings = PaymentSettingsModel.defaultSettings();
 
@@ -54,11 +56,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   StreamSubscription<List<ExperienceLevelModel>>? _experienceLevelsSub;
   StreamSubscription<List<LocationModel>>? _locationsSub;
   StreamSubscription<List<PublishingPricingModel>>? _publishingPricingSub;
+  StreamSubscription<List<ListingPlanItem>>? _listingPlansSub;
   StreamSubscription<PaymentSettingsModel>? _paymentSettingsSub;
   StreamSubscription<List<Map<String, dynamic>>>? _galleriesSub;
   final Set<String> _togglingEventIds = {};
   Timer? _periodicSyncTimer;
-  int _masterSubTab = 0; // 0 = Categories, 1 = Experience Levels, 2 = Locations, 3 = Publishing Pricing
+  int _masterSubTab = 0; // 0 = Categories, 1 = Experience Levels, 2 = Locations, 3 = Listing Plans
   int _eventFilterIndex = 0; // 0 = All, 1 = Pending Review, 2 = Active
 
   Future<void> _pickAndUploadImageForField(TextEditingController controller, StateSetter setModalState) async {
@@ -133,6 +136,11 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     _publishingPricingSub = liveSync.publishingPricingStream.listen((list) {
       if (mounted) {
         setState(() => _publishingPricing = list);
+      }
+    });
+    _listingPlansSub = liveSync.listingPlansStream.listen((list) {
+      if (mounted) {
+        setState(() => _listingPlans = list);
       }
     });
     _paymentSettingsSub = liveSync.paymentSettingsStream.listen((settings) {
@@ -218,6 +226,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     _experienceLevelsSub?.cancel();
     _locationsSub?.cancel();
     _publishingPricingSub?.cancel();
+    _listingPlansSub?.cancel();
     _paymentSettingsSub?.cancel();
     super.dispose();
   }
@@ -234,6 +243,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         sl<ApiService>().getLocations(forceRefresh: true).catchError((_) => <LocationModel>[]),
         sl<ApiService>().getPublishingPricing(forceRefresh: true).catchError((_) => <PublishingPricingModel>[]),
         sl<ApiService>().getPaymentSettings(forceRefresh: true).catchError((_) => PaymentSettingsModel.defaultSettings()),
+        sl<ApiService>().getListingPlans(forceRefresh: true).catchError((_) => <ListingPlanItem>[]),
       ]);
 
       if (mounted) {
@@ -301,6 +311,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           _locations = results[6] as List<LocationModel>;
           _publishingPricing = results[7] as List<PublishingPricingModel>;
           _paymentSettings = results[8] as PaymentSettingsModel;
+          _listingPlans = results[9] as List<ListingPlanItem>;
         });
       }
     } catch (_) {}
@@ -3280,14 +3291,14 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.payments_outlined,
+                          Icons.list_alt_rounded,
                           size: 15,
                           color: _masterSubTab == 3 ? const Color(0xFF6A2777) : const Color(0xFF64748B),
                         ),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
-                            'Pricing',
+                            'Listing Plans',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -3320,7 +3331,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         ? '${_experienceLevels.length} experience levels configured'
                         : _masterSubTab == 2
                             ? '${_locations.length} locations configured'
-                            : 'Set weekly, monthly & yearly publishing rates',
+                            : '${_listingPlans.length} listing plans configured',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -3360,32 +3371,53 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 },
               )
             else
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF6A2777),
-                  side: const BorderSide(color: Color(0xFF6A2777), width: 1.2),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                icon: const Icon(Icons.refresh, size: 14),
-                label: const Text(
-                  'Refresh',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-                ),
-                onPressed: () async {
-                  final pricing = await sl<ApiService>().getPublishingPricing(forceRefresh: true);
-                  if (mounted) {
-                    setState(() => _publishingPricing = pricing);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Publishing pricing rates refreshed from database'),
-                        backgroundColor: Color(0xFF6A2777),
-                        behavior: SnackBarBehavior.floating,
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  }
-                },
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6A2777),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.add, size: 14, color: Colors.white),
+                    label: const Text(
+                      'New Plan',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white),
+                    ),
+                    onPressed: () => _showEditListingPlanDialog(),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF6A2777),
+                      side: const BorderSide(color: Color(0xFF6A2777), width: 1.2),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.refresh, size: 14),
+                    label: const Text(
+                      'Refresh',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                    ),
+                    onPressed: () async {
+                      final plans = await sl<ApiService>().getListingPlans(forceRefresh: true);
+                      if (mounted) {
+                        setState(() => _listingPlans = plans);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Listing plans refreshed from database'),
+                            backgroundColor: Color(0xFF6A2777),
+                            behavior: SnackBarBehavior.floating,
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ],
               ),
           ],
         ),
@@ -3399,7 +3431,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         else if (_masterSubTab == 2)
           _buildLocationsMasterList()
         else
-          _buildPublishingPricingMasterList(),
+          _buildListingPlansMasterList(),
       ],
     );
   }
@@ -4171,6 +4203,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildPublishingPricingMasterList() {
     final pricingList = _publishingPricing.isNotEmpty
         ? _publishingPricing
@@ -4378,6 +4411,321 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5, color: Colors.white),
                         ),
                         onPressed: () => _showEditPricingDialog(pricing),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 20),
+        _buildPaymentSettingsCard(),
+      ],
+    );
+  }
+
+  Widget _buildListingPlansMasterList() {
+    final plansList = _listingPlans.isNotEmpty ? _listingPlans : ApiService.defaultListingPlans;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: plansList.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 16),
+          itemBuilder: (context, index) {
+            final plan = plansList[index];
+            final isEvent = plan.itemType == 'event';
+            final isGallery = plan.itemType == 'gallery';
+
+            return Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isEvent
+                      ? const Color(0xFFE9D5FF)
+                      : (isGallery ? const Color(0xFFBAE6FD) : const Color(0xFFFDE68A)),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header row
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: isEvent
+                              ? const Color(0xFFF3E8FF)
+                              : (isGallery ? const Color(0xFFE0F2FE) : const Color(0xFFFEF3C7)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          isEvent
+                              ? Icons.event_available_rounded
+                              : (isGallery ? Icons.museum_outlined : Icons.domain_rounded),
+                          color: isEvent
+                              ? const Color(0xFF6A2777)
+                              : (isGallery ? const Color(0xFF0284C7) : const Color(0xFFD97706)),
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    plan.title,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: plan.isActive ? const Color(0xFFECFDF5) : const Color(0xFFF1F5F9),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: plan.isActive ? const Color(0xFFA7F3D0) : const Color(0xFFCBD5E1),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        plan.isActive ? Icons.check_circle_rounded : Icons.visibility_off_outlined,
+                                        size: 11,
+                                        color: plan.isActive ? const Color(0xFF059669) : const Color(0xFF64748B),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        plan.isActive ? 'Active in App' : 'Hidden',
+                                        style: TextStyle(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: plan.isActive ? const Color(0xFF059669) : const Color(0xFF64748B),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Text(
+                                  plan.category,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF6A2777),
+                                  ),
+                                ),
+                                if (plan.badge.isNotEmpty) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF1EBF7),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      plan.badge,
+                                      style: const TextStyle(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF5E227A),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            if (plan.description.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                plan.description,
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  color: Color(0xFF64748B),
+                                  height: 1.35,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                  const SizedBox(height: 14),
+
+                  // Price & Features Display
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Listing Price',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              plan.price,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF1E293B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Included Features:',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF475569),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            for (final feat in plan.features)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 4),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(Icons.check, size: 14, color: Color(0xFF6A2777)),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        feat,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF334155),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Bottom Action Bar
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Type: ${plan.itemType}',
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF94A3B8),
+                        ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: plan.isActive ? Colors.redAccent : const Color(0xFF059669),
+                              side: BorderSide(
+                                color: plan.isActive ? Colors.redAccent.withValues(alpha: 0.5) : const Color(0xFFA7F3D0),
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            icon: Icon(plan.isActive ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 14),
+                            label: Text(
+                              plan.isActive ? 'Hide' : 'Activate',
+                              style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
+                            ),
+                            onPressed: () async {
+                              final updated = plan.copyWith(isActive: !plan.isActive);
+                              await sl<ApiService>().updateListingPlan(
+                                id: updated.id,
+                                itemType: updated.itemType,
+                                title: updated.title,
+                                category: updated.category,
+                                badge: updated.badge,
+                                price: updated.price,
+                                description: updated.description,
+                                features: updated.features,
+                                buttonText: updated.buttonText,
+                                isActive: updated.isActive,
+                                sortOrder: updated.sortOrder,
+                              );
+                              final fresh = await sl<ApiService>().getListingPlans(forceRefresh: true);
+                              if (mounted) setState(() => _listingPlans = fresh);
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF6A2777),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            icon: const Icon(Icons.edit_note_rounded, size: 16, color: Colors.white),
+                            label: const Text(
+                              'Edit Plan',
+                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white),
+                            ),
+                            onPressed: () => _showEditListingPlanDialog(plan),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -5261,6 +5609,443 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                           child: const Text(
                             'Save Rates',
                             style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showEditListingPlanDialog([ListingPlanItem? plan]) {
+    final isEditing = plan != null;
+    final titleCtrl = TextEditingController(text: plan?.title ?? '');
+    final categoryCtrl = TextEditingController(text: plan?.category ?? '');
+    final badgeCtrl = TextEditingController(text: plan?.badge ?? 'One-time');
+    final priceCtrl = TextEditingController(text: plan?.price ?? '199 AED');
+    final itemTypeCtrl = TextEditingController(text: plan?.itemType ?? 'event');
+    final descCtrl = TextEditingController(text: plan?.description ?? '');
+    final featuresCtrl = TextEditingController(text: plan?.features.join('\n') ?? '');
+    final buttonTextCtrl = TextEditingController(text: plan?.buttonText ?? 'Pay from My Listings');
+    bool isActive = plan?.isActive ?? true;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Dialog(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Container(
+              width: 520,
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF3E8FF),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.list_alt_rounded, color: Color(0xFF6A2777), size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              isEditing ? 'Edit ${plan.title}' : 'New Listing Plan',
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF0F172A),
+                              ),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 20, color: Color(0xFF64748B)),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Configure live amount, badge, description and feature bullet checklist displayed on the Listing Plans page.',
+                      style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Plan Title & Category row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Plan Title *', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                              const SizedBox(height: 6),
+                              TextField(
+                                controller: titleCtrl,
+                                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.black),
+                                decoration: InputDecoration(
+                                  hintText: 'e.g. Event Listing',
+                                  hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                                  filled: true,
+                                  fillColor: const Color(0xFFF8FAFC),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Category *', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                              const SizedBox(height: 6),
+                              TextField(
+                                controller: categoryCtrl,
+                                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.black),
+                                decoration: InputDecoration(
+                                  hintText: 'e.g. Events, Galleries',
+                                  hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                                  filled: true,
+                                  fillColor: const Color(0xFFF8FAFC),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Price & Badge Row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Price (Live Display) *', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                              const SizedBox(height: 6),
+                              TextField(
+                                controller: priceCtrl,
+                                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: Colors.black),
+                                decoration: InputDecoration(
+                                  hintText: 'e.g. 199 AED',
+                                  hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                                  prefixIcon: const Icon(Icons.payments_rounded, size: 18, color: Color(0xFF6B1C9B)),
+                                  filled: true,
+                                  fillColor: const Color(0xFFF8FAFC),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Badge Tag', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                              const SizedBox(height: 6),
+                              TextField(
+                                controller: badgeCtrl,
+                                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.black),
+                                decoration: InputDecoration(
+                                  hintText: 'e.g. One-time, Popular',
+                                  hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                                  prefixIcon: const Icon(Icons.bookmark_border_rounded, size: 18, color: Color(0xFF6B1C9B)),
+                                  filled: true,
+                                  fillColor: const Color(0xFFF8FAFC),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Item Type
+                    const Text('Item Type Identifier *', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: itemTypeCtrl,
+                      style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500, color: Colors.black),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. event, gallery, art_centre',
+                        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Description
+                    const Text('Description', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: descCtrl,
+                      maxLines: 2,
+                      style: const TextStyle(fontSize: 13, color: Colors.black),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. Publish a single event on Artist Dubai.',
+                        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Features Checklist (One per line)
+                    const Text('Features (One per line) *', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                    const SizedBox(height: 4),
+                    const Text('Each line will be displayed with a purple checkmark on the user-facing screen.', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: featuresCtrl,
+                      maxLines: 4,
+                      style: const TextStyle(fontSize: 13, color: Colors.black),
+                      decoration: InputDecoration(
+                        hintText: 'One event listing\nVisible in Events and calendar\nGallery photos included',
+                        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12.5),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Button Text
+                    const Text('Action Button Text', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: buttonTextCtrl,
+                      style: const TextStyle(fontSize: 13.5, color: Colors.black),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. Pay from My Listings',
+                        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Active Switch
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Active in App', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                            Text('Make this plan visible on the user Listing Plans page', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                          ],
+                        ),
+                        Switch(
+                          value: isActive,
+                          activeColor: const Color(0xFF6A2777),
+                          onChanged: (val) => setModalState(() => isActive = val),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Action buttons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        OutlinedButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF64748B),
+                            side: const BorderSide(color: Color(0xFFCBD5E1)),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          child: const Text('Cancel'),
+                        ),
+                        const SizedBox(width: 10),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF6A2777),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          onPressed: () async {
+                            final title = titleCtrl.text.trim();
+                            final category = categoryCtrl.text.trim();
+                            final price = priceCtrl.text.trim();
+                            final itemType = itemTypeCtrl.text.trim();
+
+                            if (title.isEmpty || category.isEmpty || price.isEmpty || itemType.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Title, Category, Price, and Item Type are required.'),
+                                  backgroundColor: Colors.redAccent,
+                                ),
+                              );
+                              return;
+                            }
+
+                            final lines = featuresCtrl.text
+                                .split('\n')
+                                .map((l) => l.trim())
+                                .where((l) => l.isNotEmpty)
+                                .toList();
+
+                            final messenger = ScaffoldMessenger.of(context);
+                            Navigator.pop(ctx);
+
+                            bool success;
+                            if (isEditing) {
+                              success = await sl<ApiService>().updateListingPlan(
+                                id: plan.id,
+                                itemType: itemType,
+                                title: title,
+                                category: category,
+                                badge: badgeCtrl.text.trim(),
+                                price: price,
+                                description: descCtrl.text.trim(),
+                                features: lines,
+                                buttonText: buttonTextCtrl.text.trim(),
+                                isActive: isActive,
+                                sortOrder: plan.sortOrder,
+                              );
+                            } else {
+                              success = await sl<ApiService>().createListingPlan(
+                                itemType: itemType,
+                                title: title,
+                                category: category,
+                                badge: badgeCtrl.text.trim(),
+                                price: price,
+                                description: descCtrl.text.trim(),
+                                features: lines,
+                                buttonText: buttonTextCtrl.text.trim(),
+                                isActive: isActive,
+                                sortOrder: _listingPlans.length + 1,
+                              );
+                            }
+
+                            if (success) {
+                              final updatedList = await sl<ApiService>().getListingPlans(forceRefresh: true);
+                              if (mounted) {
+                                setState(() => _listingPlans = updatedList);
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text('$title saved and synced live successfully!'),
+                                    backgroundColor: const Color(0xFF6A2777),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            } else {
+                              if (mounted) {
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Failed to save listing plan. Please check connection.'),
+                                    backgroundColor: Colors.redAccent,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          child: Text(
+                            isEditing ? 'Save Changes' : 'Create Plan',
+                            style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
                           ),
                         ),
                       ],

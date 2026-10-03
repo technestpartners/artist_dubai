@@ -10,12 +10,16 @@ import '../services/live_sync_service.dart';
 import '../services/locale_provider.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
+import '../utils/data_translator.dart';
 import '../utils/responsive_helper.dart';
 import 'notifications_panel.dart';
 
 enum TopBarMenuItem {
   adminDashboard,
   accountSettings,
+  artistChat,
+  myListings,
+  listingPlans,
   createArtistProfile,
   editArtistProfile,
   myFavorites,
@@ -43,6 +47,7 @@ class _AppTopBarState extends State<AppTopBar> {
   final GlobalKey _bellKey = GlobalKey();
   bool _hasArtistProfile = false;
   String? _myArtistId;
+  String? _myArtistCategory;
   StreamSubscription? _artistsSub;
   StreamSubscription? _authSub;
 
@@ -84,12 +89,14 @@ class _AppTopBarState extends State<AppTopBar> {
           setState(() {
             _hasArtistProfile = artist != null;
             _myArtistId = artist?.id;
+            _myArtistCategory = artist?.category;
           });
         }
       } else if (mounted) {
         setState(() {
           _hasArtistProfile = false;
           _myArtistId = null;
+          _myArtistCategory = null;
         });
       }
     } catch (_) {}
@@ -110,6 +117,15 @@ class _AppTopBarState extends State<AppTopBar> {
         break;
       case TopBarMenuItem.accountSettings:
         context.push(RouteNames.settings);
+        break;
+      case TopBarMenuItem.artistChat:
+        context.push(RouteNames.artistChat);
+        break;
+      case TopBarMenuItem.myListings:
+        context.push(RouteNames.myEvents);
+        break;
+      case TopBarMenuItem.listingPlans:
+        context.push(RouteNames.listingPlans);
         break;
       case TopBarMenuItem.createArtistProfile:
         context.push(RouteNames.artistRegistration);
@@ -272,25 +288,55 @@ class _AppTopBarState extends State<AppTopBar> {
                     horizontal: isCompact ? 2 : 4,
                   ),
                   padding: EdgeInsets.symmetric(
-                    horizontal: isCompact ? 6 : 10,
-                    vertical: isCompact ? 3 : 4,
+                    horizontal: isCompact ? 5 : 7,
+                    vertical: isCompact ? 2.5 : 3.5,
                   ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF5E227A).withValues(alpha: 0.08),
-                    border: Border.all(color: const Color(0xFF5E227A), width: isCompact ? 1.0 : 1.4),
+                    border: Border.all(color: const Color(0xFF5E227A), width: isCompact ? 1.0 : 1.2),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.language, size: isCompact ? 13 : 15, color: const Color(0xFF5E227A)),
-                      SizedBox(width: isCompact ? 2 : 4),
-                      Text(
-                        isArabic ? 'English' : 'عربي',
+                      SizedBox(width: isCompact ? 3 : 5),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: !isArabic ? const Color(0xFF5E227A) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          'EN',
+                          style: TextStyle(
+                            color: !isArabic ? Colors.white : const Color(0xFF5E227A),
+                            fontSize: isCompact ? 10.5 : 11.5,
+                            fontWeight: !isArabic ? FontWeight.bold : FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const Text(
+                        '|',
                         style: TextStyle(
-                          color: const Color(0xFF5E227A),
-                          fontSize: isCompact ? 11.0 : 12.5,
-                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF5E227A),
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w300,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: isArabic ? const Color(0xFF5E227A) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          'عربي',
+                          style: TextStyle(
+                            color: isArabic ? Colors.white : const Color(0xFF5E227A),
+                            fontSize: isCompact ? 10.5 : 11.5,
+                            fontWeight: isArabic ? FontWeight.bold : FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],
@@ -444,6 +490,17 @@ class _AppTopBarState extends State<AppTopBar> {
                               fontSize: 13,
                             ),
                           ),
+                          if (_hasArtistProfile && _myArtistCategory != null && _myArtistCategory!.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              'Artist • $_myArtistCategory',
+                              style: const TextStyle(
+                                color: Color(0xFF5E227A),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -487,12 +544,51 @@ class _AppTopBarState extends State<AppTopBar> {
                       ],
                     ),
                   ),
+                  PopupMenuItem<TopBarMenuItem>(
+                    value: TopBarMenuItem.artistChat,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.mail_outline, size: 18, color: Color(0xFF1E1E1E)),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Artist chat'.trData(ctx),
+                          style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<TopBarMenuItem>(
+                    value: TopBarMenuItem.myListings,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.palette_outlined, size: 18, color: Color(0xFF1E1E1E)),
+                        const SizedBox(width: 10),
+                        Text(
+                          'My Listings'.trData(ctx),
+                          style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<TopBarMenuItem>(
+                    value: TopBarMenuItem.listingPlans,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.palette_outlined, size: 18, color: Color(0xFF1E1E1E)),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Listing Plans'.trData(ctx),
+                          style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
+                        ),
+                      ],
+                    ),
+                  ),
                   if (_hasArtistProfile)
                     PopupMenuItem<TopBarMenuItem>(
                       value: TopBarMenuItem.editArtistProfile,
                       child: Row(
                         children: [
-                          const Icon(Icons.edit_outlined, size: 18, color: Color(0xFF1E1E1E)),
+                          const Icon(Icons.palette_outlined, size: 18, color: Color(0xFF1E1E1E)),
                           const SizedBox(width: 10),
                           Text(
                             menuL10n.editProfile,
@@ -519,7 +615,7 @@ class _AppTopBarState extends State<AppTopBar> {
                     value: TopBarMenuItem.myEvents,
                     child: Row(
                       children: [
-                        const Icon(Icons.event_outlined, size: 18, color: Color(0xFF1E1E1E)),
+                        const Icon(Icons.favorite_border, size: 18, color: Color(0xFF1E1E1E)),
                         const SizedBox(width: 10),
                         Text(
                           menuL10n.myEvents,

@@ -36,6 +36,9 @@ class RouteNames {
   static const String adminRecycleBin = '/admin/recycle-bin';
   static const String eventDetail = '/event-detail';
   static const String planPayment = '/plan-payment';
+  static const String artistChat = '/artist-chat';
+  static const String listingPlans = '/listing-plans';
+  static const String myListings = '/my-listings';
 
   static String artistDetailWithId(String id) => '/artist/$id';
   static String eventDetailWithId(String id) => '/event-detail?id=$id';

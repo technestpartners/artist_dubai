@@ -41,6 +41,8 @@ class MenuCardItem {
           return 'الذكاء الاصطناعي';
         case '/login':
           return l10n.logIn;
+        case '/logout':
+          return l10n.signOut;
         default:
           return title;
       }

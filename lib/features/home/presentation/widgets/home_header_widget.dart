@@ -110,8 +110,8 @@ class HomeHeaderWidget extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                       child: Container(
                         padding: EdgeInsets.symmetric(
-                          horizontal: isCompact ? 6.0 : (rh.isWide ? 10.0 : 8.0),
-                          vertical: isCompact || rh.isShortScreen ? 3.5 : (rh.isWide ? 6.0 : 5.0),
+                          horizontal: isCompact ? 5.0 : (rh.isWide ? 8.0 : 6.0),
+                          vertical: isCompact || rh.isShortScreen ? 2.5 : (rh.isWide ? 4.5 : 3.5),
                         ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.18),
@@ -125,13 +125,43 @@ class HomeHeaderWidget extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.language, size: isCompact ? 13 : 15, color: Colors.white),
-                            SizedBox(width: isCompact ? 2 : 4),
-                            Text(
-                              isArabic ? 'English' : 'عربي',
+                            SizedBox(width: isCompact ? 3 : 5),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: !isArabic ? Colors.white : Colors.transparent,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                'EN',
+                                style: TextStyle(
+                                  color: !isArabic ? const Color(0xFF5E227A) : Colors.white,
+                                  fontSize: isCompact ? 10.0 : 11.5,
+                                  fontWeight: !isArabic ? FontWeight.bold : FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            const Text(
+                              '|',
                               style: TextStyle(
-                                color: Colors.white,
-                                fontSize: isCompact ? 10.5 : 12,
-                                fontWeight: FontWeight.bold,
+                                color: Colors.white70,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w300,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: isArabic ? Colors.white : Colors.transparent,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                'عربي',
+                                style: TextStyle(
+                                  color: isArabic ? const Color(0xFF5E227A) : Colors.white,
+                                  fontSize: isCompact ? 10.0 : 11.5,
+                                  fontWeight: isArabic ? FontWeight.bold : FontWeight.w500,
+                                ),
                               ),
                             ),
                           ],

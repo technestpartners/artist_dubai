@@ -326,6 +326,23 @@ class DatabaseManager {
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+            CREATE TABLE IF NOT EXISTS listing_plans (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                item_type VARCHAR(50) NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                category VARCHAR(100) NOT NULL,
+                badge VARCHAR(50) DEFAULT 'One-time',
+                price VARCHAR(100) NOT NULL,
+                description TEXT NULL,
+                features_json TEXT NULL,
+                button_text VARCHAR(100) DEFAULT 'Pay from My Listings',
+                is_active TINYINT(1) DEFAULT 1,
+                sort_order INT DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_listing_plan_type (item_type)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
             CREATE TABLE IF NOT EXISTS payment_settings (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 qr_code_url VARCHAR(500) DEFAULT 'https://images.unsplash.com/photo-1595079672139-545c0ecac12a?auto=format&fit=crop&w=400&q=80',
@@ -335,6 +352,44 @@ class DatabaseManager {
                 instructions TEXT NULL,
                 is_active TINYINT(1) DEFAULT 1,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            CREATE TABLE IF NOT EXISTS artist_messages (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                sender_id VARCHAR(100) NULL,
+                sender_name VARCHAR(255) NOT NULL,
+                sender_email VARCHAR(255) NOT NULL,
+                recipient_id VARCHAR(100) NOT NULL,
+                recipient_name VARCHAR(255) NOT NULL,
+                recipient_category VARCHAR(100) DEFAULT 'Artist',
+                recipient_avatar_url VARCHAR(500) NULL,
+                subject VARCHAR(255) NOT NULL,
+                message TEXT NOT NULL,
+                flyer_url VARCHAR(500) NULL,
+                is_read TINYINT(1) DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_sender (sender_email),
+                INDEX idx_recipient (recipient_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            CREATE TABLE IF NOT EXISTS ai_chat_sessions (
+                id VARCHAR(100) PRIMARY KEY,
+                user_id VARCHAR(100) NULL,
+                user_email VARCHAR(255) NULL,
+                title VARCHAR(255) NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_user_email (user_email),
+                INDEX idx_updated_at (updated_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            CREATE TABLE IF NOT EXISTS ai_chat_messages (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                session_id VARCHAR(100) NOT NULL,
+                sender VARCHAR(50) NOT NULL,
+                message TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_session (session_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         
         ");
@@ -583,6 +638,18 @@ class DatabaseManager {
                 ];
                 $pStmt = $this->pdo->prepare("INSERT INTO publishing_pricing (id, item_type, item_name, description, weekly_price, monthly_price, six_month_price, yearly_price, six_month_badge, yearly_badge, currency, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 foreach ($pricingPlans as $plan) { $pStmt->execute($plan); }
+            }
+
+            // Seed Listing Plans (Event, Gallery, Art Centre)
+            $listingPlansCount = (int)$this->pdo->query("SELECT COUNT(*) FROM `listing_plans`")->fetchColumn();
+            if ($listingPlansCount === 0) {
+                $defaultPlans = [
+                    [1, 'event', 'Event Listing', 'Events', 'One-time', '199 AED', 'Publish a single event on Artist Dubai.', json_encode(['One event listing', 'Visible in Events and calendar', 'Gallery photos included']), 'Pay from My Listings', 1, 1],
+                    [2, 'gallery', 'Gallery Listing', 'Galleries', 'One-time', '149 AED', 'Publish a single gallery on Artist Dubai.', json_encode(['One gallery listing', 'Unlimited images', 'Shareable gallery page']), 'Pay from My Listings', 1, 2],
+                    [3, 'art_centre', 'Art Centre Listing', 'Art Centres', 'One-time', '299 AED', 'Publish a single art centre on Artist Dubai.', json_encode(['One art centre listing', 'Verified venue badge', 'Direct booking inquiry button']), 'Pay from My Listings', 1, 3],
+                ];
+                $lpStmt = $this->pdo->prepare("INSERT INTO listing_plans (id, item_type, title, category, badge, price, description, features_json, button_text, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                foreach ($defaultPlans as $dp) { $lpStmt->execute($dp); }
             }
 
             // Seed Payment Settings
@@ -3522,6 +3589,161 @@ class PublishingPricingController {
 }
 
 // -----------------------------------------------------------------------------
+// 4i2. Listing Plans Controller (Connected with Admin Dashboard & Listing Plans Screen)
+// -----------------------------------------------------------------------------
+class ListingPlansController {
+    private PDO $db;
+
+    public function __construct() {
+        $this->db = DatabaseManager::getInstance()->getConnection();
+    }
+
+    public function getPlans(): void {
+        try {
+            $stmt = $this->db->query("SELECT * FROM listing_plans ORDER BY sort_order ASC, id ASC");
+            $rows = $stmt->fetchAll();
+            foreach ($rows as &$row) {
+                $features = [];
+                if (!empty($row['features_json'])) {
+                    $decoded = json_decode($row['features_json'], true);
+                    if (is_array($decoded)) {
+                        $features = $decoded;
+                    }
+                }
+                $row['features'] = $features;
+            }
+            ApiResponse::success($rows, 'Listing plans retrieved successfully');
+        } catch (\Throwable $t) {
+            ApiResponse::error('Failed to retrieve listing plans: ' . $t->getMessage(), 500);
+        }
+    }
+
+    public function updatePlan(array $input): void {
+        AuthMiddleware::requireAdmin();
+
+        $id = (int)($input['id'] ?? 0);
+        $itemType = trim($input['item_type'] ?? '');
+        $title = InputSanitizer::cleanString($input['title'] ?? '');
+        $category = InputSanitizer::cleanString($input['category'] ?? '');
+        $badge = InputSanitizer::cleanString($input['badge'] ?? 'One-time');
+        $price = InputSanitizer::cleanString($input['price'] ?? '');
+        $description = InputSanitizer::cleanString($input['description'] ?? '');
+        $buttonText = InputSanitizer::cleanString($input['button_text'] ?? 'Pay from My Listings');
+        $isActive = isset($input['is_active']) ? (int)$input['is_active'] : 1;
+        $sortOrder = isset($input['sort_order']) ? (int)$input['sort_order'] : 0;
+
+        // Process features
+        $featuresJson = null;
+        if (isset($input['features'])) {
+            if (is_array($input['features'])) {
+                $featuresJson = json_encode(array_values(array_filter(array_map('trim', $input['features']))));
+            } else if (is_string($input['features'])) {
+                $lines = preg_split('/[\r\n,]+/', $input['features']);
+                $featuresJson = json_encode(array_values(array_filter(array_map('trim', $lines))));
+            }
+        } elseif (isset($input['features_json'])) {
+            $featuresJson = $input['features_json'];
+        }
+
+        try {
+            if ($id > 0) {
+                $fields = [];
+                $params = [];
+                if (!empty($title)) { $fields[] = 'title = ?'; $params[] = $title; }
+                if (!empty($category)) { $fields[] = 'category = ?'; $params[] = $category; }
+                if (isset($input['badge'])) { $fields[] = 'badge = ?'; $params[] = $badge; }
+                if (!empty($price)) { $fields[] = 'price = ?'; $params[] = $price; }
+                if (isset($input['description'])) { $fields[] = 'description = ?'; $params[] = $description; }
+                if ($featuresJson !== null) { $fields[] = 'features_json = ?'; $params[] = $featuresJson; }
+                if (isset($input['button_text'])) { $fields[] = 'button_text = ?'; $params[] = $buttonText; }
+                if (isset($input['is_active'])) { $fields[] = 'is_active = ?'; $params[] = $isActive; }
+                if (isset($input['sort_order'])) { $fields[] = 'sort_order = ?'; $params[] = $sortOrder; }
+
+                if (empty($fields)) {
+                    ApiResponse::error('No fields provided to update.', 400);
+                    return;
+                }
+
+                $params[] = $id;
+                $stmt = $this->db->prepare('UPDATE listing_plans SET ' . implode(', ', $fields) . ' WHERE id = ?');
+                $stmt->execute($params);
+
+                ApiResponse::success(['id' => $id, 'updated' => true], 'Listing plan updated successfully');
+            } elseif (!empty($itemType)) {
+                // Find by itemType or insert
+                $check = $this->db->prepare("SELECT id FROM listing_plans WHERE item_type = ? LIMIT 1");
+                $check->execute([$itemType]);
+                $existing = $check->fetch();
+                if ($existing) {
+                    $input['id'] = $existing['id'];
+                    $this->updatePlan($input);
+                } else {
+                    $this->createPlan($input);
+                }
+            } else {
+                ApiResponse::error('Valid plan ID or item_type is required', 400);
+            }
+        } catch (\Throwable $t) {
+            ApiResponse::error('Failed to update listing plan: ' . $t->getMessage(), 500);
+        }
+    }
+
+    public function createPlan(array $input): void {
+        AuthMiddleware::requireAdmin();
+
+        $itemType = strtolower(trim(InputSanitizer::cleanString($input['item_type'] ?? 'custom')));
+        $title = InputSanitizer::cleanString($input['title'] ?? 'Listing Plan');
+        $category = InputSanitizer::cleanString($input['category'] ?? 'Listings');
+        $badge = InputSanitizer::cleanString($input['badge'] ?? 'One-time');
+        $price = InputSanitizer::cleanString($input['price'] ?? '199 AED');
+        $description = InputSanitizer::cleanString($input['description'] ?? '');
+        $buttonText = InputSanitizer::cleanString($input['button_text'] ?? 'Pay from My Listings');
+        $isActive = isset($input['is_active']) ? (int)$input['is_active'] : 1;
+        $sortOrder = isset($input['sort_order']) ? (int)$input['sort_order'] : 0;
+
+        $featuresJson = json_encode([]);
+        if (isset($input['features'])) {
+            if (is_array($input['features'])) {
+                $featuresJson = json_encode(array_values(array_filter(array_map('trim', $input['features']))));
+            } else if (is_string($input['features'])) {
+                $lines = preg_split('/[\r\n,]+/', $input['features']);
+                $featuresJson = json_encode(array_values(array_filter(array_map('trim', $lines))));
+            }
+        }
+
+        try {
+            $stmt = $this->db->prepare("
+                INSERT INTO listing_plans 
+                (item_type, title, category, badge, price, description, features_json, button_text, is_active, sort_order) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([$itemType, $title, $category, $badge, $price, $description, $featuresJson, $buttonText, $isActive, $sortOrder]);
+            $newId = (int)$this->db->lastInsertId();
+
+            ApiResponse::success(['id' => $newId, 'created' => true], 'Listing plan created successfully');
+        } catch (\Throwable $t) {
+            ApiResponse::error('Failed to create listing plan: ' . $t->getMessage(), 500);
+        }
+    }
+
+    public function deletePlan(array $input): void {
+        AuthMiddleware::requireAdmin();
+        $id = (int)($input['id'] ?? 0);
+        if ($id <= 0) {
+            ApiResponse::error('Valid plan ID required for deletion', 400);
+            return;
+        }
+        try {
+            $stmt = $this->db->prepare("DELETE FROM listing_plans WHERE id = ?");
+            $stmt->execute([$id]);
+            ApiResponse::success(['id' => $id, 'deleted' => true], 'Listing plan deleted successfully');
+        } catch (\Throwable $t) {
+            ApiResponse::error('Failed to delete listing plan: ' . $t->getMessage(), 500);
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
 // 4i3. Payment Settings Controller
 // -----------------------------------------------------------------------------
 class PaymentSettingsController {
@@ -3591,6 +3813,429 @@ class PaymentSettingsController {
         } catch (\Throwable $t) {
             ApiResponse::error('Failed to update payment settings: ' . $t->getMessage(), 500);
         }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// 4i4. Artist Messages & Chat Controller
+// -----------------------------------------------------------------------------
+class ArtistMessagesController {
+    private PDO $db;
+
+    public function __construct() {
+        $this->db = DatabaseManager::getInstance()->getConnection();
+    }
+
+    public function getMessages(): void {
+        try {
+            $senderEmail = trim($_GET['sender_email'] ?? '');
+            $recipientId = trim($_GET['recipient_id'] ?? '');
+
+            $query = "SELECT * FROM artist_messages WHERE 1=1";
+            $params = [];
+
+            if (!empty($senderEmail)) {
+                $query .= " AND (sender_email = ? OR recipient_id = ?)";
+                $params[] = $senderEmail;
+                $params[] = $senderEmail;
+            }
+
+            $query .= " ORDER BY id DESC LIMIT 100";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll();
+
+            ApiResponse::success($rows, 'Messages retrieved successfully');
+        } catch (\Throwable $t) {
+            ApiResponse::error('Failed to retrieve messages: ' . $t->getMessage(), 500);
+        }
+    }
+
+    public function sendMessage(array $input): void {
+        try {
+            $senderName = InputSanitizer::cleanString($input['sender_name'] ?? 'User');
+            $senderEmail = InputSanitizer::cleanString($input['sender_email'] ?? 'user@artistdubai.com');
+            $senderId = InputSanitizer::cleanString($input['sender_id'] ?? '');
+            $recipientId = InputSanitizer::cleanString($input['recipient_id'] ?? '');
+            $recipientName = InputSanitizer::cleanString($input['recipient_name'] ?? 'Artist');
+            $recipientCategory = InputSanitizer::cleanString($input['recipient_category'] ?? 'Artist');
+            $recipientAvatar = InputSanitizer::cleanString($input['recipient_avatar_url'] ?? '');
+            $subject = InputSanitizer::cleanString($input['subject'] ?? 'Direct Artist Message');
+            $message = InputSanitizer::cleanString($input['message'] ?? '');
+            $flyerUrl = InputSanitizer::cleanString($input['flyer_url'] ?? '');
+
+            if (empty($recipientId) || empty($message)) {
+                ApiResponse::error('Recipient ID and message body are required.', 400);
+                return;
+            }
+
+            $stmt = $this->db->prepare("
+                INSERT INTO artist_messages 
+                (sender_id, sender_name, sender_email, recipient_id, recipient_name, recipient_category, recipient_avatar_url, subject, message, flyer_url, is_read, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW())
+            ");
+            $stmt->execute([
+                $senderId, $senderName, $senderEmail, $recipientId, $recipientName, $recipientCategory, $recipientAvatar, $subject, $message, $flyerUrl
+            ]);
+
+            $newId = $this->db->lastInsertId();
+            ApiResponse::success(['id' => $newId, 'status' => 'sent'], 'Message sent successfully');
+        } catch (\Throwable $t) {
+            ApiResponse::error('Failed to send message: ' . $t->getMessage(), 500);
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// 4i5. AI Art Guide Chat Controller
+// -----------------------------------------------------------------------------
+class AiChatController {
+    private PDO $db;
+
+    public function __construct() {
+        $this->db = DatabaseManager::getInstance()->getConnection();
+    }
+
+    public function getSessions(): void {
+        try {
+            $userEmail = trim($_GET['user_email'] ?? '');
+
+            $query = "SELECT s.*, 
+                      (SELECT COUNT(*) FROM ai_chat_messages m WHERE m.session_id = s.id) AS message_count,
+                      (SELECT message FROM ai_chat_messages m WHERE m.session_id = s.id ORDER BY m.id DESC LIMIT 1) AS last_message
+                      FROM ai_chat_sessions s WHERE 1=1";
+            $params = [];
+
+            if (!empty($userEmail)) {
+                $query .= " AND (s.user_email = ? OR s.user_email IS NULL OR s.user_email = '')";
+                $params[] = $userEmail;
+            }
+
+            $query .= " ORDER BY s.updated_at DESC LIMIT 100";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute($params);
+            $sessions = $stmt->fetchAll();
+
+            ApiResponse::success($sessions, 'AI chat sessions retrieved successfully');
+        } catch (\Throwable $t) {
+            ApiResponse::error('Failed to retrieve chat sessions: ' . $t->getMessage(), 500);
+        }
+    }
+
+    public function getMessages(array $params): void {
+        try {
+            $sessionId = trim($params['session_id'] ?? $_GET['session_id'] ?? '');
+            if (empty($sessionId)) {
+                ApiResponse::error('session_id is required', 400);
+                return;
+            }
+
+            $stmt = $this->db->prepare("SELECT * FROM ai_chat_messages WHERE session_id = ? ORDER BY id ASC");
+            $stmt->execute([$sessionId]);
+            $messages = $stmt->fetchAll();
+
+            ApiResponse::success($messages, 'Messages retrieved successfully');
+        } catch (\Throwable $t) {
+            ApiResponse::error('Failed to retrieve messages: ' . $t->getMessage(), 500);
+        }
+    }
+
+    public function sendMessage(array $input): void {
+        try {
+            $sessionId = trim($input['session_id'] ?? '');
+            $messageText = trim($input['message'] ?? '');
+            $userEmail = trim($input['user_email'] ?? '');
+            $userId = trim($input['user_id'] ?? '');
+            $title = trim($input['title'] ?? '');
+
+            if (empty($messageText)) {
+                ApiResponse::error('Message text is required', 400);
+                return;
+            }
+
+            if (empty($sessionId)) {
+                $sessionId = 'chat_' . time() . '_' . substr(md5(uniqid()), 0, 6);
+            }
+
+            if (empty($title)) {
+                $title = mb_substr($messageText, 0, 40) . (mb_strlen($messageText) > 40 ? '...' : '');
+            }
+
+            $locale = trim($input['locale'] ?? $_GET['locale'] ?? '');
+
+            // Ensure session exists
+            $stmt = $this->db->prepare("
+                INSERT INTO ai_chat_sessions (id, user_id, user_email, title, created_at, updated_at)
+                VALUES (?, ?, ?, ?, NOW(), NOW())
+                ON DUPLICATE KEY UPDATE updated_at = NOW()
+            ");
+            $stmt->execute([$sessionId, $userId ?: null, $userEmail ?: null, $title]);
+
+            // Save user message
+            $stmtMsg = $this->db->prepare("
+                INSERT INTO ai_chat_messages (session_id, sender, message, created_at)
+                VALUES (?, 'user', ?, NOW())
+            ");
+            $stmtMsg->execute([$sessionId, $messageText]);
+
+            // Generate AI reply based on Dubai art knowledge & language
+            $reply = $this->generateAiReply($messageText, $locale);
+            $relatedQuestions = $this->generateRelatedQuestions($messageText, $locale);
+
+            // Save AI reply
+            $stmtReply = $this->db->prepare("
+                INSERT INTO ai_chat_messages (session_id, sender, message, created_at)
+                VALUES (?, 'ai', ?, NOW())
+            ");
+            $stmtReply->execute([$sessionId, $reply]);
+
+            ApiResponse::success([
+                'session_id' => $sessionId,
+                'title' => $title,
+                'user_message' => $messageText,
+                'ai_reply' => $reply,
+                'related_questions' => $relatedQuestions,
+                'timestamp' => date('Y-m-d H:i:s'),
+            ], 'Message processed successfully');
+        } catch (\Throwable $t) {
+            ApiResponse::error('Failed to send AI chat message: ' . $t->getMessage(), 500);
+        }
+    }
+
+    public function deleteSession(array $input): void {
+        try {
+            $sessionId = trim($input['session_id'] ?? $_GET['session_id'] ?? '');
+            if (empty($sessionId)) {
+                ApiResponse::error('session_id is required', 400);
+                return;
+            }
+
+            $stmt1 = $this->db->prepare("DELETE FROM ai_chat_messages WHERE session_id = ?");
+            $stmt1->execute([$sessionId]);
+
+            $stmt2 = $this->db->prepare("DELETE FROM ai_chat_sessions WHERE id = ?");
+            $stmt2->execute([$sessionId]);
+
+            ApiResponse::success(['session_id' => $sessionId, 'deleted' => true], 'Session deleted successfully');
+        } catch (\Throwable $t) {
+            ApiResponse::error('Failed to delete session: ' . $t->getMessage(), 500);
+        }
+    }
+
+    private function generateAiReply(string $query, string $locale = ''): string {
+        $q = mb_strtolower($query);
+        $isArabic = ($locale === 'ar') || (bool)preg_match('/[\x{0600}-\x{06FF}]/u', $query);
+
+        if ($isArabic) {
+            if (str_contains($q, 'منطقة') || str_contains($q, 'مناطق') || str_contains($q, 'زيارة') || str_contains($q, 'أين') || str_contains($q, 'مكان') || str_contains($q, 'district') || str_contains($q, 'visit')) {
+                return "تضم دبي العديد من المراكز الفنية والإبداعية العالمية النابضة بالحياة:\n\n" .
+                    "• **السركال أفنيو (القوز)**\n" .
+                    "الوجهة الرائدة للفن المعاصر في دبي، وتضم أكثر من 70 مساحة إبداعية ومعارض عالمية، ومقاهٍ فنية وسينما مستقلة (سينما عقيل).\n\n" .
+                    "• **حي دبي للتصميم (d3)**\n" .
+                    "مركز الأزياء الراقية، والهندسة المعمارية، والمجسمات النحتية الحديثة، ومهرجانات التصميم العالمية.\n\n" .
+                    "• **قرية البوابة في مركز دبي المالي (DIFC)**\n" .
+                    "معارض تجارية مرموقة (Christie’s, Opera Gallery, Ayyam Gallery) وأرقى المطاعم.\n\n" .
+                    "• **حي الفهيدي التاريخي**\n" .
+                    "حي أبراج الرياح التاريخي، ويستضيف مهرجان سكة للفنون والتصميم، ومعرض XVA، ومشاغل الحرف التراثية.\n\n" .
+                    "• **مركز جميل للفنون (واجهة الجداف البحرية)**\n" .
+                    "مؤسسة مبتكرة تعرض الفن الحديث والمعاصر من الشرق الأوسط وجنوب آسيا في مساحات معمارية بديعة.";
+            }
+
+            if (str_contains($q, 'تسجيل') || str_contains($q, 'سجل') || str_contains($q, 'انضمام') || str_contains($q, 'فنان') || str_contains($q, 'register') || str_contains($q, 'artist')) {
+                return "التسجيل كفنان على منصة **فنان دبي** سهل وسريع:\n\n" .
+                    "1. انتقل إلى الشاشة الرئيسية.\n" .
+                    "2. اضغط على بطاقة **تسجيل فنان**.\n" .
+                    "3. املأ اسم الفنان، والمجال الفني (الرسم، النحت، التصوير الفوتوغرافي، الفن الرقمي، وغيرها)، والنبذة التعريفية، ومعلومات التواصل.\n" .
+                    "4. ارفع نماذج من أعمالك الفنية ومعارضك السابقة.\n" .
+                    "5. أرسل ملفك الشخصي للاعتماد الفوري وإبرازه عبر شبكة الفنون في دبي.";
+            }
+
+            if (str_contains($q, 'جولة') || str_contains($q, 'عطلة') || str_contains($q, 'أسبوع') || str_contains($q, 'برنامج') || str_contains($q, 'tour') || str_contains($q, 'weekend')) {
+                return "إليك خطة مقترحة لـ **جولة فنية في عطلة نهاية الأسبوع** في دبي:\n\n" .
+                    "**اليوم 1 (الجمعة - الحداثة والتصميم):**\n" .
+                    "• **الصباح:** جولة في حي دبي للتصميم (d3)، وتناول الإفطار في مقهى إبداعي، واستكشاف أحدث معارض التصميم.\n" .
+                    "• **بعد الظهر:** زيارة قرية البوابة في مركز دبي المالي العالمي (DIFC) لمشاهدة المعارض المعاصرة والممشى الفني النحتي.\n" .
+                    "• **المساء:** الاستمتاع بغروب الشمس في مركز جميل للفنون على واجهة الجداف البحرية الهادئة.\n\n" .
+                    "**اليوم 2 (السبت - الأصالة والتراث والفن المستقل):**\n" .
+                    "• **الصباح:** جولة في أزقة حي الفهيدي التاريخي وزيارة فندق ومعرض XVA الفني.\n" .
+                    "• **بعد الظهر:** الانغماس في أروقة السركال أفنيو — استكشاف مستودعات الفنون، وورش العمل المباشرة، والمتاجر الإبداعية.\n" .
+                    "• **المساء:** حضور عرض سينمائي فني مستقل أو أمسية موسيقية حية في سينما عقيل.";
+            }
+
+            if (str_contains($q, 'معرض') || str_contains($q, 'معارض') || str_contains($q, 'جاليري') || str_contains($q, 'gallery') || str_contains($q, 'galleries')) {
+                return "تضم دبي نخبة من المعارض الفنية الخاصة والمؤسسية المرموقة:\n\n" .
+                    "• **معرض XVA** (الفهيدي) - متخصص في الفن المعاصر للشرق الأوسط.\n" .
+                    "• **معرض أيام Ayyam Gallery** (السركال أفنيو) - يمثل كبار فناني المنطقة المعاصرين.\n" .
+                    "• **معرض كوستوت Custot Gallery** (السركال أفنيو) - فنون عالمية وغربية حديثة ومعاصرة.\n" .
+                    "• **أوبرا جاليري Opera Gallery** (مركز دبي المالي) - روائع الفن العالمي والمعاصر.\n" .
+                    "• **تشكيل Tashkeel** (ند الشبا) - استوديوهات فنية وبرامج إقامة وورش عمل.\n\n" .
+                    "تصفح قسم **المعارض الفنية** في التطبيق من القائمة الرئيسية للحصول على أرقام التواصل والمواقع مباشرة!";
+            }
+
+            if (str_contains($q, 'فعالية') || str_contains($q, 'فعاليات') || str_contains($q, 'مسابقة') || str_contains($q, 'مسابقات') || str_contains($q, 'event') || str_contains($q, 'competition')) {
+                return "يمكنك اكتشاف جميع المسابقات والمعارض والملتقيات الثقافية النشطة مباشرة عبر تطبيقنا!\n\n" .
+                    "• اضغط على **الفعاليات / المسابقات** من الشاشة الرئيسية.\n" .
+                    "• قم بالتصفية حسب التاريخ والموقع ومسابقات الجوائز.\n" .
+                    "• يمكن للفنانين المسجلين أيضاً إضافة فعالياتهم ومعارضهم الخاصة ومشاركتها مع مجتمع الفن.";
+            }
+
+            return "أنا **مرشد فنان دبي الذكي**! يمكنك سؤالي عن أي شيء يخص:\n\n" .
+                "• المناطق والمعارض الفنية في دبي (السركال، d3، مركز دبي المالي)\n" .
+                "• كيفية التسجيل كفنان وعرض أعمالك الفنية في التطبيق\n" .
+                "• الفعاليات والمعارض والمسابقات الثقافية القادمة\n" .
+                "• جولات فنية مقترحة لعطلة نهاية الأسبوع ونصائح زيارة المعارض\n\n" .
+                "لا تتردد في كتابة أي سؤال في الأسفل!";
+        }
+
+        // English Default
+        if (str_contains($q, 'district') || str_contains($q, 'visit') || str_contains($q, 'where') || str_contains($q, 'area') || str_contains($q, 'place')) {
+            return "Dubai has several vibrant, world-renowned art and creative hubs:\n\n" .
+                "• **Alserkal Avenue (Al Quoz)**\n" .
+                "The premier contemporary art hub of Dubai with over 70 creative spaces, world-class galleries (Green Art Gallery, Carbon 12, Grey Noise), artisan cafes, and indie cinemas.\n\n" .
+                "• **Dubai Design District (d3)**\n" .
+                "A hub for high-end fashion, architecture, modern sculpture installations, and design festivals.\n\n" .
+                "• **DIFC Gate Village**\n" .
+                "Sophisticated commercial galleries (Christie’s, Opera Gallery, Ayyam Gallery) and fine dining.\n\n" .
+                "• **Al Fahidi Historical Neighbourhood**\n" .
+                "Historic wind-tower quarter hosting the Sikka Art & Design Festival, XVA Gallery, and heritage craft studios.\n\n" .
+                "• **Jameel Arts Centre (Jaddaf Waterfront)**\n" .
+                "An innovative institution displaying modern Middle Eastern and South Asian art in minimalist architectural spaces.";
+        }
+
+        if (str_contains($q, 'register') || str_contains($q, 'join') || str_contains($q, 'sign up') || str_contains($q, 'profile') || str_contains($q, 'artist')) {
+            return "Registering as an artist on **Artist Dubai** is straightforward:\n\n" .
+                "1. Go to the Home screen.\n" .
+                "2. Tap on the **ARTIST REGISTRATION** card.\n" .
+                "3. Fill in your artist name, discipline (Painting, Sculpture, Photography, Digital Art, etc.), bio, and contact information.\n" .
+                "4. Upload your portfolio artwork samples and exhibitions.\n" .
+                "5. Submit your profile for immediate feature and verification across the Dubai art network.";
+        }
+
+        if (str_contains($q, 'tour') || str_contains($q, 'weekend') || str_contains($q, 'itinerary') || str_contains($q, 'day')) {
+            return "Here is a curated **Weekend Art Tour** in Dubai:\n\n" .
+                "**Day 1 (Friday - Modern & Design):**\n" .
+                "• **Morning:** Stroll through Dubai Design District (d3), enjoy breakfast at a creative café, and explore cutting-edge design showcases.\n" .
+                "• **Afternoon:** Visit DIFC Gate Village for prestigious contemporary galleries and sculpture walks.\n" .
+                "• **Evening:** Sunset visit to Jameel Arts Centre by the serene Jaddaf waterfront.\n\n" .
+                "**Day 2 (Saturday - Underground & Heritage):**\n" .
+                "• **Morning:** Wander through the historic Al Fahidi cultural quarters and visit XVA Art Hotel.\n" .
+                "• **Afternoon:** Dive into Alserkal Avenue — visit warehouse galleries, live artist workshops, and creative concept stores.\n" .
+                "• **Night:** Catch an independent art cinema screening or live music at Cinema Akil.";
+        }
+
+        if (str_contains($q, 'gallery') || str_contains($q, 'galleries') || str_contains($q, 'center')) {
+            return "Dubai boasts prestigious private and institutional art galleries:\n\n" .
+                "• **XVA Gallery** (Al Fahidi) - Specializes in contemporary Middle Eastern art.\n" .
+                "• **Ayyam Gallery** (Alserkal Avenue) - Leading regional contemporary artists.\n" .
+                "• **Custot Gallery** (Alserkal Avenue) - Modern and contemporary Western and international art.\n" .
+                "• **Opera Gallery** (DIFC) - Renowned master and contemporary artworks.\n" .
+                "• **Tashkeel** (Nad Al Sheba) - Studio spaces, residency programs, and workshops.\n\n" .
+                "Explore our in-app **GALLERIES** directory from the main menu for direct contacts and locations!";
+        }
+
+        if (str_contains($q, 'event') || str_contains($q, 'competition') || str_contains($q, 'exhibition')) {
+            return "You can discover all active competitions, exhibitions, and cultural gatherings directly inside our app!\n\n" .
+                "• Tap **EVENTS / COMPETITION** from the home screen.\n" .
+                "• Filter by dates, locations, and prize competitions.\n" .
+                "• Registered artists can also submit and showcase their own art events to the community.";
+        }
+
+        return "I am your **Artist Dubai Guide**! You can ask me anything about:\n\n" .
+            "• Art districts and galleries in Dubai (Alserkal, d3, DIFC)\n" .
+            "• How to register, exhibit, and showcase your artworks\n" .
+            "• Upcoming cultural events and competitions\n" .
+            "• Curated art weekend tours and gallery hopping tips\n\n" .
+            "Feel free to type any question below!";
+    }
+
+    private function generateRelatedQuestions(string $query, string $locale = ''): array {
+        $q = mb_strtolower($query);
+        $isArabic = ($locale === 'ar') || (bool)preg_match('/[\x{0600}-\x{06FF}]/u', $query);
+
+        if ($isArabic) {
+            if (str_contains($q, 'منطقة') || str_contains($q, 'مناطق') || str_contains($q, 'زيارة') || str_contains($q, 'district') || str_contains($q, 'visit') || str_contains($q, 'where') || str_contains($q, 'السركال')) {
+                return [
+                    'هل الدخول إلى معارض السركال أفنيو مجاني؟',
+                    'ما هي أوقات عمل حي دبي للتصميم d3؟',
+                    'كيف أصل إلى قرية البوابة بمركز دبي المالي بالمترو؟',
+                ];
+            }
+            if (str_contains($q, 'تسجيل') || str_contains($q, 'سجل') || str_contains($q, 'انضمام') || str_contains($q, 'فنان') || str_contains($q, 'register') || str_contains($q, 'artist')) {
+                return [
+                    'ما هي متطلبات توثيق ملف الفنان في التطبيق؟',
+                    'هل يمكنني بيع لوحاتي وأعمالي الفنية هنا؟',
+                    'كيف أضيف فعالياتي ومعارضي الخاصة؟',
+                ];
+            }
+            if (str_contains($q, 'جولة') || str_contains($q, 'عطلة') || str_contains($q, 'أسبوع') || str_contains($q, 'برنامج') || str_contains($q, 'tour') || str_contains($q, 'weekend')) {
+                return [
+                    'ما هي أفضل المقاهي الفنية لتناول الإفطار في السركال؟',
+                    'هل تتوفر جولات إرشادية فنية في حي الفهيدي؟',
+                    'ما هي أحدث الفعاليات في نهاية هذا الأسبوع؟',
+                ];
+            }
+            if (str_contains($q, 'معرض') || str_contains($q, 'معارض') || str_contains($q, 'جاليري') || str_contains($q, 'gallery') || str_contains($q, 'galleries')) {
+                return [
+                    'ما هي المعارض المتخصصة في الخط العربي المعاصر؟',
+                    'كيف أتواصل مع تشكيل للمشاركة في ورش العمل؟',
+                    'أين تقع أفضل معارض النحت في دبي؟',
+                ];
+            }
+            if (str_contains($q, 'فعالية') || str_contains($q, 'فعاليات') || str_contains($q, 'مسابقة') || str_contains($q, 'مسابقات') || str_contains($q, 'event')) {
+                return [
+                    'ما هي الجوائز المقدمة في المسابقات الفنية الحالية؟',
+                    'كيف أشارك في مهرجان سكة للفنون والتصميم؟',
+                    'هل توجد ورش عمل مجانية للفنانين المبتدئين؟',
+                ];
+            }
+            return [
+                'ما هي المناطق الفنية التي يمكنني زيارتها في دبي؟',
+                'كيف أسجل كفنان في هذا التطبيق؟',
+                'أفكار لجولة فنية في عطلة نهاية الأسبوع في دبي',
+            ];
+        }
+
+        // English
+        if (str_contains($q, 'district') || str_contains($q, 'visit') || str_contains($q, 'where') || str_contains($q, 'alserkal') || str_contains($q, 'area')) {
+            return [
+                'Is admission free at Alserkal Avenue galleries?',
+                'What are the opening hours for Dubai Design District (d3)?',
+                'How do I reach DIFC Gate Village by Metro?',
+            ];
+        }
+        if (str_contains($q, 'register') || str_contains($q, 'join') || str_contains($q, 'profile') || str_contains($q, 'artist')) {
+            return [
+                'What are the requirements to get verified as an artist?',
+                'Can I sell my paintings and artworks directly on the app?',
+                'How do I submit an art event or exhibition?',
+            ];
+        }
+        if (str_contains($q, 'tour') || str_contains($q, 'weekend') || str_contains($q, 'itinerary') || str_contains($q, 'day')) {
+            return [
+                'What are the best art cafes in Alserkal Avenue?',
+                'Are there guided art tours in Al Fahidi historic district?',
+                'What cultural events are happening this weekend?',
+            ];
+        }
+        if (str_contains($q, 'gallery') || str_contains($q, 'galleries') || str_contains($q, 'center')) {
+            return [
+                'Which galleries in Dubai feature Arabic calligraphy?',
+                'How can I join workshops and residencies at Tashkeel?',
+                'Where can I find modern sculpture galleries in Dubai?',
+            ];
+        }
+        if (str_contains($q, 'event') || str_contains($q, 'competition') || str_contains($q, 'exhibition')) {
+            return [
+                'What are the active art competitions with cash prizes?',
+                'How can I exhibit my work in the Sikka Art Festival?',
+                'Are there free beginner art workshops in Dubai?',
+            ];
+        }
+        return [
+            'Which art districts can I visit in Dubai?',
+            'How do I register as an artist in this app?',
+            'Ideas for a weekend art tour in Dubai',
+        ];
     }
 }
 
@@ -3970,6 +4615,22 @@ class UnifiedMySqlApiRouter {
                 }
                 break;
 
+            case 'listing_plans':
+            case 'listing-plans':
+            case 'listings':
+                $listingCtrl = new ListingPlansController();
+                $action = strtolower(trim($_GET['action'] ?? $input['action'] ?? ''));
+                if ($method === 'PUT' || ($method === 'POST' && ($action === 'update' || isset($input['id']) || isset($input['item_type'])))) {
+                    $listingCtrl->updatePlan(array_merge($input, $_GET));
+                } elseif ($method === 'POST') {
+                    $listingCtrl->createPlan(array_merge($input, $_POST));
+                } elseif ($method === 'DELETE' || $action === 'delete') {
+                    $listingCtrl->deletePlan(array_merge($input, $_GET));
+                } else {
+                    $listingCtrl->getPlans();
+                }
+                break;
+
             case 'payment_settings':
             case 'payment-settings':
             case 'payment':
@@ -3981,6 +4642,32 @@ class UnifiedMySqlApiRouter {
                 }
                 break;
 
+            case 'messages':
+            case 'artist_messages':
+            case 'chat':
+                $msgCtrl = new ArtistMessagesController();
+                if ($method === 'POST') {
+                    $msgCtrl->sendMessage(array_merge($input, $_POST));
+                } else {
+                    $msgCtrl->getMessages();
+                }
+                break;
+
+            case 'ai_chat':
+            case 'ai-chat':
+            case 'ai':
+                $aiCtrl = new AiChatController();
+                $aiAction = strtolower(trim($_GET['action'] ?? $input['action'] ?? ''));
+                if ($aiAction === 'messages') {
+                    $aiCtrl->getMessages(array_merge($input, $_GET));
+                } elseif ($aiAction === 'delete' || $aiAction === 'delete_session' || $method === 'DELETE') {
+                    $aiCtrl->deleteSession(array_merge($input, $_GET));
+                } elseif ($aiAction === 'send' || $aiAction === 'message' || $method === 'POST') {
+                    $aiCtrl->sendMessage(array_merge($input, $_POST));
+                } else {
+                    $aiCtrl->getSessions();
+                }
+                break;
 
             case 'seed':
                 if (!defined('CLI_TEST_MODE')) {

@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import '../../features/artists/domain/models/artist_model.dart';
 import '../../features/admin/domain/models/publishing_pricing_model.dart';
 import '../../features/admin/domain/models/payment_settings_model.dart';
+import '../../features/chat/domain/models/listing_plan_model.dart';
 import '../../features/events/domain/models/art_event_model.dart';
 import '../../features/government/domain/models/government_entity.dart';
 import '../di/injection_container.dart';
@@ -50,6 +51,8 @@ class LiveSyncService with WidgetsBindingObserver {
       StreamController<List<LocationModel>>.broadcast();
   final StreamController<List<PublishingPricingModel>> _publishingPricingController =
       StreamController<List<PublishingPricingModel>>.broadcast();
+  final StreamController<List<ListingPlanItem>> _listingPlansController =
+      StreamController<List<ListingPlanItem>>.broadcast();
   final StreamController<PaymentSettingsModel> _paymentSettingsController =
       StreamController<PaymentSettingsModel>.broadcast();
   final StreamController<bool> _authController =
@@ -66,6 +69,7 @@ class LiveSyncService with WidgetsBindingObserver {
   Stream<List<ExperienceLevelModel>> get experienceLevelsStream => _experienceLevelsController.stream;
   Stream<List<LocationModel>> get locationsStream => _locationsController.stream;
   Stream<List<PublishingPricingModel>> get publishingPricingStream => _publishingPricingController.stream;
+  Stream<List<ListingPlanItem>> get listingPlansStream => _listingPlansController.stream;
   Stream<PaymentSettingsModel> get paymentSettingsStream => _paymentSettingsController.stream;
   Stream<bool> get authStream => _authController.stream;
 
@@ -249,6 +253,17 @@ class LiveSyncService with WidgetsBindingObserver {
     } catch (_) {}
   }
 
+  /// Trigger sync for listing plans when an Admin Update occurs
+  Future<void> notifyListingPlansChanged([List<ListingPlanItem>? updatedList]) async {
+    if (updatedList != null && !_listingPlansController.isClosed) {
+      _listingPlansController.add(updatedList);
+    }
+    try {
+      final fresh = await _apiService.getListingPlans(forceRefresh: true);
+      if (!_listingPlansController.isClosed && _shouldEmit('listingPlans', fresh)) _listingPlansController.add(fresh);
+    } catch (_) {}
+  }
+
   /// Trigger sync for payment settings (QR Code &amp; Bank Details) when an Admin Update occurs
   Future<void> notifyPaymentSettingsChanged([PaymentSettingsModel? updatedSettings]) async {
     if (updatedSettings != null && !_paymentSettingsController.isClosed) {
@@ -336,6 +351,9 @@ class LiveSyncService with WidgetsBindingObserver {
         final publishingPricing = await _apiService.getPublishingPricing(forceRefresh: forceRefresh).catchError((_) => <PublishingPricingModel>[]);
         if (!_publishingPricingController.isClosed && _shouldEmit('pricing', publishingPricing)) _publishingPricingController.add(publishingPricing);
 
+        final listingPlans = await _apiService.getListingPlans(forceRefresh: forceRefresh).catchError((_) => <ListingPlanItem>[]);
+        if (!_listingPlansController.isClosed && _shouldEmit('listingPlans', listingPlans)) _listingPlansController.add(listingPlans);
+
         final paymentSettings = await _apiService.getPaymentSettings(forceRefresh: forceRefresh).catchError((_) => PaymentSettingsModel.defaultSettings());
         if (!_paymentSettingsController.isClosed && _shouldEmit('payment', paymentSettings)) _paymentSettingsController.add(paymentSettings);
 
@@ -368,6 +386,7 @@ class LiveSyncService with WidgetsBindingObserver {
     _experienceLevelsController.close();
     _locationsController.close();
     _publishingPricingController.close();
+    _listingPlansController.close();
     _paymentSettingsController.close();
     _authController.close();
   }

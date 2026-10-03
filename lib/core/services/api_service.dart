@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import '../../features/artists/domain/models/artist_model.dart';
 import '../../features/admin/domain/models/publishing_pricing_model.dart';
 import '../../features/admin/domain/models/payment_settings_model.dart';
+import '../../features/chat/domain/models/listing_plan_model.dart';
 import '../../features/events/domain/models/art_event_model.dart';
 import '../../features/government/domain/models/government_entity.dart';
 import '../constants/api_endpoints.dart';
@@ -1613,6 +1615,184 @@ class ApiService {
     return false;
   }
 
+  // 15h2. Listing Plans (Event, Gallery, Art Centre) (MySQL Backend)
+  List<ListingPlanItem>? _cachedListingPlans;
+
+  static const List<ListingPlanItem> defaultListingPlans = [
+    ListingPlanItem(
+      id: 1,
+      title: 'Event Listing',
+      category: 'Events',
+      badge: 'One-time',
+      price: '199 AED',
+      description: 'Publish a single event on Artist Dubai.',
+      features: [
+        'One event listing',
+        'Visible in Events and calendar',
+        'Gallery photos included',
+      ],
+      buttonText: 'Pay from My Listings',
+      itemType: 'event',
+      isActive: true,
+      sortOrder: 1,
+    ),
+    ListingPlanItem(
+      id: 2,
+      title: 'Gallery Listing',
+      category: 'Galleries',
+      badge: 'One-time',
+      price: '149 AED',
+      description: 'Publish a single gallery on Artist Dubai.',
+      features: [
+        'One gallery listing',
+        'Unlimited images',
+        'Shareable gallery page',
+      ],
+      buttonText: 'Pay from My Listings',
+      itemType: 'gallery',
+      isActive: true,
+      sortOrder: 2,
+    ),
+    ListingPlanItem(
+      id: 3,
+      title: 'Art Centre Listing',
+      category: 'Art Centres',
+      badge: 'One-time',
+      price: '299 AED',
+      description: 'Publish a single art centre on Artist Dubai.',
+      features: [
+        'One art centre listing',
+        'Verified venue badge',
+        'Direct booking inquiry button',
+      ],
+      buttonText: 'Pay from My Listings',
+      itemType: 'art_centre',
+      isActive: true,
+      sortOrder: 3,
+    ),
+  ];
+
+  Future<List<ListingPlanItem>> getListingPlans({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedListingPlans != null && _cachedListingPlans!.isNotEmpty) {
+      return _cachedListingPlans!;
+    }
+    try {
+      final res = await _client.get(ApiEndpoints.listingPlans);
+      if (_isSuccess(res) && res['data'] is List) {
+        final list = res['data'] as List<dynamic>;
+        if (list.isNotEmpty) {
+          _cachedListingPlans = list
+              .map((item) => ListingPlanItem.fromJson(item as Map<String, dynamic>))
+              .toList();
+          return _cachedListingPlans!;
+        }
+      }
+    } catch (_) {}
+
+    return _cachedListingPlans ?? defaultListingPlans;
+  }
+
+  Future<bool> updateListingPlan({
+    int? id,
+    required String itemType,
+    required String title,
+    required String category,
+    required String badge,
+    required String price,
+    required String description,
+    required List<String> features,
+    String buttonText = 'Pay from My Listings',
+    bool isActive = true,
+    int sortOrder = 0,
+  }) async {
+    try {
+      final res = await _client.post(
+        ApiEndpoints.listingPlans,
+        data: {
+          'action': 'update',
+          if (id != null) 'id': id,
+          'item_type': itemType,
+          'title': title,
+          'category': category,
+          'badge': badge,
+          'price': price,
+          'description': description,
+          'features': features,
+          'button_text': buttonText,
+          'is_active': isActive ? 1 : 0,
+          'sort_order': sortOrder,
+        },
+      );
+      if (_isSuccess(res)) {
+        _cachedListingPlans = null;
+        try {
+          sl<LiveSyncService>().notifyListingPlansChanged();
+        } catch (_) {}
+        await getListingPlans(forceRefresh: true);
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> createListingPlan({
+    required String itemType,
+    required String title,
+    required String category,
+    required String badge,
+    required String price,
+    required String description,
+    required List<String> features,
+    String buttonText = 'Pay from My Listings',
+    bool isActive = true,
+    int sortOrder = 0,
+  }) async {
+    try {
+      final res = await _client.post(
+        ApiEndpoints.listingPlans,
+        data: {
+          'item_type': itemType,
+          'title': title,
+          'category': category,
+          'badge': badge,
+          'price': price,
+          'description': description,
+          'features': features,
+          'button_text': buttonText,
+          'is_active': isActive ? 1 : 0,
+          'sort_order': sortOrder,
+        },
+      );
+      if (_isSuccess(res)) {
+        _cachedListingPlans = null;
+        try {
+          sl<LiveSyncService>().notifyListingPlansChanged();
+        } catch (_) {}
+        await getListingPlans(forceRefresh: true);
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> deleteListingPlan(int id) async {
+    try {
+      final res = await _client.post(
+        ApiEndpoints.listingPlans,
+        data: {'action': 'delete', 'id': id},
+      );
+      if (_isSuccess(res)) {
+        _cachedListingPlans = null;
+        try {
+          sl<LiveSyncService>().notifyListingPlansChanged();
+        } catch (_) {}
+        await getListingPlans(forceRefresh: true);
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
   // 15i. Payment Settings & QR Code (MySQL Backend)
   PaymentSettingsModel? _cachedPaymentSettings;
 
@@ -2318,6 +2498,88 @@ class ApiService {
         break;
       default:
         break;
+    }
+  }
+
+  // =========================================================================
+  // AI Chat Guide (MySQL Backend)
+  // =========================================================================
+
+  Future<List<Map<String, dynamic>>> getAiChatSessions({String? userEmail}) async {
+    try {
+      final queryParams = <String, dynamic>{'action': 'sessions'};
+      if (userEmail != null && userEmail.isNotEmpty) {
+        queryParams['user_email'] = userEmail;
+      }
+      final res = await _client.get(ApiEndpoints.aiChat, queryParameters: queryParams);
+      if (res.data != null && res.data['data'] is List) {
+        return List<Map<String, dynamic>>.from(res.data['data'] as List);
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Error getting AI chat sessions: $e');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getAiChatMessages(String sessionId) async {
+    try {
+      final res = await _client.get(ApiEndpoints.aiChat, queryParameters: {
+        'action': 'messages',
+        'session_id': sessionId,
+      });
+      if (res.data != null && res.data['data'] is List) {
+        return List<Map<String, dynamic>>.from(res.data['data'] as List);
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Error getting AI chat messages: $e');
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>?> sendAiChatMessage({
+    required String sessionId,
+    required String message,
+    String? title,
+    String? userEmail,
+    String? userId,
+    String? locale,
+  }) async {
+    try {
+      final body = <String, dynamic>{
+        'action': 'send',
+        'session_id': sessionId,
+        'message': message,
+      };
+      if (title != null && title.isNotEmpty) body['title'] = title;
+      if (userEmail != null && userEmail.isNotEmpty) body['user_email'] = userEmail;
+      if (userId != null && userId.isNotEmpty) body['user_id'] = userId;
+      body['locale'] = (locale != null && locale.isNotEmpty)
+          ? locale
+          : (DataTranslator.isAppArabic ? 'ar' : 'en');
+
+      final res = await _client.post(ApiEndpoints.aiChat, data: body);
+      if (res.data != null && res.data['data'] is Map) {
+        return Map<String, dynamic>.from(res.data['data'] as Map);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error sending AI chat message: $e');
+      return null;
+    }
+  }
+
+  Future<bool> deleteAiChatSession(String sessionId) async {
+    try {
+      final res = await _client.post(ApiEndpoints.aiChat, data: {
+        'action': 'delete',
+        'session_id': sessionId,
+      });
+      return res.statusCode == 200;
+    } catch (e) {
+      debugPrint('Error deleting AI chat session: $e');
+      return false;
     }
   }
 }

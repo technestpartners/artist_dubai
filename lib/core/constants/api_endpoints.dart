@@ -63,7 +63,11 @@ class ApiEndpoints {
 
   // Publishing Pricing & Plans (MySQL Backend)
   static const String publishingPricing = 'api.php?resource=publishing_pricing';
+  static const String listingPlans = 'api.php?resource=listing_plans';
 
   // Payment QR & Bank Settings (MySQL Backend)
   static const String paymentSettings = 'api.php?resource=payment_settings';
+
+  // AI Chat & Guides (MySQL Backend)
+  static const String aiChat = 'api.php?resource=ai_chat';
 }

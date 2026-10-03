@@ -96,7 +96,6 @@ class _MyEventsViewState extends State<MyEventsView> {
     final l10n = AppLocalizations.of(context);
     final totalCreated = _myCreatedEvents.length;
     final totalCategories = _myCreatedEvents.map((e) => e.category).toSet().length;
-    final totalCapacity = _myCreatedEvents.fold<int>(0, (sum, e) => sum + e.maxAttendees);
 
     final filtered = _filteredEvents;
 
@@ -189,14 +188,6 @@ class _MyEventsViewState extends State<MyEventsView> {
                               title: l10n.categories,
                               value: '$totalCategories',
                               icon: Icons.category_outlined,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _buildMetricCard(
-                              title: l10n.totalCapacity,
-                              value: '$totalCapacity',
-                              icon: Icons.people_outline,
                             ),
                           ),
                         ],

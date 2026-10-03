@@ -58,8 +58,14 @@ class StorageServiceImpl implements StorageService {
     await prefs.setBool('has_artist_profile', false);
     await prefs.remove('artist_profile_id');
     await prefs.remove('artist_profile_name');
-    await secureStorage.delete(key: keyAuthToken);
-    await secureStorage.delete(key: keyRefreshToken);
+    try {
+      await secureStorage
+          .delete(key: keyAuthToken)
+          .timeout(const Duration(milliseconds: 200), onTimeout: () {});
+      await secureStorage
+          .delete(key: keyRefreshToken)
+          .timeout(const Duration(milliseconds: 200), onTimeout: () {});
+    } catch (_) {}
   }
 
   @override

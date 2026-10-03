@@ -75,6 +75,21 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('New Location'), findsOneWidget);
+
+    // Switch to Listing Plans subtab (replacing old Pricing tab)
+    final listingPlansTabFinder = find.text('Listing Plans');
+    expect(listingPlansTabFinder, findsWidgets);
+    await tester.tap(listingPlansTabFinder.first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('New Plan'), findsOneWidget);
+    expect(find.text('Refresh'), findsOneWidget);
+    expect(find.text('Event Listing'), findsWidgets);
+    expect(find.text('199 AED'), findsWidgets);
+    expect(find.text('Gallery Listing'), findsWidgets);
+    expect(find.text('149 AED'), findsWidgets);
+    expect(find.text('Art Centre Listing'), findsWidgets);
+    expect(find.text('299 AED'), findsWidgets);
   });
 
   testWidgets('CreateArtistProfileView renders Location as a dropdown with Dubai, UAE default', (tester) async {

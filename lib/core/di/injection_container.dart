@@ -14,6 +14,7 @@ import '../services/locale_provider.dart';
 import '../services/logger_service.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
+import '../../features/chat/data/chat_service.dart';
 
 final sl = GetIt.instance;
 
@@ -83,6 +84,13 @@ Future<void> initDependencyInjection() async {
   final localeProvider = LocaleProvider();
   await localeProvider.loadSavedLocale();
   sl.registerSingleton<LocaleProvider>(localeProvider);
+
+  sl.registerLazySingleton<ChatService>(
+    () => ChatService(
+      storage: sl<StorageService>(),
+      apiClient: sl<ApiClient>(),
+    ),
+  );
 
   //! 3. Features (Auth, Home, Artists, Events, Profile)
 }
