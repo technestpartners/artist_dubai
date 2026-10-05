@@ -46,6 +46,7 @@ class AppNotificationItem {
       body: json['body'] as String? ?? '',
       timeAgo: json['time_ago'] as String? ?? 'Recent',
       icon: json['icon_code'] != null
+          // ignore: non_const_argument_for_const_parameter
           ? IconData(json['icon_code'] as int, fontFamily: 'MaterialIcons')
           : Icons.notifications_none_rounded,
       iconColor: json['icon_color'] != null
