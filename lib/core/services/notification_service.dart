@@ -9,6 +9,7 @@ class AppNotificationItem {
   final String title;
   final String body;
   final String timeAgo;
+  final String type;
   final IconData icon;
   final Color iconColor;
   final Color iconBg;
@@ -20,19 +21,22 @@ class AppNotificationItem {
     required this.title,
     required this.body,
     required this.timeAgo,
-    required this.icon,
-    required this.iconColor,
-    required this.iconBg,
+    this.type = 'general',
+    IconData? icon,
+    Color? iconColor,
+    Color? iconBg,
     this.route,
     this.isRead = false,
-  });
+  })  : icon = icon ?? NotificationService.resolveIconAndColors(type).$1,
+        iconColor = iconColor ?? NotificationService.resolveIconAndColors(type).$2,
+        iconBg = iconBg ?? NotificationService.resolveIconAndColors(type).$3;
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'title': title,
     'body': body,
     'time_ago': timeAgo,
-    'icon_code': icon.codePoint,
+    'type': type,
     'icon_color': iconColor.toARGB32(),
     'icon_bg': iconBg.toARGB32(),
     'route': route,
@@ -40,21 +44,21 @@ class AppNotificationItem {
   };
 
   factory AppNotificationItem.fromJson(Map<String, dynamic> json) {
+    final type = json['type'] as String? ?? 'general';
+    final (defIcon, defColor, defBg) = NotificationService.resolveIconAndColors(type);
     return AppNotificationItem(
       id: json['id']?.toString() ?? '0',
       title: json['title'] as String? ?? 'Notification',
       body: json['body'] as String? ?? '',
       timeAgo: json['time_ago'] as String? ?? 'Recent',
-      icon: json['icon_code'] != null
-          // ignore: non_const_argument_for_const_parameter
-          ? IconData(json['icon_code'] as int, fontFamily: 'MaterialIcons')
-          : Icons.notifications_none_rounded,
+      type: type,
+      icon: defIcon,
       iconColor: json['icon_color'] != null
           ? Color(json['icon_color'] as int)
-          : const Color(0xFF6A2777),
+          : defColor,
       iconBg: json['icon_bg'] != null
           ? Color(json['icon_bg'] as int)
-          : const Color(0xFFEDE9FE),
+          : defBg,
       route: json['route'] as String?,
       isRead: json['is_read'] == true,
     );
@@ -196,6 +200,7 @@ class NotificationService extends ChangeNotifier {
             title: title,
             body: body,
             timeAgo: timeAgo,
+            type: type,
             icon: icon,
             iconColor: iconColor,
             iconBg: iconBg,
@@ -284,6 +289,7 @@ class NotificationService extends ChangeNotifier {
         title: title,
         body: body,
         timeAgo: 'Just now',
+        type: type,
         icon: icon ?? resolvedIcon,
         iconColor: iconColor ?? resolvedIconColor,
         iconBg: iconBg ?? resolvedIconBg,
