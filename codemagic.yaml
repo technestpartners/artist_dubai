@@ -24,7 +24,7 @@ workflows:
             --create \
             --certificate-key=@env:CERTIFICATE_PRIVATE_KEY
           keychain add-certificates
-          xcode-project use-profiles --export-options-plist=/Users/builder/export_options.plist
+          xcode-project use-profiles
       - name: Get Flutter packages
         script: flutter pub get
       - name: Install CocoaPods
@@ -50,8 +50,7 @@ workflows:
       - name: Export and Sign IPA for App Store
         script: |
           mkdir -p build/ios/ipa
-          if [ ! -f /Users/builder/export_options.plist ]; then
-            cat <<EOF > /Users/builder/export_options.plist
+          cat <<EOF > /Users/builder/export_options.plist
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
@@ -59,13 +58,14 @@ workflows:
               <key>method</key>
               <string>app-store</string>
               <key>signingStyle</key>
-              <string>manual</string>
+              <string>automatic</string>
               <key>teamID</key>
               <string>$APP_STORE_CONNECT_TEAM_ID</string>
+              <key>uploadSymbols</key>
+              <true/>
           </dict>
           </plist>
           EOF
-          fi
           xcodebuild -exportArchive \
             -archivePath build/ios/Runner.xcarchive \
             -exportPath build/ios/ipa \
