@@ -34,6 +34,7 @@ import '../../features/settings/presentation/views/settings_view.dart';
 import '../../features/splash/presentation/views/splash_screen_view.dart';
 import '../../features/chat/presentation/views/artist_chat_view.dart';
 import '../../features/chat/presentation/views/listing_plans_view.dart';
+import '../../features/placeholder/presentation/views/coming_soon_view.dart';
 import 'route_names.dart';
 
 class AppRouter {
@@ -675,6 +676,20 @@ class AppRouter {
         path: RouteNames.myListings,
         name: 'myListings',
         redirect: (context, state) => RouteNames.myEvents,
+      ),
+      GoRoute(
+        path: RouteNames.comingSoon,
+        name: 'comingSoon',
+        pageBuilder: (context, state) {
+          final featureName = state.extra is Map
+              ? (state.extra as Map)['featureName'] as String?
+              : (state.extra is String ? state.extra as String : null);
+          return _buildFadePage(
+            context: context,
+            state: state,
+            child: ComingSoonView(featureName: featureName),
+          );
+        },
       ),
     ],
     errorBuilder: (context, state) {

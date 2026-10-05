@@ -1843,6 +1843,123 @@ class ApiService {
     return false;
   }
 
+  // 15j. Menu Permissions & Access Control (MySQL Backend)
+  Map<String, bool>? _cachedMenuPermissions;
+
+  Future<Map<String, bool>> getMenuPermissions({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedMenuPermissions != null && _cachedMenuPermissions!.isNotEmpty) {
+      return _cachedMenuPermissions!;
+    }
+    try {
+      final res = await _client.get(ApiEndpoints.menuPermissions);
+      if (_isSuccess(res) && res['data'] != null) {
+        final list = res['data'] as List;
+        final map = <String, bool>{};
+        for (final item in list) {
+          if (item is Map) {
+            final route = item['route_name']?.toString() ?? item['routeName']?.toString();
+            final enabled = item['is_enabled'] == 1 ||
+                item['is_enabled'] == '1' ||
+                item['is_enabled'] == true ||
+                item['is_enabled'] == null;
+            if (route != null && route.isNotEmpty) {
+              map[route] = enabled;
+            }
+          }
+        }
+        if (map.isNotEmpty) {
+          _cachedMenuPermissions = map;
+          try {
+            await sl<StorageService>().saveAllMenuPermissions(map);
+          } catch (_) {}
+          return _cachedMenuPermissions!;
+        }
+      }
+    } catch (_) {}
+
+    // Fallback to local storage or defaults
+    try {
+      final local = sl<StorageService>().getAllMenuPermissions();
+      _cachedMenuPermissions = local;
+      return local;
+    } catch (_) {
+      return {
+        '/about-us': true,
+        '/artists': true,
+        '/government': true,
+        '/artist-registration': true,
+        '/events': true,
+        '/events-competition': true,
+        '/galleries': true,
+        '/events-photos': true,
+        '/gallery-registration': true,
+        '/login': true,
+        '/ai': true,
+      };
+    }
+  }
+
+  Future<bool> updateMenuPermission({
+    required String routeName,
+    required bool isEnabled,
+    String? key,
+  }) async {
+    try {
+      // 1. Instantly persist to local storage
+      final storage = sl<StorageService>();
+      await storage.setMenuPermissionEnabled(routeName, isEnabled);
+      _cachedMenuPermissions = storage.getAllMenuPermissions();
+
+      // 2. Broadcast immediately so local UI updates without lag
+      try {
+        sl<LiveSyncService>().notifyMenuPermissionsChanged(_cachedMenuPermissions);
+      } catch (_) {}
+
+      // 3. Sync to backend MySQL
+      try {
+        final res = await _client.post(
+          ApiEndpoints.menuPermissions,
+          data: {
+            'route_name': routeName,
+            if (key != null) 'key': key,
+            'is_enabled': isEnabled ? 1 : 0,
+          },
+        );
+        return _isSuccess(res);
+      } catch (_) {
+        return true; // Still true because local state is successfully updated
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> updateAllMenuPermissions(Map<String, bool> permissions) async {
+    try {
+      final storage = sl<StorageService>();
+      await storage.saveAllMenuPermissions(permissions);
+      _cachedMenuPermissions = permissions;
+      try {
+        sl<LiveSyncService>().notifyMenuPermissionsChanged(permissions);
+      } catch (_) {}
+
+      try {
+        final payload = permissions.entries.map((e) => {
+          'route_name': e.key,
+          'is_enabled': e.value ? 1 : 0,
+        }).toList();
+        final res = await _client.post(
+          ApiEndpoints.menuPermissions,
+          data: {'permissions': payload},
+        );
+        return _isSuccess(res);
+      } catch (_) {
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+
   // 16. Change Password (MySQL Backend)
   Future<bool> changePassword({
     required String email,
@@ -2161,6 +2278,44 @@ class ApiService {
       return _isSuccess(res);
     } catch (_) {}
     return false;
+  }
+
+  // 24b. Clear All Notifications (MySQL Backend)
+  Future<bool> clearAllNotifications({String? email}) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.notifications}&action=clear_all',
+        data: email != null && email.isNotEmpty ? {'email': email} : {},
+      );
+      return _isSuccess(res);
+    } catch (_) {}
+    return false;
+  }
+
+  // 24c. Create Notification (MySQL Backend)
+  Future<Map<String, dynamic>?> createNotification({
+    required String title,
+    required String body,
+    String type = 'general',
+    String? route,
+    String? email,
+  }) async {
+    try {
+      final res = await _client.post(
+        ApiEndpoints.notifications,
+        data: {
+          'title': title,
+          'body': body,
+          'type': type,
+          if (route != null) 'route': route,
+          if (email != null) 'email': email,
+        },
+      );
+      if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
+        return res['data'] as Map<String, dynamic>;
+      }
+    } catch (_) {}
+    return null;
   }
 
   // 25. Delete Artist (MySQL Backend)
@@ -2512,8 +2667,9 @@ class ApiService {
         queryParams['user_email'] = userEmail;
       }
       final res = await _client.get(ApiEndpoints.aiChat, queryParameters: queryParams);
-      if (res.data != null && res.data['data'] is List) {
-        return List<Map<String, dynamic>>.from(res.data['data'] as List);
+      final dynamic body = res is Map ? res : (res != null ? _tryExtractData(res) : null);
+      if (body is Map && body['data'] is List) {
+        return List<Map<String, dynamic>>.from(body['data'] as List);
       }
       return [];
     } catch (e) {
@@ -2528,8 +2684,9 @@ class ApiService {
         'action': 'messages',
         'session_id': sessionId,
       });
-      if (res.data != null && res.data['data'] is List) {
-        return List<Map<String, dynamic>>.from(res.data['data'] as List);
+      final dynamic body = res is Map ? res : (res != null ? _tryExtractData(res) : null);
+      if (body is Map && body['data'] is List) {
+        return List<Map<String, dynamic>>.from(body['data'] as List);
       }
       return [];
     } catch (e) {
@@ -2560,8 +2717,9 @@ class ApiService {
           : (DataTranslator.isAppArabic ? 'ar' : 'en');
 
       final res = await _client.post(ApiEndpoints.aiChat, data: body);
-      if (res.data != null && res.data['data'] is Map) {
-        return Map<String, dynamic>.from(res.data['data'] as Map);
+      final dynamic respBody = res is Map ? res : (res != null ? _tryExtractData(res) : null);
+      if (respBody is Map && respBody['data'] is Map) {
+        return Map<String, dynamic>.from(respBody['data'] as Map);
       }
       return null;
     } catch (e) {
@@ -2576,10 +2734,26 @@ class ApiService {
         'action': 'delete',
         'session_id': sessionId,
       });
-      return res.statusCode == 200;
+      if (res is Map) {
+        return res['success'] == true;
+      }
+      final dynamic respBody = res != null ? _tryExtractData(res) : null;
+      if (respBody is Map) {
+        return respBody['success'] == true;
+      }
+      return false;
     } catch (e) {
       debugPrint('Error deleting AI chat session: $e');
       return false;
+    }
+  }
+
+  dynamic _tryExtractData(dynamic obj) {
+    if (obj is Map) return obj;
+    try {
+      return (obj as dynamic).data;
+    } catch (_) {
+      return null;
     }
   }
 }

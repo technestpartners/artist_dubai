@@ -3,6 +3,7 @@ class ArtistMessageModel {
   final String senderId;
   final String senderName;
   final String senderEmail;
+  final String? senderAvatarUrl;
   final String recipientId;
   final String recipientName;
   final String recipientCategory;
@@ -18,6 +19,7 @@ class ArtistMessageModel {
     required this.senderId,
     required this.senderName,
     required this.senderEmail,
+    this.senderAvatarUrl,
     required this.recipientId,
     required this.recipientName,
     this.recipientCategory = 'Artist',
@@ -35,6 +37,7 @@ class ArtistMessageModel {
       senderId: json['sender_id']?.toString() ?? json['senderId']?.toString() ?? '',
       senderName: json['sender_name']?.toString() ?? json['senderName']?.toString() ?? 'User',
       senderEmail: json['sender_email']?.toString() ?? json['senderEmail']?.toString() ?? '',
+      senderAvatarUrl: json['sender_avatar_url']?.toString() ?? json['senderAvatarUrl']?.toString(),
       recipientId: json['recipient_id']?.toString() ?? json['recipientId']?.toString() ?? '',
       recipientName: json['recipient_name']?.toString() ?? json['recipientName']?.toString() ?? 'Artist',
       recipientCategory: json['recipient_category']?.toString() ?? json['recipientCategory']?.toString() ?? 'Artist',
@@ -57,6 +60,7 @@ class ArtistMessageModel {
       'sender_id': senderId,
       'sender_name': senderName,
       'sender_email': senderEmail,
+      'sender_avatar_url': senderAvatarUrl,
       'recipient_id': recipientId,
       'recipient_name': recipientName,
       'recipient_category': recipientCategory,
@@ -74,6 +78,7 @@ class ArtistMessageModel {
     String? senderId,
     String? senderName,
     String? senderEmail,
+    String? senderAvatarUrl,
     String? recipientId,
     String? recipientName,
     String? recipientCategory,
@@ -89,6 +94,7 @@ class ArtistMessageModel {
       senderId: senderId ?? this.senderId,
       senderName: senderName ?? this.senderName,
       senderEmail: senderEmail ?? this.senderEmail,
+      senderAvatarUrl: senderAvatarUrl ?? this.senderAvatarUrl,
       recipientId: recipientId ?? this.recipientId,
       recipientName: recipientName ?? this.recipientName,
       recipientCategory: recipientCategory ?? this.recipientCategory,

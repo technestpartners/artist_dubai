@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -9,6 +10,12 @@ abstract class StorageService {
   Future<void> remove(String key);
   Future<void> clear();
   Future<void> clearAuthSession();
+
+  // Menu Permissions
+  bool isMenuPermissionEnabled(String routeName);
+  Future<void> setMenuPermissionEnabled(String routeName, bool isEnabled);
+  Map<String, bool> getAllMenuPermissions();
+  Future<void> saveAllMenuPermissions(Map<String, bool> permissions);
 
   // Secure Storage
   Future<void> writeSecure(String key, String value);
@@ -23,6 +30,7 @@ class StorageServiceImpl implements StorageService {
   static const String keyAuthToken = 'auth_token';
   static const String keyRefreshToken = 'refresh_token';
   static const String keyHasCompletedOnboarding = 'has_completed_onboarding';
+  static const String keyMenuPermissions = 'menu_permissions_map';
 
   StorageServiceImpl({required this.prefs, required this.secureStorage});
 
@@ -77,4 +85,79 @@ class StorageServiceImpl implements StorageService {
 
   @override
   Future<void> deleteSecure(String key) => secureStorage.delete(key: key);
+
+  // --- Menu Permissions Implementation ---
+  static const Map<String, bool> _defaultPermissionsMap = {
+    '/about-us': true,
+    '/artists': true,
+    '/government': true,
+    '/artist-registration': true,
+    '/events': true,
+    '/events-competition': true,
+    '/galleries': true,
+    '/events-photos': true,
+    '/gallery-registration': true,
+    '/login': true,
+    '/ai': true,
+  };
+
+  @override
+  bool isMenuPermissionEnabled(String routeName) {
+    try {
+      final raw = prefs.getString(keyMenuPermissions);
+      if (raw == null || raw.isEmpty) return true;
+      final map = jsonDecode(raw) as Map<String, dynamic>;
+      final clean = routeName.split('?').first.trim();
+      if (clean == '/events-competition' && map.containsKey('/events')) {
+        return map['/events'] != false;
+      }
+      if (clean == '/events' && map.containsKey('/events-competition')) {
+        return map['/events-competition'] != false;
+      }
+      if (map.containsKey(clean)) {
+        final val = map[clean];
+        return val == true || val == 1 || val == '1' || val == 'true';
+      }
+      return true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  @override
+  Map<String, bool> getAllMenuPermissions() {
+    try {
+      final raw = prefs.getString(keyMenuPermissions);
+      if (raw == null || raw.isEmpty) {
+        return Map<String, bool>.from(_defaultPermissionsMap);
+      }
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      final result = Map<String, bool>.from(_defaultPermissionsMap);
+      decoded.forEach((key, value) {
+        result[key] = value == true || value == 1 || value == '1' || value == 'true';
+      });
+      return result;
+    } catch (_) {
+      return Map<String, bool>.from(_defaultPermissionsMap);
+    }
+  }
+
+  @override
+  Future<void> setMenuPermissionEnabled(String routeName, bool isEnabled) async {
+    final current = getAllMenuPermissions();
+    final clean = routeName.split('?').first.trim();
+    current[clean] = isEnabled;
+    if (clean == '/events') {
+      current['/events-competition'] = isEnabled;
+    } else if (clean == '/events-competition') {
+      current['/events'] = isEnabled;
+    }
+    await saveAllMenuPermissions(current);
+  }
+
+  @override
+  Future<void> saveAllMenuPermissions(Map<String, bool> permissions) async {
+    await prefs.setString(keyMenuPermissions, jsonEncode(permissions));
+  }
 }
+

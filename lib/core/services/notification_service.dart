@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../di/injection_container.dart';
 import 'api_service.dart';
@@ -25,13 +26,47 @@ class AppNotificationItem {
     this.route,
     this.isRead = false,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'body': body,
+    'time_ago': timeAgo,
+    'icon_code': icon.codePoint,
+    'icon_color': iconColor.toARGB32(),
+    'icon_bg': iconBg.toARGB32(),
+    'route': route,
+    'is_read': isRead,
+  };
+
+  factory AppNotificationItem.fromJson(Map<String, dynamic> json) {
+    return AppNotificationItem(
+      id: json['id']?.toString() ?? '0',
+      title: json['title'] as String? ?? 'Notification',
+      body: json['body'] as String? ?? '',
+      timeAgo: json['time_ago'] as String? ?? 'Recent',
+      icon: json['icon_code'] != null
+          ? IconData(json['icon_code'] as int, fontFamily: 'MaterialIcons')
+          : Icons.notifications_none_rounded,
+      iconColor: json['icon_color'] != null
+          ? Color(json['icon_color'] as int)
+          : const Color(0xFF6A2777),
+      iconBg: json['icon_bg'] != null
+          ? Color(json['icon_bg'] as int)
+          : const Color(0xFFEDE9FE),
+      route: json['route'] as String?,
+      isRead: json['is_read'] == true,
+    );
+  }
 }
 
 class NotificationService extends ChangeNotifier {
+  static const String _kCacheKeyPrefix = 'cached_notifications_';
   final List<AppNotificationItem> _notifications = [];
   bool _isLoading = false;
 
   NotificationService() {
+    _loadFromCache();
     syncWithBackend();
   }
 
@@ -50,6 +85,90 @@ class NotificationService extends ChangeNotifier {
     }
   }
 
+  String get _cacheKey => '$_kCacheKeyPrefix${_userEmail ?? 'guest'}';
+
+  void _loadFromCache() {
+    try {
+      final raw = sl<StorageService>().getString(_cacheKey);
+      if (raw != null && raw.isNotEmpty) {
+        final list = jsonDecode(raw) as List<dynamic>;
+        _notifications.clear();
+        for (final item in list) {
+          if (item is Map<String, dynamic>) {
+            _notifications.add(AppNotificationItem.fromJson(item));
+          }
+        }
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
+  void _saveToCache() {
+    try {
+      final encoded = jsonEncode(_notifications.map((n) => n.toJson()).toList());
+      sl<StorageService>().setString(_cacheKey, encoded);
+    } catch (_) {}
+  }
+
+  static (IconData, Color, Color) resolveIconAndColors(String type) {
+    final t = type.toLowerCase();
+    if (t.contains('message') || t.contains('chat')) {
+      return (
+        Icons.chat_bubble_outline_rounded,
+        const Color(0xFF10B981),
+        const Color(0xFFD1FAE5),
+      );
+    } else if (t.contains('rsvp') || t.contains('booking') || t.contains('request')) {
+      return (
+        Icons.calendar_month_outlined,
+        const Color(0xFF6A2777),
+        const Color(0xFFEDE9FE),
+      );
+    } else if (t.contains('event') || t.contains('exhibition')) {
+      return (
+        Icons.celebration_outlined,
+        const Color(0xFFD97706),
+        const Color(0xFFFEF3C7),
+      );
+    } else if (t.contains('artwork') || t.contains('piece') || t.contains('painting')) {
+      return (
+        Icons.auto_awesome_rounded,
+        const Color(0xFFEC4899),
+        const Color(0xFFFCE7F3),
+      );
+    } else if (t.contains('gallery') || t.contains('center')) {
+      return (
+        Icons.account_balance_outlined,
+        const Color(0xFF0D9488),
+        const Color(0xFFCCFBF1),
+      );
+    } else if (t.contains('artist') || t.contains('welcome')) {
+      return (
+        Icons.palette_outlined,
+        const Color(0xFF2563EB),
+        const Color(0xFFDBEAFE),
+      );
+    } else if (t.contains('review') || t.contains('rating')) {
+      return (
+        Icons.star_outline_rounded,
+        const Color(0xFFEAB308),
+        const Color(0xFFFEF9C3),
+      );
+    } else if (t.contains('status') || t.contains('approval')) {
+      return (
+        Icons.verified_outlined,
+        const Color(0xFF059669),
+        const Color(0xFFD1FAE5),
+      );
+    } else {
+      return (
+        Icons.notifications_none_rounded,
+        const Color(0xFF6A2777),
+        const Color(0xFFEDE9FE),
+      );
+    }
+  }
+
   Future<void> syncWithBackend() async {
     _isLoading = true;
     try {
@@ -57,60 +176,36 @@ class NotificationService extends ChangeNotifier {
       final res = await api.getNotifications(email: _userEmail, forceRefresh: true);
       final rawList = (res['notifications'] as List<dynamic>?) ?? [];
 
-      if (rawList.isNotEmpty) {
-        _notifications.clear();
-        for (final item in rawList) {
-          final m = item as Map<String, dynamic>;
-          final id = m['id']?.toString() ?? '0';
-          final title = m['title'] as String? ?? 'Notification';
-          final body = m['body'] as String? ?? '';
-          final type = (m['type'] as String? ?? 'general').toLowerCase();
-          final route = m['route'] as String?;
-          final isRead = m['is_read'] == true || m['is_read'] == 1 || m['is_read'] == '1';
-          final timeAgo = m['time_ago'] as String? ?? 'Recent';
+      _notifications.clear();
+      for (final item in rawList) {
+        final m = item as Map<String, dynamic>;
+        final id = m['id']?.toString() ?? '0';
+        final title = m['title'] as String? ?? 'Notification';
+        final body = m['body'] as String? ?? '';
+        final type = (m['type'] as String? ?? 'general').toLowerCase();
+        final route = m['route'] as String?;
+        final isRead = m['is_read'] == true || m['is_read'] == 1 || m['is_read'] == '1';
+        final timeAgo = m['time_ago'] as String? ?? 'Recent';
 
-          IconData icon;
-          Color iconColor;
-          Color iconBg;
+        final (icon, iconColor, iconBg) = resolveIconAndColors(type);
 
-          if (type.contains('rsvp') || type.contains('request')) {
-            icon = Icons.calendar_month_outlined;
-            iconColor = const Color(0xFF6A2777);
-            iconBg = const Color(0xFFEDE9FE);
-          } else if (type.contains('event') || type.contains('exhibition')) {
-            icon = Icons.celebration_outlined;
-            iconColor = const Color(0xFFD97706);
-            iconBg = const Color(0xFFFEF3C7);
-          } else if (type.contains('artist') || type.contains('welcome')) {
-            icon = Icons.palette_outlined;
-            iconColor = const Color(0xFF2563EB);
-            iconBg = const Color(0xFFDBEAFE);
-          } else if (type.contains('review')) {
-            icon = Icons.star_outline_rounded;
-            iconColor = const Color(0xFFEAB308);
-            iconBg = const Color(0xFFFEF9C3);
-          } else {
-            icon = Icons.notifications_none_rounded;
-            iconColor = const Color(0xFF6A2777);
-            iconBg = const Color(0xFFEDE9FE);
-          }
-
-          _notifications.add(
-            AppNotificationItem(
-              id: id,
-              title: title,
-              body: body,
-              timeAgo: timeAgo,
-              icon: icon,
-              iconColor: iconColor,
-              iconBg: iconBg,
-              route: route,
-              isRead: isRead,
-            ),
-          );
-        }
+        _notifications.add(
+          AppNotificationItem(
+            id: id,
+            title: title,
+            body: body,
+            timeAgo: timeAgo,
+            icon: icon,
+            iconColor: iconColor,
+            iconBg: iconBg,
+            route: route,
+            isRead: isRead,
+          ),
+        );
       }
+      _saveToCache();
     } catch (_) {
+      // Offline fallback: keep existing cache in memory
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -121,6 +216,7 @@ class NotificationService extends ChangeNotifier {
     for (final n in _notifications) {
       n.isRead = true;
     }
+    _saveToCache();
     notifyListeners();
 
     try {
@@ -132,6 +228,7 @@ class NotificationService extends ChangeNotifier {
     final idx = _notifications.indexWhere((n) => n.id == id);
     if (idx != -1 && !_notifications[idx].isRead) {
       _notifications[idx].isRead = true;
+      _saveToCache();
       notifyListeners();
 
       final numericId = int.tryParse(id);
@@ -145,6 +242,7 @@ class NotificationService extends ChangeNotifier {
 
   Future<void> dismiss(String id) async {
     _notifications.removeWhere((n) => n.id == id);
+    _saveToCache();
     notifyListeners();
 
     final numericId = int.tryParse(id);
@@ -157,21 +255,26 @@ class NotificationService extends ChangeNotifier {
 
   Future<void> clearAll() async {
     _notifications.clear();
+    _saveToCache();
     notifyListeners();
 
     try {
-      await sl<ApiService>().markAllNotificationsRead(email: _userEmail);
+      await sl<ApiService>().clearAllNotifications(email: _userEmail);
     } catch (_) {}
   }
 
   void addNotification({
     required String title,
     required String body,
-    required IconData icon,
-    Color iconColor = const Color(0xFF6A2777),
-    Color iconBg = const Color(0xFFEDE9FE),
+    IconData? icon,
+    Color? iconColor,
+    Color? iconBg,
+    String type = 'general',
     String? route,
   }) {
+    final (resolvedIcon, resolvedIconColor, resolvedIconBg) =
+        resolveIconAndColors(type);
+
     final id = DateTime.now().millisecondsSinceEpoch.toString();
     _notifications.insert(
       0,
@@ -180,13 +283,25 @@ class NotificationService extends ChangeNotifier {
         title: title,
         body: body,
         timeAgo: 'Just now',
-        icon: icon,
-        iconColor: iconColor,
-        iconBg: iconBg,
+        icon: icon ?? resolvedIcon,
+        iconColor: iconColor ?? resolvedIconColor,
+        iconBg: iconBg ?? resolvedIconBg,
         route: route,
         isRead: false,
       ),
     );
+    _saveToCache();
     notifyListeners();
+
+    // Also persist to backend asynchronously if online
+    try {
+      sl<ApiService>().createNotification(
+        title: title,
+        body: body,
+        type: type,
+        route: route,
+        email: _userEmail,
+      );
+    } catch (_) {}
   }
 }

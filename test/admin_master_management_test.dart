@@ -114,4 +114,36 @@ void main() {
     final dropdownFinder = find.byType(DropdownButtonFormField<String>);
     expect(dropdownFinder, findsWidgets);
   });
+
+  testWidgets('Admin Dashboard renders Language Switcher and toggles between EN and AR', (tester) async {
+    tester.view.physicalSize = const Size(800, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(testApp(const AdminDashboardView()));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    // Language switcher exists in AppBar
+    expect(find.text('EN'), findsOneWidget);
+    expect(find.text('عربي'), findsOneWidget);
+
+    // Initial state is English
+    final localeProvider = sl<LocaleProvider>();
+    expect(localeProvider.isArabic, isFalse);
+
+    // Tap Arabic on the toggle
+    await tester.tap(find.text('عربي'));
+    await tester.pumpAndSettle();
+
+    // Verify locale switched to Arabic
+    expect(localeProvider.isArabic, isTrue);
+
+    // Tap EN on the toggle
+    await tester.tap(find.text('EN'));
+    await tester.pumpAndSettle();
+
+    // Verify locale switched back to English
+    expect(localeProvider.isArabic, isFalse);
+  });
 }
+

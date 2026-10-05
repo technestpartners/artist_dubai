@@ -2,6 +2,17 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "artist_dubai (Flutter 25098RA98I)",
+            "request": "launch",
+            "type": "dart",
+            "deviceId": "25098RA98I"
+        },
+        {
+            "name": "artist_dubai",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
             "name": "artist_dubai (Chrome - Port 8085)",
             "request": "launch",
             "type": "dart",

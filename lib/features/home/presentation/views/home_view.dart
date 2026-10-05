@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
+import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
@@ -20,6 +21,7 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   StreamSubscription<bool>? _authSub;
+  StreamSubscription<Map<String, bool>>? _permSub;
 
   bool get _isLoggedIn {
     try {
@@ -35,11 +37,15 @@ class _HomeViewState extends State<HomeView> {
     _authSub = sl<LiveSyncService>().authStream.listen((_) {
       if (mounted) setState(() {});
     });
+    _permSub = sl<LiveSyncService>().menuPermissionsStream.listen((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
   void dispose() {
     _authSub?.cancel();
+    _permSub?.cancel();
     super.dispose();
   }
 
@@ -71,6 +77,16 @@ class _HomeViewState extends State<HomeView> {
       _showLogoutDialog(context);
       return;
     }
+
+    final isAllowed = sl<StorageService>().isMenuPermissionEnabled(item.routeName);
+    if (!isAllowed) {
+      context.push(
+        RouteNames.comingSoon,
+        extra: {'featureName': item.getLocalizedTitle(context)},
+      );
+      return;
+    }
+
     context.push(item.routeName);
   }
 

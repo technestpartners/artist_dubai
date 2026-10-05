@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/locale_provider.dart';
+import '../../../../core/utils/data_translator.dart';
 
 /// Admin Recycle Bin Screen — soft-deleted items recovery & permanent deletion
 class AdminRecycleBinView extends StatefulWidget {
@@ -319,9 +322,9 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Recycle Bin',
-                  style: TextStyle(
+                Text(
+                  'Recycle Bin'.trData(context),
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF0F172A),
@@ -348,17 +351,84 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
                 ],
               ],
             ),
-            const Text(
-              'Artist Dubai management',
-              style: TextStyle(
+            Text(
+              'Artist Dubai management'.trData(context),
+              style: const TextStyle(
                 color: Color(0xFF64748B),
                 fontSize: 12,
                 fontWeight: FontWeight.w400,
               ),
             ),
           ],
+
         ),
         actions: [
+          Consumer<LocaleProvider>(
+            builder: (context, localeProvider, _) {
+              final isArabic = localeProvider.isArabic;
+              return Tooltip(
+                message: isArabic ? 'Switch to English' : 'التبديل إلى العربية',
+                child: InkWell(
+                  onTap: () => localeProvider.toggleLocale(),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF5E227A).withValues(alpha: 0.08),
+                      border: Border.all(color: const Color(0xFF5E227A), width: 1.2),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.language, size: 15, color: Color(0xFF5E227A)),
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: !isArabic ? const Color(0xFF5E227A) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            'EN',
+                            style: TextStyle(
+                              color: !isArabic ? Colors.white : const Color(0xFF5E227A),
+                              fontSize: 11.5,
+                              fontWeight: !isArabic ? FontWeight.bold : FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const Text(
+                          '|',
+                          style: TextStyle(
+                            color: Color(0xFF5E227A),
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w300,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: isArabic ? const Color(0xFF5E227A) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            'عربي',
+                            style: TextStyle(
+                              color: isArabic ? Colors.white : const Color(0xFF5E227A),
+                              fontSize: 11.5,
+                              fontWeight: isArabic ? FontWeight.bold : FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
           if (_allItems.isNotEmpty)
             TextButton.icon(
               onPressed: _confirmEmptyBin,
@@ -374,6 +444,7 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
             tooltip: 'Refresh',
           ),
         ],
+
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(46),
           child: Container(

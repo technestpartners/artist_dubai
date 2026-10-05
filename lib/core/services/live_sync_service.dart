@@ -55,6 +55,8 @@ class LiveSyncService with WidgetsBindingObserver {
       StreamController<List<ListingPlanItem>>.broadcast();
   final StreamController<PaymentSettingsModel> _paymentSettingsController =
       StreamController<PaymentSettingsModel>.broadcast();
+  final StreamController<Map<String, bool>> _menuPermissionsController =
+      StreamController<Map<String, bool>>.broadcast();
   final StreamController<bool> _authController =
       StreamController<bool>.broadcast();
 
@@ -71,6 +73,7 @@ class LiveSyncService with WidgetsBindingObserver {
   Stream<List<PublishingPricingModel>> get publishingPricingStream => _publishingPricingController.stream;
   Stream<List<ListingPlanItem>> get listingPlansStream => _listingPlansController.stream;
   Stream<PaymentSettingsModel> get paymentSettingsStream => _paymentSettingsController.stream;
+  Stream<Map<String, bool>> get menuPermissionsStream => _menuPermissionsController.stream;
   Stream<bool> get authStream => _authController.stream;
 
   LiveSyncService(this._apiService) {
@@ -111,6 +114,9 @@ class LiveSyncService with WidgetsBindingObserver {
     if (!_authController.isClosed) {
       _authController.add(isLoggedIn);
     }
+    try {
+      sl<NotificationService>().syncWithBackend();
+    } catch (_) {}
   }
 
   bool _isCurrentUserAdmin() {
@@ -157,6 +163,7 @@ class LiveSyncService with WidgetsBindingObserver {
         final fresh = await _apiService.getBookings(email: userEmail, forceRefresh: true);
         if (!_bookingsController.isClosed && _shouldEmit('bookings', fresh)) _bookingsController.add(fresh);
       }
+      sl<NotificationService>().syncWithBackend();
     } catch (_) {}
   }
 
@@ -267,11 +274,26 @@ class LiveSyncService with WidgetsBindingObserver {
   /// Trigger sync for payment settings (QR Code &amp; Bank Details) when an Admin Update occurs
   Future<void> notifyPaymentSettingsChanged([PaymentSettingsModel? updatedSettings]) async {
     if (updatedSettings != null && !_paymentSettingsController.isClosed) {
-      _paymentSettingsController.add(updatedSettings);
+      if (_shouldEmit('payment', updatedSettings)) {
+        _paymentSettingsController.add(updatedSettings);
+      }
+      return;
     }
     try {
       final fresh = await _apiService.getPaymentSettings(forceRefresh: true);
       if (!_paymentSettingsController.isClosed && _shouldEmit('payment', fresh)) _paymentSettingsController.add(fresh);
+    } catch (_) {}
+  }
+
+  /// Trigger sync for menu permissions when an Admin Update occurs
+  Future<void> notifyMenuPermissionsChanged([Map<String, bool>? updatedPermissions]) async {
+    if (updatedPermissions != null && !_menuPermissionsController.isClosed) {
+      _menuPermissionsController.add(updatedPermissions);
+      return;
+    }
+    try {
+      final fresh = await _apiService.getMenuPermissions(forceRefresh: true);
+      if (!_menuPermissionsController.isClosed) _menuPermissionsController.add(fresh);
     } catch (_) {}
   }
 
@@ -356,6 +378,9 @@ class LiveSyncService with WidgetsBindingObserver {
 
         final paymentSettings = await _apiService.getPaymentSettings(forceRefresh: forceRefresh).catchError((_) => PaymentSettingsModel.defaultSettings());
         if (!_paymentSettingsController.isClosed && _shouldEmit('payment', paymentSettings)) _paymentSettingsController.add(paymentSettings);
+
+        final menuPerms = await _apiService.getMenuPermissions(forceRefresh: forceRefresh).catchError((_) => <String, bool>{});
+        if (!_menuPermissionsController.isClosed && menuPerms.isNotEmpty) _menuPermissionsController.add(menuPerms);
 
         _hasLoadedMasters = true;
       }

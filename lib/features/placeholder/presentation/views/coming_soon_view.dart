@@ -19,7 +19,26 @@ class ComingSoonView extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            const Spacer(flex: 2),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 22),
+                    tooltip: 'Back',
+                    onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go(RouteNames.home);
+                      }
+                    },
+                  ),
+                  const Spacer(),
+                ],
+              ),
+            ),
+            const Spacer(flex: 1),
 
             // Top Artist Dubai Logo as per original image shape
             Center(
@@ -108,7 +127,11 @@ class ComingSoonView extends StatelessWidget {
                     ),
                   ),
                   onPressed: () {
-                    context.go(RouteNames.home);
+                    if (context.canPop()) {
+                      context.pop();
+                    } else {
+                      context.go(RouteNames.home);
+                    }
                   },
                   child: Text(
                     l10n.backToHome,

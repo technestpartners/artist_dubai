@@ -561,7 +561,7 @@ class _AppTopBarState extends State<AppTopBar> {
                     value: TopBarMenuItem.myListings,
                     child: Row(
                       children: [
-                        const Icon(Icons.palette_outlined, size: 18, color: Color(0xFF1E1E1E)),
+                        const Icon(Icons.event_note_outlined, size: 18, color: Color(0xFF1E1E1E)),
                         const SizedBox(width: 10),
                         Text(
                           'My Listings'.trData(ctx),
@@ -574,7 +574,7 @@ class _AppTopBarState extends State<AppTopBar> {
                     value: TopBarMenuItem.listingPlans,
                     child: Row(
                       children: [
-                        const Icon(Icons.palette_outlined, size: 18, color: Color(0xFF1E1E1E)),
+                        const Icon(Icons.campaign_outlined, size: 18, color: Color(0xFF1E1E1E)),
                         const SizedBox(width: 10),
                         Text(
                           'Listing Plans'.trData(ctx),
@@ -612,13 +612,13 @@ class _AppTopBarState extends State<AppTopBar> {
                       ),
                     ),
                   PopupMenuItem<TopBarMenuItem>(
-                    value: TopBarMenuItem.myEvents,
+                    value: TopBarMenuItem.myFavorites,
                     child: Row(
                       children: [
                         const Icon(Icons.favorite_border, size: 18, color: Color(0xFF1E1E1E)),
                         const SizedBox(width: 10),
                         Text(
-                          menuL10n.myEvents,
+                          menuL10n.myFavorites,
                           style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
                         ),
                       ],

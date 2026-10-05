@@ -1,16 +1,18 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
+import '../../../../core/services/storage_service.dart';
 import '../../../../core/utils/responsive_helper.dart';
+import '../../../../core/services/locale_provider.dart';
+import 'package:provider/provider.dart';
 import '../../../artists/domain/models/artist_model.dart';
 import '../../domain/models/publishing_pricing_model.dart';
-import '../../domain/models/payment_settings_model.dart';
+import '../../domain/models/menu_permission_model.dart';
 import '../../../chat/domain/models/listing_plan_model.dart';
 import '../../../events/domain/models/art_event_model.dart';
 import '../../../government/domain/models/government_entity.dart';
@@ -24,6 +26,7 @@ enum AdminTab {
   artCenters,
   government,
   masters,
+  permissions,
 }
 
 class AdminDashboardView extends StatefulWidget {
@@ -46,8 +49,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   List<LocationModel> _locations = [];
   List<PublishingPricingModel> _publishingPricing = [];
   List<ListingPlanItem> _listingPlans = [];
-  // ignore: unused_field
-  PaymentSettingsModel _paymentSettings = PaymentSettingsModel.defaultSettings();
+  Map<String, bool> _menuPermissions = {};
 
   StreamSubscription<List<ArtistModel>>? _artistsSub;
   StreamSubscription<List<ArtEventModel>>? _eventsSub;
@@ -57,12 +59,26 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   StreamSubscription<List<LocationModel>>? _locationsSub;
   StreamSubscription<List<PublishingPricingModel>>? _publishingPricingSub;
   StreamSubscription<List<ListingPlanItem>>? _listingPlansSub;
-  StreamSubscription<PaymentSettingsModel>? _paymentSettingsSub;
   StreamSubscription<List<Map<String, dynamic>>>? _galleriesSub;
+  StreamSubscription<Map<String, bool>>? _menuPermissionsSub;
   final Set<String> _togglingEventIds = {};
   Timer? _periodicSyncTimer;
   int _masterSubTab = 0; // 0 = Categories, 1 = Experience Levels, 2 = Locations, 3 = Listing Plans
   int _eventFilterIndex = 0; // 0 = All, 1 = Pending Review, 2 = Active
+
+  int get _activeMenuCount {
+    int count = 0;
+    for (final item in MenuPermissionModel.defaultPermissions()) {
+      if (_menuPermissions[item.routeName] ?? true) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  int get _comingSoonMenuCount {
+    return MenuPermissionModel.defaultPermissions().length - _activeMenuCount;
+  }
 
   Future<void> _pickAndUploadImageForField(TextEditingController controller, StateSetter setModalState) async {
     try {
@@ -85,8 +101,14 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   @override
   void initState() {
     super.initState();
+    _menuPermissions = sl<StorageService>().getAllMenuPermissions();
+    DataTranslator.translationNotifier.addListener(_onTranslationChanged);
     _loadAllData();
     _subscribeLiveStreams();
+  }
+
+  void _onTranslationChanged() {
+    if (mounted) setState(() {});
   }
 
   void _subscribeLiveStreams() {
@@ -141,11 +163,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     _listingPlansSub = liveSync.listingPlansStream.listen((list) {
       if (mounted) {
         setState(() => _listingPlans = list);
-      }
-    });
-    _paymentSettingsSub = liveSync.paymentSettingsStream.listen((settings) {
-      if (mounted) {
-        setState(() => _paymentSettings = settings);
       }
     });
     _galleriesSub = liveSync.galleriesStream.listen((list) {
@@ -213,10 +230,16 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         });
       }
     });
+    _menuPermissionsSub = liveSync.menuPermissionsStream.listen((perms) {
+      if (mounted) {
+        setState(() => _menuPermissions = perms);
+      }
+    });
   }
 
   @override
   void dispose() {
+    DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
     _periodicSyncTimer?.cancel();
     _artistsSub?.cancel();
     _eventsSub?.cancel();
@@ -227,7 +250,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     _locationsSub?.cancel();
     _publishingPricingSub?.cancel();
     _listingPlansSub?.cancel();
-    _paymentSettingsSub?.cancel();
+    _menuPermissionsSub?.cancel();
     super.dispose();
   }
 
@@ -242,11 +265,16 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         sl<ApiService>().getExperienceLevels(forceRefresh: true).catchError((_) => <ExperienceLevelModel>[]),
         sl<ApiService>().getLocations(forceRefresh: true).catchError((_) => <LocationModel>[]),
         sl<ApiService>().getPublishingPricing(forceRefresh: true).catchError((_) => <PublishingPricingModel>[]),
-        sl<ApiService>().getPaymentSettings(forceRefresh: true).catchError((_) => PaymentSettingsModel.defaultSettings()),
         sl<ApiService>().getListingPlans(forceRefresh: true).catchError((_) => <ListingPlanItem>[]),
+        sl<ApiService>().getMenuPermissions(forceRefresh: true).catchError((_) => <String, bool>{}),
       ]);
 
       if (mounted) {
+        if ((results[9] as Map<String, bool>).isNotEmpty) {
+          _menuPermissions = results[9] as Map<String, bool>;
+        } else {
+          _menuPermissions = sl<StorageService>().getAllMenuPermissions();
+        }
         final allItems = results[2] as List<Map<String, dynamic>>;
 
         // 1. Separate Photo Galleries (created by artists or event albums)
@@ -310,8 +338,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           _experienceLevels = results[5] as List<ExperienceLevelModel>;
           _locations = results[6] as List<LocationModel>;
           _publishingPricing = results[7] as List<PublishingPricingModel>;
-          _paymentSettings = results[8] as PaymentSettingsModel;
-          _listingPlans = results[9] as List<ListingPlanItem>;
+          _listingPlans = results[8] as List<ListingPlanItem>;
         });
       }
     } catch (_) {}
@@ -1167,50 +1194,121 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             Text(
-              'Admin Dashboard',
-              style: TextStyle(
+              'Admin Dashboard'.trData(context),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
                 color: Color(0xFF0F172A),
-                fontSize: 18,
+                fontSize: 17,
                 fontWeight: FontWeight.w700,
               ),
             ),
-            SizedBox(height: 2),
+            const SizedBox(height: 2),
             Text(
-              'Artist Dubai management',
-              style: TextStyle(
+              'Artist Dubai management'.trData(context),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
                 color: Color(0xFF64748B),
-                fontSize: 12,
+                fontSize: 11.5,
                 fontWeight: FontWeight.w400,
               ),
             ),
           ],
         ),
         actions: [
+          // ── Language Toggle Button ──────────────────────────────────────────
+          Consumer<LocaleProvider>(
+            builder: (context, localeProvider, _) {
+              final isArabic = localeProvider.isArabic;
+              return Tooltip(
+                message: isArabic ? 'Switch to English' : 'التبديل إلى العربية',
+                child: InkWell(
+                  onTap: () => localeProvider.toggleLocale(),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF5E227A).withValues(alpha: 0.08),
+                      border: Border.all(color: const Color(0xFF5E227A), width: 1.2),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.language, size: 15, color: Color(0xFF5E227A)),
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: !isArabic ? const Color(0xFF5E227A) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            'EN',
+                            style: TextStyle(
+                              color: !isArabic ? Colors.white : const Color(0xFF5E227A),
+                              fontSize: 11.5,
+                              fontWeight: !isArabic ? FontWeight.bold : FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const Text(
+                          '|',
+                          style: TextStyle(
+                            color: Color(0xFF5E227A),
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w300,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: isArabic ? const Color(0xFF5E227A) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            'عربي',
+                            style: TextStyle(
+                              color: isArabic ? Colors.white : const Color(0xFF5E227A),
+                              fontSize: 11.5,
+                              fontWeight: isArabic ? FontWeight.bold : FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
           Tooltip(
-            message: 'Recycle Bin',
+            message: 'Recycle Bin'.trData(context),
             child: InkWell(
               onTap: () => context.push(RouteNames.adminRecycleBin),
               borderRadius: BorderRadius.circular(10),
               child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFEF2F2),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: const Color(0xFFFECACA)),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.delete_outline_rounded, color: Color(0xFFDC2626), size: 18),
-                    SizedBox(width: 5),
+                    const Icon(Icons.delete_outline_rounded, color: Color(0xFFDC2626), size: 17),
+                    const SizedBox(width: 4),
                     Text(
-                      'Bin',
-                      style: TextStyle(
+                      'Bin'.trData(context),
+                      style: const TextStyle(
                         color: Color(0xFFDC2626),
-                        fontSize: 12,
+                        fontSize: 11.5,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -1219,8 +1317,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               ),
             ),
           ),
+          const SizedBox(width: 4),
         ],
       ),
+
       body: RefreshIndicator(
         color: const Color(0xFF6A2777),
         onRefresh: _loadAllData,
@@ -1256,7 +1356,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               child: _buildMetricCard(
                 icon: Icons.people_outline_rounded,
                 count: '${_artists.length}',
-                label: 'Artists',
+                label: 'Artists'.trData(context),
                 isSelected: _selectedTab == AdminTab.artists,
                 onTap: () => setState(() => _selectedTab = AdminTab.artists),
               ),
@@ -1266,7 +1366,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               child: _buildMetricCard(
                 icon: Icons.calendar_today_outlined,
                 count: '${_events.length}',
-                label: 'Events',
+                label: 'Events'.trData(context),
                 isSelected: _selectedTab == AdminTab.events || _selectedTab == AdminTab.calendar,
                 onTap: () => setState(() => _selectedTab = AdminTab.events),
               ),
@@ -1280,7 +1380,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               child: _buildMetricCard(
                 icon: Icons.image_outlined,
                 count: '${_galleries.length}',
-                label: 'Galleries',
+                label: 'Galleries'.trData(context),
                 isSelected: _selectedTab == AdminTab.galleries,
                 onTap: () => setState(() => _selectedTab = AdminTab.galleries),
               ),
@@ -1290,7 +1390,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               child: _buildMetricCard(
                 icon: Icons.business_outlined,
                 count: '${_artCenters.length}',
-                label: 'Art Centers',
+                label: 'Art Centers'.trData(context),
                 isSelected: _selectedTab == AdminTab.artCenters,
                 onTap: () => setState(() => _selectedTab = AdminTab.artCenters),
               ),
@@ -1304,7 +1404,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               child: _buildMetricCard(
                 icon: Icons.account_balance_outlined,
                 count: '${_govEntities.length}',
-                label: 'Government',
+                label: 'Government'.trData(context),
                 isSelected: _selectedTab == AdminTab.government,
                 onTap: () => setState(() => _selectedTab = AdminTab.government),
               ),
@@ -1314,9 +1414,33 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               child: _buildMetricCard(
                 icon: Icons.tune_rounded,
                 count: '${_categories.length + _experienceLevels.length}',
-                label: 'Masters',
+                label: 'Masters'.trData(context),
                 isSelected: _selectedTab == AdminTab.masters,
                 onTap: () => setState(() => _selectedTab = AdminTab.masters),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildMetricCard(
+                icon: Icons.shield_outlined,
+                count: '$_activeMenuCount/${MenuPermissionModel.defaultPermissions().length}',
+                label: 'Menu Permissions'.trData(context),
+                isSelected: _selectedTab == AdminTab.permissions,
+                onTap: () => setState(() => _selectedTab = AdminTab.permissions),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildMetricCard(
+                icon: Icons.hourglass_empty_rounded,
+                count: '$_comingSoonMenuCount',
+                label: 'Coming Soon'.trData(context),
+                isSelected: _selectedTab == AdminTab.permissions,
+                onTap: () => setState(() => _selectedTab = AdminTab.permissions),
               ),
             ),
           ],
@@ -1410,13 +1534,14 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       child: rh.isWide
           ? Row(
               children: [
-                _buildTabButton(AdminTab.artists, 'Artists'),
-                _buildTabButton(AdminTab.events, 'Events'),
-                _buildTabButton(AdminTab.calendar, 'Calendar'),
-                _buildTabButton(AdminTab.galleries, 'Galleries'),
-                _buildTabButton(AdminTab.artCenters, 'Art Centers'),
-                _buildTabButton(AdminTab.government, 'Government'),
-                _buildTabButton(AdminTab.masters, 'Masters'),
+                _buildTabButton(AdminTab.artists, 'Artists'.trData(context)),
+                _buildTabButton(AdminTab.events, 'Events'.trData(context)),
+                _buildTabButton(AdminTab.calendar, 'Calendar'.trData(context)),
+                _buildTabButton(AdminTab.galleries, 'Galleries'.trData(context)),
+                _buildTabButton(AdminTab.artCenters, 'Art Centers'.trData(context)),
+                _buildTabButton(AdminTab.government, 'Government'.trData(context)),
+                _buildTabButton(AdminTab.masters, 'Masters'.trData(context)),
+                _buildTabButton(AdminTab.permissions, 'Permissions'.trData(context)),
               ],
             )
           : Column(
@@ -1424,19 +1549,20 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 // Row 1 (4 tabs)
                 Row(
                   children: [
-                    _buildTabButton(AdminTab.artists, 'Artists'),
-                    _buildTabButton(AdminTab.events, 'Events'),
-                    _buildTabButton(AdminTab.calendar, 'Calendar'),
-                    _buildTabButton(AdminTab.galleries, 'Galleries'),
+                    _buildTabButton(AdminTab.artists, 'Artists'.trData(context)),
+                    _buildTabButton(AdminTab.events, 'Events'.trData(context)),
+                    _buildTabButton(AdminTab.calendar, 'Calendar'.trData(context)),
+                    _buildTabButton(AdminTab.galleries, 'Galleries'.trData(context)),
                   ],
                 ),
                 const SizedBox(height: 6),
-                // Row 2 (3 tabs)
+                // Row 2 (4 tabs)
                 Row(
                   children: [
-                    _buildTabButton(AdminTab.artCenters, 'Art Centers'),
-                    _buildTabButton(AdminTab.government, 'Government'),
-                    _buildTabButton(AdminTab.masters, 'Masters'),
+                    _buildTabButton(AdminTab.artCenters, 'Art Centers'.trData(context)),
+                    _buildTabButton(AdminTab.government, 'Government'.trData(context)),
+                    _buildTabButton(AdminTab.masters, 'Masters'.trData(context)),
+                    _buildTabButton(AdminTab.permissions, 'Permissions'.trData(context)),
                   ],
                 ),
               ],
@@ -1503,6 +1629,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         return _buildGovernmentTab();
       case AdminTab.masters:
         return _buildMastersTab();
+      case AdminTab.permissions:
+        return _buildPermissionsTab();
     }
   }
 
@@ -1516,7 +1644,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              '${_artists.length} artists',
+              '${_artists.length} artists'.trData(context),
               style: const TextStyle(
                 fontSize: 13.5,
                 color: Color(0xFF64748B),
@@ -1532,7 +1660,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               icon: const Icon(Icons.add, size: 14, color: Colors.white),
-              label: const Text('New artist', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
+              label: Text('New artist'.trData(context), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
               onPressed: () => context.push(
                 RouteNames.artistRegistration,
                 extra: {'fromAdmin': true},
@@ -1542,12 +1670,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         ),
         const SizedBox(height: 14),
         if (_artists.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 32),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
             child: Center(
               child: Text(
-                'No artists registered yet.',
-                style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                'No artists registered yet.'.trData(context),
+                style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
               ),
             ),
           )
@@ -1561,9 +1689,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               final artist = _artists[index];
               final isActive = artist.isActive;
               return _buildListItemCard(
-                title: artist.name,
+                title: artist.name.trData(context),
                 subtitle: '${artist.localizedCategory(context)} · ${artist.localizedLocation(context).isNotEmpty ? artist.localizedLocation(context) : 'Dubai, UAE'.trData(context)}',
-                badgeText: isActive ? 'Active' : 'Inactive',
+                badgeText: (isActive ? 'Active' : 'Inactive').trData(context),
                 isPurpleBadge: isActive,
                 onToggleStatus: () => _toggleArtistStatus(artist, index),
                 onEdit: () {
@@ -1571,7 +1699,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 },
                 onDelete: () {
                   _confirmDelete(
-                    title: 'Delete Artist Profile',
+                    title: 'Delete Artist Profile'.trData(context),
                     message: 'Are you sure you want to remove ${artist.name}?',
                     onConfirm: () async {
                       setState(() => _artists.removeAt(index));
@@ -1642,7 +1770,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              '${_events.length} events total',
+              '${_events.length} events total'.trData(context),
               style: const TextStyle(
                 fontSize: 13.5,
                 color: Color(0xFF64748B),
@@ -1658,7 +1786,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               icon: const Icon(Icons.add, size: 14, color: Colors.white),
-              label: const Text('New event', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
+              label: Text('New event'.trData(context), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
               onPressed: () async {
                 await context.push(
                   RouteNames.createArtEvent,
@@ -1675,11 +1803,11 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              _buildEventFilterChip(0, 'All (${_events.length})'),
+              _buildEventFilterChip(0, '${'All'.trData(context)} (${_events.length})'),
               const SizedBox(width: 8),
-              _buildEventFilterChip(1, 'Pending Review (${pendingEvents.length})', isHighlight: pendingEvents.isNotEmpty),
+              _buildEventFilterChip(1, '${'Pending Review'.trData(context)} (${pendingEvents.length})', isHighlight: pendingEvents.isNotEmpty),
               const SizedBox(width: 8),
-              _buildEventFilterChip(2, 'Active (${activeEvents.length})'),
+              _buildEventFilterChip(2, '${'Active'.trData(context)} (${activeEvents.length})'),
             ],
           ),
         ),
@@ -1690,8 +1818,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             child: Center(
               child: Text(
                 _eventFilterIndex == 1
-                    ? 'No pending event requests.'
-                    : (_eventFilterIndex == 2 ? 'No active events.' : 'No events created yet.'),
+                    ? 'No pending event requests.'.trData(context)
+                    : (_eventFilterIndex == 2 ? 'No active events.'.trData(context) : 'No events created yet.'.trData(context)),
                 style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
               ),
             ),
@@ -1717,9 +1845,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               final payProof = ev.paymentProofUrl ?? '';
 
               return _buildListItemCard(
-                title: ev.title,
-                subtitle: '${ev.organizer.isNotEmpty ? "Organizer: ${ev.organizer} · " : ""}${ev.formattedDate.isNotEmpty ? ev.formattedDate : ev.dateTime} - ${ev.location}$planInfo',
-                badgeText: isPending ? 'Pending Review' : (isActive ? 'Active' : 'Inactive'),
+                title: ev.title.trData(context),
+                subtitle: '${ev.organizer.isNotEmpty ? "Organizer: ${ev.organizer} · " : ""}${ev.formattedDate.isNotEmpty ? ev.formattedDate : ev.dateTime} - ${ev.location}$planInfo'.trData(context),
+                badgeText: (isPending ? 'Pending Review' : (isActive ? 'Active' : 'Inactive')).trData(context),
                 isPurpleBadge: isActive,
                 isAmberBadge: isPending,
                 paymentProofUrl: payProof,
@@ -1747,7 +1875,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 },
                 onDelete: () {
                   _confirmDelete(
-                    title: 'Delete Event',
+                    title: 'Delete Event'.trData(context),
                     message: 'Are you sure you want to delete "${ev.title}"?',
                     onConfirm: () async {
                       if (realIndex >= 0) {
@@ -1902,7 +2030,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              '${_events.length} calendar events',
+              '${_events.length} calendar events'.trData(context),
               style: const TextStyle(
                 fontSize: 13.5,
                 color: Color(0xFF64748B),
@@ -1918,7 +2046,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               icon: const Icon(Icons.add, size: 14, color: Colors.white),
-              label: const Text('Add to calendar', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
+              label: Text('Add to calendar'.trData(context), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
               onPressed: () async {
                 await context.push(
                   RouteNames.createArtEvent,
@@ -1931,11 +2059,11 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         ),
         const SizedBox(height: 14),
         if (_events.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
             child: Text(
-              'No upcoming events.',
-              style: TextStyle(color: Color(0xFF64748B), fontSize: 13.5),
+              'No upcoming events.'.trData(context),
+              style: const TextStyle(color: Color(0xFF64748B), fontSize: 13.5),
             ),
           )
         else
@@ -1948,9 +2076,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               final ev = _events[index];
               final isActive = ev.isActive && ev.status.toLowerCase().trim() != 'cancelled' && ev.status.toLowerCase().trim() != 'inactive';
               return _buildListItemCard(
-                title: ev.title,
-                subtitle: '${ev.formattedDate.isNotEmpty ? ev.formattedDate : ev.dateTime} - ${ev.locationCity ?? ev.location}',
-                badgeText: isActive ? 'Scheduled' : 'Cancelled',
+                title: ev.title.trData(context),
+                subtitle: '${ev.formattedDate.isNotEmpty ? ev.formattedDate : ev.dateTime} - ${ev.locationCity ?? ev.location}'.trData(context),
+                badgeText: (isActive ? 'Scheduled' : 'Cancelled').trData(context),
                 isPurpleBadge: isActive,
                 isRedBadge: !isActive,
                 onToggleStatus: () => _toggleCalendarEventStatus(ev, index),
@@ -1967,7 +2095,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 },
                 onDelete: () {
                   _confirmDelete(
-                    title: 'Remove from Calendar',
+                    title: 'Remove from Calendar'.trData(context),
                     message: 'Are you sure you want to remove "${ev.title}" from the calendar?',
                     onConfirm: () async {
                       setState(() {
@@ -2103,12 +2231,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
-          children: const [
-            Icon(Icons.photo_library_outlined, size: 18, color: Color(0xFF64748B)),
-            SizedBox(width: 8),
+          children: [
+            const Icon(Icons.photo_library_outlined, size: 18, color: Color(0xFF64748B)),
+            const SizedBox(width: 8),
             Text(
-              'Public photo galleries',
-              style: TextStyle(
+              'Public photo galleries'.trData(context),
+              style: const TextStyle(
                 fontSize: 13,
                 color: Color(0xFF64748B),
                 fontWeight: FontWeight.w500,
@@ -2128,18 +2256,18 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             icon: const Icon(Icons.add, size: 14, color: Colors.white),
-            label: const Text('New gallery', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
+            label: Text('New gallery'.trData(context), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
             onPressed: _showCreateGalleryDialog,
           ),
         ),
         const SizedBox(height: 12),
         if (_galleries.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 32),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
             child: Center(
               child: Text(
-                'No galleries registered.',
-                style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                'No galleries registered.'.trData(context),
+                style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
               ),
             ),
           )
@@ -2162,13 +2290,13 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               final payProof = (gal['payment_proof_url'] ?? gal['receipt_url'])?.toString() ?? '';
 
               return _buildListItemCard(
-                title: name,
+                title: name.trData(context),
                 subtitle: '${(gal['description'] != null && gal['description'].toString().isNotEmpty
                     ? gal['description']
                     : (gal['artist_name'] != null && gal['artist_name'].toString().isNotEmpty
                         ? 'Artist: ${gal['artist_name']}'
-                        : 'Artist photo collection'))}$planInfo',
-                badgeText: isPending ? 'Pending' : 'Approved',
+                        : 'Artist photo collection'))}$planInfo'.trData(context),
+                badgeText: (isPending ? 'Pending' : 'Approved').trData(context),
                 isPurpleBadge: !isPending,
                 isAmberBadge: isPending,
                 paymentProofUrl: payProof,
@@ -2177,7 +2305,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 onViewReceipt: payProof.isNotEmpty
                     ? () => _showReceiptDialog(
                           context,
-                          title: name,
+                          title: name.trData(context),
                           receiptUrl: payProof,
                           refNumber: payRef,
                           plan: plan,
@@ -2190,7 +2318,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 onEdit: () => _showCreateGalleryDialog(existing: gal, index: index),
                 onDelete: () {
                   _confirmDelete(
-                    title: 'Delete Gallery',
+                    title: 'Delete Gallery'.trData(context),
                     message: 'Are you sure you want to remove "$name"?',
                     onConfirm: () async {
                       setState(() => _galleries.removeAt(index));
@@ -2232,7 +2360,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              '${_artCenters.length} centers',
+              '${_artCenters.length} centers'.trData(context),
               style: const TextStyle(
                 fontSize: 13.5,
                 color: Color(0xFF64748B),
@@ -2248,7 +2376,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               icon: const Icon(Icons.add, size: 14, color: Colors.white),
-              label: const Text('New center', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
+              label: Text('New center'.trData(context), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
               onPressed: _showArtCenterDialog,
             ),
           ],
@@ -2256,11 +2384,11 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         const SizedBox(height: 16),
 
         if (_artCenters.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
             child: Text(
-              'No art centers yet.',
-              style: TextStyle(color: Color(0xFF64748B), fontSize: 13.5),
+              'No art centers yet.'.trData(context),
+              style: const TextStyle(color: Color(0xFF64748B), fontSize: 13.5),
             ),
           )
         else
@@ -2276,8 +2404,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               final isCurrentlyOpen = center['currently_open'] == 1 || center['currently_open'] == true;
               final isPending = _isItemPending(center);
               return _buildListItemCard(
-                title: name,
-                subtitle: subtitle,
+                title: name.trData(context),
+                subtitle: subtitle.trData(context),
                 customStatusToggle: _buildOpenClosedToggle(
                   isOpen: isCurrentlyOpen,
                   isPending: isPending,
@@ -2287,7 +2415,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 onEdit: () => _showArtCenterDialog(existing: center, index: index),
                 onDelete: () {
                   _confirmDelete(
-                    title: 'Delete Art Center',
+                    title: 'Delete Art Center'.trData(context),
                     message: 'Are you sure you want to remove "$name"?',
                     onConfirm: () async {
                       setState(() => _artCenters.removeAt(index));
@@ -2389,7 +2517,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              '${_govEntities.length} entries',
+              '${_govEntities.length} entries'.trData(context),
               style: const TextStyle(
                 fontSize: 13.5,
                 color: Color(0xFF64748B),
@@ -2405,7 +2533,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               icon: const Icon(Icons.add, size: 14, color: Colors.white),
-              label: const Text('New entry', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
+              label: Text('New entry'.trData(context), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
               onPressed: () => _showGovernmentDialog(),
             ),
           ],
@@ -2413,12 +2541,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         const SizedBox(height: 14),
 
         if (_govEntities.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 32),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
             child: Center(
               child: Text(
-                'No government entries registered.',
-                style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                'No government entries registered.'.trData(context),
+                style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
               ),
             ),
           )
@@ -2436,7 +2564,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 onEdit: () => _showGovernmentDialog(existing: g, index: index),
                 onDelete: () {
                   _confirmDelete(
-                    title: 'Delete Government Entry',
+                    title: 'Delete Government Entry'.trData(context),
                     message: 'Are you sure you want to remove "${g.name}"?',
                     onConfirm: () async {
                       setState(() => _govEntities.removeAt(index));
@@ -2519,9 +2647,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: const Color(0xFFFDE68A), width: 0.8),
         ),
-        child: const Text(
-          'Pending',
-          style: TextStyle(
+        child: Text(
+          'Pending'.trData(context),
+          style: const TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,
             color: Color(0xFFD97706),
@@ -2569,7 +2697,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     const SizedBox(width: 3),
                   ],
                   Text(
-                    'Open',
+                    'Open'.trData(context),
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: isOpen ? FontWeight.w700 : FontWeight.w500,
@@ -2609,7 +2737,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     const SizedBox(width: 3),
                   ],
                   Text(
-                    'Closed',
+                    'Closed'.trData(context),
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: !isOpen ? FontWeight.w700 : FontWeight.w500,
@@ -2654,7 +2782,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             children: [
               Expanded(
                 child: Text(
-                  entity.name,
+                  entity.name.trData(context),
                   style: const TextStyle(
                     fontSize: 14.5,
                     fontWeight: FontWeight.w700,
@@ -2671,7 +2799,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           const SizedBox(height: 4),
 
           Text(
-            entity.category,
+            entity.category.trData(context),
             style: const TextStyle(
               fontSize: 12,
               color: Color(0xFF64748B),
@@ -2694,7 +2822,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${entity.rating} ★ · ${entity.reviewCount} reviews',
+                '${entity.rating} ★ · ${entity.reviewCount} ${'reviews'.trData(context)}',
                 style: const TextStyle(
                   fontSize: 12,
                   color: Color(0xFF64748B),
@@ -3178,7 +3306,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
-                            'Categories (${_categories.length})',
+                            '${'Categories'.trData(context)} (${_categories.length})',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -3218,7 +3346,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
-                            'Levels (${_experienceLevels.length})',
+                            '${'Levels'.trData(context)} (${_experienceLevels.length})',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -3258,7 +3386,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
-                            'Locations (${_locations.length})',
+                            '${'Locations'.trData(context)} (${_locations.length})',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -3298,7 +3426,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
-                            'Listing Plans',
+                            'Listing Plans'.trData(context),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -3326,12 +3454,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             Expanded(
               child: Text(
                 _masterSubTab == 0
-                    ? '${_categories.length} categories configured'
+                    ? '${_categories.length} categories configured'.trData(context)
                     : _masterSubTab == 1
-                        ? '${_experienceLevels.length} experience levels configured'
+                        ? '${_experienceLevels.length} experience levels configured'.trData(context)
                         : _masterSubTab == 2
-                            ? '${_locations.length} locations configured'
-                            : '${_listingPlans.length} listing plans configured',
+                            ? '${_locations.length} locations configured'.trData(context)
+                            : '${_listingPlans.length} listing plans configured'.trData(context),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -3353,11 +3481,11 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 ),
                 icon: const Icon(Icons.add, size: 14, color: Colors.white),
                 label: Text(
-                  _masterSubTab == 0
+                  (_masterSubTab == 0
                       ? 'New Category'
                       : _masterSubTab == 1
                           ? 'New Level'
-                          : 'New Location',
+                          : 'New Location').trData(context),
                   style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white),
                 ),
                 onPressed: () {
@@ -3383,9 +3511,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
                     icon: const Icon(Icons.add, size: 14, color: Colors.white),
-                    label: const Text(
-                      'New Plan',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white),
+                    label: Text(
+                      'New Plan'.trData(context),
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white),
                     ),
                     onPressed: () => _showEditListingPlanDialog(),
                   ),
@@ -3398,20 +3526,20 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
                     icon: const Icon(Icons.refresh, size: 14),
-                    label: const Text(
-                      'Refresh',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                    label: Text(
+                      'Refresh'.trData(context),
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
                     ),
                     onPressed: () async {
                       final plans = await sl<ApiService>().getListingPlans(forceRefresh: true);
                       if (mounted) {
                         setState(() => _listingPlans = plans);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Listing plans refreshed from database'),
-                            backgroundColor: Color(0xFF6A2777),
+                          SnackBar(
+                            content: Text('Listing plans refreshed from database'.trData(context)),
+                            backgroundColor: const Color(0xFF6A2777),
                             behavior: SnackBarBehavior.floating,
-                            duration: Duration(seconds: 2),
+                            duration: const Duration(seconds: 2),
                           ),
                         );
                       }
@@ -3438,10 +3566,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
 
   Widget _buildCategoriesMasterList() {
     if (_categories.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 32),
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32),
         child: Center(
-          child: Text('No categories configured.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+          child: Text('No categories configured.'.trData(context), style: const TextStyle(color: Color(0xFF64748B), fontSize: 13)),
         ),
       );
     }
@@ -3495,7 +3623,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       children: [
                         Flexible(
                           child: Text(
-                            cat.name,
+                            cat.name.trData(context),
                             style: const TextStyle(
                               fontSize: 14.5,
                               fontWeight: FontWeight.w700,
@@ -3512,7 +3640,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            cat.type.toUpperCase(),
+                            cat.type.trData(context).toUpperCase(),
                             style: const TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
@@ -3525,7 +3653,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     if (cat.description.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
-                        cat.description,
+                        cat.description.trData(context),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
@@ -3537,14 +3665,14 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         Icon(Icons.person_outline, size: 13, color: Colors.purple.shade400),
                         const SizedBox(width: 3),
                         Text(
-                          '${cat.artistCount} artists',
+                          '${cat.artistCount} artists'.trData(context),
                           style: TextStyle(fontSize: 11.5, color: Colors.purple.shade700, fontWeight: FontWeight.w500),
                         ),
                         const SizedBox(width: 12),
                         Icon(Icons.event_outlined, size: 13, color: Colors.indigo.shade400),
                         const SizedBox(width: 3),
                         Text(
-                          '${cat.eventCount} events',
+                          '${cat.eventCount} events'.trData(context),
                           style: TextStyle(fontSize: 11.5, color: Colors.indigo.shade700, fontWeight: FontWeight.w500),
                         ),
                       ],
@@ -3590,10 +3718,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
 
   Widget _buildExperienceLevelsMasterList() {
     if (_experienceLevels.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 32),
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32),
         child: Center(
-          child: Text('No experience levels configured.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+          child: Text('No experience levels configured.'.trData(context), style: const TextStyle(color: Color(0xFF64748B), fontSize: 13)),
         ),
       );
     }
@@ -3644,7 +3772,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      level.name,
+                      level.name.trData(context),
                       style: const TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w700,
@@ -3660,7 +3788,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          'Years: ${level.yearsRange}',
+                          '${'Years'.trData(context)}: ${level.yearsRange.trData(context)}',
                           style: const TextStyle(fontSize: 11.5, color: Color(0xFF475569), fontWeight: FontWeight.w500),
                         ),
                       ),
@@ -3681,7 +3809,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 onPressed: () {
                   final messenger = ScaffoldMessenger.of(context);
                   _confirmDelete(
-                    title: 'Delete Experience Level',
+                    title: 'Delete Experience Level'.trData(context),
                     message: 'Are you sure you want to delete "${level.name}"?',
                     onConfirm: () async {
                       final success = await sl<ApiService>().deleteExperienceLevel(id: level.id);
@@ -3979,10 +4107,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
 
   Widget _buildLocationsMasterList() {
     if (_locations.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 32),
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32),
         child: Center(
-          child: Text('No locations configured.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+          child: Text('No locations configured.'.trData(context), style: const TextStyle(color: Color(0xFF64748B), fontSize: 13)),
         ),
       );
     }
@@ -4030,7 +4158,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      loc.name,
+                      loc.name.trData(context),
                       style: const TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w700,
@@ -4047,13 +4175,13 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            '${loc.city}, ${loc.country}',
+                            '${loc.city.trData(context)}, ${loc.country.trData(context)}',
                             style: const TextStyle(fontSize: 11.5, color: Color(0xFF475569), fontWeight: FontWeight.w500),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Order #${loc.displayOrder > 0 ? loc.displayOrder : index + 1}',
+                          '${'Order'.trData(context)} #${loc.displayOrder > 0 ? loc.displayOrder : index + 1}',
                           style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500),
                         ),
                       ],
@@ -4074,7 +4202,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 onPressed: () {
                   final messenger = ScaffoldMessenger.of(context);
                   _confirmDelete(
-                    title: 'Delete Location',
+                    title: 'Delete Location'.trData(context),
                     message: 'Are you sure you want to delete location "${loc.name}"?',
                     onConfirm: () async {
                       final success = await sl<ApiService>().deleteLocation(id: loc.id);
@@ -4419,8 +4547,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             );
           },
         ),
-        const SizedBox(height: 20),
-        _buildPaymentSettingsCard(),
       ],
     );
   }
@@ -4734,601 +4860,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             );
           },
         ),
-        const SizedBox(height: 20),
-        _buildPaymentSettingsCard(),
       ],
-    );
-  }
-
-  Widget _buildPaymentSettingsCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE9D5FF), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3E8FF),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.qr_code_2_rounded, color: Color(0xFF6A2777), size: 24),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Flexible(
-                          child: Text(
-                            'Payment QR & Receiver Bank Details',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF0F172A),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFECFDF5),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFA7F3D0)),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.check_circle_rounded, size: 11, color: Color(0xFF059669)),
-                              SizedBox(width: 4),
-                              Text(
-                                'Live for Users',
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF059669),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Presented to organizers and galleries to pay their publishing fee via QR code or direct IBAN transfer.',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: Color(0xFF64748B),
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
-          const SizedBox(height: 16),
-
-          // Content Layout
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isSmall = constraints.maxWidth < 620;
-
-              final qrWidget = Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 150,
-                      height: 150,
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: _paymentSettings.qrCodeUrl.isNotEmpty
-                            ? Image.network(
-                                _paymentSettings.qrCodeUrl,
-                                fit: BoxFit.contain,
-                                errorBuilder: (_, __, ___) => const Center(
-                                  child: Icon(Icons.qr_code_2, size: 60, color: Color(0xFF94A3B8)),
-                                ),
-                              )
-                            : const Center(
-                                child: Icon(Icons.qr_code_2, size: 60, color: Color(0xFF94A3B8)),
-                              ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Scan to Pay (UAE App / Bank)',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
-                    ),
-                  ],
-                ),
-              );
-
-              final detailsWidget = Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildPaymentDetailRow(
-                      icon: Icons.business_rounded,
-                      label: 'Account Name',
-                      value: _paymentSettings.accountName,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildPaymentDetailRow(
-                      icon: Icons.account_balance_wallet_outlined,
-                      label: 'IBAN / Account Number',
-                      value: _paymentSettings.accountNumber,
-                      copyable: true,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildPaymentDetailRow(
-                      icon: Icons.account_balance_outlined,
-                      label: 'Bank & Branch',
-                      value: _paymentSettings.bankName,
-                    ),
-                    if (_paymentSettings.instructions.isNotEmpty) ...[
-                      const SizedBox(height: 14),
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFAF5FF),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFE9D5FF)),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Icon(Icons.info_outline_rounded, size: 15, color: Color(0xFF6A2777)),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _paymentSettings.instructions,
-                                style: const TextStyle(fontSize: 11.5, color: Color(0xFF475569), height: 1.35),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              );
-
-              if (isSmall) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    qrWidget,
-                    const SizedBox(height: 16),
-                    detailsWidget,
-                  ],
-                );
-              }
-
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(width: 170, child: qrWidget),
-                  const SizedBox(width: 20),
-                  Expanded(child: detailsWidget),
-                ],
-              );
-            },
-          ),
-          const SizedBox(height: 16),
-
-          // Action button
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6A2777),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                icon: const Icon(Icons.edit_note_rounded, size: 16, color: Colors.white),
-                label: const Text(
-                  'Edit Payment QR & Bank Details',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5, color: Colors.white),
-                ),
-                onPressed: _showEditPaymentSettingsDialog,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPaymentDetailRow({
-    required IconData icon,
-    required String label,
-    required String value,
-    bool copyable = false,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Icon(icon, size: 18, color: const Color(0xFF6A2777)),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
-              ),
-              const SizedBox(height: 2),
-              SelectableText(
-                value,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
-              ),
-            ],
-          ),
-        ),
-        if (copyable && value.isNotEmpty)
-          IconButton(
-            icon: const Icon(Icons.copy_rounded, size: 16, color: Color(0xFF6A2777)),
-            tooltip: 'Copy to Clipboard',
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: value));
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Copied $label to clipboard!'),
-                  duration: const Duration(seconds: 2),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-          ),
-      ],
-    );
-  }
-
-  void _showEditPaymentSettingsDialog() {
-    final qrCtrl = TextEditingController(text: _paymentSettings.qrCodeUrl);
-    final nameCtrl = TextEditingController(text: _paymentSettings.accountName);
-    final ibanCtrl = TextEditingController(text: _paymentSettings.accountNumber);
-    final bankCtrl = TextEditingController(text: _paymentSettings.bankName);
-    final instructionsCtrl = TextEditingController(text: _paymentSettings.instructions);
-    bool isUploadingQr = false;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setModalState) {
-          return Dialog(
-            backgroundColor: Colors.white,
-            surfaceTintColor: Colors.transparent,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: Container(
-              width: 520,
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF3E8FF),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(Icons.qr_code_2_rounded, color: Color(0xFF6A2777), size: 20),
-                            ),
-                            const SizedBox(width: 12),
-                            const Text(
-                              'Edit Payment QR & Bank Details',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
-                            ),
-                          ],
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close, size: 20, color: Color(0xFF64748B)),
-                          onPressed: () => Navigator.pop(ctx),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-
-                    // QR Code URL & Upload
-                    const Text('Payment QR Code Image URL *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: qrCtrl,
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black),
-                            decoration: InputDecoration(
-                              hintText: 'https://... or upload image',
-                              hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
-                              prefixIcon: const Icon(Icons.link_rounded, size: 18, color: Color(0xFF6B1C9B)),
-                              filled: true,
-                              fillColor: const Color(0xFFF8FAFC),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            ),
-                            onChanged: (_) => setModalState(() {}),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF6A2777),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          onPressed: isUploadingQr
-                              ? null
-                              : () async {
-                                  setModalState(() => isUploadingQr = true);
-                                  await _pickAndUploadImageForField(qrCtrl, setModalState);
-                                  setModalState(() => isUploadingQr = false);
-                                },
-                          icon: isUploadingQr
-                              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                              : const Icon(Icons.upload_file_rounded, size: 16, color: Colors.white),
-                          label: const Text('Upload', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                        ),
-                      ],
-                    ),
-                    if (qrCtrl.text.trim().isNotEmpty) ...[
-                      const SizedBox(height: 10),
-                      Center(
-                        child: Container(
-                          width: 110,
-                          height: 110,
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(6),
-                            child: Image.network(
-                              qrCtrl.text.trim(),
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined, color: Colors.grey),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 14),
-
-                    // Account Name
-                    const Text('Account Name *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: nameCtrl,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black),
-                      decoration: InputDecoration(
-                        hintText: 'e.g. Artist Dubai Cultural Services LLC',
-                        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
-                        prefixIcon: const Icon(Icons.business_rounded, size: 18, color: Color(0xFF6B1C9B)),
-                        filled: true,
-                        fillColor: const Color(0xFFF8FAFC),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // IBAN / Account Number
-                    const Text('IBAN / Account Number *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: ibanCtrl,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black),
-                      decoration: InputDecoration(
-                        hintText: 'e.g. AE28 0330 0000 0001 2345 678',
-                        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
-                        prefixIcon: const Icon(Icons.account_balance_wallet_outlined, size: 18, color: Color(0xFF6B1C9B)),
-                        filled: true,
-                        fillColor: const Color(0xFFF8FAFC),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Bank Name
-                    const Text('Bank & Branch Name *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: bankCtrl,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black),
-                      decoration: InputDecoration(
-                        hintText: 'e.g. Emirates NBD, Dubai',
-                        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
-                        prefixIcon: const Icon(Icons.account_balance_outlined, size: 18, color: Color(0xFF6B1C9B)),
-                        filled: true,
-                        fillColor: const Color(0xFFF8FAFC),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Instructions
-                    const Text('Payment Instructions for Users', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: instructionsCtrl,
-                      maxLines: 3,
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black),
-                      decoration: InputDecoration(
-                        hintText: 'Enter steps for user to follow when transferring and submitting receipt...',
-                        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
-                        filled: true,
-                        fillColor: const Color(0xFFF8FAFC),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Actions
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600, fontSize: 14)),
-                        ),
-                        const SizedBox(width: 10),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF6A2777),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          onPressed: () async {
-                            final messenger = ScaffoldMessenger.of(context);
-                            final success = await sl<ApiService>().updatePaymentSettings(
-                              qrCodeUrl: qrCtrl.text.trim(),
-                              accountName: nameCtrl.text.trim(),
-                              accountNumber: ibanCtrl.text.trim(),
-                              bankName: bankCtrl.text.trim(),
-                              instructions: instructionsCtrl.text.trim(),
-                            );
-                            if (ctx.mounted) Navigator.pop(ctx);
-                            if (mounted) {
-                              if (success) {
-                                setState(() {
-                                  _paymentSettings = _paymentSettings.copyWith(
-                                    qrCodeUrl: qrCtrl.text.trim(),
-                                    accountName: nameCtrl.text.trim(),
-                                    accountNumber: ibanCtrl.text.trim(),
-                                    bankName: bankCtrl.text.trim(),
-                                    instructions: instructionsCtrl.text.trim(),
-                                  );
-                                });
-                                messenger.showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Payment settings and QR code updated successfully!'),
-                                    backgroundColor: Color(0xFF059669),
-                                  ),
-                                );
-                              } else {
-                                messenger.showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Failed to update payment settings.'),
-                                    backgroundColor: Color(0xFFDC2626),
-                                  ),
-                                );
-                              }
-                            }
-                          },
-                          child: const Text('Save Details', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.white)),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
     );
   }
 
@@ -6058,5 +5590,444 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         },
       ),
     );
+  }
+
+  // --- 8. Menu Permissions & Coming Soon Controls Tab ---
+  Widget _buildPermissionsTab() {
+    final permissionsList = MenuPermissionModel.defaultPermissions();
+    final activeCount = _activeMenuCount;
+    final totalCount = permissionsList.length;
+    final comingSoonCount = totalCount - activeCount;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // 1. Info & Overview Banner Card
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF28208C), Color(0xFF5D1F8E)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF28208C).withValues(alpha: 0.25),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.shield_rounded, color: Colors.white, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Home Menu Permissions & Coming Soon Controls'.trData(context),
+                          style: const TextStyle(
+                            fontSize: 15.5,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Toggle menu access for users. When permission is OFF, clicking that menu opens the Coming Soon page.'
+                              .trData(context),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white.withValues(alpha: 0.85),
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.check_circle_rounded, color: Color(0xFF4ADE80), size: 14),
+                        const SizedBox(width: 6),
+                        Text(
+                          '$activeCount Active (Normal)'.trData(context),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.hourglass_empty_rounded, color: Color(0xFFFBBF24), size: 14),
+                        const SizedBox(width: 6),
+                        Text(
+                          '$comingSoonCount Coming Soon'.trData(context),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // 2. Action Bar: Quick Controls
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            Text(
+              '$totalCount menu items'.trData(context),
+              style: const TextStyle(
+                fontSize: 13.5,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF6A2777),
+                    side: const BorderSide(color: Color(0xFFD8B4E2)),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  icon: const Icon(Icons.check_circle_outline, size: 14),
+                  label: Text('Enable All'.trData(context), style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
+                  onPressed: () => _toggleAllPermissions(true),
+                ),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF64748B),
+                    side: const BorderSide(color: Color(0xFFCBD5E1)),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  icon: const Icon(Icons.refresh_rounded, size: 14),
+                  label: Text('Reset Defaults'.trData(context), style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
+                  onPressed: () => _resetPermissionsToDefaults(),
+                ),
+              ],
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 12),
+
+        // 3. List of Menu Items
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: permissionsList.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (context, index) {
+            final item = permissionsList[index];
+            final isEnabled = _menuPermissions[item.routeName] ?? true;
+
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isEnabled ? const Color(0xFFE2E8F0) : const Color(0xFFFED7AA),
+                  width: isEnabled ? 1.0 : 1.4,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: isEnabled ? const Color(0x06000000) : const Color(0x10EA580C),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  // Circular thumbnail matching the Home menu
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFF28208C),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.12),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Image.asset(
+                      item.imagePath,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(Icons.image, color: Colors.white, size: 22),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Menu details
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 2,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              item.title,
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF0F172A),
+                              ),
+                            ),
+                            if (item.subtitle != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  item.subtitle!,
+                                  style: const TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              item.routeName,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF94A3B8),
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isEnabled ? const Color(0xFFDCFCE7) : const Color(0xFFFEF3C7),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isEnabled ? const Color(0xFFBBF7D0) : const Color(0xFFFDE68A),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    isEnabled ? Icons.check_circle_rounded : Icons.hourglass_empty_rounded,
+                                    size: 11,
+                                    color: isEnabled ? const Color(0xFF16A34A) : const Color(0xFFD97706),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    isEnabled ? 'Normal Access'.trData(context) : 'Coming Soon'.trData(context),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: isEnabled ? const Color(0xFF16A34A) : const Color(0xFFD97706),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 4),
+
+                  // Preview eye button to test
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    icon: const Icon(Icons.remove_red_eye_outlined, size: 20, color: Color(0xFF64748B)),
+                    tooltip: isEnabled ? 'Test Normal View' : 'Test Coming Soon View',
+                    onPressed: () {
+                      if (isEnabled) {
+                        context.push(item.routeName);
+                      } else {
+                        context.push(
+                          RouteNames.comingSoon,
+                          extra: {'featureName': item.getLocalizedTitle(context)},
+                        );
+                      }
+                    },
+                  ),
+
+                  // Toggle Switch
+                  Transform.scale(
+                    scale: 0.82,
+                    child: Switch(
+                      value: isEnabled,
+                      activeColor: const Color(0xFF6A2777),
+                      activeTrackColor: const Color(0xFFD8B4E2),
+                      inactiveThumbColor: const Color(0xFFCBD5E1),
+                      inactiveTrackColor: const Color(0xFFF1F5F9),
+                      onChanged: (newVal) => _toggleMenuPermission(item, newVal),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Future<void> _toggleMenuPermission(MenuPermissionModel item, bool isEnabled) async {
+    setState(() {
+      _menuPermissions[item.routeName] = isEnabled;
+      if (item.routeName == '/events') {
+        _menuPermissions['/events-competition'] = isEnabled;
+      }
+    });
+
+    try {
+      await sl<ApiService>().updateMenuPermission(
+        routeName: item.routeName,
+        isEnabled: isEnabled,
+        key: item.key,
+      );
+    } catch (_) {}
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isEnabled
+                ? '${item.title}: Permission enabled (Opens Normal)'.trData(context)
+                : '${item.title}: Permission turned OFF (Opens Coming Soon)'.trData(context),
+          ),
+          backgroundColor: isEnabled ? const Color(0xFF16A34A) : const Color(0xFFD97706),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Future<void> _toggleAllPermissions(bool isEnabled) async {
+    final updated = <String, bool>{};
+    for (final item in MenuPermissionModel.defaultPermissions()) {
+      updated[item.routeName] = isEnabled;
+      if (item.routeName == '/events') {
+        updated['/events-competition'] = isEnabled;
+      }
+    }
+    setState(() => _menuPermissions = updated);
+    await sl<ApiService>().updateAllMenuPermissions(updated);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isEnabled
+                ? 'All menu permissions enabled (Normal Access)'.trData(context)
+                : 'All menu permissions turned off (Coming Soon)'.trData(context),
+          ),
+          backgroundColor: const Color(0xFF6A2777),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Future<void> _resetPermissionsToDefaults() async {
+    final updated = <String, bool>{};
+    for (final item in MenuPermissionModel.defaultPermissions()) {
+      updated[item.routeName] = true;
+      if (item.routeName == '/events') {
+        updated['/events-competition'] = true;
+      }
+    }
+    setState(() => _menuPermissions = updated);
+    await sl<ApiService>().updateAllMenuPermissions(updated);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Menu permissions reset to defaults (All Enabled)'.trData(context)),
+          backgroundColor: const Color(0xFF6A2777),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 }

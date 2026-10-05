@@ -142,6 +142,86 @@ class DataTranslator {
     'flyer attached': 'تم إرفاق المنشور',
     'message sent successfully!': 'تم إرسال الرسالة بنجاح!',
     'your allowance resets on the 1st. upgrade your plan for more.': 'يتم تجديد رصيدك في اليوم الأول من كل شهر. قم بترقية خطتك للحصول على المزيد.',
+    'unlimited messages left this month': 'رسائل غير محدودة هذا الشهر',
+    'chat allowance plans': 'خطط رصيد المحادثة',
+    'upgrade to connect with more artists across dubai.': 'قم بالترقية للتواصل مع المزيد من الفنانين في دبي.',
+    'starter plan': 'خطة البداية',
+    'pro artist': 'فنان محترف',
+    'unlimited vip': 'غير محدود VIP',
+    'active plan': 'الخطة المفعلة',
+    'current plan': 'الخطة الحالية',
+    'upgrade to pro': 'ترقية إلى فنان محترف',
+    '10 messages / month': '10 رسائل / شهرياً',
+    '50 messages / month': '50 رسالة / شهرياً',
+    'unlimited messages': 'رسائل غير محدودة',
+    '10 direct messages per month': '10 رسائل مباشرة شهرياً',
+    '50 direct messages per month': '50 رسالة مباشرة شهرياً',
+    'unlimited direct artist messages': 'رسائل مباشرة غير محدودة للفنانين',
+    'direct artist collaboration inquiries': 'استفسارات التعاون المباشر مع الفنانين',
+    'flyer & artwork attachment support': 'إمكانية إرفاق منشورات وصور الأعمال الفنية',
+    'allowance auto-resets on the 1st': 'تجديد تلقائي للرصيد في الأول من كل شهر',
+    'direct artist outreach & networking': 'تواصل مباشر وبناء علاقات مع الفنانين',
+    'priority delivery in artist inboxes': 'أولوية الظهور في صندوق وارد الفنانين',
+    'high-resolution flyer attachments': 'إرفاق منشورات وصور عالية الدقة',
+    'monthly reset on the 1st': 'تجديد شهري في الأول من كل شهر',
+    'verified vip sender badge': 'شارة مرسل VIP موثق',
+    'ideal for galleries, curators & agencies': 'مثالي للمعارض والقيمين والوكالات',
+    'priority instant customer support': 'دعم فني فوري ذو أولوية',
+    'looking to publish events, galleries or art centres? view listing plans →': 'هل ترغب في نشر فعاليات أو معارض أو مراكز فنية؟ عرض خطط القوائم ←',
+    'for agencies & curators': 'للوكالات والقيمين الفنيين',
+    'select plan': 'اختيار الخطة',
+    'default': 'الافتراضي',
+    'flyer selected': 'تم اختيار المنشور',
+    'sent': 'تم الإرسال',
+    'sent:': 'تاريخ الإرسال:',
+    'direct artist message': 'رسالة مباشرة إلى الفنان',
+    'basic (free)': 'أساسي (مجاني)',
+    'close': 'إغلاق',
+    'please write your message.': 'يرجى كتابة رسالتك.',
+    'please write your message': 'يرجى كتابة رسالتك',
+    'monthly message limit reached. upgrade your plan for more.': 'تم الوصول إلى الحد الشهري للرسائل. قم بترقية خطتك للحصول على المزيد.',
+    'monthly message limit reached. upgrade your plan for more': 'تم الوصول إلى الحد الشهري للرسائل. قم بترقية خطتك للحصول على المزيد',
+    'failed to send message:': 'فشل إرسال الرسالة:',
+    'failed to send message': 'فشل إرسال الرسالة',
+    'failed to pick image:': 'فشل في اختيار الصورة:',
+    'failed to pick image': 'فشل في اختيار الصورة',
+    'inbox': 'صندوق الوارد',
+    'inbox (received)': 'الوارد (المستلم)',
+    'received': 'مستلم',
+    'from:': 'من:',
+    'from': 'من',
+    'to:': 'إلى:',
+    'to': 'إلى',
+    'reply': 'رد',
+    'reply to artist': 'الرد على الفنان',
+    'no messages in inbox': 'لا توجد رسائل في صندوق الوارد',
+    'no sent messages': 'لا توجد رسائل مرسلة',
+    'all messages': 'جميع الرسائل',
+    'sender:': 'المرسل:',
+    'recipient:': 'المستلم:',
+    'view flyer': 'عرض المنشور',
+    'incoming message': 'رسالة واردة',
+    'outgoing message': 'رسالة صادرة',
+    'attach flyer or artwork': 'إرفاق منشور أو عمل فني',
+    'supports jpg, png (max 10mb)': 'يدعم JPG و PNG (بحد أقصى 10 ميغابايت)',
+    'browse': 'استعراض',
+    'select an image from your photos': 'اختر صورة من صور جهازك',
+    'use camera to capture flyer': 'استخدم الكاميرا لالتقاط المنشور',
+    'flyer preview': 'معاينة المنشور',
+    'change': 'تغيير',
+    'remove': 'إزالة',
+    'sent to': 'أرسلت إلى',
+    'received from': 'مستلمة من',
+    'subject:': 'الموضوع:',
+    'view message →': 'عرض الرسالة ←',
+    'tap to view →': 'انقر للعرض ←',
+    'direct message': 'رسالة مباشرة',
+    'direct artist': 'فنان مباشر',
+    'message': 'الرسالة',
+    'attached flyer': 'المنشور المرفق',
+    'flyer attachment': 'مرفق المنشور',
+    'tap to view full flyer': 'انقر لعرض المنشور بالحجم الكامل',
+    'flyer preview unavailable': 'معاينة المنشور غير متوفرة',
 
     'pending': 'قيد الانتظار',
     'approved': 'معتمد',
@@ -173,10 +253,83 @@ class DataTranslator {
     'sample': 'عينة',
     'trial': 'تجربة',
     'good': 'جيد',
-    'bad': 'سيء',
-    'abc': 'اي بي سي',
+    // Admin Dashboard & Management
+    'admin dashboard': 'لوحة تحكم المشرف',
+    'artist dubai management': 'إدارة منصة فنان دبي',
+    'bin': 'سلة المهملات',
+    'recycle bin': 'سلة المحذوفات',
+    'calendar': 'التقويم',
+    'art centers': 'المراكز الفنية',
+    'masters': 'البيانات الرئيسية',
+    'categories': 'الفئات',
+    'levels': 'المستويات',
+    'locations': 'المواقع',
+    'new category': 'فئة جديدة',
+    'new level': 'مستوى جديد',
+    'new location': 'موقع جديد',
+    'new plan': 'خطة جديدة',
+    'new artist': 'فنان جديد',
+    'new event': 'فعالية جديدة',
+    'new gallery': 'معرض جديد',
+    'new center': 'مركز جديد',
+    'new entry': 'إدخال جديد',
+    'new government entry': 'إدخال حكومي جديد',
+    'edit entry': 'تعديل الإدخال',
+    'edit category': 'تعديل الفئة',
+    'edit experience level': 'تعديل مستوى الخبرة',
+    'edit location': 'تعديل الموقع',
+    'general': 'عام',
+    'refresh': 'تحديث',
+    'categories configured': 'فئات مهيأة',
+    'experience levels configured': 'مستويات خبرة مهيأة',
+    'locations configured': 'مواقع مهيأة',
+    'listing plans configured': 'خطط إدراج مهيأة',
+    'no categories configured.': 'لا توجد فئات مهيأة.',
+    'no categories configured': 'لا توجد فئات مهيأة',
+    'no experience levels configured.': 'لا توجد مستويات خبرة مهيأة.',
+    'no experience levels configured': 'لا توجد مستويات خبرة مهيأة',
+    'no locations configured.': 'لا توجد مواقع مهيأة.',
+    'no locations configured': 'لا توجد مواقع مهيأة',
+    'no artists registered yet.': 'لا يوجد فنانون مسجلون بعد.',
+    'no artists registered yet': 'لا يوجد فنانون مسجلون بعد',
+    'no events created yet.': 'لا توجد فعاليات مضافة بعد.',
+    'no events created yet': 'لا توجد فعاليات مضافة بعد',
+    'no galleries registered.': 'لا توجد معارض مسجلة.',
+    'no galleries registered': 'لا توجد معارض مسجلة',
+    'no art centers yet.': 'لا توجد مراكز فنية بعد.',
+    'no art centers yet': 'لا توجد مراكز فنية بعد',
+    'no government entries registered.': 'لا توجد جهات حكومية مسجلة.',
+    'no government entries registered': 'لا توجد جهات حكومية مسجلة',
+    'no pending event requests.': 'لا توجد طلبات فعاليات معلقة.',
+    'no pending event requests': 'لا توجد طلبات فعاليات معلقة',
+    'no active events.': 'لا توجد فعاليات نشطة.',
+    'no active events': 'لا توجد فعاليات نشطة',
+    'scheduled': 'مجدول',
+    'public photo galleries': 'معارض الصور العامة',
+    'all (general)': 'الكل (عام)',
+    'artists only': 'الفنانون فقط',
+    'events only': 'الفعاليات فقط',
+    'applicable scope': 'نطاق التطبيق',
+    'emoji icon': 'رمز الإيموجي',
+    'years range': 'نطاق السنوات',
+    'display order': 'ترتيب العرض',
+    'location name': 'اسم الموقع',
+    'city': 'المدينة',
+    'country': 'الدولة',
+    'create location': 'إنشاء موقع',
+    'create level': 'إنشاء مستوى',
+    'delete category': 'حذف الفئة',
+    'delete experience level': 'حذف مستوى الخبرة',
+    'delete location': 'حذف الموقع',
+    'delete artist profile': 'حذف ملف الفنان',
+    'delete event': 'حذف الفعالية',
+    'delete art center': 'حذف المركز الفني',
+    'delete government entry': 'حذف الجهة الحكومية',
+    'accept': 'قبول',
+    'accept & publish': 'قبول ونشر',
+    'events total': 'إجمالي الفعاليات',
 
-    // Experience Levels
+
     'beginner (1-2 years)': 'مبتدئ (١-٢ سنة)',
     'beginner 1-2 years': 'مبتدئ (١-٢ سنة)',
     'intermediate (3-5 years)': 'متوسط (٣-٥ سنوات)',
@@ -413,6 +566,15 @@ class DataTranslator {
     'art venue registration': 'تسجيل المعارض الفنية',
     'art venue': 'معرض فني',
     'photos': 'صور',
+    'permissions': 'الصلاحيات',
+    'menu permissions': 'صلاحيات القائمة',
+    'home menu permissions & coming soon controls': 'صلاحيات القائمة والتحكم في صفحة قريباً',
+    'toggle menu access for users. when permission is off, clicking that menu opens the coming soon page.': 'التحكم في وصول المستخدمين للقوائم. عند إيقاف الصلاحية، يؤدي النقر عليها لفتح صفحة قريباً.',
+    'normal access': 'وصول عادي',
+    'coming soon': 'قريباً',
+    'enable all': 'تفعيل الكل',
+    'reset defaults': 'استعادة الافتراضي',
+    'active (normal)': 'نشط (عادي)',
 
     // Photo Galleries & Portfolio Details
     'featured': 'مميز',
@@ -543,7 +705,6 @@ class DataTranslator {
     'save': 'حفظ',
     'submitted events are sent to the administrator for review and will be published once approved.': 'يتم إرسال الفعاليات المقدمة إلى المسؤول للمراجعة وسيتم نشرها بمجرد الموافقة عليها.',
     'no images available': 'لا توجد صور متاحة',
-    'close': 'إغلاق',
     'free community entry': 'دخول مجاني للمجتمع',
     'pending review': 'قيد المراجعة',
     'approved & live': 'معتمد ونشط',
@@ -1133,9 +1294,33 @@ class DataTranslator {
         final rest = trimmed.substring(15).trim();
         return 'مغلق · يفتح في $rest';
       }
-      if (lower.endsWith(' artists')) {
+      if (lower.endsWith(' categories configured')) {
+        final count = trimmed.replaceAll(RegExp(r'[^0-9]'), '');
+        return '$count فئات مهيأة';
+      }
+      if (lower.endsWith(' experience levels configured')) {
+        final count = trimmed.replaceAll(RegExp(r'[^0-9]'), '');
+        return '$count مستويات خبرة مهيأة';
+      }
+      if (lower.endsWith(' locations configured')) {
+        final count = trimmed.replaceAll(RegExp(r'[^0-9]'), '');
+        return '$count مواقع مهيأة';
+      }
+      if (lower.endsWith(' listing plans configured')) {
+        final count = trimmed.replaceAll(RegExp(r'[^0-9]'), '');
+        return '$count خطط إدراج مهيأة';
+      }
+      if (lower.endsWith(' artists total') || lower.endsWith(' artists')) {
         final count = trimmed.replaceAll(RegExp(r'[^0-9]'), '');
         return '$count فنان';
+      }
+      if (lower.endsWith(' events total') || lower.endsWith(' events')) {
+        final count = trimmed.replaceAll(RegExp(r'[^0-9]'), '');
+        return '$count فعالية';
+      }
+      if (lower.endsWith(' entries')) {
+        final count = trimmed.replaceAll(RegExp(r'[^0-9]'), '');
+        return '$count مشاركة';
       }
       if (lower.endsWith(' photos')) {
         final count = trimmed.replaceAll(RegExp(r'[^0-9]'), '');
@@ -1393,6 +1578,12 @@ class DataTranslator {
       if (lower.startsWith('explore ') && lower.contains('\'s collection of artworks')) {
         final artist = trimmed.substring(8, trimmed.toLowerCase().indexOf('\'s collection of artworks')).trim();
         return 'استكشف مجموعة أعمال $artist الفنية';
+      }
+      final msgMatch = RegExp(r'^(\d+)\s+of\s+(\d+)\s+messages left this month$', caseSensitive: false).firstMatch(trimmed);
+      if (msgMatch != null) {
+        final rem = msgMatch.group(1);
+        final total = msgMatch.group(2);
+        return 'متبقي $rem من أصل $total رسالة هذا الشهر';
       }
 
       if (trimmed.contains('\n')) {

@@ -70,4 +70,18 @@ class ApiEndpoints {
 
   // AI Chat & Guides (MySQL Backend)
   static const String aiChat = 'api.php?resource=ai_chat';
+
+  // Artist Chat & Messaging (MySQL Backend)
+  static const String messages = 'api.php?resource=messages';
+
+  // Menu Permissions & Access Control (MySQL Backend)
+  static const String menuPermissions = 'api.php?resource=menu_permissions';
+
+  // Stripe Payment Gateway (PHP Backend — secret key stays server-side)
+  static const String stripeGateway = 'api.php?resource=stripe';
+  static const String stripePaymentIntent =
+      'api.php?resource=stripe&action=create_payment_intent';
+  static const String stripeConfig =
+      'api.php?resource=stripe&action=config';
 }
+

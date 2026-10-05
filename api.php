@@ -121,6 +121,8 @@ class DatabaseManager {
                 full_name VARCHAR(255) NOT NULL,
                 email VARCHAR(255) NOT NULL UNIQUE,
                 password_hash VARCHAR(255) NOT NULL,
+                chat_plan VARCHAR(100) DEFAULT 'Basic (Free)',
+                chat_max_allowance INT DEFAULT 10,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -354,6 +356,17 @@ class DatabaseManager {
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+            CREATE TABLE IF NOT EXISTS menu_permissions (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                `key` VARCHAR(64) NOT NULL UNIQUE,
+                `title` VARCHAR(128) NOT NULL,
+                `subtitle` VARCHAR(128) NULL,
+                `route_name` VARCHAR(128) NOT NULL,
+                `image_path` VARCHAR(255) NULL,
+                `is_enabled` TINYINT(1) NOT NULL DEFAULT 1,
+                `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
             CREATE TABLE IF NOT EXISTS artist_messages (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 sender_id VARCHAR(100) NULL,
@@ -419,6 +432,8 @@ class DatabaseManager {
             "ALTER TABLE galleries ADD COLUMN contact_person VARCHAR(255) NULL",
             "ALTER TABLE galleries ADD COLUMN email VARCHAR(255) NULL",
             "ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'user'",
+            "ALTER TABLE users ADD COLUMN chat_plan VARCHAR(100) DEFAULT 'Basic (Free)'",
+            "ALTER TABLE users ADD COLUMN chat_max_allowance INT DEFAULT 10",
             "ALTER TABLE galleries ADD COLUMN phone VARCHAR(100) NULL",
             "ALTER TABLE galleries ADD COLUMN about TEXT NULL",
             "ALTER TABLE galleries ADD COLUMN status VARCHAR(50) DEFAULT 'approved'",
@@ -663,6 +678,27 @@ class DatabaseManager {
                          'Emirates NBD, Dubai',
                          'Please scan the QR code with your banking app or transfer via IBAN. Once completed, enter the transaction reference and upload your receipt screenshot.'
                      ]);
+            }
+
+            // Seed Menu Permissions
+            $menuCount = (int)$this->pdo->query("SELECT COUNT(*) FROM `menu_permissions`")->fetchColumn();
+            if ($menuCount === 0) {
+                $defaultMenuPermissions = [
+                    ['about_us', 'ABOUT US', null, '/about-us', 'assets/images/about-us-DEBERP_G.jpg', 1],
+                    ['artists', 'ARTISTS', null, '/artists', 'assets/images/artists-9NH3TeXO.jpg', 1],
+                    ['government', 'GOVERNMENT', null, '/government', 'assets/images/government-CWANBIsX.jpg', 1],
+                    ['artist_registration', 'ARTIST REGISTRATION', 'REGISTRATION', '/artist-registration', 'assets/images/artist-registration-DqgORA9-.jpg', 1],
+                    ['events_competition', 'EVENTS COMPETITION', 'COMPETITION', '/events', 'assets/images/events-competition-DvLzKG_2.jpg', 1],
+                    ['galleries_art_center', 'GALLERIES ART CENTER', 'ART CENTER', '/galleries', 'assets/images/galleries-DjK8LuXg.jpg', 1],
+                    ['events_photos', 'EVENTS PHOTOS', 'PHOTOS', '/events-photos', 'assets/images/events-photos-CckY-T_x.jpg', 1],
+                    ['gallery_registration', 'GALLERIES | ART CENTERS REGISTRATION', 'REGISTRATION', '/gallery-registration', 'assets/images/gallery-registration-DU8u0zfk.jpg', 1],
+                    ['login_portal', 'LOGIN', 'PORTAL', '/login', 'assets/images/login-portal.png', 1],
+                    ['ai_art', 'AI', 'Art | Artist', '/ai', 'assets/images/ai-hub.png', 1],
+                ];
+                $mpStmt = $this->pdo->prepare("INSERT INTO menu_permissions (`key`, `title`, `subtitle`, `route_name`, `image_path`, `is_enabled`) VALUES (?, ?, ?, ?, ?, ?)");
+                foreach ($defaultMenuPermissions as $dmp) {
+                    $mpStmt->execute($dmp);
+                }
             }
 
             // Seed Default Admin API Token for Seamless Session Continuity
@@ -2366,6 +2402,24 @@ class BookingController {
             return;
         }
         $this->db->prepare('UPDATE bookings SET status = ? WHERE id = ?')->execute([$status, $id]);
+
+        // Auto-notify the customer about their booking status update
+        try {
+            $bStmt = $this->db->prepare('SELECT email, artist_name, event_title FROM bookings WHERE id = ? LIMIT 1');
+            $bStmt->execute([$id]);
+            $bRow = $bStmt->fetch();
+            if ($bRow && !empty($bRow['email'])) {
+                $targetTitle = !empty($bRow['event_title']) ? $bRow['event_title'] : (!empty($bRow['artist_name']) ? $bRow['artist_name'] : 'Booking');
+                $capitalizedStatus = ucfirst($status);
+                $this->db->prepare("INSERT INTO notifications (title, body, type, route, user_email, is_read) VALUES (?, ?, 'booking', '/bookings', ?, 0)")
+                         ->execute([
+                             "Booking Status: $capitalizedStatus",
+                             "Your booking for '$targetTitle' has been marked as $capitalizedStatus.",
+                             $bRow['email']
+                         ]);
+            }
+        } catch (\Throwable $notifErr) {}
+
         ApiResponse::success(['id' => $id, 'status' => $status], 'Booking status updated');
     }
 
@@ -2544,6 +2598,12 @@ class GalleryController {
             'is_public' => $isPublic,
             'is_approved' => $isApproved
         ], 'Gallery registered successfully', 201);
+
+        // Auto-notify admin and registrant about gallery registration
+        try {
+            $this->db->prepare("INSERT INTO notifications (title, body, type, route, user_email, is_read) VALUES (?, ?, 'gallery', '/galleries', ?, 0)")
+                     ->execute(["New Gallery: $name", "Explore the newly registered gallery '$name' in $location.", !empty($email) ? $email : null]);
+        } catch (\Throwable $notifErr) {}
     }
 
     public function updateGallery(array $input): void {
@@ -2984,6 +3044,13 @@ class ArtworkController {
             'image_url' => $imageUrl,
             'is_featured' => $isFeatured,
         ], 'Artwork created successfully', 201);
+
+        // Auto-notify community about new artwork release
+        try {
+            $creator = !empty($artistName) ? " by $artistName" : "";
+            $this->db->prepare("INSERT INTO notifications (title, body, type, route, user_email, is_read) VALUES (?, ?, 'artwork', '/artists', null, 0)")
+                     ->execute(["New Artwork: $title", "Discover the newly published artwork '$title'$creator.", null]);
+        } catch (\Throwable $notifErr) {}
     }
 
     public function updateArtwork(array $input): void {
@@ -3280,6 +3347,17 @@ class NotificationController {
         $stmt = $this->db->prepare('DELETE FROM notifications WHERE id = ?');
         $stmt->execute([$id]);
         ApiResponse::success(['id' => $id], 'Notification deleted successfully');
+    }
+
+    public function clearAllNotifications(array $input): void {
+        $email = InputSanitizer::cleanEmail($input['email'] ?? $input['user_email'] ?? '');
+        if (!empty($email)) {
+            $stmt = $this->db->prepare('DELETE FROM notifications WHERE user_email = ? OR user_email IS NULL OR user_email = ""');
+            $stmt->execute([$email]);
+        } else {
+            $this->db->exec('DELETE FROM notifications');
+        }
+        ApiResponse::success(null, 'All notifications deleted successfully');
     }
 }
 
@@ -3817,6 +3895,66 @@ class PaymentSettingsController {
 }
 
 // -----------------------------------------------------------------------------
+// 4i3b. Menu Permissions & Access Control Controller
+// -----------------------------------------------------------------------------
+class MenuPermissionsController {
+    private PDO $db;
+
+    public function __construct() {
+        $this->db = DatabaseManager::getInstance()->getConnection();
+    }
+
+    public function getPermissions(): void {
+        try {
+            $stmt = $this->db->query("SELECT * FROM menu_permissions ORDER BY id ASC");
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            if (empty($rows)) {
+                $rows = [
+                    ['key' => 'about_us', 'title' => 'ABOUT US', 'subtitle' => null, 'route_name' => '/about-us', 'image_path' => 'assets/images/about-us-DEBERP_G.jpg', 'is_enabled' => 1],
+                    ['key' => 'artists', 'title' => 'ARTISTS', 'subtitle' => null, 'route_name' => '/artists', 'image_path' => 'assets/images/artists-9NH3TeXO.jpg', 'is_enabled' => 1],
+                    ['key' => 'government', 'title' => 'GOVERNMENT', 'subtitle' => null, 'route_name' => '/government', 'image_path' => 'assets/images/government-CWANBIsX.jpg', 'is_enabled' => 1],
+                    ['key' => 'artist_registration', 'title' => 'ARTIST REGISTRATION', 'subtitle' => 'REGISTRATION', 'route_name' => '/artist-registration', 'image_path' => 'assets/images/artist-registration-DqgORA9-.jpg', 'is_enabled' => 1],
+                    ['key' => 'events_competition', 'title' => 'EVENTS COMPETITION', 'subtitle' => 'COMPETITION', 'route_name' => '/events', 'image_path' => 'assets/images/events-competition-DvLzKG_2.jpg', 'is_enabled' => 1],
+                    ['key' => 'galleries_art_center', 'title' => 'GALLERIES ART CENTER', 'subtitle' => 'ART CENTER', 'route_name' => '/galleries', 'image_path' => 'assets/images/galleries-DjK8LuXg.jpg', 'is_enabled' => 1],
+                    ['key' => 'events_photos', 'title' => 'EVENTS PHOTOS', 'subtitle' => 'PHOTOS', 'route_name' => '/events-photos', 'image_path' => 'assets/images/events-photos-CckY-T_x.jpg', 'is_enabled' => 1],
+                    ['key' => 'gallery_registration', 'title' => 'GALLERIES | ART CENTERS REGISTRATION', 'subtitle' => 'REGISTRATION', 'route_name' => '/gallery-registration', 'image_path' => 'assets/images/gallery-registration-DU8u0zfk.jpg', 'is_enabled' => 1],
+                    ['key' => 'login_portal', 'title' => 'LOGIN', 'subtitle' => 'PORTAL', 'route_name' => '/login', 'image_path' => 'assets/images/login-portal.png', 'is_enabled' => 1],
+                    ['key' => 'ai_art', 'title' => 'AI', 'subtitle' => 'Art | Artist', 'route_name' => '/ai', 'image_path' => 'assets/images/ai-hub.png', 'is_enabled' => 1],
+                ];
+            }
+            ApiResponse::success($rows, 'Menu permissions retrieved successfully');
+        } catch (\Throwable $t) {
+            ApiResponse::error('Failed to retrieve menu permissions: ' . $t->getMessage(), 500);
+        }
+    }
+
+    public function updatePermissions(array $input): void {
+        AuthMiddleware::requireAdmin();
+        try {
+            if (isset($input['permissions']) && is_array($input['permissions'])) {
+                $stmt = $this->db->prepare("UPDATE menu_permissions SET is_enabled = ? WHERE `key` = ? OR route_name = ?");
+                foreach ($input['permissions'] as $p) {
+                    $key = $p['key'] ?? '';
+                    $route = $p['route_name'] ?? '';
+                    $isEnabled = isset($p['is_enabled']) ? ((int)$p['is_enabled'] ? 1 : 0) : 1;
+                    $stmt->execute([$isEnabled, $key, $route]);
+                }
+            } else {
+                $key = $input['key'] ?? '';
+                $route = $input['route_name'] ?? '';
+                $isEnabled = isset($input['is_enabled']) ? ((int)$input['is_enabled'] ? 1 : 0) : 1;
+                $stmt = $this->db->prepare("UPDATE menu_permissions SET is_enabled = ? WHERE `key` = ? OR route_name = ?");
+                $stmt->execute([$isEnabled, $key, $route]);
+            }
+            ApiResponse::success(['updated' => true], 'Menu permissions updated successfully');
+        } catch (\Throwable $t) {
+            ApiResponse::error('Failed to update menu permissions: ' . $t->getMessage(), 500);
+        }
+    }
+}
+
+
+// -----------------------------------------------------------------------------
 // 4i4. Artist Messages & Chat Controller
 // -----------------------------------------------------------------------------
 class ArtistMessagesController {
@@ -3828,16 +3966,71 @@ class ArtistMessagesController {
 
     public function getMessages(): void {
         try {
-            $senderEmail = trim($_GET['sender_email'] ?? '');
-            $recipientId = trim($_GET['recipient_id'] ?? '');
+            $userEmail = trim($_GET['user_email'] ?? $_GET['sender_email'] ?? $_GET['email'] ?? '');
+            $recipientId = trim($_GET['recipient_id'] ?? $_GET['artist_id'] ?? '');
+
+            // Ensure sender_avatar_url column exists in MySQL table
+            try {
+                $this->db->exec("ALTER TABLE artist_messages ADD COLUMN sender_avatar_url VARCHAR(500) NULL AFTER sender_email");
+            } catch (\Throwable $t) {}
 
             $query = "SELECT * FROM artist_messages WHERE 1=1";
             $params = [];
 
-            if (!empty($senderEmail)) {
-                $query .= " AND (sender_email = ? OR recipient_id = ?)";
-                $params[] = $senderEmail;
-                $params[] = $senderEmail;
+            $userId = trim($_GET['user_id'] ?? '');
+
+            if (!empty($userEmail) || !empty($recipientId) || !empty($userId)) {
+                $targetIds = [];
+                if (!empty($recipientId)) {
+                    $targetIds[] = $recipientId;
+                }
+                if (!empty($userId)) {
+                    $targetIds[] = $userId;
+                    $targetIds[] = 'user_' . $userId;
+                }
+                if (!empty($userEmail)) {
+                    $targetIds[] = $userEmail;
+                    $targetIds[] = strtolower($userEmail);
+                    // Look up any artist IDs registered with this email
+                    try {
+                        $aStmt = $this->db->prepare("SELECT id FROM artists WHERE LOWER(email) = LOWER(?)");
+                        $aStmt->execute([$userEmail]);
+                        $matchedIds = $aStmt->fetchAll(PDO::FETCH_COLUMN);
+                        foreach ($matchedIds as $mId) {
+                            $targetIds[] = (string)$mId;
+                        }
+                    } catch (\Throwable $e) {}
+
+                    // Also look up user ID from users table
+                    try {
+                        $uStmt = $this->db->prepare("SELECT id FROM users WHERE LOWER(email) = LOWER(?)");
+                        $uStmt->execute([$userEmail]);
+                        $foundUId = $uStmt->fetchColumn();
+                        if ($foundUId) {
+                            $targetIds[] = (string)$foundUId;
+                            $targetIds[] = 'user_' . $foundUId;
+                            $aStmt2 = $this->db->prepare("SELECT id FROM artists WHERE user_id = ?");
+                            $aStmt2->execute([$foundUId]);
+                            foreach ($aStmt2->fetchAll(PDO::FETCH_COLUMN) as $mId) {
+                                $targetIds[] = (string)$mId;
+                            }
+                        }
+                    } catch (\Throwable $e) {}
+                }
+                $targetIds = array_values(array_unique(array_filter($targetIds)));
+
+                if (!empty($targetIds)) {
+                    $inPlaceholders = implode(',', array_fill(0, count($targetIds), '?'));
+                    $query .= " AND (LOWER(sender_email) = LOWER(?) OR sender_id IN ($inPlaceholders) OR recipient_id IN ($inPlaceholders) OR LOWER(recipient_id) = LOWER(?))";
+                    $params[] = $userEmail;
+                    foreach ($targetIds as $tid) {
+                        $params[] = $tid;
+                    }
+                    foreach ($targetIds as $tid) {
+                        $params[] = $tid;
+                    }
+                    $params[] = $userEmail;
+                }
             }
 
             $query .= " ORDER BY id DESC LIMIT 100";
@@ -3851,10 +4044,91 @@ class ArtistMessagesController {
         }
     }
 
+    public function getAllowance(): void {
+        try {
+            $userEmail = trim($_GET['user_email'] ?? $_GET['email'] ?? '');
+            $currentMonthStart = date('Y-m-01 00:00:00');
+
+            $used = 0;
+            if (!empty($userEmail)) {
+                $stmt = $this->db->prepare("SELECT COUNT(*) FROM artist_messages WHERE sender_email = ? AND created_at >= ?");
+                $stmt->execute([$userEmail, $currentMonthStart]);
+                $used = (int)$stmt->fetchColumn();
+            }
+
+            $maxAllowance = 10;
+            $planName = 'Basic (Free)';
+            if (!empty($userEmail)) {
+                $uStmt = $this->db->prepare("SELECT chat_plan, chat_max_allowance FROM users WHERE email = ? LIMIT 1");
+                $uStmt->execute([$userEmail]);
+                $userRow = $uStmt->fetch();
+                if ($userRow) {
+                    if (!empty($userRow['chat_max_allowance'])) {
+                        $maxAllowance = (int)$userRow['chat_max_allowance'];
+                    }
+                    if (!empty($userRow['chat_plan'])) {
+                        $planName = $userRow['chat_plan'];
+                    }
+                }
+            }
+
+            $remaining = $maxAllowance >= 9000 ? 9999 : max(0, $maxAllowance - $used);
+
+            ApiResponse::success([
+                'month' => date('Y-m'),
+                'plan_name' => $planName,
+                'max_allowance' => $maxAllowance,
+                'used_messages' => $used,
+                'remaining_messages' => $remaining,
+                'is_unlimited' => $maxAllowance >= 9000,
+                'resets_on' => date('Y-m-01', strtotime('first day of next month')),
+            ], 'Chat allowance retrieved successfully');
+        } catch (\Throwable $t) {
+            ApiResponse::error('Failed to get allowance: ' . $t->getMessage(), 500);
+        }
+    }
+
+    public function updateAllowance(array $input): void {
+        try {
+            $userEmail = trim($input['user_email'] ?? $input['email'] ?? $_GET['user_email'] ?? '');
+            $planName = trim($input['plan_name'] ?? 'Pro Artist');
+            $maxAllowance = (int)($input['max_allowance'] ?? 50);
+
+            if (empty($userEmail)) {
+                ApiResponse::error('user_email is required', 400);
+                return;
+            }
+
+            // Update user's chat plan in MySQL
+            $stmt = $this->db->prepare("UPDATE users SET chat_plan = ?, chat_max_allowance = ? WHERE email = ?");
+            $stmt->execute([$planName, $maxAllowance, $userEmail]);
+
+            // Calculate current usage
+            $currentMonthStart = date('Y-m-01 00:00:00');
+            $cStmt = $this->db->prepare("SELECT COUNT(*) FROM artist_messages WHERE sender_email = ? AND created_at >= ?");
+            $cStmt->execute([$userEmail, $currentMonthStart]);
+            $used = (int)$cStmt->fetchColumn();
+
+            $remaining = $maxAllowance >= 9000 ? 9999 : max(0, $maxAllowance - $used);
+
+            ApiResponse::success([
+                'user_email' => $userEmail,
+                'plan_name' => $planName,
+                'max_allowance' => $maxAllowance,
+                'used_messages' => $used,
+                'remaining_messages' => $remaining,
+                'is_unlimited' => $maxAllowance >= 9000,
+            ], 'Chat plan upgraded successfully');
+        } catch (\Throwable $t) {
+            ApiResponse::error('Failed to update chat plan: ' . $t->getMessage(), 500);
+        }
+    }
+
     public function sendMessage(array $input): void {
         try {
             $senderName = InputSanitizer::cleanString($input['sender_name'] ?? 'User');
             $senderEmail = InputSanitizer::cleanString($input['sender_email'] ?? 'user@artistdubai.com');
+            $senderAvatar = InputSanitizer::cleanString($input['sender_avatar_url'] ?? $input['senderAvatarUrl'] ?? '');
             $senderId = InputSanitizer::cleanString($input['sender_id'] ?? '');
             $recipientId = InputSanitizer::cleanString($input['recipient_id'] ?? '');
             $recipientName = InputSanitizer::cleanString($input['recipient_name'] ?? 'Artist');
@@ -3869,17 +4143,75 @@ class ArtistMessagesController {
                 return;
             }
 
-            $stmt = $this->db->prepare("
-                INSERT INTO artist_messages 
-                (sender_id, sender_name, sender_email, recipient_id, recipient_name, recipient_category, recipient_avatar_url, subject, message, flyer_url, is_read, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW())
-            ");
-            $stmt->execute([
-                $senderId, $senderName, $senderEmail, $recipientId, $recipientName, $recipientCategory, $recipientAvatar, $subject, $message, $flyerUrl
-            ]);
+            // Check allowance
+            $currentMonthStart = date('Y-m-01 00:00:00');
+            $stmtCount = $this->db->prepare("SELECT COUNT(*) FROM artist_messages WHERE sender_email = ? AND created_at >= ?");
+            $stmtCount->execute([$senderEmail, $currentMonthStart]);
+            $used = (int)$stmtCount->fetchColumn();
+
+            $maxAllowance = 10;
+            if (!empty($senderEmail)) {
+                $uStmt = $this->db->prepare("SELECT chat_max_allowance FROM users WHERE email = ? LIMIT 1");
+                $uStmt->execute([$senderEmail]);
+                $userRow = $uStmt->fetch();
+                if ($userRow && !empty($userRow['chat_max_allowance'])) {
+                    $maxAllowance = (int)$userRow['chat_max_allowance'];
+                }
+            }
+
+            if ($maxAllowance < 9000 && $used >= $maxAllowance) {
+                ApiResponse::error('Monthly message limit reached. Upgrade your plan for more.', 403);
+                return;
+            }
+
+            // Try inserting with sender_avatar_url, fall back if column is missing
+            try {
+                $stmt = $this->db->prepare("
+                    INSERT INTO artist_messages 
+                    (sender_id, sender_name, sender_email, sender_avatar_url, recipient_id, recipient_name, recipient_category, recipient_avatar_url, subject, message, flyer_url, is_read, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW())
+                ");
+                $stmt->execute([
+                    $senderId, $senderName, $senderEmail, $senderAvatar, $recipientId, $recipientName, $recipientCategory, $recipientAvatar, $subject, $message, $flyerUrl
+                ]);
+            } catch (\Throwable $colErr) {
+                $stmt = $this->db->prepare("
+                    INSERT INTO artist_messages 
+                    (sender_id, sender_name, sender_email, recipient_id, recipient_name, recipient_category, recipient_avatar_url, subject, message, flyer_url, is_read, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW())
+                ");
+                $stmt->execute([
+                    $senderId, $senderName, $senderEmail, $recipientId, $recipientName, $recipientCategory, $recipientAvatar, $subject, $message, $flyerUrl
+                ]);
+            }
 
             $newId = $this->db->lastInsertId();
-            ApiResponse::success(['id' => $newId, 'status' => 'sent'], 'Message sent successfully');
+            $remaining = $maxAllowance >= 9000 ? 9999 : max(0, $maxAllowance - ($used + 1));
+
+            // Auto-dispatch in-app notification to the recipient
+            try {
+                $recipientEmail = null;
+                if (!empty($recipientId)) {
+                    $rStmt = $this->db->prepare("SELECT email FROM artists WHERE id = ? LIMIT 1");
+                    $rStmt->execute([(int)$recipientId]);
+                    $rRow = $rStmt->fetch();
+                    if ($rRow && !empty($rRow['email'])) {
+                        $recipientEmail = $rRow['email'];
+                    }
+                }
+                $notifTitle = "New Message from $senderName";
+                $notifBody = mb_substr($message, 0, 80) . (mb_strlen($message) > 80 ? '...' : '');
+                $this->db->prepare("INSERT INTO notifications (title, body, type, route, user_email, is_read) VALUES (?, ?, 'message', '/artist-chat', ?, 0)")
+                         ->execute([$notifTitle, $notifBody, $recipientEmail]);
+            } catch (\Throwable $notifErr) {}
+
+            ApiResponse::success([
+                'id' => $newId,
+                'status' => 'sent',
+                'used_messages' => $used + 1,
+                'max_allowance' => $maxAllowance,
+                'remaining_messages' => $remaining,
+            ], 'Message sent successfully');
         } catch (\Throwable $t) {
             ApiResponse::error('Failed to send message: ' . $t->getMessage(), 500);
         }
@@ -4364,6 +4696,88 @@ class RecycleBinController {
 // -----------------------------------------------------------------------------
 // 5. Strictly Pure MySQL API Router Class
 // -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// Stripe Payment Gateway Controller
+// -----------------------------------------------------------------------------
+class StripeController {
+    private string $secretKey;
+    private string $publishableKey;
+
+    public function __construct() {
+        // Use environment variable if set, otherwise use test mode key
+        $this->secretKey    = getenv('STRIPE_SECRET_KEY')    ?: 'sk_test_51UM5UtReplaceWithYourLiveSecretKey';
+        $this->publishableKey = getenv('STRIPE_PUBLISHABLE_KEY') ?: 'pk_live_51UM5UtDBfdT00Nk0l3Jzf';
+    }
+
+    public function getPublishableKey(): void {
+        ApiResponse::success(['publishable_key' => $this->publishableKey], 'Stripe config loaded.');
+    }
+
+    public function createPaymentIntent(array $data): void {
+        $amountRaw   = $data['amount'] ?? 0;
+        $currency    = strtolower(trim($data['currency'] ?? 'aed'));
+        $description = InputSanitizer::cleanString($data['description'] ?? 'Artist Dubai Plan Payment');
+        $itemType    = InputSanitizer::cleanString($data['item_type'] ?? 'event');
+        $planId      = InputSanitizer::cleanString($data['plan_id'] ?? '');
+        $planName    = InputSanitizer::cleanString($data['plan_name'] ?? '');
+
+        // Amount comes as decimal AED (e.g. 2500.0), convert to fils (smallest currency unit)
+        $amountFils = (int)round((float)$amountRaw * 100);
+
+        if ($amountFils <= 0) {
+            ApiResponse::error('Invalid payment amount.', 400);
+            return;
+        }
+
+        $postData = http_build_query([
+            'amount'                              => $amountFils,
+            'currency'                            => $currency,
+            'description'                         => $description,
+            'metadata[item_type]'                 => $itemType,
+            'metadata[plan_id]'                   => $planId,
+            'metadata[plan_name]'                 => $planName,
+            'metadata[platform]'                  => 'artist_dubai',
+            'automatic_payment_methods[enabled]'  => 'true',
+        ]);
+
+        $ch = curl_init('https://api.stripe.com/v1/payment_intents');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => $postData,
+            CURLOPT_USERPWD        => $this->secretKey . ':',
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+
+        $responseBody = curl_exec($ch);
+        $httpCode     = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError    = curl_error($ch);
+        curl_close($ch);
+
+        if ($curlError) {
+            ApiResponse::error('Network error contacting Stripe: ' . $curlError, 503);
+            return;
+        }
+
+        $responseData = json_decode($responseBody, true);
+
+        if ($httpCode === 200 && isset($responseData['client_secret'])) {
+            ApiResponse::success([
+                'client_secret'     => $responseData['client_secret'],
+                'payment_intent_id' => $responseData['id'],
+                'amount'            => $amountFils,
+                'currency'          => $currency,
+                'status'            => $responseData['status'] ?? 'requires_payment_method',
+            ], 'PaymentIntent created successfully.');
+        } else {
+            $errorMessage = $responseData['error']['message'] ?? 'Stripe payment initialization failed.';
+            ApiResponse::error($errorMessage, $httpCode ?: 400);
+        }
+    }
+}
+
 class UnifiedMySqlApiRouter {
     public static function execute(): void {
         header('Access-Control-Allow-Origin: *');
@@ -4592,6 +5006,8 @@ class UnifiedMySqlApiRouter {
                     $notifCtrl->markAllAsRead(array_merge($input, $_GET));
                 } elseif ($notifAction === 'delete') {
                     $notifCtrl->deleteNotification(array_merge($input, $_GET));
+                } elseif ($notifAction === 'clear_all' || $notifAction === 'clear' || $notifAction === 'delete_all') {
+                    $notifCtrl->clearAllNotifications(array_merge($input, $_GET));
                 } elseif ($method === 'POST') {
                     $notifCtrl->createNotification($input);
                 } else {
@@ -4642,11 +5058,27 @@ class UnifiedMySqlApiRouter {
                 }
                 break;
 
+            case 'menu_permissions':
+            case 'menu-permissions':
+            case 'permissions':
+                $permCtrl = new MenuPermissionsController();
+                if ($method === 'PUT' || $method === 'POST') {
+                    $permCtrl->updatePermissions(array_merge($input, $_POST, $_GET));
+                } else {
+                    $permCtrl->getPermissions();
+                }
+                break;
+
             case 'messages':
             case 'artist_messages':
             case 'chat':
                 $msgCtrl = new ArtistMessagesController();
-                if ($method === 'POST') {
+                $action = strtolower(trim($_GET['action'] ?? $input['action'] ?? ''));
+                if ($action === 'allowance' || $action === 'get_allowance') {
+                    $msgCtrl->getAllowance();
+                } elseif ($action === 'upgrade_plan' || $action === 'update_allowance' || $action === 'upgrade') {
+                    $msgCtrl->updateAllowance(array_merge($input, $_POST));
+                } elseif ($method === 'POST') {
                     $msgCtrl->sendMessage(array_merge($input, $_POST));
                 } else {
                     $msgCtrl->getMessages();
@@ -4750,6 +5182,19 @@ class UnifiedMySqlApiRouter {
                     $trashCtrl->emptyTrash();
                 } else {
                     $trashCtrl->getTrash();
+                }
+                break;
+
+            case 'stripe':
+            case 'stripe_payment':
+                $stripeCtrl = new StripeController();
+                $stripeAction = strtolower(trim($_GET['action'] ?? $input['action'] ?? ''));
+                if ($stripeAction === 'create_payment_intent' || $stripeAction === 'payment_intent') {
+                    $stripeCtrl->createPaymentIntent(array_merge($input, $_POST));
+                } elseif ($stripeAction === 'publishable_key' || $stripeAction === 'config') {
+                    $stripeCtrl->getPublishableKey();
+                } else {
+                    ApiResponse::error('Invalid Stripe action.', 400);
                 }
                 break;
 

@@ -39,6 +39,7 @@ class RouteNames {
   static const String artistChat = '/artist-chat';
   static const String listingPlans = '/listing-plans';
   static const String myListings = '/my-listings';
+  static const String comingSoon = '/coming-soon';
 
   static String artistDetailWithId(String id) => '/artist/$id';
   static String eventDetailWithId(String id) => '/event-detail?id=$id';

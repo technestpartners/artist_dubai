@@ -196,31 +196,39 @@ class _NotificationsPanelDialogState extends State<_NotificationsPanelDialog> {
                       if (items.isNotEmpty) ...[
                         const Divider(height: 1, color: Color(0xFFE2E8F0)),
                         Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              GestureDetector(
+                              InkWell(
+                                borderRadius: BorderRadius.circular(6),
                                 onTap: () {
                                   _notificationService.clearAll();
                                 },
-                                child: Text(
-                                  l10n.clearAll,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF94A3B8),
-                                    fontWeight: FontWeight.w500,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                  child: Text(
+                                    l10n.clearAll,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF94A3B8),
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
                               ),
-                              GestureDetector(
+                              InkWell(
+                                borderRadius: BorderRadius.circular(6),
                                 onTap: () => Navigator.pop(context),
-                                child: Text(
-                                  l10n.close,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF6A2777),
-                                    fontWeight: FontWeight.w600,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                  child: Text(
+                                    l10n.close,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF6A2777),
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -304,10 +312,11 @@ class _NotificationsPanelDialogState extends State<_NotificationsPanelDialog> {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      GestureDetector(
+                      InkWell(
+                        borderRadius: BorderRadius.circular(12),
                         onTap: () => _notificationService.dismiss(n.id),
                         child: const Padding(
-                          padding: EdgeInsets.all(2.0),
+                          padding: EdgeInsets.all(4.0),
                           child: Icon(
                             Icons.close,
                             size: 15,
