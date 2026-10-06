@@ -38,6 +38,9 @@ workflows:
           export LANG=en_US.UTF-8
           export LC_ALL=en_US.UTF-8
           cd ios && pod install --repo-update
+      - name: Flutter build iOS (no codesign)
+        script: |
+          flutter build ios --release --no-codesign --build-name=3.2.4 --build-number=9
       - name: Set up code signing
         script: |
           keychain initialize
@@ -53,17 +56,11 @@ workflows:
             || (echo "ERROR: No profiles installed! Check iMbu API key has App Manager role in App Store Connect." && exit 1)
           echo "=== Signing Identities in Keychain ==="
           security find-identity -v -p codesigning
-      - name: Flutter build & export IPA
+      - name: Build IPA
         script: |
-          EXPORT_PLIST="$HOME/export_options.plist"
-          if [ ! -f "$EXPORT_PLIST" ]; then
-            EXPORT_PLIST="ios/ExportOptions.plist"
-          fi
-          echo "Using Export Options Plist: $EXPORT_PLIST"
-          flutter build ipa --release \
-            --build-name=3.2.4 \
-            --build-number=9 \
-            --export-options-plist="$EXPORT_PLIST"
+          xcode-project build-ipa \
+            --workspace ios/Runner.xcworkspace \
+            --scheme Runner
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
