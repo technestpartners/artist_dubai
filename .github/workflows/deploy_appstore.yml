@@ -1,4 +1,4 @@
-name: Publish to App Store (Production)
+name: Publish to App Store (Production 3.2.4(9))
 
 on:
   workflow_dispatch:
@@ -11,13 +11,13 @@ on:
           - 'Promote Existing TestFlight Build'
         default: 'Build & Submit New Binary'
       app_version:
-        description: 'App Version (e.g. 3.2.4) [Required if promoting TestFlight build]'
+        description: 'App Version (e.g. 3.2.4)'
         required: false
         default: '3.2.4'
       build_number:
-        description: 'Build Number (e.g. 4) [Required if promoting TestFlight build, or override for build]'
+        description: 'Build Number (e.g. 9)'
         required: false
-        default: '4'
+        default: '9'
       submit_for_review:
         description: 'Automatically submit for Apple App Review?'
         type: boolean
@@ -37,7 +37,7 @@ on:
 jobs:
   publish_appstore:
     name: Publish to Apple App Store
-    runs-on: macos-26
+    runs-on: macos-14
 
     steps:
       - name: Checkout Code
@@ -65,12 +65,11 @@ jobs:
       - name: Determine Build Number
         id: build_info
         run: |
-          if [ -n "${{ github.event.inputs.build_number }}" ]; then
-            BUILD_NUM="${{ github.event.inputs.build_number }}"
-          else
-            BUILD_NUM="${{ github.run_number }}"
-          fi
+          VERSION="${{ github.event.inputs.app_version || '3.2.4' }}"
+          BUILD_NUM="${{ github.event.inputs.build_number || '9' }}"
+          echo "VERSION_NAME=$VERSION" >> $GITHUB_OUTPUT
           echo "BUILD_NUMBER=$BUILD_NUM" >> $GITHUB_OUTPUT
+          echo "Target Version: $VERSION (Build $BUILD_NUM)"
 
       - name: Install Apple Certificate & Provisioning Profile
         if: ${{ github.event.inputs.action_type == 'Build & Submit New Binary' }}
@@ -83,7 +82,6 @@ jobs:
           if [ -z "$BUILD_CERTIFICATE_BASE64" ] || [ -z "$BUILD_PROVISION_PROFILE_BASE64" ]; then
             echo "::error ::Missing Apple signing credentials in GitHub Secrets!"
             echo "Please configure APPLE_CERTIFICATE_BASE64, APPLE_CERTIFICATE_PASSWORD, and APPLE_PROVISIONING_PROFILE_BASE64 in repository Settings -> Secrets."
-            echo "See docs/TESTFLIGHT_PIPELINE_SETUP.md for step-by-step guidance."
             exit 1
           fi
 
@@ -111,8 +109,9 @@ jobs:
           flutter pub get
           cd ios && pod install --repo-update && cd ..
           flutter build ipa --release \
-            --export-options-plist=ios/ExportOptions.plist \
-            --build-number=${{ steps.build_info.outputs.BUILD_NUMBER }}
+            --build-name="${{ steps.build_info.outputs.VERSION_NAME }}" \
+            --build-number="${{ steps.build_info.outputs.BUILD_NUMBER }}" \
+            --export-options-plist=ios/ExportOptions.plist
 
       - name: Publish to App Store via Fastlane
         env:
@@ -123,8 +122,8 @@ jobs:
           cd ios
           if [ "${{ github.event.inputs.action_type }}" = "Promote Existing TestFlight Build" ]; then
             bundle exec fastlane promote_to_app_store \
-              app_version:"${{ github.event.inputs.app_version }}" \
-              build_number:"${{ github.event.inputs.build_number }}" \
+              app_version:"${{ steps.build_info.outputs.VERSION_NAME }}" \
+              build_number:"${{ steps.build_info.outputs.BUILD_NUMBER }}" \
               submit_for_review:${{ github.event.inputs.submit_for_review }} \
               automatic_release:${{ github.event.inputs.automatic_release }} \
               phased_release:${{ github.event.inputs.phased_release }}
