@@ -49,18 +49,60 @@ workflows:
             --certificate-key @env:CERTIFICATE_PRIVATE_KEY \
             --create
           keychain add-certificates
-          xcode-project use-profiles --project ios/Runner.xcodeproj
-          echo "=== Installed Provisioning Profiles ==="
-          ls ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null \
-            && echo "Profiles found!" \
-            || (echo "ERROR: No profiles installed! Check iMbu API key has App Manager role in App Store Connect." && exit 1)
-          echo "=== Signing Identities in Keychain ==="
+          xcode-project use-profiles
+          
+          echo "=== Provisioning Profiles ==="
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
+          echo "=== Code Signing Identities ==="
           security find-identity -v -p codesigning
-      - name: Build IPA
+      - name: Archive and Export IPA
         script: |
-          xcode-project build-ipa \
-            --workspace ios/Runner.xcworkspace \
-            --scheme Runner
+          mkdir -p build/ios/ipa
+          mkdir -p build/ios/xcarchive
+          
+          FIRST_PROFILE=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision 2>/dev/null | head -n 1)
+          PROFILE_NAME=""
+          if [ -n "$FIRST_PROFILE" ]; then
+            security cms -D -i "$FIRST_PROFILE" > /tmp/profile.plist 2>/dev/null || true
+            PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /tmp/profile.plist 2>/dev/null || echo "")
+            echo "Extracted Provisioning Profile Name: $PROFILE_NAME"
+          fi
+          
+          EXPORT_PLIST="/Users/builder/export_options.plist"
+          if [ ! -f "$EXPORT_PLIST" ]; then
+            EXPORT_PLIST="ios/ExportOptions.plist"
+          fi
+          echo "Using Export Options Plist: $EXPORT_PLIST"
+          
+          if [ -n "$PROFILE_NAME" ]; then
+            xcodebuild -workspace ios/Runner.xcworkspace \
+              -scheme Runner \
+              -configuration Release \
+              -archivePath build/ios/xcarchive/Runner.xcarchive \
+              archive \
+              CODE_SIGN_STYLE=Manual \
+              DEVELOPMENT_TEAM=VDL4YWPJJ2 \
+              PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
+              COMPILER_INDEX_STORE_ENABLE=NO
+          else
+            xcodebuild -workspace ios/Runner.xcworkspace \
+              -scheme Runner \
+              -configuration Release \
+              -archivePath build/ios/xcarchive/Runner.xcarchive \
+              archive \
+              CODE_SIGN_STYLE=Manual \
+              DEVELOPMENT_TEAM=VDL4YWPJJ2 \
+              COMPILER_INDEX_STORE_ENABLE=NO
+          fi
+          
+          echo "=== Exporting Archive to IPA ==="
+          xcodebuild -exportArchive \
+            -archivePath build/ios/xcarchive/Runner.xcarchive \
+            -exportOptionsPlist "$EXPORT_PLIST" \
+            -exportPath build/ios/ipa
+          
+          echo "=== Exported IPA Artifacts ==="
+          ls -la build/ios/ipa/
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
