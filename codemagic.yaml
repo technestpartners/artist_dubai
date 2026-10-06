@@ -12,14 +12,6 @@ workflows:
       vars:
         BUNDLE_ID: "com.imbu.Dubai-Artists"
     scripts:
-      - name: Set up code signing settings on Xcode project
-        script: |
-          keychain initialize
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create
-          keychain add-certificates
-          xcode-project use-profiles
       - name: Get Flutter packages
         script: |
           flutter packages pub get
@@ -29,10 +21,19 @@ workflows:
           export LANG=en_US.UTF-8
           export LC_ALL=en_US.UTF-8
           cd ios && pod install
-      - name: Flutter build ipa
+      - name: Set up code signing settings on Xcode project
         script: |
-          flutter build ipa --release \
-            --export-options-plist=/Users/builder/export_options.plist
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Build IPA
+        script: |
+          xcode-project build-ipa \
+            --workspace ios/Runner.xcworkspace \
+            --scheme Runner
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
