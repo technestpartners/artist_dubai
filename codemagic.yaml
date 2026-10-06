@@ -14,6 +14,10 @@ workflows:
       cocoapods: default
       vars:
         BUNDLE_ID: "com.imbu.Dubai-Artists"
+    cache:
+      cache_paths:
+        - $FLUTTER_ROOT/.pub-cache
+        - $HOME/Library/Caches/CocoaPods
     triggering:
       events:
         - push
