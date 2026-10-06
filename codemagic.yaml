@@ -1,4 +1,4 @@
-  workflows:
+workflows:
   ios-testflight:
     name: iOS TestFlight (Production Release)
     instance_type: mac_mini_m2
@@ -11,6 +11,13 @@
       cocoapods: default
       vars:
         BUNDLE_ID: "com.imbu.Dubai-Artists"
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+          source: true
     scripts:
       - name: Get Flutter packages
         script: |
