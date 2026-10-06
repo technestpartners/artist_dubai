@@ -22,7 +22,7 @@ class ExploreCategoriesView extends StatefulWidget {
 
 class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
   List<CategoryInfo> _categories = ArtistModel.categoryList;
-  List<ArtistModel> _allArtists = sl<ApiService>().cachedArtists ?? List.from(ArtistModel.mockArtists);
+  List<ArtistModel> _allArtists = sl<ApiService>().cachedArtists ?? [];
   StreamSubscription<List<CategoryInfo>>? _catSub;
   StreamSubscription<List<ArtistModel>>? _artistSub;
 
@@ -34,7 +34,7 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
       if (mounted && cats.isNotEmpty) setState(() => _categories = cats);
     });
     _artistSub = sl<LiveSyncService>().artistsStream.listen((artists) {
-      if (mounted && artists.isNotEmpty) setState(() => _allArtists = artists);
+      if (mounted) setState(() => _allArtists = artists);
     });
   }
 
@@ -52,11 +52,7 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
       if (mounted) {
         setState(() {
           if (categories.isNotEmpty) _categories = categories;
-          if (artists.isNotEmpty) {
-            _allArtists = artists;
-          } else if (_allArtists.isEmpty) {
-            _allArtists = List.from(ArtistModel.mockArtists);
-          }
+          _allArtists = artists;
         });
       }
     } catch (_) {}

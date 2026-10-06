@@ -1,29 +1,38 @@
-name: Deploy to TestFlight
+name: Deploy to TestFlight (iOS 3.2.4(9))
 
 on:
   push:
     tags:
-      - 'v*.*.*' # Trigger when creating release tags like v1.0.1
+      - 'v*.*.*' # Trigger on tags like v3.2.4
   workflow_dispatch:
     inputs:
+      version_name:
+        description: 'App Version Name (e.g., 3.2.4)'
+        required: false
+        default: '3.2.4'
       build_number:
-        description: 'Build number override (optional, defaults to GitHub Run Number)'
+        description: 'App Build Number (e.g., 9)'
         required: false
-        default: ''
+        default: '9'
       changelog:
-        description: 'TestFlight changelog / What to test'
+        description: 'TestFlight What to Test / Changelog'
         required: false
-        default: 'New build with latest updates and stability improvements.'
+        default: 'Version 3.2.4 (Build 9) - Performance optimizations, gallery enhancements, and stability fixes.'
       skip_waiting:
-        description: 'Skip waiting for TestFlight build processing (faster CI completion)'
+        description: 'Skip waiting for TestFlight build processing in CI'
         type: boolean
         required: false
         default: true
+      distribute_external:
+        description: 'Automatically distribute to external beta testers once processed'
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   build_and_upload:
     name: Build & Upload iOS to TestFlight
-    runs-on: macos-26
+    runs-on: macos-14
 
     steps:
       - name: Checkout Code
@@ -48,16 +57,23 @@ jobs:
           bundler-cache: true
           working-directory: 'ios'
 
-      - name: Determine Build Number
+      - name: Determine Version and Build Number
         id: build_info
         run: |
-          if [ -n "${{ github.event.inputs.build_number }}" ]; then
-            BUILD_NUM="${{ github.event.inputs.build_number }}"
-          else
-            BUILD_NUM="${{ github.run_number }}"
+          VERSION="${{ github.event.inputs.version_name }}"
+          BUILD_NUM="${{ github.event.inputs.build_number }}"
+
+          if [ -z "$VERSION" ]; then
+            VERSION="3.2.4"
           fi
+
+          if [ -z "$BUILD_NUM" ]; then
+            BUILD_NUM="9"
+          fi
+
+          echo "VERSION_NAME=$VERSION" >> $GITHUB_OUTPUT
           echo "BUILD_NUMBER=$BUILD_NUM" >> $GITHUB_OUTPUT
-          echo "Using Build Number: $BUILD_NUM"
+          echo "🚀 Deploying Version: $VERSION (Build: $BUILD_NUM)"
 
       - name: Install Apple Certificate & Provisioning Profile
         env:
@@ -68,31 +84,25 @@ jobs:
         run: |
           if [ -z "$BUILD_CERTIFICATE_BASE64" ] || [ -z "$BUILD_PROVISION_PROFILE_BASE64" ]; then
             echo "::error ::Missing Apple signing credentials in GitHub Secrets!"
-            echo "Please configure APPLE_CERTIFICATE_BASE64, APPLE_CERTIFICATE_PASSWORD, and APPLE_PROVISIONING_PROFILE_BASE64 in repository Settings -> Secrets."
-            echo "See docs/TESTFLIGHT_PIPELINE_SETUP.md for step-by-step guidance."
+            echo "Please ensure APPLE_CERTIFICATE_BASE64, APPLE_CERTIFICATE_PASSWORD, and APPLE_PROVISIONING_PROFILE_BASE64 are set."
             exit 1
           fi
 
-          # Create variables
           CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
           PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
-          # Decode base64 secrets to files
           echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
           echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o "$PP_PATH"
 
-          # Create temporary keychain
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
-          # Import certificate to keychain
           security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security list-keychain -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | sed -e 's/^[ \t]*//' | tr -d '"')
 
-          # Apply provisioning profile
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           cp "$PP_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/
 
@@ -107,8 +117,9 @@ jobs:
       - name: Build Flutter iOS IPA
         run: |
           flutter build ipa --release \
-            --export-options-plist=ios/ExportOptions.plist \
-            --build-number=${{ steps.build_info.outputs.BUILD_NUMBER }}
+            --build-name="${{ steps.build_info.outputs.VERSION_NAME }}" \
+            --build-number="${{ steps.build_info.outputs.BUILD_NUMBER }}" \
+            --export-options-plist=ios/ExportOptions.plist
 
       - name: Upload IPA to TestFlight via Fastlane
         env:
@@ -119,13 +130,14 @@ jobs:
           cd ios
           bundle exec fastlane beta \
             skip_waiting:${{ github.event.inputs.skip_waiting || 'true' }} \
-            changelog:"${{ github.event.inputs.changelog || 'Automated build uploaded via GitHub Actions' }}"
+            distribute_external:${{ github.event.inputs.distribute_external || 'false' }} \
+            changelog:"${{ github.event.inputs.changelog || 'Version 3.2.4(9) - Performance optimizations and stability updates.' }}"
 
       - name: Upload IPA Artifact to GitHub
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: release-ipa
+          name: release-ipa-${{ steps.build_info.outputs.VERSION_NAME }}-${{ steps.build_info.outputs.BUILD_NUMBER }}
           path: build/ios/ipa/*.ipa
           retention-days: 14
 

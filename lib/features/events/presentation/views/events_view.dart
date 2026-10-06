@@ -213,17 +213,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
   }
 
   List<ArtEventModel> get _combinedEvents {
-    if (_allEvents.isEmpty) {
-      return ArtEventModel.mockEvents;
-    }
-    final list = List<ArtEventModel>.from(_allEvents);
-    final existingTitles = list.map((e) => e.title.toLowerCase().trim()).toSet();
-    for (final mock in ArtEventModel.mockEvents) {
-      if (!existingTitles.contains(mock.title.toLowerCase().trim())) {
-        list.add(mock);
-      }
-    }
-    return list;
+    return List<ArtEventModel>.from(_allEvents);
   }
 
   bool get _isFilterActive =>
@@ -946,10 +936,10 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
   // What's On Mode: "Featured" Carousel + "Recommended for You"
   // -------------------------------------------------------------
   Widget _buildWhatsOnSections(List<ArtEventModel> events) {
-    final featuredEvents = events.isNotEmpty ? events : ArtEventModel.mockEvents;
+    final featuredEvents = events;
     final recommendedEvents = events.length > 2
         ? events.sublist(2)
-        : (events.isNotEmpty ? events : ArtEventModel.mockEvents);
+        : events;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -32,20 +32,8 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
 
   late final String _title;
   late final String _categoryEmoji;
-  List<ArtistModel> _categoryArtists = ArtistModel.mockArtists;
-  List<Map<String, dynamic>> _categoryArtworks = [
-    {
-      'id': '1',
-      'title': 'Sacred Verses',
-      'artist_name': 'Fatima Al-Hashimi',
-      'category': 'Calligraphy & Typography',
-      'medium': 'Gold leaf & ink on handmade linen',
-      'dimensions': '120 x 80 cm',
-      'price': 'AED 18,500',
-      'image_url': 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119',
-      'likes_count': 142,
-    }
-  ];
+  List<ArtistModel> _categoryArtists = [];
+  List<Map<String, dynamic>> _categoryArtworks = [];
   final Set<String> _likedArtistIds = {};
   StreamSubscription<List<ArtistModel>>? _artistSub;
   StreamSubscription<Map<String, dynamic>>? _favSub;

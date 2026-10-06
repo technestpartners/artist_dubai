@@ -113,7 +113,7 @@ class _ArtistsViewState extends State<ArtistsView> {
       _allArtists = List.from(cached);
       _isLoading = false;
     } else {
-      _allArtists = List.from(ArtistModel.mockArtists);
+      _allArtists = [];
       _isLoading = false;
     }
     _fetchData();
@@ -121,11 +121,7 @@ class _ArtistsViewState extends State<ArtistsView> {
     _artistsSub = sl<LiveSyncService>().artistsStream.listen((artists) {
       if (mounted) {
         setState(() {
-          if (artists.isNotEmpty) {
-            _allArtists = artists;
-          } else if (_allArtists.isEmpty) {
-            _allArtists = List.from(ArtistModel.mockArtists);
-          }
+          _allArtists = artists;
           _isLoading = false;
         });
       }
@@ -192,20 +188,13 @@ class _ArtistsViewState extends State<ArtistsView> {
       final artists = await sl<ApiService>().getArtists(forceRefresh: true);
       if (mounted) {
         setState(() {
-          if (artists.isNotEmpty) {
-            _allArtists = artists;
-          } else if (_allArtists.isEmpty) {
-            _allArtists = List.from(ArtistModel.mockArtists);
-          }
+          _allArtists = artists;
           _isLoading = false;
         });
       }
     } catch (_) {
       if (mounted) {
         setState(() {
-          if (_allArtists.isEmpty) {
-            _allArtists = List.from(ArtistModel.mockArtists);
-          }
           _isLoading = false;
         });
       }
@@ -278,17 +267,12 @@ class _ArtistsViewState extends State<ArtistsView> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final sourceArtists = _allArtists.isNotEmpty ? _allArtists : ArtistModel.mockArtists;
-    final effectiveArtists = sourceArtists.where((a) {
+    final effectiveArtists = _allArtists.where((a) {
       if (!a.isActive) return false;
       final st = a.status.toLowerCase().trim();
       if (st == 'inactive' || st == 'deactive' || st == 'suspended' || st == 'deleted' || st == 'pending') return false;
       return true;
     }).toList();
-
-    if (effectiveArtists.isEmpty) {
-      effectiveArtists.addAll(ArtistModel.mockArtists);
-    }
 
     // Sort latest artists first
     effectiveArtists.sort((a, b) {

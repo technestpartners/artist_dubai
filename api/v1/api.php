@@ -486,229 +486,11 @@ class DatabaseManager {
             try { $this->pdo->exec($m); } catch (\Throwable $t) {}
         }
 
-        $this->seedInitialData();
+        // Auto-seeding disabled to keep database clean and prevent unwanted inserts
     }
 
     private function seedInitialData(): void {
-        try {
-            // Seed Admin User
-            $adminEmail = 'admin@artistdubai.com';
-            $adminHash = password_hash('admin123', PASSWORD_BCRYPT);
-            $aCheck = $this->pdo->prepare("SELECT id FROM users WHERE email = ?");
-            $aCheck->execute([$adminEmail]);
-            if (!$aCheck->fetch()) {
-                $this->pdo->prepare("INSERT INTO users (full_name, email, password_hash, role) VALUES ('Dubai Art Administrator', ?, ?, 'admin')")->execute([$adminEmail, $adminHash]);
-            }
-
-            // Seed Users
-            $usersCount = (int)$this->pdo->query("SELECT COUNT(*) FROM `users`")->fetchColumn();
-            if ($usersCount === 0) {
-                $users = [
-                    [1, 'Renish Artistry', 'renish@gmail.com', password_hash('123456', PASSWORD_BCRYPT), 'user'],
-                    [2, 'Demo Artist', 'artist@example.com', password_hash('123456', PASSWORD_BCRYPT), 'user'],
-                    [3, 'Admin User', 'admin@technestpartners.com', password_hash('123456', PASSWORD_BCRYPT), 'admin'],
-                ];
-                $uStmt = $this->pdo->prepare("INSERT IGNORE INTO users (id, full_name, email, password_hash, role) VALUES (?, ?, ?, ?, ?)");
-                foreach ($users as $u) { $uStmt->execute($u); }
-            }
-
-            // Seed Artists
-            $artistsCount = (int)$this->pdo->query("SELECT COUNT(*) FROM `artists`")->fetchColumn();
-            if ($artistsCount === 0) {
-                $artists = [
-                    [1, 1, 'Renish Artistry', 'Contemporary Painting', 'Dubai Design District (d3)', 'Celebrated UAE visual artist specializing in modern abstract, fluid acrylics, and textured canvas commissions for luxury interiors.', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80', 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80', 1421, 420, 38, 'renish@artistdubai.com', '+971 50 123 4567', 'https://artistdubai.com/renish', '@renish_art', 'Senior / 9 Years', 'AED 2,500+'],
-                    [2, NULL, 'Fatima Al-Hashemi', 'Arabic Calligraphy', 'Al Shindagha Historic District', 'Master calligrapher blending classical Thuluth and Diwani scripts with contemporary 24K gold leaf illumination.', 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80', 'https://images.unsplash.com/photo-1582561424760-0321d75e81fa?auto=format&fit=crop&w=1200&q=80', 981, 310, 24, 'fatima@artistdubai.com', '+971 55 987 6543', 'https://fatimacalligraphy.ae', '@fatima_calligraphy', 'Master / 12 Years', 'AED 1,800+'],
-                    [3, NULL, 'Tariq Mansoor', 'Sculpture & Bronze', 'Al Quoz Creative Zone', 'Award-winning sculptor creating monumental bronze and marble installations celebrating UAE maritime and falconry heritage.', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80', 'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&fit=crop&w=1200&q=80', 760, 250, 19, 'tariq@artistdubai.com', '+971 52 456 7890', 'https://tariqmansoor.com', '@tariq_sculpts', 'Senior / 14 Years', 'AED 3,200+'],
-                    [4, NULL, 'Elena Rostova', 'Digital & Generative Art', 'Dubai Media City', 'Pioneer in immersive generative art, 3D projection mapping, and digital collectible artworks for tech and hospitality venues.', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80', 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80', 2340, 680, 45, 'elena@artistdubai.com', '+971 56 321 6549', 'https://elenarostova.art', '@elena_digital_visions', 'Expert / 8 Years', 'AED 2,000+'],
-                    [5, NULL, 'Zayd Al-Nuaimi', 'Fine Art Photography', 'Jumeirah Beach Road', 'Documentary and landscape photographer capturing the architectural marvels and raw desert wilderness of the Arabian peninsula.', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=80', 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1200&q=80', 1120, 390, 52, 'zayd@artistdubai.com', '+971 50 789 0123', 'https://zaydphotography.ae', '@zayd_nuaimi_photo', 'Mid-Senior / 6 Years', 'AED 1,600+'],
-                ];
-                $aStmt = $this->pdo->prepare("INSERT INTO artists (id, user_id, name, category, location, bio, avatar_url, banner_url, followers_count, works_count, email, phone, website, instagram, experience_level, booking_rate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                foreach ($artists as $a) { $aStmt->execute($a); }
-            }
-
-            // Seed Events
-            $eventsCount = (int)$this->pdo->query("SELECT COUNT(*) FROM `events`")->fetchColumn();
-            if ($eventsCount === 0) {
-                $events = [
-                    [1, 'Dubai Modern Art Showcase', 'A premier art gathering bringing together contemporary painters, sculptors, and digital creators in Dubai.', 'Art Exhibition', 'Free', '2026-10-15 18:00', '2026-10-15 22:00', 'Dubai, UAE', 'Alserkal Avenue, Warehouse 42', 1, 0, 100, 'Renish Artistry', 'renish@gmail.com', '+971 50 123 4567', 'Art,Exhibition,Dubai,Contemporary', 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80'],
-                    [2, 'Sharjah Calligraphy Biennial', 'Celebrating classical and modern Arabic calligraphy with master artists from across the Islamic world.', 'Calligraphy Festival', 'Free', '2026-11-05 10:00', '2026-11-12 20:00', 'Sharjah, UAE', 'Heart of Sharjah Heritage Area', 1, 0, 250, 'Fatima Al-Hashemi', 'fatima@artistdubai.com', '+971 55 987 6543', 'Calligraphy,Heritage,Sharjah', 'https://images.unsplash.com/photo-1582561424760-0321d75e81fa?auto=format&fit=crop&w=1200&q=80'],
-                    [3, 'Al Quoz Bronze & Sculpture Gala', 'An open-air evening symposium featuring live bronze casting, marble chiseling, and curator-led walkthroughs.', 'Sculpture & Heritage', 'AED 150', '2026-11-20 17:00', '2026-11-20 22:00', 'Al Quoz, Dubai', 'Alserkal Avenue, The Yard', 0, 0, 150, 'Tariq Mansoor', 'tariq@artistdubai.com', '+971 52 456 7890', 'Sculpture,Bronze,AlQuoz', 'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&fit=crop&w=1200&q=80'],
-                    [4, 'Generative Art & Spatial 3D Expo', 'Immersive spatial digital projections, interactive neural network art, and large-format dynamic LEDs.', 'Digital Art & Tech', 'AED 200', '2026-12-02 19:00', '2026-12-03 23:00', 'Dubai Media City', 'Amphitheatre Pavilion', 0, 0, 300, 'Elena Rostova', 'elena@artistdubai.com', '+971 56 321 6549', 'Digital,Generative,AI,3D', 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80'],
-                ];
-                $eStmt = $this->pdo->prepare("INSERT INTO events (id, title, description, category, price, event_date, end_date, location, venue, is_free, attendees_count, max_attendees, organizer_name, contact_email, contact_phone, tags, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                foreach ($events as $e) { $eStmt->execute($e); }
-            }
-
-            // Seed Galleries
-            $galleriesCount = (int)$this->pdo->query("SELECT COUNT(*) FROM `galleries`")->fetchColumn();
-            if ($galleriesCount === 0) {
-                $galleries = [
-                    [1, 'Custot Gallery Dubai', 'Contemporary Art', 'Alserkal Avenue, Street 8, Al Quoz 1, Dubai', 'Tue - Sat: 10:00 AM - 7:00 PM', 'https://custotgallerydubai.com', 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80'],
-                    [2, 'Leila Heller Gallery', 'Modern & Contemporary', 'I-87, Alserkal Avenue, Al Quoz 1, Dubai', 'Sun - Thu: 10:00 AM - 7:00 PM', 'https://leilahellergallery.com', 'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&fit=crop&w=800&q=80'],
-                    [3, 'The Third Line', 'Contemporary Middle Eastern', 'H-80, Alserkal Avenue, Al Quoz 1, Dubai', 'Mon - Sat: 11:00 AM - 7:00 PM', 'https://thethirdline.com', 'https://images.unsplash.com/photo-1582561424760-0321d75e81fa?auto=format&fit=crop&w=800&q=80'],
-                    [4, 'Jameel Arts Centre', 'Contemporary Art Institution', 'Jaddaf Waterfront, Dubai', 'Daily: 10:00 AM - 8:00 PM', 'https://jameelartscentre.org', 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80'],
-                ];
-                $gStmt = $this->pdo->prepare("INSERT INTO galleries (id, name, category, location, timing, website, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                foreach ($galleries as $g) { $gStmt->execute($g); }
-            }
-
-            // Seed Categories
-            $categoriesCount = (int)$this->pdo->query("SELECT COUNT(*) FROM `categories`")->fetchColumn();
-            if ($categoriesCount === 0) {
-                $categories = [
-                    [1, 'Contemporary Painting', 'general', 'Fine art, oil on canvas, acrylic, and modern abstract expressions.', '🎨'],
-                    [2, 'Arabic Calligraphy', 'general', 'Classical and modern Arabic lettering, gold leaf illumination, and sacred geometry.', '✒️'],
-                    [3, 'Sculpture & Bronze', 'general', 'Monumental 3D sculptures, cast bronze, marble, and architectural installations.', '🗿'],
-                    [4, 'Digital & Generative Art', 'general', 'Spatial 3D projection, neural network artworks, and dynamic interactive displays.', '💻'],
-                    [5, 'Fine Art Photography', 'general', 'Architectural, landscape, documentary, and portrait photography of the Middle East.', '📷'],
-                ];
-                $cStmt = $this->pdo->prepare("INSERT INTO categories (id, name, type, description, emoji) VALUES (?, ?, ?, ?, ?)");
-                foreach ($categories as $c) { $cStmt->execute($c); }
-            }
-
-            // Seed Experience Levels
-            $expLevelsCount = (int)$this->pdo->query("SELECT COUNT(*) FROM `experience_levels`")->fetchColumn();
-            if ($expLevelsCount === 0) {
-                $expLevels = [
-                    [1, 'Beginner (1-2 years)', '1-2 years', 1],
-                    [2, 'Intermediate (3-5 years)', '3-5 years', 2],
-                    [3, 'Advanced (5-10 years)', '5-10 years', 3],
-                    [4, 'Professional (10+ years)', '10+ years', 4],
-                ];
-                $expStmt = $this->pdo->prepare("INSERT INTO experience_levels (id, name, years_range, display_order) VALUES (?, ?, ?, ?)");
-                foreach ($expLevels as $el) { $expStmt->execute($el); }
-            }
-
-            // Seed Locations
-            $locsCount = (int)$this->pdo->query("SELECT COUNT(*) FROM `locations`")->fetchColumn();
-            if ($locsCount === 0) {
-                $locations = [
-                    [1, 'Dubai, UAE', 'Dubai', 'UAE', 1],
-                    [2, 'Dubai Design District (d3), Dubai', 'Dubai', 'UAE', 2],
-                    [3, 'Alserkal Avenue, Al Quoz, Dubai', 'Dubai', 'UAE', 3],
-                    [4, 'Downtown Dubai, UAE', 'Dubai', 'UAE', 4],
-                    [5, 'DIFC, Dubai', 'Dubai', 'UAE', 5],
-                    [6, 'Al Shindagha Historic District, Dubai', 'Dubai', 'UAE', 6],
-                    [7, 'Jaddaf Waterfront, Dubai', 'Dubai', 'UAE', 7],
-                    [8, 'Madinat Jumeirah, Dubai', 'Dubai', 'UAE', 8],
-                    [9, 'Dubai Marina, UAE', 'Dubai', 'UAE', 9],
-                    [10, 'Palm Jumeirah, Dubai', 'Dubai', 'UAE', 10],
-                    [11, 'Jumeirah, Dubai', 'Dubai', 'UAE', 11],
-                    [12, 'Business Bay, Dubai', 'Dubai', 'UAE', 12],
-                    [13, 'Abu Dhabi, UAE', 'Abu Dhabi', 'UAE', 13],
-                    [14, 'Sharjah, UAE', 'Sharjah', 'UAE', 14],
-                    [15, 'Ajman, UAE', 'Ajman', 'UAE', 15],
-                    [16, 'Ras Al Khaimah, UAE', 'Ras Al Khaimah', 'UAE', 16],
-                    [17, 'Fujairah, UAE', 'Fujairah', 'UAE', 17],
-                    [18, 'Umm Al Quwain, UAE', 'Umm Al Quwain', 'UAE', 18],
-                ];
-                $locStmt = $this->pdo->prepare("INSERT INTO locations (id, name, city, country, display_order) VALUES (?, ?, ?, ?, ?)");
-                foreach ($locations as $loc) { $locStmt->execute($loc); }
-            }
-
-            // Seed Artworks
-            $artworksCount = (int)$this->pdo->query("SELECT COUNT(*) FROM `artworks`")->fetchColumn();
-            if ($artworksCount === 0) {
-                $artworks = [
-                    [1, 1, 'Renish Artistry', 'Burj Horizon in Ochre', '2024', 'Oil & Acrylic on Canvas', '150 x 100 cm', 'A textured exploration of sunset gradients across modern Dubai skyline.', 'AED 14,500', 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80', 1],
-                    [2, 1, 'Renish Artistry', 'Desert Mirage Symphony', '2024', 'Mixed Media with Gold Flakes', '120 x 80 cm', 'Dynamic abstract flow reflecting golden hour in the Arabian desert.', 'AED 11,200', 'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&fit=crop&w=800&q=80', 1],
-                    [3, 2, 'Fatima Al-Hashemi', 'Diwani Calligraphic Harmony', '2024', '24K Gold Leaf & Ink', '100 x 70 cm', 'Sacred verses rendered in flowing Diwani script with hand-beaten gold leaf.', 'AED 18,000', 'https://images.unsplash.com/photo-1582561424760-0321d75e81fa?auto=format&fit=crop&w=800&q=80', 1],
-                ];
-                $awStmt = $this->pdo->prepare("INSERT INTO artworks (id, artist_id, artist_name, title, year, medium, dimensions, description, price, image_url, is_featured) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                foreach ($artworks as $aw) { $awStmt->execute($aw); }
-            }
-
-            // Seed Government Entities
-            $govCount = (int)$this->pdo->query("SELECT COUNT(*) FROM `government_entities`")->fetchColumn();
-            if ($govCount === 0) {
-                $govEntities = [
-                    ['Dubai Culture & Arts Authority', 'Government · Cultural Authority', 'Al Shindagha, Dubai', 4.5, 120, 'Open · Closes at 15:00', 1, 'https://dubaiculture.gov.ae/en', 'https://maps.google.com/?q=Dubai+Culture+and+Arts+Authority+Al+Shindagha+Dubai', 'https://www.google.com/maps/search/?api=1&query=Dubai+Culture+and+Arts+Authority+Al+Shindagha+Dubai', 7, 30, 15, 0, '6,7', null],
-                    ['Ministry of Culture & Youth', 'Government · Federal Ministry', 'Abu Dhabi, UAE', 4.2, 98, 'Open · Closes at 14:30', 1, 'https://www.mcy.gov.ae/', 'https://maps.google.com/?q=Ministry+of+Culture+and+Youth+Abu+Dhabi', 'https://www.google.com/maps/search/?api=1&query=Ministry+of+Culture+and+Youth+Abu+Dhabi', 7, 30, 14, 30, '6,7', null],
-                    ['Dubai Design District (d3)', 'Creative Hub · Design District', 'Dubai Design District, Dubai', 4.7, 215, 'Open · Closes at 22:00', 1, 'https://dubaidesigndistrict.com/', 'https://maps.google.com/?q=Dubai+Design+District+Dubai', 'https://www.google.com/maps/search/?api=1&query=Dubai+Design+District+Dubai', 8, 0, 22, 0, '', null],
-                    ['Art Dubai', 'Art Fair · Cultural Event', 'Madinat Jumeirah, Dubai', 4.6, 180, 'Closed · Opens Mar 2026', 0, 'https://www.artdubai.ae/', 'https://maps.google.com/?q=Madinat+Jumeirah+Dubai', 'https://www.google.com/maps/search/?api=1&query=Madinat+Jumeirah+Dubai', 10, 0, 20, 0, '', 'Closed · Opens Mar 2026'],
-                    ['Alserkal Avenue', 'Arts District · Gallery Hub', 'Al Quoz, Dubai', 4.8, 310, 'Open · Closes at 20:00', 1, 'https://alserkal.online/', 'https://maps.google.com/?q=Alserkal+Avenue+Al+Quoz+Dubai', 'https://www.google.com/maps/search/?api=1&query=Alserkal+Avenue+Al+Quoz+Dubai', 10, 0, 20, 0, '', null],
-                    ['Dubai Opera', 'Performing Arts · Venue', 'Downtown Dubai', 4.9, 450, 'Open · Next show at 19:30', 1, 'https://www.dubaiopera.com/en', 'https://maps.google.com/?q=Dubai+Opera+Downtown+Dubai', 'https://www.google.com/maps/search/?api=1&query=Dubai+Opera+Downtown+Dubai', 10, 0, 23, 0, '', null],
-                ];
-                $govStmt = $this->pdo->prepare("INSERT INTO government_entities (name, category, location, base_rating, base_review_count, default_timing, default_is_open, website_url, directions_url, google_maps_reviews_url, open_hour, open_minute, close_hour, close_minute, closed_days, seasonal_notice) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                foreach ($govEntities as $ge) { $govStmt->execute($ge); }
-            }
-
-            // Seed Notifications
-            $notifCount = (int)$this->pdo->query("SELECT COUNT(*) FROM `notifications`")->fetchColumn();
-            if ($notifCount === 0) {
-                $notifs = [
-                    ['Welcome to Artist Dubai', 'Explore top UAE visual artists, art galleries, and cultural showcases across Dubai.', 'welcome', '/artists', 'renish@gmail.com', 0],
-                    ['Upcoming Art Exhibition', 'Dubai Modern Art Showcase is scheduled at Alserkal Avenue.', 'event', '/events', 'renish@gmail.com', 0],
-                    ['New Booking Request', 'You have received a new booking inquiry for contemporary painting commission.', 'booking', '/booking-requests', 'renish@gmail.com', 0],
-                ];
-                $nStmt = $this->pdo->prepare("INSERT INTO notifications (title, body, type, route, user_email, is_read) VALUES (?, ?, ?, ?, ?, ?)");
-                foreach ($notifs as $n) { $nStmt->execute($n); }
-            }
-            // Seed Publishing Pricing Plans
-            $pricingCount = (int)$this->pdo->query("SELECT COUNT(*) FROM `publishing_pricing`")->fetchColumn();
-            if ($pricingCount === 0) {
-                $pricingPlans = [
-                    [1, 'event', 'Event Publishing', 'Standard rate for publishing art events, exhibitions, and symposiums on Artist Dubai.', 'AED 150', 'AED 500', 'AED 2,500', 'AED 4,500', 'Save 17%', 'Best Value', 'AED', 1],
-                    [2, 'gallery', 'Gallery Listing & Exhibition', 'Featured gallery showcase, virtual walkthrough, and high-impact art lover outreach.', 'AED 200', 'AED 750', 'AED 3,800', 'AED 6,500', 'Save 15%', 'Best Value', 'AED', 1],
-                ];
-                $pStmt = $this->pdo->prepare("INSERT INTO publishing_pricing (id, item_type, item_name, description, weekly_price, monthly_price, six_month_price, yearly_price, six_month_badge, yearly_badge, currency, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                foreach ($pricingPlans as $plan) { $pStmt->execute($plan); }
-            }
-
-            // Seed Listing Plans (Event, Gallery, Art Centre)
-            $listingPlansCount = (int)$this->pdo->query("SELECT COUNT(*) FROM `listing_plans`")->fetchColumn();
-            if ($listingPlansCount === 0) {
-                $defaultPlans = [
-                    [1, 'event', 'Event Listing', 'Events', 'One-time', '199 AED', 'Publish a single event on Artist Dubai.', json_encode(['One event listing', 'Visible in Events and calendar', 'Gallery photos included']), 'Pay from My Listings', 1, 1],
-                    [2, 'gallery', 'Gallery Listing', 'Galleries', 'One-time', '149 AED', 'Publish a single gallery on Artist Dubai.', json_encode(['One gallery listing', 'Unlimited images', 'Shareable gallery page']), 'Pay from My Listings', 1, 2],
-                    [3, 'art_centre', 'Art Centre Listing', 'Art Centres', 'One-time', '299 AED', 'Publish a single art centre on Artist Dubai.', json_encode(['One art centre listing', 'Verified venue badge', 'Direct booking inquiry button']), 'Pay from My Listings', 1, 3],
-                ];
-                $lpStmt = $this->pdo->prepare("INSERT INTO listing_plans (id, item_type, title, category, badge, price, description, features_json, button_text, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                foreach ($defaultPlans as $dp) { $lpStmt->execute($dp); }
-            }
-
-            // Seed Payment Settings
-            $payCount = (int)$this->pdo->query("SELECT COUNT(*) FROM `payment_settings`")->fetchColumn();
-            if ($payCount === 0) {
-                $this->pdo->prepare("INSERT INTO payment_settings (id, qr_code_url, account_name, account_number, bank_name, instructions, is_active) VALUES (1, ?, ?, ?, ?, ?, 1)")
-                     ->execute([
-                         'https://images.unsplash.com/photo-1595079672139-545c0ecac12a?auto=format&fit=crop&w=400&q=80',
-                         'Artist Dubai Cultural Services LLC',
-                         'AE28 0330 0000 0001 2345 678',
-                         'Emirates NBD, Dubai',
-                         'Please scan the QR code with your banking app or transfer via IBAN. Once completed, enter the transaction reference and upload your receipt screenshot.'
-                     ]);
-            }
-
-            // Seed Menu Permissions
-            $menuCount = (int)$this->pdo->query("SELECT COUNT(*) FROM `menu_permissions`")->fetchColumn();
-            if ($menuCount === 0) {
-                $defaultMenuPermissions = [
-                    ['about_us', 'ABOUT US', null, '/about-us', 'assets/images/about-us-DEBERP_G.jpg', 1],
-                    ['artists', 'ARTISTS', null, '/artists', 'assets/images/artists-9NH3TeXO.jpg', 1],
-                    ['government', 'GOVERNMENT', null, '/government', 'assets/images/government-CWANBIsX.jpg', 1],
-                    ['artist_registration', 'ARTIST REGISTRATION', 'REGISTRATION', '/artist-registration', 'assets/images/artist-registration-DqgORA9-.jpg', 1],
-                    ['events_competition', 'EVENTS COMPETITION', 'COMPETITION', '/events', 'assets/images/events-competition-DvLzKG_2.jpg', 1],
-                    ['galleries_art_center', 'GALLERIES ART CENTER', 'ART CENTER', '/galleries', 'assets/images/galleries-DjK8LuXg.jpg', 1],
-                    ['events_photos', 'EVENTS PHOTOS', 'PHOTOS', '/events-photos', 'assets/images/events-photos-CckY-T_x.jpg', 1],
-                    ['gallery_registration', 'GALLERIES | ART CENTERS REGISTRATION', 'REGISTRATION', '/gallery-registration', 'assets/images/gallery-registration-DU8u0zfk.jpg', 1],
-                    ['login_portal', 'LOGIN', 'PORTAL', '/login', 'assets/images/login-portal.png', 1],
-                    ['ai_art', 'AI', 'Art | Artist', '/ai', 'assets/images/ai-hub.png', 1],
-                ];
-                $mpStmt = $this->pdo->prepare("INSERT INTO menu_permissions (`key`, `title`, `subtitle`, `route_name`, `image_path`, `is_enabled`) VALUES (?, ?, ?, ?, ?, ?)");
-                foreach ($defaultMenuPermissions as $dmp) {
-                    $mpStmt->execute($dmp);
-                }
-            }
-
-            // Seed Default Admin API Token for Seamless Session Continuity
-            $tokenCheck = $this->pdo->prepare("SELECT id FROM api_tokens WHERE token = ?");
-            $tokenCheck->execute(['admin_auth_token_secure_dubai']);
-            if (!$tokenCheck->fetch()) {
-                $this->pdo->prepare("INSERT INTO api_tokens (user_id, token, role, expires_at) VALUES (1, 'admin_auth_token_secure_dubai', 'admin', '2035-01-01 00:00:00')")->execute();
-            }
-
-        } catch (\Throwable $t) {}
+        // Disabled: No automatic data insertion
     }
 }
 
@@ -1045,18 +827,6 @@ class AuthController {
 
         $cleanLower = strtolower($email);
         $isAdminEmail = in_array($cleanLower, ['admin@artistdubai.com', 'admin@dubaiart.ae', 'admin@admin.com', 'admin@technestpartners.com']);
-
-        // Check if admin user exists in DB; if not, create it
-        if ($isAdminEmail) {
-            try {
-                $checkAdmin = $this->db->prepare('SELECT id FROM users WHERE email = ?');
-                $checkAdmin->execute([$email]);
-                if (!$checkAdmin->fetch()) {
-                    $adminHash = password_hash('admin123', PASSWORD_BCRYPT);
-                    $this->db->prepare("INSERT INTO users (full_name, email, password_hash, role) VALUES ('Dubai Art Administrator', ?, ?, 'admin')")->execute([$email, $adminHash]);
-                }
-            } catch (\Throwable $t) {}
-        }
 
         $stmt = $this->db->prepare('SELECT id, full_name, email, password_hash, role, created_at FROM users WHERE email = ?');
         $stmt->execute([$email]);
@@ -2661,144 +2431,12 @@ class GovernmentController {
     }
 
     public function getEntities(): void {
-        $baseEntities = [
-            [
-                'name' => 'Dubai Culture & Arts Authority',
-                'default_is_open' => 1,
-                'base_rating' => 4.5,
-                'base_review_count' => 120,
-                'category' => 'Government · Cultural Authority',
-                'location' => 'Al Shindagha, Dubai',
-                'default_timing' => 'Open · Closes at 15:00',
-                'website_url' => 'https://www.dubaiculture.gov.ae/',
-                'directions_url' => 'https://maps.google.com/?q=Dubai+Culture+and+Arts+Authority+Al+Shindagha+Dubai',
-                'google_maps_reviews_url' => 'https://www.google.com/maps/search/?api=1&query=Dubai+Culture+and+Arts+Authority+Al+Shindagha+Dubai',
-                'open_hour' => 7,
-                'open_minute' => 30,
-                'close_hour' => 15,
-                'close_minute' => 0,
-                'closed_days' => '6,7',
-                'seasonal_notice' => null
-            ],
-            [
-                'name' => 'Ministry of Culture & Youth',
-                'default_is_open' => 1,
-                'base_rating' => 4.2,
-                'base_review_count' => 98,
-                'category' => 'Government · Federal Ministry',
-                'location' => 'Abu Dhabi, UAE',
-                'default_timing' => 'Open · Closes at 14:30',
-                'website_url' => 'https://www.mcy.gov.ae/',
-                'directions_url' => 'https://maps.google.com/?q=Ministry+of+Culture+and+Youth+Abu+Dhabi',
-                'google_maps_reviews_url' => 'https://www.google.com/maps/search/?api=1&query=Ministry+of+Culture+and+Youth+Abu+Dhabi',
-                'open_hour' => 7,
-                'open_minute' => 30,
-                'close_hour' => 14,
-                'close_minute' => 30,
-                'closed_days' => '6,7',
-                'seasonal_notice' => null
-            ],
-            [
-                'name' => 'Dubai Design District (d3)',
-                'default_is_open' => 1,
-                'base_rating' => 4.7,
-                'base_review_count' => 215,
-                'category' => 'Creative Hub · Design District',
-                'location' => 'Dubai Design District, Dubai',
-                'default_timing' => 'Open · Closes at 22:00',
-                'website_url' => 'https://dubaidesigndistrict.com/',
-                'directions_url' => 'https://maps.google.com/?q=Dubai+Design+District+Dubai',
-                'google_maps_reviews_url' => 'https://www.google.com/maps/search/?api=1&query=Dubai+Design+District+Dubai',
-                'open_hour' => 8,
-                'open_minute' => 0,
-                'close_hour' => 22,
-                'close_minute' => 0,
-                'closed_days' => '',
-                'seasonal_notice' => null
-            ],
-            [
-                'name' => 'Art Dubai',
-                'default_is_open' => 0,
-                'base_rating' => 4.6,
-                'base_review_count' => 180,
-                'category' => 'Art Fair · Cultural Event',
-                'location' => 'Madinat Jumeirah, Dubai',
-                'default_timing' => 'Closed · Opens Mar 2026',
-                'website_url' => 'https://www.artdubai.ae/',
-                'directions_url' => 'https://maps.google.com/?q=Madinat+Jumeirah+Dubai',
-                'google_maps_reviews_url' => 'https://www.google.com/maps/search/?api=1&query=Madinat+Jumeirah+Dubai',
-                'open_hour' => 10,
-                'open_minute' => 0,
-                'close_hour' => 20,
-                'close_minute' => 0,
-                'closed_days' => '',
-                'seasonal_notice' => 'Closed · Opens Mar 2026'
-            ],
-            [
-                'name' => 'Alserkal Avenue',
-                'default_is_open' => 1,
-                'base_rating' => 4.8,
-                'base_review_count' => 310,
-                'category' => 'Arts District · Gallery Hub',
-                'location' => 'Al Quoz, Dubai',
-                'default_timing' => 'Open · Closes at 20:00',
-                'website_url' => 'https://alserkal.online/',
-                'directions_url' => 'https://maps.google.com/?q=Alserkal+Avenue+Al+Quoz+Dubai',
-                'google_maps_reviews_url' => 'https://www.google.com/maps/search/?api=1&query=Alserkal+Avenue+Al+Quoz+Dubai',
-                'open_hour' => 10,
-                'open_minute' => 0,
-                'close_hour' => 20,
-                'close_minute' => 0,
-                'closed_days' => '',
-                'seasonal_notice' => null
-            ],
-            [
-                'name' => 'Dubai Opera',
-                'default_is_open' => 1,
-                'base_rating' => 4.9,
-                'base_review_count' => 450,
-                'category' => 'Performing Arts · Venue',
-                'location' => 'Downtown Dubai',
-                'default_timing' => 'Open · Next show at 19:30',
-                'website_url' => 'https://www.dubaiopera.com/en',
-                'directions_url' => 'https://maps.google.com/?q=Dubai+Opera+Downtown+Dubai',
-                'google_maps_reviews_url' => 'https://www.google.com/maps/search/?api=1&query=Dubai+Opera+Downtown+Dubai',
-                'open_hour' => 10,
-                'open_minute' => 0,
-                'close_hour' => 23,
-                'close_minute' => 0,
-                'closed_days' => '',
-                'seasonal_notice' => null
-            ]
-        ];
-
         try {
-            // Only seed default entities if table is empty
-            $countStmt = $this->db->query("SELECT COUNT(*) FROM government_entities");
-            $totalCount = (int)$countStmt->fetchColumn();
-            if ($totalCount === 0) {
-                $insStmt = $this->db->prepare("INSERT INTO government_entities (name, category, location, base_rating, base_review_count, rating, review_count, default_timing, default_is_open, website_url, directions_url, google_maps_reviews_url, open_hour, open_minute, close_hour, close_minute, closed_days, seasonal_notice) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                foreach ($baseEntities as $be) {
-                    $closedDaysStr = is_array($be['closed_days'] ?? null) ? implode(',', $be['closed_days']) : ($be['closed_days'] ?? '');
-                    $insStmt->execute([
-                        $be['name'], $be['category'], $be['location'],
-                        $be['base_rating'], $be['base_review_count'], $be['base_rating'], $be['base_review_count'],
-                        $be['default_timing'], $be['default_is_open'], $be['website_url'],
-                        $be['directions_url'], $be['google_maps_reviews_url'],
-                        $be['open_hour'] ?? 8, $be['open_minute'] ?? 0, $be['close_hour'] ?? 18, $be['close_minute'] ?? 0,
-                        $closedDaysStr, $be['seasonal_notice'] ?? null
-                    ]);
-                }
-            }
-
-            // Fetch all records from database (preserves admin additions, edits, open/close status, and deletions!)
+            // Fetch all active records from database
             $stmtGov = $this->db->query("SELECT * FROM government_entities WHERE deleted_at IS NULL ORDER BY id ASC");
             $dbEntities = $stmtGov->fetchAll();
-            if (empty($dbEntities)) {
-                $dbEntities = $baseEntities;
-            }
         } catch (\Throwable $e) {
-            $dbEntities = $baseEntities;
+            $dbEntities = [];
         }
 
         $entities = [];
@@ -5101,72 +4739,42 @@ class UnifiedMySqlApiRouter {
                 }
                 break;
 
-            case 'seed':
+            case 'clean_db':
+            case 'clean_database':
+            case 'wipe_db':
+            case 'clean':
                 if (!defined('CLI_TEST_MODE')) {
                     AuthMiddleware::requireAdmin();
                 }
                 try {
                     $db = DatabaseManager::getInstance()->getConnection();
+                    $tables = [
+                        'artists', 'events', 'galleries', 'artworks', 'bookings',
+                        'categories', 'experience_levels', 'locations', 'government_entities',
+                        'notifications', 'favorites', 'follows', 'artist_messages',
+                        'ai_chat_sessions', 'ai_chat_messages', 'listing_plans',
+                        'publishing_pricing', 'payment_settings', 'menu_permissions',
+                        'rate_limits', 'reviews', 'api_tokens', 'users'
+                    ];
                     
-                    // Users
-                    $users = [
-                        [1, 'Renish Artistry', 'renish@gmail.com', password_hash('123456', PASSWORD_BCRYPT)],
-                        [2, 'Demo Artist', 'artist@example.com', password_hash('123456', PASSWORD_BCRYPT)],
-                        [3, 'Admin User', 'admin@technestpartners.com', password_hash('123456', PASSWORD_BCRYPT)],
-                    ];
-                    $uStmt = $db->prepare("INSERT INTO users (id, full_name, email, password_hash) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE full_name=VALUES(full_name)");
-                    foreach ($users as $u) { $uStmt->execute($u); }
-
-                    // Artists
-                    $artists = [
-                        [1, 1, 'Renish Artistry', 'Contemporary Painting', 'Dubai Design District (d3)', 'Celebrated UAE visual artist specializing in modern abstract, fluid acrylics, and textured canvas commissions for luxury interiors.', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80', 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80', 1421, 38, 'renish@artistdubai.com', '+971 50 123 4567', 'https://artistdubai.com/renish', '@renish_art', 'Senior / 9 Years', 'AED 2,500+'],
-                        [2, NULL, 'Fatima Al-Hashemi', 'Arabic Calligraphy', 'Al Shindagha Historic District', 'Master calligrapher blending classical Thuluth and Diwani scripts with contemporary 24K gold leaf illumination.', 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80', 'https://images.unsplash.com/photo-1582561424760-0321d75e81fa?auto=format&fit=crop&w=1200&q=80', 981, 24, 'fatima@artistdubai.com', '+971 55 987 6543', 'https://fatimacalligraphy.ae', '@fatima_calligraphy', 'Master / 12 Years', 'AED 1,800+'],
-                        [3, NULL, 'Tariq Mansoor', 'Sculpture & Bronze', 'Al Quoz Creative Zone', 'Award-winning sculptor creating monumental bronze and marble installations celebrating UAE maritime and falconry heritage.', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80', 'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&fit=crop&w=1200&q=80', 760, 19, 'tariq@artistdubai.com', '+971 52 456 7890', 'https://tariqmansoor.com', '@tariq_sculpts', 'Senior / 14 Years', 'AED 3,200+'],
-                        [4, NULL, 'Elena Rostova', 'Digital & Generative Art', 'Dubai Media City', 'Pioneer in immersive generative art, 3D projection mapping, and digital collectible artworks for tech and hospitality venues.', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80', 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80', 2340, 45, 'elena@artistdubai.com', '+971 56 321 6549', 'https://elenarostova.art', '@elena_digital_visions', 'Expert / 8 Years', 'AED 2,000+'],
-                        [5, NULL, 'Zayd Al-Nuaimi', 'Fine Art Photography', 'Jumeirah Beach Road', 'Documentary and landscape photographer capturing the architectural marvels and raw desert wilderness of the Arabian peninsula.', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=80', 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1200&q=80', 1120, 52, 'zayd@artistdubai.com', '+971 50 789 0123', 'https://zaydphotography.ae', '@zayd_nuaimi_photo', 'Mid-Senior / 6 Years', 'AED 1,600+'],
-                    ];
-                    $aStmt = $db->prepare("INSERT INTO artists (id, user_id, name, category, location, bio, avatar_url, banner_url, followers_count, works_count, email, phone, website, instagram, experience_level, booking_rate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name=VALUES(name)");
-                    foreach ($artists as $a) { $aStmt->execute($a); }
-
-                    // Events
-                    $events = [
-                        [1, 'Dubai Modern Art Showcase', 'A premier art gathering bringing together contemporary painters, sculptors, and digital creators in Dubai.', 'Art Exhibition', 'Free', '2026-10-15 18:00', '2026-10-15 22:00', 'Dubai, UAE', 'Alserkal Avenue, Warehouse 42', 1, 0, 100, 'Renish Artistry', 'renish@gmail.com', '+971 50 123 4567', 'Art,Exhibition,Dubai,Contemporary', 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1200&q=80'],
-                        [2, 'Sharjah Calligraphy Biennial', 'Celebrating classical and modern Arabic calligraphy with master artists from across the Islamic world.', 'Calligraphy Festival', 'Free', '2026-11-05 10:00', '2026-11-12 20:00', 'Sharjah, UAE', 'Heart of Sharjah Heritage Area', 1, 0, 250, 'Fatima Al-Hashemi', 'fatima@artistdubai.com', '+971 55 987 6543', 'Calligraphy,Heritage,Sharjah', 'https://images.unsplash.com/photo-1582561424760-0321d75e81fa?auto=format&fit=crop&w=1200&q=80'],
-                        [3, 'Al Quoz Bronze & Sculpture Gala', 'An open-air evening symposium featuring live bronze casting, marble chiseling, and curator-led walkthroughs.', 'Sculpture & Heritage', 'AED 150', '2026-11-20 17:00', '2026-11-20 22:00', 'Al Quoz, Dubai', 'Alserkal Avenue, The Yard', 0, 0, 150, 'Tariq Mansoor', 'tariq@artistdubai.com', '+971 52 456 7890', 'Sculpture,Bronze,AlQuoz', 'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&fit=crop&w=1200&q=80'],
-                        [4, 'Generative Art & Spatial 3D Expo', 'Immersive spatial digital projections, interactive neural network art, and large-format dynamic LEDs.', 'Digital Art & Tech', 'AED 200', '2026-12-02 19:00', '2026-12-03 23:00', 'Dubai Media City', 'Amphitheatre Pavilion', 0, 0, 300, 'Elena Rostova', 'elena@artistdubai.com', '+971 56 321 6549', 'Digital,Generative,AI,3D', 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80'],
-                    ];
-                    $eStmt = $db->prepare("INSERT INTO events (id, title, description, category, price, event_date, end_date, location, venue, is_free, attendees_count, max_attendees, organizer_name, contact_email, contact_phone, tags, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE title=VALUES(title)");
-                    foreach ($events as $e) { $eStmt->execute($e); }
-
-                    // Galleries
-                    $galleries = [
-                        [1, 'Custot Gallery Dubai', 'Contemporary Art', 'Alserkal Avenue, Street 8, Al Quoz 1, Dubai', 'Tue - Sat: 10:00 AM - 7:00 PM', 'https://custotgallerydubai.com', 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80'],
-                        [2, 'Leila Heller Gallery', 'Modern & Contemporary', 'I-87, Alserkal Avenue, Al Quoz 1, Dubai', 'Sun - Thu: 10:00 AM - 7:00 PM', 'https://leilahellergallery.com', 'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&fit=crop&w=800&q=80'],
-                        [3, 'The Third Line', 'Contemporary Middle Eastern', 'H-80, Alserkal Avenue, Al Quoz 1, Dubai', 'Mon - Sat: 11:00 AM - 7:00 PM', 'https://thethirdline.com', 'https://images.unsplash.com/photo-1582561424760-0321d75e81fa?auto=format&fit=crop&w=800&q=80'],
-                        [4, 'Jameel Arts Centre', 'Contemporary Art Institution', 'Jaddaf Waterfront, Dubai', 'Daily: 10:00 AM - 8:00 PM', 'https://jameelartscentre.org', 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80'],
-                    ];
-                    $gStmt = $db->prepare("INSERT INTO galleries (id, name, category, location, timing, website, image_url) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name=VALUES(name)");
-                    foreach ($galleries as $g) { $gStmt->execute($g); }
-
-                    // Categories
-                    $categories = [
-                        [1, 'Contemporary Painting', 'general', 'Fine art, oil on canvas, acrylic, and modern abstract expressions.', '🎨'],
-                        [2, 'Arabic Calligraphy', 'general', 'Classical and modern Arabic lettering, gold leaf illumination, and sacred geometry.', '✒️'],
-                        [3, 'Sculpture & Bronze', 'general', 'Monumental 3D sculptures, cast bronze, marble, and architectural installations.', '🗿'],
-                        [4, 'Digital & Generative Art', 'general', 'Spatial 3D projection, neural network artworks, and dynamic interactive displays.', '💻'],
-                        [5, 'Fine Art Photography', 'general', 'Architectural, landscape, documentary, and portrait photography of the Middle East.', '📷'],
-                    ];
-                    $cStmt = $db->prepare("INSERT INTO categories (id, name, type, description, emoji) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name=VALUES(name)");
-                    foreach ($categories as $c) { $cStmt->execute($c); }
+                    $db->exec("SET FOREIGN_KEY_CHECKS = 0");
+                    foreach ($tables as $t) {
+                        try { $db->exec("TRUNCATE TABLE `$t`"); } catch (\Throwable $e) {}
+                    }
+                    $db->exec("SET FOREIGN_KEY_CHECKS = 1");
 
                     ApiResponse::success([
-                        'artists' => (int)$db->query("SELECT COUNT(*) FROM artists")->fetchColumn(),
-                        'events' => (int)$db->query("SELECT COUNT(*) FROM events")->fetchColumn(),
-                        'galleries' => (int)$db->query("SELECT COUNT(*) FROM galleries")->fetchColumn(),
-                        'categories' => (int)$db->query("SELECT COUNT(*) FROM categories")->fetchColumn(),
-                    ], 'Database seeded successfully on Hostinger!');
+                        'cleaned' => true,
+                        'artists_count' => (int)$db->query("SELECT COUNT(*) FROM artists")->fetchColumn(),
+                        'events_count' => (int)$db->query("SELECT COUNT(*) FROM events")->fetchColumn(),
+                        'galleries_count' => (int)$db->query("SELECT COUNT(*) FROM galleries")->fetchColumn(),
+                        'categories_count' => (int)$db->query("SELECT COUNT(*) FROM categories")->fetchColumn(),
+                        'users_count' => (int)$db->query("SELECT COUNT(*) FROM users")->fetchColumn(),
+                        'api_tokens_count' => (int)$db->query("SELECT COUNT(*) FROM api_tokens")->fetchColumn(),
+                        'government_entities_count' => (int)$db->query("SELECT COUNT(*) FROM government_entities")->fetchColumn(),
+                    ], 'Database wiped cleanly. All user logins and data removed. Zero auto-seeding enabled.');
                 } catch (\Throwable $e) {
-                    ApiResponse::error('Seed error: ' . $e->getMessage(), 500);
+                    ApiResponse::error('Clean DB error: ' . $e->getMessage(), 500);
                 }
                 break;
 

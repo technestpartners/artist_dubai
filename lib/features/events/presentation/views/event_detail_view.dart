@@ -36,10 +36,10 @@ class _EventDetailViewState extends State<EventDetailView> {
 
   String? get effectiveId => widget.eventId ?? widget.event?.id ?? _fetchedEvent?.id;
 
-  ArtEventModel get event {
+  ArtEventModel? get event {
     if (_fetchedEvent != null) return _fetchedEvent!;
     if (widget.event != null) return widget.event!;
-    return ArtEventModel.sampleEvent;
+    return null;
   }
 
   @override
@@ -195,10 +195,22 @@ class _EventDetailViewState extends State<EventDetailView> {
       );
     }
 
-    final rh = ResponsiveHelper.of(context);
     final ev = event;
+    if (ev == null) {
+      return Scaffold(
+        backgroundColor: _darkBg,
+        appBar: const AppTopBar(backgroundColor: Colors.white),
+        body: Center(
+          child: Text(
+            'Event not found'.trData(context),
+            style: const TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ),
+      );
+    }
+    final rh = ResponsiveHelper.of(context);
     final isLiked = _likedEventIds.contains(ev.id);
-    final similarEvents = ArtEventModel.mockEvents.where((e) => e.id != ev.id).toList();
+    final similarEvents = (sl<ApiService>().cachedEvents ?? []).where((e) => e.id != ev.id).toList();
 
     return Scaffold(
       backgroundColor: _darkBg,

@@ -84,6 +84,7 @@ class ApiService {
   ApiService(this._client);
 
   List<ArtistModel>? get cachedArtists => _cachedArtists;
+  List<ArtEventModel>? get cachedEvents => _cachedEvents;
   List<Map<String, dynamic>>? get cachedCompetitions => _cachedCompetitions;
   List<Map<String, dynamic>>? get cachedGalleries => _cachedGalleries;
 
@@ -205,9 +206,7 @@ class ApiService {
     } catch (_) {}
     final fallbackList = (_cachedArtists != null && _cachedArtists!.isNotEmpty)
         ? _cachedArtists!
-        : ((category == null || category == 'All') && (query == null || query.isEmpty)
-            ? ArtistModel.mockArtists
-            : <ArtistModel>[]);
+        : <ArtistModel>[];
     return PagedResult<ArtistModel>(
       data: page == 1 ? fallbackList : [],
       page: page, limit: limit, total: fallbackList.length, totalPages: 1, hasMore: false,
@@ -269,7 +268,7 @@ class ApiService {
     if (_cachedArtists != null && _cachedArtists!.isNotEmpty) {
       return _cachedArtists!;
     }
-    return isDefaultQuery ? ArtistModel.mockArtists : [];
+    return [];
   }
 
 
@@ -442,7 +441,7 @@ class ApiService {
     if (_cachedEvents != null && _cachedEvents!.isNotEmpty) {
       return _cachedEvents!;
     }
-    return isDefaultQuery ? ArtEventModel.mockEvents : [];
+    return [];
   }
 
   // 5b. Event Details (Instant Cache-First)
@@ -466,13 +465,6 @@ class ApiService {
 
     if (_cachedEventDetails.containsKey(id)) {
       return _cachedEventDetails[id]!;
-    }
-    final mockMatch = ArtEventModel.mockEvents.where((e) => e.id == id).firstOrNull;
-    if (mockMatch != null) {
-      return mockMatch;
-    }
-    if (ArtEventModel.mockEvents.isNotEmpty) {
-      return ArtEventModel.mockEvents.first;
     }
     throw Exception('Event not found in database');
   }
@@ -1025,61 +1017,10 @@ class ApiService {
       }
     } catch (_) {}
 
-    return (_cachedCompetitions != null && _cachedCompetitions!.isNotEmpty)
-        ? _cachedCompetitions!
-        : mockCompetitions;
+    return _cachedCompetitions ?? [];
   }
 
-  static final List<Map<String, dynamic>> mockCompetitions = [
-    {
-      'id': '1',
-      'title': 'Dubai Modern Art Showcase',
-      'theme': 'Contemporary & Floral Expressions',
-      'organizer': 'Dubai Culture',
-      'deadline': 'TBD',
-      'location': 'Dubai, UAE',
-      'entry_fee': 'Free',
-      'prize': 'AED 25,000',
-      'status': 'open',
-      'entries_count': 0,
-      'max_entries': 500,
-      'image_url': 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=800',
-      'tags': ['Art', 'Exhibition', 'Dubai', 'Contemporary'],
-      'description': 'Open calls and art competitions in Dubai for modern & contemporary artists.',
-    },
-    {
-      'id': '2',
-      'title': 'Emirati Heritage & Seascape Art Expo',
-      'theme': 'Maritime Heritage of the UAE',
-      'organizer': 'Dubai Arts Council',
-      'deadline': '15 Oct',
-      'location': 'Dubai, UAE',
-      'entry_fee': 'Free',
-      'prize': 'AED 50,000',
-      'status': 'open',
-      'entries_count': 45,
-      'max_entries': 200,
-      'image_url': 'https://images.unsplash.com/photo-1578925518470-4def7a0f08bb?w=800',
-      'tags': ['Heritage', 'Seascape', 'Emirati Art'],
-      'description': 'Celebrating traditional Emirati maritime crafts, historic vessels, and Arabian Gulf heritage.',
-    },
-    {
-      'id': '3',
-      'title': 'Digital Future \u0026 Youth Art Challenge',
-      'theme': 'Next-Gen UAE Creatives',
-      'organizer': 'd3 Dubai',
-      'deadline': '30 Nov',
-      'location': 'Dubai Design District',
-      'entry_fee': 'Free',
-      'prize': 'AED 15,000',
-      'status': 'open',
-      'entries_count': 120,
-      'max_entries': 300,
-      'image_url': 'https://images.unsplash.com/photo-1547891654-e66ed7ebb968?w=800',
-      'tags': ['Digital Art', 'Youth', 'd3'],
-      'description': 'A showcase for emerging young artists, new media creators, and digital graphic designers.',
-    },
-  ];
+  static final List<Map<String, dynamic>> mockCompetitions = const [];
 
   // 14. My Bookings (user's booking history)
   Future<List<Map<String, dynamic>>> getBookings({

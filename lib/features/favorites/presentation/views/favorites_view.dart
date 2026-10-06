@@ -58,7 +58,7 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
 
     // Also include any locally favorited events that might not be in DB response yet
     final existingEventIds = serverEvents.map((e) => e.id).toSet();
-    final allAvailableEvents = ArtEventModel.mockEvents;
+    final allAvailableEvents = sl<ApiService>().cachedEvents ?? [];
     for (final id in favService.eventIds) {
       if (!existingEventIds.contains(id)) {
         final match = allAvailableEvents.where((e) => e.id == id).firstOrNull;
@@ -71,10 +71,7 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
 
     // Also include any locally favorited artists
     final existingArtistIds = serverArtists.map((a) => a.id).toSet();
-    final allAvailableArtists = [
-      ...sl<ApiService>().cachedArtists ?? [],
-      ...ArtistModel.mockArtists,
-    ];
+    final allAvailableArtists = sl<ApiService>().cachedArtists ?? [];
     for (final id in favService.artistIds) {
       if (!existingArtistIds.contains(id)) {
         final match = allAvailableArtists.where((a) => a.id == id).firstOrNull;

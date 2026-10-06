@@ -76,16 +76,13 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
       final data = await sl<ApiService>().getCompetitions(forceRefresh: forceRefresh);
       if (mounted) {
         setState(() {
-          _competitions = data.isNotEmpty ? data : ApiService.mockCompetitions;
+          _competitions = data;
           _isLoading = false;
         });
       }
     } catch (_) {
       if (mounted) {
         setState(() {
-          if (_competitions.isEmpty) {
-            _competitions = ApiService.mockCompetitions;
-          }
           _isLoading = false;
         });
       }
