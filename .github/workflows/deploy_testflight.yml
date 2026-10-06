@@ -107,7 +107,9 @@ jobs:
           cp "$PP_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/
 
       - name: Install Flutter Dependencies
-        run: flutter pub get
+        run: |
+          flutter pub get
+          flutter build ios --config-only
 
       - name: Install CocoaPods
         run: |

@@ -107,6 +107,7 @@ jobs:
         if: ${{ github.event.inputs.action_type == 'Build & Submit New Binary' }}
         run: |
           flutter pub get
+          flutter build ios --config-only
           cd ios && pod install --repo-update && cd ..
           flutter build ipa --release \
             --build-name="${{ steps.build_info.outputs.VERSION_NAME }}" \
