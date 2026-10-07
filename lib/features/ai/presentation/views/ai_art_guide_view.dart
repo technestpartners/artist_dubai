@@ -832,14 +832,22 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
             'مؤسسة مبتكرة تعرض الفن الحديث والمعاصر من الشرق الأوسط وجنوب آسيا في مساحات معمارية بديعة.';
       }
 
-      // Register
-      if (q.contains('تسجيل') || q.contains('سجل') || q.contains('انضمام') || q.contains('فنان') || q.contains('register') || q.contains('artist')) {
+      // Register (explicit registration intent)
+      if (q.contains('تسجيل كفنان') || q.contains('التسجيل كفنان') || q.contains('سجل كفنان') || q.contains('كيف أسجل') || q.contains('انضمام كفنان') || q.contains('register as') || q.contains('sign up as')) {
         return 'التسجيل كفنان على منصة **فنان دبي** سهل وسريع:\n\n'
             '1. انتقل إلى الشاشة الرئيسية.\n'
             '2. اضغط على بطاقة **تسجيل فنان**.\n'
             '3. املأ اسم الفنان، والمجال الفني (الرسم، النحت، التصوير الفوتوغرافي، الفن الرقمي، وغيرها)، والنبذة التعريفية، ومعلومات التواصل.\n'
             '4. ارفع نماذج من أعمالك الفنية ومعارضك السابقة.\n'
             '5. أرسل ملفك الشخصي للاعتماد الفوري وإبرازه عبر شبكة الفنون في دبي.';
+      }
+
+      // Artists recommendation & discovery
+      if (q.contains('فنان') || q.contains('فنانين') || q.contains('مبدع') || q.contains('رسام') || q.contains('artist')) {
+        return 'تضم منصة **فنان دبي** نخبة من الفنانين والمبدعين في شتى المجالات الفنية:\n\n'
+            '• **التخصصات المتوفرة:** الخط العربي والطباعة، الفن المعاصر، النحت، الفن الرقمي، والتصوير الفوتوغرافي.\n'
+            '• **استكشاف الفنانين:** افتح تبويب **الفنانون** من الشريط السفلي للاطلاع على الملفات الشخصية الموثقة ونماذج الأعمال وسعر الحجز التقديري.\n'
+            '• **الحجز والتواصل:** يمكنك التواصل مع أي فنان مباشرة لطلب لوحة خاصة أو حجز لفعالية حية عبر زري "تواصل" أو "حجز الفنان".';
       }
 
       // Tour / Weekend
@@ -1043,14 +1051,22 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
           'An innovative institution displaying modern Middle Eastern and South Asian art in minimalist architectural spaces.';
     }
 
-    // Register
-    if (q.contains('register') || q.contains('join') || q.contains('sign up') || q.contains('profile') || q.contains('artist')) {
+    // Register (strictly registration)
+    if (q.contains('register as') || q.contains('sign up as') || q.contains('how to register') || q.contains('how do i register') || q.contains('join as an artist')) {
       return 'Registering as an artist on **Artist Dubai** is straightforward:\n\n'
           '1. Go to the Home screen.\n'
           '2. Tap on the **ARTIST REGISTRATION** card.\n'
           '3. Fill in your artist name, discipline (Painting, Sculpture, Photography, Digital Art, etc.), bio, and contact information.\n'
           '4. Upload your portfolio artwork samples and exhibitions.\n'
           '5. Submit your profile for immediate feature and verification across the Dubai art network.';
+    }
+
+    // Artist discovery & recommendations
+    if (q.contains('artist') || q.contains('creator') || q.contains('painter')) {
+      return 'Discover verified artists across the UAE on **Artist Dubai**:\n\n'
+          '• **Disciplines:** Arabic Calligraphy, Contemporary Painting, Sculptural Arts, Fine Art Photography, and Digital Media.\n'
+          '• **Explore Portfolios:** Tap the **Artists** tab in the bottom navigation bar to view full creator bios, verified portfolios, and booking rates.\n'
+          '• **Book or Commission:** Open any artist profile to submit a direct commission or booking request for private art, murals, or live event demonstrations.';
     }
 
     // Weekend tour
@@ -1775,45 +1791,8 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
     required bool isArabic,
     required bool isUser,
   }) {
-    if (isUser) {
-      final hasArabic = RegExp(r'[\u0600-\u06FF]').hasMatch(text);
-      if (hasArabic == isArabic) return text;
-      final tr = DataTranslator.translate(text, isArabic: isArabic);
-      return tr.isNotEmpty ? tr : text;
-    }
-    return _translateAiResponse(text, isArabic: isArabic);
-  }
-
-  String _translateAiResponse(String text, {required bool isArabic}) {
     final hasArabic = RegExp(r'[\u0600-\u06FF]').hasMatch(text);
-    if (hasArabic == isArabic) {
-      return text;
-    }
-    // Check known curated knowledge base responses:
-    // 1. Districts
-    if (text.contains('السركال') || text.contains('Alserkal Avenue')) {
-      return _generateArtResponse('district', isArabic: isArabic);
-    }
-    // 2. Register
-    if (text.contains('تسجيل فنان') || text.contains('ARTIST REGISTRATION') || text.contains('التسجيل كفنان')) {
-      return _generateArtResponse('register', isArabic: isArabic);
-    }
-    // 3. Tour
-    if (text.contains('جولة فنية') || text.contains('Weekend Art Tour') || text.contains('خطة مقترحة')) {
-      return _generateArtResponse('tour', isArabic: isArabic);
-    }
-    // 4. Galleries
-    if (text.contains('XVA Gallery') || text.contains('معرض XVA') || text.contains('المعارض الفنية') || text.contains('GALLERIES')) {
-      return _generateArtResponse('gallery', isArabic: isArabic);
-    }
-    // 5. Events & Competition
-    if (text.contains('الفعاليات / المسابقات') || text.contains('EVENTS / COMPETITION') || text.contains('اكتشاف جميع المسابقات')) {
-      return _generateArtResponse('event', isArabic: isArabic);
-    }
-    // 6. Welcome / Intro
-    if (text.contains('مرشد فنان دبي الذكي') || text.contains('Artist Dubai Guide')) {
-      return _generateArtResponse('intro', isArabic: isArabic);
-    }
+    if (hasArabic == isArabic) return text;
     final tr = DataTranslator.translate(text, isArabic: isArabic);
     return tr.isNotEmpty ? tr : text;
   }

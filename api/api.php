@@ -721,9 +721,15 @@ class AuthMiddleware {
                 } catch (\Throwable $t) {}
 
                 $cleanEmail = strtolower(trim($row['email'] ?? ''));
-                $isAdminEmail = in_array($cleanEmail, ['admin@artistdubai.com', 'admin@dubaiart.ae', 'admin@admin.com', 'admin@technestpartners.com']) || strpos($cleanEmail, 'admin@') === 0;
-                $role = $isAdminEmail ? 'admin' : strtolower($row['user_role'] ?? $row['role'] ?? 'user');
-                $isAdmin = $isAdminEmail || in_array($role, ['admin', 'superadmin', 'super_admin', 'userpadmin']) || strpos($role, 'admin') !== false;
+                $dbRole = strtolower(trim($row['user_role'] ?? $row['role'] ?? 'user'));
+
+                // Dynamically evaluate admin privileges from the database role column first
+                $isAdminRole = in_array($dbRole, ['admin', 'superadmin', 'super_admin']) || (strpos($dbRole, 'admin') !== false);
+                $isAdminEmail = (strpos($cleanEmail, 'admin@') === 0) 
+                             || in_array($cleanEmail, ['admin@artistdubai.com', 'admin@dubaiart.ae', 'admin@admin.com', 'admin@technestpartners.com']);
+
+                $isAdmin = $isAdminRole || $isAdminEmail;
+                $role = $isAdmin ? ($isAdminRole ? $dbRole : 'admin') : ($dbRole ?: 'user');
 
                 $user = [
                     'id' => (int)$row['user_id'],
@@ -3948,9 +3954,12 @@ class AiChatController {
             ");
             $stmtMsg->execute([$sessionId, $messageText]);
 
-            // Generate AI reply based on Dubai art knowledge & language
-            $reply = $this->generateAiReply($messageText, $locale);
-            $relatedQuestions = $this->generateRelatedQuestions($messageText, $locale);
+            // Fetch live database context dynamically (RAG)
+            $dbContext = $this->fetchDatabaseContext($messageText);
+
+            // Generate dynamic AI reply grounded in real database records & comprehensive art domain intelligence
+            $reply = $this->generateAiReply($messageText, $locale, $dbContext);
+            $relatedQuestions = $this->generateRelatedQuestions($messageText, $locale, $dbContext);
 
             // Save AI reply
             $stmtReply = $this->db->prepare("
@@ -3966,6 +3975,7 @@ class AiChatController {
                 'ai_reply' => $reply,
                 'related_questions' => $relatedQuestions,
                 'timestamp' => date('Y-m-d H:i:s'),
+                'is_dynamic' => true,
             ], 'Message processed successfully');
         } catch (\Throwable $t) {
             ApiResponse::error('Failed to send AI chat message: ' . $t->getMessage(), 500);
@@ -3992,164 +4002,472 @@ class AiChatController {
         }
     }
 
-    private function generateAiReply(string $query, string $locale = ''): string {
+    /**
+     * Dynamically queries the live MySQL database for artists, events, galleries, and artworks
+     * to provide real-time Retrieval-Augmented Generation (RAG) context.
+     */
+    private function fetchDatabaseContext(string $query): array {
+        $context = [
+            'counts' => [
+                'artists' => 0,
+                'events' => 0,
+                'galleries' => 0,
+                'artworks' => 0,
+            ],
+            'matched_artists' => [],
+            'matched_events' => [],
+            'matched_galleries' => [],
+            'matched_artworks' => [],
+            'categories' => [],
+        ];
+
+        try {
+            $context['counts']['artists'] = (int)$this->db->query("SELECT COUNT(*) FROM artists")->fetchColumn();
+            $context['counts']['events'] = (int)$this->db->query("SELECT COUNT(*) FROM events")->fetchColumn();
+            $context['counts']['galleries'] = (int)$this->db->query("SELECT COUNT(*) FROM galleries")->fetchColumn();
+            $context['counts']['artworks'] = (int)$this->db->query("SELECT COUNT(*) FROM artworks")->fetchColumn();
+
+            $catStmt = $this->db->query("SELECT name FROM categories ORDER BY id ASC LIMIT 8");
+            if ($catStmt) {
+                $context['categories'] = $catStmt->fetchAll(PDO::FETCH_COLUMN);
+            }
+
+            // Extract keywords
+            $rawTokens = preg_split('/[\s,\.\?!]+/u', mb_strtolower(trim($query)));
+            $stopWords = ['what', 'when', 'where', 'which', 'who', 'whom', 'how', 'the', 'and', 'for', 'are', 'can', 'does', 'with', 'about', 'this', 'that', 'tell', 'show', 'from', 'you', 'your', 'please', 'give'];
+            $tokens = array_values(array_filter($rawTokens, function($w) use ($stopWords) {
+                return mb_strlen($w) >= 2 && !in_array($w, $stopWords);
+            }));
+
+            // 1. Matched Artists (Search by category, name, or keywords)
+            $artMatches = [];
+            foreach ($tokens as $token) {
+                if (in_array($token, ['artist', 'artists', 'dubai', 'recommend', 'local', 'best', 'good', 'top', 'any', 'فنان', 'فنانين'])) continue;
+                $like = '%' . $token . '%';
+                $stmt = $this->db->prepare("SELECT id, name, category, booking_rate, location, bio FROM artists WHERE (is_active = 1 OR status = 'active') AND (name LIKE ? OR category LIKE ? OR bio LIKE ?) LIMIT 4");
+                $stmt->execute([$like, $like, $like]);
+                foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                    $artMatches[$r['id']] = $r;
+                }
+                if (count($artMatches) >= 4) break;
+            }
+            if (empty($artMatches) && $context['counts']['artists'] > 0) {
+                $stmt = $this->db->query("SELECT id, name, category, booking_rate, location, bio FROM artists WHERE is_active = 1 OR status = 'active' ORDER BY id DESC LIMIT 4");
+                $artMatches = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+            $context['matched_artists'] = array_values($artMatches);
+
+            // 2. Matched Events (Search by title, location, category)
+            $evMatches = [];
+            foreach ($tokens as $token) {
+                if (in_array($token, ['event', 'events', 'dubai', 'show', 'happening', 'فعالية', 'فعاليات'])) continue;
+                $like = '%' . $token . '%';
+                $stmt = $this->db->prepare("SELECT id, title, location, event_date, price, category FROM events WHERE (is_active = 1 OR status = 'active') AND (title LIKE ? OR location LIKE ? OR category LIKE ?) LIMIT 4");
+                $stmt->execute([$like, $like, $like]);
+                foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                    $evMatches[$r['id']] = $r;
+                }
+                if (count($evMatches) >= 4) break;
+            }
+            if (empty($evMatches) && $context['counts']['events'] > 0) {
+                $stmt = $this->db->query("SELECT id, title, location, event_date, price, category FROM events WHERE is_active = 1 OR status = 'active' ORDER BY event_date ASC, id DESC LIMIT 4");
+                $evMatches = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+            $context['matched_events'] = array_values($evMatches);
+
+            // 3. Matched Galleries
+            $galMatches = [];
+            foreach ($tokens as $token) {
+                if (in_array($token, ['gallery', 'galleries', 'dubai', 'center', 'معرض', 'معارض', 'جاليري'])) continue;
+                $like = '%' . $token . '%';
+                $stmt = $this->db->prepare("SELECT id, name, location, timing, description FROM galleries WHERE (is_approved = 1 OR status = 'active') AND (name LIKE ? OR location LIKE ? OR description LIKE ?) LIMIT 4");
+                $stmt->execute([$like, $like, $like]);
+                foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                    $galMatches[$r['id']] = $r;
+                }
+                if (count($galMatches) >= 4) break;
+            }
+            if (empty($galMatches) && $context['counts']['galleries'] > 0) {
+                $stmt = $this->db->query("SELECT id, name, location, timing, description FROM galleries WHERE is_approved = 1 OR status = 'active' ORDER BY id DESC LIMIT 4");
+                if (!$stmt) {
+                    $stmt = $this->db->query("SELECT id, name, location, timing, description FROM galleries ORDER BY id DESC LIMIT 4");
+                }
+                if ($stmt) {
+                    $galMatches = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                }
+            }
+            $context['matched_galleries'] = array_values($galMatches);
+
+            // 4. Matched Artworks
+            $artwMatches = [];
+            foreach ($tokens as $token) {
+                if (in_array($token, ['art', 'artwork', 'artworks', 'painting', 'paintings', 'price', 'لوحة', 'لوحات'])) continue;
+                $like = '%' . $token . '%';
+                $stmt = $this->db->prepare("SELECT id, title, artist_name, price, medium FROM artworks WHERE title LIKE ? OR artist_name LIKE ? OR medium LIKE ? LIMIT 4");
+                $stmt->execute([$like, $like, $like]);
+                foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                    $artwMatches[$r['id']] = $r;
+                }
+                if (count($artwMatches) >= 4) break;
+            }
+            if (empty($artwMatches) && $context['counts']['artworks'] > 0) {
+                $stmt = $this->db->query("SELECT id, title, artist_name, price, medium FROM artworks ORDER BY id DESC LIMIT 4");
+                $artwMatches = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+            $context['matched_artworks'] = array_values($artwMatches);
+
+        } catch (\Throwable $t) {}
+
+        return $context;
+    }
+
+    private function generateAiReply(string $query, string $locale = '', array $dbContext = []): string {
         $q = mb_strtolower(trim($query));
         $isArabic = ($locale === 'ar') || (bool)preg_match('/[\x{0600}-\x{06FF}]/u', $query);
 
-        // 1. Try Gemini Generative AI if key is configured
+        // 1. Try Gemini Generative AI if key is configured (via env or settings)
         $geminiKey = getenv('GEMINI_API_KEY') ?: ($GLOBALS['GEMINI_API_KEY'] ?? '');
+        if (empty($geminiKey)) {
+            try {
+                $sStmt = $this->db->query("SELECT setting_value FROM payment_settings WHERE setting_key IN ('gemini_api_key', 'ai_api_key') LIMIT 1");
+                if ($sStmt && ($val = $sStmt->fetchColumn())) {
+                    $geminiKey = trim($val);
+                }
+            } catch (\Throwable $t) {}
+        }
         if (!empty($geminiKey)) {
-            $geminiReply = $this->callGeminiApi($query, $geminiKey, $isArabic);
+            $geminiReply = $this->callGeminiApi($query, $geminiKey, $isArabic, $dbContext);
             if (!empty($geminiReply)) {
                 return $geminiReply;
             }
         }
 
-        // 2. Comprehensive Dubai Art Intelligence Engine
-        if ($isArabic) {
-            // Free admission / tickets
-            if (str_contains($q, 'مجاني') || str_contains($q, 'تذاكر') || str_contains($q, 'تذكرة') || str_contains($q, 'رسوم') || str_contains($q, 'دخول') || str_contains($q, 'free') || str_contains($q, 'admission') || str_contains($q, 'ticket')) {
-                return "نعم، الدخول إلى غالبية المعارض الفنية في دبي **مجاني تماماً** ومتاح للجميع:\n\n" .
-                    "• **السركال أفنيو:** الدخول إلى المنطقة وجميع صالات العرض الـ 70 مجاني طوال العام، دون الحاجة إلى تذاكر مسبقة (باستثناء عروض سينما عقيل وبعض ورش العمل المتخصصة).\n" .
-                    "• **قرية البوابة بمركز دبي المالي (DIFC):** زيارة المعارض الفنية المعاصرة والممشى الفني مجانية بالكامل.\n" .
-                    "• **حي دبي للتصميم (d3):** الدخول إلى الصالات والمجسمات النحتية الخارجية مجاني ومفتوح للجمهور.\n" .
-                    "• **مركز جميل للفنون:** الدخول إلى صالات العرض وحديقة المجسمات مجاني مع الترحيب بجميع الزوار.\n" .
-                    "• **مهرجان سكة للفنون والتصميم:** الدخول لجميع فعالياته ومعارضه في حي الفهيدي مجاني سنوياً.";
-            }
+        // 2. Intelligent Dynamic Intent Detection Grounded in Live Database Records
 
-            // Opening hours / timings
-            if (str_contains($q, 'أوقات') || str_contains($q, 'ساعات') || str_contains($q, 'مواعيد') || str_contains($q, 'يفتح') || str_contains($q, 'يغلق') || str_contains($q, 'hours') || str_contains($q, 'timing')) {
-                if (str_contains($q, 'd3') || str_contains($q, 'تصميم')) {
+        // Intent A: Booking / Hiring / Commissioning Artists (distinct from registration!)
+        $asksBook = str_contains($q, 'book') || str_contains($q, 'hire') || str_contains($q, 'commission') || str_contains($q, 'quote')
+                 || str_contains($q, 'حجز') || str_contains($q, 'توظيف') || str_contains($q, 'تكليف') || str_contains($q, 'طلب فنان');
+        if ($asksBook) {
+            if ($isArabic) {
+                $reply = "حجز وتكليف الفنانين عبر تطبيق **فنان دبي** يتم بسهولة وبشكل موثوق:\n\n" .
+                    "1. افتح تبويب **الفنانون** من الشريط السفلي للاطلاع على قائمة المبدعين المعتمدين في الإمارات.\n" .
+                    "2. اضغط على أي ملف فنان للاطلاع على نبذته وسيرته، وأعماله السابقة، وسعر الحجز التقديري.\n" .
+                    "3. اضغط على زر **طلب حجز / تواصل مع الفنان**.\n" .
+                    "4. حدد تفاصيل طلبك (رسم حي، لوحة خاصة، جدارية، ورشة عمل)، والموعد، والميزانية المتوقعة.\n\n";
+                if (!empty($dbContext['matched_artists'])) {
+                    $reply .= "إليك نخبة من الفنانين المتاحين للحجز حالياً:\n";
+                    foreach ($dbContext['matched_artists'] as $art) {
+                        $rate = !empty($art['booking_rate']) ? " (السعر: {$art['booking_rate']})" : "";
+                        $loc = !empty($art['location']) ? " — {$art['location']}" : "";
+                        $reply .= "• **{$art['name']}** [{$art['category']}]{$rate}{$loc}\n";
+                    }
+                }
+                return $reply;
+            } else {
+                $reply = "Booking or commissioning an artist on **Artist Dubai** is straightforward and secure:\n\n" .
+                    "1. Tap the **Artists** tab in the bottom navigation bar to browse verified creators across the UAE.\n" .
+                    "2. Tap any artist profile to inspect their portfolio, style, biography, and starting booking rate.\n" .
+                    "3. Tap **Book Artist** or **Contact** directly on their profile.\n" .
+                    "4. Specify your project requirements: commission type (Private Canvas, Mural, Live Event Painting, Workshop), deadline, and budget.\n\n";
+                if (!empty($dbContext['matched_artists'])) {
+                    $reply .= "Featured artists available for booking right now:\n";
+                    foreach ($dbContext['matched_artists'] as $art) {
+                        $rate = !empty($art['booking_rate']) ? " (Rate: {$art['booking_rate']})" : "";
+                        $loc = !empty($art['location']) ? " — {$art['location']}" : "";
+                        $reply .= "• **{$art['name']}** [{$art['category']}]{$rate}{$loc}\n";
+                    }
+                }
+                return $reply;
+            }
+        }
+
+        // Intent B: Registering / Signing Up as an Artist (strictly registration intent, not just mentioning the word "artist")
+        $asksRegister = str_contains($q, 'register as') || str_contains($q, 'sign up as') || str_contains($q, 'become an artist')
+                     || str_contains($q, 'join as artist') || str_contains($q, 'artist registration') || str_contains($q, 'create profile') || str_contains($q, 'how do i register')
+                     || str_contains($q, 'تسجيل فنان') || str_contains($q, 'انضمام كفنان') || str_contains($q, 'كيف أسجل كفنان') || str_contains($q, 'إنشاء ملف فنان');
+        if ($asksRegister) {
+            if ($isArabic) {
+                return "التسجيل كفنان على منصة **فنان دبي** سهل ومتاح لجميع المبدعين:\n\n" .
+                    "1. توجه إلى الشاشة الرئيسية للتطبيق.\n" .
+                    "2. اضغط على بطاقة **تسجيل فنان**.\n" .
+                    "3. أدخل اسم الفنان، والتخصص الفني (رسم زيتي، خط عربي، نحت، فن رقمي، تصوير، وغيرها)، والنبذة التعريفية، ومعلومات التواصل.\n" .
+                    "4. ارفع 3 إلى 5 صور عالية الدقة من أفضل أعمالك الفنية الأصلية.\n" .
+                    "5. أرسل ملفك لاعتماده من فريق المراجعة خلال 24 ساعة لتبدأ في تلقي طلبات الحجز وعرض أعمالك للجمهور!";
+            } else {
+                return "Registering as an artist on **Artist Dubai** is simple and rewarding:\n\n" .
+                    "1. Head to the **Home** tab in the app.\n" .
+                    "2. Tap the **ARTIST REGISTRATION** card.\n" .
+                    "3. Fill in your full name, artistic discipline (Painting, Calligraphy, Sculpture, Digital Art, Photography, etc.), bio, and contact links.\n" .
+                    "4. Upload 3 to 5 high-resolution samples of your original artworks.\n" .
+                    "5. Submit your profile for fast review by our curatorial team within 24 hours to gain verified status and start receiving commission requests!";
+            }
+        }
+
+        // Intent C: Exploring / Recommending Artists (Live DB Grounding)
+        $asksArtists = str_contains($q, 'artist') || str_contains($q, 'painter') || str_contains($q, 'sculptor') || str_contains($q, 'calligrapher')
+                    || str_contains($q, 'recommend') || str_contains($q, 'who are') || str_contains($q, 'creators')
+                    || str_contains($q, 'فنان') || str_contains($q, 'رسام') || str_contains($q, 'خطاط') || str_contains($q, 'نحات');
+        if ($asksArtists && !empty($dbContext['matched_artists'])) {
+            if ($isArabic) {
+                $reply = "إليك نخبة من الفنانين المسجلين في منصة **فنان دبي**:\n\n";
+                foreach ($dbContext['matched_artists'] as $art) {
+                    $rate = !empty($art['starting_rate']) ? " (بدءاً من {$art['starting_rate']})" : "";
+                    $loc = !empty($art['location']) ? " — {$art['location']}" : "";
+                    $reply .= "• **{$art['name']}** [{$art['category']}]{$rate}{$loc}\n";
+                }
+                $reply .= "\nيمكنك فتح قسم **الفنانون** في الشريط السفلي للاطلاع على معارض أعمالهم الكاملة والتواصل المباشر معهم!";
+                return $reply;
+            } else {
+                $reply = "Here are featured artists registered on **Artist Dubai**:\n\n";
+                foreach ($dbContext['matched_artists'] as $art) {
+                    $rate = !empty($art['starting_rate']) ? " (Starting at {$art['starting_rate']})" : "";
+                    $loc = !empty($art['location']) ? " — {$art['location']}" : "";
+                    $reply .= "• **{$art['name']}** [{$art['category']}]{$rate}{$loc}\n";
+                }
+                $reply .= "\nYou can tap the **Artists** tab in the bottom bar to view their full portfolios and connect directly!";
+                return $reply;
+            }
+        }
+
+        // Intent D: Events & Exhibitions (Live DB Grounding)
+        $asksEvents = str_contains($q, 'event') || str_contains($q, 'exhibition') || str_contains($q, 'festival') || str_contains($q, 'happening')
+                   || str_contains($q, 'فعالية') || str_contains($q, 'معرض') || str_contains($q, 'مهرجان') || str_contains($q, 'نشاط');
+        if ($asksEvents && !empty($dbContext['matched_events'])) {
+            if ($isArabic) {
+                $reply = "أبرز الفعاليات والمعارض الفنية الحالية في دبي:\n\n";
+                foreach ($dbContext['matched_events'] as $ev) {
+                    $date = !empty($ev['event_date']) ? " (التاريخ: {$ev['event_date']})" : "";
+                    $loc = !empty($ev['location']) ? " — {$ev['location']}" : "";
+                    $price = !empty($ev['price']) ? " [{$ev['price']}]" : "";
+                    $reply .= "• **{$ev['title']}**{$loc}{$date}{$price}\n";
+                }
+                $reply .= "\nتفضل بزيارة قسم **الفعاليات** في التطبيق لمعرفة جميع التفاصيل وتأكيد حضورك!";
+                return $reply;
+            } else {
+                $reply = "Upcoming art events & exhibitions on **Artist Dubai**:\n\n";
+                foreach ($dbContext['matched_events'] as $ev) {
+                    $date = !empty($ev['event_date']) ? " (Date: {$ev['event_date']})" : "";
+                    $loc = !empty($ev['location']) ? " — {$ev['location']}" : "";
+                    $price = !empty($ev['price']) ? " [{$ev['price']}]" : "";
+                    $reply .= "• **{$ev['title']}**{$loc}{$date}{$price}\n";
+                }
+                $reply .= "\nExplore full event schedules and RSVP directly inside the **Events** tab!";
+                return $reply;
+            }
+        }
+
+        // Intent E: Galleries & Cultural Spaces (Live DB Grounding + Curated Knowledge)
+        $asksGalleries = str_contains($q, 'gallery') || str_contains($q, 'galleries') || str_contains($q, 'space') || str_contains($q, 'center')
+                      || str_contains($q, 'جاليري') || str_contains($q, 'صالات') || str_contains($q, 'معارض فنية');
+        if ($asksGalleries && !empty($dbContext['matched_galleries'])) {
+            if ($isArabic) {
+                $reply = "أبرز صالات العرض والمعارض الفنية المسجلة في دبي:\n\n";
+                foreach ($dbContext['matched_galleries'] as $gal) {
+                    $loc = !empty($gal['location']) ? " ({$gal['location']})" : "";
+                    $reply .= "• **{$gal['name']}**{$loc}\n";
+                }
+                $reply .= "\nكما تضم دبي مراكز أيقونية مجانية مثل **السركال أفنيو**، و**قرية البوابة بمركز دبي المالي**، و**حي دبي للتصميم d3**، و**مركز جميل للفنون**!";
+                return $reply;
+            } else {
+                $reply = "Featured art galleries & exhibition spaces on **Artist Dubai**:\n\n";
+                foreach ($dbContext['matched_galleries'] as $gal) {
+                    $loc = !empty($gal['location']) ? " ({$gal['location']})" : "";
+                    $reply .= "• **{$gal['name']}**{$loc}\n";
+                }
+                $reply .= "\nDubai also features iconic contemporary hubs including **Alserkal Avenue**, **DIFC Gate Village**, **Dubai Design District (d3)**, and **Jameel Arts Centre**!";
+                return $reply;
+            }
+        }
+
+        // Intent F: Selling / Buying Artworks (Live DB Grounding)
+        $asksArtworks = str_contains($q, 'sell') || str_contains($q, 'buy') || str_contains($q, 'artwork') || str_contains($q, 'painting') || str_contains($q, 'sculpture') || str_contains($q, 'canvas') || str_contains($q, 'price')
+                     || str_contains($q, 'بيع') || str_contains($q, 'شراء') || str_contains($q, 'لوحة') || str_contains($q, 'لوحات') || str_contains($q, 'أعمال');
+        if ($asksArtworks) {
+            if ($isArabic) {
+                $reply = "بيع وشراء اللوحات والأعمال الفنية عبر **فنان دبي**:\n\n" .
+                    "• **للفنانين:** يمكنك إضافة أعمالك الأصلية من لوحة التحكم مع تحديد الخامة والمقاس والسعر بالدرهم الإماراتي ليراها المقتنون ومصممو الديكور.\n" .
+                    "• **للمقتنين والزوار:** يمكنك استعراض الكتالوج الفني، وشراء القطع الأصلية مباشرة أو طلب أعمال مخصصة من الفنان.\n\n";
+                if (!empty($dbContext['matched_artworks'])) {
+                    $reply .= "أعمال فنية معروضة للاقتناء حالياً:\n";
+                    foreach ($dbContext['matched_artworks'] as $aw) {
+                        $p = !empty($aw['price']) ? " [{$aw['price']} د.إ]" : "";
+                        $artName = !empty($aw['artist_name']) ? " — بريشة {$aw['artist_name']}" : "";
+                        $reply .= "• **{$aw['title']}**{$artName}{$p}\n";
+                    }
+                }
+                return $reply;
+            } else {
+                $reply = "Buying and selling original art on **Artist Dubai**:\n\n" .
+                    "• **For Artists:** Upload your authentic artworks with high-resolution imagery, medium, dimensions, and prices in AED.\n" .
+                    "• **For Art Collectors:** Browse original pieces across diverse styles and connect directly with creators for acquisitions or bespoke commissions.\n\n";
+                if (!empty($dbContext['matched_artworks'])) {
+                    $reply .= "Featured original artworks available right now:\n";
+                    foreach ($dbContext['matched_artworks'] as $aw) {
+                        $p = !empty($aw['price']) ? " [AED {$aw['price']}]" : "";
+                        $artName = !empty($aw['artist_name']) ? " — by {$aw['artist_name']}" : "";
+                        $reply .= "• **{$aw['title']}**{$artName}{$p}\n";
+                    }
+                }
+                return $reply;
+            }
+        }
+
+        // Intent G: Arabic Calligraphy & Typography
+        $asksCalligraphy = str_contains($q, 'calligraphy') || str_contains($q, 'typography') || str_contains($q, 'lettering') || str_contains($q, 'arabic art')
+                        || str_contains($q, 'خط') || str_contains($q, 'خطاط') || str_contains($q, 'حروف');
+        if ($asksCalligraphy) {
+            if ($isArabic) {
+                return "يعد **الخط العربي وفن الحروفية** من أرقى الفنون التي تحظى باهتمام استثنائي في دبي:\n\n" .
+                    "• **المدارس الكلاسيكية:** إتقان خطوط الثلث، والديواني، والكوفي، والنسخ، والرقعة.\n" .
+                    "• **الحروفية المعاصرة:** دمج التجريد اللوني الحديث مع تشكيلات الحرف العربي في لوحات وجداريات ضخمة.\n" .
+                    "• **أين تكتشفها؟** في تبويب **الفنانون** داخل التطبيق، يمكنك تصفية النتائج حسب فئة الخط العربي لرؤية أعمال نخبة الخطاطين المعتمدين.\n" .
+                    "• ينظم **مركز تشكيل** ومعارض **السركال أفنيو** ومهرجان **سكة للفنون** ورش عمل ومعارض متخصصة بالخط طوال العام.";
+            } else {
+                return "Arabic Calligraphy and **Hurufiyya** are among the most revered art forms in Dubai's creative landscape:\n\n" .
+                    "• **Traditional Scripts:** Masters specialize in Thuluth, Diwani, Kufic, and Naskh calligraphy.\n" .
+                    "• **Contemporary Hurufiyya:** Modern regional creators fuse abstract expressionism with geometric Arabic typography and sculptural lettering.\n" .
+                    "• **Discover Artists:** In the **Artists** tab of the app, filter by **Calligraphy & Typography** to explore portfolios of celebrated local calligraphers.\n" .
+                    "• **Where to Experience:** Tashkeel (Nad Al Sheba), Sikka Art Festival (Al Fahidi), and specialized seasonal exhibitions across DIFC and Alserkal Avenue.";
+            }
+        }
+
+        // Intent H: Free Admission / Tickets
+        $asksFree = str_contains($q, 'free') || str_contains($q, 'admission') || str_contains($q, 'ticket') || str_contains($q, 'cost') || str_contains($q, 'entry') || str_contains($q, 'fee')
+                 || str_contains($q, 'مجاني') || str_contains($q, 'تذاكر') || str_contains($q, 'تذكرة') || str_contains($q, 'رسوم') || str_contains($q, 'دخول');
+        if ($asksFree) {
+            if ($isArabic) {
+                return "نعم، الدخول إلى غالبية المعارض الفنية في دبي **مجاني تماماً** ومتاح للجميع:\n\n" .
+                    "• **السركال أفنيو:** الدخول إلى المنطقة وجميع صالات العرض الـ 70 مجاني طوال العام دون الحاجة إلى تذاكر مسبقة (باستثناء عروض سينما عقيل وبعض ورش العمل التخصصية).\n" .
+                    "• **قرية البوابة بمركز دبي المالي (DIFC):** زيارة المعارض الفنية المعاصرة والممشى الفني النحتي مجانية بالكامل.\n" .
+                    "• **حي دبي للتصميم (d3):** الدخول إلى الصالات والمجسمات النحتية الخارجية مفتوح ومجاني للجمهور.\n" .
+                    "• **مركز جميل للفنون:** الدخول إلى صالات العرض وحديقة المجسمات مجاني دائماً.\n" .
+                    "• **مهرجان سكة للفنون والتصميم:** الدخول لجميع فعالياته ومعارضه في حي الفهيدي مجاني سنوياً.";
+            } else {
+                return "Yes! General admission to major contemporary galleries across Dubai is **completely free** and open to the public:\n\n" .
+                    "• **Alserkal Avenue:** Free entry 365 days a year. All 70+ contemporary galleries (Green Art, Carbon 12, Ayyam) are free to enter with no booking required (only Cinema Akil screenings or ticketed culinary events have fees).\n" .
+                    "• **DIFC Gate Village:** Free entry to all art galleries, exhibitions, and the outdoor sculpture promenade.\n" .
+                    "• **Dubai Design District (d3):** Free public entry to galleries, design pop-ups, and interactive art installations.\n" .
+                    "• **Jameel Arts Centre:** Free admission to all exhibition galleries and the outdoor sculpture park.\n" .
+                    "• **Sikka Art & Design Festival (Al Fahidi):** Free public access to all exhibitions, live music, and installations.";
+            }
+        }
+
+        // Intent I: Opening Hours / Timings
+        $asksHours = str_contains($q, 'hour') || str_contains($q, 'timing') || str_contains($q, 'open') || str_contains($q, 'close') || str_contains($q, 'schedule')
+                  || str_contains($q, 'أوقات') || str_contains($q, 'ساعات') || str_contains($q, 'مواعيد') || str_contains($q, 'يفتح') || str_contains($q, 'يغلق');
+        if ($asksHours) {
+            if (str_contains($q, 'd3') || str_contains($q, 'design') || str_contains($q, 'تصميم')) {
+                if ($isArabic) {
                     return "أوقات عمل **حي دبي للتصميم (d3)**:\n\n" .
                         "• **المساحات العامة والمطاعم والمقاهي:** تفتح يومياً من الساعة 8:00 صباحاً وحتى 11:00 مساءً (وحتى منتصف الليل في عطلة نهاية الأسبوع).\n" .
                         "• **المكاتب وصالات العرض التجارية:** تعمل عادة من الأحد إلى الخميس من 9:00 صباحاً حتى 6:00 مساءً.\n" .
                         "• أفضل وقت للزيارة والاستمتاع بالمجسمات والتصوير هو وقت العصر والمساء!";
+                } else {
+                    return "Opening hours for **Dubai Design District (d3)**:\n\n" .
+                        "• **Public outdoor promenades, cafes & restaurants:** Open daily from 8:00 AM to 11:00 PM (and midnight on weekends).\n" .
+                        "• **Commercial design showrooms & art galleries:** Typically open Sunday through Thursday from 9:00 AM to 6:00 PM.\n" .
+                        "• The best visiting time for lighting, outdoor sculpture photography, and dining is late afternoon and evening!";
                 }
-                if (str_contains($q, 'السركال') || str_contains($q, 'alserkal')) {
+            }
+            if (str_contains($q, 'alserkal') || str_contains($q, 'quoz') || str_contains($q, 'السركال')) {
+                if ($isArabic) {
                     return "أوقات عمل **السركال أفنيو (القوز)**:\n\n" .
                         "• **صالات العرض الفنية:** تفتح عادة من السبت إلى الخميس، من الساعة 10:00 صباحاً حتى 7:00 مساءً (بعض المعارض تغلق أيام الجمعة).\n" .
                         "• **المقاهي والمساحات الإبداعية:** تفتح يومياً من الساعة 8:00 صباحاً حتى 10:00 مساءً.\n" .
                         "• **سينما عقيل:** تفتح في أوقات العروض المسائية (غالباً بعد الساعة 5:00 مساءً).";
+                } else {
+                    return "Opening hours for **Alserkal Avenue (Al Quoz)**:\n\n" .
+                        "• **Contemporary Art Galleries:** Saturday through Thursday, 10:00 AM to 7:00 PM (some galleries are closed on Fridays).\n" .
+                        "• **Artisan Cafes & Concept Spaces:** Daily from 8:00 AM to 10:00 PM.\n" .
+                        "• **Cinema Akil:** Open during scheduled evening screenings (typically 5:00 PM to 11:00 PM).";
                 }
+            }
+            if ($isArabic) {
                 return "مواعيد عمل أبرز المناطق والمعارض الفنية في دبي:\n\n" .
                     "• **السركال أفنيو:** صالات العرض 10:00 ص - 7:00 م (السبت-الخميس)، والمقاهي حتى 10:00 م.\n" .
                     "• **حي دبي للتصميم d3:** المرافق والمقاهي 8:00 ص - 11:00 م يومياً.\n" .
                     "• **قرية البوابة بمركز دبي المالي (DIFC):** المعارض 10:00 ص - 8:00 م (الأحد-الخميس).\n" .
                     "• **مركز جميل للفنون:** 10:00 ص - 8:00 م (يغلق أيام الثلاثاء).\n" .
                     "• **حي الفهيدي التاريخي:** 9:00 ص - 8:00 م يومياً.";
+            } else {
+                return "Typical opening hours for Dubai art destinations:\n\n" .
+                    "• **Alserkal Avenue:** Galleries 10:00 AM – 7:00 PM (Sat–Thu), Cafes 8:00 AM – 10:00 PM daily.\n" .
+                    "• **Dubai Design District (d3):** 8:00 AM – 11:00 PM daily.\n" .
+                    "• **DIFC Gate Village:** Galleries 10:00 AM – 8:00 PM (Sun–Thu).\n" .
+                    "• **Jameel Arts Centre:** 10:00 AM – 8:00 PM (Closed on Tuesdays).\n" .
+                    "• **Al Fahidi Historical Neighbourhood:** 9:00 AM – 8:00 PM daily.";
             }
+        }
 
-            // Metro / Directions / Transport
-            if (str_contains($q, 'مترو') || str_contains($q, 'وصول') || str_contains($q, 'كيف أصل') || str_contains($q, 'مواصلات') || str_contains($q, 'طريق') || str_contains($q, 'مواقف') || str_contains($q, 'metro') || str_contains($q, 'reach')) {
-                if (str_contains($q, 'difc') || str_contains($q, 'المالي') || str_contains($q, 'البوابة')) {
+        // Intent J: Metro & Public Transit Directions
+        $asksTransit = str_contains($q, 'metro') || str_contains($q, 'reach') || str_contains($q, 'direction') || str_contains($q, 'get to') || str_contains($q, 'transport') || str_contains($q, 'taxi') || str_contains($q, 'parking')
+                    || str_contains($q, 'مترو') || str_contains($q, 'وصول') || str_contains($q, 'كيف أصل') || str_contains($q, 'مواصلات') || str_contains($q, 'طريق') || str_contains($q, 'مواقف');
+        if ($asksTransit) {
+            if (str_contains($q, 'difc') || str_contains($q, 'gate village') || str_contains($q, 'financial') || str_contains($q, 'المالي') || str_contains($q, 'البوابة')) {
+                if ($isArabic) {
                     return "للوصول إلى **قرية البوابة بمركز دبي المالي (DIFC)** بالمترو:\n\n" .
                         "• اركب **الخط الأحمر لمترو دبي** وانزل في **محطة المركز المالي (Financial Centre Station)** (المخرج 1) أو **محطة أبراج الإمارات (Emirates Towers Station)**.\n" .
                         "• تقع قرية البوابة على بعد 7 إلى 10 دقائق مشياً عبر ممرات مكيفة ومريحة، أو دقيقة واحدة بسيارة الأجرة.\n" .
                         "• تتوفر أيضاً مواقف سيارات تحت الأرض وخدمة صف السيارات (Valet) عند بوابات DIFC 1-10.";
+                } else {
+                    return "How to reach **DIFC Gate Village by Metro**:\n\n" .
+                        "• Take the **Dubai Metro Red Line** and exit at **Financial Centre Metro Station** (Exit 1) or **Emirates Towers Station**.\n" .
+                        "• From Financial Centre Station, it is a comfortable 7–10 minute air-conditioned walk through the DIFC concourse or a 2-minute taxi ride.\n" .
+                        "• If driving, underground visitor and valet parking is available at Gate Village Buildings 1 to 10.";
                 }
-                if (str_contains($q, 'السركال') || str_contains($q, 'alserkal')) {
+            }
+            if (str_contains($q, 'alserkal') || str_contains($q, 'quoz') || str_contains($q, 'السركال')) {
+                if ($isArabic) {
                     return "للوصول إلى **السركال أفنيو (القوز 1)**:\n\n" .
                         "• **بالمترو:** خذ الخط الأحمر إلى **محطة أون باسيف (Onpassive)** أو **محطة إكويتي (Equiti)**، ثم استقل سيارة أجرة لمدة 5 دقائق (أو حافلة RTA F25).\n" .
                         "• **بالسيارة:** تتوفر مواقف مجانية على أطراف الأفنيو ومواقف مأجورة قريبة في القوز 1.";
+                } else {
+                    return "How to reach **Alserkal Avenue (Al Quoz 1)**:\n\n" .
+                        "• **By Metro:** Take the Red Line to **Onpassive Metro Station** or **Equiti Metro Station**, then take a 5-minute taxi (approx. AED 12–15) or RTA Feeder Bus F25.\n" .
+                        "• **By Car:** Free and RTA parking spaces are available surrounding Avenue 17 and Streets 8 & 6 in Al Quoz 1.";
                 }
+            }
+            if ($isArabic) {
                 return "طرق الوصول إلى أهم الوجهات الفنية في دبي:\n\n" .
                     "• **مركز دبي المالي DIFC:** الخط الأحمر للمترو - محطة المركز المالي.\n" .
                     "• **حي الفهيدي التاريخي:** الخط الأخضر للمترو - محطة شرف دي جي (الفهيدي سابقاً).\n" .
                     "• **السركال أفنيو:** محطة مترو أون باسيف + 5 دقائق تاكسي.\n" .
                     "• **حي دبي للتصميم d3:** محطة مترو دبي مول / الخليج التجاري + حافلة d3 أو تاكسي.";
+            } else {
+                return "How to reach Dubai's top art districts:\n\n" .
+                    "• **DIFC Gate Village:** Metro Red Line to **Financial Centre Station**.\n" .
+                    "• **Al Fahidi Historical District:** Metro Green Line to **Sharaf DG Station** (formerly Al Fahidi).\n" .
+                    "• **Alserkal Avenue:** Metro Red Line to **Onpassive Station** + 5-min taxi.\n" .
+                    "• **Dubai Design District (d3):** Metro Red Line to **Dubai Mall / Business Bay** + RTA Bus d3 or 5-min taxi.";
             }
+        }
 
-            // Booking / Hiring artists
-            if (str_contains($q, 'حجز') || str_contains($q, 'توظيف') || str_contains($q, 'طلب فنان') || str_contains($q, 'استئجار') || str_contains($q, 'تكليف') || str_contains($q, 'book') || str_contains($q, 'hire')) {
-                return "حجز وتكليف الفنانين عبر تطبيق **فنان دبي** يتم بسهولة وبشكل موثوق:\n\n" .
-                    "1. افتح تبويب **الفنانون** من الشريط السفلي واستكشف نخبة المبدعين في الإمارات.\n" .
-                    "2. اضغط على ملف الفنان للاطلاع على نبذته وسيرته ومعرض أعماله وسعر الحجز التقديري.\n" .
-                    "3. اضغط على زر **طلب حجز / تواصل مع الفنان**.\n" .
-                    "4. حدد نوع المناسبة (لوحة خاصة، جدارية، ورشة عمل، معرض حي)، والتاريخ، والميزانية المتوقعة.\n" .
-                    "5. سيتم التواصل معك مباشرة لتأكيد التفاصيل وتنفيذ العمل بإشراف المنصة!";
+        // Intent K: Art Districts & Creative Hubs
+        $asksDistricts = str_contains($q, 'district') || str_contains($q, 'districts') || str_contains($q, 'visit') || str_contains($q, 'place') || str_contains($q, 'where to go')
+                      || str_contains($q, 'منطقة') || str_contains($q, 'مناطق') || str_contains($q, 'أين أذهب') || str_contains($q, 'زيارة');
+        if ($asksDistricts) {
+            if ($isArabic) {
+                return "تضم دبي مراكز إبداعية وفنية عالمية نابضة بالحياة:\n\n" .
+                    "• **السركال أفنيو (القوز):** الوجهة الرائدة للفن المعاصر في دبي، وتضم أكثر من 70 مساحة إبداعية وصالات عرض عالمية ومقاهٍ فنية وسينما مستقلة (سينما عقيل).\n\n" .
+                    "• **حي دبي للتصميم (d3):** مركز الأزياء الراقية، والهندسة المعمارية، والمجسمات النحتية الحديثة، ومهرجانات التصميم العالمية.\n\n" .
+                    "• **قرية البوابة بمركز دبي المالي (DIFC):** معارض تجارية مرموقة (Christie's, Opera Gallery, Ayyam Gallery) ومطاعم فاخرة وممشى نحتي.\n\n" .
+                    "• **حي الفهيدي التاريخي:** حي أبراج الرياح التراثي الذي يستضيف مهرجان سكة للفنون والتصميم، ومعرض XVA ومشاغل الحرف التقليدية.\n\n" .
+                    "• **مركز جميل للفنون (واجهة الجداف البحرية):** مؤسسة مبتكرة تعرض الفن الحديث والمعاصر في مساحات معمارية بديعة.";
+            } else {
+                return "Dubai has several vibrant, world-renowned art and creative hubs:\n\n" .
+                    "• **Alserkal Avenue (Al Quoz)**\nThe premier contemporary art hub of Dubai with over 70 creative spaces, world-class galleries (Green Art Gallery, Carbon 12, Grey Noise), artisan cafes, and indie cinemas.\n\n" .
+                    "• **Dubai Design District (d3)**\nA hub for high-end fashion, architecture, modern sculpture installations, and design festivals.\n\n" .
+                    "• **DIFC Gate Village**\nSophisticated commercial galleries (Christie's, Opera Gallery, Ayyam Gallery) and fine dining.\n\n" .
+                    "• **Al Fahidi Historical Neighbourhood**\nHistoric wind-tower quarter hosting the Sikka Art & Design Festival, XVA Gallery, and heritage craft studios.\n\n" .
+                    "• **Jameel Arts Centre (Jaddaf Waterfront)**\nAn innovative institution displaying modern Middle Eastern and South Asian art in minimalist architectural spaces.";
             }
+        }
 
-            // Selling & Buying Art
-            if (str_contains($q, 'بيع') || str_contains($q, 'شراء') || str_contains($q, 'لوحاتي') || str_contains($q, 'أعمالي') || str_contains($q, 'سعر') || str_contains($q, 'sell') || str_contains($q, 'buy')) {
-                return "بيع وشراء اللوحات والأعمال الفنية عبر **فنان دبي**:\n\n" .
-                    "• **للفنانين:** بعد توثيق حسابك كفنان، يمكنك إضافة أعمالك الفنية من لوحة التحكم، وتحديد الأبعاد والخامة والسعر بالدرهم الإماراتي ليراها المقتنون ومصممو الديكور.\n" .
-                    "• **للمقتنين والزوار:** يمكنك استعراض قسم **الأعمال الفنية** في التطبيق، والتواصل مباشرة لاقتناء أي قطعة أصلية أو طلب عمل فني مخصص.\n" .
-                    "• المنصة توفر خيارات دفع آمنة وعروض أسعار واضحة دون أي تعقيد.";
-            }
-
-            // Calligraphy
-            if (str_contains($q, 'خط') || str_contains($q, 'خطاط') || str_contains($q, 'حروف') || str_contains($q, 'calligraphy')) {
-                return "يعد **الخط العربي وفن الحروفية** من أرقى الفنون التي تحظى باهتمام بالغ في دبي:\n\n" .
-                    "• **الأنماط التقليدية:** الثلث، والديواني، والكوفي، والنسخ، والرقعة.\n" .
-                    "• **الحروفية المعاصرة:** دمج التجريد اللوني الحديث مع تشكيلات الحرف العربي.\n" .
-                    "• **أين تكتشفها؟** يمكنك تصفية قسم **الفنانون** في التطبيق حسب فئة **الخط العربي والطباعة** لرؤية أعمال نخبة الخطاطين.\n" .
-                    "• ينظم مركز تشكيل ومعارض السركال ومهرجان سكة ورش عمل ومعارض متخصصة بالخط طوال العام.";
-            }
-
-            // Tashkeel & Workshops
-            if (str_contains($q, 'تشكيل') || str_contains($q, 'ورش') || str_contains($q, 'مبتدئ') || str_contains($q, 'تدريب') || str_contains($q, 'tashkeel') || str_contains($q, 'workshop')) {
-                return "يقدم المشهد الفني في دبي ورش عمل وبرامج تدريبية لجميع المستويات:\n\n" .
-                    "• **مركز تشكيل (ند الشبا وحي الفهيدي):** يوفر استوديوهات متخصصة للطباعة، وصناعة الفخار، والتصوير، وبرنامج تنوين للتصميم، مع ورش أسبوعية للمبتدئين والمحترفين.\n" .
-                    "• **السركال أفنيو:** مساحات مثل thejamjar تقدم دروساً حرة في الرسم التعبيري والألوان الزيتية والإكريليك للأطفال والكبار.\n" .
-                    "• **مركز جميل للفنون:** برامج مجتمعية وحلقات نقاشية وورش فنية دورية مجانية.\n" .
-                    "• تابع تبويب **الفعاليات** في التطبيق لمعرفة مواعيد ورش العمل القادمة والتسجيل فيها.";
-            }
-
-            // Art Cafes & Dining
-            if (str_contains($q, 'مقهى') || str_contains($q, 'مقاهي') || str_contains($q, 'مطعم') || str_contains($q, 'إفطار') || str_contains($q, 'cafe') || str_contains($q, 'coffee')) {
-                return "أفضل المقاهي الفنية لتناول القهوة والإفطار وسط الأعمال الإبداعية:\n\n" .
-                    "• **Nightjar Coffee Roasters (السركال):** تحميص حرفي وأطباق إفطار لذيذة في قلب أجواء المستودعات الفنية.\n" .
-                    "• **Wild & The Moon (السركال):** مقهى صحي وعضوي وسط مساحات خضراء مريحة.\n" .
-                    "• **XVA Cafe (حي الفهيدي):** فناء تراثي هادئ تحت أشجار السدر يقدم أشهى المأكولات النباتية والتراثية.\n" .
-                    "• **The Lighthouse (حي دبي للتصميم d3):** مفهوم إبداعي يجمع بين متجر التصاميم والمطعم الراقي.\n" .
-                    "• **A4 Space (السركال):** مساحة عمل مشتركة هادئة مع مكتبة فنية ومقهى مفتوح.";
-            }
-
-            // Competitions & Open Calls
-            if (str_contains($q, 'مسابقة') || str_contains($q, 'مسابقات') || str_contains($q, 'جوائز') || str_contains($q, 'مكافآت') || str_contains($q, 'competition') || str_contains($q, 'prize')) {
-                return "المسابقات والجوائز الفنية النشطة في دبي:\n\n" .
-                    "• **مهرجان سكة للفنون والتصميم:** يفتح سنوياً دعوة للمبدعين بجوائز دعم وتمويل للمشاريع الفنية الفائزة.\n" .
-                    "• **برنامج تنوين للتصميم (تشكيل):** منحة تدريب وتمويل لإنتاج قطع أثاث وتصميم إماراتية.\n" .
-                    "• **مسابقات الفنون التشكيلية الرقمية والجداريات:** يعلن عنها مجلس دبي للتصميم وهيئة الثقافة والفنون (دبي للثقافة).\n" .
-                    "• تصفح شاشة **الفعاليات / المسابقات** في تطبيقنا للاطلاع على شروط المشاركة والمواعيد النهائية فور صدورها.";
-            }
-
-            // Verification & Artist requirements
-            if (str_contains($q, 'توثيق') || str_contains($q, 'متطلبات') || str_contains($q, 'شروط') || str_contains($q, 'verify') || str_contains($q, 'requirement')) {
-                return "متطلبات توثيق واعتماد ملف الفنان في تطبيق **فنان دبي**:\n\n" .
-                    "1. **معلومات شخصية وسيرة فنية:** الاسم الكامل، والمجال الفني الرئيسي، ونبذة مختصرة عن مسيرتك الإبداعية.\n" .
-                    "2. **معرض الأعمال (Portfolio):** رفع ما لا يقل عن 3 إلى 5 صور واضحة وعالية الجودة لأعمالك الفنية الأصلية.\n" .
-                    "3. **بيانات الاتصال والتواصل الاجتماعي:** بريد إلكتروني صالح، ورقم هاتف، وحساب إنستغرام أو موقع إلكتروني لعرض الأعمال.\n" .
-                    "4. **مراجعة سريعة:** يقوم فريق المراجعة بالتحقق من الملف واعتماده خلال 24 ساعة لتظهر كفنان معتمد في المنصة!";
-            }
-
-            // Districts
-            if (str_contains($q, 'منطقة') || str_contains($q, 'مناطق') || str_contains($q, 'زيارة') || str_contains($q, 'أين') || str_contains($q, 'مكان') || str_contains($q, 'district') || str_contains($q, 'visit')) {
-                return "تضم دبي العديد من المراكز الفنية والإبداعية العالمية النابضة بالحياة:\n\n" .
-                    "• **السركال أفنيو (القوز)**\n" .
-                    "الوجهة الرائدة للفن المعاصر في دبي، وتضم أكثر من 70 مساحة إبداعية ومعارض عالمية، ومقاهٍ فنية وسينما مستقلة (سينما عقيل).\n\n" .
-                    "• **حي دبي للتصميم (d3)**\n" .
-                    "مركز الأزياء الراقية، والهندسة المعمارية، والمجسمات النحتية الحديثة، ومهرجانات التصميم العالمية.\n\n" .
-                    "• **قرية البوابة في مركز دبي المالي (DIFC)**\n" .
-                    "معارض تجارية مرموقة (Christie’s, Opera Gallery, Ayyam Gallery) وأرقى المطاعم.\n\n" .
-                    "• **حي الفهيدي التاريخي**\n" .
-                    "حي أبراج الرياح التاريخي، ويستضيف مهرجان سكة للفنون والتصميم، ومعرض XVA، ومشاغل الحرف التراثية.\n\n" .
-                    "• **مركز جميل للفنون (واجهة الجداف البحرية)**\n" .
-                    "مؤسسة مبتكرة تعرض الفن الحديث والمعاصر من الشرق الأوسط وجنوب آسيا في مساحات معمارية بديعة.";
-            }
-
-            // Register
-            if (str_contains($q, 'تسجيل') || str_contains($q, 'سجل') || str_contains($q, 'انضمام') || str_contains($q, 'فنان') || str_contains($q, 'register') || str_contains($q, 'artist')) {
-                return "التسجيل كفنان على منصة **فنان دبي** سهل وسريع:\n\n" .
-                    "1. انتقل إلى الشاشة الرئيسية.\n" .
-                    "2. اضغط على بطاقة **تسجيل فنان**.\n" .
-                    "3. املأ اسم الفنان، والمجال الفني (الرسم، النحت، التصوير الفوتوغرافي، الفن الرقمي، وغيرها)، والنبذة التعريفية، ومعلومات التواصل.\n" .
-                    "4. ارفع نماذج من أعمالك الفنية ومعارضك السابقة.\n" .
-                    "5. أرسل ملفك الشخصي للاعتماد الفوري وإبرازه عبر شبكة الفنون في دبي.";
-            }
-
-            // Tour / Weekend
-            if (str_contains($q, 'جولة') || str_contains($q, 'عطلة') || str_contains($q, 'أسبوع') || str_contains($q, 'برنامج') || str_contains($q, 'tour') || str_contains($q, 'weekend')) {
+        // Intent L: Weekend Itinerary & Tours
+        $asksTour = str_contains($q, 'tour') || str_contains($q, 'weekend') || str_contains($q, 'itinerary') || str_contains($q, 'trip')
+                 || str_contains($q, 'جولة') || str_contains($q, 'عطلة') || str_contains($q, 'أسبوع') || str_contains($q, 'برنامج');
+        if ($asksTour) {
+            if ($isArabic) {
                 return "إليك خطة مقترحة لـ **جولة فنية في عطلة نهاية الأسبوع** في دبي:\n\n" .
                     "**اليوم 1 (الجمعة - الحداثة والتصميم):**\n" .
                     "• **الصباح:** جولة في حي دبي للتصميم (d3)، وتناول الإفطار في مقهى إبداعي، واستكشاف أحدث معارض التصميم.\n" .
@@ -4159,325 +4477,191 @@ class AiChatController {
                     "• **الصباح:** جولة في أزقة حي الفهيدي التاريخي وزيارة فندق ومعرض XVA الفني.\n" .
                     "• **بعد الظهر:** الانغماس في أروقة السركال أفنيو — استكشاف مستودعات الفنون، وورش العمل المباشرة، والمتاجر الإبداعية.\n" .
                     "• **المساء:** حضور عرض سينمائي فني مستقل أو أمسية موسيقية حية في سينما عقيل.";
+            } else {
+                return "Here is a curated **Weekend Art Tour** in Dubai:\n\n" .
+                    "**Day 1 (Friday - Modern & Design):**\n" .
+                    "• **Morning:** Stroll through Dubai Design District (d3), enjoy breakfast at a creative café, and explore cutting-edge design showcases.\n" .
+                    "• **Afternoon:** Visit DIFC Gate Village for prestigious contemporary galleries and sculpture walks.\n" .
+                    "• **Evening:** Sunset visit to Jameel Arts Centre by the serene Jaddaf waterfront.\n\n" .
+                    "**Day 2 (Saturday - Underground & Heritage):**\n" .
+                    "• **Morning:** Wander through the historic Al Fahidi cultural quarters and visit XVA Art Hotel.\n" .
+                    "• **Afternoon:** Dive into Alserkal Avenue — visit warehouse galleries, live artist workshops, and creative concept stores.\n" .
+                    "• **Night:** Catch an independent art cinema screening or live music at Cinema Akil.";
             }
+        }
 
-            // Galleries
-            if (str_contains($q, 'معرض') || str_contains($q, 'معارض') || str_contains($q, 'جاليري') || str_contains($q, 'gallery') || str_contains($q, 'galleries')) {
-                return "تضم دبي نخبة من المعارض الفنية الخاصة والمؤسسية المرموقة:\n\n" .
-                    "• **معرض XVA** (الفهيدي) - متخصص في الفن المعاصر للشرق الأوسط.\n" .
-                    "• **معرض أيام Ayyam Gallery** (السركال أفنيو) - يمثل كبار فناني المنطقة المعاصرين.\n" .
-                    "• **معرض كوستوت Custot Gallery** (السركال أفنيو) - فنون عالمية وغربية حديثة ومعاصرة.\n" .
-                    "• **أوبرا جاليري Opera Gallery** (مركز دبي المالي) - روائع الفن العالمي والمعاصر.\n" .
-                    "• **تشكيل Tashkeel** (ند الشبا) - استوديوهات فنية وبرامج إقامة وورش عمل.\n\n" .
-                    "تصفح قسم **المعارض الفنية** في التطبيق من القائمة الرئيسية للحصول على أرقام التواصل والمواقع مباشرة!";
+        // Intent M: Art Cafes & Dining
+        $asksCafe = str_contains($q, 'cafe') || str_contains($q, 'coffee') || str_contains($q, 'breakfast') || str_contains($q, 'dining') || str_contains($q, 'food') || str_contains($q, 'restaurant')
+                 || str_contains($q, 'مقهى') || str_contains($q, 'مقاهي') || str_contains($q, 'مطعم') || str_contains($q, 'إفطار') || str_contains($q, 'قهوة');
+        if ($asksCafe) {
+            if ($isArabic) {
+                return "أفضل المقاهي الفنية لتناول القهوة والإفطار وسط الأعمال الإبداعية في دبي:\n\n" .
+                    "• **Nightjar Coffee Roasters (السركال أفنيو):** تحميص حرفي وأطباق إفطار شهية في قلب أجواء المستودعات الفنية.\n" .
+                    "• **Wild & The Moon (السركال أفنيو):** أطباق ومشروبات عضوية ونباتية 100% وسط مساحات خضراء مريحة.\n" .
+                    "• **XVA Cafe (حي الفهيدي):** فناء تراثي هادئ تحت أشجار السدر يقدم أشهى المأكولات النباتية والتراثية.\n" .
+                    "• **The Lighthouse (حي دبي للتصميم d3):** مفهوم إبداعي يجمع بين متجر التصاميم والمطعم الراقي.\n" .
+                    "• **A4 Space (السركال أفنيو):** مساحة عمل مشتركة هادئة مع مكتبة فنية ومقهى مفتوح.";
+            } else {
+                return "Top art cafes in Dubai where you can dine surrounded by creativity:\n\n" .
+                    "• **Nightjar Coffee Roasters (Alserkal Avenue):** Renowned artisan cold brews and craft breakfast dishes inside a vibrant warehouse vibe.\n" .
+                    "• **Wild & The Moon (Alserkal Avenue):** 100% plant-based organic food and cold-pressed juices in a sunlit green space.\n" .
+                    "• **XVA Cafe (Al Fahidi):** A secluded historic courtyard shaded by a Frangipani tree, serving gourmet vegetarian Middle Eastern cuisine.\n" .
+                    "• **The Lighthouse (d3):** A design concept store and Mediterranean dining lounge created for the creative community.\n" .
+                    "• **A4 Space (Alserkal Avenue):** Loft-style creative hub with an indie coffee counter, art library, and co-working spaces.";
             }
+        }
 
-            // Events
-            if (str_contains($q, 'فعالية') || str_contains($q, 'فعاليات') || str_contains($q, 'حدث') || str_contains($q, 'event')) {
-                return "يمكنك اكتشاف جميع المسابقات والمعارض والملتقيات الثقافية النشطة مباشرة عبر تطبيقنا!\n\n" .
-                    "• اضغط على **الفعاليات / المسابقات** من الشاشة الرئيسية.\n" .
-                    "• قم بالتصفية حسب التاريخ والموقع ومسابقات الجوائز.\n" .
-                    "• يمكن للفنانين المسجلين أيضاً إضافة فعالياتهم ومعارضهم الخاصة ومشاركتها مع مجتمع الفن.";
+        // Intent N: Tashkeel, Workshops & Beginner Classes
+        $asksWorkshops = str_contains($q, 'workshop') || str_contains($q, 'workshops') || str_contains($q, 'tashkeel') || str_contains($q, 'class') || str_contains($q, 'beginner') || str_contains($q, 'learn')
+                      || str_contains($q, 'تشكيل') || str_contains($q, 'ورش') || str_contains($q, 'تدريب') || str_contains($q, 'مبتدئ') || str_contains($q, 'دروس');
+        if ($asksWorkshops) {
+            if ($isArabic) {
+                return "يقدم المشهد الفني في دبي ورش عمل وبرامج تدريبية لجميع المستويات:\n\n" .
+                    "• **مركز تشكيل (ند الشبا وحي الفهيدي):** يوفر استوديوهات متخصصة للطباعة، وصناعة الفخار، والتصوير، وبرنامج تنوين للتصميم، مع ورش أسبوعية للمبتدئين والمحترفين.\n" .
+                    "• **السركال أفنيو:** مساحات مثل thejamjar تقدم دروساً حرة في الرسم التعبيري والألوان الزيتية والإكريليك للأطفال والكبار.\n" .
+                    "• **مركز جميل للفنون:** برامج مجتمعية وحلقات نقاشية وورش فنية دورية مجانية.\n" .
+                    "• تابع تبويب **الفعاليات** في التطبيق لمعرفة مواعيد ورش العمل القادمة والتسجيل فيها مباشرة!";
+            } else {
+                return "Dubai offers dynamic art workshops and learning spaces for all skill levels:\n\n" .
+                    "• **Tashkeel (Nad Al Sheba & Al Fahidi):** Founded by HH Sheikha Lateefa bint Maktoum, offers professional printmaking studios, darkrooms, ceramic facilities, and public workshops.\n" .
+                    "• **thejamjar (Alserkal Avenue):** A community art space offering guided painting classes, DIY canvas sessions, and youth art programs.\n" .
+                    "• **Jameel Arts Centre:** Hosts free community workshops, curatorial talks, and family learning weekends.\n" .
+                    "• Check the in-app **Events** tab regularly for upcoming masterclasses and workshop registrations!";
             }
+        }
 
-            // Greetings
-            if (str_contains($q, 'مرحبا') || str_contains($q, 'أهلا') || str_contains($q, 'سلام') || str_contains($q, 'صباح') || str_contains($q, 'مساء') || str_contains($q, 'hello') || str_contains($q, 'hi')) {
-                return "أهلاً بك في **مرشد فنان دبي الذكي**! يسعدني مساعدتك في استكشاف المشهد الفني الغني في دبي. يمكنك سؤالي عن:\n\n" .
-                    "• المناطق الفنية الشهيرة (السركال أفنيو، حي دبي للتصميم d3، مركز دبي المالي DIFC)\n" .
-                    "• أوقات العمل والدخول المجاني وطرق الوصول بالمترو\n" .
-                    "• كيفية التسجيل كفنان، وحجز الفنانين، أو عرض وبيع لوحاتك\n" .
-                    "• ورش العمل، والمعارض القادمة، وجولات عطلة نهاية الأسبوع المقترحة\n\n" .
-                    "كيف يمكنني مساعدتك اليوم؟";
+        // Intent O: Competitions & Open Calls
+        $asksComp = str_contains($q, 'competition') || str_contains($q, 'prize') || str_contains($q, 'award') || str_contains($q, 'open call') || str_contains($q, 'grant')
+                 || str_contains($q, 'مسابقة') || str_contains($q, 'مسابقات') || str_contains($q, 'جوائز') || str_contains($q, 'مكافآت');
+        if ($asksComp) {
+            if ($isArabic) {
+                return "المسابقات والجوائز الفنية النشطة في دبي:\n\n" .
+                    "• **مهرجان سكة للفنون والتصميم:** يفتح سنوياً دعوة للمبدعين بجوائز دعم وتمويل للمشاريع الفنية الفائزة.\n" .
+                    "• **برنامج تنوين للتصميم (تشكيل):** منحة تدريب وتمويل لإنتاج قطع أثاث وتصميم إماراتية.\n" .
+                    "• **تكليفات الفن العام (Public Art Dubai):** دعوات مفتوحة تنظمها دبي للثقافة للمجسمات والجداريات الضخمة.\n" .
+                    "• تصفح شاشة **الفعاليات / المسابقات** في تطبيقنا للاطلاع على شروط المشاركة والمواعيد النهائية فور صدورها!";
+            } else {
+                return "Active art competitions, grants, and open calls in Dubai:\n\n" .
+                    "• **Sikka Art & Design Open Call:** Annual competition by Dubai Culture providing production grants for site-specific installations and exhibitions.\n" .
+                    "• **Tanween Design Programme (Tashkeel):** Annual design cohort with product manufacture and launch at Dubai Design Week.\n" .
+                    "• **Public Art Dubai Commissions:** Open calls by the Dubai government for large-scale outdoor sculptures and mural works.\n" .
+                    "• Browse active competitions and deadlines under our app's **EVENTS / COMPETITIONS** section!";
             }
-
-            return "أنا **مرشد فنان دبي الذكي**! يمكنك سؤالي عن أي شيء يخص:\n\n" .
-                "• المناطق والمعارض الفنية في دبي (السركال، d3، مركز دبي المالي)\n" .
-                "• مواعيد العمل والدخول المجاني وطرق الوصول بالمترو\n" .
-                "• كيفية حجز الفنانين أو التسجيل كفنان وعرض أعمالك\n" .
-                "• الفعاليات والمعارض والمسابقات الثقافية والورش التدريبية\n\n" .
-                "لا تتردد في كتابة أي سؤال في الأسفل!";
         }
 
-        // ENGLISH LOGIC
-        // Free admission / tickets
-        if (str_contains($q, 'free') || str_contains($q, 'admission') || str_contains($q, 'ticket') || str_contains($q, 'cost') || str_contains($q, 'entry') || str_contains($q, 'fee') || str_contains($q, 'price')) {
-            return "Yes! General admission to major contemporary galleries across Dubai is **completely free** and open to the public:\n\n" .
-                "• **Alserkal Avenue:** Free entry 365 days a year. All 70+ contemporary galleries (Green Art, Carbon 12, Ayyam) are free to enter with no booking required (only Cinema Akil screenings or ticketed culinary events have fees).\n" .
-                "• **DIFC Gate Village:** Free entry to all art galleries, exhibitions, and the outdoor sculpture promenade.\n" .
-                "• **Dubai Design District (d3):** Free public entry to galleries, design pop-ups, and interactive art installations.\n" .
-                "• **Jameel Arts Centre:** Free admission to all exhibition galleries and the outdoor sculpture park.\n" .
-                "• **Sikka Art & Design Festival (Al Fahidi):** Free public access to all exhibitions, live music, and installations.";
-        }
-
-        // Opening hours & timings
-        if (str_contains($q, 'hour') || str_contains($q, 'timing') || str_contains($q, 'open') || str_contains($q, 'close') || str_contains($q, 'schedule')) {
-            if (str_contains($q, 'd3') || str_contains($q, 'design')) {
-                return "Opening hours for **Dubai Design District (d3)**:\n\n" .
-                    "• **Public outdoor promenades, cafes & restaurants:** Open daily from 8:00 AM to 11:00 PM (and midnight on weekends).\n" .
-                    "• **Commercial design showrooms & art galleries:** Typically open Sunday through Thursday from 9:00 AM to 6:00 PM.\n" .
-                    "• The best visiting time for lighting, outdoor sculpture photography, and dining is late afternoon and evening!";
+        // Intent P: Artist Verification Requirements
+        $asksVerify = str_contains($q, 'verify') || str_contains($q, 'verified') || str_contains($q, 'requirement') || str_contains($q, 'criteria')
+                   || str_contains($q, 'توثيق') || str_contains($q, 'متطلبات') || str_contains($q, 'شروط');
+        if ($asksVerify) {
+            if ($isArabic) {
+                return "متطلبات توثيق واعتماد ملف الفنان في تطبيق **فنان دبي**:\n\n" .
+                    "1. **المعلومات والسيرة:** الاسم الفني، والتخصص الرئيسي، ونبذة ملخصة عن مسيرتك ومعارضك.\n" .
+                    "2. **معرض الأعمال (Portfolio):** رفع ما لا يقل عن 3 إلى 5 صور واضحة وعالية الجودة لأعمالك الفنية الأصلية.\n" .
+                    "3. **بيانات التواصل:** بريد إلكتروني صالح، ورقم هاتف، وحساب إنستغرام أو رابط موقع إلكتروني.\n" .
+                    "4. **الاعتماد:** يتم تدقيق الطلب وتوثيق الحساب بشارة التحقق خلال 24 ساعة للظهور في قوائم الفنانين المعتمدين!";
+            } else {
+                return "Requirements to get verified as an artist on **Artist Dubai**:\n\n" .
+                    "1. **Full Name & Discipline:** Clear profile title indicating your creative discipline (e.g. Contemporary Painting, Sculpture, Digital Art).\n" .
+                    "2. **Portfolio Samples:** Upload 3 to 5 high-resolution images of your original artwork.\n" .
+                    "3. **Artist Bio:** A brief artist statement summarizing your artistic journey and themes.\n" .
+                    "4. **Valid Contact:** Phone number, email, and social handle (Instagram or website) for verification.\n" .
+                    "5. **Fast Review:** Our curation team reviews submissions within 24 hours to award verified artist status!";
             }
-            if (str_contains($q, 'alserkal') || str_contains($q, 'quoz')) {
-                return "Opening hours for **Alserkal Avenue (Al Quoz)**:\n\n" .
-                    "• **Contemporary Art Galleries:** Saturday through Thursday, 10:00 AM to 7:00 PM (some galleries are closed on Fridays).\n" .
-                    "• **Artisan Cafes & Concept Spaces:** Daily from 8:00 AM to 10:00 PM.\n" .
-                    "• **Cinema Akil:** Open during scheduled evening screenings (typically 5:00 PM to 11:00 PM).";
+        }
+
+        // Intent Q: Sculptures & Public Installations
+        $asksSculpture = str_contains($q, 'sculpture') || str_contains($q, 'installation') || str_contains($q, '3d') || str_contains($q, 'monument')
+                      || str_contains($q, 'نحت') || str_contains($q, 'مجسم') || str_contains($q, 'مجسمات') || str_contains($q, 'تماثيل');
+        if ($asksSculpture) {
+            if ($isArabic) {
+                return "أين تشاهد المجسمات النحتية الحديثة في دبي:\n\n" .
+                    "• **ممشى المجسمات بمركز دبي المالي (DIFC Sculpture Promenade):** متحف مفتوح طوال العام يضم مجسمات برونزية وفولاذية ورخامية لنخبة من كبار النحاتين العالميين.\n" .
+                    "• **معرض كوستوت Custot (السركال أفنيو):** يعرض بانتظام منحوتات ضخمة لفنانين معاصرين مثل بيرنار فينيت وجان دوبوفيه.\n" .
+                    "• **حديقة المجسمات بمركز جميل للفنون:** مساحات خارجية على خور الجداف تضم أعمالاً تركيبية حصرية.\n" .
+                    "• **أعمال حي دبي للتصميم d3:** مجسمات تفاعلية مستوحاة من التصميم المعماري الحديث.";
+            } else {
+                return "Where to experience monumental modern sculptures in Dubai:\n\n" .
+                    "• **DIFC Sculpture Promenade:** Year-round open-air museum displaying monumental contemporary bronze, steel, and marble sculptures by international masters.\n" .
+                    "• **Custot Gallery (Alserkal):** Frequently showcases monumental sculpture and modern European masters (Dubuffet, Bernar Venet).\n" .
+                    "• **Jameel Arts Centre Sculpture Park:** Outdoor park along Jaddaf Waterfront featuring bespoke commissions.\n" .
+                    "• **d3 Design Installations:** Cutting-edge interactive public art installations throughout Dubai Design District.";
             }
-            return "Typical opening hours for Dubai art destinations:\n\n" .
-                "• **Alserkal Avenue:** Galleries 10:00 AM – 7:00 PM (Sat–Thu), Cafes 8:00 AM – 10:00 PM daily.\n" .
-                "• **Dubai Design District (d3):** 8:00 AM – 11:00 PM daily.\n" .
-                "• **DIFC Gate Village:** Galleries 10:00 AM – 8:00 PM (Sun–Thu).\n" .
-                "• **Jameel Arts Centre:** 10:00 AM – 8:00 PM (Closed on Tuesdays).\n" .
-                "• **Al Fahidi Historical Neighbourhood:** 9:00 AM – 8:00 PM daily.";
         }
 
-        // Metro / Transport / Directions
-        if (str_contains($q, 'metro') || str_contains($q, 'reach') || str_contains($q, 'direction') || str_contains($q, 'get to') || str_contains($q, 'transport') || str_contains($q, 'taxi') || str_contains($q, 'parking')) {
-            if (str_contains($q, 'difc') || str_contains($q, 'gate village') || str_contains($q, 'financial')) {
-                return "How to reach **DIFC Gate Village by Metro**:\n\n" .
-                    "• Take the **Dubai Metro Red Line** and exit at **Financial Centre Metro Station** (Exit 1) or **Emirates Towers Station**.\n" .
-                    "• From Financial Centre Station, it is a comfortable 7–10 minute air-conditioned walk through the DIFC concourse or a 2-minute taxi ride.\n" .
-                    "• If driving, underground visitor and valet parking is available at Gate Village Buildings 1 to 10.";
-            }
-            if (str_contains($q, 'alserkal') || str_contains($q, 'quoz')) {
-                return "How to reach **Alserkal Avenue (Al Quoz 1)**:\n\n" .
-                    "• **By Metro:** Take the Red Line to **Onpassive Metro Station** or **Equiti Metro Station**, then take a 5-minute taxi (approx. AED 12–15) or RTA Feeder Bus F25.\n" .
-                    "• **By Car:** Free and RTA parking spaces are available surrounding Avenue 17 and Streets 8 & 6 in Al Quoz 1.";
-            }
-            return "How to reach Dubai's top art districts:\n\n" .
-                "• **DIFC Gate Village:** Metro Red Line to **Financial Centre Station**.\n" .
-                "• **Al Fahidi Historical District:** Metro Green Line to **Sharaf DG Station** (formerly Al Fahidi).\n" .
-                "• **Alserkal Avenue:** Metro Red Line to **Onpassive Station** + 5-min taxi.\n" .
-                "• **Dubai Design District (d3):** Metro Red Line to **Dubai Mall / Business Bay** + RTA Bus d3 or 5-min taxi.";
+        // Fallback / Conversational Greetings
+        if ($isArabic) {
+            return "مرحباً بك في **مرشد فنان دبي الذكي**! أنا هنا لمساعدتك في كل ما يتعلق بالمشهد الفني في دبي:\n\n" .
+                "• **المناطق الفنية:** السركال أفنيو، حي دبي للتصميم d3، مركز دبي المالي DIFC، مركز جميل للفنون، حي الفهيدي.\n" .
+                "• **أوقات العمل والتذاكر:** مواعيد الدخول، والدخول المجاني، وإرشادات المترو والمواصلات.\n" .
+                "• **الفنانون والأعمال:** كيفية حجز فنان، أو طلب لوحات مخصصة، أو التسجيل كفنان معتمد.\n" .
+                "• **الفعاليات:** المعارض الحالية، والمسابقات، وورش العمل التدريبية.\n\n" .
+                "تفضل بسؤالك وسأجيبك فوراً!";
+        } else {
+            return "Hello! I am your **Artist Dubai AI Guide**. I am here to help you navigate and explore Dubai's cultural landscape:\n\n" .
+                "• **Creative Districts:** Alserkal Avenue, Dubai Design District (d3), DIFC Gate Village, Jameel Arts Centre, and Al Fahidi.\n" .
+                "• **Visiting Info:** Opening hours, free admission policies, and Metro transit directions.\n" .
+                "• **Artists & Artworks:** How to book artists, purchase original art, or register as a verified creator.\n" .
+                "• **Events & Learning:** Current exhibitions, art competitions, and beginner workshops.\n\n" .
+                "Feel free to ask any question!";
         }
-
-        // Booking an artist (distinguished from registration!)
-        if (str_contains($q, 'book') || str_contains($q, 'hire') || str_contains($q, 'commission') || str_contains($q, 'booking') || str_contains($q, 'request artist')) {
-            return "Booking or commissioning an artist on **Artist Dubai** is simple and direct:\n\n" .
-                "1. Tap the **Artists** tab in the bottom navigation bar to browse verified UAE talents.\n" .
-                "2. Tap any artist profile to review their bio, artistic discipline, portfolio works, and starting booking rate (e.g. AED 1,500+).\n" .
-                "3. Tap the **Book Artist** or **Contact** button on their profile.\n" .
-                "4. Enter your project details: event date, location, booking type (Live Painting, Mural Commission, Workshop, Custom Artwork), and budget.\n" .
-                "5. Submit your request for swift confirmation and coordination directly from the artist and our team!";
-        }
-
-        // Selling artworks & prices
-        if (str_contains($q, 'sell') || str_contains($q, 'buy') || str_contains($q, 'artwork') || str_contains($q, 'painting') || str_contains($q, 'price') || str_contains($q, 'portfolio')) {
-            return "Buying and selling original art on **Artist Dubai**:\n\n" .
-                "• **For Artists:** Once verified, you can upload artworks directly through your artist dashboard with high-resolution imagery, dimensions, medium (Oil, Acrylic, Mixed Media), and pricing in AED/USD.\n" .
-                "• **For Art Collectors & Buyers:** Browse original artworks in the in-app catalog, contact the artists directly, or submit purchase inquiries with transparent pricing.\n" .
-                "• We connect artists with collectors, corporate offices, luxury hotels, and private art patrons across the UAE.";
-        }
-
-        // Arabic Calligraphy & Typography
-        if (str_contains($q, 'calligraphy') || str_contains($q, 'typography') || str_contains($q, 'arabic art') || str_contains($q, 'lettering')) {
-            return "Arabic Calligraphy is one of the most celebrated art forms in Dubai's creative landscape:\n\n" .
-                "• **Traditional Styles:** Masters specialize in Thuluth, Diwani, Kufic, and Naskh scripts.\n" .
-                "• **Contemporary Hurufiyya:** Modern regional artists blend abstract expressionism with geometric Arabic typography and sculptural lettering.\n" .
-                "• **Find Artists:** In the **Artists** tab of our app, filter by **Calligraphy & Typography** to view featured local and regional masters.\n" .
-                "• **Where to Experience:** Tashkeel (Nad Al Sheba), Sikka Art Festival (Al Fahidi), and specialized exhibitions across DIFC and Alserkal Avenue.";
-        }
-
-        // Tashkeel, Workshops & Beginner classes
-        if (str_contains($q, 'tashkeel') || str_contains($q, 'workshop') || str_contains($q, 'class') || str_contains($q, 'beginner') || str_contains($q, 'residency') || str_contains($q, 'learn')) {
-            return "Dubai offers dynamic art workshops and learning spaces for all skill levels:\n\n" .
-                "• **Tashkeel (Nad Al Sheba & Al Fahidi):** Founded by HH Sheikha Lateefa bint Maktoum, offers professional printmaking studios, darkrooms, ceramic facilities, and public workshops.\n" .
-                "• **thejamjar (Alserkal Avenue):** A community art space offering guided painting classes, DIY canvas sessions, and youth art programs.\n" .
-                "• **Jameel Arts Centre:** Hosts free community workshops, curatorial talks, and family learning weekends.\n" .
-                "• Check the in-app **Events** tab regularly for upcoming masterclasses and workshop registrations.";
-        }
-
-        // Art Cafes & Dining
-        if (str_contains($q, 'cafe') || str_contains($q, 'coffee') || str_contains($q, 'breakfast') || str_contains($q, 'dining') || str_contains($q, 'food') || str_contains($q, 'restaurant')) {
-            return "Top art cafes in Dubai where you can dine surrounded by creativity:\n\n" .
-                "• **Nightjar Coffee Roasters (Alserkal Avenue):** Renowned artisan cold brews and craft breakfast dishes inside a vibrant warehouse vibe.\n" .
-                "• **Wild & The Moon (Alserkal Avenue):** 100% plant-based organic food and cold-pressed juices in a sunlit green space.\n" .
-                "• **XVA Cafe (Al Fahidi):** A secluded historic courtyard shaded by a Frangipani tree, serving gourmet vegetarian Middle Eastern cuisine.\n" .
-                "• **The Lighthouse (d3):** A design concept store and Mediterranean dining lounge created for the creative community.\n" .
-                "• **A4 Space (Alserkal Avenue):** Loft-style creative hub with an indie coffee counter, art library, and co-working spaces.";
-        }
-
-        // Art Competitions & Open Calls
-        if (str_contains($q, 'competition') || str_contains($q, 'prize') || str_contains($q, 'award') || str_contains($q, 'open call') || str_contains($q, 'cash')) {
-            return "Active art competitions, grants, and open calls in Dubai:\n\n" .
-                "• **Sikka Art & Design Open Call:** Annual competition by Dubai Culture providing production grants for site-specific installations and exhibitions.\n" .
-                "• **Tanween Design Programme (Tashkeel):** Annual design cohort with product manufacture and launch at Dubai Design Week.\n" .
-                "• **Public Art Dubai Commissions:** Open calls by the Dubai government for large-scale outdoor sculptures and mural works.\n" .
-                "• Browse active competitions and deadlines under our app's **EVENTS / COMPETITIONS** section!";
-        }
-
-        // Requirements & Verification
-        if (str_contains($q, 'requirement') || str_contains($q, 'verified') || str_contains($q, 'verification') || str_contains($q, 'criteria')) {
-            return "Requirements to get verified as an artist on **Artist Dubai**:\n\n" .
-                "1. **Full Name & Discipline:** Clear profile title indicating your creative discipline (e.g. Contemporary Painting, Sculpture, Digital Art).\n" .
-                "2. **Portfolio Samples:** Upload 3 to 5 high-resolution images of your original artwork.\n" .
-                "3. **Artist Bio:** A brief artist statement summarizing your artistic journey and themes.\n" .
-                "4. **Valid Contact:** Phone number, email, and social handle (Instagram or website) for verification.\n" .
-                "5. **Fast Review:** Our curation team reviews submissions within 24 hours to award verified artist status!";
-        }
-
-        // Guided tours & Al Fahidi
-        if (str_contains($q, 'guided tour') || str_contains($q, 'heritage') || str_contains($q, 'fahidi') || str_contains($q, 'sikka')) {
-            return "Exploring heritage art and guided experiences in **Al Fahidi Historical Neighbourhood**:\n\n" .
-                "• Wander through traditional coral-stone wind-tower houses dating back to the late 19th century.\n" .
-                "• Visit **XVA Art Hotel & Gallery**, the **Coffee Museum**, and **Alserkal Cultural Foundation**.\n" .
-                "• Every February/March, the entire district transforms for the **Sikka Art & Design Festival**.\n" .
-                "• Guided walking tours can be arranged through the Sheikh Mohammed bin Rashid Al Maktoum Centre for Cultural Understanding (SMCCU) right inside the district.";
-        }
-
-        // Sculpture
-        if (str_contains($q, 'sculpture') || str_contains($q, 'installation') || str_contains($q, '3d')) {
-            return "Where to experience monumental modern sculptures in Dubai:\n\n" .
-                "• **DIFC Sculpture Promenade:** Year-round open-air museum displaying monumental contemporary bronze, steel, and marble sculptures by international masters.\n" .
-                "• **Custot Gallery (Alserkal):** Frequently showcases monumental sculpture and modern European masters (Dubuffet, Bernar Venet).\n" .
-                "• **Jameel Arts Centre Sculpture Park:** Outdoor park along Jaddaf Waterfront featuring bespoke commissions.\n" .
-                "• **d3 Design Installations:** Cutting-edge interactive public art installations throughout Dubai Design District.";
-        }
-
-        // Districts general
-        if (str_contains($q, 'district') || str_contains($q, 'visit') || str_contains($q, 'where') || str_contains($q, 'area') || str_contains($q, 'place')) {
-            return "Dubai has several vibrant, world-renowned art and creative hubs:\n\n" .
-                "• **Alserkal Avenue (Al Quoz)**\n" .
-                "The premier contemporary art hub of Dubai with over 70 creative spaces, world-class galleries (Green Art Gallery, Carbon 12, Grey Noise), artisan cafes, and indie cinemas.\n\n" .
-                "• **Dubai Design District (d3)**\n" .
-                "A hub for high-end fashion, architecture, modern sculpture installations, and design festivals.\n\n" .
-                "• **DIFC Gate Village**\n" .
-                "Sophisticated commercial galleries (Christie’s, Opera Gallery, Ayyam Gallery) and fine dining.\n\n" .
-                "• **Al Fahidi Historical Neighbourhood**\n" .
-                "Historic wind-tower quarter hosting the Sikka Art & Design Festival, XVA Gallery, and heritage craft studios.\n\n" .
-                "• **Jameel Arts Centre (Jaddaf Waterfront)**\n" .
-                "An innovative institution displaying modern Middle Eastern and South Asian art in minimalist architectural spaces.";
-        }
-
-        // Register
-        if (str_contains($q, 'register') || str_contains($q, 'join') || str_contains($q, 'sign up') || str_contains($q, 'profile') || str_contains($q, 'artist')) {
-            return "Registering as an artist on **Artist Dubai** is straightforward:\n\n" .
-                "1. Go to the Home screen.\n" .
-                "2. Tap on the **ARTIST REGISTRATION** card.\n" .
-                "3. Fill in your artist name, discipline (Painting, Sculpture, Photography, Digital Art, etc.), bio, and contact information.\n" .
-                "4. Upload your portfolio artwork samples and exhibitions.\n" .
-                "5. Submit your profile for immediate feature and verification across the Dubai art network.";
-        }
-
-        // Weekend tour
-        if (str_contains($q, 'tour') || str_contains($q, 'weekend') || str_contains($q, 'itinerary') || str_contains($q, 'day')) {
-            return "Here is a curated **Weekend Art Tour** in Dubai:\n\n" .
-                "**Day 1 (Friday - Modern & Design):**\n" .
-                "• **Morning:** Stroll through Dubai Design District (d3), enjoy breakfast at a creative café, and explore cutting-edge design showcases.\n" .
-                "• **Afternoon:** Visit DIFC Gate Village for prestigious contemporary galleries and sculpture walks.\n" .
-                "• **Evening:** Sunset visit to Jameel Arts Centre by the serene Jaddaf waterfront.\n\n" .
-                "**Day 2 (Saturday - Underground & Heritage):**\n" .
-                "• **Morning:** Wander through the historic Al Fahidi cultural quarters and visit XVA Art Hotel.\n" .
-                "• **Afternoon:** Dive into Alserkal Avenue — visit warehouse galleries, live artist workshops, and creative concept stores.\n" .
-                "• **Night:** Catch an independent art cinema screening or live music at Cinema Akil.";
-        }
-
-        // Galleries
-        if (str_contains($q, 'gallery') || str_contains($q, 'galleries') || str_contains($q, 'center')) {
-            return "Dubai boasts prestigious private and institutional art galleries:\n\n" .
-                "• **XVA Gallery** (Al Fahidi) - Specializes in contemporary Middle Eastern art.\n" .
-                "• **Ayyam Gallery** (Alserkal Avenue) - Leading regional contemporary artists.\n" .
-                "• **Custot Gallery** (Alserkal Avenue) - Modern and contemporary Western and international art.\n" .
-                "• **Opera Gallery** (DIFC) - Renowned master and contemporary artworks.\n" .
-                "• **Tashkeel** (Nad Al Sheba) - Studio spaces, residency programs, and workshops.\n\n" .
-                "Explore our in-app **GALLERIES** directory from the main menu for direct contacts and locations!";
-        }
-
-        // Events
-        if (str_contains($q, 'event') || str_contains($q, 'exhibition')) {
-            return "You can discover all active competitions, exhibitions, and cultural gatherings directly inside our app!\n\n" .
-                "• Tap **EVENTS / COMPETITION** from the home screen.\n" .
-                "• Filter by dates, locations, and prize competitions.\n" .
-                "• Registered artists can also submit and showcase their own art events to the community.";
-        }
-
-        // Greetings
-        if (str_contains($q, 'hello') || str_contains($q, 'hi') || str_contains($q, 'hey') || str_contains($q, 'salam') || str_contains($q, 'morning') || str_contains($q, 'evening')) {
-            return "Hello! I am your **Artist Dubai Guide**. I am here to help you navigate and enjoy Dubai's vibrant cultural ecosystem. You can ask me about:\n\n" .
-                "• Major art districts (Alserkal Avenue, d3, DIFC Gate Village)\n" .
-                "• Free admission policies, opening hours, and Metro directions\n" .
-                "• How to book artists, sell artworks, or register as a creator\n" .
-                "• Weekend art itineraries, cafes, workshops, and exhibitions\n\n" .
-                "What would you like to explore today?";
-        }
-
-        return "I am your **Artist Dubai Guide**! You can ask me anything about:\n\n" .
-            "• Art districts, galleries, and exhibitions across Dubai\n" .
-            "• Free gallery admissions, opening hours, and transport directions\n" .
-            "• Booking artists, selling art, or registering as an artist\n" .
-            "• Curated weekend art tours, creative workshops, and art cafes\n\n" .
-            "Feel free to type any question below!";
     }
 
-    private function generateRelatedQuestions(string $query, string $locale = ''): array {
+    private function generateRelatedQuestions(string $query, string $locale = '', array $dbContext = []): array {
         $q = mb_strtolower(trim($query));
         $isArabic = ($locale === 'ar') || (bool)preg_match('/[\x{0600}-\x{06FF}]/u', $query);
 
         if ($isArabic) {
-            if (str_contains($q, 'مجاني') || str_contains($q, 'تذاكر') || str_contains($q, 'رسوم') || str_contains($q, 'دخول')) {
-                return [
-                    'ما هي أوقات عمل معارض السركال أفنيو؟',
-                    'كيف أصل إلى السركال أفنيو بالمترو؟',
-                    'ما هي أفضل المقاهي الفنية في السركال؟',
-                ];
-            }
-            if (str_contains($q, 'أوقات') || str_contains($q, 'ساعات') || str_contains($q, 'مواعيد')) {
+            if (str_contains($q, 'hour') || str_contains($q, 'timing') || str_contains($q, 'أوقات') || str_contains($q, 'ساعات') || str_contains($q, 'مواعيد')) {
                 return [
                     'هل الدخول إلى معارض السركال أفنيو مجاني؟',
                     'كيف أصل إلى قرية البوابة بمركز دبي المالي بالمترو؟',
                     'ما هي أحدث الفعاليات الفنية هذا الأسبوع؟',
                 ];
             }
-            if (str_contains($q, 'مترو') || str_contains($q, 'وصول') || str_contains($q, 'طريق')) {
+            if (str_contains($q, 'metro') || str_contains($q, 'reach') || str_contains($q, 'مترو') || str_contains($q, 'وصول') || str_contains($q, 'طريق')) {
                 return [
-                    'ما هي المعارض الفنية الموجودة في مركز دبي المالي؟',
+                    'ما هي أوقات عمل حي دبي للتصميم d3؟',
                     'هل تتوفر مواقف سيارات في السركال أفنيو؟',
                     'أفكار لجولة فنية في عطلة نهاية الأسبوع في دبي',
                 ];
             }
-            if (str_contains($q, 'حجز') || str_contains($q, 'توظيف') || str_contains($q, 'فنان')) {
+            if (str_contains($q, 'free') || str_contains($q, 'ticket') || str_contains($q, 'مجاني') || str_contains($q, 'تذاكر') || str_contains($q, 'رسوم')) {
+                return [
+                    'ما هي أوقات عمل معارض السركال أفنيو؟',
+                    'كيف أصل إلى السركال أفنيو بالمترو؟',
+                    'ما هي أفضل المقاهي الفنية في السركال؟',
+                ];
+            }
+            if (str_contains($q, 'book') || str_contains($q, 'hire') || str_contains($q, 'حجز') || str_contains($q, 'توظيف') || str_contains($q, 'طلب فنان')) {
                 return [
                     'ما هو متوسط سعر حجز الفنانين في دبي؟',
                     'كيف يمكنني بيع لوحاتي وأعمالي الفنية هنا؟',
                     'ما هي متطلبات توثيق ملف الفنان في التطبيق؟',
                 ];
             }
-            if (str_contains($q, 'بيع') || str_contains($q, 'شراء') || str_contains($q, 'لوحات')) {
+            if (!empty($dbContext['matched_artists'])) {
+                $firstName = $dbContext['matched_artists'][0]['name'] ?? 'فنان';
                 return [
-                    'كيف أحجز فناناً لعمل لوحة خاصة؟',
+                    "كيف أحجز $firstName لعمل لوحة خاصة؟",
+                    'ما هو متوسط سعر حجز الفنانين في دبي؟',
                     'ما هي متطلبات توثيق ملف الفنان في التطبيق؟',
-                    'ما هي المعارض المتخصصة في الخط العربي المعاصر؟',
                 ];
             }
-            if (str_contains($q, 'خط') || str_contains($q, 'خطاط')) {
+            if (!empty($dbContext['matched_events'])) {
                 return [
-                    'كيف أتواصل مع تشكيل للمشاركة في ورش العمل؟',
-                    'كيف أحجز خطاطاً لمناسبة خاصة؟',
-                    'أين تقع أفضل معارض الفن المعاصر في دبي؟',
-                ];
-            }
-            if (str_contains($q, 'منطقة') || str_contains($q, 'مناطق') || str_contains($q, 'السركال') || str_contains($q, 'زيارة')) {
-                return [
+                    'كيف أشارك في الفعاليات والمعارض القادمة؟',
                     'هل الدخول إلى معارض السركال أفنيو مجاني؟',
                     'ما هي أوقات عمل حي دبي للتصميم d3؟',
-                    'كيف أصل إلى قرية البوابة بمركز دبي المالي بالمترو؟',
                 ];
             }
             return [
-                'ما هي المناطق الفنية التي يمكنني زيارتها في دبي؟',
-                'كيف أحجز فناناً في هذا التطبيق؟',
-                'أفكار لجولة فنية في عطلة نهاية الأسبوع في دبي',
+                'هل الدخول إلى معارض السركال أفنيو مجاني؟',
+                'ما هي أوقات عمل حي دبي للتصميم d3؟',
+                'كيف أصل إلى قرية البوابة بمركز دبي المالي بالمترو؟',
             ];
         }
 
         // ENGLISH
-        if (str_contains($q, 'free') || str_contains($q, 'admission') || str_contains($q, 'ticket') || str_contains($q, 'cost')) {
-            return [
-                'What are the opening hours for Alserkal Avenue galleries?',
-                'How do I reach DIFC Gate Village by Metro?',
-                'What are the best art cafes in Alserkal Avenue?',
-            ];
-        }
         if (str_contains($q, 'hour') || str_contains($q, 'timing') || str_contains($q, 'open') || str_contains($q, 'close')) {
             return [
                 'Is admission free at Alserkal Avenue galleries?',
@@ -4487,50 +4671,60 @@ class AiChatController {
         }
         if (str_contains($q, 'metro') || str_contains($q, 'reach') || str_contains($q, 'direction') || str_contains($q, 'get to')) {
             return [
-                'Which galleries in Dubai feature Arabic calligraphy?',
+                'What are the opening hours for Dubai Design District (d3)?',
                 'Is admission free at Alserkal Avenue galleries?',
                 'Ideas for a weekend art tour in Dubai',
             ];
         }
+        if (str_contains($q, 'free') || str_contains($q, 'admission') || str_contains($q, 'ticket') || str_contains($q, 'cost')) {
+            return [
+                'What are the opening hours for Alserkal Avenue galleries?',
+                'How do I reach DIFC Gate Village by Metro?',
+                'What are the best art cafes in Alserkal Avenue?',
+            ];
+        }
         if (str_contains($q, 'book') || str_contains($q, 'hire') || str_contains($q, 'commission')) {
             return [
+                'What are the starting rates for artists in Dubai?',
                 'Can I sell my paintings and artworks directly on the app?',
                 'What are the requirements to get verified as an artist?',
-                'How do I submit an art event or exhibition?',
             ];
         }
-        if (str_contains($q, 'sell') || str_contains($q, 'buy') || str_contains($q, 'artwork') || str_contains($q, 'painting')) {
+        if (!empty($dbContext['matched_artists'])) {
+            $firstName = $dbContext['matched_artists'][0]['name'] ?? 'an artist';
             return [
-                'How do I book an artist in this app?',
+                "How do I book $firstName for a commission?",
+                'What are the starting rates for artists in Dubai?',
                 'What are the requirements to get verified as an artist?',
-                'Which galleries in Dubai feature Arabic calligraphy?',
             ];
         }
-        if (str_contains($q, 'calligraphy') || str_contains($q, 'typography')) {
+        if (!empty($dbContext['matched_events'])) {
             return [
-                'How can I join workshops and residencies at Tashkeel?',
-                'How do I book an artist in this app?',
-                'Where can I find modern sculpture galleries in Dubai?',
-            ];
-        }
-        if (str_contains($q, 'district') || str_contains($q, 'visit') || str_contains($q, 'where') || str_contains($q, 'alserkal')) {
-            return [
+                'How do I RSVP for upcoming art exhibitions?',
                 'Is admission free at Alserkal Avenue galleries?',
                 'What are the opening hours for Dubai Design District (d3)?',
-                'How do I reach DIFC Gate Village by Metro?',
             ];
         }
         return [
             'Which art districts can I visit in Dubai?',
+            'What are the opening hours for Dubai Design District (d3)?',
             'How do I book an artist in this app?',
-            'Ideas for a weekend art tour in Dubai',
         ];
     }
 
-    private function callGeminiApi(string $prompt, string $apiKey, bool $isArabic): ?string {
+    private function callGeminiApi(string $prompt, string $apiKey, bool $isArabic, array $dbContext = []): ?string {
         try {
             $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" . urlencode($apiKey);
-            $systemInstruction = "You are the AI Art Guide for 'Artist Dubai', an official mobile application for contemporary artists, galleries, cultural hubs, and events in Dubai, UAE. Answer clearly, accurately, and politely in markdown format. Keep answers concise (under 250 words) and suitable for a mobile screen. Locale: " . ($isArabic ? "Arabic" : "English") . ".";
+            
+            $dbSummary = "Live Database Context: Artists registered (" . ($dbContext['counts']['artists'] ?? 0) . "), Events (" . ($dbContext['counts']['events'] ?? 0) . "), Galleries (" . ($dbContext['counts']['galleries'] ?? 0) . ").";
+            if (!empty($dbContext['matched_artists'])) {
+                $dbSummary .= "\nActive matching artists: " . json_encode(array_column($dbContext['matched_artists'], 'name'), JSON_UNESCAPED_UNICODE);
+            }
+            if (!empty($dbContext['matched_events'])) {
+                $dbSummary .= "\nActive matching events: " . json_encode(array_column($dbContext['matched_events'], 'title'), JSON_UNESCAPED_UNICODE);
+            }
+
+            $systemInstruction = "You are the AI Art Guide for 'Artist Dubai', an official mobile application for contemporary artists, galleries, cultural hubs, and events in Dubai, UAE. Answer clearly, accurately, and politely in markdown format. Keep answers concise (under 250 words) and suitable for a mobile screen. Use the provided Live Database Context as platform ground truth. Locale: " . ($isArabic ? "Arabic" : "English") . ".\n\n" . $dbSummary;
             
             $payload = [
                 'contents' => [
