@@ -45,11 +45,18 @@ workflows:
           cd ios && pod install --repo-update
       - name: Build Flutter iOS IPA
         script: |
+          set -e
+          EXPORT_PLIST="/Users/builder/export_options.plist"
+          if [ ! -f "$EXPORT_PLIST" ]; then
+            EXPORT_PLIST="ios/ExportOptions.plist"
+          fi
+          echo "Using Export Options Plist: $EXPORT_PLIST"
+          
           flutter build ipa \
             --release \
             --build-name=3.2.4 \
             --build-number=9 \
-            --export-options-plist=ios/ExportOptions.plist
+            --export-options-plist="$EXPORT_PLIST"
           echo "=== IPA Built ==="
           ls -la build/ios/ipa/*.ipa
     artifacts:
