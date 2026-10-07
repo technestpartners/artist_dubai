@@ -38,9 +38,6 @@ workflows:
           export LANG=en_US.UTF-8
           export LC_ALL=en_US.UTF-8
           cd ios && pod install --repo-update
-      - name: Flutter build iOS (no codesign)
-        script: |
-          flutter build ios --release --no-codesign --build-name=3.2.4 --build-number=9
       - name: Set up code signing
         script: |
           keychain initialize
@@ -51,58 +48,26 @@ workflows:
           keychain add-certificates
           xcode-project use-profiles
           
-          echo "=== Provisioning Profiles ==="
+          echo "=== Provisioning Profiles Installed ==="
           ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
           echo "=== Code Signing Identities ==="
           security find-identity -v -p codesigning
-      - name: Archive and Export IPA
+      - name: Build & Package Release IPA
         script: |
-          mkdir -p build/ios/ipa
-          mkdir -p build/ios/xcarchive
-          
-          FIRST_PROFILE=$(ls ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision 2>/dev/null | head -n 1)
-          PROFILE_NAME=""
-          if [ -n "$FIRST_PROFILE" ]; then
-            security cms -D -i "$FIRST_PROFILE" > /tmp/profile.plist 2>/dev/null || true
-            PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /tmp/profile.plist 2>/dev/null || echo "")
-            echo "Extracted Provisioning Profile Name: $PROFILE_NAME"
-          fi
-          
+          set -e
           EXPORT_PLIST="/Users/builder/export_options.plist"
           if [ ! -f "$EXPORT_PLIST" ]; then
             EXPORT_PLIST="ios/ExportOptions.plist"
           fi
           echo "Using Export Options Plist: $EXPORT_PLIST"
           
-          if [ -n "$PROFILE_NAME" ]; then
-            xcodebuild -workspace ios/Runner.xcworkspace \
-              -scheme Runner \
-              -configuration Release \
-              -archivePath build/ios/xcarchive/Runner.xcarchive \
-              archive \
-              CODE_SIGN_STYLE=Manual \
-              DEVELOPMENT_TEAM=VDL4YWPJJ2 \
-              PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
-              COMPILER_INDEX_STORE_ENABLE=NO
-          else
-            xcodebuild -workspace ios/Runner.xcworkspace \
-              -scheme Runner \
-              -configuration Release \
-              -archivePath build/ios/xcarchive/Runner.xcarchive \
-              archive \
-              CODE_SIGN_STYLE=Manual \
-              DEVELOPMENT_TEAM=VDL4YWPJJ2 \
-              COMPILER_INDEX_STORE_ENABLE=NO
-          fi
+          flutter build ipa --release \
+            --build-name=3.2.4 \
+            --build-number=9 \
+            --export-options-plist="$EXPORT_PLIST"
           
-          echo "=== Exporting Archive to IPA ==="
-          xcodebuild -exportArchive \
-            -archivePath build/ios/xcarchive/Runner.xcarchive \
-            -exportOptionsPlist "$EXPORT_PLIST" \
-            -exportPath build/ios/ipa
-          
-          echo "=== Exported IPA Artifacts ==="
-          ls -la build/ios/ipa/
+          echo "=== Verifying Generated IPA ==="
+          ls -la build/ios/ipa/*.ipa
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
