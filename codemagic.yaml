@@ -4,7 +4,7 @@ workflows:
     instance_type: mac_mini_m2
     max_build_duration: 60
     integrations:
-      app_store_connect: iMbu
+      app_store_connect: CICD
     environment:
       flutter: stable
       xcode: latest
