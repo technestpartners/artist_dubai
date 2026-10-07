@@ -8,6 +8,7 @@ workflows:
       xcode: latest
       cocoapods: default
       vars:
+        BUNDLE_ID: "com.imbu.Dubai-Artists"
         APP_STORE_CONNECT_ISSUER_ID: "cc1a0e8b-556e-4a6b-a0b0-7758e822bdd4"
         APP_STORE_CONNECT_KEY_IDENTIFIER: "XUJ4SVP57R"
         APP_STORE_CONNECT_PRIVATE_KEY: |
@@ -17,6 +18,34 @@ workflows:
           pRHfSZaS6X6xtVwXDnTQlMWVDw/56jyM6TRa3ZGq16R0CXhWFWJjJrlgrG0dckpb
           Ip369qR3
           -----END PRIVATE KEY-----
+        CERTIFICATE_PRIVATE_KEY: |
+          -----BEGIN RSA PRIVATE KEY-----
+          MIIEpAIBAAKCAQEAzyxfedVDR7IXSg8RM6gEngXbJ28ls+NMubItcG+20fx8NlRm
+          qMz2P1jdSELSPv9auzxK/e4D3GIxbf7SuVGPwomDMj/+SGsCq38HmhuRN/++1rC9
+          +Pv45BQdxWgZmrF2cOmUVpvvMJFqCASfiTFtVDCF+3n1G1qykWpIaBgrE6TgKeCR
+          FwbV04IjMwF8Ykirhcwb0U4axyO0mWgxq94EYUW8JgUPn7Ql58B02rxgfaVScvSg
+          i2U1vT8gDjNBYzpzHytn7bHNz7MIFNdUCQcE90mbimuQlJPnUrQUGC4ux4T57Zi8
+          gyOFmw4yVJxqjeK3jxrNmmm+Y/+jqjKDJz2n3wIDAQABAoIBAF7pLTRbh18pL5I2
+          JONNbhAXDreaK+OllljcUATaqR66VQ1uzTk37PhIddfNBRTnV2G/1XtPt2UXdx21
+          SESuIPY2mWxD9PKoU6jNoWXwiy7kc0FX5zBR/0w+CwWNE23TLze7SsIC3imZ9MGH
+          nK71fei78iWrUacefgAweMt3hwSQCTnutjkGje0d7FGE5hAr1RRjYR81EWFfctOT
+          vKfplmFCqIInAr9fhuAuBnL0h3CfYQuGPDzdN/qA8WGRfdAMlgeXBPElQkjMlZbN
+          4J1jCnNtpEuVLE1qa+CVzVBsFDsuPFoR+G0toNBKV8pSJRg5wJsrG5Y9W4xzyqFy
+          dAs2ioECgYEA6Y8+3gb6TbzIEeSzbMVSfF6zaR2KFWNrY8AT+RHB0VyC1mASlj98
+          BPQ+h1vdBvSN6KUs4eDazrUGcnKb9uA6/IutLGl6FSfd3tDZCvt/8/+UNVzEM0jJ
+          VoGpHCEq/aJ5c+MwhMLAjHtxjAUJLu65AZOQxX4z4mvQCTgxr75/c9cCgYEA4xQe
+          L2pjpbrP85H2ALMdSwyxyYf9LYL0PQqomPRepwXpfZKE87GlJYYfKxUvwFr9en20
+          lEewWvYAO87/l7b0f1cDneB9Z6Lc4gX1fa9Lp6lDjjVZZiQ9OB1+ia5azgnxm2Nw
+          LWP5zqUk783AQgNxzdCaI+3i5em7CWG5s7XeazkCgYEAtrYmA0FILOpDRaQ5LR1M
+          gxj+l3vRWxwUlctclJtsmWEaxaQQxlNRrPp5tCCMT3WfUmFtNCNYaR66tWutUTtn
+          ScvnJHg7VjOC4V1Wfb30AihthDVXE5ucTj1O0z+rRxIEm0Ee4q0MPpoPYO9LmNiO
+          CIqtVaJ96mJXM+8vB4IqaK8CgYBy+pzOJXCPWigxjJajhA4xEhxzjwgDI2vH/L2h
+          tRq4N6Yijy4CttCIT4E4r2GeZHQ0sbHd4u7JIAa+QfHpQBpM4CJUrnbRIwX07E+B
+          dGE6Y9pxB1JdBbx5zXVlAYO5EA/mPlNuqFC08aniQqw2wMe/DwD9cFaTU+YAuhrt
+          hAk7AQKBgQCuToE5/mhyzBDwqGmQL17JUXKaEowFAF6l+z36WJdfSa7KM9kzCxLL
+          s3G/qCsMG1P0wR54BN0cK1R1t4aj1yynnzl5Y8B/Mgm79rTv8mySu/Oc+bG6Khyq
+          Y9XBU94QbRglssHXmYNoszKZJ1jT7AZXbLDgunOSgCB4hrRcDEVelQ==
+          -----END RSA PRIVATE KEY-----
     triggering:
       events:
         - push
@@ -29,20 +58,23 @@ workflows:
         - pattern: 'v*'
           include: true
     scripts:
-      - name: Set up Apple API Key and Signing
+      - name: Set up Apple API Key and Code Signing
         script: |
           mkdir -p ~/.private_keys
           echo "$APP_STORE_CONNECT_PRIVATE_KEY" > ~/.private_keys/AuthKey_${APP_STORE_CONNECT_KEY_IDENTIFIER}.p8
           chmod 600 ~/.private_keys/AuthKey_${APP_STORE_CONNECT_KEY_IDENTIFIER}.p8
-          ssh-keygen -t rsa -b 2048 -m PEM -f /tmp/cert_key -q -N ""
-          export CERTIFICATE_PRIVATE_KEY=$(cat /tmp/cert_key)
           keychain initialize
-          app-store-connect fetch-signing-files "com.imbu.Dubai-Artists" \
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create \
             --certificate-key=@env:CERTIFICATE_PRIVATE_KEY
           keychain add-certificates
           xcode-project use-profiles --export-options-plist=/Users/builder/export_options.plist
+          
+          echo "=== Provisioning Profiles Installed ==="
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || true
+          echo "=== Code Signing Identities in Keychain ==="
+          security find-identity -v -p codesigning
       - name: Get Flutter packages
         script: |
           flutter packages pub get
@@ -53,7 +85,7 @@ workflows:
           export LC_ALL=en_US.UTF-8
           cd ios
           pod install --repo-update
-      - name: Flutter build iOS
+      - name: Flutter build iOS (Release)
         script: |
           flutter build ios --release --no-codesign --build-name=3.2.4 --build-number=9
       - name: Archive Runner
