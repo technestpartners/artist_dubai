@@ -1,22 +1,22 @@
 workflows:
   ios-testflight:
     name: iOS TestFlight (Production Release 3.2.4(9))
-    instance_type: mac_mini_m2
     max_build_duration: 60
-    integrations:
-      app_store_connect: CICD
+    instance_type: mac_mini_m2
     environment:
       flutter: stable
       xcode: latest
       cocoapods: default
       vars:
-        BUNDLE_ID: "com.imbu.Dubai-Artists"
-      groups:
-        - ios_signing_credentials
-    cache:
-      cache_paths:
-        - $FLUTTER_ROOT/.pub-cache
-        - $HOME/Library/Caches/CocoaPods
+        APP_STORE_CONNECT_ISSUER_ID: "cc1a0e8b-556e-4a6b-a0b0-7758e822bdd4"
+        APP_STORE_CONNECT_KEY_IDENTIFIER: "XUJ4SVP57R"
+        APP_STORE_CONNECT_PRIVATE_KEY: |
+          -----BEGIN PRIVATE KEY-----
+          MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgP2dFZCqWljzoQeDu
+          8+ie0XZyIg32kGFqHocs+mJENaSgCgYIKoZIzj0DAQehRANCAASOr7NFWpVq5/nC
+          pRHfSZaS6X6xtVwXDnTQlMWVDw/56jyM6TRa3ZGq16R0CXhWFWJjJrlgrG0dckpb
+          Ip369qR3
+          -----END PRIVATE KEY-----
     triggering:
       events:
         - push
@@ -29,6 +29,20 @@ workflows:
         - pattern: 'v*'
           include: true
     scripts:
+      - name: Set up Apple API Key and Signing
+        script: |
+          mkdir -p ~/.private_keys
+          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > ~/.private_keys/AuthKey_${APP_STORE_CONNECT_KEY_IDENTIFIER}.p8
+          chmod 600 ~/.private_keys/AuthKey_${APP_STORE_CONNECT_KEY_IDENTIFIER}.p8
+          ssh-keygen -t rsa -b 2048 -m PEM -f /tmp/cert_key -q -N ""
+          export CERTIFICATE_PRIVATE_KEY=$(cat /tmp/cert_key)
+          keychain initialize
+          app-store-connect fetch-signing-files "com.imbu.Dubai-Artists" \
+            --type IOS_APP_STORE \
+            --create \
+            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY
+          keychain add-certificates
+          xcode-project use-profiles --export-options-plist=/Users/builder/export_options.plist
       - name: Get Flutter packages
         script: |
           flutter packages pub get
@@ -37,38 +51,45 @@ workflows:
         script: |
           export LANG=en_US.UTF-8
           export LC_ALL=en_US.UTF-8
-          cd ios && pod install --repo-update
-      - name: Set up code signing
+          cd ios
+          pod install --repo-update
+      - name: Flutter build iOS
         script: |
-          keychain initialize
-          if [ -n "$CERTIFICATE_PRIVATE_KEY" ]; then
-            app-store-connect fetch-signing-files "$BUNDLE_ID" \
-              --type IOS_APP_STORE \
-              --certificate-key @env:CERTIFICATE_PRIVATE_KEY \
-              --create
-          else
-            app-store-connect fetch-signing-files "$BUNDLE_ID" \
-              --type IOS_APP_STORE \
-              --create
+          flutter build ios --release --no-codesign --build-name=3.2.4 --build-number=9
+      - name: Archive Runner
+        script: |
+          xcodebuild -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -archivePath build/ios/Runner.xcarchive \
+            archive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            COMPILER_INDEX_STORE_ENABLE=NO
+      - name: Export and Sign IPA for App Store
+        script: |
+          mkdir -p build/ios/ipa
+          if [ ! -f /Users/builder/export_options.plist ]; then
+            cat <<EOF > /Users/builder/export_options.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>teamID</key>
+              <string>VDL4YWPJJ2</string>
+          </dict>
+          </plist>
+          EOF
           fi
-          keychain add-certificates
-          xcode-project use-profiles --project ios/Runner.xcodeproj
-          
-          echo "=== Provisioning Profiles Installed ==="
-          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || true
-          echo "=== Code Signing Identities ==="
-          security find-identity -v -p codesigning
-      - name: Flutter build iOS (no codesign)
-        script: |
-          flutter build ios --release --no-codesign
-      - name: Build & Package Release IPA
-        script: |
-          set -e
-          xcode-project build-ipa \
-            --workspace ios/Runner.xcworkspace \
-            --scheme Runner
-          
-          echo "=== Verifying Generated IPA ==="
+          xcodebuild -exportArchive \
+            -archivePath build/ios/Runner.xcarchive \
+            -exportPath build/ios/ipa \
+            -exportOptionsPlist /Users/builder/export_options.plist
           ls -la build/ios/ipa/*.ipa
     artifacts:
       - build/ios/ipa/*.ipa
@@ -81,7 +102,7 @@ workflows:
           success: true
           failure: true
       app_store_connect:
-        auth: integration
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
-        submit_to_app_store: false
-
