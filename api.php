@@ -3260,10 +3260,33 @@ class PublishingPricingController {
         try {
             $stmt = $this->db->query("SELECT * FROM publishing_pricing ORDER BY id ASC");
             $rows = $stmt->fetchAll();
+            if (empty($rows)) {
+                $this->seedInitialPricing();
+                $stmt = $this->db->query("SELECT * FROM publishing_pricing ORDER BY id ASC");
+                $rows = $stmt->fetchAll();
+            }
             ApiResponse::success($rows, 'Publishing pricing retrieved successfully');
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to retrieve publishing pricing', 500);
+            ApiResponse::error('Failed to retrieve publishing pricing: ' . $t->getMessage(), 500);
         }
+    }
+
+    public function seedInitialPricing(): void {
+        try {
+            $count = (int)$this->db->query("SELECT COUNT(*) FROM publishing_pricing")->fetchColumn();
+            if ($count === 0) {
+                $stmt = $this->db->prepare("
+                    INSERT INTO publishing_pricing 
+                    (id, item_type, item_name, description, weekly_price, monthly_price, six_month_price, yearly_price, six_month_badge, yearly_badge, currency, is_active)
+                    VALUES 
+                    (1, 'event', 'Event Publishing', 'Publishing events is a paid service on Artist Dubai. Select your preferred promotion duration. Once reviewed and approved by the admin, your event will be broadcasted to art enthusiasts across Dubai.', 'AED 150', 'AED 500', 'AED 2,500', 'AED 4,500', '180 days active', '365 days active', 'AED', 1),
+                    (2, 'gallery', 'Gallery Listing & Showcase', 'Premier directory listing, verified status badge, and spotlight showcase for Dubai art galleries.', 'AED 200', 'AED 750', 'AED 3,800', 'AED 6,500', '180 days active', '365 days active', 'AED', 1),
+                    (3, 'artist', 'Artist Verification & Listing', 'Get verified badge, priority placement in artist directory, and direct commissioning channel.', 'AED 100', 'AED 350', 'AED 1,800', 'AED 3,000', '180 days active', '365 days active', 'AED', 1)
+                    ON DUPLICATE KEY UPDATE item_name = VALUES(item_name)
+                ");
+                $stmt->execute();
+            }
+        } catch (\Throwable $t) {}
     }
 
     public function updatePricing(array $input): void {
@@ -3276,6 +3299,8 @@ class PublishingPricingController {
         $monthlyPrice = InputSanitizer::cleanString($input['monthly_price'] ?? $input['monthly'] ?? '');
         $sixMonthPrice = InputSanitizer::cleanString($input['six_month_price'] ?? $input['six_month'] ?? '');
         $yearlyPrice = InputSanitizer::cleanString($input['yearly_price'] ?? $input['yearly'] ?? '');
+        $sixMonthBadge = InputSanitizer::cleanString($input['six_month_badge'] ?? $input['sixMonthBadge'] ?? '');
+        $yearlyBadge = InputSanitizer::cleanString($input['yearly_badge'] ?? $input['yearlyBadge'] ?? '');
         $isActive = isset($input['is_active']) ? (int)$input['is_active'] : 1;
 
         if ($id <= 0) {
@@ -3292,6 +3317,8 @@ class PublishingPricingController {
             if (!empty($monthlyPrice)) { $fields[] = 'monthly_price = ?'; $params[] = $monthlyPrice; }
             if (!empty($sixMonthPrice)) { $fields[] = 'six_month_price = ?'; $params[] = $sixMonthPrice; }
             if (!empty($yearlyPrice)) { $fields[] = 'yearly_price = ?'; $params[] = $yearlyPrice; }
+            if (!empty($sixMonthBadge)) { $fields[] = 'six_month_badge = ?'; $params[] = $sixMonthBadge; }
+            if (!empty($yearlyBadge)) { $fields[] = 'yearly_badge = ?'; $params[] = $yearlyBadge; }
             if (isset($input['is_active'])) { $fields[] = 'is_active = ?'; $params[] = $isActive; }
 
             if (empty($fields)) {
@@ -3324,6 +3351,11 @@ class ListingPlansController {
         try {
             $stmt = $this->db->query("SELECT * FROM listing_plans ORDER BY sort_order ASC, id ASC");
             $rows = $stmt->fetchAll();
+            if (empty($rows)) {
+                $this->seedInitialPlans();
+                $stmt = $this->db->query("SELECT * FROM listing_plans ORDER BY sort_order ASC, id ASC");
+                $rows = $stmt->fetchAll();
+            }
             foreach ($rows as &$row) {
                 $features = [];
                 if (!empty($row['features_json'])) {
@@ -3338,6 +3370,61 @@ class ListingPlansController {
         } catch (\Throwable $t) {
             ApiResponse::error('Failed to retrieve listing plans: ' . $t->getMessage(), 500);
         }
+    }
+
+    public function seedInitialPlans(): void {
+        try {
+            $count = (int)$this->db->query("SELECT COUNT(*) FROM listing_plans")->fetchColumn();
+            if ($count === 0) {
+                $plans = [
+                    [
+                        'item_type' => 'event',
+                        'title' => 'Event Listing',
+                        'category' => 'Events',
+                        'badge' => 'One-time',
+                        'price' => '99 AED',
+                        'description' => 'Publish a single event on Artist Dubai.',
+                        'features_json' => json_encode(['One event listing', 'Visible in Events and calendar', 'Gallery photos included']),
+                        'button_text' => 'Pay from My Listings',
+                        'sort_order' => 1
+                    ],
+                    [
+                        'item_type' => 'gallery',
+                        'title' => 'Gallery Listing',
+                        'category' => 'Galleries',
+                        'badge' => 'One-time',
+                        'price' => '149 AED',
+                        'description' => 'Publish a single gallery on Artist Dubai.',
+                        'features_json' => json_encode(['One gallery listing', 'Unlimited images', 'Shareable gallery page']),
+                        'button_text' => 'Pay from My Listings',
+                        'sort_order' => 2
+                    ],
+                    [
+                        'item_type' => 'art_centre',
+                        'title' => 'Art Centre Listing',
+                        'category' => 'Art Centres',
+                        'badge' => 'One-time',
+                        'price' => '299 AED',
+                        'description' => 'Publish a single art centre on Artist Dubai.',
+                        'features_json' => json_encode(['One art centre listing', 'Verified venue badge', 'Direct booking inquiry button']),
+                        'button_text' => 'Pay from My Listings',
+                        'sort_order' => 3
+                    ],
+                ];
+                $stmt = $this->db->prepare("
+                    INSERT INTO listing_plans 
+                    (item_type, title, category, badge, price, description, features_json, button_text, is_active, sort_order)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+                ");
+                foreach ($plans as $p) {
+                    $stmt->execute([
+                        $p['item_type'], $p['title'], $p['category'], $p['badge'],
+                        $p['price'], $p['description'], $p['features_json'],
+                        $p['button_text'], $p['sort_order']
+                    ]);
+                }
+            }
+        } catch (\Throwable $t) {}
     }
 
     public function updatePlan(array $input): void {

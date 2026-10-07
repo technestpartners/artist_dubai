@@ -4936,6 +4936,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   void _showEditPricingDialog(PublishingPricingModel pricing) {
     final sixMonthCtrl = TextEditingController(text: pricing.sixMonthPrice);
     final yearlyCtrl = TextEditingController(text: pricing.yearlyPrice);
+    final sixMonthBadgeCtrl = TextEditingController(text: pricing.sixMonthBadge);
+    final yearlyBadgeCtrl = TextEditingController(text: pricing.yearlyBadge);
     final descCtrl = TextEditingController(text: pricing.description ?? '');
 
     showDialog(
@@ -5021,6 +5023,30 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     ),
                     const SizedBox(height: 14),
 
+                    // 6 Months Badge / Subtitle
+                    const Text('6 Months Badge / Subtitle', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: sixMonthBadgeCtrl,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. 180 days active',
+                        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
                     // Yearly Rate Field
                     const Text('Yearly Rate *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
                     const SizedBox(height: 6),
@@ -5031,6 +5057,30 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         hintText: 'e.g. AED 4,500',
                         hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
                         prefixIcon: const Icon(Icons.stars_rounded, size: 18, color: Color(0xFF6B1C9B)),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Yearly Badge / Subtitle
+                    const Text('Yearly Badge / Subtitle', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: yearlyBadgeCtrl,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. 365 days active',
+                        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
                         filled: true,
                         fillColor: const Color(0xFFF8FAFC),
                         enabledBorder: OutlineInputBorder(
@@ -5110,8 +5160,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                               monthlyPrice: pricing.monthlyPrice,
                               sixMonthPrice: sixMonth,
                               yearlyPrice: yearly,
-                              sixMonthBadge: '',
-                              yearlyBadge: '',
+                              sixMonthBadge: sixMonthBadgeCtrl.text.trim().isNotEmpty
+                                  ? sixMonthBadgeCtrl.text.trim()
+                                  : pricing.sixMonthBadge,
+                              yearlyBadge: yearlyBadgeCtrl.text.trim().isNotEmpty
+                                  ? yearlyBadgeCtrl.text.trim()
+                                  : pricing.yearlyBadge,
                               description: descCtrl.text.trim().isNotEmpty ? descCtrl.text.trim() : null,
                             );
 

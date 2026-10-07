@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
@@ -38,6 +40,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
 
   String _selectedPublishingPlan = 'six_month';
   PublishingPricingModel? _galleryPricing;
+  StreamSubscription<List<PublishingPricingModel>>? _pricingSub;
 
   static const Color _screenBg = Color(0xFF651B8A);
   static const Color _cardBg = Color(0xFF551478);
@@ -46,6 +49,30 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
   void initState() {
     super.initState();
     _loadPublishingPricing();
+
+    try {
+      _pricingSub = sl<LiveSyncService>().publishingPricingStream.listen((pricingList) {
+        if (!mounted || pricingList.isEmpty) return;
+        final galPricing = pricingList.firstWhere(
+          (p) => p.itemType == 'gallery',
+          orElse: () => _galleryPricing ?? const PublishingPricingModel(
+            id: 2,
+            itemType: 'gallery',
+            itemName: 'Gallery Showcase',
+            weeklyPrice: 'AED 200',
+            monthlyPrice: 'AED 750',
+            sixMonthPrice: 'AED 3,800',
+            yearlyPrice: 'AED 6,500',
+            sixMonthBadge: '180 days showcase',
+            yearlyBadge: '365 days showcase',
+            currency: 'AED',
+          ),
+        );
+        setState(() {
+          _galleryPricing = galPricing;
+        });
+      });
+    } catch (_) {}
   }
 
   @override
@@ -66,7 +93,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
 
   Future<void> _loadPublishingPricing() async {
     try {
-      final pricingList = await sl<ApiService>().getPublishingPricing();
+      final pricingList = await sl<ApiService>().getPublishingPricing(forceRefresh: true);
       final galPricing = pricingList.firstWhere(
         (p) => p.itemType == 'gallery',
         orElse: () => const PublishingPricingModel(
@@ -77,6 +104,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
           monthlyPrice: 'AED 750',
           sixMonthPrice: 'AED 3,800',
           yearlyPrice: 'AED 6,500',
+          sixMonthBadge: '180 days showcase',
+          yearlyBadge: '365 days showcase',
+          description: 'Premier directory listing, verified status badge, and spotlight showcase for Dubai art galleries.',
           currency: 'AED',
         ),
       );
@@ -98,6 +128,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
     _emailController.dispose();
     _phoneController.dispose();
     _aboutController.dispose();
+    _pricingSub?.cancel();
     super.dispose();
   }
 
@@ -710,7 +741,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Publishing your gallery on Artist Dubai is a premium feature. Select your preferred showcase plan. Once verified by the admin, your gallery will be featured prominently to art lovers across the UAE.'.trData(context),
+                        _galleryPricing?.description != null && _galleryPricing!.description!.trim().isNotEmpty
+                            ? DataTranslator.tr(context, _galleryPricing!.description!.trim())
+                            : 'Publishing your gallery on Artist Dubai is a premium feature. Select your preferred showcase plan. Once verified by the admin, your gallery will be featured prominently to art lovers across the UAE.'.trData(context),
                         style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 12,
@@ -723,6 +756,12 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                           final isSmall = constraints.maxWidth < 460;
                           final sixMonthPrice = _galleryPricing?.sixMonthPrice ?? 'AED 3,800';
                           final yearlyPrice = _galleryPricing?.yearlyPrice ?? 'AED 6,500';
+                          final sixMonthSubtitle = _galleryPricing?.sixMonthBadge.trim().isNotEmpty == true
+                              ? DataTranslator.tr(context, _galleryPricing!.sixMonthBadge.trim())
+                              : '180 days showcase'.trData(context);
+                          final yearlySubtitle = _galleryPricing?.yearlyBadge.trim().isNotEmpty == true
+                              ? DataTranslator.tr(context, _galleryPricing!.yearlyBadge.trim())
+                              : '365 days showcase'.trData(context);
 
                           final cards = [
                             _buildGalleryPricingCard(
@@ -730,14 +769,14 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                               title: '6 Months'.trData(context),
                               price: sixMonthPrice,
                               period: '/ 6 mo'.trData(context),
-                              subtitle: '180 days showcase'.trData(context),
+                              subtitle: sixMonthSubtitle,
                             ),
                             _buildGalleryPricingCard(
                               id: 'yearly',
                               title: 'Yearly'.trData(context),
                               price: yearlyPrice,
                               period: '/ year'.trData(context),
-                              subtitle: '365 days showcase'.trData(context),
+                              subtitle: yearlySubtitle,
                             ),
                           ];
 

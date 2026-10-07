@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -62,6 +63,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
   String _selectedPublishingPlan = 'six_month';
   PublishingPricingModel? _eventPricing;
+  StreamSubscription<List<PublishingPricingModel>>? _pricingSub;
 
   final _transactionIdController = TextEditingController();
   String? _receiptUrl;
@@ -173,6 +175,31 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     _loadDynamicCategories();
     _loadDynamicLocations();
     _loadPublishingPricing();
+
+    try {
+      _pricingSub = sl<LiveSyncService>().publishingPricingStream.listen((pricingList) {
+        if (!mounted || pricingList.isEmpty) return;
+        final evPricing = pricingList.firstWhere(
+          (p) => p.itemType == 'event',
+          orElse: () => _eventPricing ?? const PublishingPricingModel(
+            id: 1,
+            itemType: 'event',
+            itemName: 'Event Publishing',
+            weeklyPrice: 'AED 150',
+            monthlyPrice: 'AED 500',
+            sixMonthPrice: 'AED 2,500',
+            yearlyPrice: 'AED 4,500',
+            sixMonthBadge: '180 days active',
+            yearlyBadge: '365 days active',
+            description: 'Publishing events is a paid service on Artist Dubai. Select your preferred promotion duration. Once reviewed and approved by the admin, your event will be broadcasted to art enthusiasts across Dubai.',
+            currency: 'AED',
+          ),
+        );
+        setState(() {
+          _eventPricing = evPricing;
+        });
+      });
+    } catch (_) {}
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -413,7 +440,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
   Future<void> _loadPublishingPricing() async {
     try {
-      final pricingList = await sl<ApiService>().getPublishingPricing();
+      final pricingList = await sl<ApiService>().getPublishingPricing(forceRefresh: true);
       final evPricing = pricingList.firstWhere(
         (p) => p.itemType == 'event',
         orElse: () => const PublishingPricingModel(
@@ -424,6 +451,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           monthlyPrice: 'AED 500',
           sixMonthPrice: 'AED 2,500',
           yearlyPrice: 'AED 4,500',
+          sixMonthBadge: '180 days active',
+          yearlyBadge: '365 days active',
+          description: 'Publishing events is a paid service on Artist Dubai. Select your preferred promotion duration. Once reviewed and approved by the admin, your event will be broadcasted to art enthusiasts across Dubai.',
           currency: 'AED',
         ),
       );
@@ -586,6 +616,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     _tagsController.dispose();
     _maxTicketsController.dispose();
     _transactionIdController.dispose();
+    _pricingSub?.cancel();
     super.dispose();
   }
 
@@ -669,6 +700,13 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
             'title': title,
             'subtitle': '${_selectedCategory ?? 'Art Exhibition'} • $selectedLoc',
             'planId': _selectedPublishingPlan,
+            'planName': _selectedPublishingPlan == 'yearly'
+                ? (_eventPricing?.yearlyBadge.trim().isNotEmpty == true
+                    ? '${l10n.yearly} (${_eventPricing!.yearlyBadge.trim()})'
+                    : 'Yearly Plan (365 Days)')
+                : (_eventPricing?.sixMonthBadge.trim().isNotEmpty == true
+                    ? '${l10n.sixMonths} (${_eventPricing!.sixMonthBadge.trim()})'
+                    : '6 Months Plan (180 Days)'),
             'planAmount': publishingAmount,
             'formData': {
               'title': title,
@@ -1261,7 +1299,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              l10n.paidPublishingDesc,
+                              _eventPricing?.description != null && _eventPricing!.description!.trim().isNotEmpty
+                                  ? DataTranslator.tr(context, _eventPricing!.description!.trim())
+                                  : l10n.paidPublishingDesc,
                               style: const TextStyle(
                                 fontSize: 12.5,
                                 color: Color(0xFF475569),
@@ -1274,6 +1314,12 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                 final isSmall = constraints.maxWidth < 460;
                                 final sixMonthPrice = _eventPricing?.sixMonthPrice ?? 'AED 2,500';
                                 final yearlyPrice = _eventPricing?.yearlyPrice ?? 'AED 4,500';
+                                final sixMonthSubtitle = _eventPricing?.sixMonthBadge.trim().isNotEmpty == true
+                                    ? DataTranslator.tr(context, _eventPricing!.sixMonthBadge.trim())
+                                    : l10n.daysActive180;
+                                final yearlySubtitle = _eventPricing?.yearlyBadge.trim().isNotEmpty == true
+                                    ? DataTranslator.tr(context, _eventPricing!.yearlyBadge.trim())
+                                    : l10n.daysActive365;
 
                                 final cards = [
                                   _buildPricingPlanCard(
@@ -1281,14 +1327,14 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                     title: l10n.sixMonths,
                                     price: sixMonthPrice,
                                     period: '/ 6 mo',
-                                    subtitle: l10n.daysActive180,
+                                    subtitle: sixMonthSubtitle,
                                   ),
                                   _buildPricingPlanCard(
                                     id: 'yearly',
                                     title: l10n.yearly,
                                     price: yearlyPrice,
                                     period: '/ year',
-                                    subtitle: l10n.daysActive365,
+                                    subtitle: yearlySubtitle,
                                   ),
                                 ];
 
