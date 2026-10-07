@@ -69,7 +69,7 @@ workflows:
             --create \
             --certificate-key=@env:CERTIFICATE_PRIVATE_KEY
           keychain add-certificates
-          xcode-project use-profiles --export-options-plist=/Users/builder/export_options.plist
+          xcode-project use-profiles --project ios/Runner.xcodeproj
           
           echo "=== Provisioning Profiles Installed ==="
           ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || true
@@ -88,40 +88,14 @@ workflows:
       - name: Flutter build iOS (Release)
         script: |
           flutter build ios --release --no-codesign --build-name=3.2.4 --build-number=9
-      - name: Archive Runner
+      - name: Build & Package Release IPA
         script: |
-          xcodebuild -workspace ios/Runner.xcworkspace \
-            -scheme Runner \
-            -configuration Release \
-            -archivePath build/ios/Runner.xcarchive \
-            archive \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            COMPILER_INDEX_STORE_ENABLE=NO
-      - name: Export and Sign IPA for App Store
-        script: |
-          mkdir -p build/ios/ipa
-          if [ ! -f /Users/builder/export_options.plist ]; then
-            cat <<EOF > /Users/builder/export_options.plist
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>app-store</string>
-              <key>signingStyle</key>
-              <string>manual</string>
-              <key>teamID</key>
-              <string>VDL4YWPJJ2</string>
-          </dict>
-          </plist>
-          EOF
-          fi
-          xcodebuild -exportArchive \
-            -archivePath build/ios/Runner.xcarchive \
-            -exportPath build/ios/ipa \
-            -exportOptionsPlist /Users/builder/export_options.plist
+          set -e
+          xcode-project build-ipa \
+            --workspace ios/Runner.xcworkspace \
+            --scheme Runner
+          
+          echo "=== Verifying Generated IPA ==="
           ls -la build/ios/ipa/*.ipa
     artifacts:
       - build/ios/ipa/*.ipa
