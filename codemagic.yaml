@@ -11,8 +11,6 @@ workflows:
       cocoapods: default
       vars:
         BUNDLE_ID: "com.imbu.Dubai-Artists"
-      groups:
-        - ios_signing_credentials
     triggering:
       events:
         - push
@@ -36,33 +34,25 @@ workflows:
           
           echo "=== Provisioning Profiles Installed ==="
           ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || true
-          echo "=== Code Signing Identities in Keychain ==="
+          echo "=== Code Signing Identities ==="
           security find-identity -v -p codesigning
       - name: Get Flutter packages
         script: |
           flutter packages pub get
-          flutter build ios --config-only
       - name: Install CocoaPods
         script: |
           export LANG=en_US.UTF-8
           export LC_ALL=en_US.UTF-8
           cd ios
           pod install --repo-update
-      - name: Build Flutter iOS Release IPA
+      - name: Build Flutter iOS IPA
         script: |
-          set -e
-          if [ -f /Users/builder/export_options.plist ]; then
-            EXPORT_PLIST=/Users/builder/export_options.plist
-          else
-            EXPORT_PLIST=ios/ExportOptions.plist
-          fi
-          
-          flutter build ipa --release \
+          flutter build ipa \
+            --release \
             --build-name=3.2.4 \
             --build-number=9 \
-            --export-options-plist="$EXPORT_PLIST"
+            --export-options-plist=ios/ExportOptions.plist
           
-          echo "=== Verifying Generated IPA ==="
           ls -la build/ios/ipa/*.ipa
     artifacts:
       - build/ios/ipa/*.ipa
