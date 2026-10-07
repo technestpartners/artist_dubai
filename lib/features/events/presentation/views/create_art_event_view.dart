@@ -65,6 +65,20 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
   PublishingPricingModel? _eventPricing;
   StreamSubscription<List<PublishingPricingModel>>? _pricingSub;
 
+  final _titleKey = GlobalKey();
+  final _categoryKey = GlobalKey();
+  final _dateKey = GlobalKey();
+  final _endDateKey = GlobalKey();
+
+  final _titleFocusNode = FocusNode();
+  final _dateFocusNode = FocusNode();
+  final _endDateFocusNode = FocusNode();
+
+  String? _titleError;
+  String? _categoryError;
+  String? _dateError;
+  String? _endDateError;
+
   final _transactionIdController = TextEditingController();
   String? _receiptUrl;
 
@@ -200,6 +214,43 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
         });
       });
     } catch (_) {}
+
+    _eventTitleController.addListener(() {
+      if (_titleError != null && _eventTitleController.text.trim().isNotEmpty) {
+        setState(() => _titleError = null);
+      }
+    });
+    _eventDateController.addListener(() {
+      if (_dateError != null && _eventDateController.text.trim().isNotEmpty) {
+        setState(() => _dateError = null);
+      }
+    });
+    _endDateController.addListener(() {
+      if (_endDateError != null) {
+        setState(() => _endDateError = null);
+      }
+    });
+  }
+
+  void _scrollToField(GlobalKey key, {FocusNode? focusNode}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = key.currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(
+          ctx,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOutCubic,
+          alignment: 0.15,
+        );
+      }
+      if (focusNode != null) {
+        Future.delayed(const Duration(milliseconds: 350), () {
+          if (mounted) {
+            focusNode.requestFocus();
+          }
+        });
+      }
+    });
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -570,6 +621,11 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
     setState(() {
       controller.text = formatted;
+      if (!isEndDate) {
+        _dateError = null;
+      } else {
+        _endDateError = null;
+      }
       // If start date changed and is now after existing end date, sync end date to match start date
       if (!isEndDate && _endDateController.text.isNotEmpty) {
         final newStart = _parseDateTimeString(formatted);
@@ -616,6 +672,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     _tagsController.dispose();
     _maxTicketsController.dispose();
     _transactionIdController.dispose();
+    _titleFocusNode.dispose();
+    _dateFocusNode.dispose();
+    _endDateFocusNode.dispose();
     _pricingSub?.cancel();
     super.dispose();
   }
@@ -624,6 +683,10 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     final l10n = AppLocalizations.of(context);
     final title = _eventTitleController.text.trim();
     if (title.isEmpty) {
+      setState(() {
+        _titleError = l10n.enterEventTitle;
+      });
+      _scrollToField(_titleKey, focusNode: _titleFocusNode);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.enterEventTitle),
@@ -634,8 +697,27 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       return;
     }
 
+    if (_selectedCategory == null || _selectedCategory!.trim().isEmpty) {
+      setState(() {
+        _categoryError = l10n.selectCategory;
+      });
+      _scrollToField(_categoryKey);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.selectCategory),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     final eventDate = _eventDateController.text.trim();
     if (eventDate.isEmpty) {
+      setState(() {
+        _dateError = l10n.selectEventDate;
+      });
+      _scrollToField(_dateKey, focusNode: _dateFocusNode);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.selectEventDate),
@@ -649,13 +731,16 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     final startDt = _parseDateTimeString(eventDate);
     final endDt = _parseDateTimeString(_endDateController.text.trim());
     if (startDt != null && endDt != null && endDt.isBefore(startDt)) {
+      final msg = Localizations.localeOf(context).languageCode == 'ar'
+          ? 'تاريخ ووقت الانتهاء يجب أن يكون في أو بعد تاريخ البدء'
+          : 'End date and time must be on or after the start date and time';
+      setState(() {
+        _endDateError = msg;
+      });
+      _scrollToField(_endDateKey, focusNode: _endDateFocusNode);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            Localizations.localeOf(context).languageCode == 'ar'
-                ? 'تاريخ ووقت الانتهاء يجب أن يكون في أو بعد تاريخ البدء'
-                : 'End date and time must be on or after the start date and time',
-          ),
+          content: Text(msg),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
         ),
@@ -664,6 +749,10 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     }
 
     setState(() {
+      _titleError = null;
+      _categoryError = null;
+      _dateError = null;
+      _endDateError = null;
       _isSubmitting = true;
     });
 
@@ -1146,20 +1235,26 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildLabel(l10n.eventTitle, isRequired: true),
+                            _buildLabel(l10n.eventTitle, isRequired: true, hasError: _titleError != null),
                             _buildTextField(
+                              fieldKey: _titleKey,
                               controller: _eventTitleController,
+                              focusNode: _titleFocusNode,
+                              errorText: _titleError,
                               hintText: l10n.enterEventTitle,
                             ),
                             const SizedBox(height: 12),
-                            _buildLabel(l10n.categoryLabel, isRequired: true),
+                            _buildLabel(l10n.categoryLabel, isRequired: true, hasError: _categoryError != null),
                             _buildDropdownField(
+                              fieldKey: _categoryKey,
                               value: _selectedCategory,
                               hintText: l10n.selectCategory,
                               items: _categories,
+                              errorText: _categoryError,
                               onChanged: (val) {
                                 setState(() {
                                   _selectedCategory = val;
+                                  _categoryError = null;
                                 });
                               },
                             ),
@@ -1183,17 +1278,23 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildLabel(l10n.startDateTime, isRequired: true),
+                            _buildLabel(l10n.startDateTime, isRequired: true, hasError: _dateError != null),
                             _buildTextField(
+                              fieldKey: _dateKey,
                               controller: _eventDateController,
+                              focusNode: _dateFocusNode,
+                              errorText: _dateError,
                               hintText: 'dd-mm-yyyy --:--',
                               suffixIcon: Icons.calendar_today_outlined,
                               onTap: () => _pickDateTime(_eventDateController),
                             ),
                             const SizedBox(height: 12),
-                            _buildLabel(l10n.endDateTimeOptional),
+                            _buildLabel(l10n.endDateTimeOptional, hasError: _endDateError != null),
                             _buildTextField(
+                              fieldKey: _endDateKey,
                               controller: _endDateController,
+                              focusNode: _endDateFocusNode,
+                              errorText: _endDateError,
                               hintText: 'dd-mm-yyyy --:--',
                               suffixIcon: Icons.calendar_today_outlined,
                               onTap: () => _pickDateTime(_endDateController),
@@ -1530,16 +1631,16 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
 
 
-  Widget _buildLabel(String label, {bool isRequired = false}) {
+  Widget _buildLabel(String label, {bool isRequired = false, bool hasError = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6.0),
       child: RichText(
         text: TextSpan(
           text: label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF1E1E1E),
+            color: hasError ? const Color(0xFFDC2626) : const Color(0xFF1E1E1E),
           ),
           children: isRequired
               ? const [
@@ -1560,6 +1661,10 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
   Widget _buildTextField({
     required TextEditingController controller,
     required String hintText,
+    Key? fieldKey,
+    FocusNode? focusNode,
+    String? errorText,
+    ValueChanged<String>? onChanged,
     IconData? prefixIcon,
     IconData? suffixIcon,
     TextInputType? keyboardType,
@@ -1568,14 +1673,17 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     bool showCounter = false,
     VoidCallback? onTap,
   }) {
+    final hasError = errorText != null && errorText.isNotEmpty;
     final field = TextFormField(
       controller: controller,
+      focusNode: focusNode,
       keyboardType: keyboardType,
       maxLines: maxLines,
       maxLength: maxLength,
       readOnly: onTap != null,
       enableInteractiveSelection: onTap == null,
       onTap: onTap,
+      onChanged: onChanged,
       onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
       style: const TextStyle(
         fontSize: 14.5,
@@ -1584,6 +1692,12 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       ),
       decoration: InputDecoration(
         hintText: hintText,
+        errorText: errorText,
+        errorStyle: const TextStyle(
+          color: Color(0xFFEF4444),
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
         counterText: showCounter ? null : '',
         counterStyle: const TextStyle(
           fontSize: 11.5,
@@ -1595,37 +1709,53 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           color: Color(0xFF64748B),
           fontWeight: FontWeight.normal,
         ),
-        prefixIcon:
-            prefixIcon != null
-                ? Icon(prefixIcon, size: 18, color: const Color(0xFF64748B))
-                : null,
-        suffixIcon:
-            suffixIcon != null
-                ? Icon(suffixIcon, size: 18, color: const Color(0xFF6A2777))
-                : null,
+        prefixIcon: prefixIcon != null
+            ? Icon(prefixIcon, size: 18, color: hasError ? const Color(0xFFEF4444) : const Color(0xFF64748B))
+            : null,
+        suffixIcon: suffixIcon != null
+            ? Icon(suffixIcon, size: 18, color: hasError ? const Color(0xFFEF4444) : const Color(0xFF6A2777))
+            : null,
         filled: true,
-        fillColor: Colors.white,
+        fillColor: hasError ? const Color(0xFFFEF2F2) : Colors.white,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
           vertical: 12,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1),
+          borderSide: BorderSide(
+            color: hasError ? const Color(0xFFEF4444) : const Color(0xFFCBD5E1),
+            width: hasError ? 1.5 : 1,
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1),
+          borderSide: BorderSide(
+            color: hasError ? const Color(0xFFEF4444) : const Color(0xFFCBD5E1),
+            width: hasError ? 1.5 : 1,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5),
+          borderSide: BorderSide(
+            color: hasError ? const Color(0xFFEF4444) : const Color(0xFF6A2777),
+            width: hasError ? 2 : 1.5,
+          ),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFFEF4444), width: 2),
         ),
       ),
     );
 
+    Widget content = field;
     if (onTap != null) {
-      return MouseRegion(
+      content = MouseRegion(
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
@@ -1637,7 +1767,24 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
         ),
       );
     }
-    return field;
+
+    return AnimatedContainer(
+      key: fieldKey,
+      duration: const Duration(milliseconds: 300),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: hasError
+            ? [
+                BoxShadow(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.22),
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                ),
+              ]
+            : null,
+      ),
+      child: content,
+    );
   }
 
   Widget _buildDropdownField({
@@ -1645,11 +1792,14 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     required String hintText,
     required List<String> items,
     required ValueChanged<String?> onChanged,
+    Key? fieldKey,
+    String? errorText,
   }) {
+    final hasError = errorText != null && errorText.isNotEmpty;
     final uniqueItems = items.toSet().toList();
     final validValue = (value != null && uniqueItems.contains(value)) ? value : null;
 
-    return DropdownButtonFormField<String>(
+    final dropdown = DropdownButtonFormField<String>(
       value: validValue,
       isExpanded: true,
       dropdownColor: Colors.white,
@@ -1671,23 +1821,46 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
         fontWeight: FontWeight.w500,
       ),
       decoration: InputDecoration(
+        errorText: errorText,
+        errorStyle: const TextStyle(
+          color: Color(0xFFEF4444),
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: hasError ? const Color(0xFFFEF2F2) : Colors.white,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
           vertical: 12,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1),
+          borderSide: BorderSide(
+            color: hasError ? const Color(0xFFEF4444) : const Color(0xFFCBD5E1),
+            width: hasError ? 1.5 : 1,
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1),
+          borderSide: BorderSide(
+            color: hasError ? const Color(0xFFEF4444) : const Color(0xFFCBD5E1),
+            width: hasError ? 1.5 : 1,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFF5E227A), width: 1.5),
+          borderSide: BorderSide(
+            color: hasError ? const Color(0xFFEF4444) : const Color(0xFF5E227A),
+            width: hasError ? 2 : 1.5,
+          ),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFFEF4444), width: 2),
         ),
       ),
       selectedItemBuilder: (context) {
@@ -1720,6 +1893,24 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
         );
       }).toList(),
       onChanged: onChanged,
+    );
+
+    return AnimatedContainer(
+      key: fieldKey,
+      duration: const Duration(milliseconds: 300),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: hasError
+            ? [
+                BoxShadow(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.22),
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                ),
+              ]
+            : null,
+      ),
+      child: dropdown,
     );
   }
 
