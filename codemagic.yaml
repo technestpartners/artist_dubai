@@ -23,6 +23,10 @@ workflows:
         - pattern: 'v*'
           include: true
     scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+          flutter build ios --config-only
       - name: Set up code signing
         script: |
           keychain initialize
@@ -31,20 +35,15 @@ workflows:
             --create
           keychain add-certificates
           xcode-project use-profiles
-          
           echo "=== Provisioning Profiles Installed ==="
           ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || true
           echo "=== Code Signing Identities ==="
           security find-identity -v -p codesigning
-      - name: Get Flutter packages
-        script: |
-          flutter packages pub get
       - name: Install CocoaPods
         script: |
           export LANG=en_US.UTF-8
           export LC_ALL=en_US.UTF-8
-          cd ios
-          pod install --repo-update
+          cd ios && pod install --repo-update
       - name: Build Flutter iOS IPA
         script: |
           flutter build ipa \
@@ -52,7 +51,7 @@ workflows:
             --build-name=3.2.4 \
             --build-number=9 \
             --export-options-plist=ios/ExportOptions.plist
-          
+          echo "=== IPA Built ==="
           ls -la build/ios/ipa/*.ipa
     artifacts:
       - build/ios/ipa/*.ipa
