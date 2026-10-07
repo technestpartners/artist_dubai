@@ -11,6 +11,34 @@ workflows:
       cocoapods: default
       vars:
         BUNDLE_ID: "com.imbu.Dubai-Artists"
+        CERTIFICATE_PRIVATE_KEY: |
+          -----BEGIN RSA PRIVATE KEY-----
+          MIIEpAIBAAKCAQEAzyxfedVDR7IXSg8RM6gEngXbJ28ls+NMubItcG+20fx8NlRm
+          qMz2P1jdSELSPv9auzxK/e4D3GIxbf7SuVGPwomDMj/+SGsCq38HmhuRN/++1rC9
+          +Pv45BQdxWgZmrF2cOmUVpvvMJFqCASfiTFtVDCF+3n1G1qykWpIaBgrE6TgKeCR
+          FwbV04IjMwF8Ykirhcwb0U4axyO0mWgxq94EYUW8JgUPn7Ql58B02rxgfaVScvSg
+          i2U1vT8gDjNBYzpzHytn7bHNz7MIFNdUCQcE90mbimuQlJPnUrQUGC4ux4T57Zi8
+          gyOFmw4yVJxqjeK3jxrNmmm+Y/+jqjKDJz2n3wIDAQABAoIBAF7pLTRbh18pL5I2
+          JONNbhAXDreaK+OllljcUATaqR66VQ1uzTk37PhIddfNBRTnV2G/1XtPt2UXdx21
+          SESuIPY2mWxD9PKoU6jNoWXwiy7kc0FX5zBR/0w+CwWNE23TLze7SsIC3imZ9MGH
+          nK71fei78iWrUacefgAweMt3hwSQCTnutjkGje0d7FGE5hAr1RRjYR81EWFfctOT
+          vKfplmFCqIInAr9fhuAuBnL0h3CfYQuGPDzdN/qA8WGRfdAMlgeXBPElQkjMlZbN
+          4J1jCnNtpEuVLE1qa+CVzVBsFDsuPFoR+G0toNBKV8pSJRg5wJsrG5Y9W4xzyqFy
+          dAs2ioECgYEA6Y8+3gb6TbzIEeSzbMVSfF6zaR2KFWNrY8AT+RHB0VyC1mASlj98
+          BPQ+h1vdBvSN6KUs4eDazrUGcnKb9uA6/IutLGl6FSfd3tDZCvt/8/+UNVzEM0jJ
+          VoGpHCEq/aJ5c+MwhMLAjHtxjAUJLu65AZOQxX4z4mvQCTgxr75/c9cCgYEA4xQe
+          L2pjpbrP85H2ALMdSwyxyYf9LYL0PQqomPRepwXpfZKE87GlJYYfKxUvwFr9en20
+          lEewWvYAO87/l7b0f1cDneB9Z6Lc4gX1fa9Lp6lDjjVZZiQ9OB1+ia5azgnxm2Nw
+          LWP5zqUk783AQgNxzdCaI+3i5em7CWG5s7XeazkCgYEAtrYmA0FILOpDRaQ5LR1M
+          gxj+l3vRWxwUlctclJtsmWEaxaQQxlNRrPp5tCCMT3WfUmFtNCNYaR66tWutUTtn
+          ScvnJHg7VjOC4V1Wfb30AihthDVXE5ucTj1O0z+rRxIEm0Ee4q0MPpoPYO9LmNiO
+          CIqtVaJ96mJXM+8vB4IqaK8CgYBy+pzOJXCPWigxjJajhA4xEhxzjwgDI2vH/L2h
+          tRq4N6Yijy4CttCIT4E4r2GeZHQ0sbHd4u7JIAa+QfHpQBpM4CJUrnbRIwX07E+B
+          dGE6Y9pxB1JdBbx5zXVlAYO5EA/mPlNuqFC08aniQqw2wMe/DwD9cFaTU+YAuhrt
+          hAk7AQKBgQCuToE5/mhyzBDwqGmQL17JUXKaEowFAF6l+z36WJdfSa7KM9kzCxLL
+          s3G/qCsMG1P0wR54BN0cK1R1t4aj1yynnzl5Y8B/Mgm79rTv8mySu/Oc+bG6Khyq
+          Y9XBU94QbRglssHXmYNoszKZJ1jT7AZXbLDgunOSgCB4hrRcDEVelQ==
+          -----END RSA PRIVATE KEY-----
     triggering:
       events:
         - push
@@ -31,7 +59,9 @@ workflows:
         script: |
           keychain initialize
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE
+            --type IOS_APP_STORE \
+            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
+            --create
           keychain add-certificates
           xcode-project use-profiles
           echo "=== Provisioning Profiles ==="
@@ -51,7 +81,6 @@ workflows:
             EXPORT_PLIST="ios/ExportOptions.plist"
           fi
           echo "Using Export Options Plist: $EXPORT_PLIST"
-          
           flutter build ipa \
             --release \
             --build-name=3.2.4 \
