@@ -31,13 +31,12 @@ workflows:
         script: |
           keychain initialize
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create
+            --type IOS_APP_STORE
           keychain add-certificates
           xcode-project use-profiles
-          echo "=== Provisioning Profiles Installed ==="
+          echo "=== Provisioning Profiles ==="
           ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || true
-          echo "=== Code Signing Identities ==="
+          echo "=== Signing Identities ==="
           security find-identity -v -p codesigning
       - name: Install CocoaPods
         script: |
