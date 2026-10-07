@@ -41,20 +41,26 @@ workflows:
       - name: Set up code signing
         script: |
           keychain initialize
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --certificate-key @env:CERTIFICATE_PRIVATE_KEY \
-            --create
+          if [ -n "$CERTIFICATE_PRIVATE_KEY" ]; then
+            app-store-connect fetch-signing-files "$BUNDLE_ID" \
+              --type IOS_APP_STORE \
+              --certificate-key @env:CERTIFICATE_PRIVATE_KEY \
+              --create
+          else
+            app-store-connect fetch-signing-files "$BUNDLE_ID" \
+              --type IOS_APP_STORE \
+              --create
+          fi
           keychain add-certificates
           xcode-project use-profiles --project ios/Runner.xcodeproj
           
           echo "=== Provisioning Profiles Installed ==="
-          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || true
           echo "=== Code Signing Identities ==="
           security find-identity -v -p codesigning
       - name: Flutter build iOS (no codesign)
         script: |
-          flutter build ios --release --no-codesign --build-name=3.2.4 --build-number=9
+          flutter build ios --release --no-codesign
       - name: Build & Package Release IPA
         script: |
           set -e
@@ -77,4 +83,5 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
-        submit_to_app_store: true
+        submit_to_app_store: false
+
