@@ -1,4 +1,4 @@
-name: Deploy to TestFlight (iOS 3.2.4(10))
+name: Deploy to TestFlight (iOS 3.2.4(9))
 
 on:
   push:
@@ -11,13 +11,13 @@ on:
         required: false
         default: '3.2.4'
       build_number:
-        description: 'App Build Number (e.g., 10)'
+        description: 'App Build Number (e.g., 9)'
         required: false
-        default: '10'
+        default: '9'
       changelog:
         description: 'TestFlight What to Test / Changelog'
         required: false
-        default: 'Version 3.2.4 (Build 10) - Performance optimizations, privacy compliance updates, and stability fixes.'
+        default: 'Version 3.2.4 (Build 9) - Performance optimizations, privacy compliance updates, and stability fixes.'
       skip_waiting:
         description: 'Skip waiting for TestFlight build processing in CI'
         type: boolean
