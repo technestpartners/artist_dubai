@@ -54,7 +54,7 @@ workflows:
       - name: Get Flutter packages
         script: |
           flutter packages pub get
-          flutter build ios --config-only
+          flutter build ios --config-only --build-name=3.2.4 --build-number=10
       - name: Set up code signing
         script: |
           keychain initialize
