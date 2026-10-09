@@ -2107,6 +2107,45 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                               ),
                             ),
                           ],
+                          if (!_isMyProfile(currentArtist)) ...[
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 44,
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF6A2777),
+                                  foregroundColor: Colors.white,
+                                  iconColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    RouteNames.artistChat,
+                                    arguments: {
+                                      'artistId': currentArtist.id,
+                                      'artistName': currentArtist.name,
+                                      'artistCategory': currentArtist.category,
+                                      'artistAvatarUrl': currentArtist.avatarUrl,
+                                    },
+                                  );
+                                },
+                                icon: const Icon(Icons.chat_bubble_outline, size: 18, color: Colors.white),
+                                label: Text(
+                                  'Message Artist'.trData(context),
+                                  style: const TextStyle(
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),

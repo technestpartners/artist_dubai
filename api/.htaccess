@@ -1,9 +1,11 @@
-# Artist Dubai API v1 - Hardened Security Configuration
+# Artist Dubai API - Hardened Security Configuration
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    RewriteRule ^api\.php$ ../api.php [QSA,L]
+    RewriteRule ^$ ../api.php [QSA,L]
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^(.*)$ api.php [QSA,L]
+    RewriteRule ^(.*)$ ../api.php [QSA,L]
 </IfModule>
 
 # Block access to database dumps, configuration files, environment variables and source archives

@@ -21,6 +21,7 @@ import '../../features/events/presentation/views/event_photos_view.dart';
 import '../../features/events/presentation/views/events_view.dart';
 import '../../features/favorites/presentation/views/favorites_view.dart';
 import '../../features/events/presentation/views/my_events_view.dart';
+import '../../features/events/presentation/views/my_bookings_view.dart';
 import '../../features/galleries/presentation/views/galleries_view.dart';
 import '../../features/galleries/presentation/views/gallery_registration_view.dart';
 import '../../features/government/presentation/views/government_portal_view.dart';
@@ -123,7 +124,12 @@ class AppRouter {
 
     // 4. Standard path inspection (e.g. /artist/18)
     final path = uri.path;
-    if (path.isNotEmpty && path != '/' && !path.endsWith('index.html')) {
+    if (path.isNotEmpty &&
+        path != '/' &&
+        path != '/splash' &&
+        path != '/artist_dubai' &&
+        path != '/artist_dubai/' &&
+        !path.endsWith('index.html')) {
       if (path.contains('share.php') || path.contains('share')) {
         return null;
       }
@@ -137,13 +143,32 @@ class AppRouter {
   static String? get initialDeepLink {
     try {
       if (kIsWeb) {
-        return parseDeepLink(Uri.base);
+        final link = parseDeepLink(Uri.base);
+        if (link != null &&
+            link.isNotEmpty &&
+            link != RouteNames.splash &&
+            link != RouteNames.root &&
+            link != '/' &&
+            link != '/splash') {
+          return link;
+        }
       } else {
         final defaultRoute = WidgetsBinding.instance.platformDispatcher.defaultRouteName;
-        if (defaultRoute.isNotEmpty && defaultRoute != '/' && defaultRoute != '/splash') {
+        if (defaultRoute.isNotEmpty &&
+            defaultRoute != '/' &&
+            defaultRoute != '/splash' &&
+            defaultRoute != RouteNames.splash) {
           final uri = Uri.tryParse(defaultRoute);
           if (uri != null) {
-            return parseDeepLink(uri);
+            final link = parseDeepLink(uri);
+            if (link != null &&
+                link.isNotEmpty &&
+                link != RouteNames.splash &&
+                link != RouteNames.root &&
+                link != '/' &&
+                link != '/splash') {
+              return link;
+            }
           }
         }
       }
@@ -367,6 +392,15 @@ class AppRouter {
           context: context,
           state: state,
           child: const MyEventsView(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.bookings,
+        name: 'bookings',
+        pageBuilder: (context, state) => _buildSlidePage(
+          context: context,
+          state: state,
+          child: const MyBookingsView(),
         ),
       ),
       GoRoute(

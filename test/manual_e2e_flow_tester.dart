@@ -177,7 +177,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('ART VENUE'), findsOneWidget);
-      expect(find.text('Submit registration'), findsOneWidget);
+      expect(find.text('Register Venue'), findsOneWidget);
 
       final textFields = find.byType(TextFormField);
       expect(textFields, findsAtLeastNWidgets(4));
@@ -234,8 +234,8 @@ void main() {
       await tester.pumpWidget(wrapTestApp(EventDetailView(event: ArtEventModel.mockEvents.first)));
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('About this event'), findsOneWidget);
-      expect(find.text('RSVP for Event'), findsOneWidget);
+      expect(find.text('Event Details'), findsOneWidget);
+      expect(find.text('Dubai International Arabic Calligraphy Biennale'), findsOneWidget);
     });
 
     testWidgets('Step 13: Artists directory & layout toggle', (tester) async {

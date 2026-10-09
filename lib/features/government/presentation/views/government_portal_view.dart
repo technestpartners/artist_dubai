@@ -18,12 +18,16 @@ class GovernmentPortalView extends StatefulWidget {
   State<GovernmentPortalView> createState() => _GovernmentPortalViewState();
 }
 class _GovernmentPortalViewState extends State<GovernmentPortalView> {
-  List<GovernmentEntity> _entities = GovernmentEntity.entities;
+  List<GovernmentEntity> _entities = sl<ApiService>().cachedGovEntities ?? [];
+  bool _isLoading = true;
   StreamSubscription<List<GovernmentEntity>>? _govSub;
 
   @override
   void initState() {
     super.initState();
+    if (_entities.isNotEmpty) {
+      _isLoading = false;
+    }
     _fetchEntities();
 
     // Listen to real-time sync broadcast
@@ -31,6 +35,7 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
       if (mounted) {
         setState(() {
           _entities = updatedEntities;
+          _isLoading = false;
         });
       }
     });
@@ -50,11 +55,18 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
   }
 
   Future<void> _fetchEntities() async {
-    final liveEntities = await sl<ApiService>().getGovernmentEntities(forceRefresh: true);
-    if (mounted) {
-      setState(() {
-        _entities = liveEntities;
-      });
+    try {
+      final liveEntities = await sl<ApiService>().getGovernmentEntities(forceRefresh: true);
+      if (mounted) {
+        setState(() {
+          _entities = liveEntities;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -111,6 +123,8 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
             constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
             child: RefreshIndicator(
               color: const Color(0xFF6A2777),
+              backgroundColor: Colors.white,
+              strokeWidth: 2.8,
               onRefresh: _fetchEntities,
               child: ListView(
                 padding: EdgeInsets.symmetric(horizontal: rh.horizontalPadding, vertical: rh.verticalPadding),
@@ -137,8 +151,54 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
                   ),
                   const SizedBox(height: 18),
 
-                  // Government Entity Cards List
-                  ...entities.map((entity) => _buildEntityCard(context, entity)),
+                  if (_isLoading && entities.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Center(
+                        child: CircularProgressIndicator(color: Colors.white),
+                      ),
+                    )
+                  else if (entities.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF551478),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.account_balance_outlined,
+                            size: 46,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No government entities listed yet'.trData(context),
+                            style: const TextStyle(
+                              fontSize: 17.5,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Official cultural entities and government authorities will appear here.'.trData(context),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              color: Colors.white70,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    ...entities.map((entity) => _buildEntityCard(context, entity)),
                   const SizedBox(height: 16),
                 ],
               ),

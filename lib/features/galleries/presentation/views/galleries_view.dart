@@ -152,16 +152,20 @@ class _GalleriesViewState extends State<GalleriesView> {
       appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
         top: false,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(rh.horizontalPadding, 24, rh.horizontalPadding, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+        child: RefreshIndicator(
+          color: const Color(0xFF6A2777),
+          backgroundColor: Colors.white,
+          onRefresh: _loadGalleries,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(rh.horizontalPadding, 24, rh.horizontalPadding, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                     // 1. Header Title & Subtitle
                     Text(
                       l10n.galleriesArtCenter,
@@ -527,10 +531,11 @@ class _GalleriesViewState extends State<GalleriesView> {
             ),
           ),
         ),
-          ),
-        ),
       ),
-      bottomNavigationBar: const AppBottomNavBar(currentIndex: -1),
-    );
+    ),
+  ),
+),
+bottomNavigationBar: const AppBottomNavBar(currentIndex: -1),
+);
   }
 }

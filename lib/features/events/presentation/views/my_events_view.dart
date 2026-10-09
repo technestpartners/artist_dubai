@@ -106,7 +106,8 @@ class _MyEventsViewState extends State<MyEventsView> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator(color: Colors.white))
             : RefreshIndicator(
-                color: const Color(0xFF6A2777),
+                color: const Color(0xFF6B1C9B),
+                backgroundColor: Colors.white,
                 onRefresh: _fetchMyEvents,
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),

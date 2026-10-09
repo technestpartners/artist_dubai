@@ -40,19 +40,6 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
 
   static const List<String> _defaultCategories = [
     'All Categories',
-    'Arabic Calligraphy',
-    'Calligraphy & Typography',
-    'Contemporary Painting',
-    'Art Exhibition',
-    'Digital Art & Sculpture',
-    'Photography',
-    'Abstract Painting',
-    'Ceramics & Pottery',
-    'Art Workshop',
-    'Cultural Festival',
-    'Gallery Opening',
-    'Music & Concerts',
-    'Sports & Fitness',
   ];
 
   List<ArtEventModel> _allEvents = [];
@@ -76,6 +63,8 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
     _selectedViewMode = widget.initialTabIndex == 1 ? 1 : 0;
     _likedEventIds.addAll(sl<FavoritesService>().eventIds);
     sl<FavoritesService>().addListener(_onFavoritesChanged);
+    final initialEvents = sl<ApiService>().cachedEvents ?? [];
+    _allEvents = initialEvents.where((e) => e.isActive && e.status.toLowerCase() != 'pending').toList();
     _fetchEvents();
     _fetchCategories();
 
@@ -457,6 +446,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
       body: SafeArea(
         child: RefreshIndicator(
           color: _primaryPurple,
+          backgroundColor: Colors.white,
           onRefresh: () => _fetchEvents(forceRefresh: true),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -831,7 +821,9 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
           ),
           const SizedBox(width: 8),
           _buildFilterChip(
-            label: _sortBy == 'Soonest' ? 'Sort By'.trData(context) : _sortBy.trData(context),
+            label: _sortBy == 'Soonest'
+                ? (Localizations.maybeLocaleOf(context)?.languageCode == 'ar' ? 'ترتيب حسب' : 'Sort By')
+                : _sortBy.trData(context),
             isActive: _sortBy != 'Soonest',
             onTap: _showSortDialog,
           ),
@@ -936,6 +928,45 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
   // What's On Mode: "Featured" Carousel + "Recommended for You"
   // -------------------------------------------------------------
   Widget _buildWhatsOnSections(List<ArtEventModel> events) {
+    if (events.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+        alignment: Alignment.center,
+        child: Column(
+          children: [
+            const Icon(Icons.event_busy_outlined, size: 52, color: Colors.white70),
+            const SizedBox(height: 14),
+            Text(
+              'No events available currently.'.trData(context),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, color: Color(0xFFE2D6F5), fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Check back soon or register a new art event!'.trData(context),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13, color: Colors.white60),
+            ),
+            if (_isFilterActive) ...[
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: _clearAllFilters,
+                icon: const Icon(Icons.refresh, size: 16),
+                label: Text('Clear All Filters'.trData(context), style: const TextStyle(fontWeight: FontWeight.w700)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: _primaryPurple,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
     final featuredEvents = events;
     final recommendedEvents = events.length > 2
         ? events.sublist(2)
@@ -944,137 +975,141 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section: "Featured"
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Featured'.trData(context),
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-              ),
-            ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (featuredEvents.length > 1) ...[
-                  // Scroll Left Button
-                  InkWell(
-                    onTap: () {
-                      if (_featuredScrollController.hasClients) {
-                        _featuredScrollController.animateTo(
-                          (_featuredScrollController.offset - 264)
-                              .clamp(0.0, _featuredScrollController.position.maxScrollExtent),
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeOut,
-                        );
-                      }
-                    },
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.chevron_left, color: Colors.white, size: 20),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  // Scroll Right Button
-                  InkWell(
-                    onTap: () {
-                      if (_featuredScrollController.hasClients) {
-                        _featuredScrollController.animateTo(
-                          (_featuredScrollController.offset + 264)
-                              .clamp(0.0, _featuredScrollController.position.maxScrollExtent),
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeOut,
-                        );
-                      }
-                    },
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.chevron_right, color: Colors.white, size: 20),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                ],
-                GestureDetector(
-                  onTap: () => setState(() => _selectedViewMode = 1),
-                  child: Text(
-                    'SEE ALL'.trData(context),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFFF3E8F6),
-                      letterSpacing: 0.5,
-                    ),
-                  ),
+        if (featuredEvents.isNotEmpty) ...[
+          // Section: "Featured"
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Featured'.trData(context),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
                 ),
-              ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (featuredEvents.length > 1) ...[
+                    // Scroll Left Button
+                    InkWell(
+                      onTap: () {
+                        if (_featuredScrollController.hasClients) {
+                          _featuredScrollController.animateTo(
+                            (_featuredScrollController.offset - 264)
+                                .clamp(0.0, _featuredScrollController.position.maxScrollExtent),
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOut,
+                          );
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.chevron_left, color: Colors.white, size: 20),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    // Scroll Right Button
+                    InkWell(
+                      onTap: () {
+                        if (_featuredScrollController.hasClients) {
+                          _featuredScrollController.animateTo(
+                            (_featuredScrollController.offset + 264)
+                                .clamp(0.0, _featuredScrollController.position.maxScrollExtent),
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOut,
+                          );
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.chevron_right, color: Colors.white, size: 20),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
+                  GestureDetector(
+                    onTap: () => setState(() => _selectedViewMode = 1),
+                    child: Text(
+                      'SEE ALL'.trData(context),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFFF3E8F6),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Horizontal Featured Carousel (Reference Screenshot 1)
+          SizedBox(
+            height: 270,
+            child: Listener(
+              onPointerSignal: (pointerSignal) {
+                if (pointerSignal is PointerScrollEvent && _featuredScrollController.hasClients) {
+                  final target = (_featuredScrollController.offset + pointerSignal.scrollDelta.dy)
+                      .clamp(0.0, _featuredScrollController.position.maxScrollExtent);
+                  _featuredScrollController.jumpTo(target);
+                }
+              },
+              child: ScrollConfiguration(
+                behavior: ScrollConfiguration.of(context).copyWith(
+                  dragDevices: {
+                    PointerDeviceKind.touch,
+                    PointerDeviceKind.mouse,
+                    PointerDeviceKind.trackpad,
+                    PointerDeviceKind.stylus,
+                  },
+                ),
+                child: ListView.separated(
+                  controller: _featuredScrollController,
+                  physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: featuredEvents.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 14),
+                  itemBuilder: (context, index) {
+                    return _buildHorizontalEventCard(featuredEvents[index]);
+                  },
+                ),
+              ),
             ),
+          ),
+        ],
+
+        if (recommendedEvents.isNotEmpty) ...[
+          const SizedBox(height: 26),
+
+          // Section: "Recommended for You" (Reference Screenshot 2)
+          Text(
+            'Recommended for You'.trData(context),
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          for (final ev in recommendedEvents) ...[
+            _buildLargeEventCard(ev),
+            const SizedBox(height: 18),
           ],
-        ),
-        const SizedBox(height: 12),
-
-        // Horizontal Featured Carousel (Reference Screenshot 1)
-        SizedBox(
-          height: 270,
-          child: Listener(
-            onPointerSignal: (pointerSignal) {
-              if (pointerSignal is PointerScrollEvent && _featuredScrollController.hasClients) {
-                final target = (_featuredScrollController.offset + pointerSignal.scrollDelta.dy)
-                    .clamp(0.0, _featuredScrollController.position.maxScrollExtent);
-                _featuredScrollController.jumpTo(target);
-              }
-            },
-            child: ScrollConfiguration(
-              behavior: ScrollConfiguration.of(context).copyWith(
-                dragDevices: {
-                  PointerDeviceKind.touch,
-                  PointerDeviceKind.mouse,
-                  PointerDeviceKind.trackpad,
-                  PointerDeviceKind.stylus,
-                },
-              ),
-              child: ListView.separated(
-                controller: _featuredScrollController,
-                physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-                scrollDirection: Axis.horizontal,
-                itemCount: featuredEvents.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 14),
-                itemBuilder: (context, index) {
-                  return _buildHorizontalEventCard(featuredEvents[index]);
-                },
-              ),
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 26),
-
-        // Section: "Recommended for You" (Reference Screenshot 2)
-        Text(
-          'Recommended for You'.trData(context),
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-          ),
-        ),
-        const SizedBox(height: 14),
-
-        for (final ev in recommendedEvents) ...[
-          _buildLargeEventCard(ev),
-          const SizedBox(height: 18),
         ],
       ],
     );

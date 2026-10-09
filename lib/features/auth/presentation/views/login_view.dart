@@ -79,14 +79,11 @@ class _LoginViewState extends State<LoginView> {
       if (userData != null) {
         final user = userData['user'] as Map<String, dynamic>? ?? {};
         final userEmail = (user['email'] as String? ?? email).trim().toLowerCase();
-        final rawRole = (user['role'] as String? ?? (userEmail.contains('admin') ? 'admin' : 'user')).toLowerCase();
-        final isAdmin = rawRole == 'admin' ||
+        final rawRole = (user['role'] as String? ?? 'user').toLowerCase();
+        final isAdmin = user['is_admin'] == true ||
+            rawRole == 'admin' ||
             rawRole == 'superadmin' ||
             rawRole == 'super_admin' ||
-            rawRole == 'userpadmin' ||
-            rawRole.contains('admin') ||
-            user['is_admin'] == true ||
-            userEmail.contains('admin') ||
             userEmail == 'admin@artistdubai.com' ||
             userEmail == 'admin@dubaiart.ae' ||
             userEmail == 'admin@admin.com';
@@ -103,7 +100,11 @@ class _LoginViewState extends State<LoginView> {
           await storage.setString('user_id', user['id'].toString());
         }
         if (userData['token'] != null) {
-          await storage.setString('auth_token', userData['token'].toString());
+          final tokenStr = userData['token'].toString();
+          await storage.setString('auth_token', tokenStr);
+          try {
+            await storage.writeSecure('auth_token', tokenStr);
+          } catch (_) {}
         }
 
         // Hydrate artist profile immediately from login response if present

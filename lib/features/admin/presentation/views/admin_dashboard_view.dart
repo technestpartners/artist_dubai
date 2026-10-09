@@ -17,8 +17,10 @@ import '../../../chat/domain/models/listing_plan_model.dart';
 import '../../../events/domain/models/art_event_model.dart';
 import '../../../government/domain/models/government_entity.dart';
 import '../../../../core/utils/data_translator.dart';
+import '../../../../core/widgets/app_cached_image.dart';
 
 enum AdminTab {
+  overview,
   artists,
   events,
   calendar,
@@ -27,6 +29,7 @@ enum AdminTab {
   government,
   masters,
   permissions,
+  users,
 }
 
 class AdminDashboardView extends StatefulWidget {
@@ -37,7 +40,7 @@ class AdminDashboardView extends StatefulWidget {
 }
 
 class _AdminDashboardViewState extends State<AdminDashboardView> {
-  AdminTab _selectedTab = AdminTab.artists;
+  AdminTab _selectedTab = AdminTab.overview;
 
   List<ArtistModel> _artists = [];
   List<ArtEventModel> _events = [];
@@ -50,6 +53,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   List<PublishingPricingModel> _publishingPricing = [];
   List<ListingPlanItem> _listingPlans = [];
   Map<String, bool> _menuPermissions = {};
+  List<Map<String, dynamic>> _users = [];
+  bool _isLoadingUsers = false;
+  String _userSearchQuery = '';
+  String _userRoleFilter = 'all';
 
   StreamSubscription<List<ArtistModel>>? _artistsSub;
   StreamSubscription<List<ArtEventModel>>? _eventsSub;
@@ -267,6 +274,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         sl<ApiService>().getPublishingPricing(forceRefresh: true).catchError((_) => <PublishingPricingModel>[]),
         sl<ApiService>().getListingPlans(forceRefresh: true).catchError((_) => <ListingPlanItem>[]),
         sl<ApiService>().getMenuPermissions(forceRefresh: true).catchError((_) => <String, bool>{}),
+        sl<ApiService>().getUsers().catchError((_) => <Map<String, dynamic>>[]),
       ]);
 
       if (mounted) {
@@ -275,6 +283,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         } else {
           _menuPermissions = sl<StorageService>().getAllMenuPermissions();
         }
+        _users = results[10] as List<Map<String, dynamic>>;
         final allItems = results[2] as List<Map<String, dynamic>>;
 
         // 1. Separate Photo Galleries (created by artists or event albums)
@@ -310,23 +319,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           return !isPhoto;
         }).toList();
 
-        final finalPhotoGalleries = photoGalleries.isNotEmpty
-            ? photoGalleries
-            : [
-                {
-                  'id': 101,
-                  'name': 'ART Water - Brand',
-                  'title': 'ART Water - Brand',
-                  'description': 'ART Water - Brand photo collection',
-                  'category': 'Artist gallery',
-                  'artist_name': 'Renish Artistry',
-                  'image_url': 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80',
-                  'photo_count': 1,
-                  'status': 'approved',
-                  'is_public': 1,
-                  'is_approved': 1,
-                },
-              ];
+        final finalPhotoGalleries = photoGalleries;
 
         setState(() {
           _artists = results[0] as List<ArtistModel>;
@@ -714,7 +707,80 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  _buildFormField(label: '', controller: imageCtrl, hint: 'https://... or click Upload'),
+                  _buildFormField(
+                    label: '',
+                    controller: imageCtrl,
+                    hint: 'https://... or click Upload',
+                    onChanged: (_) => setModalState(() {}),
+                  ),
+                  if (imageCtrl.text.trim().isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 150,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFCBD5E1)),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          AppCachedImage(
+                            imageUrl: imageCtrl.text.trim(),
+                            fit: BoxFit.cover,
+                            placeholder: const Center(
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6A2777)),
+                                ),
+                              ),
+                            ),
+                            errorWidget: Container(
+                              color: const Color(0xFFF1F5F9),
+                              alignment: Alignment.center,
+                              padding: const EdgeInsets.all(12),
+                              child: const Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.broken_image_outlined, color: Color(0xFF94A3B8), size: 28),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Image preview not available',
+                                    style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 6,
+                            right: 6,
+                            child: Material(
+                              color: Colors.black54,
+                              shape: const CircleBorder(),
+                              child: InkWell(
+                                customBorder: const CircleBorder(),
+                                onTap: () {
+                                  setModalState(() {
+                                    imageCtrl.clear();
+                                  });
+                                },
+                                child: const Padding(
+                                  padding: EdgeInsets.all(5),
+                                  child: Icon(Icons.close, color: Colors.white, size: 14),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
 
                   _buildFormField(label: 'Description', controller: descCtrl, maxLines: 3),
@@ -944,7 +1010,76 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     label: '',
                     controller: coverImageCtrl,
                     hint: 'https://... or click Upload',
+                    onChanged: (_) => setModalState(() {}),
                   ),
+                  if (coverImageCtrl.text.trim().isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 150,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFCBD5E1)),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          AppCachedImage(
+                            imageUrl: coverImageCtrl.text.trim(),
+                            fit: BoxFit.cover,
+                            placeholder: const Center(
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6A2777)),
+                                ),
+                              ),
+                            ),
+                            errorWidget: Container(
+                              color: const Color(0xFFF1F5F9),
+                              alignment: Alignment.center,
+                              padding: const EdgeInsets.all(12),
+                              child: const Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.broken_image_outlined, color: Color(0xFF94A3B8), size: 28),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Image preview not available',
+                                    style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 6,
+                            right: 6,
+                            child: Material(
+                              color: Colors.black54,
+                              shape: const CircleBorder(),
+                              child: InkWell(
+                                customBorder: const CircleBorder(),
+                                onTap: () {
+                                  setModalState(() {
+                                    coverImageCtrl.clear();
+                                  });
+                                },
+                                child: const Padding(
+                                  padding: EdgeInsets.all(5),
+                                  child: Icon(Icons.close, color: Colors.white, size: 14),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
 
                   Column(
@@ -1105,6 +1240,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     bool readOnly = false,
     VoidCallback? onTap,
     IconData? suffixIcon,
+    ValueChanged<String>? onChanged,
   }) {
     final textField = TextField(
       controller: controller,
@@ -1112,6 +1248,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       keyboardType: keyboardType,
       readOnly: readOnly || onTap != null,
       enableInteractiveSelection: onTap == null,
+      onChanged: onChanged,
       style: const TextStyle(fontSize: 13.5, color: Colors.black, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         hintText: hint,
@@ -1177,106 +1314,104 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFFFF),
+      backgroundColor: const Color(0xFFF8FAFC),
+      drawer: _buildAdminDrawer(context),
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0.5,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1E293B)),
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go(RouteNames.home);
-            }
-          },
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        leadingWidth: 48,
+        titleSpacing: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            color: const Color(0xFFE2E8F0),
+            height: 1,
+          ),
         ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Admin Dashboard'.trData(context),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFF0F172A),
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
+        leading: Builder(
+          builder: (scaffoldContext) => Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: Center(
+              child: InkWell(
+                onTap: () => Scaffold.of(scaffoldContext).openDrawer(),
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6A2777).withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFF6A2777).withValues(alpha: 0.2)),
+                  ),
+                  child: const Icon(Icons.menu_rounded, color: Color(0xFF6A2777), size: 20),
+                ),
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              'Artist Dubai management'.trData(context),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFF64748B),
-                fontSize: 11.5,
-                fontWeight: FontWeight.w400,
+          ),
+        ),
+        title: Padding(
+          padding: const EdgeInsets.only(left: 6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Admin Dashboard'.trData(context),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFF0F172A),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.2,
+                ),
               ),
-            ),
-          ],
+              Text(
+                'Artist Dubai · Executive'.trData(context),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFF64748B),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           // ── Language Toggle Button ──────────────────────────────────────────
-          Consumer<LocaleProvider>(
-            builder: (context, localeProvider, _) {
-              final isArabic = localeProvider.isArabic;
+          Builder(
+            builder: (context) {
+              LocaleProvider? localeProvider;
+              try {
+                localeProvider = Provider.of<LocaleProvider>(context, listen: true);
+              } catch (_) {}
+              final isArabic = localeProvider?.isArabic ?? false;
               return Tooltip(
                 message: isArabic ? 'Switch to English' : 'التبديل إلى العربية',
                 child: InkWell(
-                  onTap: () => localeProvider.toggleLocale(),
-                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => localeProvider?.toggleLocale(),
+                  borderRadius: BorderRadius.circular(8),
                   child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                    margin: const EdgeInsets.symmetric(vertical: 11, horizontal: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3.5),
                     decoration: BoxDecoration(
                       color: const Color(0xFF5E227A).withValues(alpha: 0.08),
-                      border: Border.all(color: const Color(0xFF5E227A), width: 1.2),
-                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFF5E227A).withValues(alpha: 0.3)),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.language, size: 15, color: Color(0xFF5E227A)),
-                        const SizedBox(width: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                          decoration: BoxDecoration(
-                            color: !isArabic ? const Color(0xFF5E227A) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            'EN',
-                            style: TextStyle(
-                              color: !isArabic ? Colors.white : const Color(0xFF5E227A),
-                              fontSize: 11.5,
-                              fontWeight: !isArabic ? FontWeight.bold : FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        const Text(
-                          '|',
-                          style: TextStyle(
+                        const Icon(Icons.language, size: 12.5, color: Color(0xFF5E227A)),
+                        const SizedBox(width: 2.5),
+                        Text(
+                          isArabic ? 'عربي' : 'EN',
+                          style: const TextStyle(
                             color: Color(0xFF5E227A),
                             fontSize: 10.5,
-                            fontWeight: FontWeight.w300,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                          decoration: BoxDecoration(
-                            color: isArabic ? const Color(0xFF5E227A) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            'عربي',
-                            style: TextStyle(
-                              color: isArabic ? Colors.white : const Color(0xFF5E227A),
-                              fontSize: 11.5,
-                              fontWeight: isArabic ? FontWeight.bold : FontWeight.w600,
-                            ),
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
@@ -1290,39 +1425,51 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             message: 'Recycle Bin'.trData(context),
             child: InkWell(
               onTap: () => context.push(RouteNames.adminRecycleBin),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(8),
               child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 11),
+                padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFEF2F2),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: const Color(0xFFFECACA)),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.delete_outline_rounded, color: Color(0xFFDC2626), size: 17),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Bin'.trData(context),
-                      style: const TextStyle(
-                        color: Color(0xFFDC2626),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
+                child: const Icon(Icons.delete_outline_rounded, color: Color(0xFFDC2626), size: 16),
               ),
             ),
           ),
-          const SizedBox(width: 4),
+          Tooltip(
+            message: 'Exit to App'.trData(context),
+            child: InkWell(
+              onTap: () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go(RouteNames.home);
+                }
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 11),
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                ),
+                child: const Icon(Icons.home_outlined, color: Color(0xFF475569), size: 16),
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
         ],
       ),
 
       body: RefreshIndicator(
         color: const Color(0xFF6A2777),
+        backgroundColor: Colors.white,
+        strokeWidth: 2.8,
+        displacement: 40,
         onRefresh: _loadAllData,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -1330,15 +1477,11 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. KPI Summary Cards (2x2 Grid matching screenshots)
-              _buildMetricsGrid(),
-              const SizedBox(height: 16),
-
-              // 2. Multi-row Tab Selector Bar matching screenshots
+              // 1. Multi-row Tab Selector Bar
               _buildTabSelector(),
               const SizedBox(height: 16),
 
-              // 3. Tab Content View
+              // 2. Tab Content View
               _buildTabContent(),
             ],
           ),
@@ -1349,6 +1492,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
 
   Widget _buildMetricsGrid() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           children: [
@@ -1445,6 +1589,30 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             ),
           ],
         ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildMetricCard(
+                icon: Icons.manage_accounts_outlined,
+                count: '${_users.length}',
+                label: 'All Users & Data'.trData(context),
+                isSelected: _selectedTab == AdminTab.users,
+                onTap: () => setState(() => _selectedTab = AdminTab.users),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildMetricCard(
+                icon: Icons.palette_outlined,
+                count: '${_users.where((u) => u['has_artist_profile'] == true || u['role'] == 'artist').length}',
+                label: 'Artist Accounts'.trData(context),
+                isSelected: _selectedTab == AdminTab.users,
+                onTap: () => setState(() => _selectedTab = AdminTab.users),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -1460,7 +1628,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+        duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -1471,9 +1639,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           ),
           boxShadow: [
             BoxShadow(
-              color: isSelected ? const Color(0x186A2777) : const Color(0x08000000),
-              blurRadius: isSelected ? 8 : 6,
-              offset: const Offset(0, 2),
+              color: isSelected ? const Color(0x206A2777) : const Color(0x06000000),
+              blurRadius: isSelected ? 12 : 5,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -1483,29 +1651,48 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(
-                  icon,
-                  color: const Color(0xFF6A2777),
-                  size: 22,
+                Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: isSelected ? const Color(0xFF6A2777).withValues(alpha: 0.12) : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isSelected ? const Color(0xFF6A2777).withValues(alpha: 0.3) : const Color(0xFFF1F5F9),
+                    ),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: isSelected ? const Color(0xFF6A2777) : const Color(0xFF475569),
+                    size: 19,
+                  ),
                 ),
                 if (isSelected)
                   Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF6A2777),
-                      shape: BoxShape.circle,
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF6A2777),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Text(
+                      'ACTIVE',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 8.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               count,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF0F172A),
+                fontWeight: FontWeight.w900,
+                color: isSelected ? const Color(0xFF6A2777) : const Color(0xFF0F172A),
+                letterSpacing: -0.5,
               ),
             ),
             const SizedBox(height: 2),
@@ -1525,87 +1712,189 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
 
   Widget _buildTabSelector() {
     final rh = ResponsiveHelper.of(context);
+    final tabs = [
+      (AdminTab.overview, 'Overview'.trData(context), Icons.dashboard_outlined),
+      (AdminTab.artists, 'Artists'.trData(context), Icons.palette_outlined),
+      (AdminTab.events, 'Events'.trData(context), Icons.event_outlined),
+      (AdminTab.calendar, 'Calendar'.trData(context), Icons.calendar_month_outlined),
+      (AdminTab.galleries, 'Galleries'.trData(context), Icons.photo_library_outlined),
+      (AdminTab.artCenters, 'Art Centers'.trData(context), Icons.account_balance_outlined),
+      (AdminTab.government, 'Government'.trData(context), Icons.assured_workload_outlined),
+      (AdminTab.masters, 'Masters'.trData(context), Icons.stars_outlined),
+      (AdminTab.permissions, 'Permissions'.trData(context), Icons.security_outlined),
+      (AdminTab.users, 'Users'.trData(context), Icons.people_alt_outlined),
+    ];
+
+    if (rh.isWide) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0A000000),
+              blurRadius: 6,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: tabs.map((t) => Expanded(child: _buildWideTabButton(t.$1, t.$2, t.$3))).toList(),
+        ),
+      );
+    }
+
+    // On mobile: Direct 2-row grid with NO SCROLL - all 10 tabs directly visible
     return Container(
-      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         color: const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
-      child: rh.isWide
-          ? Row(
-              children: [
-                _buildTabButton(AdminTab.artists, 'Artists'.trData(context)),
-                _buildTabButton(AdminTab.events, 'Events'.trData(context)),
-                _buildTabButton(AdminTab.calendar, 'Calendar'.trData(context)),
-                _buildTabButton(AdminTab.galleries, 'Galleries'.trData(context)),
-                _buildTabButton(AdminTab.artCenters, 'Art Centers'.trData(context)),
-                _buildTabButton(AdminTab.government, 'Government'.trData(context)),
-                _buildTabButton(AdminTab.masters, 'Masters'.trData(context)),
-                _buildTabButton(AdminTab.permissions, 'Permissions'.trData(context)),
-              ],
-            )
-          : Column(
-              children: [
-                // Row 1 (4 tabs)
-                Row(
-                  children: [
-                    _buildTabButton(AdminTab.artists, 'Artists'.trData(context)),
-                    _buildTabButton(AdminTab.events, 'Events'.trData(context)),
-                    _buildTabButton(AdminTab.calendar, 'Calendar'.trData(context)),
-                    _buildTabButton(AdminTab.galleries, 'Galleries'.trData(context)),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                // Row 2 (4 tabs)
-                Row(
-                  children: [
-                    _buildTabButton(AdminTab.artCenters, 'Art Centers'.trData(context)),
-                    _buildTabButton(AdminTab.government, 'Government'.trData(context)),
-                    _buildTabButton(AdminTab.masters, 'Masters'.trData(context)),
-                    _buildTabButton(AdminTab.permissions, 'Permissions'.trData(context)),
-                  ],
-                ),
-              ],
-            ),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              _buildCompactTabButton(AdminTab.overview, 'Overview'.trData(context), Icons.dashboard_outlined),
+              _buildCompactTabButton(AdminTab.artists, 'Artists'.trData(context), Icons.palette_outlined),
+              _buildCompactTabButton(AdminTab.events, 'Events'.trData(context), Icons.event_outlined),
+              _buildCompactTabButton(AdminTab.calendar, 'Calendar'.trData(context), Icons.calendar_month_outlined),
+              _buildCompactTabButton(AdminTab.galleries, 'Galleries'.trData(context), Icons.photo_library_outlined),
+            ],
+          ),
+          const SizedBox(height: 5),
+          Row(
+            children: [
+              _buildCompactTabButton(AdminTab.artCenters, 'Centers'.trData(context), Icons.account_balance_outlined),
+              _buildCompactTabButton(AdminTab.government, 'Government'.trData(context), Icons.assured_workload_outlined),
+              _buildCompactTabButton(AdminTab.masters, 'Masters'.trData(context), Icons.stars_outlined),
+              _buildCompactTabButton(AdminTab.permissions, 'Permissions'.trData(context), Icons.security_outlined),
+              _buildCompactTabButton(AdminTab.users, 'Users'.trData(context), Icons.people_alt_outlined),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildTabButton(AdminTab tab, String title) {
+  Widget _buildWideTabButton(AdminTab tab, String title, IconData? icon) {
     final isSelected = _selectedTab == tab;
-    return Expanded(
-      child: GestureDetector(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
         onTap: () => setState(() => _selectedTab = tab),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+          duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
           margin: const EdgeInsets.symmetric(horizontal: 2),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            color: isSelected ? const Color(0xFF6A2777) : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
             boxShadow: isSelected
                 ? const [
                     BoxShadow(
-                      color: Color(0x10000000),
-                      blurRadius: 4,
-                      offset: Offset(0, 1),
+                      color: Color(0x336A2777),
+                      blurRadius: 8,
+                      offset: Offset(0, 3),
                     ),
                   ]
                 : null,
           ),
-          child: Center(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                title,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                softWrap: false,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? const Color(0xFF0F172A) : const Color(0xFF64748B),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  size: 15,
+                  color: isSelected ? Colors.white : const Color(0xFF475569),
+                ),
+                const SizedBox(width: 5),
+              ],
+              Flexible(
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                    color: isSelected ? Colors.white : const Color(0xFF334155),
+                    letterSpacing: 0.2,
+                  ),
                 ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactTabButton(AdminTab tab, String title, IconData icon) {
+    final isSelected = _selectedTab == tab;
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () => setState(() => _selectedTab = tab),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+            margin: const EdgeInsets.symmetric(horizontal: 1.5),
+            decoration: BoxDecoration(
+              color: isSelected ? const Color(0xFF6A2777) : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: isSelected
+                  ? const [
+                      BoxShadow(
+                        color: Color(0x336A2777),
+                        blurRadius: 6,
+                        offset: Offset(0, 2),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 16,
+                  color: isSelected ? Colors.white : const Color(0xFF475569),
+                ),
+                const SizedBox(height: 3),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                      color: isSelected ? Colors.white : const Color(0xFF334155),
+                      letterSpacing: -0.1,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -1615,6 +1904,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
 
   Widget _buildTabContent() {
     switch (_selectedTab) {
+      case AdminTab.overview:
+        return _buildMetricsGrid();
       case AdminTab.artists:
         return _buildArtistsTab();
       case AdminTab.events:
@@ -1631,6 +1922,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         return _buildMastersTab();
       case AdminTab.permissions:
         return _buildPermissionsTab();
+      case AdminTab.users:
+        return _buildUsersTab();
     }
   }
 
@@ -2902,16 +3195,16 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
         boxShadow: const [
           BoxShadow(
             color: Color(0x06000000),
-            blurRadius: 4,
-            offset: Offset(0, 1),
+            blurRadius: 8,
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -3124,8 +3417,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Container(
-          width: 500,
-          constraints: const BoxConstraints(maxHeight: 650),
+          constraints: const BoxConstraints(maxWidth: 500, maxHeight: 650),
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -3273,203 +3565,70 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Sub-tab switcher: Categories vs Experience Levels
+        // Sub-tab switcher: Categories vs Experience Levels vs Locations vs Listing Plans
         Container(
-          padding: const EdgeInsets.all(4),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           decoration: BoxDecoration(
             color: const Color(0xFFF1F5F9),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFCBD5E1), width: 1.1),
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _masterSubTab = 0),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      color: _masterSubTab == 0 ? Colors.white : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: _masterSubTab == 0
-                          ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
-                          : null,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.category_outlined,
-                          size: 15,
-                          color: _masterSubTab == 0 ? const Color(0xFF6A2777) : const Color(0xFF64748B),
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            '${'Categories'.trData(context)} (${_categories.length})',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: _masterSubTab == 0 ? FontWeight.w700 : FontWeight.w500,
-                              color: _masterSubTab == 0 ? const Color(0xFF6A2777) : const Color(0xFF64748B),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildMasterSubTabItem(
+                  index: 0,
+                  icon: Icons.category_outlined,
+                  label: '${'Categories'.trData(context)} (${_categories.length})',
                 ),
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _masterSubTab = 1),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      color: _masterSubTab == 1 ? Colors.white : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: _masterSubTab == 1
-                          ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
-                          : null,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.stars_outlined,
-                          size: 15,
-                          color: _masterSubTab == 1 ? const Color(0xFF6A2777) : const Color(0xFF64748B),
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            '${'Levels'.trData(context)} (${_experienceLevels.length})',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: _masterSubTab == 1 ? FontWeight.w700 : FontWeight.w500,
-                              color: _masterSubTab == 1 ? const Color(0xFF6A2777) : const Color(0xFF64748B),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                const SizedBox(width: 4),
+                _buildMasterSubTabItem(
+                  index: 1,
+                  icon: Icons.stars_outlined,
+                  label: '${'Levels'.trData(context)} (${_experienceLevels.length})',
                 ),
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _masterSubTab = 2),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      color: _masterSubTab == 2 ? Colors.white : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: _masterSubTab == 2
-                          ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
-                          : null,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 15,
-                          color: _masterSubTab == 2 ? const Color(0xFF6A2777) : const Color(0xFF64748B),
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            '${'Locations'.trData(context)} (${_locations.length})',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: _masterSubTab == 2 ? FontWeight.w700 : FontWeight.w500,
-                              color: _masterSubTab == 2 ? const Color(0xFF6A2777) : const Color(0xFF64748B),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                const SizedBox(width: 4),
+                _buildMasterSubTabItem(
+                  index: 2,
+                  icon: Icons.location_on_outlined,
+                  label: '${'Locations'.trData(context)} (${_locations.length})',
                 ),
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _masterSubTab = 3),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      color: _masterSubTab == 3 ? Colors.white : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: _masterSubTab == 3
-                          ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
-                          : null,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.list_alt_rounded,
-                          size: 15,
-                          color: _masterSubTab == 3 ? const Color(0xFF6A2777) : const Color(0xFF64748B),
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            'Listing Plans'.trData(context),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: _masterSubTab == 3 ? FontWeight.w700 : FontWeight.w500,
-                              color: _masterSubTab == 3 ? const Color(0xFF6A2777) : const Color(0xFF64748B),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                const SizedBox(width: 4),
+                _buildMasterSubTabItem(
+                  index: 3,
+                  icon: Icons.list_alt_rounded,
+                  label: '${'Listing Plans'.trData(context)} (${_listingPlans.length})',
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 14),
 
         // Action header row
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 10,
+          runSpacing: 8,
           children: [
-            Expanded(
-              child: Text(
-                _masterSubTab == 0
-                    ? '${_categories.length} categories configured'.trData(context)
-                    : _masterSubTab == 1
-                        ? '${_experienceLevels.length} experience levels configured'.trData(context)
-                        : _masterSubTab == 2
-                            ? '${_locations.length} locations configured'.trData(context)
-                            : '${_listingPlans.length} listing plans configured'.trData(context),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13.5,
-                  color: Color(0xFF64748B),
-                  fontWeight: FontWeight.w500,
-                ),
+            Text(
+              _masterSubTab == 0
+                  ? '${_categories.length} categories configured'.trData(context)
+                  : _masterSubTab == 1
+                      ? '${_experienceLevels.length} experience levels configured'.trData(context)
+                      : _masterSubTab == 2
+                          ? '${_locations.length} locations configured'.trData(context)
+                          : '${_listingPlans.length} listing plans configured'.trData(context),
+              style: const TextStyle(
+                fontSize: 13,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(width: 8),
             if (_masterSubTab != 3)
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
@@ -3561,6 +3720,47 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         else
           _buildListingPlansMasterList(),
       ],
+    );
+  }
+
+  Widget _buildMasterSubTabItem({
+    required int index,
+    required IconData icon,
+    required String label,
+  }) {
+    final isSelected = _masterSubTab == index;
+    return GestureDetector(
+      onTap: () => setState(() => _masterSubTab = index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8.5),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: isSelected
+              ? const [BoxShadow(color: Color(0x1A000000), blurRadius: 4, offset: Offset(0, 2))]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 15,
+              color: isSelected ? const Color(0xFF6A2777) : const Color(0xFF475569),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12.0,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                color: isSelected ? const Color(0xFF6A2777) : const Color(0xFF334155),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -4552,7 +4752,41 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   }
 
   Widget _buildListingPlansMasterList() {
-    final plansList = _listingPlans.isNotEmpty ? _listingPlans : ApiService.defaultListingPlans;
+    final plansList = _listingPlans;
+
+    if (plansList.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Column(
+          children: [
+            Icon(Icons.workspace_premium_outlined, size: 44, color: Colors.grey.shade400),
+            const SizedBox(height: 12),
+            Text(
+              'No listing plans created yet',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Use the form above to add an event or gallery publishing plan.',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -4617,24 +4851,34 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
+                            Text(
+                              plan.title,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF0F172A),
+                                height: 1.25,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
-                                Flexible(
-                                  child: Text(
-                                    plan.title,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFF0F172A),
-                                    ),
+                                Text(
+                                  plan.category,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF6A2777),
                                   ),
                                 ),
-                                const SizedBox(width: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: plan.isActive ? const Color(0xFFECFDF5) : const Color(0xFFF1F5F9),
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
                                       color: plan.isActive ? const Color(0xFFA7F3D0) : const Color(0xFFCBD5E1),
                                     ),
@@ -4651,7 +4895,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                       Text(
                                         plan.isActive ? 'Active in App' : 'Hidden',
                                         style: TextStyle(
-                                          fontSize: 10.5,
+                                          fontSize: 10,
                                           fontWeight: FontWeight.w600,
                                           color: plan.isActive ? const Color(0xFF059669) : const Color(0xFF64748B),
                                         ),
@@ -4659,21 +4903,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                     ],
                                   ),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Text(
-                                  plan.category,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF6A2777),
-                                  ),
-                                ),
-                                if (plan.badge.isNotEmpty) ...[
-                                  const SizedBox(width: 8),
+                                if (plan.badge.isNotEmpty)
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                                     decoration: BoxDecoration(
@@ -4689,7 +4919,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                       ),
                                     ),
                                   ),
-                                ],
                               ],
                             ),
                             if (plan.description.isNotEmpty) ...[
@@ -4712,68 +4941,73 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   const Divider(height: 1, color: Color(0xFFF1F5F9)),
                   const SizedBox(height: 14),
 
-                  // Price & Features Display
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                        ),
-                        child: Column(
+                  // Price & Features Display (Responsive)
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isNarrow = constraints.maxWidth < 360;
+                      if (isNarrow) {
+                        return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Listing Price',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF64748B),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFE2E8F0)),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Listing Price',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF64748B),
+                                    ),
+                                  ),
+                                  Text(
+                                    plan.price,
+                                    style: const TextStyle(
+                                      fontSize: 19,
+                                      fontWeight: FontWeight.w900,
+                                      color: Color(0xFF1E293B),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              plan.price,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF1E293B),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                            const SizedBox(height: 12),
                             const Text(
                               'Included Features:',
                               style: TextStyle(
                                 fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
                                 color: Color(0xFF475569),
                               ),
                             ),
                             const SizedBox(height: 6),
-                            for (final feat in plan.features)
+                            for (final feat in (plan.features.isNotEmpty ? plan.features : plan.effectiveFeatures))
                               Padding(
-                                padding: const EdgeInsets.only(bottom: 4),
+                                padding: const EdgeInsets.only(bottom: 5),
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Icon(Icons.check, size: 14, color: Color(0xFF6A2777)),
-                                    const SizedBox(width: 6),
+                                    const Padding(
+                                      padding: EdgeInsets.only(top: 2),
+                                      child: Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF6A2777)),
+                                    ),
+                                    const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
                                         feat,
                                         style: const TextStyle(
                                           fontSize: 12,
+                                          fontWeight: FontWeight.w500,
                                           color: Color(0xFF334155),
+                                          height: 1.3,
                                         ),
                                       ),
                                     ),
@@ -4781,26 +5015,116 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                 ),
                               ),
                           ],
-                        ),
-                      ),
-                    ],
+                        );
+                      }
+
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Listing Price',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  plan.price,
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w900,
+                                    color: Color(0xFF1E293B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Included Features:',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF475569),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                for (final feat in (plan.features.isNotEmpty ? plan.features : plan.effectiveFeatures))
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 5),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Padding(
+                                          padding: EdgeInsets.only(top: 2),
+                                          child: Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF6A2777)),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            feat,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                              color: Color(0xFF334155),
+                                              height: 1.3,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 16),
 
                   // Bottom Action Bar
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 10,
                     children: [
-                      Text(
-                        'Type: ${plan.itemType}',
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF94A3B8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'Type: ${plan.itemType}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF64748B),
+                          ),
                         ),
                       ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           OutlinedButton.icon(
                             style: OutlinedButton.styleFrom(
@@ -4826,7 +5150,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                 badge: updated.badge,
                                 price: updated.price,
                                 description: updated.description,
-                                features: updated.features,
+                                features: updated.features.isNotEmpty ? updated.features : updated.effectiveFeatures,
                                 buttonText: updated.buttonText,
                                 isActive: updated.isActive,
                                 sortOrder: updated.sortOrder,
@@ -4835,13 +5159,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                               if (mounted) setState(() => _listingPlans = fresh);
                             },
                           ),
-                          const SizedBox(width: 8),
                           ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF6A2777),
                               foregroundColor: Colors.white,
                               elevation: 0,
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
                             icon: const Icon(Icons.edit_note_rounded, size: 16, color: Colors.white),
@@ -4851,6 +5174,20 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             ),
                             onPressed: () => _showEditListingPlanDialog(plan),
                           ),
+                          if (plan.id != null)
+                            IconButton(
+                              tooltip: 'Delete Plan',
+                              icon: const Icon(Icons.delete_outline_rounded, size: 17, color: Colors.redAccent),
+                              style: IconButton.styleFrom(
+                                backgroundColor: const Color(0xFFFEF2F2),
+                                padding: const EdgeInsets.all(7),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  side: const BorderSide(color: Color(0xFFFECACA)),
+                                ),
+                              ),
+                              onPressed: () => _confirmDeleteListingPlan(plan),
+                            ),
                         ],
                       ),
                     ],
@@ -4861,6 +5198,87 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           },
         ),
       ],
+    );
+  }
+
+  void _confirmDeleteListingPlan(ListingPlanItem plan) {
+    if (plan.id == null) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.delete_forever_rounded, color: Colors.redAccent, size: 22),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Delete Listing Plan',
+                style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to permanently delete "${plan.title}"? This listing plan will be removed from both the mobile app and admin console.',
+          style: const TextStyle(fontSize: 13, color: Color(0xFF475569), height: 1.4),
+        ),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF64748B),
+              side: const BorderSide(color: Color(0xFFCBD5E1)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              Navigator.pop(ctx);
+              final success = await sl<ApiService>().deleteListingPlan(plan.id!);
+              if (success) {
+                final updated = await sl<ApiService>().getListingPlans(forceRefresh: true);
+                if (mounted) {
+                  setState(() => _listingPlans = updated);
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text('"${plan.title}" deleted successfully.'),
+                      backgroundColor: Colors.redAccent,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              } else {
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Failed to delete listing plan.'),
+                    backgroundColor: Colors.redAccent,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+            child: const Text('Delete Plan', style: TextStyle(fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -4949,7 +5367,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             surfaceTintColor: Colors.transparent,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: Container(
-              width: 480,
+              constraints: const BoxConstraints(maxWidth: 480),
               padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -5215,321 +5633,613 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     final categoryCtrl = TextEditingController(text: plan?.category ?? '');
     final badgeCtrl = TextEditingController(text: plan?.badge ?? 'One-time');
     final priceCtrl = TextEditingController(text: plan?.price ?? '199 AED');
-    final itemTypeCtrl = TextEditingController(text: plan?.itemType ?? 'event');
+    String selectedItemType = plan?.itemType ?? 'event';
     final descCtrl = TextEditingController(text: plan?.description ?? '');
-    final featuresCtrl = TextEditingController(text: plan?.features.join('\n') ?? '');
+    final initialFeatures = plan != null
+        ? (plan.features.isNotEmpty ? plan.features.join('\n') : plan.effectiveFeatures.join('\n'))
+        : ListingPlanItem.defaultFeaturesForItemType('event').join('\n');
+    final featuresCtrl = TextEditingController(text: initialFeatures);
     final buttonTextCtrl = TextEditingController(text: plan?.buttonText ?? 'Pay from My Listings');
     bool isActive = plan?.isActive ?? true;
+
+    // Quick Templates for 1-Click Professional Pre-Filling
+    final quickTemplates = [
+      {
+        'title': 'Standard Event Listing',
+        'category': 'Exhibitions & Openings',
+        'badge': 'Popular',
+        'price': 'AED 500',
+        'itemType': 'event',
+        'desc': '30-day verified event showcase across mobile app and website',
+        'features': [
+          '30-day verified event showcase across mobile app and website',
+          'Event calendar & push notification highlight',
+          'Direct ticket booking & RSVP link integration',
+          'Featured placement in Art Events feed',
+          'Analytics & attendee click metrics',
+        ].join('\n'),
+        'buttonText': 'Pay from My Listings',
+      },
+      {
+        'title': 'Pro Artist Portfolio',
+        'category': 'Featured Profile',
+        'badge': 'Recommended',
+        'price': 'AED 350',
+        'itemType': 'artist',
+        'desc': 'Annual premium verified artist badge, unlimited artworks & direct buyer inquiries',
+        'features': [
+          'Verified Gold Artist Badge on profile',
+          'Unlimited portfolio artwork uploads',
+          'Featured spot on Artist Discovery grid',
+          'Direct WhatsApp & inquiry link to artist',
+          'Priority curation in collector newsletters',
+        ].join('\n'),
+        'buttonText': 'Subscribe to Pro',
+      },
+      {
+        'title': 'Elite Gallery Showcase',
+        'category': 'Galleries & Spaces',
+        'badge': 'Premium',
+        'price': 'AED 750',
+        'itemType': 'gallery',
+        'desc': 'Comprehensive gallery venue listing with exhibitions calendar & collector reach',
+        'features': [
+          'Full digital gallery showroom & map listing',
+          'Unlimited exhibition postings for 12 months',
+          'Featured spot on Galleries directory',
+          'Direct visitor booking & VIP inquiries',
+          'Social media & push broadcast spotlight',
+        ].join('\n'),
+        'buttonText': 'List Your Gallery',
+      },
+      {
+        'title': 'Art Center Partner',
+        'category': 'Institutions & Venues',
+        'badge': 'VIP Partner',
+        'price': 'AED 990',
+        'itemType': 'art_centre',
+        'desc': 'Official institution hub page, workshop hosting & priority event syndication',
+        'features': [
+          'Official verified institution partner badge',
+          'Unlimited event & workshop listings',
+          'Direct ticket booking with instant notifications',
+          'Top banner rotation on mobile home screen',
+          'Dedicated account manager & support',
+        ].join('\n'),
+        'buttonText': 'Join Partner Network',
+      },
+    ];
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) {
+          final linesCount = featuresCtrl.text
+              .split('\n')
+              .map((l) => l.trim())
+              .where((l) => l.isNotEmpty)
+              .length;
+
           return Dialog(
             backgroundColor: Colors.white,
             surfaceTintColor: Colors.transparent,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: Container(
-              width: 520,
-              padding: const EdgeInsets.all(22),
+              constraints: const BoxConstraints(maxWidth: 540, maxHeight: 700),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Header Row
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
                             Container(
-                              width: 36,
-                              height: 36,
+                              width: 40,
+                              height: 40,
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF3E8FF),
-                                borderRadius: BorderRadius.circular(8),
+                                color: const Color(0xFF6A2777).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFD8B4FE), width: 1.2),
                               ),
-                              child: const Icon(Icons.list_alt_rounded, color: Color(0xFF6A2777), size: 20),
+                              child: const Icon(Icons.list_alt_rounded, color: Color(0xFF6A2777), size: 22),
                             ),
                             const SizedBox(width: 12),
-                            Text(
-                              isEditing ? 'Edit ${plan.title}' : 'New Listing Plan',
-                              style: const TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF0F172A),
-                              ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  isEditing ? 'Edit ${plan.title}' : 'New Listing Plan',
+                                  style: const TextStyle(
+                                    fontSize: 17.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF0F172A),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  isEditing ? 'Update pricing, features and app visibility' : 'Create & publish listing plan for mobile app',
+                                  style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close, size: 20, color: Color(0xFF64748B)),
+                          icon: const Icon(Icons.close_rounded, size: 22, color: Color(0xFF64748B)),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
                           onPressed: () => Navigator.pop(ctx),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Configure live amount, badge, description and feature bullet checklist displayed on the Listing Plans page.',
-                      style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
-                    ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 14),
+                    const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                    const SizedBox(height: 14),
 
-                    // Plan Title & Category row
+                    // Quick Template Pre-Fill Row
                     Row(
                       children: [
-                        Expanded(
-                          child: Column(
+                        const Icon(Icons.auto_awesome_rounded, size: 14, color: Color(0xFF6A2777)),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'Quick Templates (One-Click Pre-fill):',
+                          style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF475569)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: quickTemplates.map((t) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: InkWell(
+                              onTap: () {
+                                setModalState(() {
+                                  titleCtrl.text = t['title']!;
+                                  categoryCtrl.text = t['category']!;
+                                  badgeCtrl.text = t['badge']!;
+                                  priceCtrl.text = t['price']!;
+                                  selectedItemType = t['itemType']!;
+                                  descCtrl.text = t['desc']!;
+                                  featuresCtrl.text = t['features']!;
+                                  buttonTextCtrl.text = t['buttonText']!;
+                                });
+                              },
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFAF5FF),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFFE9D5FF)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      t['itemType'] == 'event'
+                                          ? Icons.event_available_rounded
+                                          : (t['itemType'] == 'artist'
+                                              ? Icons.palette_outlined
+                                              : (t['itemType'] == 'gallery'
+                                                  ? Icons.museum_outlined
+                                                  : Icons.account_balance_outlined)),
+                                      size: 13,
+                                      color: const Color(0xFF6A2777),
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      t['title']!.split(' ').first,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF6A2777),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Responsive Form Fields Layout
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isNarrow = constraints.maxWidth < 440;
+                        if (isNarrow) {
+                          return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Plan Title *', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                              _buildFormLabel('Plan Title *'),
                               const SizedBox(height: 6),
-                              TextField(
+                              _buildDialogTextField(
                                 controller: titleCtrl,
-                                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.black),
-                                decoration: InputDecoration(
-                                  hintText: 'e.g. Event Listing',
-                                  hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
-                                  filled: true,
-                                  fillColor: const Color(0xFFF8FAFC),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                ),
+                                hint: 'e.g. Standard Event Listing',
+                                icon: Icons.title_rounded,
                               ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Category *', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                              const SizedBox(height: 12),
+                              _buildFormLabel('Category *'),
                               const SizedBox(height: 6),
-                              TextField(
+                              _buildDialogTextField(
                                 controller: categoryCtrl,
-                                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.black),
-                                decoration: InputDecoration(
-                                  hintText: 'e.g. Events, Galleries',
-                                  hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
-                                  filled: true,
-                                  fillColor: const Color(0xFFF8FAFC),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                ),
+                                hint: 'e.g. Exhibitions & Openings',
+                                icon: Icons.category_outlined,
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Price & Badge Row
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Price (Live Display) *', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                              const SizedBox(height: 12),
+                              _buildFormLabel('Price (Live Display) *'),
                               const SizedBox(height: 6),
-                              TextField(
+                              _buildDialogTextField(
                                 controller: priceCtrl,
-                                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: Colors.black),
-                                decoration: InputDecoration(
-                                  hintText: 'e.g. 199 AED',
-                                  hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
-                                  prefixIcon: const Icon(Icons.payments_rounded, size: 18, color: Color(0xFF6B1C9B)),
-                                  filled: true,
-                                  fillColor: const Color(0xFFF8FAFC),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                ),
+                                hint: 'e.g. AED 500, Free',
+                                icon: Icons.payments_rounded,
+                                isBold: true,
                               ),
+                              const SizedBox(height: 12),
+                              _buildFormLabel('Badge Tag'),
+                              const SizedBox(height: 6),
+                              _buildDialogTextField(
+                                controller: badgeCtrl,
+                                hint: 'e.g. Popular, Recommended',
+                                icon: Icons.bookmark_border_rounded,
+                              ),
+                            ],
+                          );
+                        }
+
+                        return Column(
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      _buildFormLabel('Plan Title *'),
+                                      const SizedBox(height: 6),
+                                      _buildDialogTextField(
+                                        controller: titleCtrl,
+                                        hint: 'e.g. Standard Event Listing',
+                                        icon: Icons.title_rounded,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      _buildFormLabel('Category *'),
+                                      const SizedBox(height: 6),
+                                      _buildDialogTextField(
+                                        controller: categoryCtrl,
+                                        hint: 'e.g. Exhibitions & Openings',
+                                        icon: Icons.category_outlined,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      _buildFormLabel('Price (Live Display) *'),
+                                      const SizedBox(height: 6),
+                                      _buildDialogTextField(
+                                        controller: priceCtrl,
+                                        hint: 'e.g. AED 500, Free',
+                                        icon: Icons.payments_rounded,
+                                        isBold: true,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      _buildFormLabel('Badge Tag'),
+                                      const SizedBox(height: 6),
+                                      _buildDialogTextField(
+                                        controller: badgeCtrl,
+                                        hint: 'e.g. Popular, Recommended',
+                                        icon: Icons.bookmark_border_rounded,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Item Type Dropdown (Professional selector instead of bare text input)
+                    _buildFormLabel('Listing Item Type *'),
+                    const SizedBox(height: 6),
+                    DropdownButtonFormField<String>(
+                      value: ['event', 'artist', 'gallery', 'art_centre', 'custom'].contains(selectedItemType)
+                          ? selectedItemType
+                          : 'custom',
+                      dropdownColor: Colors.white,
+                      style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'event',
+                          child: Row(
+                            children: [
+                              Icon(Icons.event_available_rounded, size: 17, color: Color(0xFF6A2777)),
+                              SizedBox(width: 9),
+                              Text('Event Listing (event)', style: TextStyle(fontWeight: FontWeight.w600)),
                             ],
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        DropdownMenuItem(
+                          value: 'artist',
+                          child: Row(
                             children: [
-                              const Text('Badge Tag', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
-                              const SizedBox(height: 6),
-                              TextField(
-                                controller: badgeCtrl,
-                                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.black),
-                                decoration: InputDecoration(
-                                  hintText: 'e.g. One-time, Popular',
-                                  hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
-                                  prefixIcon: const Icon(Icons.bookmark_border_rounded, size: 18, color: Color(0xFF6B1C9B)),
-                                  filled: true,
-                                  fillColor: const Color(0xFFF8FAFC),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                ),
-                              ),
+                              Icon(Icons.palette_outlined, size: 17, color: Color(0xFF7E22CE)),
+                              SizedBox(width: 9),
+                              Text('Artist Portfolio (artist)', style: TextStyle(fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'gallery',
+                          child: Row(
+                            children: [
+                              Icon(Icons.museum_outlined, size: 17, color: Color(0xFF0284C7)),
+                              SizedBox(width: 9),
+                              Text('Gallery Showcase (gallery)', style: TextStyle(fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'art_centre',
+                          child: Row(
+                            children: [
+                              Icon(Icons.account_balance_outlined, size: 17, color: Color(0xFFD97706)),
+                              SizedBox(width: 9),
+                              Text('Art Center Showcase (art_centre)', style: TextStyle(fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'custom',
+                          child: Row(
+                            children: [
+                              Icon(Icons.stars_rounded, size: 17, color: Color(0xFF475569)),
+                              SizedBox(width: 9),
+                              Text('Custom Subscription (custom)', style: TextStyle(fontWeight: FontWeight.w600)),
                             ],
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Item Type
-                    const Text('Item Type Identifier *', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: itemTypeCtrl,
-                      style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500, color: Colors.black),
+                      onChanged: (val) {
+                        if (val == null) return;
+                        setModalState(() {
+                          selectedItemType = val;
+                          if (featuresCtrl.text.trim().isEmpty) {
+                            featuresCtrl.text = ListingPlanItem.defaultFeaturesForItemType(val).join('\n');
+                          }
+                        });
+                      },
                       decoration: InputDecoration(
-                        hintText: 'e.g. event, gallery, art_centre',
-                        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
                         filled: true,
                         fillColor: const Color(0xFFF8FAFC),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5)),
                       ),
                     ),
                     const SizedBox(height: 14),
 
-                    // Description
-                    const Text('Description', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                    // Description Field
+                    _buildFormLabel('Description'),
                     const SizedBox(height: 6),
                     TextField(
                       controller: descCtrl,
                       maxLines: 2,
-                      style: const TextStyle(fontSize: 13, color: Colors.black),
+                      style: const TextStyle(fontSize: 13, color: Color(0xFF0F172A), fontWeight: FontWeight.w500),
                       decoration: InputDecoration(
-                        hintText: 'e.g. Publish a single event on Artist Dubai.',
+                        hintText: 'e.g. 30-day verified event showcase across mobile app and website',
                         hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                        prefixIcon: const Icon(Icons.description_outlined, size: 18, color: Color(0xFF6A2777)),
                         filled: true,
                         fillColor: const Color(0xFFF8FAFC),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
-                        ),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5)),
                       ),
                     ),
                     const SizedBox(height: 14),
 
-                    // Features Checklist (One per line)
-                    const Text('Features (One per line) *', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                    // Features Checklist with Header Count & Quick Add Feature Chips
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildFormLabel('Features Checklist (One per line) *'),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF3E8FF),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '$linesCount Features',
+                            style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF6A2777)),
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 4),
-                    const Text('Each line will be displayed with a purple checkmark on the user-facing screen.', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                    const Text(
+                      'Each line renders with a branded checkmark on user-facing pricing screens.',
+                      style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                    ),
                     const SizedBox(height: 6),
                     TextField(
                       controller: featuresCtrl,
                       maxLines: 4,
-                      style: const TextStyle(fontSize: 13, color: Colors.black),
+                      style: const TextStyle(fontSize: 13, color: Color(0xFF0F172A), height: 1.4, fontWeight: FontWeight.w500),
+                      onChanged: (_) => setModalState(() {}),
                       decoration: InputDecoration(
-                        hintText: 'One event listing\nVisible in Events and calendar\nGallery photos included',
+                        hintText: '30-day verified showcase\nEvent calendar highlight\nDirect ticket booking link',
                         hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12.5),
                         filled: true,
                         fillColor: const Color(0xFFF8FAFC),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
-                        ),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5)),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    // Quick-append feature chips
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: [
+                          _buildQuickFeatureChip('+ 30-Day Highlight', featuresCtrl, () => setModalState(() {})),
+                          const SizedBox(width: 6),
+                          _buildQuickFeatureChip('+ Verified Gold Badge', featuresCtrl, () => setModalState(() {})),
+                          const SizedBox(width: 6),
+                          _buildQuickFeatureChip('+ Direct WhatsApp Link', featuresCtrl, () => setModalState(() {})),
+                          const SizedBox(width: 6),
+                          _buildQuickFeatureChip('+ Push Notification Broadcast', featuresCtrl, () => setModalState(() {})),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 14),
 
-                    // Button Text
-                    const Text('Action Button Text', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                    // Action Button Text with Quick Preset Chips
+                    _buildFormLabel('Action Button Text'),
                     const SizedBox(height: 6),
                     TextField(
                       controller: buttonTextCtrl,
-                      style: const TextStyle(fontSize: 13.5, color: Colors.black),
+                      style: const TextStyle(fontSize: 13.5, color: Color(0xFF0F172A), fontWeight: FontWeight.w600),
                       decoration: InputDecoration(
                         hintText: 'e.g. Pay from My Listings',
                         hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                        prefixIcon: const Icon(Icons.touch_app_outlined, size: 18, color: Color(0xFF6A2777)),
                         filled: true,
                         fillColor: const Color(0xFFF8FAFC),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF6B1C9B), width: 1.5),
-                        ),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5)),
                       ),
                     ),
-                    const SizedBox(height: 14),
-
-                    // Active Switch
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
                       children: [
-                        const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Active in App', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
-                            Text('Make this plan visible on the user Listing Plans page', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                          ],
-                        ),
-                        Switch(
-                          value: isActive,
-                          activeColor: const Color(0xFF6A2777),
-                          onChanged: (val) => setModalState(() => isActive = val),
-                        ),
+                        _buildButtonPresetChip('Pay from My Listings', buttonTextCtrl, () => setModalState(() {})),
+                        _buildButtonPresetChip('Subscribe to Pro', buttonTextCtrl, () => setModalState(() {})),
+                        _buildButtonPresetChip('List Your Gallery', buttonTextCtrl, () => setModalState(() {})),
+                        _buildButtonPresetChip('Choose Plan', buttonTextCtrl, () => setModalState(() {})),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
-                    // Action buttons
+                    // Active Switch Card Container
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isActive ? const Color(0xFFF0FDF4) : const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: isActive ? const Color(0xFFA7F3D0) : const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                isActive ? Icons.visibility_rounded : Icons.visibility_off_outlined,
+                                color: isActive ? const Color(0xFF16A34A) : const Color(0xFF64748B),
+                                size: 20,
+                              ),
+                              const SizedBox(width: 10),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Text(
+                                        'Active in App',
+                                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                        decoration: BoxDecoration(
+                                          color: isActive ? const Color(0xFFDCFCE7) : const Color(0xFFE2E8F0),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          isActive ? 'VISIBLE' : 'HIDDEN',
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w800,
+                                            color: isActive ? const Color(0xFF15803D) : const Color(0xFF64748B),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 2),
+                                  const Text(
+                                    'Visible to users on listing plans screen',
+                                    style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          Switch(
+                            value: isActive,
+                            activeColor: const Color(0xFF16A34A),
+                            activeTrackColor: const Color(0xFFBBF7D0),
+                            onChanged: (val) => setModalState(() => isActive = val),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+
+                    // Dialog Actions
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
@@ -5541,21 +6251,27 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           ),
-                          child: const Text('Cancel'),
+                          child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w600)),
                         ),
                         const SizedBox(width: 10),
-                        ElevatedButton(
+                        ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF6A2777),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            elevation: 0,
+                          ),
+                          icon: const Icon(Icons.check_circle_outline_rounded, size: 16, color: Colors.white),
+                          label: Text(
+                            isEditing ? 'Save Changes' : 'Create Plan',
+                            style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
                           ),
                           onPressed: () async {
                             final title = titleCtrl.text.trim();
                             final category = categoryCtrl.text.trim();
                             final price = priceCtrl.text.trim();
-                            final itemType = itemTypeCtrl.text.trim();
+                            final itemType = selectedItemType.trim();
 
                             if (title.isEmpty || category.isEmpty || price.isEmpty || itemType.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -5629,10 +6345,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                               }
                             }
                           },
-                          child: Text(
-                            isEditing ? 'Save Changes' : 'Create Plan',
-                            style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
-                          ),
                         ),
                       ],
                     ),
@@ -5646,132 +6358,103 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     );
   }
 
+  Widget _buildFormLabel(String label) {
+    return Text(
+      label,
+      style: const TextStyle(
+        fontSize: 12.5,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF1E293B),
+      ),
+    );
+  }
+
+  Widget _buildDialogTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    bool isBold = false,
+  }) {
+    return TextField(
+      controller: controller,
+      style: TextStyle(
+        fontSize: 13.5,
+        fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
+        color: const Color(0xFF0F172A),
+      ),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+        prefixIcon: Icon(icon, size: 18, color: const Color(0xFF6A2777)),
+        filled: true,
+        fillColor: const Color(0xFFF8FAFC),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5)),
+      ),
+    );
+  }
+
+  Widget _buildQuickFeatureChip(String text, TextEditingController controller, VoidCallback onUpdate) {
+    return InkWell(
+      onTap: () {
+        final cleanText = text.replaceFirst('+ ', '').trim();
+        final current = controller.text.trim();
+        if (current.isEmpty) {
+          controller.text = cleanText;
+        } else {
+          controller.text = '$current\n$cleanText';
+        }
+        onUpdate();
+      },
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: const Color(0xFFCBD5E1)),
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF475569)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildButtonPresetChip(String text, TextEditingController controller, VoidCallback onUpdate) {
+    return InkWell(
+      onTap: () {
+        controller.text = text;
+        onUpdate();
+      },
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFAF5FF),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: const Color(0xFFE9D5FF)),
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF6A2777)),
+        ),
+      ),
+    );
+  }
+
   // --- 8. Menu Permissions & Coming Soon Controls Tab ---
   Widget _buildPermissionsTab() {
     final permissionsList = MenuPermissionModel.defaultPermissions();
-    final activeCount = _activeMenuCount;
     final totalCount = permissionsList.length;
-    final comingSoonCount = totalCount - activeCount;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 1. Info & Overview Banner Card
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF28208C), Color(0xFF5D1F8E)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF28208C).withValues(alpha: 0.25),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.shield_rounded, color: Colors.white, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Home Menu Permissions & Coming Soon Controls'.trData(context),
-                          style: const TextStyle(
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Toggle menu access for users. When permission is OFF, clicking that menu opens the Coming Soon page.'
-                              .trData(context),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white.withValues(alpha: 0.85),
-                            height: 1.3,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.check_circle_rounded, color: Color(0xFF4ADE80), size: 14),
-                        const SizedBox(width: 6),
-                        Text(
-                          '$activeCount Active (Normal)'.trData(context),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.hourglass_empty_rounded, color: Color(0xFFFBBF24), size: 14),
-                        const SizedBox(width: 6),
-                        Text(
-                          '$comingSoonCount Coming Soon'.trData(context),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // 2. Action Bar: Quick Controls
+        // 1. Action Bar: Quick Controls
         Wrap(
           alignment: WrapAlignment.spaceBetween,
           crossAxisAlignment: WrapCrossAlignment.center,
@@ -6083,5 +6766,1787 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         ),
       );
     }
+  }
+
+  // --- 9. Users & Data Tab ---
+  Widget _buildUsersTab() {
+    final filteredUsers = _users.where((user) {
+      final name = (user['full_name'] ?? '').toString().toLowerCase();
+      final email = (user['email'] ?? '').toString().toLowerCase();
+      final role = (user['role'] ?? '').toString().toLowerCase();
+      final query = _userSearchQuery.toLowerCase();
+
+      final matchesSearch = query.isEmpty ||
+          name.contains(query) ||
+          email.contains(query) ||
+          role.contains(query);
+
+      final matchesRole = _userRoleFilter == 'all' ||
+          role == _userRoleFilter.toLowerCase() ||
+          (_userRoleFilter == 'artist' && user['has_artist_profile'] == true);
+
+      return matchesSearch && matchesRole;
+    }).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Header with count & refresh button
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${_users.length} registered users'.trData(context),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                Text(
+                  '${_users.where((u) => u['is_admin'] == true).length} admins · ${_users.where((u) => u['has_artist_profile'] == true || u['role'] == 'artist').length} artists'
+                      .trData(context),
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                ),
+              ],
+            ),
+            IconButton(
+              icon: _isLoadingUsers
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6A2777)),
+                    )
+                  : const Icon(Icons.refresh_rounded, color: Color(0xFF6A2777)),
+              tooltip: 'Refresh Users'.trData(context),
+              onPressed: _refreshUsers,
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // Search Bar
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: TextField(
+            onChanged: (val) => setState(() => _userSearchQuery = val),
+            decoration: InputDecoration(
+              icon: const Icon(Icons.search, color: Color(0xFF94A3B8), size: 20),
+              hintText: 'Search user by name, email, or role...'.trData(context),
+              hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        // Role Filter Chips
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildUserRoleChip('all', 'All Users'.trData(context), _users.length),
+              const SizedBox(width: 8),
+              _buildUserRoleChip('admin', 'Admins'.trData(context), _users.where((u) => u['is_admin'] == true).length),
+              const SizedBox(width: 8),
+              _buildUserRoleChip('artist', 'Artists'.trData(context), _users.where((u) => u['has_artist_profile'] == true || u['role'] == 'artist').length),
+              const SizedBox(width: 8),
+              _buildUserRoleChip('user', 'Standard Users'.trData(context), _users.where((u) => u['role'] == 'user' && u['has_artist_profile'] != true).length),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // User Cards List
+        if (filteredUsers.isEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 40),
+            alignment: Alignment.center,
+            child: Column(
+              children: [
+                const Icon(Icons.person_search_outlined, size: 48, color: Color(0xFFCBD5E1)),
+                const SizedBox(height: 8),
+                Text(
+                  'No users match your filter'.trData(context),
+                  style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                ),
+              ],
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: filteredUsers.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (ctx, i) => _buildUserCard(filteredUsers[i]),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildUserRoleChip(String roleKey, String label, int count) {
+    final isSelected = _userRoleFilter == roleKey;
+    return InkWell(
+      onTap: () => setState(() => _userRoleFilter = roleKey),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF6A2777) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF6A2777) : const Color(0xFFE2E8F0),
+          ),
+        ),
+        child: Text(
+          '$label ($count)',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected ? Colors.white : const Color(0xFF475569),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserCard(Map<String, dynamic> user) {
+    final id = user['id'] ?? 0;
+    final name = (user['full_name'] ?? 'Unnamed User').toString();
+    final email = (user['email'] ?? '').toString();
+    final role = (user['role'] ?? 'user').toString().toLowerCase();
+    final isAdmin = user['is_admin'] == true || role == 'admin' || role == 'superadmin' || email.toLowerCase().startsWith('admin@');
+    final hasArtist = user['has_artist_profile'] == true || role == 'artist';
+    final artistName = user['artist_name']?.toString() ?? '';
+    final artistCategory = user['artist_category']?.toString() ?? '';
+    final avatarUrl = user['avatar_url']?.toString() ?? '';
+    final totalBookings = user['total_bookings'] ?? 0;
+    final totalFavorites = user['total_favorites'] ?? 0;
+    final totalArtworks = user['total_artworks'] ?? 0;
+    final chatPlan = user['chat_plan']?.toString() ?? 'Basic (Free)';
+    final createdAt = user['created_at']?.toString() ?? '';
+
+    final String displayRole = isAdmin ? 'ADMIN' : (role == 'artist' || hasArtist ? 'ARTIST' : (role.isNotEmpty ? role.toUpperCase() : 'USER'));
+
+    Color roleBadgeBg;
+    Color roleBadgeBorder;
+    Color roleBadgeText;
+    if (isAdmin) {
+      roleBadgeBg = const Color(0xFFFEF2F2);
+      roleBadgeBorder = const Color(0xFFFCA5A5);
+      roleBadgeText = const Color(0xFFDC2626);
+    } else if (hasArtist || role == 'artist') {
+      roleBadgeBg = const Color(0xFFFAF5FF);
+      roleBadgeBorder = const Color(0xFFD8B4FE);
+      roleBadgeText = const Color(0xFF7E22CE);
+    } else {
+      roleBadgeBg = const Color(0xFFF1F5F9);
+      roleBadgeBorder = const Color(0xFFCBD5E1);
+      roleBadgeText = const Color(0xFF334155);
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x06000000),
+            blurRadius: 4,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Row 1: Avatar, Name/Email, Role Badge
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // User Avatar
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: const Color(0xFF6A2777).withValues(alpha: 0.12),
+                backgroundImage: (avatarUrl.isNotEmpty) ? NetworkImage(avatarUrl) : null,
+                child: (avatarUrl.isEmpty)
+                    ? Text(
+                        name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF6A2777),
+                          fontSize: 16,
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 10),
+              // Name and Email
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0F172A),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      email,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF64748B),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              // Role Badge & Edit Role Button
+              PopupMenuButton<String>(
+                tooltip: 'Manage Role'.trData(context),
+                color: Colors.white,
+                elevation: 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                onSelected: (newRole) => _updateUserRole(id, newRole),
+                itemBuilder: (ctx) => [
+                  PopupMenuItem(
+                    value: 'user',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.person_outline, size: 16, color: Color(0xFF475569)),
+                        const SizedBox(width: 8),
+                        Text('Set as User'.trData(context), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'artist',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.palette_outlined, size: 16, color: Color(0xFF7E22CE)),
+                        const SizedBox(width: 8),
+                        Text('Set as Artist'.trData(context), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'admin',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.shield_outlined, size: 16, color: Color(0xFFDC2626)),
+                        const SizedBox(width: 8),
+                        Text('Promote to Admin'.trData(context), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
+                      ],
+                    ),
+                  ),
+                ],
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: roleBadgeBg,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: roleBadgeBorder, width: 1.2),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        displayRole,
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          color: roleBadgeText,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(width: 3),
+                      Icon(Icons.arrow_drop_down_rounded, size: 16, color: roleBadgeText),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          const SizedBox(height: 10),
+
+          // Row 2: User Activity Stats & Badges
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              _buildUserDataBadge(Icons.bookmark_border_rounded, '$totalBookings Bookings'.trData(context)),
+              _buildUserDataBadge(Icons.favorite_border_rounded, '$totalFavorites Favorites'.trData(context)),
+              if (hasArtist || totalArtworks > 0)
+                _buildUserDataBadge(Icons.palette_outlined, '$totalArtworks Artworks'.trData(context)),
+              _buildUserDataBadge(Icons.chat_bubble_outline_rounded, chatPlan),
+            ],
+          ),
+
+          // Row 2.5: Purchased Plans & Due Dates Section
+          const SizedBox(height: 10),
+          Builder(
+            builder: (context) {
+              final rawPlans = user['purchased_plans'];
+              final List<Map<String, dynamic>> plansList = [];
+              if (rawPlans is List) {
+                for (final item in rawPlans) {
+                  if (item is Map) {
+                    plansList.add(Map<String, dynamic>.from(item));
+                  }
+                }
+              }
+
+              final userEmailLower = email.toLowerCase().trim();
+              if (plansList.isEmpty) {
+                // Check if user published events with plans
+                for (final ev in _events) {
+                  final orgEmail = (ev.organizerEmail ?? '').toLowerCase().trim();
+                  if (orgEmail == userEmailLower && ev.publishingPlan != null && ev.publishingPlan!.isNotEmpty) {
+                    final pName = '${ev.publishingPlan![0].toUpperCase()}${ev.publishingPlan!.substring(1)} Plan';
+                    plansList.add({
+                      'plan_name': pName,
+                      'plan_type': 'Event Publishing',
+                      'price': (ev.publishingAmount != null && ev.publishingAmount!.isNotEmpty)
+                          ? ev.publishingAmount!
+                          : (ev.price.isNotEmpty ? ev.price : 'Free'),
+                      'due_date': ev.dateTime.isNotEmpty ? ev.dateTime.split(' ').first : 'Active',
+                      'status': (ev.paymentStatus != null && ev.paymentStatus!.isNotEmpty) ? ev.paymentStatus! : 'Active',
+                    });
+                  }
+                }
+                // Check if user published galleries with plans
+                for (final g in _galleries) {
+                  final gEmail = (g['user_email'] ?? g['email'] ?? '').toString().toLowerCase().trim();
+                  final pubPlan = g['publishing_plan']?.toString() ?? '';
+                  if (gEmail == userEmailLower && pubPlan.isNotEmpty) {
+                    plansList.add({
+                      'plan_name': '${pubPlan[0].toUpperCase()}${pubPlan.substring(1)} Plan',
+                      'plan_type': 'Gallery Publishing',
+                      'price': (g['publishing_amount'] != null && g['publishing_amount'].toString().isNotEmpty)
+                          ? g['publishing_amount'].toString()
+                          : (g['price'] != null && g['price'].toString().isNotEmpty ? g['price'].toString() : 'Free'),
+                      'due_date': (g['created_at'] != null) ? g['created_at'].toString().split(' ').first : 'Active',
+                      'status': (g['payment_status'] ?? 'Active').toString(),
+                    });
+                  }
+                }
+              }
+
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.verified_rounded, size: 14, color: Color(0xFF6A2777)),
+                        const SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            'Purchased Plans & Due Dates'.trData(context),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0F172A),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: plansList.isNotEmpty
+                                ? const Color(0xFF6A2777).withValues(alpha: 0.1)
+                                : const Color(0xFF64748B).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            plansList.isNotEmpty ? '${plansList.length} Plan(s)'.trData(context) : 'No Active Plans'.trData(context),
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: plansList.isNotEmpty ? const Color(0xFF6A2777) : const Color(0xFF64748B),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (plansList.isEmpty) ...[
+                      Text(
+                        'User has no active purchased plans or subscriptions.'.trData(context),
+                        style: const TextStyle(fontSize: 11.5, color: Color(0xFF94A3B8), fontStyle: FontStyle.italic),
+                      ),
+                    ] else ...[
+                      for (int pIdx = 0; pIdx < plansList.length; pIdx++) ...[
+                        if (pIdx > 0) const SizedBox(height: 6),
+                        _buildPlanRow(
+                          context,
+                          planName: (plansList[pIdx]['plan_name'] ?? plansList[pIdx]['plan_type'] ?? 'Plan').toString(),
+                          price: (plansList[pIdx]['price'] ?? 'Free').toString(),
+                          dueDate: (plansList[pIdx]['due_date'] ?? plansList[pIdx]['expires_at'] ?? 'Active').toString(),
+                          status: (plansList[pIdx]['status'] ?? 'Active').toString(),
+                        ),
+                      ],
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
+
+          // Row 3: If Artist, show Artist Details
+          if (hasArtist && artistName.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFAF5FF),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFE9D5FF)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.verified_user_rounded, color: Color(0xFF7E22CE), size: 14),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Linked Artist: $artistName ${artistCategory.isNotEmpty ? '· $artistCategory' : ''}'
+                          .trData(context),
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        color: Color(0xFF6B21A8),
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // Row 4: Account Actions & Registration Date
+          const SizedBox(height: 10),
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          const SizedBox(height: 8),
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              if (createdAt.isNotEmpty)
+                Text(
+                  'Registered: ${createdAt.split(' ').first}'.trData(context),
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500),
+                )
+              else
+                const SizedBox.shrink(),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF6A2777),
+                      side: const BorderSide(color: Color(0xFFD8B4E2)),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.card_membership_rounded, size: 14),
+                    label: Text(
+                      'Assign / Edit Plan'.trData(context),
+                      style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
+                    ),
+                    onPressed: () => _showAssignPlanDialog(user),
+                  ),
+                  IconButton(
+                    tooltip: 'Delete User'.trData(context),
+                    icon: const Icon(Icons.delete_outline_rounded, size: 17, color: Colors.redAccent),
+                    style: IconButton.styleFrom(
+                      backgroundColor: const Color(0xFFFEF2F2),
+                      padding: const EdgeInsets.all(6),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: const BorderSide(color: Color(0xFFFECACA)),
+                      ),
+                    ),
+                    onPressed: () => _confirmDeleteUser(user),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlanRow(
+    BuildContext context, {
+    required String planName,
+    required String price,
+    required String dueDate,
+    required String status,
+  }) {
+    final isExpired = status.toLowerCase().contains('expired');
+    final isFree = price.toLowerCase().contains('free') || price == '0';
+
+    Color statusBg = const Color(0xFFDCFCE7);
+    Color statusText = const Color(0xFF15803D);
+    if (isExpired) {
+      statusBg = const Color(0xFFFEE2E2);
+      statusText = const Color(0xFFB91C1C);
+    } else if (status.toLowerCase().contains('pending')) {
+      statusBg = const Color(0xFFFEF3C7);
+      statusText = const Color(0xFFB45309);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        planName,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                      decoration: BoxDecoration(
+                        color: statusBg,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        status.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w800,
+                          color: statusText,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today_rounded, size: 10.5, color: Color(0xFF64748B)),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        'Due / Expires: '.trData(context) + dueDate,
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: isExpired ? const Color(0xFFDC2626) : const Color(0xFF64748B),
+                          fontWeight: isExpired ? FontWeight.w700 : FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+            decoration: BoxDecoration(
+              color: isFree ? const Color(0xFFF0FDF4) : const Color(0xFFFAF5FF),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: isFree ? const Color(0xFFBBF7D0) : const Color(0xFFE9D5FF),
+              ),
+            ),
+            child: Text(
+              price,
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
+                color: isFree ? const Color(0xFF16A34A) : const Color(0xFF6A2777),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserDataBadge(IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: const Color(0xFF64748B)),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF334155),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _refreshUsers() async {
+    setState(() => _isLoadingUsers = true);
+    try {
+      final fresh = await sl<ApiService>().getUsers();
+      if (mounted) {
+        setState(() {
+          _users = fresh;
+          _isLoadingUsers = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingUsers = false);
+    }
+  }
+
+  Future<void> _updateUserRole(dynamic userId, String newRole) async {
+    final int id = int.tryParse(userId.toString()) ?? 0;
+    if (id <= 0) return;
+
+    final success = await sl<ApiService>().updateUserRole(userId: id, role: newRole);
+    if (success && mounted) {
+      setState(() {
+        final idx = _users.indexWhere((u) => u['id'] == id);
+        if (idx != -1) {
+          _users[idx]['role'] = newRole;
+          _users[idx]['is_admin'] = newRole == 'admin';
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('User role updated to $newRole successfully'.trData(context)),
+          backgroundColor: const Color(0xFF16A34A),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    }
+  }
+
+  Future<void> _showAssignPlanDialog(Map<String, dynamic> user) async {
+    final int userId = int.tryParse(user['id'].toString()) ?? 0;
+    final String email = (user['email'] ?? '').toString();
+    final String userName = (user['full_name'] ?? 'User').toString();
+    final String currentPlan = (user['chat_plan'] ?? 'Basic (Free)').toString();
+
+    // 1. Build catalog of all pre-configured plans (system memberships + admin created plans from Masters)
+    final availablePlans = <Map<String, String>>[
+      {
+        'title': 'Basic (Free)',
+        'price': 'Free',
+        'type': 'Membership Plan',
+        'badge': 'Standard',
+      },
+      {
+        'title': 'Pro Artist',
+        'price': 'AED 99',
+        'type': 'Membership Plan',
+        'badge': 'Popular',
+      },
+      {
+        'title': 'VIP Unlimited',
+        'price': 'AED 299',
+        'type': 'Membership Plan',
+        'badge': 'VIP',
+      },
+    ];
+
+    // Merge in listing plans created by Admin in Masters
+    final listingPlansList = _listingPlans;
+    for (final lp in listingPlansList) {
+      String pType = 'Membership Plan';
+      if (lp.itemType.toLowerCase().contains('event')) {
+        pType = 'Event Publishing';
+      } else if (lp.itemType.toLowerCase().contains('gallery')) {
+        pType = 'Gallery Publishing';
+      } else {
+        pType = 'Custom Subscription';
+      }
+      if (!availablePlans.any((p) => p['title'] == lp.title)) {
+        availablePlans.add({
+          'title': lp.title,
+          'price': lp.price,
+          'type': pType,
+          'badge': lp.badge.isNotEmpty ? lp.badge : 'Admin Master',
+        });
+      }
+    }
+
+    // 2. Check if user already purchased a plan
+    final rawPurchased = user['purchased_plans'];
+    Map<String, dynamic>? latestPurchased;
+    if (rawPurchased is List && rawPurchased.isNotEmpty) {
+      for (final p in rawPurchased) {
+        if (p is Map) {
+          latestPurchased = Map<String, dynamic>.from(p);
+          break;
+        }
+      }
+    }
+
+    // Default template selection
+    String selectedTemplate = 'custom';
+    if (latestPurchased != null && (latestPurchased['plan_name']?.toString().isNotEmpty ?? false)) {
+      selectedTemplate = 'user_purchased';
+    } else {
+      final matchingIndex = availablePlans.indexWhere((p) => p['title'] == currentPlan);
+      if (matchingIndex != -1) {
+        selectedTemplate = availablePlans[matchingIndex]['title']!;
+      }
+    }
+
+    final initialPrice = latestPurchased != null
+        ? (latestPurchased['price']?.toString() ?? 'Free')
+        : (currentPlan.contains('Basic') ? 'Free' : (currentPlan.contains('Pro') ? 'AED 99' : 'AED 299'));
+
+    final planController = TextEditingController(
+      text: latestPurchased != null ? (latestPurchased['plan_name']?.toString() ?? currentPlan) : currentPlan,
+    );
+    final priceController = TextEditingController(text: initialPrice);
+
+    // Expiration date (defaults to +30 days or existing due date)
+    final existingDue = latestPurchased != null ? (latestPurchased['due_date'] ?? latestPurchased['expires_at'])?.toString() : null;
+    String initialDueStr = '';
+    if (existingDue != null && existingDue.isNotEmpty && existingDue.length >= 10) {
+      initialDueStr = existingDue.substring(0, 10);
+    } else {
+      final defaultDue = DateTime.now().add(const Duration(days: 30));
+      initialDueStr = '${defaultDue.year}-${defaultDue.month.toString().padLeft(2, '0')}-${defaultDue.day.toString().padLeft(2, '0')}';
+    }
+    final dueDateController = TextEditingController(text: initialDueStr);
+
+    String selectedPlanType = latestPurchased != null ? (latestPurchased['plan_type']?.toString() ?? 'Membership Plan') : 'Membership Plan';
+    String selectedStatus = latestPurchased != null ? (latestPurchased['status']?.toString() ?? 'Active') : 'Active';
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6A2777).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.card_membership_rounded, color: Color(0xFF6A2777), size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Assign Plan to User'.trData(context), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                    Text(userName, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: SizedBox(
+              width: 390,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // User Purchased Plan Banner with Auto-Fill Action
+                  if (latestPurchased != null) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0FDF4),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFF86EFAC)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.shopping_bag_outlined, size: 16, color: Color(0xFF16A34A)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'User Purchased Plan'.trData(context),
+                                  style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF15803D)),
+                                ),
+                                Text(
+                                  '${latestPurchased['plan_name']} · ${latestPurchased['price'] ?? 'Active'}',
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          TextButton(
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              backgroundColor: const Color(0xFF16A34A),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                            ),
+                            onPressed: () {
+                              setDialogState(() {
+                                final pName = (latestPurchased?['plan_name'] ?? currentPlan).toString();
+                                final pPrice = (latestPurchased?['price'] ?? 'Free').toString();
+                                final pDue = (latestPurchased?['due_date'] ?? latestPurchased?['expires_at'] ?? '').toString();
+                                final pType = (latestPurchased?['plan_type'] ?? 'Membership Plan').toString();
+
+                                planController.text = pName;
+                                priceController.text = pPrice;
+                                if (pDue.isNotEmpty && pDue.length >= 10) {
+                                  dueDateController.text = pDue.substring(0, 10);
+                                }
+                                selectedPlanType = pType;
+                                selectedStatus = 'Active';
+                                selectedTemplate = 'user_purchased';
+                              });
+                            },
+                            child: Text('Auto-Fill'.trData(context), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  // Auto Plan Selector Dropdown
+                  Text('Auto-Select From Created Plans'.trData(context), style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<String>(
+                    value: selectedTemplate,
+                    dropdownColor: Colors.white,
+                    style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                    items: [
+                      if (latestPurchased != null)
+                        DropdownMenuItem(
+                          value: 'user_purchased',
+                          child: Text('★ User Purchased: ${latestPurchased['plan_name']}', style: const TextStyle(color: Color(0xFF16A34A), fontWeight: FontWeight.w700, fontSize: 13)),
+                        ),
+                      ...availablePlans.map((p) => DropdownMenuItem(
+                        value: p['title']!,
+                        child: Text('${p['title']} — ${p['price']} (${p['badge']})', style: const TextStyle(color: Color(0xFF0F172A), fontSize: 13, fontWeight: FontWeight.w600)),
+                      )),
+                      const DropdownMenuItem(
+                        value: 'custom',
+                        child: Text('✏ Custom / Manual Entry', style: TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w600)),
+                      ),
+                    ],
+                    onChanged: (val) {
+                      if (val == null) return;
+                      setDialogState(() {
+                        selectedTemplate = val;
+                        if (val == 'user_purchased' && latestPurchased != null) {
+                          planController.text = latestPurchased['plan_name']?.toString() ?? currentPlan;
+                          priceController.text = latestPurchased['price']?.toString() ?? 'Free';
+                          final pDue = (latestPurchased['due_date'] ?? latestPurchased['expires_at'] ?? '').toString();
+                          if (pDue.isNotEmpty && pDue.length >= 10) {
+                            dueDateController.text = pDue.substring(0, 10);
+                          }
+                          selectedPlanType = latestPurchased['plan_type']?.toString() ?? 'Membership Plan';
+                        } else if (val != 'custom') {
+                          final found = availablePlans.firstWhere((p) => p['title'] == val);
+                          planController.text = found['title']!;
+                          priceController.text = found['price']!;
+                          selectedPlanType = found['type']!;
+                          // Default 30 days expiration
+                          final nextDue = DateTime.now().add(const Duration(days: 30));
+                          dueDateController.text = '${nextDue.year}-${nextDue.month.toString().padLeft(2, '0')}-${nextDue.day.toString().padLeft(2, '0')}';
+                        }
+                      });
+                    },
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.auto_awesome_rounded, size: 18, color: Color(0xFF6A2777)),
+                      filled: true,
+                      fillColor: const Color(0xFFFAF5FF),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFD8B4FE))),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFD8B4FE))),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5)),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Plan Name / Tier Textfield
+                  Text('Plan Name / Tier'.trData(context), style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: planController,
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                    decoration: InputDecoration(
+                      hintText: 'e.g. Pro Artist, Premium Gallery, Basic (Free)',
+                      hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+                      prefixIcon: const Icon(Icons.card_membership_rounded, size: 18, color: Color(0xFF6A2777)),
+                      filled: true,
+                      fillColor: const Color(0xFFF8FAFC),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5)),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Price Textfield
+                  Text('Price'.trData(context), style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: priceController,
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                    decoration: InputDecoration(
+                      hintText: 'e.g. Free, AED 99, 199 AED',
+                      hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+                      prefixIcon: const Icon(Icons.payments_outlined, size: 18, color: Color(0xFF6A2777)),
+                      filled: true,
+                      fillColor: const Color(0xFFF8FAFC),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5)),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Due / Expiration Date with Picker & Quick Preset Buttons
+                  Text('Due / Expiration Date (YYYY-MM-DD)'.trData(context), style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: dueDateController,
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                    decoration: InputDecoration(
+                      hintText: 'YYYY-MM-DD',
+                      hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+                      prefixIcon: const Icon(Icons.calendar_month_outlined, size: 18, color: Color(0xFF6A2777)),
+                      filled: true,
+                      fillColor: const Color(0xFFF8FAFC),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5)),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.calendar_today_rounded, size: 18, color: Color(0xFF6A2777)),
+                        onPressed: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now().add(const Duration(days: 30)),
+                            firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                            lastDate: DateTime.now().add(const Duration(days: 3650)),
+                          );
+                          if (picked != null) {
+                            setDialogState(() {
+                              dueDateController.text =
+                                  '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildDurationQuickChip('+30 Days', 30, dueDateController, () => setDialogState(() {})),
+                        const SizedBox(width: 6),
+                        _buildDurationQuickChip('+60 Days', 60, dueDateController, () => setDialogState(() {})),
+                        const SizedBox(width: 6),
+                        _buildDurationQuickChip('+90 Days', 90, dueDateController, () => setDialogState(() {})),
+                        const SizedBox(width: 6),
+                        _buildDurationQuickChip('+1 Year', 365, dueDateController, () => setDialogState(() {})),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Plan Type Dropdown
+                  Text('Plan Type'.trData(context), style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<String>(
+                    value: selectedPlanType,
+                    dropdownColor: Colors.white,
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                    items: const [
+                      DropdownMenuItem(value: 'Membership Plan', child: Text('Membership Plan', style: TextStyle(color: Color(0xFF0F172A), fontSize: 13.5, fontWeight: FontWeight.w600))),
+                      DropdownMenuItem(value: 'Event Publishing', child: Text('Event Publishing', style: TextStyle(color: Color(0xFF0F172A), fontSize: 13.5, fontWeight: FontWeight.w600))),
+                      DropdownMenuItem(value: 'Gallery Publishing', child: Text('Gallery Publishing', style: TextStyle(color: Color(0xFF0F172A), fontSize: 13.5, fontWeight: FontWeight.w600))),
+                      DropdownMenuItem(value: 'Custom Subscription', child: Text('Custom Subscription', style: TextStyle(color: Color(0xFF0F172A), fontSize: 13.5, fontWeight: FontWeight.w600))),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setDialogState(() => selectedPlanType = val);
+                    },
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.category_outlined, size: 18, color: Color(0xFF6A2777)),
+                      filled: true,
+                      fillColor: const Color(0xFFF8FAFC),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5)),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Status Dropdown
+                  Text('Status'.trData(context), style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<String>(
+                    value: selectedStatus,
+                    dropdownColor: Colors.white,
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                    items: const [
+                      DropdownMenuItem(value: 'Active', child: Text('Active', style: TextStyle(color: Color(0xFF15803D), fontSize: 13.5, fontWeight: FontWeight.w700))),
+                      DropdownMenuItem(value: 'Pending', child: Text('Pending', style: TextStyle(color: Color(0xFFB45309), fontSize: 13.5, fontWeight: FontWeight.w700))),
+                      DropdownMenuItem(value: 'Expired', child: Text('Expired', style: TextStyle(color: Color(0xFFDC2626), fontSize: 13.5, fontWeight: FontWeight.w700))),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setDialogState(() => selectedStatus = val);
+                    },
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.check_circle_outline_rounded, size: 18, color: Color(0xFF6A2777)),
+                      filled: true,
+                      fillColor: const Color(0xFFF8FAFC),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Cancel'.trData(context), style: const TextStyle(color: Color(0xFF64748B))),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6A2777),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () async {
+                final pName = planController.text.trim();
+                final pPrice = priceController.text.trim();
+                final pDue = dueDateController.text.trim();
+                final messenger = ScaffoldMessenger.of(context);
+                final successMsg = 'Plan updated successfully for $userName'.trData(context);
+                final failMsg = 'Failed to update user plan. Please check connection.'.trData(context);
+                Navigator.pop(ctx);
+
+                final success = await sl<ApiService>().assignUserPlan(
+                  userId: userId,
+                  email: email,
+                  planName: pName.isNotEmpty ? pName : 'Basic (Free)',
+                  planType: selectedPlanType,
+                  price: pPrice.isNotEmpty ? pPrice : 'Free',
+                  dueDate: pDue,
+                  status: selectedStatus,
+                );
+
+                if (success) {
+                  await _refreshUsers();
+                  if (mounted) {
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(successMsg),
+                        backgroundColor: const Color(0xFF16A34A),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    );
+                  }
+                } else if (mounted) {
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(failMsg),
+                      backgroundColor: Colors.redAccent,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+              child: Text('Save Plan'.trData(context), style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDurationQuickChip(String label, int days, TextEditingController controller, VoidCallback onSet) {
+    return InkWell(
+      onTap: () {
+        final target = DateTime.now().add(Duration(days: days));
+        controller.text = '${target.year}-${target.month.toString().padLeft(2, '0')}-${target.day.toString().padLeft(2, '0')}';
+        onSet();
+      },
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: const Color(0xFFCBD5E1)),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF475569)),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteUser(Map<String, dynamic> user) async {
+    final int userId = int.tryParse(user['id'].toString()) ?? 0;
+    final String email = (user['email'] ?? '').toString();
+    final String userName = (user['full_name'] ?? 'User').toString();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 24),
+            const SizedBox(width: 8),
+            Text('Delete User?'.trData(context), style: const TextStyle(fontWeight: FontWeight.w700)),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to delete "$userName" ($email)? This will permanently remove their profile, plans, and activity.'
+              .trData(context),
+          style: const TextStyle(fontSize: 13.5, color: Color(0xFF334155), height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel'.trData(context), style: const TextStyle(color: Color(0xFF64748B))),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Delete Permanently'.trData(context), style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final success = await sl<ApiService>().adminDeleteUser(userId: userId, email: email);
+      if (success) {
+        setState(() {
+          _users.removeWhere((u) => u['id'] == userId || u['email'] == email);
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('User "$userName" deleted successfully'.trData(context)),
+              backgroundColor: const Color(0xFF6A2777),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete user. Please check server connection.'.trData(context)),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildAdminDrawer(BuildContext context) {
+    final storage = sl<StorageService>();
+    final adminName = storage.getString('user_name') ?? 'Super Admin';
+    final adminEmail = storage.getString('user_email') ?? 'admin@artistdubai.com';
+    final adminRole = (storage.getString('user_role') ?? 'Administrator').toUpperCase();
+
+    return Drawer(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      elevation: 16,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.horizontal(right: Radius.circular(24)),
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            // ── Drawer Header ──
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(18, 16, 16, 18),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF3B0744), Color(0xFF6A2777), Color(0xFF8B2C9E)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.3),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.admin_panel_settings_rounded,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Artist Dubai'.trData(context),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                              Text(
+                                'Executive Console'.trData(context),
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      InkWell(
+                        onTap: () => Navigator.of(context).pop(),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.16),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.close_rounded, color: Colors.white, size: 18),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  // Admin User Profile Info Card
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.22),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                    ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundColor: Colors.white.withValues(alpha: 0.2),
+                          child: Text(
+                            adminName.isNotEmpty ? adminName[0].toUpperCase() : 'A',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                adminName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                adminEmail,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.75),
+                                  fontSize: 10.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: const Color(0xFF10B981),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 5,
+                                height: 5,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF34D399),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                adminRole,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Navigation Drawer Items ──
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                children: [
+                  _buildDrawerSectionLabel(context, 'MANAGEMENT & CATALOG'),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.dashboard_rounded,
+                    title: 'Dashboard Overview'.trData(context),
+                    count: 'KPIs',
+                    isSelected: _selectedTab == AdminTab.overview,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      setState(() => _selectedTab = AdminTab.overview);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.people_alt_rounded,
+                    title: 'Artists Management'.trData(context),
+                    count: '${_artists.length}',
+                    isSelected: _selectedTab == AdminTab.artists,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      setState(() => _selectedTab = AdminTab.artists);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.event_available_rounded,
+                    title: 'Events & Competitions'.trData(context),
+                    count: '${_events.length}',
+                    isSelected: _selectedTab == AdminTab.events,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      setState(() => _selectedTab = AdminTab.events);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.calendar_month_rounded,
+                    title: 'Events Calendar'.trData(context),
+                    count: 'View',
+                    isSelected: _selectedTab == AdminTab.calendar,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      setState(() => _selectedTab = AdminTab.calendar);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.photo_library_rounded,
+                    title: 'Galleries'.trData(context),
+                    count: '${_galleries.length}',
+                    isSelected: _selectedTab == AdminTab.galleries,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      setState(() => _selectedTab = AdminTab.galleries);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.museum_rounded,
+                    title: 'Art Centers'.trData(context),
+                    count: '${_artCenters.length}',
+                    isSelected: _selectedTab == AdminTab.artCenters,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      setState(() => _selectedTab = AdminTab.artCenters);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.account_balance_rounded,
+                    title: 'Government & Hubs'.trData(context),
+                    count: '${_govEntities.length}',
+                    isSelected: _selectedTab == AdminTab.government,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      setState(() => _selectedTab = AdminTab.government);
+                    },
+                  ),
+
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 6),
+                    child: Divider(color: Color(0xFFE2E8F0), height: 1),
+                  ),
+
+                  _buildDrawerSectionLabel(context, 'PLATFORM & USERS'),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.tune_rounded,
+                    title: 'Masters & Categories'.trData(context),
+                    count: '${_categories.length + _experienceLevels.length}',
+                    isSelected: _selectedTab == AdminTab.masters,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      setState(() => _selectedTab = AdminTab.masters);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.shield_outlined,
+                    title: 'Menu Permissions'.trData(context),
+                    count: '$_activeMenuCount Active',
+                    isSelected: _selectedTab == AdminTab.permissions,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      setState(() => _selectedTab = AdminTab.permissions);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.manage_accounts_rounded,
+                    title: 'Users & Purchased Plans'.trData(context),
+                    count: '${_users.length}',
+                    isSelected: _selectedTab == AdminTab.users,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      setState(() => _selectedTab = AdminTab.users);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.delete_outline_rounded,
+                    title: 'Recycle Bin'.trData(context),
+                    count: 'Bin',
+                    iconColor: const Color(0xFFDC2626),
+                    isSelected: false,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      context.push(RouteNames.adminRecycleBin);
+                    },
+                  ),
+
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 6),
+                    child: Divider(color: Color(0xFFE2E8F0), height: 1),
+                  ),
+
+                  _buildDrawerSectionLabel(context, 'SHORTCUTS & PORTAL'),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.home_rounded,
+                    title: 'Back to Home App'.trData(context),
+                    isSelected: false,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      context.go(RouteNames.home);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.auto_awesome_rounded,
+                    title: 'AI Art Guide'.trData(context),
+                    isSelected: false,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      context.push(RouteNames.ai);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.settings_rounded,
+                    title: 'Platform Settings'.trData(context),
+                    isSelected: false,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      context.push(RouteNames.settings);
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Drawer Footer ──
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF8FAFC),
+                border: Border(top: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.verified_rounded, size: 14, color: Color(0xFF6A2777)),
+                      const SizedBox(width: 5),
+                      Text(
+                        'Artist Dubai v2.4.0'.trData(context),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                  InkWell(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      context.go(RouteNames.home);
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6A2777).withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF6A2777).withValues(alpha: 0.2)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.exit_to_app_rounded, size: 13, color: Color(0xFF6A2777)),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Exit'.trData(context),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF6A2777),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDrawerSectionLabel(BuildContext context, String label) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
+      child: Text(
+        label.trData(context),
+        style: const TextStyle(
+          color: Color(0xFF94A3B8),
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    String? count,
+    Color? iconColor,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 2),
+      child: Material(
+        color: isSelected ? const Color(0xFF6A2777).withValues(alpha: 0.08) : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8.5),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: isSelected
+                  ? Border.all(color: const Color(0xFF6A2777).withValues(alpha: 0.25), width: 1.2)
+                  : Border.all(color: Colors.transparent),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 19,
+                  color: isSelected
+                      ? const Color(0xFF6A2777)
+                      : (iconColor ?? const Color(0xFF64748B)),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                      color: isSelected ? const Color(0xFF6A2777) : const Color(0xFF1E293B),
+                    ),
+                  ),
+                ),
+                if (count != null && count.isNotEmpty) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? const Color(0xFF6A2777)
+                          : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      count,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: isSelected ? Colors.white : const Color(0xFF64748B),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

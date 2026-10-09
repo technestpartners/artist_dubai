@@ -20,26 +20,7 @@ class DioInterceptor extends Interceptor {
       token = storageService.getString(StorageServiceImpl.keyAuthToken);
     }
 
-    final isAdmin = storageService.getBool('is_admin') ?? false;
-    final userEmail = storageService.getString('user_email');
-    if ((token == null || token.isEmpty) &&
-        (isAdmin ||
-            userEmail == 'admin@artistdubai.com' ||
-            userEmail == 'admin@technestpartners.com' ||
-            userEmail == 'admin@admin.com' ||
-            options.path.contains('resource=trash'))) {
-      token = 'admin_auth_token_secure_dubai';
-    }
-
-    final path = options.path.toLowerCase();
-    final method = options.method.toUpperCase();
-    final isPublicGet = method == 'GET' &&
-        !path.contains('resource=trash') &&
-        !path.contains('action=profile') &&
-        !path.contains('resource=bookings') &&
-        !path.contains('resource=favorites');
-
-    if (token != null && token.isNotEmpty && !isPublicGet) {
+    if (token != null && token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
     }
 

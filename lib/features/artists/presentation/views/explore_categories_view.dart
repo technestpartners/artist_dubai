@@ -21,14 +21,18 @@ class ExploreCategoriesView extends StatefulWidget {
 }
 
 class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
-  List<CategoryInfo> _categories = ArtistModel.categoryList;
+  List<CategoryInfo> _categories = sl<ApiService>().cachedCategories ?? [];
   List<ArtistModel> _allArtists = sl<ApiService>().cachedArtists ?? [];
+  bool _isLoading = false;
   StreamSubscription<List<CategoryInfo>>? _catSub;
   StreamSubscription<List<ArtistModel>>? _artistSub;
 
   @override
   void initState() {
     super.initState();
+    if (_categories.isEmpty) {
+      _isLoading = true;
+    }
     _fetchCategoriesFromApi();
     _catSub = sl<LiveSyncService>().categoriesStream.listen((cats) {
       if (mounted && cats.isNotEmpty) setState(() => _categories = cats);
@@ -51,11 +55,14 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
       final artists = await sl<ApiService>().getArtists(forceRefresh: forceRefresh);
       if (mounted) {
         setState(() {
-          if (categories.isNotEmpty) _categories = categories;
+          _categories = categories;
           _allArtists = artists;
+          _isLoading = false;
         });
       }
-    } catch (_) {}
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   bool get _isLoggedIn {
@@ -122,7 +129,8 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
 
             Expanded(
               child: RefreshIndicator(
-                color: const Color(0xFF6A2777),
+                color: const Color(0xFF6B1C9B),
+                backgroundColor: Colors.white,
                 onRefresh: () => _fetchCategoriesFromApi(forceRefresh: true),
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
@@ -210,21 +218,71 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
                     ),
                     const SizedBox(height: 20),
 
-                    // 2-Column Grid of Category Cards (Exact Match to Screenshot media_1787732660883.png)
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 14,
-                            mainAxisSpacing: 14,
-                            childAspectRatio: 1.15,
+                    // Categories Grid or Empty State
+                    if (_isLoading && _categories.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 40),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
                           ),
-                      itemCount: _categories.length,
-                      itemBuilder: (context, index) {
-                        final category = _categories[index];
-                        final count = _allArtists.where((a) {
+                        ),
+                      )
+                    else if (_categories.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            const Icon(
+                              Icons.category_outlined,
+                              color: Colors.white70,
+                              size: 48,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'No categories available'.trData(context),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Categories will appear here once added.'.trData(context),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFFE2D6F5),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 14,
+                              mainAxisSpacing: 14,
+                              childAspectRatio: 1.15,
+                            ),
+                        itemCount: _categories.length,
+                        itemBuilder: (context, index) {
+                          final category = _categories[index];
+                          final count = _allArtists.where((a) {
                           final aCat = a.category.toLowerCase().trim();
                           final cName = category.name.toLowerCase().trim();
                           return aCat == cName ||

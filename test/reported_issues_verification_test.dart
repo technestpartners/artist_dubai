@@ -199,6 +199,13 @@ void main() {
     allTextFormFields[3].controller!.text = '23-09-2026 18:00';
     await tester.pumpAndSettle();
 
+    final categoryDropdown = find.byType(DropdownButtonFormField<String>).first;
+    await tester.ensureVisible(categoryDropdown);
+    await tester.tap(categoryDropdown);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Art Exhibition').last);
+    await tester.pumpAndSettle();
+
     // Scroll to submit button and tap
     final submitButton = find.widgetWithText(ElevatedButton, 'Create Event');
     await tester.ensureVisible(submitButton);

@@ -18,6 +18,7 @@ class ApiEndpoints {
   static const String login = 'api.php?resource=login';
   static const String register = 'api.php?resource=register';
   static const String userProfile = 'api.php?resource=login&action=profile';
+  static const String users = 'api.php?resource=users';
 
   // Artists (MySQL Backend)
   static const String artists = 'api.php?resource=artists';
@@ -64,6 +65,7 @@ class ApiEndpoints {
   // Publishing Pricing & Plans (MySQL Backend)
   static const String publishingPricing = 'api.php?resource=publishing_pricing';
   static const String listingPlans = 'api.php?resource=listing_plans';
+  static const String userPlans = 'api.php?resource=user_plans';
 
   // Payment QR & Bank Settings (MySQL Backend)
   static const String paymentSettings = 'api.php?resource=payment_settings';

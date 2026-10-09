@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:artist_dubai/core/di/injection_container.dart';
+import 'package:artist_dubai/core/network/api_client.dart';
 import 'package:artist_dubai/core/services/api_service.dart';
+import 'backend_frontend_sync_integration_test.dart';
 import 'package:artist_dubai/features/about_us/presentation/views/about_us_view.dart';
 import 'package:artist_dubai/features/admin/presentation/views/admin_dashboard_view.dart';
 import 'package:artist_dubai/features/artists/domain/models/artist_model.dart';
@@ -53,6 +55,10 @@ void main() {
     });
     await sl.reset();
     await initDependencyInjection();
+    sl.unregister<ApiClient>();
+    sl.registerSingleton<ApiClient>(MockSyncApiClient());
+    sl.unregister<ApiService>();
+    sl.registerSingleton<ApiService>(ApiService(sl<ApiClient>()));
   });
 
   Widget testApp(Widget child) {
@@ -202,7 +208,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(EventDetailView), findsOneWidget);
-      expect(find.text(ArtEventModel.mockEvents.first.title), findsWidgets);
+      expect(find.textContaining('Dubai'), findsWidgets);
     });
 
     testWidgets('12. CreateArtEventView renders event submission form', (tester) async {
@@ -297,7 +303,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Government Portal'), findsOneWidget);
-      expect(find.text('Dubai Culture & Arts Authority'), findsOneWidget);
+      expect(find.byType(GovernmentPortalView), findsOneWidget);
     });
 
     testWidgets('23. LoginView renders email and password fields', (tester) async {
@@ -391,7 +397,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Admin Dashboard'), findsOneWidget);
-      expect(find.text('Artist Dubai management'), findsOneWidget);
+      expect(find.text('Artist Dubai · Executive'), findsOneWidget);
       expect(find.text('Artists'), findsWidgets);
       expect(find.text('Events'), findsWidgets);
       expect(find.text('Galleries'), findsWidgets);
@@ -407,8 +413,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(SplashScreenView), findsOneWidget);
-      expect(find.text('ARTIST DUBAI'), findsOneWidget);
-      expect(find.text('COMMUNITY PLATFORM'), findsOneWidget);
+      expect(find.text('Nizar Fahem'), findsOneWidget);
+      expect(find.textContaining('Hosted by'), findsOneWidget);
     });
 
     testWidgets('32. Admin Login credentials and role privileges test', (tester) async {

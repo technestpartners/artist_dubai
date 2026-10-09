@@ -22,7 +22,6 @@ enum TopBarMenuItem {
   listingPlans,
   createArtistProfile,
   editArtistProfile,
-  myFavorites,
   myEvents,
   privacyPolicy,
   termsConditions,
@@ -145,9 +144,7 @@ class _AppTopBarState extends State<AppTopBar> {
           },
         );
         break;
-      case TopBarMenuItem.myFavorites:
-        context.push(RouteNames.favorites);
-        break;
+
       case TopBarMenuItem.myEvents:
         context.push(RouteNames.myEvents);
         break;
@@ -188,9 +185,17 @@ class _AppTopBarState extends State<AppTopBar> {
     bool isAdmin = false;
     try {
       final storage = sl<StorageService>();
-      isAdmin = storage.getBool('is_admin') ?? false;
-      userName = storage.getString('user_name') ?? 'User';
+      final storedAdmin = storage.getBool('is_admin') ?? false;
+      final storedRole = (storage.getString('user_role') ?? '').toLowerCase();
       userEmail = storage.getString('user_email') ?? '';
+      final lowerEmail = userEmail.toLowerCase().trim();
+      isAdmin = storedAdmin ||
+          storedRole.contains('admin') ||
+          lowerEmail.contains('admin') ||
+          lowerEmail == 'admin@artistdubai.com' ||
+          lowerEmail == 'admin@dubaiart.ae' ||
+          lowerEmail == 'admin@admin.com';
+      userName = storage.getString('user_name') ?? 'User';
       if (userName.isNotEmpty) {
         avatarLetter = userName[0].toUpperCase();
       }
@@ -611,19 +616,7 @@ class _AppTopBarState extends State<AppTopBar> {
                         ],
                       ),
                     ),
-                  PopupMenuItem<TopBarMenuItem>(
-                    value: TopBarMenuItem.myFavorites,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.favorite_border, size: 18, color: Color(0xFF1E1E1E)),
-                        const SizedBox(width: 10),
-                        Text(
-                          menuL10n.myFavorites,
-                          style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
-                        ),
-                      ],
-                    ),
-                  ),
+
                   const PopupMenuDivider(height: 1),
                 ],
 
@@ -679,6 +672,25 @@ class _AppTopBarState extends State<AppTopBar> {
                         Text(
                           menuL10n.signIn,
                           style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<TopBarMenuItem>(
+                    value: TopBarMenuItem.adminDashboard,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.admin_panel_settings_outlined, size: 18, color: Color(0xFF6A2777)),
+                        const SizedBox(width: 10),
+                        Text(
+                          Localizations.localeOf(ctx).languageCode == 'ar'
+                              ? 'بوابة المسؤول'
+                              : 'Admin Portal',
+                          style: const TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF6A2777),
+                          ),
                         ),
                       ],
                     ),

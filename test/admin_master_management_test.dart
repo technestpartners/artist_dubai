@@ -77,7 +77,7 @@ void main() {
     expect(find.text('New Location'), findsOneWidget);
 
     // Switch to Listing Plans subtab (replacing old Pricing tab)
-    final listingPlansTabFinder = find.text('Listing Plans');
+    final listingPlansTabFinder = find.textContaining('Listing Plans');
     expect(listingPlansTabFinder, findsWidgets);
     await tester.tap(listingPlansTabFinder.first);
     await tester.pumpAndSettle();
@@ -123,27 +123,28 @@ void main() {
     await tester.pumpWidget(testApp(const AdminDashboardView()));
     await tester.pump(const Duration(milliseconds: 100));
 
-    // Language switcher exists in AppBar
+    // Language switcher exists in AppBar (initial state EN)
     expect(find.text('EN'), findsOneWidget);
-    expect(find.text('عربي'), findsOneWidget);
 
     // Initial state is English
     final localeProvider = sl<LocaleProvider>();
     expect(localeProvider.isArabic, isFalse);
 
-    // Tap Arabic on the toggle
-    await tester.tap(find.text('عربي'));
-    await tester.pumpAndSettle();
-
-    // Verify locale switched to Arabic
-    expect(localeProvider.isArabic, isTrue);
-
-    // Tap EN on the toggle
+    // Tap toggle button to switch to Arabic
     await tester.tap(find.text('EN'));
     await tester.pumpAndSettle();
 
-    // Verify locale switched back to English
+    // Verify locale switched to Arabic and button now displays 'عربي'
+    expect(localeProvider.isArabic, isTrue);
+    expect(find.text('عربي'), findsOneWidget);
+
+    // Tap toggle button again to switch back to English
+    await tester.tap(find.text('عربي'));
+    await tester.pumpAndSettle();
+
+    // Verify locale switched back to English and button displays 'EN'
     expect(localeProvider.isArabic, isFalse);
+    expect(find.text('EN'), findsOneWidget);
   });
 }
 

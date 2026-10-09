@@ -168,33 +168,12 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                 vertical: rh.isShortScreen ? 3 : 6,
               ),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF3E0A58),
-                    Color(0xFF240436),
-                  ],
-                ),
+                color: Colors.transparent,
                 borderRadius: BorderRadius.circular(32),
                 border: Border.all(
                   color: Colors.white.withValues(alpha: 0.26),
                   width: 1.2,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.50),
-                    offset: const Offset(0, 8),
-                    blurRadius: 24,
-                    spreadRadius: 0,
-                  ),
-                  BoxShadow(
-                    color: const Color(0xFF7B1FA2).withValues(alpha: 0.25),
-                    offset: const Offset(0, 2),
-                    blurRadius: 10,
-                    spreadRadius: -1,
-                  ),
-                ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,

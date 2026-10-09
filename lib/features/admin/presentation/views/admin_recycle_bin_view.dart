@@ -578,6 +578,8 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
 
     return RefreshIndicator(
       color: _purple,
+      backgroundColor: Colors.white,
+      strokeWidth: 2.8,
       onRefresh: _loadTrash,
       child: ListView.separated(
         padding: const EdgeInsets.all(16),

@@ -81,6 +81,12 @@ class AppTheme {
         selectionColor: Color(0xFFE9D5FF),
         selectionHandleColor: Color(0xFF6A2777),
       ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: Color(0xFF6A2777),
+        refreshBackgroundColor: Colors.white,
+        linearTrackColor: Color(0xFFF1F5F9),
+        circularTrackColor: Colors.transparent,
+      ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: const Color(0xFF6A2777),
         contentTextStyle: GoogleFonts.outfit(
@@ -218,6 +224,12 @@ class AppTheme {
         cursorColor: Color(0xFF6A2777),
         selectionColor: Color(0xFFE9D5FF),
         selectionHandleColor: Color(0xFF6A2777),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: Color(0xFF6A2777),
+        refreshBackgroundColor: Colors.white,
+        linearTrackColor: Color(0xFFF1F5F9),
+        circularTrackColor: Colors.transparent,
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: const Color(0xFF6A2777),

@@ -31,7 +31,7 @@ class _ArtistsViewState extends State<ArtistsView> {
   final GlobalKey _selectorKey = GlobalKey();
   List<ArtistModel> _allArtists = [];
   bool _isLoading = true;
-  List<CategoryInfo> _categories = ArtistModel.categoryList;
+  List<CategoryInfo> _categories = sl<ApiService>().cachedCategories ?? [];
   final Set<String> _favoritedArtistIds = {};
   final Set<String> _followedArtistIds = {};
   StreamSubscription<List<ArtistModel>>? _artistsSub;
@@ -308,7 +308,8 @@ class _ArtistsViewState extends State<ArtistsView> {
       appBar: const AppTopBar(),
       body: SafeArea(
         child: RefreshIndicator(
-          color: const Color(0xFF6A2777),
+          color: const Color(0xFF6B1C9B),
+          backgroundColor: Colors.white,
           onRefresh: _fetchData,
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),

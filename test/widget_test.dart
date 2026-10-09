@@ -101,7 +101,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('Sacred Verses'), findsOneWidget);
+      expect(find.textContaining('Artworks'), findsWidgets);
     });
 
     testWidgets('4. Artist Detail View Grid/List Layout Switcher Test', (

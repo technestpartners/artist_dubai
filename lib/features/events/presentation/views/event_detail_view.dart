@@ -6,6 +6,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/favorites_service.dart';
 import '../../../../core/services/live_sync_service.dart';
+import '../../../../core/services/storage_service.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/utils/responsive_helper.dart';
@@ -324,6 +325,10 @@ class _EventDetailViewState extends State<EventDetailView> {
 
                     // Map Preview Card (Reference Screenshot 4 & 5)
                     _buildMapPreviewWidget(ev),
+                    const SizedBox(height: 20),
+
+                    // 4. Ticket Booking & RSVP Action Card
+                    _buildBookTicketSection(ev),
                   ],
                 ),
               ),
@@ -688,6 +693,352 @@ class _EventDetailViewState extends State<EventDetailView> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildBookTicketSection(ArtEventModel ev) {
+    final priceLabel = (ev.price.isNotEmpty && ev.price.toLowerCase() != 'free')
+        ? ev.price
+        : 'Complimentary Entry';
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFBF8FD),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE9D5FF), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _primaryPurple.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.confirmation_number_outlined, color: _primaryPurple, size: 22),
+                    ),
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Admission & Entry'.trData(context),
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            priceLabel.trData(context),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF1E1E1E),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDEF7EC),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Instant Pass'.trData(context),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF03543F),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _primaryPurple,
+                foregroundColor: Colors.white,
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: const Icon(Icons.confirmation_number, size: 19),
+              label: Text(
+                'Book Ticket / RSVP Pass'.trData(context),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.2,
+                ),
+              ),
+              onPressed: () => _showBookingBottomSheet(ev),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBookingBottomSheet(ArtEventModel ev) {
+    int ticketCount = 1;
+    final storage = sl<StorageService>();
+    final defaultName = storage.getString('user_name') ?? '';
+    final defaultEmail = storage.getString('user_email') ?? '';
+
+    final nameController = TextEditingController(text: defaultName);
+    final emailController = TextEditingController(text: defaultEmail);
+    final phoneController = TextEditingController();
+    bool isSubmitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Container(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            20,
+            20,
+            MediaQuery.of(ctx).viewInsets.bottom + 20,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Reserve Entry Ticket'.trData(context),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF1E1E1E),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  ev.localizedTitle(context),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: _primaryPurple,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Ticket Quantity Row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Number of Tickets:'.trData(context),
+                      style: const TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1E1E1E),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.remove_circle_outline, color: _primaryPurple),
+                          onPressed: ticketCount > 1
+                              ? () => setSheetState(() => ticketCount--)
+                              : null,
+                        ),
+                        Text(
+                          '$ticketCount',
+                          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add_circle_outline, color: _primaryPurple),
+                          onPressed: ticketCount < 10
+                              ? () => setSheetState(() => ticketCount++)
+                              : null,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Full Name'.trData(context),
+                    prefixIcon: const Icon(Icons.person_outline, size: 20),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    labelText: 'Email Address'.trData(context),
+                    prefixIcon: const Icon(Icons.email_outlined, size: 20),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: InputDecoration(
+                    labelText: 'Mobile Phone (Optional)'.trData(context),
+                    prefixIcon: const Icon(Icons.phone_outlined, size: 20),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _primaryPurple,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: isSubmitting
+                        ? null
+                        : () async {
+                            final name = nameController.text.trim();
+                            final email = emailController.text.trim();
+                            if (name.isEmpty || email.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Please enter your name and email.'.trData(context)),
+                                  backgroundColor: const Color(0xFFEF4444),
+                                ),
+                              );
+                              return;
+                            }
+                            setSheetState(() => isSubmitting = true);
+                            final success = await sl<ApiService>().createBooking({
+                              'name': name,
+                              'full_name': name,
+                              'email': email,
+                              'phone': phoneController.text.trim(),
+                              'event_id': ev.id,
+                              'event_title': ev.title,
+                              'event_date': ev.displaySchedule,
+                              'location': ev.location,
+                              'booking_type': 'Event Ticket',
+                              'tickets_count': ticketCount,
+                              'total_price': ev.price.isNotEmpty ? ev.price : 'Free',
+                              'status': 'Confirmed',
+                            });
+                            setSheetState(() => isSubmitting = false);
+                            if (sheetContext.mounted) {
+                              Navigator.pop(sheetContext);
+                            }
+                            if (mounted) {
+                              if (success) {
+                                _showBookingSuccessDialog(ev, ticketCount);
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Could not confirm reservation. Please try again.'.trData(context)),
+                                    backgroundColor: const Color(0xFFEF4444),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                    child: isSubmitting
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                          )
+                        : Text(
+                            'Confirm Reservation ($ticketCount ${ticketCount == 1 ? "Ticket" : "Tickets"})'.trData(context),
+                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showBookingSuccessDialog(ArtEventModel ev, int tickets) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 26),
+            const SizedBox(width: 8),
+            Flexible(child: Text('Booking Confirmed!'.trData(context))),
+          ],
+        ),
+        content: Text(
+          'Your entry pass for ${ev.localizedTitle(context)} ($tickets ticket${tickets > 1 ? "s" : ""}) has been reserved successfully.'.trData(context),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Done'.trData(context)),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _primaryPurple,
+              foregroundColor: Colors.white,
+            ),
+            icon: const Icon(Icons.confirmation_number, size: 16),
+            label: Text('View My Passes'.trData(context)),
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.push(RouteNames.bookings);
+            },
+          ),
+        ],
       ),
     );
   }

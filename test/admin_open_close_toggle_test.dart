@@ -30,6 +30,7 @@ void main() {
       'user_email': 'admin@artistdubai.com',
       'user_name': 'Dubai Art Administrator',
       'is_admin': true,
+      'auth_token': 'mock_admin_token_test_suite',
     });
 
     await sl.reset();
@@ -69,7 +70,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Tap Government tab
-    final govTabFinder = find.text('Government');
+    final govTabFinder = find.byIcon(Icons.assured_workload_outlined);
     expect(govTabFinder, findsWidgets);
     await tester.tap(govTabFinder.first);
     await tester.pumpAndSettle();

@@ -8,6 +8,7 @@ import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
+import '../../../../core/services/storage_service.dart';
 import '../../../../core/services/stripe_payment_service.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../admin/domain/models/payment_settings_model.dart';
@@ -44,13 +45,15 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
   bool _obscureCvv = true;
   bool _saveCard = true;
 
-  late final String _itemType; // 'event' or 'gallery'
+  late final String _itemType; // 'event' or 'gallery' or 'artist' or 'art_centre'
   late final String _title;
   late final String _subtitle;
   late final String _planId;
   late final String _planName;
   late final String _planAmount;
   late final Map<String, dynamic> _formData;
+  late final bool _isPlanPurchase;
+  late final List<String> _features;
 
   @override
   void initState() {
@@ -65,28 +68,41 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
 
   void _parseArgs() {
     _itemType = (widget.args['itemType'] ?? 'event').toString().toLowerCase();
-    _title = widget.args['title']?.toString().trim().isNotEmpty == true
-        ? widget.args['title'].toString().trim()
-        : (_itemType == 'gallery' ? 'Art Gallery Registration' : 'Art Event Listing');
-    _subtitle = widget.args['subtitle']?.toString().trim().isNotEmpty == true
-        ? widget.args['subtitle'].toString().trim()
-        : 'Dubai, UAE';
-    _planId = (widget.args['planId'] ?? 'six_month').toString();
-    _planName = widget.args['planName']?.toString().trim().isNotEmpty == true
-        ? widget.args['planName'].toString().trim()
-        : (_planId == 'yearly'
-            ? 'Yearly Plan (365 Days)'
-            : (_planId == 'monthly' ? 'Monthly Plan (30 Days)' : '6 Months Plan (180 Days)'));
-    _planAmount = widget.args['planAmount']?.toString().trim().isNotEmpty == true
-        ? widget.args['planAmount'].toString().trim()
-        : (_itemType == 'gallery'
-            ? (_planId == 'yearly' ? 'AED 6,500' : (_planId == 'monthly' ? 'AED 750' : 'AED 3,800'))
-            : (_planId == 'yearly' ? 'AED 4,500' : (_planId == 'monthly' ? 'AED 500' : 'AED 2,500')));
     _formData = widget.args['formData'] is Map<String, dynamic>
         ? Map<String, dynamic>.from(widget.args['formData'] as Map)
         : (widget.args['formData'] is Map
             ? Map<String, dynamic>.from(widget.args['formData'] as Map)
             : <String, dynamic>{});
+    _isPlanPurchase = widget.args['isPlanPurchase'] == true || _formData.isEmpty;
+    _features = widget.args['features'] is List
+        ? List<String>.from(widget.args['features'] as List)
+        : <String>[];
+
+    _planId = (widget.args['planId'] ?? 'one_time').toString();
+    _planName = widget.args['planName']?.toString().trim().isNotEmpty == true
+        ? widget.args['planName'].toString().trim()
+        : (_planId == 'yearly'
+            ? 'Yearly Plan (365 Days)'
+            : (_planId == 'monthly' ? 'Monthly Plan (30 Days)' : 'Listing Plan'));
+    _planAmount = (widget.args['planAmount'] ?? widget.args['amount'])?.toString().trim().isNotEmpty == true
+        ? (widget.args['planAmount'] ?? widget.args['amount']).toString().trim()
+        : (_itemType == 'gallery'
+            ? (_planId == 'yearly' ? 'AED 6,500' : (_planId == 'monthly' ? 'AED 750' : 'AED 3,800'))
+            : (_planId == 'yearly' ? 'AED 4,500' : (_planId == 'monthly' ? 'AED 500' : 'AED 2,500')));
+
+    if (_isPlanPurchase) {
+      _title = _planName;
+      _subtitle = widget.args['planPeriod']?.toString().trim().isNotEmpty == true
+          ? widget.args['planPeriod'].toString().trim()
+          : 'Artist Dubai Platform Plan';
+    } else {
+      _title = widget.args['title']?.toString().trim().isNotEmpty == true
+          ? widget.args['title'].toString().trim()
+          : (_itemType == 'gallery' ? 'Art Gallery Registration' : 'Art Event Listing');
+      _subtitle = widget.args['subtitle']?.toString().trim().isNotEmpty == true
+          ? widget.args['subtitle'].toString().trim()
+          : 'Dubai, UAE';
+    }
   }
 
   Future<void> _loadPaymentSettings() async {
@@ -215,7 +231,21 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     bool success = false;
 
     try {
-      if (_itemType == 'gallery') {
+      if (_isPlanPurchase) {
+        final email = sl<StorageService>().getString('user_email') ?? '';
+        success = await sl<ApiService>().recordPlanPurchase(
+          email: email.isNotEmpty ? email : (_formData['email'] ?? 'user@artistdubai.com'),
+          planName: _planName,
+          planType: _itemType,
+          itemTitle: _title,
+          price: _planAmount,
+          billingCycle: widget.args['planPeriod']?.toString() ?? 'Monthly',
+          paymentReference: txnRef.isNotEmpty ? txnRef : null,
+          paymentMethod: 'Bank Transfer & QR',
+          paymentProofUrl: _receiptUrl,
+          features: _features,
+        );
+      } else if (_itemType == 'gallery') {
         final payload = {
           'name': _formData['name'] ?? _title,
           'category': _formData['category'] ?? 'Art Gallery',
@@ -379,7 +409,21 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     bool success = false;
 
     try {
-      if (_itemType == 'gallery') {
+      if (_isPlanPurchase) {
+        final email = sl<StorageService>().getString('user_email') ?? '';
+        success = await sl<ApiService>().recordPlanPurchase(
+          email: email.isNotEmpty ? email : (_formData['email'] ?? 'user@artistdubai.com'),
+          planName: _planName,
+          planType: _itemType,
+          itemTitle: _title,
+          price: _planAmount,
+          billingCycle: widget.args['planPeriod']?.toString() ?? 'Monthly',
+          paymentReference: ccRef,
+          paymentMethod: 'Credit Card / Stripe',
+          paymentProofUrl: null,
+          features: _features,
+        );
+      } else if (_itemType == 'gallery') {
         final payload = {
           'name': _formData['name'] ?? _title,
           'category': _formData['category'] ?? 'Art Gallery',
@@ -509,22 +553,28 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
             ),
             const SizedBox(height: 18),
             Text(
-              (isCreditCard
-                      ? (_itemType == 'gallery' ? 'Gallery Registered & Paid!' : 'Event Published & Paid!')
-                      : (_itemType == 'gallery' ? 'Gallery Submitted for Review!' : 'Event Submitted for Review!'))
+              (_isPlanPurchase
+                      ? (isCreditCard ? 'Plan Purchased & Activated!' : 'Payment Submitted for Verification!')
+                      : (isCreditCard
+                          ? (_itemType == 'gallery' ? 'Gallery Registered & Paid!' : 'Event Published & Paid!')
+                          : (_itemType == 'gallery' ? 'Gallery Submitted for Review!' : 'Event Submitted for Review!')))
                   .trData(context),
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
             ),
             const SizedBox(height: 10),
             Text(
-              (isCreditCard
-                      ? (_itemType == 'gallery'
-                          ? 'Your credit card payment of $_planAmount was successful! Your art gallery registration has been approved and registered.'
-                          : 'Your credit card payment of $_planAmount was successful! Your event listing has been registered and is now published.')
-                      : (_itemType == 'gallery'
-                          ? 'Your gallery registration and payment proof have been submitted. Once verified by our administration team, your gallery will appear publicly.'
-                          : 'Your event listing and payment proof have been submitted. Our team will verify your transfer and publish your event within 24 hours.'))
+              (_isPlanPurchase
+                      ? (isCreditCard
+                          ? 'Your subscription to $_planName is now active! All features have been enabled for your account.'
+                          : 'Your payment transfer details for $_planName have been received. Our team will verify and activate your benefits shortly.')
+                      : (isCreditCard
+                          ? (_itemType == 'gallery'
+                              ? 'Your credit card payment of $_planAmount was successful! Your art gallery registration has been approved and registered.'
+                              : 'Your credit card payment of $_planAmount was successful! Your event listing has been registered and is now published.')
+                          : (_itemType == 'gallery'
+                              ? 'Your gallery registration and payment proof have been submitted. Once verified by our administration team, your gallery will appear publicly.'
+                              : 'Your event listing and payment proof have been submitted. Our team will verify your transfer and publish your event within 24 hours.')))
                   .trData(context),
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 13, height: 1.45, color: Color(0xFF475569)),
@@ -583,18 +633,39 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                 ),
                 onPressed: () {
                   Navigator.of(ctx).pop();
-                  if (_itemType == 'gallery') {
+                  if (_isPlanPurchase) {
+                    context.go(RouteNames.settings);
+                  } else if (_itemType == 'gallery') {
                     context.go(RouteNames.galleries);
                   } else {
                     context.go(RouteNames.myEvents);
                   }
                 },
                 child: Text(
-                  (_itemType == 'gallery' ? 'Back to Galleries' : 'View My Events').trData(context),
+                  (_isPlanPurchase
+                          ? 'View My Active Plans'
+                          : (_itemType == 'gallery' ? 'Back to Galleries' : 'View My Events'))
+                      .trData(context),
                   style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                 ),
               ),
             ),
+            if (_isPlanPurchase) ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    context.go(RouteNames.home);
+                  },
+                  child: Text(
+                    'Return to Home'.trData(context),
+                    style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

@@ -130,27 +130,29 @@ class GovernmentEntity {
     return GovernmentEntity(
       id: json['id'] != null ? int.tryParse(json['id'].toString()) : null,
       name: DataTranslator.translate(rawName, isArabic: isAr),
-      defaultIsOpen: json['default_is_open'] == 1 || json['default_is_open'] == true || json['is_open'] == true,
-      rating: double.tryParse(json['rating']?.toString() ?? '4.5') ?? 4.5,
-      reviewCount: (json['review_count'] as num?)?.toInt() ?? 0,
+      defaultIsOpen: json['default_is_open'] == 1 || json['default_is_open'] == true || json['is_open'] == true || json['is_open'] == 1,
+      rating: double.tryParse(json['rating']?.toString() ?? json['base_rating']?.toString() ?? '4.5') ?? 4.5,
+      reviewCount: (json['review_count'] as num?)?.toInt() ?? (json['base_review_count'] as num?)?.toInt() ?? 0,
       category: DataTranslator.translate(rawCat, isArabic: isAr),
       location: DataTranslator.translate(rawLoc, isArabic: isAr),
       defaultTiming: DataTranslator.translate(rawTiming, isArabic: isAr),
       websiteUrl: json['website_url'] as String? ?? 'https://dubaiculture.gov.ae/',
       directionsUrl: json['directions_url'] as String? ?? defaultMapsUrl,
       googleMapsReviewsUrl: json['google_maps_reviews_url'] as String? ?? defaultMapsUrl,
-      reviews: (json['reviews'] as List?)
-              ?.map((e) => ReviewModel.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const [],
+      reviews: json['reviews'] is List
+          ? (json['reviews'] as List)
+              .map((e) => ReviewModel.fromJson(e as Map<String, dynamic>))
+              .toList()
+          : const [],
       openHour: (json['open_hour'] as num?)?.toInt(),
       openMinute: (json['open_minute'] as num?)?.toInt() ?? 0,
       closeHour: (json['close_hour'] as num?)?.toInt(),
       closeMinute: (json['close_minute'] as num?)?.toInt() ?? 0,
-      closedDays:
-          (json['closed_days'] as List?)
-              ?.map((e) => (e as num).toInt())
-              .toList(),
+      closedDays: json['closed_days'] is List
+          ? (json['closed_days'] as List)
+              .map((e) => (e as num).toInt())
+              .toList()
+          : null,
       seasonalNotice: rawNotice != null ? DataTranslator.translate(rawNotice, isArabic: isAr) : null,
     );
   }

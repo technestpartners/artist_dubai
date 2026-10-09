@@ -1,4 +1,4 @@
-name: Deploy to TestFlight (iOS 3.2.4(9))
+name: Deploy to TestFlight (iOS 3.2.4(10))
 
 on:
   push:
@@ -13,13 +13,13 @@ on:
         required: false
         default: '3.2.4'
       build_number:
-        description: 'App Build Number (e.g., 9)'
+        description: 'App Build Number (e.g., 10)'
         required: false
-        default: '9'
+        default: '10'
       changelog:
         description: 'TestFlight What to Test / Changelog'
         required: false
-        default: 'Version 3.2.4 (Build 9) - Performance optimizations, privacy compliance updates, and stability fixes.'
+        default: 'Version 3.2.4 (Build 10) - Performance optimizations, dynamic localization improvements, and stability fixes.'
       skip_waiting:
         description: 'Skip waiting for TestFlight build processing in CI'
         type: boolean
@@ -70,7 +70,7 @@ jobs:
           fi
 
           if [ -z "$BUILD_NUM" ]; then
-            BUILD_NUM="9"
+            BUILD_NUM="10"
           fi
 
           echo "VERSION_NAME=$VERSION" >> $GITHUB_OUTPUT
@@ -135,7 +135,7 @@ jobs:
           bundle exec fastlane beta \
             skip_waiting:${{ github.event.inputs.skip_waiting || 'true' }} \
             distribute_external:${{ github.event.inputs.distribute_external || 'false' }} \
-            changelog:"${{ github.event.inputs.changelog || 'Version 3.2.4(9) - Performance optimizations and stability updates.' }}"
+            changelog:"${{ github.event.inputs.changelog || 'Version 3.2.4(10) - Performance optimizations and stability updates.' }}"
 
       - name: Upload IPA Artifact to GitHub
         if: always()

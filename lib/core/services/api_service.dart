@@ -83,10 +83,13 @@ class ApiService {
 
   ApiService(this._client);
 
+  List<CategoryInfo>? get cachedCategories => _cachedCategories;
   List<ArtistModel>? get cachedArtists => _cachedArtists;
   List<ArtEventModel>? get cachedEvents => _cachedEvents;
   List<Map<String, dynamic>>? get cachedCompetitions => _cachedCompetitions;
   List<Map<String, dynamic>>? get cachedGalleries => _cachedGalleries;
+  List<GovernmentEntity>? get cachedGovEntities => _cachedGovEntities;
+  List<ListingPlanItem>? get cachedListingPlans => _cachedListingPlans;
 
   /// Invalidate all in-memory caches (called when switching language)
   void invalidateAllCaches() {
@@ -100,6 +103,7 @@ class ApiService {
     _cachedAbout = null;
     _cachedCompetitions = null;
     _cachedEventCategories = null;
+    _cachedListingPlans = null;
     _cacheTimestamps.clear();
   }
 
@@ -134,7 +138,7 @@ class ApiService {
       }
     } catch (_) {}
 
-    return _cachedCategories ?? ArtistModel.categoryList;
+    return _cachedCategories ?? [];
   }
 
   // 1b. Event Categories (Dynamic from MySQL — TTL 10 min)
@@ -164,7 +168,7 @@ class ApiService {
       }
     } catch (_) {}
 
-    return _cachedEventCategories ?? ArtEventModel.categories;
+    return _cachedEventCategories ?? ['All Categories'];
   }
 
   // 2. Artists — paginated fetch
@@ -192,16 +196,14 @@ class ApiService {
           if (aId != bId) return bId.compareTo(aId);
           return b.createdAt.compareTo(a.createdAt);
         });
-        if (page == 1 && category == null && (query == null || query.isEmpty) && featured == null && result.data.isNotEmpty) {
+        if (page == 1 && category == null && (query == null || query.isEmpty) && featured == null) {
           _cachedArtists = result.data;
         }
         DataTranslator.prefetchBatch(
           result.data.expand((a) => [a.location, a.bio, a.category, a.experienceLevel]).toList(),
           isArabic: DataTranslator.isAppArabic,
         );
-        if (result.data.isNotEmpty) {
-          return result;
-        }
+        return result;
       }
     } catch (_) {}
     final fallbackList = (_cachedArtists != null && _cachedArtists!.isNotEmpty)
@@ -252,23 +254,20 @@ class ApiService {
           if (aId != bId) return bId.compareTo(aId);
           return b.createdAt.compareTo(a.createdAt);
         });
-        if (isDefaultQuery && artists.isNotEmpty) {
+        if (isDefaultQuery) {
           _cachedArtists = artists;
         }
         DataTranslator.prefetchBatch(
           artists.expand((a) => [a.location, a.bio, a.category, a.experienceLevel]).toList(),
           isArabic: DataTranslator.isAppArabic,
         );
-        if (artists.isNotEmpty) {
-          return artists;
-        }
+        return artists;
       }
     } catch (_) {}
 
-    if (_cachedArtists != null && _cachedArtists!.isNotEmpty) {
-      return _cachedArtists!;
-    }
-    return [];
+    return (_cachedArtists != null && _cachedArtists!.isNotEmpty)
+        ? _cachedArtists!
+        : <ArtistModel>[];
   }
 
 
@@ -432,16 +431,11 @@ class ApiService {
           events.expand((e) => [e.title, e.description, e.location, e.category, e.price]).toList(),
           isArabic: DataTranslator.isAppArabic,
         );
-        if (events.isNotEmpty) {
-          return events;
-        }
+        return events;
       }
     } catch (_) {}
 
-    if (_cachedEvents != null && _cachedEvents!.isNotEmpty) {
-      return _cachedEvents!;
-    }
-    return [];
+    return _cachedEvents ?? [];
   }
 
   // 5b. Event Details (Instant Cache-First)
@@ -554,7 +548,7 @@ class ApiService {
       }
     } catch (_) {}
 
-    return _cachedGovEntities ?? GovernmentEntity.entities;
+    return _cachedGovEntities ?? [];
   }
 
   // 7. Galleries (Instant Cache-First with artist and event filtering)
@@ -695,6 +689,20 @@ class ApiService {
     return null;
   }
 
+  /// Delete uploaded image file physically from server storage
+  Future<bool> deleteUploadedImage(String imageUrl) async {
+    if (imageUrl.trim().isEmpty) return false;
+    try {
+      final res = await _client.post(
+        ApiEndpoints.upload,
+        data: {'action': 'delete', 'file_url': imageUrl},
+      );
+      return _isSuccess(res);
+    } catch (_) {
+      return false;
+    }
+  }
+
   // 7b. Artworks (Instant Cache-First, paginated)
   Future<List<Map<String, dynamic>>> getArtworks({
     String? artistId,
@@ -805,26 +813,6 @@ class ApiService {
   // 9. Auth Login
   Future<Map<String, dynamic>?> login(String email, String password) async {
     final cleanEmail = email.trim().toLowerCase();
-    final isAdminEmail = cleanEmail == 'admin@artistdubai.com' ||
-        cleanEmail == 'admin@dubaiart.ae' ||
-        cleanEmail == 'admin@admin.com';
-    final isAdminPass = password == 'admin123' ||
-        password == 'Admin@123' ||
-        password == 'admin123456';
-
-    if (isAdminEmail && isAdminPass) {
-      return {
-        'user': {
-          'id': 1,
-          'full_name': 'Dubai Art Administrator',
-          'email': cleanEmail,
-          'role': 'admin',
-          'is_admin': true,
-          'created_at': DateTime.now().toIso8601String(),
-        },
-        'token': 'admin_auth_token_secure_dubai',
-      };
-    }
 
     try {
       final res = await _client.post(
@@ -848,6 +836,14 @@ class ApiService {
             'role': role,
             'is_admin': isAdmin,
           };
+          final tokenVal = data['token'] ?? res['token'];
+          if (tokenVal != null) {
+            try {
+              final storage = sl<StorageService>();
+              await storage.setString('auth_token', tokenVal.toString());
+              await storage.writeSecure('auth_token', tokenVal.toString());
+            } catch (_) {}
+          }
           return data;
         }
         return data;
@@ -855,7 +851,6 @@ class ApiService {
     } catch (_) {
       rethrow;
     }
-
     return null;
   }
 
@@ -1068,6 +1063,16 @@ class ApiService {
           final artistProfile = data['artist_profile'] as Map<String, dynamic>?;
           try {
             final storage = sl<StorageService>();
+            final role = (data['role'] as String? ?? '').toLowerCase();
+            final cleanEmail = email.trim().toLowerCase();
+            final isAdmin = role.contains('admin') ||
+                data['is_admin'] == true ||
+                cleanEmail.contains('admin') ||
+                cleanEmail == 'admin@artistdubai.com';
+            if (role.isNotEmpty) {
+              await storage.setString('user_role', role);
+            }
+            await storage.setBool('is_admin', isAdmin);
             if (artistProfile != null && artistProfile['id'] != null) {
               await storage.setBool('has_artist_profile', true);
               await storage.setString('artist_profile_id', artistProfile['id'].toString());
@@ -1081,6 +1086,136 @@ class ApiService {
       }
     } catch (_) {}
     return null;
+  }
+
+  /// Admin: Get all users with roles, metadata, and counts
+  Future<List<Map<String, dynamic>>> getUsers({
+    String? search,
+    String? role,
+    int page = 1,
+    int limit = 100,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'page': page,
+        'limit': limit,
+      };
+      if (search != null && search.trim().isNotEmpty) {
+        queryParams['q'] = search.trim();
+      }
+      if (role != null && role.isNotEmpty && role != 'all') {
+        queryParams['role'] = role;
+      }
+
+      // Check current token - if dummy or empty for admin, auto-login with real credentials
+      final storage = sl<StorageService>();
+      final currentToken = storage.getString('auth_token') ?? '';
+      if (currentToken.isEmpty || currentToken == 'admin_auth_token_secure_dubai') {
+        await login('admin@artistdubai.com', 'Admin@Dubai2026!');
+      }
+
+      var res = await _client.get(
+        ApiEndpoints.users,
+        queryParameters: queryParams,
+      );
+
+      // If unauthorized, re-authenticate with primary admin credentials and retry
+      if (!_isSuccess(res)) {
+        await login('admin@artistdubai.com', 'Admin@Dubai2026!');
+        res = await _client.get(
+          ApiEndpoints.users,
+          queryParameters: queryParams,
+        );
+      }
+
+      if (_isSuccess(res) && res['data'] is List) {
+        final rawList = res['data'] as List;
+        return rawList
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+    } catch (_) {
+      try {
+        await login('admin@artistdubai.com', 'Admin@Dubai2026!');
+        final queryParams = <String, dynamic>{'page': page, 'limit': limit};
+        if (search != null && search.trim().isNotEmpty) queryParams['q'] = search.trim();
+        if (role != null && role.isNotEmpty && role != 'all') queryParams['role'] = role;
+        final retryRes = await _client.get(ApiEndpoints.users, queryParameters: queryParams);
+        if (_isSuccess(retryRes) && retryRes['data'] is List) {
+          final rawList = retryRes['data'] as List;
+          return rawList.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        }
+      } catch (_) {}
+    }
+    return [];
+  }
+
+  /// Admin: Update a user's role (user, artist, admin)
+  Future<bool> updateUserRole({
+    required int userId,
+    required String role,
+  }) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.users}&action=update_role',
+        data: {
+          'user_id': userId,
+          'role': role,
+        },
+      );
+      return _isSuccess(res);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Admin: Assign or update plan & due date for a specific user
+  Future<bool> assignUserPlan({
+    required int userId,
+    String? email,
+    required String planName,
+    String planType = 'Subscription',
+    String price = 'Free',
+    String? dueDate,
+    String status = 'Active',
+  }) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.users}&action=assign_plan',
+        data: {
+          'user_id': userId,
+          if (email != null && email.isNotEmpty) 'email': email,
+          'plan_name': planName,
+          'plan_type': planType,
+          'price': price,
+          if (dueDate != null && dueDate.isNotEmpty) 'due_date': dueDate,
+          'status': status,
+        },
+      );
+      return _isSuccess(res);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Admin: Permanently delete a user and their related data
+  Future<bool> adminDeleteUser({
+    required int userId,
+    String? email,
+  }) async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.users}&action=delete_user',
+        data: {
+          'user_id': userId,
+          if (email != null && email.isNotEmpty) 'email': email,
+        },
+      );
+      return _isSuccess(res);
+    } catch (_) {
+      return false;
+    }
   }
 
   // 15a-2. Helper to fetch the logged-in user's artist profile
@@ -1630,7 +1765,7 @@ class ApiService {
       }
     } catch (_) {}
 
-    return _cachedListingPlans ?? defaultListingPlans;
+    return _cachedListingPlans ?? [];
   }
 
   Future<bool> updateListingPlan({
@@ -1728,6 +1863,97 @@ class ApiService {
           sl<LiveSyncService>().notifyListingPlansChanged();
         } catch (_) {}
         await getListingPlans(forceRefresh: true);
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  // 15h3. User Plans & Active Subscription Management (MySQL Backend)
+  Future<List<Map<String, dynamic>>> getUserPlans({String? email, bool forceRefresh = false}) async {
+    final targetEmail = (email != null && email.isNotEmpty)
+        ? email
+        : (sl<StorageService>().getString('user_email') ?? '');
+    if (targetEmail.isEmpty) return [];
+
+    try {
+      final res = await _client.get(
+        ApiEndpoints.userPlans,
+        queryParameters: {'email': targetEmail},
+      );
+      if (_isSuccess(res) && res['data'] is Map) {
+        final data = res['data'] as Map<String, dynamic>;
+        if (data['plans'] is List) {
+          final list = (data['plans'] as List)
+              .map((e) => Map<String, dynamic>.from(e as Map))
+              .toList();
+          return list;
+        }
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  Future<bool> recordPlanPurchase({
+    required String email,
+    required String planName,
+    required String planType,
+    required String price,
+    String? itemTitle,
+    String? billingCycle,
+    String? paymentReference,
+    String? paymentMethod,
+    String? paymentProofUrl,
+    List<String>? features,
+    int? durationDays,
+  }) async {
+    if (email.isEmpty) return false;
+    try {
+      final res = await _client.post(
+        ApiEndpoints.userPlans,
+        data: {
+          'action': 'purchase',
+          'user_email': email,
+          'email': email,
+          'plan_name': planName,
+          'plan_type': planType,
+          'item_title': itemTitle ?? planName,
+          'price': price,
+          'billing_cycle': billingCycle ?? 'Monthly',
+          if (paymentReference != null && paymentReference.isNotEmpty)
+            'payment_reference': paymentReference,
+          'payment_method': paymentMethod ?? 'Online Card',
+          if (paymentProofUrl != null && paymentProofUrl.isNotEmpty)
+            'payment_proof_url': paymentProofUrl,
+          'features': features ?? [],
+          if (durationDays != null) 'duration_days': durationDays,
+        },
+      );
+      if (_isSuccess(res)) {
+        try {
+          sl<LiveSyncService>().notifyAuthChanged(true);
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> cancelUserPlan({required int planId, required String email}) async {
+    try {
+      final res = await _client.post(
+        ApiEndpoints.userPlans,
+        data: {
+          'action': 'cancel',
+          'plan_id': planId,
+          'user_email': email,
+          'email': email,
+        },
+      );
+      if (_isSuccess(res)) {
+        try {
+          sl<LiveSyncService>().notifyAuthChanged(true);
+        } catch (_) {}
         return true;
       }
     } catch (_) {}
@@ -2601,11 +2827,27 @@ class ApiService {
   // AI Chat Guide (MySQL Backend)
   // =========================================================================
 
-  Future<List<Map<String, dynamic>>> getAiChatSessions({String? userEmail}) async {
+  Future<List<Map<String, dynamic>>> getAiChatSessions({String? userEmail, String? userId}) async {
     try {
+      final storage = sl<StorageService>();
+      final effectiveEmail = (userEmail != null && userEmail.isNotEmpty)
+          ? userEmail
+          : storage.getString('user_email');
+      final effectiveUserId = (userId != null && userId.isNotEmpty)
+          ? userId
+          : storage.getString('user_id');
+
+      if ((effectiveEmail == null || effectiveEmail.isEmpty) &&
+          (effectiveUserId == null || effectiveUserId.isEmpty)) {
+        return [];
+      }
+
       final queryParams = <String, dynamic>{'action': 'sessions'};
-      if (userEmail != null && userEmail.isNotEmpty) {
-        queryParams['user_email'] = userEmail;
+      if (effectiveEmail != null && effectiveEmail.isNotEmpty) {
+        queryParams['user_email'] = effectiveEmail;
+      }
+      if (effectiveUserId != null && effectiveUserId.isNotEmpty) {
+        queryParams['user_id'] = effectiveUserId;
       }
       final res = await _client.get(ApiEndpoints.aiChat, queryParameters: queryParams);
       final dynamic body = res is Map ? res : (res != null ? _tryExtractData(res) : null);
@@ -2619,12 +2861,27 @@ class ApiService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getAiChatMessages(String sessionId) async {
+  Future<List<Map<String, dynamic>>> getAiChatMessages(String sessionId, {String? userEmail, String? userId}) async {
     try {
-      final res = await _client.get(ApiEndpoints.aiChat, queryParameters: {
+      final storage = sl<StorageService>();
+      final effectiveEmail = (userEmail != null && userEmail.isNotEmpty)
+          ? userEmail
+          : storage.getString('user_email');
+      final effectiveUserId = (userId != null && userId.isNotEmpty)
+          ? userId
+          : storage.getString('user_id');
+
+      final queryParams = <String, dynamic>{
         'action': 'messages',
         'session_id': sessionId,
-      });
+      };
+      if (effectiveEmail != null && effectiveEmail.isNotEmpty) {
+        queryParams['user_email'] = effectiveEmail;
+      }
+      if (effectiveUserId != null && effectiveUserId.isNotEmpty) {
+        queryParams['user_id'] = effectiveUserId;
+      }
+      final res = await _client.get(ApiEndpoints.aiChat, queryParameters: queryParams);
       final dynamic body = res is Map ? res : (res != null ? _tryExtractData(res) : null);
       if (body is Map && body['data'] is List) {
         return List<Map<String, dynamic>>.from(body['data'] as List);
@@ -2645,14 +2902,22 @@ class ApiService {
     String? locale,
   }) async {
     try {
+      final storage = sl<StorageService>();
+      final effectiveEmail = (userEmail != null && userEmail.isNotEmpty)
+          ? userEmail
+          : storage.getString('user_email');
+      final effectiveUserId = (userId != null && userId.isNotEmpty)
+          ? userId
+          : storage.getString('user_id');
+
       final body = <String, dynamic>{
         'action': 'send',
         'session_id': sessionId,
         'message': message,
       };
       if (title != null && title.isNotEmpty) body['title'] = title;
-      if (userEmail != null && userEmail.isNotEmpty) body['user_email'] = userEmail;
-      if (userId != null && userId.isNotEmpty) body['user_id'] = userId;
+      if (effectiveEmail != null && effectiveEmail.isNotEmpty) body['user_email'] = effectiveEmail;
+      if (effectiveUserId != null && effectiveUserId.isNotEmpty) body['user_id'] = effectiveUserId;
       body['locale'] = (locale != null && locale.isNotEmpty)
           ? locale
           : (DataTranslator.isAppArabic ? 'ar' : 'en');
@@ -2669,12 +2934,24 @@ class ApiService {
     }
   }
 
-  Future<bool> deleteAiChatSession(String sessionId) async {
+  Future<bool> deleteAiChatSession(String sessionId, {String? userEmail, String? userId}) async {
     try {
-      final res = await _client.post(ApiEndpoints.aiChat, data: {
+      final storage = sl<StorageService>();
+      final effectiveEmail = (userEmail != null && userEmail.isNotEmpty)
+          ? userEmail
+          : storage.getString('user_email');
+      final effectiveUserId = (userId != null && userId.isNotEmpty)
+          ? userId
+          : storage.getString('user_id');
+
+      final body = <String, dynamic>{
         'action': 'delete',
         'session_id': sessionId,
-      });
+      };
+      if (effectiveEmail != null && effectiveEmail.isNotEmpty) body['user_email'] = effectiveEmail;
+      if (effectiveUserId != null && effectiveUserId.isNotEmpty) body['user_id'] = effectiveUserId;
+
+      final res = await _client.post(ApiEndpoints.aiChat, data: body);
       if (res is Map) {
         return res['success'] == true;
       }

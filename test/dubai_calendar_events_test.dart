@@ -17,7 +17,7 @@ void main() {
   setUp(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     HttpOverrides.global = _TestHttpOverrides();
-    SharedPreferences.setMockInitialValues({'is_logged_in': false});
+    SharedPreferences.setMockInitialValues({'is_logged_in': true, 'user_email': 'test@example.com'});
     await sl.reset();
     await initDependencyInjection();
   });

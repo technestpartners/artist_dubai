@@ -9,10 +9,29 @@
 ob_start();
 
 if (!headers_sent()) {
-    $origin = $_SERVER['HTTP_ORIGIN'] ?? '*';
-    header("Access-Control-Allow-Origin: $origin");
-    if ($origin !== '*') {
-        header("Access-Control-Allow-Credentials: true");
+    // ─── CORS Allowlist ───────────────────────────────────────────────────────
+    // Only allow requests from known origins. Any other origin receives no
+    // Access-Control-Allow-Origin header, causing the browser to block the call.
+    $allowedOrigins = [
+        'https://technestpartners.com',
+        'https://www.technestpartners.com',
+        'http://localhost',
+        'http://localhost:8080',
+        'http://localhost:3000',
+        'http://127.0.0.1',
+        'capacitor://localhost',   // Ionic/Capacitor mobile hybrid
+        'http://localhost:5173',   // Vite dev server
+    ];
+    $requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    $originAllowed = in_array($requestOrigin, $allowedOrigins, true);
+
+    // Flutter mobile apps (no Origin header) and server-to-server calls are OK
+    if (empty($requestOrigin) || $originAllowed) {
+        if (!empty($requestOrigin)) {
+            header("Access-Control-Allow-Origin: {$requestOrigin}");
+            header("Access-Control-Allow-Credentials: true");
+            header("Vary: Origin");
+        }
     }
 
     $reqHeaders = $_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'] ?? 'Content-Type, Authorization, X-Requested-With, Accept, Origin, If-None-Match, X-Api-Key, X-Auth-Token';
@@ -20,7 +39,7 @@ if (!headers_sent()) {
     header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD");
     header("Access-Control-Max-Age: 86400");
     header("X-Content-Type-Options: nosniff");
-    header("X-Frame-Options: SAMEORIGIN");
+    header("X-Frame-Options: DENY");
     header("X-XSS-Protection: 1; mode=block");
     header("Referrer-Policy: strict-origin-when-cross-origin");
     header("Content-Type: application/json; charset=UTF-8");
@@ -34,69 +53,52 @@ if (isset($_SERVER['REQUEST_METHOD']) && strtoupper($_SERVER['REQUEST_METHOD']) 
     exit();
 }
 
+/**
+ * -----------------------------------------------------------------------------
+ * 1. PRODUCTION DATABASE CONFIGURATION
+ * -----------------------------------------------------------------------------
+ * Strictly configured for the production database.
+ * If deploying to another server or modifying credentials, simply update the
+ * constants below, or set environment variables (DB_HOST, DB_NAME, DB_USER, DB_PASS).
+ */
+if (!defined('DB_HOST')) define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+if (!defined('DB_NAME')) define('DB_NAME', getenv('DB_NAME') ?: 'u530915492_artist_dubai');
+if (!defined('DB_USER')) define('DB_USER', getenv('DB_USER') ?: 'u530915492_artist_dubai');
+if (!defined('DB_PASS')) define('DB_PASS', getenv('DB_PASS') !== false && getenv('DB_PASS') !== null ? getenv('DB_PASS') : 'Artist@Dubai@TN21');
+if (!defined('DB_PORT')) define('DB_PORT', (int)(getenv('DB_PORT') ?: 3306));
+if (!defined('GEMINI_API_KEY')) define('GEMINI_API_KEY', getenv('GEMINI_API_KEY') ?: '');
+
 // -----------------------------------------------------------------------------
-// 1. Strictly Pure MySQL Database Manager Singleton Class
+// Strictly Pure MySQL Database Manager Singleton Class
 // -----------------------------------------------------------------------------
 class DatabaseManager {
     private static ?DatabaseManager $instance = null;
     private PDO $pdo;
 
     private function __construct() {
-        // Automatic Detection: Hostinger Live Server vs Local Laragon
-        $isLive = (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'technestpartners.com') !== false)
-               || (isset($_SERVER['SERVER_NAME']) && strpos($_SERVER['SERVER_NAME'], 'technestpartners.com') !== false)
-               || (getenv('APP_ENV') === 'production');
+        $host = DB_HOST;
+        $db   = DB_NAME;
+        $user = DB_USER;
+        $pass = DB_PASS;
+        $port = DB_PORT;
 
-        $host = getenv('DB_HOST') ?: ($isLive ? 'localhost' : '127.0.0.1');
-        $db   = getenv('DB_NAME') ?: ($isLive ? 'u530915492_artist_dubai' : 'artist_dubai');
-        $user = getenv('DB_USER') ?: ($isLive ? 'u530915492_artist_dubai' : 'root');
-        $pass = getenv('DB_PASS') !== false && getenv('DB_PASS') !== null ? getenv('DB_PASS') : ($isLive ? 'Artist@Dubai@TN21' : '');
+        try {
+            $dsn = "mysql:host=$host;port=$port;dbname=$db;charset=utf8mb4";
+            $this->pdo = new PDO($dsn, $user, $pass, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false,
+            ]);
 
-        $tryDbs = array_values(array_unique(array_filter([
-            getenv('DB_NAME'),
-            $db,
-            'u530915492_artist_dubai',
-            'artist_dubai'
-        ])));
-
-        $connected = false;
-        $lastException = null;
-
-        foreach ($tryDbs as $databaseName) {
-            try {
-                // On local environment, ensure database exists
-                if (!$isLive && $user === 'root' && ($host === '127.0.0.1' || $host === 'localhost')) {
-                    try {
-                        $rootPdo = new PDO("mysql:host=$host;charset=utf8mb4", $user, $pass, [
-                            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                        ]);
-                        $rootPdo->exec("CREATE DATABASE IF NOT EXISTS `$databaseName` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-                    } catch (\Throwable $t) {}
-                }
-
-                // Connect to MySQL Database
-                $dsn = "mysql:host=$host;dbname=$databaseName;charset=utf8mb4";
-                $this->pdo = new PDO($dsn, $user, $pass, [
-                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES => false,
-                ]);
-
-                $this->provisionMySqlSchema();
-                $connected = true;
-                break;
-            } catch (\PDOException $e) {
-                $lastException = $e;
-            }
-        }
-
-        if (!$connected) {
+            $this->provisionMySqlSchema();
+        } catch (\PDOException $e) {
             http_response_code(500);
-            $msg = $isLive ? 'Database service temporarily unavailable. Please try again shortly.' : ('MySQL Connection Error: ' . ($lastException ? $lastException->getMessage() : 'Unknown'));
+            // Log the real error server-side (not exposed to clients)
+            error_log('[ArtistDubai] Database connection failed: ' . $e->getMessage());
             echo json_encode([
-                'status' => 'error',
-                'success' => false,
-                'message' => $msg,
+                'status'   => 'error',
+                'success'  => false,
+                'message'  => 'Service temporarily unavailable. Please try again shortly.',
                 'database' => 'MySQL'
             ], JSON_UNESCAPED_SLASHES);
             exit();
@@ -115,6 +117,13 @@ class DatabaseManager {
     }
 
     private function provisionMySqlSchema(): void {
+        $flagFile = __DIR__ . '/.schema_provisioned';
+        $forceMigrate = (php_sapi_name() === 'cli' && in_array('migrate', $_SERVER['argv'] ?? []))
+                     || (isset($_GET['action']) && $_GET['action'] === 'migrate');
+        if (file_exists($flagFile) && !$forceMigrate) {
+            return;
+        }
+
         $this->pdo->exec("
             CREATE TABLE IF NOT EXISTS users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -345,6 +354,26 @@ class DatabaseManager {
                 INDEX idx_listing_plan_type (item_type)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+            CREATE TABLE IF NOT EXISTS user_plans (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NULL,
+                user_email VARCHAR(255) NOT NULL,
+                plan_name VARCHAR(255) NOT NULL,
+                plan_type VARCHAR(100) DEFAULT 'Subscription',
+                item_title VARCHAR(255) NULL,
+                price VARCHAR(100) NOT NULL DEFAULT 'Free',
+                billing_cycle VARCHAR(100) DEFAULT 'Monthly',
+                status VARCHAR(50) DEFAULT 'Active',
+                payment_reference VARCHAR(255) NULL,
+                payment_method VARCHAR(100) DEFAULT 'Card',
+                features_json TEXT NULL,
+                start_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+                expires_at DATETIME NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_user_plan_email (user_email),
+                INDEX idx_user_plan_status (status)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
             CREATE TABLE IF NOT EXISTS payment_settings (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 qr_code_url VARCHAR(500) DEFAULT 'https://images.unsplash.com/photo-1595079672139-545c0ecac12a?auto=format&fit=crop&w=400&q=80',
@@ -447,6 +476,7 @@ class DatabaseManager {
             "ALTER TABLE artists ADD INDEX idx_artist_email (email)",
             "ALTER TABLE events ADD INDEX idx_event_cat (category)",
             "ALTER TABLE events ADD INDEX idx_event_contact (contact_email)",
+            "ALTER TABLE ai_chat_messages ADD COLUMN related_questions TEXT NULL",
             "ALTER TABLE bookings ADD INDEX idx_booking_email (email)",
             "ALTER TABLE bookings ADD INDEX idx_booking_status (status)",
             "ALTER TABLE artworks ADD INDEX idx_artworks_artist (artist_id)",
@@ -486,11 +516,135 @@ class DatabaseManager {
             try { $this->pdo->exec($m); } catch (\Throwable $t) {}
         }
 
-        // Auto-seeding disabled to keep database clean and prevent unwanted inserts
+        // Self-Provisioning Baseline Data Injection for Fresh Installations
+        $this->seedInitialData();
+
+        @file_put_contents($flagFile, date('c'));
     }
 
     private function seedInitialData(): void {
-        // Disabled: No automatic data insertion
+        try {
+            // 1. Categories (Auto-seed standard categories if table is empty)
+            $catCount = (int)$this->pdo->query("SELECT COUNT(*) FROM categories WHERE deleted_at IS NULL")->fetchColumn();
+            if ($catCount === 0) {
+                $categories = [
+                    ['Art Exhibition', 'event', 'Fine art exhibitions, group showcases, and gallery displays', '🖼️'],
+                    ['Gallery Opening', 'event', 'New gallery space debuts, exclusive launch receptions and vernissage', '🏛️'],
+                    ['Art Workshop', 'event', 'Interactive hands-on art classes, live demonstrations and creative sessions', '🎨'],
+                    ['Artist Talk', 'event', 'Q&A panels, keynote lectures, and creative dialogues with masters', '🎤'],
+                    ['Art Fair', 'event', 'Large-scale art fairs, cultural expos, and trade exhibitions', '🎪'],
+                    ['Sculpture Installation', 'event', 'Outdoor, 3D and immersive sculptural installations', '🗿'],
+                    ['Photography Exhibition', 'event', 'Fine art, documentary and architectural photography showcases', '📷'],
+                    ['Cultural Festival', 'event', 'Heritage celebrations, arts festivals, and multicultural festivities', '🎉'],
+                    ['Art Competition', 'event', 'Juried art contests, awards, and youth talent competitions', '🏆'],
+                    ['Community Art Project', 'event', 'Public murals, collaborative community art, and social initiatives', '🤝'],
+                    ['Calligraphy & Typography', 'artist', 'Arabic calligraphy, modern lettering and typography', '✍️'],
+                    ['Contemporary Painting', 'artist', 'Modern and contemporary canvas and acrylic painting', '🎨'],
+                    ['Digital Art & Sculpture', 'artist', 'Digital 3D installations, sculptures and generative art', '🗿'],
+                    ['Photography', 'artist', 'Landscape, architectural and fine art photography across UAE', '📷'],
+                    ['Abstract Painting', 'artist', 'Abstract expressions, mixed media and vibrant color palettes', '🎨'],
+                    ['Ceramics & Pottery', 'artist', 'Handcrafted ceramics, clay sculptures and pottery', '🏺'],
+                ];
+                $stmt = $this->pdo->prepare("INSERT IGNORE INTO categories (name, type, description, emoji) VALUES (?, ?, ?, ?)");
+                foreach ($categories as $cat) {
+                    $stmt->execute($cat);
+                }
+            }
+
+            // 2. Experience Levels (Auto-seed if empty)
+            $expCount = (int)$this->pdo->query("SELECT COUNT(*) FROM experience_levels WHERE deleted_at IS NULL")->fetchColumn();
+            if ($expCount === 0) {
+                $levels = [
+                    ['Emerging Artist', '1-3 years', 1],
+                    ['Mid-Career Artist', '4-8 years', 2],
+                    ['Established Master', '9+ years', 3],
+                ];
+                $stmt = $this->pdo->prepare("INSERT IGNORE INTO experience_levels (name, years_range, display_order) VALUES (?, ?, ?)");
+                foreach ($levels as $l) {
+                    $stmt->execute($l);
+                }
+            }
+
+            // 3. Locations (Auto-seed if empty)
+            $locCount = (int)$this->pdo->query("SELECT COUNT(*) FROM locations WHERE deleted_at IS NULL")->fetchColumn();
+            if ($locCount === 0) {
+                $locations = [
+                    ['Alserkal Avenue, Al Quoz', 'Dubai', 'UAE', 1],
+                    ['Dubai Design District (d3)', 'Dubai', 'UAE', 2],
+                    ['DIFC (Gate Village)', 'Dubai', 'UAE', 3],
+                    ['Downtown Dubai', 'Dubai', 'UAE', 4],
+                    ['Jumeirah', 'Dubai', 'UAE', 5],
+                    ['Al Fahidi Historical Neighbourhood', 'Dubai', 'UAE', 6],
+                ];
+                $stmt = $this->pdo->prepare("INSERT IGNORE INTO locations (name, city, country, display_order) VALUES (?, ?, ?, ?)");
+                foreach ($locations as $loc) {
+                    $stmt->execute($loc);
+                }
+            }
+
+            // 4. Default Admin User & Persistent API Token
+            $adminCount = (int)$this->pdo->query("SELECT COUNT(*) FROM users WHERE role = 'admin' OR email = 'admin@artistdubai.com'")->fetchColumn();
+            if ($adminCount === 0) {
+                $initialAdminPass = getenv('ADMIN_INITIAL_PASSWORD') ?: 'Admin@Dubai2026!';
+                $hashed = password_hash($initialAdminPass, PASSWORD_BCRYPT);
+                $this->pdo->prepare("INSERT INTO users (full_name, email, password_hash, role) VALUES (?, ?, ?, 'admin')")
+                          ->execute(['Dubai Art Administrator', 'admin@artistdubai.com', $hashed]);
+                $adminId = (int)$this->pdo->lastInsertId();
+            } else {
+                $adminId = (int)$this->pdo->query("SELECT id FROM users WHERE role = 'admin' OR email = 'admin@artistdubai.com' ORDER BY id ASC LIMIT 1")->fetchColumn();
+            }
+
+            if ($adminId > 0) {
+                // Check if admin already has any valid token (avoid creating duplicates)
+                $hasAnyToken = (bool)$this->pdo->query("SELECT COUNT(*) FROM api_tokens WHERE user_id = {$adminId} AND expires_at > NOW()")->fetchColumn();
+                if (!$hasAnyToken) {
+                    // Generate a cryptographically secure random token (unique per installation)
+                    $adminToken = bin2hex(random_bytes(32));
+                    $this->pdo->prepare("INSERT INTO api_tokens (user_id, token, role, expires_at) VALUES (?, ?, 'admin', DATE_ADD(NOW(), INTERVAL 10 YEAR))")
+                              ->execute([$adminId, $adminToken]);
+                }
+            }
+
+            // 5. Publishing Pricing (Auto-seed if empty)
+            $priceCount = (int)$this->pdo->query("SELECT COUNT(*) FROM publishing_pricing")->fetchColumn();
+            if ($priceCount === 0) {
+                $this->pdo->exec("
+                    INSERT INTO publishing_pricing (item_type, item_name, description, weekly_price, monthly_price, six_month_price, yearly_price, six_month_badge, yearly_badge, currency, is_active) VALUES
+                    ('event', 'Event Publishing', 'Publish art events and exhibitions across Dubai', 'AED 150', 'AED 500', 'AED 2,500', 'AED 4,500', 'Save 17%', 'Best Value', 'AED', 1),
+                    ('artist', 'Artist Verification', 'Verified artist badge and premium listing showcase', 'AED 100', 'AED 350', 'AED 1,800', 'AED 3,200', 'Save 14%', 'Featured', 'AED', 1),
+                    ('gallery', 'Gallery Space Spotlight', 'Feature your gallery on curated maps and event calendars', 'AED 250', 'AED 800', 'AED 4,000', 'AED 7,200', 'Save 16%', 'Premium', 'AED', 1);
+                ");
+            }
+
+            // 6. Listing Plans (Auto-seed if empty)
+            $planCount = (int)$this->pdo->query("SELECT COUNT(*) FROM listing_plans")->fetchColumn();
+            if ($planCount === 0) {
+                $this->pdo->exec("
+                    INSERT INTO listing_plans (item_type, title, category, badge, price, description, button_text, is_active, sort_order) VALUES
+                    ('event', 'Standard Event Listing', 'Exhibitions & Openings', 'Popular', 'AED 500', '30-day verified event showcase across mobile app and website', 'Pay from My Listings', 1, 1),
+                    ('artist', 'Pro Artist Portfolio', 'Visual Arts', 'Best Choice', 'AED 350', 'Unlimited artwork uploads, custom bio, direct buyer messaging', 'Upgrade Artist Profile', 1, 2);
+                ");
+            }
+
+            // 7. Payment Settings (Auto-seed if empty)
+            $payCount = (int)$this->pdo->query("SELECT COUNT(*) FROM payment_settings")->fetchColumn();
+            if ($payCount === 0) {
+                $this->pdo->exec("
+                    INSERT INTO payment_settings (account_name, account_number, bank_name, instructions, is_active) VALUES
+                    ('Artist Dubai Cultural Services LLC', 'AE28 0330 0000 0001 2345 678', 'Emirates NBD, Dubai', 'Please include your booking or listing reference in the transfer remarks.', 1);
+                ");
+            }
+
+            // 8. Auto-provision Uploads Directory & Anti-RCE .htaccess
+            $uploadDir = __DIR__ . '/uploads';
+            if (!is_dir($uploadDir)) {
+                @mkdir($uploadDir, 0755, true);
+            }
+            $uploadHtaccess = $uploadDir . '/.htaccess';
+            if (!file_exists($uploadHtaccess)) {
+                @file_put_contents($uploadHtaccess, "# Hardened Upload Security - Strictly disable script execution\nOptions -ExecCGI -Indexes\n<FilesMatch \"(?i)\\.(php|phtml|phar|sh|exe|pl|cgi)$\">\n    Require all denied\n</FilesMatch>\nHeader set X-Content-Type-Options \"nosniff\"\n");
+            }
+        } catch (\Throwable $t) {}
     }
 }
 
@@ -656,9 +810,10 @@ class AuthMiddleware {
             ?? $_SERVER['HTTP_X_AUTH_TOKEN'] 
             ?? '';
         if (!empty($apiKey)) return trim($apiKey);
-        
-        if (!empty($_GET['token'])) return trim((string)$_GET['token']);
-        if (!empty($_POST['token'])) return trim((string)$_POST['token']);
+
+        // NOTE: Accepting tokens via GET/POST body is intentionally disabled.
+        // Tokens in URLs appear in server logs, browser history, and referrer headers,
+        // which constitutes a security vulnerability. Use Authorization header only.
 
         return null;
     }
@@ -676,33 +831,6 @@ class AuthMiddleware {
 
         if (self::$cachedUser !== null && self::$lastToken === $token) {
             return self::$cachedUser;
-        }
-
-        // Backward compatibility for pre-configured mobile app admin token
-        if ($token === 'admin_auth_token_secure_dubai') {
-            try {
-                $db = DatabaseManager::getInstance()->getConnection();
-                $adminStmt = $db->query("SELECT id, full_name, email, role, created_at FROM users WHERE role = 'admin' OR email LIKE '%admin%' ORDER BY id ASC LIMIT 1");
-                $admin = $adminStmt->fetch();
-                if ($admin) {
-                    $admin['is_admin'] = true;
-                    self::$cachedUser = $admin;
-                    self::$lastToken = $token;
-                    return $admin;
-                }
-            } catch (\Throwable $t) {}
-            
-            $fallbackAdmin = [
-                'id' => 1,
-                'full_name' => 'Dubai Art Administrator',
-                'email' => 'admin@artistdubai.com',
-                'role' => 'admin',
-                'is_admin' => true,
-                'created_at' => date('Y-m-d H:i:s'),
-            ];
-            self::$cachedUser = $fallbackAdmin;
-            self::$lastToken = $token;
-            return $fallbackAdmin;
         }
 
         try {
@@ -724,9 +852,8 @@ class AuthMiddleware {
                 $dbRole = strtolower(trim($row['user_role'] ?? $row['role'] ?? 'user'));
 
                 // Dynamically evaluate admin privileges from the database role column first
-                $isAdminRole = in_array($dbRole, ['admin', 'superadmin', 'super_admin']) || (strpos($dbRole, 'admin') !== false);
-                $isAdminEmail = (strpos($cleanEmail, 'admin@') === 0) 
-                             || in_array($cleanEmail, ['admin@artistdubai.com', 'admin@dubaiart.ae', 'admin@admin.com', 'admin@technestpartners.com']);
+                $isAdminRole = in_array($dbRole, ['admin', 'superadmin', 'super_admin']) || ($dbRole === 'admin');
+                $isAdminEmail = in_array($cleanEmail, ['admin@artistdubai.com', 'admin@dubaiart.ae', 'admin@admin.com', 'admin@technestpartners.com'], true);
 
                 $isAdmin = $isAdminRole || $isAdminEmail;
                 $role = $isAdmin ? ($isAdminRole ? $dbRole : 'admin') : ($dbRole ?: 'user');
@@ -831,8 +958,8 @@ class AuthController {
             return;
         }
 
-        $cleanLower = strtolower($email);
-        $isAdminEmail = in_array($cleanLower, ['admin@artistdubai.com', 'admin@dubaiart.ae', 'admin@admin.com', 'admin@technestpartners.com']);
+        $cleanLower = strtolower(trim($email));
+        $isAdminEmail = in_array($cleanLower, ['admin@artistdubai.com', 'admin@dubaiart.ae', 'admin@admin.com', 'admin@technestpartners.com'], true);
 
         $stmt = $this->db->prepare('SELECT id, full_name, email, password_hash, role, created_at FROM users WHERE email = ?');
         $stmt->execute([$email]);
@@ -843,40 +970,29 @@ class AuthController {
             return;
         }
 
-        // Verify password securely using password_verify
+        // Verify password using secure bcrypt
         $valid = password_verify($password, $user['password_hash']);
-
-        // Safe legacy fallback migration: if password matches plain text or md5 from old seed
         if (!$valid) {
-            if ($password === $user['password_hash'] || md5($password) === $user['password_hash'] || ($isAdminEmail && ($password === 'admin123' || $password === 'Admin@123' || $password === 'admin123456'))) {
-                $valid = true;
-                $newHash = password_hash($password, PASSWORD_BCRYPT);
-                try {
-                    $this->db->prepare('UPDATE users SET password_hash = ? WHERE id = ?')->execute([$newHash, $user['id']]);
-                } catch (\Throwable $t) {}
-            }
+            ApiResponse::error('Incorrect password. Please try again.', 401);
+            return;
         }
 
-        if ($valid) {
-            if (password_needs_rehash($user['password_hash'], PASSWORD_BCRYPT)) {
-                $newHash = password_hash($password, PASSWORD_BCRYPT);
-                try {
-                    $this->db->prepare('UPDATE users SET password_hash = ? WHERE id = ?')->execute([$newHash, $user['id']]);
-                } catch (\Throwable $t) {}
-            }
+        if (password_needs_rehash($user['password_hash'], PASSWORD_BCRYPT)) {
+            $newHash = password_hash($password, PASSWORD_BCRYPT);
+            try {
+                $this->db->prepare('UPDATE users SET password_hash = ? WHERE id = ?')->execute([$newHash, $user['id']]);
+            } catch (\Throwable $t) {}
+        }
 
-            $cleanLower = strtolower(trim($user['email'] ?? ''));
-            $isAdminEmail = in_array($cleanLower, ['admin@artistdubai.com', 'admin@dubaiart.ae', 'admin@admin.com', 'admin@technestpartners.com']) || strpos($cleanLower, 'admin@') === 0;
-            if ($isAdminEmail) {
-                $userRole = 'admin';
-                $isAdmin = true;
-                try {
-                    $this->db->prepare("UPDATE users SET role = 'admin' WHERE id = ?")->execute([$user['id']]);
-                } catch (\Throwable $t) {}
-            } else {
-                $userRole = !empty($user['role']) ? strtolower($user['role']) : 'user';
-                $isAdmin = in_array($userRole, ['admin', 'superadmin', 'super_admin', 'userpadmin']) || strpos($userRole, 'admin') !== false;
-            }
+        $cleanLower = strtolower(trim($user['email'] ?? ''));
+        $isAdminEmail = in_array($cleanLower, ['admin@artistdubai.com', 'admin@dubaiart.ae', 'admin@admin.com', 'admin@technestpartners.com'], true);
+        if ($isAdminEmail) {
+            $userRole = 'admin';
+            $isAdmin = true;
+        } else {
+            $userRole = !empty($user['role']) ? strtolower($user['role']) : 'user';
+            $isAdmin = in_array($userRole, ['admin', 'superadmin', 'super_admin']) || ($userRole === 'admin');
+        }
 
             // Issue cryptographically secure persistent API token
             $token = AuthMiddleware::createToken((int)$user['id'], $userRole, 30);
@@ -899,9 +1015,6 @@ class AuthController {
                 'token' => $token
             ], $isAdmin ? 'Admin login successful' : 'Login successful');
             return;
-        }
-
-        ApiResponse::error('Incorrect password. Please try again.', 401);
     }
 
     public function register(array $input): void {
@@ -1003,7 +1116,7 @@ class AuthController {
 
         $user = null;
         if (!empty($email)) {
-            $stmt = $this->db->prepare('SELECT id, full_name, email, role, created_at FROM users WHERE email = ?');
+            $stmt = $this->db->prepare('SELECT id, full_name, email, role, created_at, chat_plan, chat_max_allowance FROM users WHERE email = ?');
             $stmt->execute([$email]);
             $user = $stmt->fetch();
         }
@@ -1017,12 +1130,96 @@ class AuthController {
             $artistStmt->execute([$user['id'], $user['email'], $user['full_name']]);
             $artist = $artistStmt->fetch();
 
+            $chatPlan = !empty($user['chat_plan']) ? $user['chat_plan'] : 'Basic (Free)';
+            $maxAllowance = !empty($user['chat_max_allowance']) ? (int)$user['chat_max_allowance'] : 10;
+
+            // Fetch user purchased plans from user_plans
+            $plans = [];
+            try {
+                $pStmt = $this->db->prepare('SELECT * FROM user_plans WHERE user_email = ? ORDER BY id DESC');
+                $pStmt->execute([$user['email']]);
+                $dbPlans = $pStmt->fetchAll();
+                foreach ($dbPlans as $dp) {
+                    $features = [];
+                    if (!empty($dp['features_json'])) {
+                        $decoded = json_decode($dp['features_json'], true);
+                        if (is_array($decoded)) $features = $decoded;
+                    }
+                    $plans[] = [
+                        'id' => (int)$dp['id'],
+                        'plan_name' => $dp['plan_name'],
+                        'plan_type' => $dp['plan_type'] ?? 'Subscription',
+                        'item_title' => $dp['item_title'] ?? $dp['plan_name'],
+                        'price' => $dp['price'] ?? 'Free',
+                        'billing_cycle' => $dp['billing_cycle'] ?? 'Monthly',
+                        'status' => $dp['status'] ?? 'Active',
+                        'payment_reference' => $dp['payment_reference'] ?? null,
+                        'payment_method' => $dp['payment_method'] ?? 'Online',
+                        'features' => $features,
+                        'start_date' => $dp['start_date'] ?? $dp['created_at'],
+                        'expires_at' => $dp['expires_at'] ?? null,
+                        'created_at' => $dp['created_at'],
+                    ];
+                }
+            } catch (\Throwable $t) {}
+
+            // Also check published events with publishing plan
+            try {
+                $eStmt = $this->db->prepare("SELECT id, title, category, publishing_plan, publishing_amount, payment_status, payment_reference, created_at FROM events WHERE contact_email = ? AND publishing_plan IS NOT NULL AND publishing_plan != '' ORDER BY id DESC");
+                $eStmt->execute([$user['email']]);
+                $eventPlans = $eStmt->fetchAll();
+                foreach ($eventPlans as $ep) {
+                    $plans[] = [
+                        'id' => (int)$ep['id'],
+                        'plan_name' => (!empty($ep['publishing_plan']) ? ucfirst($ep['publishing_plan']) . ' Plan' : 'Event Publishing Plan'),
+                        'plan_type' => 'Event Publishing',
+                        'item_title' => $ep['title'] ?? 'Art Event Listing',
+                        'price' => !empty($ep['publishing_amount']) ? $ep['publishing_amount'] : 'Free',
+                        'billing_cycle' => !empty($ep['publishing_plan']) ? ucfirst($ep['publishing_plan']) : 'Listing',
+                        'status' => strtolower($ep['payment_status'] ?? '') === 'paid' ? 'Active' : (ucfirst($ep['payment_status'] ?? 'Active')),
+                        'payment_reference' => $ep['payment_reference'] ?? null,
+                        'payment_method' => 'Online',
+                        'features' => ['Featured Event Listing', 'Calendar & Push Visibility', 'RSVP & Ticketing Access'],
+                        'start_date' => $ep['created_at'],
+                        'expires_at' => null,
+                        'created_at' => $ep['created_at'],
+                    ];
+                }
+            } catch (\Throwable $t) {}
+
+            // Also check published galleries with publishing plan
+            try {
+                $gStmt = $this->db->prepare("SELECT id, name, category, publishing_plan, publishing_amount, payment_status, payment_reference, created_at FROM galleries WHERE email = ? AND publishing_plan IS NOT NULL AND publishing_plan != '' ORDER BY id DESC");
+                $gStmt->execute([$user['email']]);
+                $galleryPlans = $gStmt->fetchAll();
+                foreach ($galleryPlans as $gp) {
+                    $plans[] = [
+                        'id' => (int)$gp['id'],
+                        'plan_name' => (!empty($gp['publishing_plan']) ? ucfirst($gp['publishing_plan']) . ' Plan' : 'Gallery Publishing Plan'),
+                        'plan_type' => 'Gallery Publishing',
+                        'item_title' => $gp['name'] ?? 'Art Gallery Listing',
+                        'price' => !empty($gp['publishing_amount']) ? $gp['publishing_amount'] : 'Free',
+                        'billing_cycle' => !empty($gp['publishing_plan']) ? ucfirst($gp['publishing_plan']) : 'Listing',
+                        'status' => strtolower($gp['payment_status'] ?? '') === 'paid' ? 'Active' : (ucfirst($gp['payment_status'] ?? 'Active')),
+                        'payment_reference' => $gp['payment_reference'] ?? null,
+                        'payment_method' => 'Online',
+                        'features' => ['Verified Gallery Badge', 'Exhibition Space Listing', 'Direct Collector Inquiries'],
+                        'start_date' => $gp['created_at'],
+                        'expires_at' => null,
+                        'created_at' => $gp['created_at'],
+                    ];
+                }
+            } catch (\Throwable $t) {}
+
             ApiResponse::success([
                 'id' => (int)$user['id'],
                 'full_name' => $user['full_name'],
                 'email' => $user['email'],
                 'role' => $user['role'] ?? 'user',
                 'created_at' => $user['created_at'],
+                'chat_plan' => $chatPlan,
+                'chat_max_allowance' => $maxAllowance,
+                'purchased_plans' => $plans,
                 'artist_profile' => $artist ?: null
             ], 'Profile fetched');
             return;
@@ -1059,8 +1256,8 @@ class AuthController {
         // Security verification:
         // Must either:
         // 1. Be authenticated as admin
-        // 2. Be authenticated as the account owner
-        // 3. Provide the correct current_password
+        // 2. Be authenticated as account owner (and provide correct current password if provided)
+        // 3. Unauthenticated requests must provide correct current password verified via bcrypt
         $isAuthorized = false;
         if ($currentUser && !empty($currentUser['is_admin'])) {
             $isAuthorized = true;
@@ -1075,7 +1272,7 @@ class AuthController {
                 $isAuthorized = true;
             }
         } elseif (!empty($currentPassword)) {
-            $isAuthorized = password_verify($currentPassword, $user['password_hash']) || ($currentPassword === $user['password_hash']);
+            $isAuthorized = password_verify($currentPassword, $user['password_hash']);
             if (!$isAuthorized) {
                 ApiResponse::error('Current password is incorrect.', 401);
                 return;
@@ -1129,6 +1326,309 @@ class AuthController {
         } else {
             ApiResponse::error('Account not found', 404);
         }
+    }
+
+    /**
+     * Admin: List all users with comprehensive metadata, role, chat plans, and counts
+     */
+    public function listUsers(array $query = []): void {
+        AuthMiddleware::requireAdmin();
+
+        $page = max(1, (int)($query['page'] ?? 1));
+        $limit = isset($query['limit']) ? min(200, max(1, (int)$query['limit'])) : 100;
+        $offset = ($page - 1) * $limit;
+        $search = InputSanitizer::cleanString($query['q'] ?? $query['search'] ?? '');
+        $roleFilter = InputSanitizer::cleanString($query['role'] ?? '');
+
+        $sql = "SELECT u.id, u.full_name, u.email, u.role, u.chat_plan, u.chat_max_allowance, u.created_at,
+                       a.id as artist_id, a.name as artist_name, a.category as artist_category, a.avatar_url,
+                       (SELECT COUNT(*) FROM bookings b WHERE b.email = u.email COLLATE utf8mb4_unicode_ci) as total_bookings,
+                       (SELECT COUNT(*) FROM favorites f WHERE f.user_email = u.email COLLATE utf8mb4_unicode_ci) as total_favorites,
+                       (SELECT COUNT(*) FROM artworks aw WHERE aw.artist_id = a.id) as total_artworks
+                FROM users u
+                LEFT JOIN artists a ON (a.user_id = u.id OR a.email = u.email COLLATE utf8mb4_unicode_ci)
+                WHERE 1=1";
+        $params = [];
+
+        if (!empty($search)) {
+            $sql .= " AND (u.full_name LIKE ? OR u.email LIKE ? OR u.role LIKE ?)";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
+        }
+
+        if (!empty($roleFilter) && $roleFilter !== 'all') {
+            $sql .= " AND LOWER(u.role) = ?";
+            $params[] = strtolower($roleFilter);
+        }
+
+        $countSql = "SELECT COUNT(*) FROM users u WHERE 1=1";
+        $countParams = [];
+        if (!empty($search)) {
+            $countSql .= " AND (u.full_name LIKE ? OR u.email LIKE ? OR u.role LIKE ?)";
+            $countParams[] = "%$search%";
+            $countParams[] = "%$search%";
+            $countParams[] = "%$search%";
+        }
+        if (!empty($roleFilter) && $roleFilter !== 'all') {
+            $countSql .= " AND LOWER(u.role) = ?";
+            $countParams[] = strtolower($roleFilter);
+        }
+
+        $countStmt = $this->db->prepare($countSql);
+        $countStmt->execute($countParams);
+        $total = (int)$countStmt->fetchColumn();
+
+        $sql .= " ORDER BY u.id DESC LIMIT $limit OFFSET $offset";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $users = $stmt->fetchAll();
+
+        foreach ($users as &$usr) {
+            $usr['is_admin'] = in_array(strtolower($usr['role']), ['admin', 'superadmin']) || str_starts_with(strtolower($usr['email']), 'admin@');
+            $usr['total_bookings'] = (int)($usr['total_bookings'] ?? 0);
+            $usr['total_favorites'] = (int)($usr['total_favorites'] ?? 0);
+            $usr['total_artworks'] = (int)($usr['total_artworks'] ?? 0);
+            $usr['has_artist_profile'] = !empty($usr['artist_id']);
+
+            // Gather all purchased plans and due dates for this user
+            $plans = [];
+
+            // 1. Check user_plans table
+            try {
+                $pStmt = $this->db->prepare('SELECT * FROM user_plans WHERE user_email = ? OR user_id = ? ORDER BY id DESC');
+                $pStmt->execute([$usr['email'], $usr['id']]);
+                $dbPlans = $pStmt->fetchAll();
+                foreach ($dbPlans as $dp) {
+                    $expiresAt = $dp['expires_at'] ?? null;
+                    if (empty($expiresAt) && !empty($dp['start_date'])) {
+                        $expiresAt = date('Y-m-d H:i:s', strtotime($dp['start_date'] . ' + 30 days'));
+                    }
+                    $plans[] = [
+                        'id' => (int)$dp['id'],
+                        'plan_name' => $dp['plan_name'] ?? 'Premium Plan',
+                        'plan_type' => $dp['plan_type'] ?? 'Subscription',
+                        'price' => !empty($dp['price']) ? $dp['price'] : 'Free',
+                        'billing_cycle' => $dp['billing_cycle'] ?? 'Monthly',
+                        'status' => $dp['status'] ?? 'Active',
+                        'payment_reference' => $dp['payment_reference'] ?? null,
+                        'payment_method' => $dp['payment_method'] ?? 'Online Card',
+                        'start_date' => $dp['start_date'] ?? $dp['created_at'],
+                        'due_date' => $expiresAt,
+                        'expires_at' => $expiresAt,
+                        'created_at' => $dp['created_at'],
+                    ];
+                }
+            } catch (\Throwable $t) {}
+
+            // 2. Check events published by this user with paid publishing plan
+            try {
+                $eStmt = $this->db->prepare("SELECT id, title, publishing_plan, publishing_amount, payment_status, payment_reference, created_at FROM events WHERE (user_email = ? OR email = ?) AND publishing_plan IS NOT NULL AND publishing_plan != '' ORDER BY id DESC");
+                $eStmt->execute([$usr['email'], $usr['email']]);
+                $eventPlans = $eStmt->fetchAll();
+                foreach ($eventPlans as $ep) {
+                    $planName = !empty($ep['publishing_plan']) ? ucfirst($ep['publishing_plan']) . ' Plan' : 'Event Publishing Plan';
+                    $durationDays = 30;
+                    $pLower = strtolower($ep['publishing_plan'] ?? '');
+                    if (strpos($pLower, '60') !== false || strpos($pLower, 'gold') !== false || strpos($pLower, 'quarter') !== false) $durationDays = 60;
+                    if (strpos($pLower, '90') !== false || strpos($pLower, 'platinum') !== false || strpos($pLower, 'annual') !== false) $durationDays = 90;
+                    $dueDate = date('Y-m-d', strtotime($ep['created_at'] . " + $durationDays days"));
+
+                    $plans[] = [
+                        'id' => (int)$ep['id'],
+                        'plan_name' => $planName,
+                        'plan_type' => 'Event Publishing',
+                        'item_title' => $ep['title'] ?? 'Art Event',
+                        'price' => !empty($ep['publishing_amount']) ? $ep['publishing_amount'] : 'Free',
+                        'billing_cycle' => ucfirst($ep['publishing_plan'] ?? 'Listing'),
+                        'status' => strtolower($ep['payment_status'] ?? '') === 'paid' ? 'Active' : (ucfirst($ep['payment_status'] ?? 'Active')),
+                        'payment_reference' => $ep['payment_reference'] ?? null,
+                        'payment_method' => 'Online Card',
+                        'start_date' => $ep['created_at'],
+                        'due_date' => $dueDate,
+                        'expires_at' => $dueDate,
+                        'created_at' => $ep['created_at'],
+                    ];
+                }
+            } catch (\Throwable $t) {}
+
+            // 3. Check galleries published by this user with paid publishing plan
+            try {
+                $gStmt = $this->db->prepare("SELECT id, name, category, publishing_plan, publishing_amount, payment_status, payment_reference, created_at FROM galleries WHERE email = ? AND publishing_plan IS NOT NULL AND publishing_plan != '' ORDER BY id DESC");
+                $gStmt->execute([$usr['email']]);
+                $galleryPlans = $gStmt->fetchAll();
+                foreach ($galleryPlans as $gp) {
+                    $planName = !empty($gp['publishing_plan']) ? ucfirst($gp['publishing_plan']) . ' Plan' : 'Gallery Publishing Plan';
+                    $dueDate = date('Y-m-d', strtotime($gp['created_at'] . " + 30 days"));
+                    $plans[] = [
+                        'id' => (int)$gp['id'],
+                        'plan_name' => $planName,
+                        'plan_type' => 'Gallery Publishing',
+                        'item_title' => $gp['name'] ?? 'Art Gallery',
+                        'price' => !empty($gp['publishing_amount']) ? $gp['publishing_amount'] : 'Free',
+                        'billing_cycle' => ucfirst($gp['publishing_plan'] ?? 'Listing'),
+                        'status' => strtolower($gp['payment_status'] ?? '') === 'paid' ? 'Active' : (ucfirst($gp['payment_status'] ?? 'Active')),
+                        'payment_reference' => $gp['payment_reference'] ?? null,
+                        'payment_method' => 'Online Card',
+                        'start_date' => $gp['created_at'],
+                        'due_date' => $dueDate,
+                        'expires_at' => $dueDate,
+                        'created_at' => $gp['created_at'],
+                    ];
+                }
+            } catch (\Throwable $t) {}
+
+            $usr['purchased_plans'] = $plans;
+            $usr['plans_count'] = count($plans);
+
+            if (!empty($plans)) {
+                $primaryPlan = $plans[0];
+                $usr['primary_plan_name'] = $primaryPlan['plan_name'];
+                $usr['primary_plan_price'] = $primaryPlan['price'];
+                $usr['primary_plan_due_date'] = $primaryPlan['due_date'];
+                $usr['primary_plan_status'] = $primaryPlan['status'];
+            } else {
+                $usr['primary_plan_name'] = null;
+                $usr['primary_plan_price'] = null;
+                $usr['primary_plan_due_date'] = null;
+                $usr['primary_plan_status'] = null;
+            }
+        }
+
+        $pagination = [
+            'page' => $page,
+            'limit' => $limit,
+            'total' => $total,
+            'total_pages' => ceil($total / max(1, $limit)),
+            'has_more' => ($offset + count($users)) < $total
+        ];
+
+        ApiResponse::success($users, 'All users retrieved successfully', 200, $pagination);
+    }
+
+    /**
+     * Admin: Update user role (e.g. promote to admin, set to artist/user)
+     */
+    public function updateUserRole(array $input): void {
+        AuthMiddleware::requireAdmin();
+
+        $userId = (int)($input['user_id'] ?? $input['id'] ?? 0);
+        $newRole = strtolower(trim(InputSanitizer::cleanString($input['role'] ?? 'user')));
+        $allowedRoles = ['user', 'artist', 'admin'];
+
+        if ($userId <= 0 || !in_array($newRole, $allowedRoles, true)) {
+            ApiResponse::error('Valid user ID and role (user, artist, admin) required.', 400);
+            return;
+        }
+
+        $stmt = $this->db->prepare("UPDATE users SET role = ? WHERE id = ?");
+        $stmt->execute([$newRole, $userId]);
+
+        ApiResponse::success(['id' => $userId, 'role' => $newRole], 'User role updated successfully');
+    }
+
+    /**
+     * Admin: Assign or update a user's plan and due date
+     */
+    public function assignUserPlan(array $input): void {
+        AuthMiddleware::requireAdmin();
+
+        $userId = (int)($input['user_id'] ?? $input['id'] ?? 0);
+        $email = InputSanitizer::cleanEmail($input['email'] ?? $input['user_email'] ?? '');
+        $planName = InputSanitizer::cleanString($input['plan_name'] ?? '');
+        $planType = InputSanitizer::cleanString($input['plan_type'] ?? 'Subscription');
+        $price = InputSanitizer::cleanString($input['price'] ?? 'Free');
+        $dueDate = InputSanitizer::cleanString($input['due_date'] ?? $input['expires_at'] ?? '');
+        $status = InputSanitizer::cleanString($input['status'] ?? 'Active');
+
+        if ($userId <= 0 && empty($email)) {
+            ApiResponse::error('User ID or email is required.', 400);
+            return;
+        }
+
+        if (empty($email)) {
+            $uStmt = $this->db->prepare('SELECT email FROM users WHERE id = ?');
+            $uStmt->execute([$userId]);
+            $email = (string)$uStmt->fetchColumn();
+        }
+
+        if (empty($planName)) {
+            $planName = 'Basic (Free)';
+        }
+
+        // If expires_at / due_date not provided, default to +30 days
+        if (empty($dueDate)) {
+            $dueDate = date('Y-m-d H:i:s', strtotime('+30 days'));
+        } elseif (strlen($dueDate) === 10) {
+            $dueDate .= ' 23:59:59';
+        }
+
+        // 1. Insert into user_plans
+        $ins = $this->db->prepare("
+            INSERT INTO user_plans (user_id, user_email, plan_name, plan_type, price, status, expires_at, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+        ");
+        $ins->execute([$userId > 0 ? $userId : null, $email, $planName, $planType, $price, $status, $dueDate]);
+
+        // 2. Also update chat_plan on users table for unified display
+        if (!empty($email)) {
+            $this->db->prepare("UPDATE users SET chat_plan = ? WHERE email = ? OR id = ?")
+                     ->execute([$planName, $email, $userId]);
+        }
+
+        ApiResponse::success([
+            'user_id' => $userId,
+            'user_email' => $email,
+            'plan_name' => $planName,
+            'due_date' => $dueDate,
+            'status' => $status
+        ], 'Plan assigned successfully to user');
+    }
+
+    /**
+     * Admin: Delete user and their associated data
+     */
+    public function adminDeleteUser(array $input): void {
+        AuthMiddleware::requireAdmin();
+
+        $userId = (int)($input['user_id'] ?? $input['id'] ?? 0);
+        $email = InputSanitizer::cleanEmail($input['email'] ?? '');
+
+        if ($userId <= 0 && empty($email)) {
+            ApiResponse::error('Valid user ID or email required for deletion.', 400);
+            return;
+        }
+
+        if ($userId > 0) {
+            $stmt = $this->db->prepare('SELECT id, email, full_name FROM users WHERE id = ?');
+            $stmt->execute([$userId]);
+        } else {
+            $stmt = $this->db->prepare('SELECT id, email, full_name FROM users WHERE email = ?');
+            $stmt->execute([$email]);
+        }
+        $user = $stmt->fetch();
+
+        if (!$user) {
+            ApiResponse::error('User not found.', 404);
+            return;
+        }
+
+        $targetId = (int)$user['id'];
+        $targetEmail = $user['email'];
+        $targetName = $user['full_name'];
+
+        // Revoke tokens
+        AuthMiddleware::revokeAllUserTokens($targetId);
+
+        // Delete user & linked data
+        $this->db->prepare('DELETE FROM user_plans WHERE user_id = ? OR user_email = ?')->execute([$targetId, $targetEmail]);
+        $this->db->prepare('DELETE FROM artists WHERE user_id = ? OR email = ? OR name = ?')->execute([$targetId, $targetEmail, $targetName]);
+        $this->db->prepare('DELETE FROM bookings WHERE email = ?')->execute([$targetEmail]);
+        $this->db->prepare('DELETE FROM favorites WHERE user_email = ?')->execute([$targetEmail]);
+        $this->db->prepare('DELETE FROM follows WHERE user_email = ?')->execute([$targetEmail]);
+        $this->db->prepare('DELETE FROM users WHERE id = ?')->execute([$targetId]);
+
+        ApiResponse::success(['id' => $targetId, 'email' => $targetEmail], 'User and associated data permanently removed');
     }
 }
 
@@ -1618,7 +2118,7 @@ class ArtistController {
         $id = (int)($input['id'] ?? $input['artist_id'] ?? 0);
         if ($id <= 0) { ApiResponse::error('Artist ID is required.'); return; }
 
-        $stmt = $this->db->prepare('SELECT id, user_id, email FROM artists WHERE id = ?');
+        $stmt = $this->db->prepare('SELECT id, user_id, email, avatar_url, banner_url FROM artists WHERE id = ?');
         $stmt->execute([$id]);
         $artist = $stmt->fetch();
         if (!$artist) { ApiResponse::error('Artist not found', 404); return; }
@@ -1626,6 +2126,14 @@ class ArtistController {
         if (!$currentUser['is_admin'] && $artist['user_id'] != $currentUser['id'] && strtolower($artist['email'] ?? '') !== strtolower($currentUser['email'])) {
             ApiResponse::error('Forbidden. You do not have permission to update this artist profile.', 403);
             return;
+        }
+
+        // Clean up old avatar or banner if changed
+        if (isset($input['avatar_url']) && !empty($artist['avatar_url']) && $input['avatar_url'] !== $artist['avatar_url']) {
+            UploadController::deletePhysicalFile($artist['avatar_url']);
+        }
+        if (isset($input['banner_url']) && !empty($artist['banner_url']) && $input['banner_url'] !== $artist['banner_url']) {
+            UploadController::deletePhysicalFile($artist['banner_url']);
         }
 
         $fields = [];
@@ -1650,7 +2158,7 @@ class ArtistController {
         $id = (int)($input['id'] ?? $input['artist_id'] ?? $_GET['id'] ?? 0);
         if ($id <= 0) { ApiResponse::error('Artist ID is required.'); return; }
 
-        $stmt = $this->db->prepare('SELECT id, user_id, email FROM artists WHERE id = ?');
+        $stmt = $this->db->prepare('SELECT id, user_id, email, avatar_url, banner_url FROM artists WHERE id = ?');
         $stmt->execute([$id]);
         $artist = $stmt->fetch();
         if (!$artist) { ApiResponse::error('Artist not found', 404); return; }
@@ -1660,9 +2168,26 @@ class ArtistController {
             return;
         }
 
+        // Delete physical avatar & banner from storage
+        if (!empty($artist['avatar_url'])) {
+            UploadController::deletePhysicalFile($artist['avatar_url']);
+        }
+        if (!empty($artist['banner_url'])) {
+            UploadController::deletePhysicalFile($artist['banner_url']);
+        }
+
+        // Clean up artworks' images for this artist
+        $artworks = $this->db->prepare('SELECT image_url FROM artworks WHERE artist_id = ?');
+        $artworks->execute([$id]);
+        while ($aw = $artworks->fetch()) {
+            if (!empty($aw['image_url'])) {
+                UploadController::deletePhysicalFile($aw['image_url']);
+            }
+        }
+
         // Soft-delete: move to recycle bin
         $this->db->prepare('UPDATE artists SET deleted_at = NOW() WHERE id = ?')->execute([$id]);
-        ApiResponse::success(['id' => $id], 'Artist moved to recycle bin');
+        ApiResponse::success(['id' => $id], 'Artist moved to recycle bin and associated images removed from storage');
     }
 }
 
@@ -1882,6 +2407,15 @@ class EventController {
             return;
         }
 
+        if (isset($input['image_url'])) {
+            $evStmt = $this->db->prepare('SELECT image_url FROM events WHERE id = ?');
+            $evStmt->execute([$id]);
+            $currentImg = $evStmt->fetchColumn();
+            if ($currentImg && $currentImg !== $input['image_url']) {
+                UploadController::deletePhysicalFile($currentImg);
+            }
+        }
+
         $params[] = $id;
         $sql = 'UPDATE events SET ' . implode(', ', $fields) . ' WHERE id = ?';
         $stmt = $this->db->prepare($sql);
@@ -1895,7 +2429,7 @@ class EventController {
         $id = (int)($input['id'] ?? $input['event_id'] ?? $_GET['id'] ?? 0);
         if ($id <= 0) { ApiResponse::error('Event ID is required.'); return; }
 
-        $stmt = $this->db->prepare('SELECT id, contact_email FROM events WHERE id = ?');
+        $stmt = $this->db->prepare('SELECT id, contact_email, image_url, galleries_json FROM events WHERE id = ?');
         $stmt->execute([$id]);
         $ev = $stmt->fetch();
         if (!$ev) {
@@ -1908,9 +2442,17 @@ class EventController {
             return;
         }
 
+        // Delete physical files from disk storage
+        if (!empty($ev['image_url'])) {
+            UploadController::deletePhysicalFile($ev['image_url']);
+        }
+        if (!empty($ev['galleries_json'])) {
+            UploadController::deleteMultiplePhysicalFiles($ev['galleries_json']);
+        }
+
         // Soft-delete: move to recycle bin
         $this->db->prepare('UPDATE events SET deleted_at = NOW() WHERE id = ?')->execute([$id]);
-        ApiResponse::success(['id' => $id], 'Event moved to recycle bin');
+        ApiResponse::success(['id' => $id], 'Event moved to recycle bin and image(s) deleted from storage');
     }
 }
 
@@ -2387,7 +2929,7 @@ class GalleryController {
         $id = (int)($input['id'] ?? $input['gallery_id'] ?? 0);
         if ($id <= 0) { ApiResponse::error('Gallery ID is required.'); return; }
 
-        $stmt = $this->db->prepare('SELECT id, email FROM galleries WHERE id = ?');
+        $stmt = $this->db->prepare('SELECT id, email, image_url, cover_url FROM galleries WHERE id = ?');
         $stmt->execute([$id]);
         $gal = $stmt->fetch();
         if (!$gal) { ApiResponse::error('Gallery not found', 404); return; }
@@ -2396,6 +2938,15 @@ class GalleryController {
             ApiResponse::error('Forbidden. You do not have permission to update this gallery.', 403);
             return;
         }
+
+        // If new image_url or cover_url is provided and differs from old, clean up old file from storage
+        if (isset($input['image_url']) && !empty($gal['image_url']) && $input['image_url'] !== $gal['image_url']) {
+            UploadController::deletePhysicalFile($gal['image_url']);
+        }
+        if (isset($input['cover_url']) && !empty($gal['cover_url']) && $input['cover_url'] !== $gal['cover_url']) {
+            UploadController::deletePhysicalFile($gal['cover_url']);
+        }
+
         $fields = [];
         $params = [];
         $allowed = ['name','title','description','category','location','image_url','cover_url','status','is_public','is_approved','about','website','timing','currently_open','display_order','event_name','event_id'];
@@ -2413,7 +2964,7 @@ class GalleryController {
         $id = (int)($input['id'] ?? $input['gallery_id'] ?? $_GET['id'] ?? 0);
         if ($id <= 0) { ApiResponse::error('Gallery ID is required.'); return; }
 
-        $stmt = $this->db->prepare('SELECT id, email FROM galleries WHERE id = ?');
+        $stmt = $this->db->prepare('SELECT id, email, image_url, cover_url, images_json FROM galleries WHERE id = ?');
         $stmt->execute([$id]);
         $gal = $stmt->fetch();
         if (!$gal) { ApiResponse::error('Gallery not found', 404); return; }
@@ -2423,9 +2974,20 @@ class GalleryController {
             return;
         }
 
+        // Delete physical files from disk storage
+        if (!empty($gal['image_url'])) {
+            UploadController::deletePhysicalFile($gal['image_url']);
+        }
+        if (!empty($gal['cover_url'])) {
+            UploadController::deletePhysicalFile($gal['cover_url']);
+        }
+        if (!empty($gal['images_json'])) {
+            UploadController::deleteMultiplePhysicalFiles($gal['images_json']);
+        }
+
         // Soft-delete: move to recycle bin
         $this->db->prepare('UPDATE galleries SET deleted_at = NOW() WHERE id = ?')->execute([$id]);
-        ApiResponse::success(['id' => $id], 'Gallery moved to recycle bin');
+        ApiResponse::success(['id' => $id], 'Gallery moved to recycle bin and image(s) deleted from storage');
     }
 }
 
@@ -2571,6 +3133,24 @@ class GovernmentController {
             ApiResponse::error('Entity ID or name is required for deletion', 422);
         }
         try {
+            // Delete physical image file if entity has image_url or logo_url
+            if (!empty($id)) {
+                $stmtImg = $this->db->prepare("SELECT * FROM government_entities WHERE id = ? LIMIT 1");
+                $stmtImg->execute([$id]);
+            } else {
+                $stmtImg = $this->db->prepare("SELECT * FROM government_entities WHERE name = ? LIMIT 1");
+                $stmtImg->execute([$name]);
+            }
+            $ent = $stmtImg->fetch();
+            if ($ent) {
+                if (!empty($ent['image_url'])) {
+                    UploadController::deletePhysicalFile($ent['image_url']);
+                }
+                if (!empty($ent['logo_url'])) {
+                    UploadController::deletePhysicalFile($ent['logo_url']);
+                }
+            }
+
             // Soft-delete: move to recycle bin
             if (!empty($id)) {
                 $stmt = $this->db->prepare("UPDATE government_entities SET deleted_at = NOW() WHERE id = ?");
@@ -2579,7 +3159,7 @@ class GovernmentController {
                 $stmt = $this->db->prepare("UPDATE government_entities SET deleted_at = NOW() WHERE name = ?");
                 $stmt->execute([$name]);
             }
-            ApiResponse::success(['id' => $id, 'name' => $name], 'Government entity moved to recycle bin');
+            ApiResponse::success(['id' => $id, 'name' => $name], 'Government entity moved to recycle bin and image(s) deleted from storage');
         } catch (\Throwable $e) {
             ApiResponse::error('Failed to move government entity to recycle bin: ' . $e->getMessage(), 500);
         }
@@ -2702,7 +3282,7 @@ class ArtworkController {
         $id = (int)($input['id'] ?? $input['artwork_id'] ?? 0);
         if ($id <= 0) { ApiResponse::error('Artwork ID is required.'); return; }
 
-        $artStmt = $this->db->prepare('SELECT a.id, a.artist_id, ar.user_id, ar.email FROM artworks a LEFT JOIN artists ar ON a.artist_id = ar.id WHERE a.id = ?');
+        $artStmt = $this->db->prepare('SELECT a.id, a.artist_id, a.image_url, ar.user_id, ar.email FROM artworks a LEFT JOIN artists ar ON a.artist_id = ar.id WHERE a.id = ?');
         $artStmt->execute([$id]);
         $art = $artStmt->fetch();
         if (!$art) { ApiResponse::error('Artwork not found', 404); return; }
@@ -2711,6 +3291,12 @@ class ArtworkController {
             ApiResponse::error('Forbidden. You do not have permission to update this artwork.', 403);
             return;
         }
+
+        // Clean up old image if changed
+        if (isset($input['image_url']) && !empty($art['image_url']) && $input['image_url'] !== $art['image_url']) {
+            UploadController::deletePhysicalFile($art['image_url']);
+        }
+
         $fields = [];
         $params = [];
         $allowed = ['title','year','medium','dimensions','description','price','image_url','is_featured'];
@@ -2728,7 +3314,7 @@ class ArtworkController {
         $id = (int)($input['id'] ?? $input['artwork_id'] ?? $_GET['id'] ?? 0);
         if ($id <= 0) { ApiResponse::error('Artwork ID is required.'); return; }
 
-        $artStmt = $this->db->prepare('SELECT a.id, a.artist_id, ar.user_id, ar.email FROM artworks a LEFT JOIN artists ar ON a.artist_id = ar.id WHERE a.id = ?');
+        $artStmt = $this->db->prepare('SELECT a.id, a.artist_id, a.image_url, ar.user_id, ar.email FROM artworks a LEFT JOIN artists ar ON a.artist_id = ar.id WHERE a.id = ?');
         $artStmt->execute([$id]);
         $art = $artStmt->fetch();
         if (!$art) { ApiResponse::error('Artwork not found', 404); return; }
@@ -2738,11 +3324,16 @@ class ArtworkController {
             return;
         }
 
+        // Delete physical file from storage
+        if (!empty($art['image_url'])) {
+            UploadController::deletePhysicalFile($art['image_url']);
+        }
+
         $this->db->prepare('DELETE FROM artworks WHERE id = ?')->execute([$id]);
         if (!empty($art['artist_id'])) {
             $this->db->prepare('UPDATE artists SET works_count = (SELECT COUNT(*) FROM artworks WHERE artist_id = ?) WHERE id = ?')->execute([(int)$art['artist_id'], (int)$art['artist_id']]);
         }
-        ApiResponse::success(['id' => $id], 'Artwork deleted successfully');
+        ApiResponse::success(['id' => $id], 'Artwork deleted successfully and image removed from storage');
     }
 }
 
@@ -3012,6 +3603,110 @@ class UploadController {
     private const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
     private const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     private const MAX_FILE_SIZE = 10485760; // 10 MB
+
+    /**
+     * Safely delete an uploaded file from disk storage given its URL or filename.
+     */
+    public static function deletePhysicalFile(?string $fileUrl): bool {
+        if (empty($fileUrl)) return false;
+        $trimmed = trim((string)$fileUrl);
+        if (empty($trimmed)) return false;
+
+        $filename = '';
+        if (preg_match('/(?:resource=uploads|uploads)[^?]*[?&]file=([^&#]+)/i', $trimmed, $m)) {
+            $filename = urldecode($m[1]);
+        } elseif (preg_match('/uploads\/([^\/\?#]+)/i', $trimmed, $m)) {
+            $filename = urldecode($m[1]);
+        } elseif (preg_match('/^art_\d+_[a-f0-9]+\.(jpg|jpeg|png|webp|gif)$/i', $trimmed)) {
+            $filename = $trimmed;
+        }
+
+        if (empty($filename)) return false;
+
+        $cleanName = basename($filename);
+        if (empty($cleanName) || str_starts_with($cleanName, '.') || str_contains($cleanName, '..')) {
+            return false;
+        }
+
+        $rawExt = strtolower(pathinfo($cleanName, PATHINFO_EXTENSION));
+        if (!in_array($rawExt, self::ALLOWED_EXTS, true)) {
+            return false;
+        }
+
+        $possibleDirs = array_unique(array_filter([
+            __DIR__ . '/uploads',
+            __DIR__ . '/../uploads',
+            __DIR__ . '/../../uploads',
+            dirname(__DIR__) . '/uploads',
+            dirname(__DIR__, 2) . '/uploads',
+            __DIR__ . '/api/uploads',
+            __DIR__ . '/api/v1/uploads',
+            ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/uploads',
+            ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/artist_dubai/uploads',
+            ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/api/uploads',
+            'D:/laragon/www/artist_dubai/uploads',
+            'D:/laragon/www/artist_dubai/api/uploads',
+            'D:/laragon/www/artist_dubai/api/v1/uploads',
+        ]));
+
+        $deleted = false;
+        foreach ($possibleDirs as $dir) {
+            if (!is_dir($dir)) continue;
+            $target = $dir . DIRECTORY_SEPARATOR . $cleanName;
+            if (file_exists($target) && is_file($target)) {
+                $realDir = realpath($dir);
+                $realTarget = realpath($target);
+                if ($realDir && $realTarget && str_starts_with($realTarget, $realDir)) {
+                    if (@unlink($realTarget)) {
+                        $deleted = true;
+                    }
+                }
+            }
+        }
+        return $deleted;
+    }
+
+    /**
+     * Delete multiple physical files from storage.
+     * Accepts an array of URLs/strings, or a JSON string of URLs.
+     */
+    public static function deleteMultiplePhysicalFiles(mixed $files): int {
+        if (empty($files)) return 0;
+        if (is_string($files)) {
+            $decoded = json_decode($files, true);
+            if (is_array($decoded)) {
+                $files = $decoded;
+            } else {
+                $files = [$files];
+            }
+        }
+        if (!is_array($files)) return 0;
+
+        $count = 0;
+        foreach ($files as $f) {
+            if (is_string($f) && self::deletePhysicalFile($f)) {
+                $count++;
+            } elseif (is_array($f)) {
+                $url = $f['url'] ?? $f['image_url'] ?? $f['image'] ?? null;
+                if (is_string($url) && self::deletePhysicalFile($url)) {
+                    $count++;
+                }
+            }
+        }
+        return $count;
+    }
+
+    public function handleDelete(array|string $input): void {
+        AuthMiddleware::requireAuth();
+        $fileUrl = is_array($input) ? ($input['file'] ?? $input['url'] ?? $input['filename'] ?? '') : (string)$input;
+        if (empty($fileUrl)) {
+            ApiResponse::error('File URL or filename is required for deletion', 400);
+            return;
+        }
+
+        $deleted = self::deletePhysicalFile($fileUrl);
+        ApiResponse::success(['deleted' => $deleted, 'file' => $fileUrl], $deleted ? 'File successfully deleted from storage' : 'File not found or already deleted');
+    }
 
     public function serveFile(string $filename): void {
         $cleanName = basename($filename);
@@ -3553,6 +4248,256 @@ class ListingPlansController {
 }
 
 // -----------------------------------------------------------------------------
+// 4i2b. User Purchased Plans Controller
+// -----------------------------------------------------------------------------
+class UserPlansController {
+    private PDO $db;
+
+    public function __construct() {
+        $this->db = DatabaseManager::getInstance()->getConnection();
+        try {
+            $this->db->exec("ALTER TABLE user_plans ADD COLUMN payment_proof_url VARCHAR(500) NULL");
+        } catch (\Throwable $t) {}
+    }
+
+    public function getPlans(array $input = []): void {
+        try {
+            $currentUser = AuthMiddleware::getCurrentUser();
+            $email = InputSanitizer::cleanEmail($input['email'] ?? $input['user_email'] ?? $_GET['email'] ?? $_GET['user_email'] ?? '');
+            if (empty($email) && $currentUser) {
+                $email = $currentUser['email'];
+            }
+
+            if (empty($email)) {
+                ApiResponse::error('User email is required', 400);
+                return;
+            }
+
+            // Fetch user base membership
+            $uStmt = $this->db->prepare("SELECT id, role, chat_plan, chat_max_allowance, created_at FROM users WHERE email = ? LIMIT 1");
+            $uStmt->execute([$email]);
+            $userRow = $uStmt->fetch();
+
+            $chatPlan = !empty($userRow['chat_plan']) ? $userRow['chat_plan'] : 'Basic (Free)';
+            $maxAllowance = !empty($userRow['chat_max_allowance']) ? (int)$userRow['chat_max_allowance'] : 10;
+            $memberSince = !empty($userRow['created_at']) ? $userRow['created_at'] : date('Y-m-d H:i:s');
+
+            $plans = [];
+            $pStmt = $this->db->prepare('SELECT * FROM user_plans WHERE user_email = ? ORDER BY id DESC');
+            $pStmt->execute([$email]);
+            $dbPlans = $pStmt->fetchAll();
+            foreach ($dbPlans as $dp) {
+                $features = [];
+                if (!empty($dp['features_json'])) {
+                    $decoded = json_decode($dp['features_json'], true);
+                    if (is_array($decoded)) $features = $decoded;
+                }
+                $exp = $dp['expires_at'] ?? null;
+                $isExpired = false;
+                $daysLeft = null;
+                if (!empty($exp)) {
+                    $diffSec = strtotime($exp) - time();
+                    $daysLeft = max(0, (int)ceil($diffSec / 86400));
+                    $isExpired = ($diffSec < 0);
+                }
+                $plans[] = [
+                    'id' => (int)$dp['id'],
+                    'plan_name' => $dp['plan_name'],
+                    'plan_type' => $dp['plan_type'] ?? 'Subscription',
+                    'item_title' => $dp['item_title'] ?? $dp['plan_name'],
+                    'price' => $dp['price'] ?? 'Free',
+                    'billing_cycle' => $dp['billing_cycle'] ?? 'Monthly',
+                    'status' => $isExpired ? 'Expired' : ($dp['status'] ?? 'Active'),
+                    'payment_reference' => $dp['payment_reference'] ?? null,
+                    'payment_method' => $dp['payment_method'] ?? 'Online',
+                    'payment_proof_url' => $dp['payment_proof_url'] ?? null,
+                    'features' => $features,
+                    'start_date' => $dp['start_date'] ?? $dp['created_at'],
+                    'expires_at' => $exp,
+                    'days_left' => $daysLeft,
+                    'is_expired' => $isExpired,
+                    'created_at' => $dp['created_at'],
+                ];
+            }
+
+            // Also check events
+            try {
+                $eStmt = $this->db->prepare("SELECT id, title, category, publishing_plan, publishing_amount, payment_status, payment_reference, created_at FROM events WHERE contact_email = ? AND publishing_plan IS NOT NULL AND publishing_plan != '' ORDER BY id DESC");
+                $eStmt->execute([$email]);
+                $eventPlans = $eStmt->fetchAll();
+                foreach ($eventPlans as $ep) {
+                    $plans[] = [
+                        'id' => (int)$ep['id'],
+                        'plan_name' => (!empty($ep['publishing_plan']) ? ucfirst($ep['publishing_plan']) . ' Plan' : 'Event Publishing Plan'),
+                        'plan_type' => 'Event Publishing',
+                        'item_title' => $ep['title'] ?? 'Art Event Listing',
+                        'price' => !empty($ep['publishing_amount']) ? $ep['publishing_amount'] : 'Free',
+                        'billing_cycle' => !empty($ep['publishing_plan']) ? ucfirst($ep['publishing_plan']) : 'Listing',
+                        'status' => strtolower($ep['payment_status'] ?? '') === 'paid' ? 'Active' : (ucfirst($ep['payment_status'] ?? 'Active')),
+                        'payment_reference' => $ep['payment_reference'] ?? null,
+                        'payment_method' => 'Online',
+                        'features' => ['Featured Event Listing', 'Calendar & Push Visibility', 'RSVP & Ticketing Access'],
+                        'start_date' => $ep['created_at'],
+                        'expires_at' => null,
+                        'days_left' => null,
+                        'is_expired' => false,
+                        'created_at' => $ep['created_at'],
+                    ];
+                }
+            } catch (\Throwable $t) {}
+
+            // Also check galleries
+            try {
+                $gStmt = $this->db->prepare("SELECT id, name, category, publishing_plan, publishing_amount, payment_status, payment_reference, created_at FROM galleries WHERE email = ? AND publishing_plan IS NOT NULL AND publishing_plan != '' ORDER BY id DESC");
+                $gStmt->execute([$email]);
+                $galleryPlans = $gStmt->fetchAll();
+                foreach ($galleryPlans as $gp) {
+                    $plans[] = [
+                        'id' => (int)$gp['id'],
+                        'plan_name' => (!empty($gp['publishing_plan']) ? ucfirst($gp['publishing_plan']) . ' Plan' : 'Gallery Publishing Plan'),
+                        'plan_type' => 'Gallery Publishing',
+                        'item_title' => $gp['name'] ?? 'Art Gallery Listing',
+                        'price' => !empty($gp['publishing_amount']) ? $gp['publishing_amount'] : 'Free',
+                        'billing_cycle' => !empty($gp['publishing_plan']) ? ucfirst($gp['publishing_plan']) : 'Listing',
+                        'status' => strtolower($gp['payment_status'] ?? '') === 'paid' ? 'Active' : (ucfirst($gp['payment_status'] ?? 'Active')),
+                        'payment_reference' => $gp['payment_reference'] ?? null,
+                        'payment_method' => 'Online',
+                        'features' => ['Verified Gallery Badge', 'Exhibition Space Listing', 'Direct Collector Inquiries'],
+                        'start_date' => $gp['created_at'],
+                        'expires_at' => null,
+                        'days_left' => null,
+                        'is_expired' => false,
+                        'created_at' => $gp['created_at'],
+                    ];
+                }
+            } catch (\Throwable $t) {}
+
+            ApiResponse::success([
+                'email' => $email,
+                'chat_plan' => $chatPlan,
+                'chat_max_allowance' => $maxAllowance,
+                'plans' => $plans,
+            ], 'User plans retrieved successfully');
+        } catch (\Throwable $t) {
+            ApiResponse::error('Failed to get user plans: ' . $t->getMessage(), 500);
+        }
+    }
+
+    public function recordPurchase(array $input): void {
+        try {
+            $currentUser = AuthMiddleware::getCurrentUser();
+            $email = InputSanitizer::cleanEmail($input['email'] ?? $input['user_email'] ?? ($currentUser['email'] ?? ''));
+            $planName = trim(InputSanitizer::cleanString($input['plan_name'] ?? 'Custom Plan'));
+            $planType = trim(InputSanitizer::cleanString($input['plan_type'] ?? 'Subscription'));
+            $itemTitle = trim(InputSanitizer::cleanString($input['item_title'] ?? $planName));
+            $price = trim(InputSanitizer::cleanString($input['price'] ?? $input['plan_amount'] ?? 'AED 0'));
+            $billingCycle = trim(InputSanitizer::cleanString($input['billing_cycle'] ?? $input['plan_period'] ?? 'Monthly'));
+            $paymentRef = trim(InputSanitizer::cleanString($input['payment_reference'] ?? $input['transaction_id'] ?? ''));
+            $paymentMethod = trim(InputSanitizer::cleanString($input['payment_method'] ?? 'Online'));
+            $paymentProofUrl = trim(InputSanitizer::cleanUrl($input['payment_proof_url'] ?? $input['receipt_url'] ?? ''));
+            $features = isset($input['features']) && is_array($input['features']) ? json_encode($input['features']) : null;
+
+            if (empty($email)) {
+                ApiResponse::error('user_email is required', 400);
+                return;
+            }
+
+            // Calculate duration and expiration
+            $durationDays = 30;
+            $cycleCheck = strtolower($billingCycle . ' ' . $planName . ' ' . ($input['badge'] ?? ''));
+            if (strpos($cycleCheck, 'year') !== false || strpos($cycleCheck, 'annual') !== false || strpos($cycleCheck, '365') !== false) {
+                $durationDays = 365;
+            } elseif (strpos($cycleCheck, 'six') !== false || strpos($cycleCheck, '6 month') !== false || strpos($cycleCheck, '180') !== false) {
+                $durationDays = 180;
+            } elseif (strpos($cycleCheck, 'three') !== false || strpos($cycleCheck, 'quarter') !== false || strpos($cycleCheck, '90') !== false) {
+                $durationDays = 90;
+            } elseif (isset($input['duration_days']) && (int)$input['duration_days'] > 0) {
+                $durationDays = (int)$input['duration_days'];
+            }
+            $expiresAt = date('Y-m-d H:i:s', strtotime("+$durationDays days"));
+
+            // Look up user
+            $uStmt = $this->db->prepare("SELECT id, role, chat_plan FROM users WHERE email = ? LIMIT 1");
+            $uStmt->execute([$email]);
+            $userRow = $uStmt->fetch();
+            $userId = $userRow ? (int)$userRow['id'] : null;
+
+            $stmt = $this->db->prepare("
+                INSERT INTO user_plans 
+                (user_id, user_email, plan_name, plan_type, item_title, price, billing_cycle, status, payment_reference, payment_method, payment_proof_url, features_json, start_date, expires_at, created_at) 
+                VALUES (?, ?, ?, ?, ?, ?, 'Active', ?, ?, ?, ?, NOW(), ?, NOW())
+            ");
+            $stmt->execute([
+                $userId,
+                $email,
+                $planName,
+                $planType,
+                $itemTitle,
+                $price,
+                $billingCycle,
+                $paymentRef,
+                $paymentMethod,
+                $paymentProofUrl ?: null,
+                $features,
+                $expiresAt
+            ]);
+            $newId = (int)$this->db->lastInsertId();
+
+            // Automatically upgrade user chat_plan and allowance, and promote role if artist plan
+            if ($userRow) {
+                $newChatPlan = $planName;
+                $maxAllowance = 25;
+                if (stripos($planName, 'VIP') !== false || stripos($planName, 'Unlimited') !== false) {
+                    $maxAllowance = 9999;
+                } elseif (stripos($planName, 'Pro') !== false || stripos($planName, 'Elite') !== false) {
+                    $maxAllowance = 100;
+                }
+
+                $newRole = $userRow['role'] ?? 'user';
+                if ($newRole === 'user' && (stripos($planName, 'Artist') !== false || stripos($planType, 'artist') !== false)) {
+                    $newRole = 'artist';
+                }
+
+                $this->db->prepare("UPDATE users SET chat_plan = ?, chat_max_allowance = ?, role = ? WHERE email = ?")
+                         ->execute([$newChatPlan, $maxAllowance, $newRole, $email]);
+            }
+
+            ApiResponse::success([
+                'id' => $newId,
+                'user_email' => $email,
+                'plan_name' => $planName,
+                'item_title' => $itemTitle,
+                'price' => $price,
+                'billing_cycle' => $billingCycle,
+                'status' => 'Active',
+                'expires_at' => $expiresAt,
+                'duration_days' => $durationDays,
+                'features' => isset($input['features']) && is_array($input['features']) ? $input['features'] : [],
+            ], 'Plan purchase recorded successfully');
+        } catch (\Throwable $t) {
+            ApiResponse::error('Failed to record plan purchase: ' . $t->getMessage(), 500);
+        }
+    }
+
+    public function cancelPlan(array $input): void {
+        try {
+            $currentUser = AuthMiddleware::getCurrentUser();
+            $planId = (int)($input['plan_id'] ?? $input['id'] ?? 0);
+            $email = InputSanitizer::cleanEmail($input['email'] ?? $input['user_email'] ?? ($currentUser['email'] ?? ''));
+            if ($planId <= 0 || empty($email)) {
+                ApiResponse::error('Valid plan ID and email required', 400);
+                return;
+            }
+            $stmt = $this->db->prepare("UPDATE user_plans SET status = 'Cancelled' WHERE id = ? AND (user_email = ? OR ? = 1)");
+            $stmt->execute([$planId, $email, !empty($currentUser['is_admin']) ? 1 : 0]);
+            ApiResponse::success(['id' => $planId, 'status' => 'Cancelled'], 'Plan cancelled successfully');
+        } catch (\Throwable $t) {
+            ApiResponse::error('Failed to cancel plan: ' . $t->getMessage(), 500);
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
 // 4i3. Payment Settings Controller
 // -----------------------------------------------------------------------------
 class PaymentSettingsController {
@@ -3834,6 +4779,18 @@ class ArtistMessagesController {
             $stmt = $this->db->prepare("UPDATE users SET chat_plan = ?, chat_max_allowance = ? WHERE email = ?");
             $stmt->execute([$planName, $maxAllowance, $userEmail]);
 
+            // Automatically record in user_plans for admin dashboard sync
+            try {
+                $price = $maxAllowance >= 9000 ? 'AED 299' : ($maxAllowance > 10 ? 'AED 99' : 'Free');
+                $due = date('Y-m-d H:i:s', strtotime('+30 days'));
+                $uIdStmt = $this->db->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
+                $uIdStmt->execute([$userEmail]);
+                $uId = $uIdStmt->fetchColumn();
+
+                $pIns = $this->db->prepare("INSERT INTO user_plans (user_id, user_email, plan_name, plan_type, price, status, expires_at, created_at) VALUES (?, ?, ?, 'Membership Plan', ?, 'Active', ?, NOW())");
+                $pIns->execute([$uId ? (int)$uId : null, $userEmail, $planName, $price, $due]);
+            } catch (\Throwable $e) {}
+
             // Calculate current usage
             $currentMonthStart = date('Y-m-01 00:00:00');
             $cStmt = $this->db->prepare("SELECT COUNT(*) FROM artist_messages WHERE sender_email = ? AND created_at >= ?");
@@ -3961,17 +4918,31 @@ class AiChatController {
 
     public function getSessions(): void {
         try {
-            $userEmail = trim($_GET['user_email'] ?? '');
+            $userEmail = trim($_GET['user_email'] ?? $_POST['user_email'] ?? '');
+            $userId    = trim($_GET['user_id'] ?? $_POST['user_id'] ?? '');
+
+            // Strict user isolation: never leak all users' sessions if unauthenticated
+            if (empty($userEmail) && empty($userId)) {
+                ApiResponse::success([], 'AI chat sessions retrieved successfully');
+                return;
+            }
 
             $query = "SELECT s.*, 
                       (SELECT COUNT(*) FROM ai_chat_messages m WHERE m.session_id = s.id) AS message_count,
                       (SELECT message FROM ai_chat_messages m WHERE m.session_id = s.id ORDER BY m.id DESC LIMIT 1) AS last_message
-                      FROM ai_chat_sessions s WHERE 1=1";
+                      FROM ai_chat_sessions s WHERE ";
             $params = [];
 
-            if (!empty($userEmail)) {
-                $query .= " AND (s.user_email = ? OR s.user_email IS NULL OR s.user_email = '')";
+            if (!empty($userEmail) && !empty($userId)) {
+                $query .= "(s.user_email = ? OR s.user_id = ?)";
                 $params[] = $userEmail;
+                $params[] = $userId;
+            } elseif (!empty($userEmail)) {
+                $query .= "s.user_email = ?";
+                $params[] = $userEmail;
+            } else {
+                $query .= "s.user_id = ?";
+                $params[] = $userId;
             }
 
             $query .= " ORDER BY s.updated_at DESC LIMIT 100";
@@ -3988,14 +4959,43 @@ class AiChatController {
     public function getMessages(array $params): void {
         try {
             $sessionId = trim($params['session_id'] ?? $_GET['session_id'] ?? '');
+            $userEmail = trim($params['user_email'] ?? $_GET['user_email'] ?? '');
+            $userId    = trim($params['user_id'] ?? $_GET['user_id'] ?? '');
             if (empty($sessionId)) {
                 ApiResponse::error('session_id is required', 400);
                 return;
             }
 
+            // Verify ownership if user credentials are provided
+            if (!empty($userEmail) || !empty($userId)) {
+                $chk = $this->db->prepare("SELECT user_email, user_id FROM ai_chat_sessions WHERE id = ? LIMIT 1");
+                $chk->execute([$sessionId]);
+                $sess = $chk->fetch();
+                if ($sess) {
+                    $sEmail = trim($sess['user_email'] ?? '');
+                    $sUid   = trim((string)($sess['user_id'] ?? ''));
+                    if (!empty($sEmail) && !empty($userEmail) && strcasecmp($sEmail, $userEmail) !== 0) {
+                        ApiResponse::error('Access denied to this chat session', 403);
+                        return;
+                    }
+                    if (!empty($sUid) && !empty($userId) && $sUid !== $userId && empty($sEmail)) {
+                        ApiResponse::error('Access denied to this chat session', 403);
+                        return;
+                    }
+                }
+            }
+
             $stmt = $this->db->prepare("SELECT * FROM ai_chat_messages WHERE session_id = ? ORDER BY id ASC");
             $stmt->execute([$sessionId]);
             $messages = $stmt->fetchAll();
+            foreach ($messages as &$m) {
+                if (!empty($m['related_questions'])) {
+                    $decodedRel = json_decode($m['related_questions'], true);
+                    $m['related_questions'] = is_array($decodedRel) ? $decodedRel : [];
+                } else {
+                    $m['related_questions'] = [];
+                }
+            }
 
             ApiResponse::success($messages, 'Messages retrieved successfully');
         } catch (\Throwable $t) {
@@ -4030,7 +5030,11 @@ class AiChatController {
             $stmt = $this->db->prepare("
                 INSERT INTO ai_chat_sessions (id, user_id, user_email, title, created_at, updated_at)
                 VALUES (?, ?, ?, ?, NOW(), NOW())
-                ON DUPLICATE KEY UPDATE updated_at = NOW()
+                ON DUPLICATE KEY UPDATE 
+                    updated_at = NOW(),
+                    user_id = COALESCE(user_id, VALUES(user_id)),
+                    user_email = COALESCE(user_email, VALUES(user_email)),
+                    title = IF(title = 'Chat' OR title = '' OR title IS NULL, VALUES(title), title)
             ");
             $stmt->execute([$sessionId, $userId ?: null, $userEmail ?: null, $title]);
 
@@ -4044,16 +5048,26 @@ class AiChatController {
             // Fetch live database context dynamically (RAG)
             $dbContext = $this->fetchDatabaseContext($messageText);
 
-            // Generate dynamic AI reply grounded in real database records & comprehensive art domain intelligence
-            $reply = $this->generateAiReply($messageText, $locale, $dbContext);
-            $relatedQuestions = $this->generateRelatedQuestions($messageText, $locale, $dbContext);
+            // Generate 100% dynamic AI reply exclusively from Google Gemini API
+            $aiData = $this->generateGeminiAiResponse($messageText, $locale, $dbContext);
+            $reply = $aiData['reply'];
+            $relatedQuestions = $aiData['related_questions'];
 
-            // Save AI reply
-            $stmtReply = $this->db->prepare("
-                INSERT INTO ai_chat_messages (session_id, sender, message, created_at)
-                VALUES (?, 'ai', ?, NOW())
-            ");
-            $stmtReply->execute([$sessionId, $reply]);
+            // Save AI reply with related questions
+            $relJson = !empty($relatedQuestions) ? json_encode($relatedQuestions, JSON_UNESCAPED_UNICODE) : null;
+            try {
+                $stmtReply = $this->db->prepare("
+                    INSERT INTO ai_chat_messages (session_id, sender, message, related_questions, created_at)
+                    VALUES (?, 'ai', ?, ?, NOW())
+                ");
+                $stmtReply->execute([$sessionId, $reply, $relJson]);
+            } catch (\Throwable $e) {
+                $stmtReply = $this->db->prepare("
+                    INSERT INTO ai_chat_messages (session_id, sender, message, created_at)
+                    VALUES (?, 'ai', ?, NOW())
+                ");
+                $stmtReply->execute([$sessionId, $reply]);
+            }
 
             ApiResponse::success([
                 'session_id' => $sessionId,
@@ -4072,9 +5086,29 @@ class AiChatController {
     public function deleteSession(array $input): void {
         try {
             $sessionId = trim($input['session_id'] ?? $_GET['session_id'] ?? '');
+            $userEmail = trim($input['user_email'] ?? $_GET['user_email'] ?? '');
+            $userId    = trim($input['user_id'] ?? $_GET['user_id'] ?? '');
             if (empty($sessionId)) {
                 ApiResponse::error('session_id is required', 400);
                 return;
+            }
+
+            if (!empty($userEmail) || !empty($userId)) {
+                $chk = $this->db->prepare("SELECT user_email, user_id FROM ai_chat_sessions WHERE id = ? LIMIT 1");
+                $chk->execute([$sessionId]);
+                $sess = $chk->fetch();
+                if ($sess) {
+                    $sEmail = trim($sess['user_email'] ?? '');
+                    $sUid   = trim((string)($sess['user_id'] ?? ''));
+                    if (!empty($sEmail) && !empty($userEmail) && strcasecmp($sEmail, $userEmail) !== 0) {
+                        ApiResponse::error('Access denied to delete this chat session', 403);
+                        return;
+                    }
+                    if (!empty($sUid) && !empty($userId) && $sUid !== $userId && empty($sEmail)) {
+                        ApiResponse::error('Access denied to delete this chat session', 403);
+                        return;
+                    }
+                }
             }
 
             $stmt1 = $this->db->prepare("DELETE FROM ai_chat_messages WHERE session_id = ?");
@@ -4208,12 +5242,31 @@ class AiChatController {
         return $context;
     }
 
-    private function generateAiReply(string $query, string $locale = '', array $dbContext = []): string {
-        $q = mb_strtolower(trim($query));
-        $isArabic = ($locale === 'ar') || (bool)preg_match('/[\x{0600}-\x{06FF}]/u', $query);
+    /**
+     * Exclusively generates dynamic AI responses from Google Gemini API.
+     * No hardcoded or canned answers — all insights and follow-up questions
+     * are dynamically generated in real-time by Google Gemini.
+     */
+    /**
+     * Exclusively generates dynamic AI responses from Google Gemini API.
+     * No hardcoded or canned answers — all insights and follow-up questions
+     * are dynamically generated in real-time by Google Gemini.
+     */
+    private function generateGeminiAiResponse(string $query, string $locale = '', array $dbContext = [], array $recentHistory = []): array {
+        if ($locale === 'ar') {
+            $isArabic = true;
+        } elseif ($locale === 'en') {
+            $isArabic = false;
+        } else {
+            preg_match_all('/[\x{0600}-\x{06FF}]/u', $query, $arMatches);
+            preg_match_all('/[a-zA-Z]/u', $query, $enMatches);
+            $arCount = count($arMatches[0] ?? []);
+            $enCount = count($enMatches[0] ?? []);
+            $isArabic = ($arCount > $enCount);
+        }
 
-        // 1. Try Gemini Generative AI if key is configured (via env or settings)
-        $geminiKey = getenv('GEMINI_API_KEY') ?: ($GLOBALS['GEMINI_API_KEY'] ?? '');
+        // 1. Fetch Gemini API key (from env, defined constant, globals, or database settings)
+        $geminiKey = getenv('GEMINI_API_KEY') ?: (defined('GEMINI_API_KEY') && !empty(GEMINI_API_KEY) ? GEMINI_API_KEY : ($GLOBALS['GEMINI_API_KEY'] ?? ''));
         if (empty($geminiKey)) {
             try {
                 $sStmt = $this->db->query("SELECT setting_value FROM payment_settings WHERE setting_key IN ('gemini_api_key', 'ai_api_key') LIMIT 1");
@@ -4222,631 +5275,155 @@ class AiChatController {
                 }
             } catch (\Throwable $t) {}
         }
+        if (empty($geminiKey)) {
+            $geminiKey = getenv('GEMINI_API_KEY') ?: '';
+        }
+
+        // 2. Call Google Gemini API
         if (!empty($geminiKey)) {
-            $geminiReply = $this->callGeminiApi($query, $geminiKey, $isArabic, $dbContext);
-            if (!empty($geminiReply)) {
-                return $geminiReply;
+            $geminiResult = $this->callGeminiApi($query, $geminiKey, $isArabic, $dbContext, $recentHistory);
+            if (!empty($geminiResult) && !empty($geminiResult['reply'])) {
+                return $geminiResult;
             }
         }
 
-        // 2. Intelligent Dynamic Intent Detection Grounded in Live Database Records
+        // 3. If Gemini is unreachable or encounters a network issue, return an honest notice
+        $unavailableMsg = $isArabic
+            ? "عذراً، تعذر الاتصال بمحرك الذكاء الاصطناعي (Google Gemini) في الوقت الحالي. يرجى التحقق من اتصال الإنترنت أو المحاولة مجدداً بعد لحظات."
+            : "We are currently unable to reach the Google Gemini AI service. Please verify your connection or try again in a moment.";
 
-        // Intent A: Booking / Hiring / Commissioning Artists (distinct from registration!)
-        $asksBook = str_contains($q, 'book') || str_contains($q, 'hire') || str_contains($q, 'commission') || str_contains($q, 'quote')
-                 || str_contains($q, 'حجز') || str_contains($q, 'توظيف') || str_contains($q, 'تكليف') || str_contains($q, 'طلب فنان');
-        if ($asksBook) {
-            if ($isArabic) {
-                $reply = "حجز وتكليف الفنانين عبر تطبيق **فنان دبي** يتم بسهولة وبشكل موثوق:\n\n" .
-                    "1. افتح تبويب **الفنانون** من الشريط السفلي للاطلاع على قائمة المبدعين المعتمدين في الإمارات.\n" .
-                    "2. اضغط على أي ملف فنان للاطلاع على نبذته وسيرته، وأعماله السابقة، وسعر الحجز التقديري.\n" .
-                    "3. اضغط على زر **طلب حجز / تواصل مع الفنان**.\n" .
-                    "4. حدد تفاصيل طلبك (رسم حي، لوحة خاصة، جدارية، ورشة عمل)، والموعد، والميزانية المتوقعة.\n\n";
-                if (!empty($dbContext['matched_artists'])) {
-                    $reply .= "إليك نخبة من الفنانين المتاحين للحجز حالياً:\n";
-                    foreach ($dbContext['matched_artists'] as $art) {
-                        $rate = !empty($art['booking_rate']) ? " (السعر: {$art['booking_rate']})" : "";
-                        $loc = !empty($art['location']) ? " — {$art['location']}" : "";
-                        $reply .= "• **{$art['name']}** [{$art['category']}]{$rate}{$loc}\n";
-                    }
-                }
-                return $reply;
-            } else {
-                $reply = "Booking or commissioning an artist on **Artist Dubai** is straightforward and secure:\n\n" .
-                    "1. Tap the **Artists** tab in the bottom navigation bar to browse verified creators across the UAE.\n" .
-                    "2. Tap any artist profile to inspect their portfolio, style, biography, and starting booking rate.\n" .
-                    "3. Tap **Book Artist** or **Contact** directly on their profile.\n" .
-                    "4. Specify your project requirements: commission type (Private Canvas, Mural, Live Event Painting, Workshop), deadline, and budget.\n\n";
-                if (!empty($dbContext['matched_artists'])) {
-                    $reply .= "Featured artists available for booking right now:\n";
-                    foreach ($dbContext['matched_artists'] as $art) {
-                        $rate = !empty($art['booking_rate']) ? " (Rate: {$art['booking_rate']})" : "";
-                        $loc = !empty($art['location']) ? " — {$art['location']}" : "";
-                        $reply .= "• **{$art['name']}** [{$art['category']}]{$rate}{$loc}\n";
-                    }
-                }
-                return $reply;
-            }
-        }
-
-        // Intent B: Registering / Signing Up as an Artist (strictly registration intent, not just mentioning the word "artist")
-        $asksRegister = str_contains($q, 'register as') || str_contains($q, 'sign up as') || str_contains($q, 'become an artist')
-                     || str_contains($q, 'join as artist') || str_contains($q, 'artist registration') || str_contains($q, 'create profile') || str_contains($q, 'how do i register')
-                     || str_contains($q, 'تسجيل فنان') || str_contains($q, 'انضمام كفنان') || str_contains($q, 'كيف أسجل كفنان') || str_contains($q, 'إنشاء ملف فنان');
-        if ($asksRegister) {
-            if ($isArabic) {
-                return "التسجيل كفنان على منصة **فنان دبي** سهل ومتاح لجميع المبدعين:\n\n" .
-                    "1. توجه إلى الشاشة الرئيسية للتطبيق.\n" .
-                    "2. اضغط على بطاقة **تسجيل فنان**.\n" .
-                    "3. أدخل اسم الفنان، والتخصص الفني (رسم زيتي، خط عربي، نحت، فن رقمي، تصوير، وغيرها)، والنبذة التعريفية، ومعلومات التواصل.\n" .
-                    "4. ارفع 3 إلى 5 صور عالية الدقة من أفضل أعمالك الفنية الأصلية.\n" .
-                    "5. أرسل ملفك لاعتماده من فريق المراجعة خلال 24 ساعة لتبدأ في تلقي طلبات الحجز وعرض أعمالك للجمهور!";
-            } else {
-                return "Registering as an artist on **Artist Dubai** is simple and rewarding:\n\n" .
-                    "1. Head to the **Home** tab in the app.\n" .
-                    "2. Tap the **ARTIST REGISTRATION** card.\n" .
-                    "3. Fill in your full name, artistic discipline (Painting, Calligraphy, Sculpture, Digital Art, Photography, etc.), bio, and contact links.\n" .
-                    "4. Upload 3 to 5 high-resolution samples of your original artworks.\n" .
-                    "5. Submit your profile for fast review by our curatorial team within 24 hours to gain verified status and start receiving commission requests!";
-            }
-        }
-
-        // Intent C: Exploring / Recommending Artists (Live DB Grounding)
-        $asksArtists = str_contains($q, 'artist') || str_contains($q, 'painter') || str_contains($q, 'sculptor') || str_contains($q, 'calligrapher')
-                    || str_contains($q, 'recommend') || str_contains($q, 'who are') || str_contains($q, 'creators')
-                    || str_contains($q, 'فنان') || str_contains($q, 'رسام') || str_contains($q, 'خطاط') || str_contains($q, 'نحات');
-        if ($asksArtists && !empty($dbContext['matched_artists'])) {
-            if ($isArabic) {
-                $reply = "إليك نخبة من الفنانين المسجلين في منصة **فنان دبي**:\n\n";
-                foreach ($dbContext['matched_artists'] as $art) {
-                    $rate = !empty($art['starting_rate']) ? " (بدءاً من {$art['starting_rate']})" : "";
-                    $loc = !empty($art['location']) ? " — {$art['location']}" : "";
-                    $reply .= "• **{$art['name']}** [{$art['category']}]{$rate}{$loc}\n";
-                }
-                $reply .= "\nيمكنك فتح قسم **الفنانون** في الشريط السفلي للاطلاع على معارض أعمالهم الكاملة والتواصل المباشر معهم!";
-                return $reply;
-            } else {
-                $reply = "Here are featured artists registered on **Artist Dubai**:\n\n";
-                foreach ($dbContext['matched_artists'] as $art) {
-                    $rate = !empty($art['starting_rate']) ? " (Starting at {$art['starting_rate']})" : "";
-                    $loc = !empty($art['location']) ? " — {$art['location']}" : "";
-                    $reply .= "• **{$art['name']}** [{$art['category']}]{$rate}{$loc}\n";
-                }
-                $reply .= "\nYou can tap the **Artists** tab in the bottom bar to view their full portfolios and connect directly!";
-                return $reply;
-            }
-        }
-
-        // Intent D: Events & Exhibitions (Live DB Grounding)
-        $asksEvents = str_contains($q, 'event') || str_contains($q, 'exhibition') || str_contains($q, 'festival') || str_contains($q, 'happening')
-                   || str_contains($q, 'فعالية') || str_contains($q, 'معرض') || str_contains($q, 'مهرجان') || str_contains($q, 'نشاط');
-        if ($asksEvents && !empty($dbContext['matched_events'])) {
-            if ($isArabic) {
-                $reply = "أبرز الفعاليات والمعارض الفنية الحالية في دبي:\n\n";
-                foreach ($dbContext['matched_events'] as $ev) {
-                    $date = !empty($ev['event_date']) ? " (التاريخ: {$ev['event_date']})" : "";
-                    $loc = !empty($ev['location']) ? " — {$ev['location']}" : "";
-                    $price = !empty($ev['price']) ? " [{$ev['price']}]" : "";
-                    $reply .= "• **{$ev['title']}**{$loc}{$date}{$price}\n";
-                }
-                $reply .= "\nتفضل بزيارة قسم **الفعاليات** في التطبيق لمعرفة جميع التفاصيل وتأكيد حضورك!";
-                return $reply;
-            } else {
-                $reply = "Upcoming art events & exhibitions on **Artist Dubai**:\n\n";
-                foreach ($dbContext['matched_events'] as $ev) {
-                    $date = !empty($ev['event_date']) ? " (Date: {$ev['event_date']})" : "";
-                    $loc = !empty($ev['location']) ? " — {$ev['location']}" : "";
-                    $price = !empty($ev['price']) ? " [{$ev['price']}]" : "";
-                    $reply .= "• **{$ev['title']}**{$loc}{$date}{$price}\n";
-                }
-                $reply .= "\nExplore full event schedules and RSVP directly inside the **Events** tab!";
-                return $reply;
-            }
-        }
-
-        // Intent E: Galleries & Cultural Spaces (Live DB Grounding + Curated Knowledge)
-        $asksGalleries = str_contains($q, 'gallery') || str_contains($q, 'galleries') || str_contains($q, 'space') || str_contains($q, 'center')
-                      || str_contains($q, 'جاليري') || str_contains($q, 'صالات') || str_contains($q, 'معارض فنية');
-        if ($asksGalleries && !empty($dbContext['matched_galleries'])) {
-            if ($isArabic) {
-                $reply = "أبرز صالات العرض والمعارض الفنية المسجلة في دبي:\n\n";
-                foreach ($dbContext['matched_galleries'] as $gal) {
-                    $loc = !empty($gal['location']) ? " ({$gal['location']})" : "";
-                    $reply .= "• **{$gal['name']}**{$loc}\n";
-                }
-                $reply .= "\nكما تضم دبي مراكز أيقونية مجانية مثل **السركال أفنيو**، و**قرية البوابة بمركز دبي المالي**، و**حي دبي للتصميم d3**، و**مركز جميل للفنون**!";
-                return $reply;
-            } else {
-                $reply = "Featured art galleries & exhibition spaces on **Artist Dubai**:\n\n";
-                foreach ($dbContext['matched_galleries'] as $gal) {
-                    $loc = !empty($gal['location']) ? " ({$gal['location']})" : "";
-                    $reply .= "• **{$gal['name']}**{$loc}\n";
-                }
-                $reply .= "\nDubai also features iconic contemporary hubs including **Alserkal Avenue**, **DIFC Gate Village**, **Dubai Design District (d3)**, and **Jameel Arts Centre**!";
-                return $reply;
-            }
-        }
-
-        // Intent F: Selling / Buying Artworks (Live DB Grounding)
-        $asksArtworks = str_contains($q, 'sell') || str_contains($q, 'buy') || str_contains($q, 'artwork') || str_contains($q, 'painting') || str_contains($q, 'sculpture') || str_contains($q, 'canvas') || str_contains($q, 'price')
-                     || str_contains($q, 'بيع') || str_contains($q, 'شراء') || str_contains($q, 'لوحة') || str_contains($q, 'لوحات') || str_contains($q, 'أعمال');
-        if ($asksArtworks) {
-            if ($isArabic) {
-                $reply = "بيع وشراء اللوحات والأعمال الفنية عبر **فنان دبي**:\n\n" .
-                    "• **للفنانين:** يمكنك إضافة أعمالك الأصلية من لوحة التحكم مع تحديد الخامة والمقاس والسعر بالدرهم الإماراتي ليراها المقتنون ومصممو الديكور.\n" .
-                    "• **للمقتنين والزوار:** يمكنك استعراض الكتالوج الفني، وشراء القطع الأصلية مباشرة أو طلب أعمال مخصصة من الفنان.\n\n";
-                if (!empty($dbContext['matched_artworks'])) {
-                    $reply .= "أعمال فنية معروضة للاقتناء حالياً:\n";
-                    foreach ($dbContext['matched_artworks'] as $aw) {
-                        $p = !empty($aw['price']) ? " [{$aw['price']} د.إ]" : "";
-                        $artName = !empty($aw['artist_name']) ? " — بريشة {$aw['artist_name']}" : "";
-                        $reply .= "• **{$aw['title']}**{$artName}{$p}\n";
-                    }
-                }
-                return $reply;
-            } else {
-                $reply = "Buying and selling original art on **Artist Dubai**:\n\n" .
-                    "• **For Artists:** Upload your authentic artworks with high-resolution imagery, medium, dimensions, and prices in AED.\n" .
-                    "• **For Art Collectors:** Browse original pieces across diverse styles and connect directly with creators for acquisitions or bespoke commissions.\n\n";
-                if (!empty($dbContext['matched_artworks'])) {
-                    $reply .= "Featured original artworks available right now:\n";
-                    foreach ($dbContext['matched_artworks'] as $aw) {
-                        $p = !empty($aw['price']) ? " [AED {$aw['price']}]" : "";
-                        $artName = !empty($aw['artist_name']) ? " — by {$aw['artist_name']}" : "";
-                        $reply .= "• **{$aw['title']}**{$artName}{$p}\n";
-                    }
-                }
-                return $reply;
-            }
-        }
-
-        // Intent G: Arabic Calligraphy & Typography
-        $asksCalligraphy = str_contains($q, 'calligraphy') || str_contains($q, 'typography') || str_contains($q, 'lettering') || str_contains($q, 'arabic art')
-                        || str_contains($q, 'خط') || str_contains($q, 'خطاط') || str_contains($q, 'حروف');
-        if ($asksCalligraphy) {
-            if ($isArabic) {
-                return "يعد **الخط العربي وفن الحروفية** من أرقى الفنون التي تحظى باهتمام استثنائي في دبي:\n\n" .
-                    "• **المدارس الكلاسيكية:** إتقان خطوط الثلث، والديواني، والكوفي، والنسخ، والرقعة.\n" .
-                    "• **الحروفية المعاصرة:** دمج التجريد اللوني الحديث مع تشكيلات الحرف العربي في لوحات وجداريات ضخمة.\n" .
-                    "• **أين تكتشفها؟** في تبويب **الفنانون** داخل التطبيق، يمكنك تصفية النتائج حسب فئة الخط العربي لرؤية أعمال نخبة الخطاطين المعتمدين.\n" .
-                    "• ينظم **مركز تشكيل** ومعارض **السركال أفنيو** ومهرجان **سكة للفنون** ورش عمل ومعارض متخصصة بالخط طوال العام.";
-            } else {
-                return "Arabic Calligraphy and **Hurufiyya** are among the most revered art forms in Dubai's creative landscape:\n\n" .
-                    "• **Traditional Scripts:** Masters specialize in Thuluth, Diwani, Kufic, and Naskh calligraphy.\n" .
-                    "• **Contemporary Hurufiyya:** Modern regional creators fuse abstract expressionism with geometric Arabic typography and sculptural lettering.\n" .
-                    "• **Discover Artists:** In the **Artists** tab of the app, filter by **Calligraphy & Typography** to explore portfolios of celebrated local calligraphers.\n" .
-                    "• **Where to Experience:** Tashkeel (Nad Al Sheba), Sikka Art Festival (Al Fahidi), and specialized seasonal exhibitions across DIFC and Alserkal Avenue.";
-            }
-        }
-
-        // Intent H: Free Admission / Tickets
-        $asksFree = str_contains($q, 'free') || str_contains($q, 'admission') || str_contains($q, 'ticket') || str_contains($q, 'cost') || str_contains($q, 'entry') || str_contains($q, 'fee')
-                 || str_contains($q, 'مجاني') || str_contains($q, 'تذاكر') || str_contains($q, 'تذكرة') || str_contains($q, 'رسوم') || str_contains($q, 'دخول');
-        if ($asksFree) {
-            if ($isArabic) {
-                return "نعم، الدخول إلى غالبية المعارض الفنية في دبي **مجاني تماماً** ومتاح للجميع:\n\n" .
-                    "• **السركال أفنيو:** الدخول إلى المنطقة وجميع صالات العرض الـ 70 مجاني طوال العام دون الحاجة إلى تذاكر مسبقة (باستثناء عروض سينما عقيل وبعض ورش العمل التخصصية).\n" .
-                    "• **قرية البوابة بمركز دبي المالي (DIFC):** زيارة المعارض الفنية المعاصرة والممشى الفني النحتي مجانية بالكامل.\n" .
-                    "• **حي دبي للتصميم (d3):** الدخول إلى الصالات والمجسمات النحتية الخارجية مفتوح ومجاني للجمهور.\n" .
-                    "• **مركز جميل للفنون:** الدخول إلى صالات العرض وحديقة المجسمات مجاني دائماً.\n" .
-                    "• **مهرجان سكة للفنون والتصميم:** الدخول لجميع فعالياته ومعارضه في حي الفهيدي مجاني سنوياً.";
-            } else {
-                return "Yes! General admission to major contemporary galleries across Dubai is **completely free** and open to the public:\n\n" .
-                    "• **Alserkal Avenue:** Free entry 365 days a year. All 70+ contemporary galleries (Green Art, Carbon 12, Ayyam) are free to enter with no booking required (only Cinema Akil screenings or ticketed culinary events have fees).\n" .
-                    "• **DIFC Gate Village:** Free entry to all art galleries, exhibitions, and the outdoor sculpture promenade.\n" .
-                    "• **Dubai Design District (d3):** Free public entry to galleries, design pop-ups, and interactive art installations.\n" .
-                    "• **Jameel Arts Centre:** Free admission to all exhibition galleries and the outdoor sculpture park.\n" .
-                    "• **Sikka Art & Design Festival (Al Fahidi):** Free public access to all exhibitions, live music, and installations.";
-            }
-        }
-
-        // Intent I: Opening Hours / Timings
-        $asksHours = str_contains($q, 'hour') || str_contains($q, 'timing') || str_contains($q, 'open') || str_contains($q, 'close') || str_contains($q, 'schedule')
-                  || str_contains($q, 'أوقات') || str_contains($q, 'ساعات') || str_contains($q, 'مواعيد') || str_contains($q, 'يفتح') || str_contains($q, 'يغلق');
-        if ($asksHours) {
-            if (str_contains($q, 'd3') || str_contains($q, 'design') || str_contains($q, 'تصميم')) {
-                if ($isArabic) {
-                    return "أوقات عمل **حي دبي للتصميم (d3)**:\n\n" .
-                        "• **المساحات العامة والمطاعم والمقاهي:** تفتح يومياً من الساعة 8:00 صباحاً وحتى 11:00 مساءً (وحتى منتصف الليل في عطلة نهاية الأسبوع).\n" .
-                        "• **المكاتب وصالات العرض التجارية:** تعمل عادة من الأحد إلى الخميس من 9:00 صباحاً حتى 6:00 مساءً.\n" .
-                        "• أفضل وقت للزيارة والاستمتاع بالمجسمات والتصوير هو وقت العصر والمساء!";
-                } else {
-                    return "Opening hours for **Dubai Design District (d3)**:\n\n" .
-                        "• **Public outdoor promenades, cafes & restaurants:** Open daily from 8:00 AM to 11:00 PM (and midnight on weekends).\n" .
-                        "• **Commercial design showrooms & art galleries:** Typically open Sunday through Thursday from 9:00 AM to 6:00 PM.\n" .
-                        "• The best visiting time for lighting, outdoor sculpture photography, and dining is late afternoon and evening!";
-                }
-            }
-            if (str_contains($q, 'alserkal') || str_contains($q, 'quoz') || str_contains($q, 'السركال')) {
-                if ($isArabic) {
-                    return "أوقات عمل **السركال أفنيو (القوز)**:\n\n" .
-                        "• **صالات العرض الفنية:** تفتح عادة من السبت إلى الخميس، من الساعة 10:00 صباحاً حتى 7:00 مساءً (بعض المعارض تغلق أيام الجمعة).\n" .
-                        "• **المقاهي والمساحات الإبداعية:** تفتح يومياً من الساعة 8:00 صباحاً حتى 10:00 مساءً.\n" .
-                        "• **سينما عقيل:** تفتح في أوقات العروض المسائية (غالباً بعد الساعة 5:00 مساءً).";
-                } else {
-                    return "Opening hours for **Alserkal Avenue (Al Quoz)**:\n\n" .
-                        "• **Contemporary Art Galleries:** Saturday through Thursday, 10:00 AM to 7:00 PM (some galleries are closed on Fridays).\n" .
-                        "• **Artisan Cafes & Concept Spaces:** Daily from 8:00 AM to 10:00 PM.\n" .
-                        "• **Cinema Akil:** Open during scheduled evening screenings (typically 5:00 PM to 11:00 PM).";
-                }
-            }
-            if ($isArabic) {
-                return "مواعيد عمل أبرز المناطق والمعارض الفنية في دبي:\n\n" .
-                    "• **السركال أفنيو:** صالات العرض 10:00 ص - 7:00 م (السبت-الخميس)، والمقاهي حتى 10:00 م.\n" .
-                    "• **حي دبي للتصميم d3:** المرافق والمقاهي 8:00 ص - 11:00 م يومياً.\n" .
-                    "• **قرية البوابة بمركز دبي المالي (DIFC):** المعارض 10:00 ص - 8:00 م (الأحد-الخميس).\n" .
-                    "• **مركز جميل للفنون:** 10:00 ص - 8:00 م (يغلق أيام الثلاثاء).\n" .
-                    "• **حي الفهيدي التاريخي:** 9:00 ص - 8:00 م يومياً.";
-            } else {
-                return "Typical opening hours for Dubai art destinations:\n\n" .
-                    "• **Alserkal Avenue:** Galleries 10:00 AM – 7:00 PM (Sat–Thu), Cafes 8:00 AM – 10:00 PM daily.\n" .
-                    "• **Dubai Design District (d3):** 8:00 AM – 11:00 PM daily.\n" .
-                    "• **DIFC Gate Village:** Galleries 10:00 AM – 8:00 PM (Sun–Thu).\n" .
-                    "• **Jameel Arts Centre:** 10:00 AM – 8:00 PM (Closed on Tuesdays).\n" .
-                    "• **Al Fahidi Historical Neighbourhood:** 9:00 AM – 8:00 PM daily.";
-            }
-        }
-
-        // Intent J: Metro & Public Transit Directions
-        $asksTransit = str_contains($q, 'metro') || str_contains($q, 'reach') || str_contains($q, 'direction') || str_contains($q, 'get to') || str_contains($q, 'transport') || str_contains($q, 'taxi') || str_contains($q, 'parking')
-                    || str_contains($q, 'مترو') || str_contains($q, 'وصول') || str_contains($q, 'كيف أصل') || str_contains($q, 'مواصلات') || str_contains($q, 'طريق') || str_contains($q, 'مواقف');
-        if ($asksTransit) {
-            if (str_contains($q, 'difc') || str_contains($q, 'gate village') || str_contains($q, 'financial') || str_contains($q, 'المالي') || str_contains($q, 'البوابة')) {
-                if ($isArabic) {
-                    return "للوصول إلى **قرية البوابة بمركز دبي المالي (DIFC)** بالمترو:\n\n" .
-                        "• اركب **الخط الأحمر لمترو دبي** وانزل في **محطة المركز المالي (Financial Centre Station)** (المخرج 1) أو **محطة أبراج الإمارات (Emirates Towers Station)**.\n" .
-                        "• تقع قرية البوابة على بعد 7 إلى 10 دقائق مشياً عبر ممرات مكيفة ومريحة، أو دقيقة واحدة بسيارة الأجرة.\n" .
-                        "• تتوفر أيضاً مواقف سيارات تحت الأرض وخدمة صف السيارات (Valet) عند بوابات DIFC 1-10.";
-                } else {
-                    return "How to reach **DIFC Gate Village by Metro**:\n\n" .
-                        "• Take the **Dubai Metro Red Line** and exit at **Financial Centre Metro Station** (Exit 1) or **Emirates Towers Station**.\n" .
-                        "• From Financial Centre Station, it is a comfortable 7–10 minute air-conditioned walk through the DIFC concourse or a 2-minute taxi ride.\n" .
-                        "• If driving, underground visitor and valet parking is available at Gate Village Buildings 1 to 10.";
-                }
-            }
-            if (str_contains($q, 'alserkal') || str_contains($q, 'quoz') || str_contains($q, 'السركال')) {
-                if ($isArabic) {
-                    return "للوصول إلى **السركال أفنيو (القوز 1)**:\n\n" .
-                        "• **بالمترو:** خذ الخط الأحمر إلى **محطة أون باسيف (Onpassive)** أو **محطة إكويتي (Equiti)**، ثم استقل سيارة أجرة لمدة 5 دقائق (أو حافلة RTA F25).\n" .
-                        "• **بالسيارة:** تتوفر مواقف مجانية على أطراف الأفنيو ومواقف مأجورة قريبة في القوز 1.";
-                } else {
-                    return "How to reach **Alserkal Avenue (Al Quoz 1)**:\n\n" .
-                        "• **By Metro:** Take the Red Line to **Onpassive Metro Station** or **Equiti Metro Station**, then take a 5-minute taxi (approx. AED 12–15) or RTA Feeder Bus F25.\n" .
-                        "• **By Car:** Free and RTA parking spaces are available surrounding Avenue 17 and Streets 8 & 6 in Al Quoz 1.";
-                }
-            }
-            if ($isArabic) {
-                return "طرق الوصول إلى أهم الوجهات الفنية في دبي:\n\n" .
-                    "• **مركز دبي المالي DIFC:** الخط الأحمر للمترو - محطة المركز المالي.\n" .
-                    "• **حي الفهيدي التاريخي:** الخط الأخضر للمترو - محطة شرف دي جي (الفهيدي سابقاً).\n" .
-                    "• **السركال أفنيو:** محطة مترو أون باسيف + 5 دقائق تاكسي.\n" .
-                    "• **حي دبي للتصميم d3:** محطة مترو دبي مول / الخليج التجاري + حافلة d3 أو تاكسي.";
-            } else {
-                return "How to reach Dubai's top art districts:\n\n" .
-                    "• **DIFC Gate Village:** Metro Red Line to **Financial Centre Station**.\n" .
-                    "• **Al Fahidi Historical District:** Metro Green Line to **Sharaf DG Station** (formerly Al Fahidi).\n" .
-                    "• **Alserkal Avenue:** Metro Red Line to **Onpassive Station** + 5-min taxi.\n" .
-                    "• **Dubai Design District (d3):** Metro Red Line to **Dubai Mall / Business Bay** + RTA Bus d3 or 5-min taxi.";
-            }
-        }
-
-        // Intent K: Art Districts & Creative Hubs
-        $asksDistricts = str_contains($q, 'district') || str_contains($q, 'districts') || str_contains($q, 'visit') || str_contains($q, 'place') || str_contains($q, 'where to go')
-                      || str_contains($q, 'منطقة') || str_contains($q, 'مناطق') || str_contains($q, 'أين أذهب') || str_contains($q, 'زيارة');
-        if ($asksDistricts) {
-            if ($isArabic) {
-                return "تضم دبي مراكز إبداعية وفنية عالمية نابضة بالحياة:\n\n" .
-                    "• **السركال أفنيو (القوز):** الوجهة الرائدة للفن المعاصر في دبي، وتضم أكثر من 70 مساحة إبداعية وصالات عرض عالمية ومقاهٍ فنية وسينما مستقلة (سينما عقيل).\n\n" .
-                    "• **حي دبي للتصميم (d3):** مركز الأزياء الراقية، والهندسة المعمارية، والمجسمات النحتية الحديثة، ومهرجانات التصميم العالمية.\n\n" .
-                    "• **قرية البوابة بمركز دبي المالي (DIFC):** معارض تجارية مرموقة (Christie's, Opera Gallery, Ayyam Gallery) ومطاعم فاخرة وممشى نحتي.\n\n" .
-                    "• **حي الفهيدي التاريخي:** حي أبراج الرياح التراثي الذي يستضيف مهرجان سكة للفنون والتصميم، ومعرض XVA ومشاغل الحرف التقليدية.\n\n" .
-                    "• **مركز جميل للفنون (واجهة الجداف البحرية):** مؤسسة مبتكرة تعرض الفن الحديث والمعاصر في مساحات معمارية بديعة.";
-            } else {
-                return "Dubai has several vibrant, world-renowned art and creative hubs:\n\n" .
-                    "• **Alserkal Avenue (Al Quoz)**\nThe premier contemporary art hub of Dubai with over 70 creative spaces, world-class galleries (Green Art Gallery, Carbon 12, Grey Noise), artisan cafes, and indie cinemas.\n\n" .
-                    "• **Dubai Design District (d3)**\nA hub for high-end fashion, architecture, modern sculpture installations, and design festivals.\n\n" .
-                    "• **DIFC Gate Village**\nSophisticated commercial galleries (Christie's, Opera Gallery, Ayyam Gallery) and fine dining.\n\n" .
-                    "• **Al Fahidi Historical Neighbourhood**\nHistoric wind-tower quarter hosting the Sikka Art & Design Festival, XVA Gallery, and heritage craft studios.\n\n" .
-                    "• **Jameel Arts Centre (Jaddaf Waterfront)**\nAn innovative institution displaying modern Middle Eastern and South Asian art in minimalist architectural spaces.";
-            }
-        }
-
-        // Intent L: Weekend Itinerary & Tours
-        $asksTour = str_contains($q, 'tour') || str_contains($q, 'weekend') || str_contains($q, 'itinerary') || str_contains($q, 'trip')
-                 || str_contains($q, 'جولة') || str_contains($q, 'عطلة') || str_contains($q, 'أسبوع') || str_contains($q, 'برنامج');
-        if ($asksTour) {
-            if ($isArabic) {
-                return "إليك خطة مقترحة لـ **جولة فنية في عطلة نهاية الأسبوع** في دبي:\n\n" .
-                    "**اليوم 1 (الجمعة - الحداثة والتصميم):**\n" .
-                    "• **الصباح:** جولة في حي دبي للتصميم (d3)، وتناول الإفطار في مقهى إبداعي، واستكشاف أحدث معارض التصميم.\n" .
-                    "• **بعد الظهر:** زيارة قرية البوابة في مركز دبي المالي العالمي (DIFC) لمشاهدة المعارض المعاصرة والممشى الفني النحتي.\n" .
-                    "• **المساء:** الاستمتاع بغروب الشمس في مركز جميل للفنون على واجهة الجداف البحرية الهادئة.\n\n" .
-                    "**اليوم 2 (السبت - الأصالة والتراث والفن المستقل):**\n" .
-                    "• **الصباح:** جولة في أزقة حي الفهيدي التاريخي وزيارة فندق ومعرض XVA الفني.\n" .
-                    "• **بعد الظهر:** الانغماس في أروقة السركال أفنيو — استكشاف مستودعات الفنون، وورش العمل المباشرة، والمتاجر الإبداعية.\n" .
-                    "• **المساء:** حضور عرض سينمائي فني مستقل أو أمسية موسيقية حية في سينما عقيل.";
-            } else {
-                return "Here is a curated **Weekend Art Tour** in Dubai:\n\n" .
-                    "**Day 1 (Friday - Modern & Design):**\n" .
-                    "• **Morning:** Stroll through Dubai Design District (d3), enjoy breakfast at a creative café, and explore cutting-edge design showcases.\n" .
-                    "• **Afternoon:** Visit DIFC Gate Village for prestigious contemporary galleries and sculpture walks.\n" .
-                    "• **Evening:** Sunset visit to Jameel Arts Centre by the serene Jaddaf waterfront.\n\n" .
-                    "**Day 2 (Saturday - Underground & Heritage):**\n" .
-                    "• **Morning:** Wander through the historic Al Fahidi cultural quarters and visit XVA Art Hotel.\n" .
-                    "• **Afternoon:** Dive into Alserkal Avenue — visit warehouse galleries, live artist workshops, and creative concept stores.\n" .
-                    "• **Night:** Catch an independent art cinema screening or live music at Cinema Akil.";
-            }
-        }
-
-        // Intent M: Art Cafes & Dining
-        $asksCafe = str_contains($q, 'cafe') || str_contains($q, 'coffee') || str_contains($q, 'breakfast') || str_contains($q, 'dining') || str_contains($q, 'food') || str_contains($q, 'restaurant')
-                 || str_contains($q, 'مقهى') || str_contains($q, 'مقاهي') || str_contains($q, 'مطعم') || str_contains($q, 'إفطار') || str_contains($q, 'قهوة');
-        if ($asksCafe) {
-            if ($isArabic) {
-                return "أفضل المقاهي الفنية لتناول القهوة والإفطار وسط الأعمال الإبداعية في دبي:\n\n" .
-                    "• **Nightjar Coffee Roasters (السركال أفنيو):** تحميص حرفي وأطباق إفطار شهية في قلب أجواء المستودعات الفنية.\n" .
-                    "• **Wild & The Moon (السركال أفنيو):** أطباق ومشروبات عضوية ونباتية 100% وسط مساحات خضراء مريحة.\n" .
-                    "• **XVA Cafe (حي الفهيدي):** فناء تراثي هادئ تحت أشجار السدر يقدم أشهى المأكولات النباتية والتراثية.\n" .
-                    "• **The Lighthouse (حي دبي للتصميم d3):** مفهوم إبداعي يجمع بين متجر التصاميم والمطعم الراقي.\n" .
-                    "• **A4 Space (السركال أفنيو):** مساحة عمل مشتركة هادئة مع مكتبة فنية ومقهى مفتوح.";
-            } else {
-                return "Top art cafes in Dubai where you can dine surrounded by creativity:\n\n" .
-                    "• **Nightjar Coffee Roasters (Alserkal Avenue):** Renowned artisan cold brews and craft breakfast dishes inside a vibrant warehouse vibe.\n" .
-                    "• **Wild & The Moon (Alserkal Avenue):** 100% plant-based organic food and cold-pressed juices in a sunlit green space.\n" .
-                    "• **XVA Cafe (Al Fahidi):** A secluded historic courtyard shaded by a Frangipani tree, serving gourmet vegetarian Middle Eastern cuisine.\n" .
-                    "• **The Lighthouse (d3):** A design concept store and Mediterranean dining lounge created for the creative community.\n" .
-                    "• **A4 Space (Alserkal Avenue):** Loft-style creative hub with an indie coffee counter, art library, and co-working spaces.";
-            }
-        }
-
-        // Intent N: Tashkeel, Workshops & Beginner Classes
-        $asksWorkshops = str_contains($q, 'workshop') || str_contains($q, 'workshops') || str_contains($q, 'tashkeel') || str_contains($q, 'class') || str_contains($q, 'beginner') || str_contains($q, 'learn')
-                      || str_contains($q, 'تشكيل') || str_contains($q, 'ورش') || str_contains($q, 'تدريب') || str_contains($q, 'مبتدئ') || str_contains($q, 'دروس');
-        if ($asksWorkshops) {
-            if ($isArabic) {
-                return "يقدم المشهد الفني في دبي ورش عمل وبرامج تدريبية لجميع المستويات:\n\n" .
-                    "• **مركز تشكيل (ند الشبا وحي الفهيدي):** يوفر استوديوهات متخصصة للطباعة، وصناعة الفخار، والتصوير، وبرنامج تنوين للتصميم، مع ورش أسبوعية للمبتدئين والمحترفين.\n" .
-                    "• **السركال أفنيو:** مساحات مثل thejamjar تقدم دروساً حرة في الرسم التعبيري والألوان الزيتية والإكريليك للأطفال والكبار.\n" .
-                    "• **مركز جميل للفنون:** برامج مجتمعية وحلقات نقاشية وورش فنية دورية مجانية.\n" .
-                    "• تابع تبويب **الفعاليات** في التطبيق لمعرفة مواعيد ورش العمل القادمة والتسجيل فيها مباشرة!";
-            } else {
-                return "Dubai offers dynamic art workshops and learning spaces for all skill levels:\n\n" .
-                    "• **Tashkeel (Nad Al Sheba & Al Fahidi):** Founded by HH Sheikha Lateefa bint Maktoum, offers professional printmaking studios, darkrooms, ceramic facilities, and public workshops.\n" .
-                    "• **thejamjar (Alserkal Avenue):** A community art space offering guided painting classes, DIY canvas sessions, and youth art programs.\n" .
-                    "• **Jameel Arts Centre:** Hosts free community workshops, curatorial talks, and family learning weekends.\n" .
-                    "• Check the in-app **Events** tab regularly for upcoming masterclasses and workshop registrations!";
-            }
-        }
-
-        // Intent O: Competitions & Open Calls
-        $asksComp = str_contains($q, 'competition') || str_contains($q, 'prize') || str_contains($q, 'award') || str_contains($q, 'open call') || str_contains($q, 'grant')
-                 || str_contains($q, 'مسابقة') || str_contains($q, 'مسابقات') || str_contains($q, 'جوائز') || str_contains($q, 'مكافآت');
-        if ($asksComp) {
-            if ($isArabic) {
-                return "المسابقات والجوائز الفنية النشطة في دبي:\n\n" .
-                    "• **مهرجان سكة للفنون والتصميم:** يفتح سنوياً دعوة للمبدعين بجوائز دعم وتمويل للمشاريع الفنية الفائزة.\n" .
-                    "• **برنامج تنوين للتصميم (تشكيل):** منحة تدريب وتمويل لإنتاج قطع أثاث وتصميم إماراتية.\n" .
-                    "• **تكليفات الفن العام (Public Art Dubai):** دعوات مفتوحة تنظمها دبي للثقافة للمجسمات والجداريات الضخمة.\n" .
-                    "• تصفح شاشة **الفعاليات / المسابقات** في تطبيقنا للاطلاع على شروط المشاركة والمواعيد النهائية فور صدورها!";
-            } else {
-                return "Active art competitions, grants, and open calls in Dubai:\n\n" .
-                    "• **Sikka Art & Design Open Call:** Annual competition by Dubai Culture providing production grants for site-specific installations and exhibitions.\n" .
-                    "• **Tanween Design Programme (Tashkeel):** Annual design cohort with product manufacture and launch at Dubai Design Week.\n" .
-                    "• **Public Art Dubai Commissions:** Open calls by the Dubai government for large-scale outdoor sculptures and mural works.\n" .
-                    "• Browse active competitions and deadlines under our app's **EVENTS / COMPETITIONS** section!";
-            }
-        }
-
-        // Intent P: Artist Verification Requirements
-        $asksVerify = str_contains($q, 'verify') || str_contains($q, 'verified') || str_contains($q, 'requirement') || str_contains($q, 'criteria')
-                   || str_contains($q, 'توثيق') || str_contains($q, 'متطلبات') || str_contains($q, 'شروط');
-        if ($asksVerify) {
-            if ($isArabic) {
-                return "متطلبات توثيق واعتماد ملف الفنان في تطبيق **فنان دبي**:\n\n" .
-                    "1. **المعلومات والسيرة:** الاسم الفني، والتخصص الرئيسي، ونبذة ملخصة عن مسيرتك ومعارضك.\n" .
-                    "2. **معرض الأعمال (Portfolio):** رفع ما لا يقل عن 3 إلى 5 صور واضحة وعالية الجودة لأعمالك الفنية الأصلية.\n" .
-                    "3. **بيانات التواصل:** بريد إلكتروني صالح، ورقم هاتف، وحساب إنستغرام أو رابط موقع إلكتروني.\n" .
-                    "4. **الاعتماد:** يتم تدقيق الطلب وتوثيق الحساب بشارة التحقق خلال 24 ساعة للظهور في قوائم الفنانين المعتمدين!";
-            } else {
-                return "Requirements to get verified as an artist on **Artist Dubai**:\n\n" .
-                    "1. **Full Name & Discipline:** Clear profile title indicating your creative discipline (e.g. Contemporary Painting, Sculpture, Digital Art).\n" .
-                    "2. **Portfolio Samples:** Upload 3 to 5 high-resolution images of your original artwork.\n" .
-                    "3. **Artist Bio:** A brief artist statement summarizing your artistic journey and themes.\n" .
-                    "4. **Valid Contact:** Phone number, email, and social handle (Instagram or website) for verification.\n" .
-                    "5. **Fast Review:** Our curation team reviews submissions within 24 hours to award verified artist status!";
-            }
-        }
-
-        // Intent Q: Sculptures & Public Installations
-        $asksSculpture = str_contains($q, 'sculpture') || str_contains($q, 'installation') || str_contains($q, '3d') || str_contains($q, 'monument')
-                      || str_contains($q, 'نحت') || str_contains($q, 'مجسم') || str_contains($q, 'مجسمات') || str_contains($q, 'تماثيل');
-        if ($asksSculpture) {
-            if ($isArabic) {
-                return "أين تشاهد المجسمات النحتية الحديثة في دبي:\n\n" .
-                    "• **ممشى المجسمات بمركز دبي المالي (DIFC Sculpture Promenade):** متحف مفتوح طوال العام يضم مجسمات برونزية وفولاذية ورخامية لنخبة من كبار النحاتين العالميين.\n" .
-                    "• **معرض كوستوت Custot (السركال أفنيو):** يعرض بانتظام منحوتات ضخمة لفنانين معاصرين مثل بيرنار فينيت وجان دوبوفيه.\n" .
-                    "• **حديقة المجسمات بمركز جميل للفنون:** مساحات خارجية على خور الجداف تضم أعمالاً تركيبية حصرية.\n" .
-                    "• **أعمال حي دبي للتصميم d3:** مجسمات تفاعلية مستوحاة من التصميم المعماري الحديث.";
-            } else {
-                return "Where to experience monumental modern sculptures in Dubai:\n\n" .
-                    "• **DIFC Sculpture Promenade:** Year-round open-air museum displaying monumental contemporary bronze, steel, and marble sculptures by international masters.\n" .
-                    "• **Custot Gallery (Alserkal):** Frequently showcases monumental sculpture and modern European masters (Dubuffet, Bernar Venet).\n" .
-                    "• **Jameel Arts Centre Sculpture Park:** Outdoor park along Jaddaf Waterfront featuring bespoke commissions.\n" .
-                    "• **d3 Design Installations:** Cutting-edge interactive public art installations throughout Dubai Design District.";
-            }
-        }
-
-        // Fallback / Conversational Greetings
-        if ($isArabic) {
-            return "مرحباً بك في **مرشد فنان دبي الذكي**! أنا هنا لمساعدتك في كل ما يتعلق بالمشهد الفني في دبي:\n\n" .
-                "• **المناطق الفنية:** السركال أفنيو، حي دبي للتصميم d3، مركز دبي المالي DIFC، مركز جميل للفنون، حي الفهيدي.\n" .
-                "• **أوقات العمل والتذاكر:** مواعيد الدخول، والدخول المجاني، وإرشادات المترو والمواصلات.\n" .
-                "• **الفنانون والأعمال:** كيفية حجز فنان، أو طلب لوحات مخصصة، أو التسجيل كفنان معتمد.\n" .
-                "• **الفعاليات:** المعارض الحالية، والمسابقات، وورش العمل التدريبية.\n\n" .
-                "تفضل بسؤالك وسأجيبك فوراً!";
-        } else {
-            return "Hello! I am your **Artist Dubai AI Guide**. I am here to help you navigate and explore Dubai's cultural landscape:\n\n" .
-                "• **Creative Districts:** Alserkal Avenue, Dubai Design District (d3), DIFC Gate Village, Jameel Arts Centre, and Al Fahidi.\n" .
-                "• **Visiting Info:** Opening hours, free admission policies, and Metro transit directions.\n" .
-                "• **Artists & Artworks:** How to book artists, purchase original art, or register as a verified creator.\n" .
-                "• **Events & Learning:** Current exhibitions, art competitions, and beginner workshops.\n\n" .
-                "Feel free to ask any question!";
-        }
-    }
-
-    private function generateRelatedQuestions(string $query, string $locale = '', array $dbContext = []): array {
-        $q = mb_strtolower(trim($query));
-        $isArabic = ($locale === 'ar') || (bool)preg_match('/[\x{0600}-\x{06FF}]/u', $query);
-
-        if ($isArabic) {
-            if (str_contains($q, 'hour') || str_contains($q, 'timing') || str_contains($q, 'أوقات') || str_contains($q, 'ساعات') || str_contains($q, 'مواعيد')) {
-                return [
-                    'هل الدخول إلى معارض السركال أفنيو مجاني؟',
-                    'كيف أصل إلى قرية البوابة بمركز دبي المالي بالمترو؟',
-                    'ما هي أحدث الفعاليات الفنية هذا الأسبوع؟',
-                ];
-            }
-            if (str_contains($q, 'metro') || str_contains($q, 'reach') || str_contains($q, 'مترو') || str_contains($q, 'وصول') || str_contains($q, 'طريق')) {
-                return [
-                    'ما هي أوقات عمل حي دبي للتصميم d3؟',
-                    'هل تتوفر مواقف سيارات في السركال أفنيو؟',
-                    'أفكار لجولة فنية في عطلة نهاية الأسبوع في دبي',
-                ];
-            }
-            if (str_contains($q, 'free') || str_contains($q, 'ticket') || str_contains($q, 'مجاني') || str_contains($q, 'تذاكر') || str_contains($q, 'رسوم')) {
-                return [
-                    'ما هي أوقات عمل معارض السركال أفنيو؟',
-                    'كيف أصل إلى السركال أفنيو بالمترو؟',
-                    'ما هي أفضل المقاهي الفنية في السركال؟',
-                ];
-            }
-            if (str_contains($q, 'book') || str_contains($q, 'hire') || str_contains($q, 'حجز') || str_contains($q, 'توظيف') || str_contains($q, 'طلب فنان')) {
-                return [
-                    'ما هو متوسط سعر حجز الفنانين في دبي؟',
-                    'كيف يمكنني بيع لوحاتي وأعمالي الفنية هنا؟',
-                    'ما هي متطلبات توثيق ملف الفنان في التطبيق؟',
-                ];
-            }
-            if (!empty($dbContext['matched_artists'])) {
-                $firstName = $dbContext['matched_artists'][0]['name'] ?? 'فنان';
-                return [
-                    "كيف أحجز $firstName لعمل لوحة خاصة؟",
-                    'ما هو متوسط سعر حجز الفنانين في دبي؟',
-                    'ما هي متطلبات توثيق ملف الفنان في التطبيق؟',
-                ];
-            }
-            if (!empty($dbContext['matched_events'])) {
-                return [
-                    'كيف أشارك في الفعاليات والمعارض القادمة؟',
-                    'هل الدخول إلى معارض السركال أفنيو مجاني؟',
-                    'ما هي أوقات عمل حي دبي للتصميم d3؟',
-                ];
-            }
-            return [
-                'هل الدخول إلى معارض السركال أفنيو مجاني؟',
-                'ما هي أوقات عمل حي دبي للتصميم d3؟',
-                'كيف أصل إلى قرية البوابة بمركز دبي المالي بالمترو؟',
-            ];
-        }
-
-        // ENGLISH
-        if (str_contains($q, 'hour') || str_contains($q, 'timing') || str_contains($q, 'open') || str_contains($q, 'close')) {
-            return [
-                'Is admission free at Alserkal Avenue galleries?',
-                'How do I reach DIFC Gate Village by Metro?',
-                'What cultural events are happening this weekend?',
-            ];
-        }
-        if (str_contains($q, 'metro') || str_contains($q, 'reach') || str_contains($q, 'direction') || str_contains($q, 'get to')) {
-            return [
-                'What are the opening hours for Dubai Design District (d3)?',
-                'Is admission free at Alserkal Avenue galleries?',
-                'Ideas for a weekend art tour in Dubai',
-            ];
-        }
-        if (str_contains($q, 'free') || str_contains($q, 'admission') || str_contains($q, 'ticket') || str_contains($q, 'cost')) {
-            return [
-                'What are the opening hours for Alserkal Avenue galleries?',
-                'How do I reach DIFC Gate Village by Metro?',
-                'What are the best art cafes in Alserkal Avenue?',
-            ];
-        }
-        if (str_contains($q, 'book') || str_contains($q, 'hire') || str_contains($q, 'commission')) {
-            return [
-                'What are the starting rates for artists in Dubai?',
-                'Can I sell my paintings and artworks directly on the app?',
-                'What are the requirements to get verified as an artist?',
-            ];
-        }
-        if (!empty($dbContext['matched_artists'])) {
-            $firstName = $dbContext['matched_artists'][0]['name'] ?? 'an artist';
-            return [
-                "How do I book $firstName for a commission?",
-                'What are the starting rates for artists in Dubai?',
-                'What are the requirements to get verified as an artist?',
-            ];
-        }
-        if (!empty($dbContext['matched_events'])) {
-            return [
-                'How do I RSVP for upcoming art exhibitions?',
-                'Is admission free at Alserkal Avenue galleries?',
-                'What are the opening hours for Dubai Design District (d3)?',
-            ];
-        }
         return [
-            'Which art districts can I visit in Dubai?',
-            'What are the opening hours for Dubai Design District (d3)?',
-            'How do I book an artist in this app?',
+            'reply' => $unavailableMsg,
+            'related_questions' => [],
         ];
     }
 
-    private function callGeminiApi(string $prompt, string $apiKey, bool $isArabic, array $dbContext = []): ?string {
-        try {
-            $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" . urlencode($apiKey);
-            
-            $dbSummary = "Live Database Context: Artists registered (" . ($dbContext['counts']['artists'] ?? 0) . "), Events (" . ($dbContext['counts']['events'] ?? 0) . "), Galleries (" . ($dbContext['counts']['galleries'] ?? 0) . ").";
-            if (!empty($dbContext['matched_artists'])) {
-                $dbSummary .= "\nActive matching artists: " . json_encode(array_column($dbContext['matched_artists'], 'name'), JSON_UNESCAPED_UNICODE);
-            }
-            if (!empty($dbContext['matched_events'])) {
-                $dbSummary .= "\nActive matching events: " . json_encode(array_column($dbContext['matched_events'], 'title'), JSON_UNESCAPED_UNICODE);
-            }
+    /**
+     * Direct integration with Google Gemini Generative Language API.
+     * Grounded with real-time live database context and prompts Gemini
+     * to dynamically supply tailored follow-up questions.
+     */
+    private function callGeminiApi(string $prompt, string $apiKey, bool $isArabic, array $dbContext = [], array $recentHistory = []): ?array {
+        // High-availability working models priority list
+        $models = [
+            'gemini-3.5-flash',
+            'gemini-3.5-flash-lite',
+            'gemini-3.1-flash-lite',
+            'gemini-3.8-flash',
+            'gemini-3.7-flash',
+            'gemini-3.6-flash',
+        ];
+        
+        $dbSummary = "Live Database Context: Artists registered (" . ($dbContext['counts']['artists'] ?? 0) . "), Events (" . ($dbContext['counts']['events'] ?? 0) . "), Galleries (" . ($dbContext['counts']['galleries'] ?? 0) . "), Artworks (" . ($dbContext['counts']['artworks'] ?? 0) . ").";
+        if (!empty($dbContext['matched_artists'])) {
+            $dbSummary .= "\nActive matching artists: " . json_encode(array_column($dbContext['matched_artists'], 'name'), JSON_UNESCAPED_UNICODE);
+        }
+        if (!empty($dbContext['matched_events'])) {
+            $dbSummary .= "\nActive matching events: " . json_encode(array_column($dbContext['matched_events'], 'title'), JSON_UNESCAPED_UNICODE);
+        }
+        if (!empty($dbContext['matched_galleries'])) {
+            $dbSummary .= "\nActive matching galleries: " . json_encode(array_column($dbContext['matched_galleries'], 'name'), JSON_UNESCAPED_UNICODE);
+        }
+        if (!empty($dbContext['matched_artworks'])) {
+            $dbSummary .= "\nFeatured artworks: " . json_encode(array_column($dbContext['matched_artworks'], 'title'), JSON_UNESCAPED_UNICODE);
+        }
 
-            $systemInstruction = "You are the AI Art Guide for 'Artist Dubai', an official mobile application for contemporary artists, galleries, cultural hubs, and events in Dubai, UAE. Answer clearly, accurately, and politely in markdown format. Keep answers concise (under 250 words) and suitable for a mobile screen. Use the provided Live Database Context as platform ground truth. Locale: " . ($isArabic ? "Arabic" : "English") . ".\n\n" . $dbSummary;
-            
-            $payload = [
-                'contents' => [
-                    [
-                        'role' => 'user',
-                        'parts' => [
-                            ['text' => $systemInstruction . "\n\nUser Question: " . $prompt]
-                        ]
-                    ]
-                ],
-                'generationConfig' => [
-                    'temperature' => 0.7,
-                    'maxOutputTokens' => 600,
-                ]
-            ];
+        $systemInstruction = "You are the official, highly sophisticated, and welcoming AI Art Guide for 'Artist Dubai' (فنان دبي), the premier cultural and visual arts platform celebrating artists, prestigious galleries, cultural districts (Alserkal Avenue, Dubai Design District d3, Al Fahidi Historical Neighbourhood, Jameel Arts Centre), art fairs (Art Dubai, World Art Dubai), and exhibitions across Dubai and the UAE.\n" .
+            "Core Persona & Guidelines:\n" .
+            "1. Deliver accurate, inspiring, and concise insights in clean Markdown with clear headings and bullet points tailored for mobile screens.\n" .
+            "2. When discussing artists, exhibitions, or booking, encourage users to explore profiles or events directly on the Artist Dubai app.\n" .
+            "3. Seamlessly ground your answers using the live database context below:\n" .
+            $dbSummary . "\n" .
+            "4. Language: Answer strictly and eloquently in " . ($isArabic ? "Arabic" : "English") . ".\n\n" .
+            "MANDATORY OUTPUT FORMAT:\n" .
+            "At the very end of your response, output exactly this delimiter on a new line:\n" .
+            "---RELATED---\n" .
+            "Followed by exactly 3 relevant follow-up questions the user might ask next, formatted as:\n" .
+            "1. [Question 1]\n" .
+            "2. [Question 2]\n" .
+            "3. [Question 3]";
 
-            $ch = curl_init($url);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 6);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            $result = curl_exec($ch);
-            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            if ($code === 200 && !empty($result)) {
-                $decoded = json_decode($result, true);
-                $candidateText = $decoded['candidates'][0]['content']['parts'][0]['text'] ?? null;
-                if (!empty($candidateText)) {
-                    return trim($candidateText);
+        $contents = [];
+        // Add conversation history if present
+        if (!empty($recentHistory)) {
+            foreach ($recentHistory as $h) {
+                $role = ($h['sender'] === 'user') ? 'user' : 'model';
+                $text = trim($h['message'] ?? '');
+                if (!empty($text)) {
+                    $contents[] = [
+                        'role' => $role,
+                        'parts' => [['text' => $text]]
+                    ];
                 }
             }
-        } catch (\Throwable $t) {}
+        }
+
+        // Current message with system instruction
+        $userText = (!empty($contents) ? "" : ($systemInstruction . "\n\n")) . "User Question: " . $prompt;
+        $contents[] = [
+            'role' => 'user',
+            'parts' => [['text' => $userText]]
+        ];
+
+        $payload = [
+            'contents' => $contents,
+            'generationConfig' => [
+                'temperature' => 0.7,
+                'maxOutputTokens' => 1024,
+            ]
+        ];
+        if (!empty($systemInstruction)) {
+            $payload['systemInstruction'] = [
+                'parts' => [['text' => $systemInstruction]]
+            ];
+        }
+        $payloadJson = json_encode($payload);
+
+        foreach ($models as $model) {
+            try {
+                $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . urlencode($apiKey);
+
+                $ch = curl_init($url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $payloadJson);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 12);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                $result = curl_exec($ch);
+                $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+
+                if ($code === 200 && !empty($result)) {
+                    $decoded = json_decode($result, true);
+                    $candidateText = $decoded['candidates'][0]['content']['parts'][0]['text'] ?? null;
+                    if (!empty($candidateText)) {
+                        $rawText = trim($candidateText);
+                        $replyText = $rawText;
+                        $relatedQuestions = [];
+
+                        if (str_contains($rawText, '---RELATED---')) {
+                            $parts = explode('---RELATED---', $rawText, 2);
+                            $replyText = trim($parts[0]);
+                            $relatedRaw = trim($parts[1]);
+                            $relLines = preg_split('/[\r\n]+/', $relatedRaw);
+                            foreach ($relLines as $line) {
+                                $cleanLine = trim(preg_replace('/^[\d\.\-\*\•\s]+/', '', trim($line)));
+                                if (!empty($cleanLine) && mb_strlen($cleanLine) >= 6) {
+                                    $relatedQuestions[] = $cleanLine;
+                                }
+                            }
+                            $relatedQuestions = array_slice($relatedQuestions, 0, 3);
+                        }
+
+                        return [
+                            'reply' => $replyText,
+                            'related_questions' => $relatedQuestions,
+                        ];
+                    }
+                }
+            } catch (\Throwable $t) {}
+        }
         return null;
     }
 }
@@ -4928,23 +5505,59 @@ class RecycleBinController {
             return;
         }
         try {
-            // Cascade cleanup for specific types
+            // Delete associated physical image files from storage
             if ($type === 'artists') {
+                $stmtA = $this->db->prepare('SELECT avatar_url, banner_url FROM artists WHERE id = ?');
+                $stmtA->execute([$id]);
+                if ($row = $stmtA->fetch()) {
+                    UploadController::deletePhysicalFile($row['avatar_url'] ?? null);
+                    UploadController::deletePhysicalFile($row['banner_url'] ?? null);
+                }
+                // Also artworks belonging to this artist
+                $stmtArt = $this->db->prepare('SELECT image_url FROM artworks WHERE artist_id = ?');
+                $stmtArt->execute([$id]);
+                while ($artRow = $stmtArt->fetch()) {
+                    UploadController::deletePhysicalFile($artRow['image_url'] ?? null);
+                }
+
                 $this->db->prepare('DELETE FROM artworks WHERE artist_id = ?')->execute([$id]);
                 $this->db->prepare('DELETE FROM favorites WHERE item_type = "artist" AND item_id = ?')->execute([(string)$id]);
                 $this->db->prepare('DELETE FROM follows WHERE artist_id = ?')->execute([$id]);
             } elseif ($type === 'events') {
+                $stmtE = $this->db->prepare('SELECT image_url, galleries_json FROM events WHERE id = ?');
+                $stmtE->execute([$id]);
+                if ($row = $stmtE->fetch()) {
+                    UploadController::deletePhysicalFile($row['image_url'] ?? null);
+                    UploadController::deleteMultiplePhysicalFiles($row['galleries_json'] ?? null);
+                }
+
                 $this->db->prepare('DELETE FROM bookings WHERE event_id = ?')->execute([$id]);
                 $this->db->prepare('DELETE FROM favorites WHERE item_type = "event" AND item_id = ?')->execute([(string)$id]);
+            } elseif ($type === 'galleries') {
+                $stmtG = $this->db->prepare('SELECT image_url, cover_url, images_json FROM galleries WHERE id = ?');
+                $stmtG->execute([$id]);
+                if ($row = $stmtG->fetch()) {
+                    UploadController::deletePhysicalFile($row['image_url'] ?? null);
+                    UploadController::deletePhysicalFile($row['cover_url'] ?? null);
+                    UploadController::deleteMultiplePhysicalFiles($row['images_json'] ?? null);
+                }
+            } elseif ($type === 'government_entities') {
+                $stmtGov = $this->db->prepare('SELECT image_url, logo_url FROM government_entities WHERE id = ?');
+                $stmtGov->execute([$id]);
+                if ($row = $stmtGov->fetch()) {
+                    UploadController::deletePhysicalFile($row['image_url'] ?? null);
+                    UploadController::deletePhysicalFile($row['logo_url'] ?? null);
+                }
             }
+
             $this->db->prepare("DELETE FROM {$type} WHERE id = ?")->execute([$id]);
-            ApiResponse::success(['id' => $id, 'type' => $type], 'Item permanently deleted');
+            ApiResponse::success(['id' => $id, 'type' => $type], 'Item and associated files permanently deleted');
         } catch (\Throwable $e) {
             ApiResponse::error('Permanent delete failed: ' . $e->getMessage(), 500);
         }
     }
 
-    /** Empty entire recycle bin — permanently delete all trashed items */
+    /** Empty entire recycle bin — permanently delete all trashed items and their physical images */
     public function emptyTrash(): void {
         AuthMiddleware::requireAdmin();
         $tables = ['artists','events','galleries','government_entities','categories','experience_levels','locations'];
@@ -4952,25 +5565,51 @@ class RecycleBinController {
         foreach ($tables as $table) {
             try {
                 if ($table === 'artists') {
-                    $ids = $this->db->query("SELECT id FROM artists WHERE deleted_at IS NOT NULL")->fetchAll(PDO::FETCH_COLUMN);
-                    foreach ($ids as $id) {
-                        $this->db->prepare('DELETE FROM artworks WHERE artist_id = ?')->execute([$id]);
-                        $this->db->prepare('DELETE FROM favorites WHERE item_type = "artist" AND item_id = ?')->execute([(string)$id]);
-                        $this->db->prepare('DELETE FROM follows WHERE artist_id = ?')->execute([$id]);
+                    $rows = $this->db->query("SELECT id, avatar_url, banner_url FROM artists WHERE deleted_at IS NOT NULL")->fetchAll();
+                    foreach ($rows as $r) {
+                        UploadController::deletePhysicalFile($r['avatar_url'] ?? null);
+                        UploadController::deletePhysicalFile($r['banner_url'] ?? null);
+
+                        $artRows = $this->db->prepare("SELECT image_url FROM artworks WHERE artist_id = ?");
+                        $artRows->execute([$r['id']]);
+                        while ($art = $artRows->fetch()) {
+                            UploadController::deletePhysicalFile($art['image_url'] ?? null);
+                        }
+
+                        $this->db->prepare('DELETE FROM artworks WHERE artist_id = ?')->execute([$r['id']]);
+                        $this->db->prepare('DELETE FROM favorites WHERE item_type = "artist" AND item_id = ?')->execute([(string)$r['id']]);
+                        $this->db->prepare('DELETE FROM follows WHERE artist_id = ?')->execute([$r['id']]);
                     }
                 } elseif ($table === 'events') {
-                    $ids = $this->db->query("SELECT id FROM events WHERE deleted_at IS NOT NULL")->fetchAll(PDO::FETCH_COLUMN);
-                    foreach ($ids as $id) {
-                        $this->db->prepare('DELETE FROM bookings WHERE event_id = ?')->execute([$id]);
-                        $this->db->prepare('DELETE FROM favorites WHERE item_type = "event" AND item_id = ?')->execute([(string)$id]);
+                    $rows = $this->db->query("SELECT id, image_url, galleries_json FROM events WHERE deleted_at IS NOT NULL")->fetchAll();
+                    foreach ($rows as $r) {
+                        UploadController::deletePhysicalFile($r['image_url'] ?? null);
+                        UploadController::deleteMultiplePhysicalFiles($r['galleries_json'] ?? null);
+
+                        $this->db->prepare('DELETE FROM bookings WHERE event_id = ?')->execute([$r['id']]);
+                        $this->db->prepare('DELETE FROM favorites WHERE item_type = "event" AND item_id = ?')->execute([(string)$r['id']]);
+                    }
+                } elseif ($table === 'galleries') {
+                    $rows = $this->db->query("SELECT id, image_url, cover_url, images_json FROM galleries WHERE deleted_at IS NOT NULL")->fetchAll();
+                    foreach ($rows as $r) {
+                        UploadController::deletePhysicalFile($r['image_url'] ?? null);
+                        UploadController::deletePhysicalFile($r['cover_url'] ?? null);
+                        UploadController::deleteMultiplePhysicalFiles($r['images_json'] ?? null);
+                    }
+                } elseif ($table === 'government_entities') {
+                    $rows = $this->db->query("SELECT id, image_url, logo_url FROM government_entities WHERE deleted_at IS NOT NULL")->fetchAll();
+                    foreach ($rows as $r) {
+                        UploadController::deletePhysicalFile($r['image_url'] ?? null);
+                        UploadController::deletePhysicalFile($r['logo_url'] ?? null);
                     }
                 }
+
                 $stmt = $this->db->prepare("DELETE FROM {$table} WHERE deleted_at IS NOT NULL");
                 $stmt->execute();
                 $totalDeleted += $stmt->rowCount();
             } catch (\Throwable $e) {}
         }
-        ApiResponse::success(['total_deleted' => $totalDeleted], "Recycle bin emptied — {$totalDeleted} items permanently removed");
+        ApiResponse::success(['total_deleted' => $totalDeleted], "Recycle bin emptied — {$totalDeleted} items and files permanently removed");
     }
 }
 // -----------------------------------------------------------------------------
@@ -5102,7 +5741,9 @@ class UnifiedMySqlApiRouter {
                 if (empty($reqFile) && preg_match('/uploads?\/([^\/\?]+)/', $uri, $m)) {
                     $reqFile = $m[1];
                 }
-                if ($method === 'GET' || !empty($reqFile)) {
+                if ($action === 'delete' || $method === 'DELETE') {
+                    $uploadCtrl->handleDelete(array_merge($input, $_GET));
+                } elseif ($method === 'GET' || !empty($reqFile)) {
                     $uploadCtrl->serveFile($reqFile);
                 } else {
                     $uploadCtrl->handleUpload($input);
@@ -5128,7 +5769,19 @@ class UnifiedMySqlApiRouter {
                 }
                 break;
 
-
+            case 'users':
+            case 'user':
+                $auth = new AuthController();
+                if ($action === 'update_role' || $action === 'role' || $method === 'PUT' || $method === 'PATCH') {
+                    $auth->updateUserRole(array_merge($input, $_POST, $_GET));
+                } elseif ($action === 'assign_plan' || $action === 'assignplan' || $action === 'update_plan') {
+                    $auth->assignUserPlan(array_merge($input, $_POST, $_GET));
+                } elseif ($action === 'delete' || $action === 'delete_user' || $method === 'DELETE') {
+                    $auth->adminDeleteUser(array_merge($input, $_POST, $_GET));
+                } else {
+                    $auth->listUsers($_GET);
+                }
+                break;
 
             case 'categories':
                 $cat = new CategoryController();
@@ -5324,6 +5977,20 @@ class UnifiedMySqlApiRouter {
                     $listingCtrl->deletePlan(array_merge($input, $_GET));
                 } else {
                     $listingCtrl->getPlans();
+                }
+                break;
+
+            case 'user_plans':
+            case 'user-plans':
+            case 'purchased_plans':
+                $userPlansCtrl = new UserPlansController();
+                $upAction = strtolower(trim($_GET['action'] ?? $input['action'] ?? ''));
+                if ($upAction === 'cancel') {
+                    $userPlansCtrl->cancelPlan(array_merge($input, $_POST, $_GET));
+                } elseif ($method === 'POST' || $upAction === 'purchase' || $upAction === 'record') {
+                    $userPlansCtrl->recordPurchase(array_merge($input, $_POST));
+                } else {
+                    $userPlansCtrl->getPlans(array_merge($input, $_GET));
                 }
                 break;
 
