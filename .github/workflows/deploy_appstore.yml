@@ -1,4 +1,4 @@
-name: Publish to App Store (Production 3.2.4(9))
+name: Publish to App Store (Production 3.2.5(1))
 
 on:
   workflow_dispatch:
@@ -11,13 +11,13 @@ on:
           - 'Promote Existing TestFlight Build'
         default: 'Build & Submit New Binary'
       app_version:
-        description: 'App Version (e.g. 3.2.4)'
+        description: 'App Version (e.g. 3.2.5)'
         required: false
-        default: '3.2.4'
+        default: '3.2.5'
       build_number:
-        description: 'Build Number (e.g. 9)'
+        description: 'Build Number (e.g. 1)'
         required: false
-        default: '9'
+        default: '1'
       submit_for_review:
         description: 'Automatically submit for Apple App Review?'
         type: boolean
@@ -65,8 +65,8 @@ jobs:
       - name: Determine Build Number
         id: build_info
         run: |
-          VERSION="${{ github.event.inputs.app_version || '3.2.4' }}"
-          BUILD_NUM="${{ github.event.inputs.build_number || '9' }}"
+          VERSION="${{ github.event.inputs.app_version || '3.2.5' }}"
+          BUILD_NUM="${{ github.event.inputs.build_number || '1' }}"
           echo "VERSION_NAME=$VERSION" >> $GITHUB_OUTPUT
           echo "BUILD_NUMBER=$BUILD_NUM" >> $GITHUB_OUTPUT
           echo "Target Version: $VERSION (Build $BUILD_NUM)"

@@ -1,6 +1,6 @@
 workflows:
   ios-testflight:
-    name: iOS TestFlight (Production Release 3.2.4(10))
+    name: iOS TestFlight (Production Release 3.2.5(1))
     max_build_duration: 60
     instance_type: mac_mini_m2
     integrations:
@@ -54,7 +54,7 @@ workflows:
       - name: Get Flutter packages
         script: |
           flutter packages pub get
-          flutter build ios --config-only --build-name=3.2.4 --build-number=10
+          flutter build ios --config-only --build-name=3.2.5 --build-number=1
       - name: Set up code signing
         script: |
           keychain initialize
@@ -83,8 +83,8 @@ workflows:
           echo "Using Export Options Plist: $EXPORT_PLIST"
           flutter build ipa \
             --release \
-            --build-name=3.2.4 \
-            --build-number=10 \
+            --build-name=3.2.5 \
+            --build-number=1 \
             --export-options-plist="$EXPORT_PLIST"
           echo "=== IPA Built ==="
           ls -la build/ios/ipa/*.ipa
