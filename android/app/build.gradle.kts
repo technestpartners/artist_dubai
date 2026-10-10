@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.artistdubai.artist_dubai"
+    namespace = "com.imbu.DubaiArtists"
     compileSdk = 36
     ndkVersion = "28.2.13676358"
 
@@ -20,7 +20,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.artistdubai.artist_dubai"
+        applicationId = "com.imbu.DubaiArtists"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
