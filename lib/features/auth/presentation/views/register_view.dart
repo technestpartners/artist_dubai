@@ -1,17 +1,19 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
-import '../../../../core/errors/exceptions.dart';
-import '../../../../core/services/api_service.dart';
-import '../../../../core/services/live_sync_service.dart';
-import '../../../../core/services/storage_service.dart';
+import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
-import '../../../../core/utils/responsive_helper.dart';
+import '../controllers/register_controller.dart';
+import '../widgets/auth_error_banner_widget.dart';
+import '../widgets/login_header_widget.dart';
 
+/// Clean presentation view for User and Artist registration.
+/// Business logic and state management are fully delegated to [RegisterController].
 class RegisterView extends StatefulWidget {
   const RegisterView({super.key, this.initialRole = 'user'});
 
@@ -22,47 +24,33 @@ class RegisterView extends StatefulWidget {
 }
 
 class _RegisterViewState extends State<RegisterView> {
-  late String _selectedRole;
+  late final RegisterController _controller;
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
 
-  bool _obscurePassword = true;
-  bool _acceptTerms = false;
-  bool _isLoading = false;
-
-  String? _fullNameError;
-  String? _emailError;
-  String? _passwordError;
-  String? _confirmPasswordError;
-  String? _termsError;
-
-  bool get _isFormValid {
-    final fullName = _fullNameController.text.trim();
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-    final confirmPassword = _confirmPasswordController.text.trim();
-
-    return fullName.isNotEmpty &&
-        email.isNotEmpty &&
-        email.contains('@') &&
-        email.contains('.') &&
-        password.length >= 6 &&
-        confirmPassword.isNotEmpty &&
-        password == confirmPassword &&
-        _acceptTerms;
-  }
-
   @override
   void initState() {
     super.initState();
-    _selectedRole = (widget.initialRole == 'artist') ? 'artist' : 'user';
+    _controller = sl<RegisterController>(param1: widget.initialRole);
+    _controller.addListener(_onControllerStateChanged);
+  }
+
+  void _onControllerStateChanged() {
+    if (!mounted) return;
+    final generalErr = _controller.state.generalError;
+    if (generalErr != null && generalErr.isNotEmpty) {
+      _showSnackBar(generalErr);
+    }
+    setState(() {});
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_onControllerStateChanged);
+    _controller.dispose();
     _fullNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -70,137 +58,20 @@ class _RegisterViewState extends State<RegisterView> {
     super.dispose();
   }
 
-  void _onCreateAccount() async {
-    final fullName = _fullNameController.text.trim();
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-    final confirmPassword = _confirmPasswordController.text.trim();
-
-    setState(() {
-      _fullNameError = null;
-      _emailError = null;
-      _passwordError = null;
-      _confirmPasswordError = null;
-      _termsError = null;
-    });
-
-    bool hasError = false;
-
-    if (fullName.isEmpty) {
-      _fullNameError = 'Full name is required';
-      hasError = true;
-    }
-
-    if (email.isEmpty) {
-      _emailError = 'Email address is required';
-      hasError = true;
-    } else if (!email.contains('@') || !email.contains('.')) {
-      _emailError = 'Please enter a valid email address';
-      hasError = true;
-    }
-
-    if (password.isEmpty) {
-      _passwordError = 'Password is required';
-      hasError = true;
-    } else if (password.length < 6) {
-      _passwordError = 'Password must be at least 6 characters';
-      hasError = true;
-    }
-
-    if (confirmPassword.isEmpty) {
-      _confirmPasswordError = 'Please confirm your password';
-      hasError = true;
-    } else if (password != confirmPassword) {
-      _confirmPasswordError = 'Passwords do not match';
-      hasError = true;
-    }
-
-    if (!_acceptTerms) {
-      _termsError = 'Please accept the Privacy Policy and Terms of Service';
-      hasError = true;
-    }
-
-    if (hasError) {
-      setState(() {});
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      final res = await sl<ApiService>().registerUser(
-        name: fullName,
-        email: email,
-        password: password,
-        role: _selectedRole,
-      );
-
-      final storage = sl<StorageService>();
-      if (res != null) {
-        final user = res['user'] as Map<String, dynamic>? ?? {};
-        await storage.setBool('is_logged_in', true);
-        await storage.setBool('is_admin', false);
-        await storage.setString('user_role', _selectedRole);
-        await storage.setString('user_name', user['full_name'] as String? ?? fullName);
-        await storage.setString('user_email', user['email'] as String? ?? email);
-        if (user['created_at'] != null) {
-          await storage.setString('user_created_at', user['created_at'].toString());
-        }
-        if (res['token'] != null) {
-          await storage.setString('auth_token', res['token'].toString());
-        }
-
-        try {
-          sl<LiveSyncService>().notifyAuthChanged(true);
-        } catch (_) {}
-
-        if (mounted) {
-          final l10n = AppLocalizations.of(context);
-          if (_selectedRole == 'user') {
-            _showSnackBar(l10n.accountCreatedEnthusiast);
-            if (context.canPop()) {
-              context.pop(true);
-            } else {
-              context.go(RouteNames.events);
-            }
-          } else {
-            _showSnackBar(l10n.accountCreatedArtist);
-            context.go(RouteNames.artistRegistration);
-          }
+  Future<void> _handleCreateAccount() async {
+    final session = await _controller.submitRegistration();
+    if (session != null && mounted) {
+      final l10n = AppLocalizations.of(context);
+      if (_controller.state.selectedRole == 'user') {
+        _showSnackBar(l10n.accountCreatedEnthusiast);
+        if (context.canPop()) {
+          context.pop(true);
+        } else {
+          context.go(RouteNames.events);
         }
       } else {
-        if (mounted) {
-          final l10n = AppLocalizations.of(context);
-          _showSnackBar(l10n.unableToRegister);
-        }
-      }
-    } on ServerException catch (e) {
-      if (mounted) {
-        final msg = e.message;
-        if (msg.toLowerCase().contains('email') || msg.toLowerCase().contains('already exist')) {
-          setState(() => _emailError = msg);
-        } else {
-          _showSnackBar(msg);
-        }
-      }
-    } on UnauthorizedException catch (e) {
-      if (mounted) {
-        _showSnackBar(e.message);
-      }
-    } on NetworkException catch (e) {
-      if (mounted) {
-        _showSnackBar(e.message);
-      }
-    } catch (_) {
-      if (mounted) {
-        final l10n = AppLocalizations.of(context);
-        setState(() {
-          _emailError = l10n.accountEmailExists;
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
+        _showSnackBar(l10n.accountCreatedArtist);
+        context.go(RouteNames.artistRegistration);
       }
     }
   }
@@ -222,30 +93,6 @@ class _RegisterViewState extends State<RegisterView> {
     );
   }
 
-  Widget _buildFieldError(String? error) {
-    if (error == null || error.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(top: 6.0, left: 2.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.error_outline, size: 14, color: Color(0xFFDC2626)),
-          const SizedBox(width: 5),
-          Expanded(
-            child: Text(
-              error,
-              style: const TextStyle(
-                color: Color(0xFFDC2626),
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildFieldLabel(String label, {bool isRequired = true}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6.0),
@@ -257,17 +104,18 @@ class _RegisterViewState extends State<RegisterView> {
             fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
-          children: isRequired
-              ? const [
-                  TextSpan(
-                    text: ' *',
-                    style: TextStyle(
-                      color: Color(0xFFDC2626),
-                      fontWeight: FontWeight.bold,
+          children:
+              isRequired
+                  ? const [
+                    TextSpan(
+                      text: ' *',
+                      style: TextStyle(
+                        color: Color(0xFFDC2626),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                ]
-              : null,
+                  ]
+                  : null,
         ),
       ),
     );
@@ -289,13 +137,11 @@ class _RegisterViewState extends State<RegisterView> {
       ),
       suffixIcon: suffixIcon,
       filled: true,
-      fillColor: hasErr
-          ? const Color(0xFFFEF2F2)
-          : (isFilled ? const Color(0xFFEDF2F9) : const Color(0xFFF9FAFB)),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 14,
-      ),
+      fillColor:
+          hasErr
+              ? const Color(0xFFFEF2F2)
+              : (isFilled ? const Color(0xFFEDF2F9) : const Color(0xFFF9FAFB)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6.0),
         borderSide: BorderSide(
@@ -325,402 +171,373 @@ class _RegisterViewState extends State<RegisterView> {
     final l10n = AppLocalizations.of(context);
     final rh = ResponsiveHelper.of(context);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF6B1C9B),
-      appBar: const AppTopBar(backgroundColor: Colors.white),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: rh.isWide ? 520.0 : double.infinity),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Top Action Row
-                  Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: rh.horizontalPadding,
-                      vertical: 12.0,
+    return ChangeNotifierProvider<RegisterController>.value(
+      value: _controller,
+      child: Consumer<RegisterController>(
+        builder: (context, controller, _) {
+          final state = controller.state;
+          return Scaffold(
+            backgroundColor: const Color(0xFF6B1C9B),
+            appBar: const AppTopBar(backgroundColor: Colors.white),
+            body: SafeArea(
+              child: SingleChildScrollView(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: rh.isWide ? 520.0 : double.infinity,
                     ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                      onPressed: () {
-                        if (context.canPop()) {
-                          context.pop();
-                        } else {
-                          context.go(RouteNames.home);
-                        }
-                      },
-                    ),
-                    InkWell(
-                      onTap: () => context.go(RouteNames.home),
-                      borderRadius: BorderRadius.circular(6),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8.0,
-                          vertical: 4.0,
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.home_outlined,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Top Action Row
+                        LoginHeader(horizontalPadding: rh.horizontalPadding),
+
+                        // Centered Elevated Register Card
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0,
+                            vertical: 8.0,
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24.0,
+                              vertical: 32.0,
+                            ),
+                            decoration: BoxDecoration(
                               color: Colors.white,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              l10n.home,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
+                              borderRadius: BorderRadius.circular(16.0),
+                              border: Border.all(
+                                color: const Color(0xFFE2E8F0),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Centered Elevated Register Card
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 8.0,
-                ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24.0,
-                    vertical: 32.0,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16.0),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        l10n.registerAccountTitle,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Color(0xFF111827),
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.4,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        l10n.registerAccountSubtitle,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Color(0xFF6B7280),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Full Name Field
-                      _buildFieldLabel(l10n.fullName),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: _fullNameController,
-                        onChanged: (_) {
-                          setState(() {
-                            _fullNameError = null;
-                          });
-                        },
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        decoration: _buildInputDecoration(
-                          hintText: l10n.enterFullName,
-                          errorText: _fullNameError,
-                          isFilled: _fullNameController.text.isNotEmpty,
-                        ),
-                      ),
-                      _buildFieldError(_fullNameError),
-                      const SizedBox(height: 18),
-
-                      // Email Field
-                      _buildFieldLabel(l10n.email),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        onChanged: (_) {
-                          setState(() {
-                            _emailError = null;
-                          });
-                        },
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        decoration: _buildInputDecoration(
-                          hintText: 'allenbaiyee@me.com',
-                          errorText: _emailError,
-                          isFilled: _emailController.text.isNotEmpty,
-                        ),
-                      ),
-                      _buildFieldError(_emailError),
-                      const SizedBox(height: 18),
-
-                      // Password Field
-                      _buildFieldLabel(l10n.passwordLabel),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        onChanged: (_) {
-                          setState(() {
-                            _passwordError = null;
-                          });
-                        },
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        decoration: _buildInputDecoration(
-                          hintText: '••••••••',
-                          errorText: _passwordError,
-                          isFilled: _passwordController.text.isNotEmpty,
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                              color: const Color(0xFF475569),
-                              size: 20,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                      _buildFieldError(_passwordError),
-                      const SizedBox(height: 18),
-
-                      // Confirm Password Field
-                      _buildFieldLabel(l10n.confirmPasswordLabel),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: _confirmPasswordController,
-                        obscureText: _obscurePassword,
-                        onChanged: (_) {
-                          setState(() {
-                            _confirmPasswordError = null;
-                          });
-                        },
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        decoration: _buildInputDecoration(
-                          hintText: l10n.enterConfirmPassword,
-                          errorText: _confirmPasswordError,
-                          isFilled: _confirmPasswordController.text.isNotEmpty,
-                        ),
-                      ),
-                      _buildFieldError(_confirmPasswordError),
-                      const SizedBox(height: 20),
-
-                      // Terms & Conditions Enclosed Box
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14.0,
-                          vertical: 14.0,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(6.0),
-                          border: Border.all(
-                            color: _termsError != null
-                                ? const Color(0xFFDC2626)
-                                : const Color(0xFF475569),
-                            width: 1.1,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _acceptTerms = !_acceptTerms;
-                                  if (_acceptTerms) {
-                                    _termsError = null;
-                                  }
-                                });
-                              },
-                              child: Container(
-                                width: 22,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(3.0),
-                                  border: Border.all(
-                                    color: const Color(0xFF6A2777),
-                                    width: 1.5,
-                                  ),
-                                  color: _acceptTerms
-                                      ? const Color(0xFF6A2777)
-                                      : Colors.transparent,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.04),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4),
                                 ),
-                                child: _acceptTerms
-                                    ? const Icon(
-                                        Icons.check,
-                                        size: 16,
-                                        color: Colors.white,
-                                      )
-                                    : null,
-                              ),
+                              ],
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text.rich(
-                                TextSpan(
-                                  text: l10n.acceptTermsPrefix,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(
+                                  l10n.registerAccountTitle,
+                                  textAlign: TextAlign.center,
                                   style: const TextStyle(
-                                    color: Color(0xFF374151),
-                                    fontSize: 12.5,
+                                    color: Color(0xFF111827),
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -0.4,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  l10n.registerAccountSubtitle,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Color(0xFF6B7280),
+                                    fontSize: 13,
                                     fontWeight: FontWeight.w500,
                                   ),
-                                  children: [
-                                    TextSpan(
-                                      text: l10n.privacyPolicy,
-                                      style: const TextStyle(
-                                        color: Color(0xFF6A2777),
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                      recognizer: TapGestureRecognizer()
-                                        ..onTap = () {
-                                          _showSnackBar(
-                                            l10n.privacyPolicyDetails,
-                                          );
-                                        },
-                                    ),
-                                    TextSpan(text: l10n.andWord),
-                                    TextSpan(
-                                      text: l10n.termsOfService,
-                                      style: const TextStyle(
-                                        color: Color(0xFF6A2777),
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                      recognizer: TapGestureRecognizer()
-                                        ..onTap = () {
-                                          _showSnackBar(
-                                            l10n.termsOfServiceDetails,
-                                          );
-                                        },
-                                    ),
-                                    const TextSpan(
-                                      text: ' *',
-                                      style: TextStyle(
-                                        color: Color(0xFFDC2626),
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
                                 ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      _buildFieldError(_termsError),
-                      const SizedBox(height: 24),
+                                const SizedBox(height: 24),
 
-                      // Create Account Button
-                      SizedBox(
-                        height: 44,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _onCreateAccount,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _isFormValid
-                                ? const Color(0xFF6A2777)
-                                : const Color(0xFFA581AB),
-                            foregroundColor: Colors.white,
-                            elevation: _isFormValid ? 2 : 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6.0),
-                            ),
-                          ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : Text(
-                                  l10n.createAccount,
+                                if (state.generalError != null &&
+                                    state.generalError!.isNotEmpty) ...[
+                                  AuthErrorBanner(message: state.generalError!),
+                                  const SizedBox(height: 16),
+                                ],
+
+                                // 1. Full Name Field
+                                _buildFieldLabel(l10n.fullName),
+                                const SizedBox(height: 6),
+                                TextField(
+                                  controller: _fullNameController,
+                                  onChanged:
+                                      (val) => _controller.setFullName(val),
                                   style: const TextStyle(
+                                    color: Colors.black,
                                     fontSize: 14,
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  decoration: _buildInputDecoration(
+                                    hintText: l10n.enterFullName,
+                                    errorText: state.fullNameError,
+                                    isFilled:
+                                        _fullNameController.text.isNotEmpty,
                                   ),
                                 ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
+                                AuthErrorBanner(errorText: state.fullNameError),
+                                const SizedBox(height: 18),
 
-                      // Sign In Redirect
-                      Center(
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () => context.go(RouteNames.login),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-                            child: Text(
-                              '${l10n.alreadyHaveAccount}${l10n.signInNow}',
-                              style: const TextStyle(
-                                color: Color(0xFF6A2777),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
+                                // 2. Email Field
+                                _buildFieldLabel(l10n.email),
+                                const SizedBox(height: 6),
+                                TextField(
+                                  controller: _emailController,
+                                  keyboardType: TextInputType.emailAddress,
+                                  onChanged: (val) => _controller.setEmail(val),
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  decoration: _buildInputDecoration(
+                                    hintText: 'allenbaiyee@me.com',
+                                    errorText: state.emailError,
+                                    isFilled: _emailController.text.isNotEmpty,
+                                  ),
+                                ),
+                                AuthErrorBanner(errorText: state.emailError),
+                                const SizedBox(height: 18),
+
+                                // 3. Password Field
+                                _buildFieldLabel(l10n.passwordLabel),
+                                const SizedBox(height: 6),
+                                TextField(
+                                  controller: _passwordController,
+                                  obscureText: state.obscurePassword,
+                                  onChanged:
+                                      (val) => _controller.setPassword(val),
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  decoration: _buildInputDecoration(
+                                    hintText: '••••••••',
+                                    errorText: state.passwordError,
+                                    isFilled:
+                                        _passwordController.text.isNotEmpty,
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        state.obscurePassword
+                                            ? Icons.visibility_outlined
+                                            : Icons.visibility_off_outlined,
+                                        color: const Color(0xFF475569),
+                                        size: 20,
+                                      ),
+                                      onPressed:
+                                          _controller.togglePasswordVisibility,
+                                    ),
+                                  ),
+                                ),
+                                AuthErrorBanner(errorText: state.passwordError),
+                                const SizedBox(height: 18),
+
+                                // 4. Confirm Password Field
+                                _buildFieldLabel(l10n.confirmPasswordLabel),
+                                const SizedBox(height: 6),
+                                TextField(
+                                  controller: _confirmPasswordController,
+                                  obscureText: state.obscurePassword,
+                                  onChanged:
+                                      (val) =>
+                                          _controller.setConfirmPassword(val),
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  decoration: _buildInputDecoration(
+                                    hintText: l10n.enterConfirmPassword,
+                                    errorText: state.confirmPasswordError,
+                                    isFilled:
+                                        _confirmPasswordController
+                                            .text
+                                            .isNotEmpty,
+                                  ),
+                                ),
+                                AuthErrorBanner(
+                                  errorText: state.confirmPasswordError,
+                                ),
+                                const SizedBox(height: 20),
+
+                                // Terms & Conditions Enclosed Box
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14.0,
+                                    vertical: 14.0,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(6.0),
+                                    border: Border.all(
+                                      color:
+                                          state.termsError != null
+                                              ? const Color(0xFFDC2626)
+                                              : const Color(0xFF475569),
+                                      width: 1.1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      GestureDetector(
+                                        onTap:
+                                            () => _controller.setAcceptTerms(
+                                              !state.acceptTerms,
+                                            ),
+                                        child: Container(
+                                          width: 22,
+                                          height: 32,
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              3.0,
+                                            ),
+                                            border: Border.all(
+                                              color: const Color(0xFF6A2777),
+                                              width: 1.5,
+                                            ),
+                                            color:
+                                                state.acceptTerms
+                                                    ? const Color(0xFF6A2777)
+                                                    : Colors.transparent,
+                                          ),
+                                          child:
+                                              state.acceptTerms
+                                                  ? const Icon(
+                                                    Icons.check,
+                                                    size: 16,
+                                                    color: Colors.white,
+                                                  )
+                                                  : null,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text.rich(
+                                          TextSpan(
+                                            text: l10n.acceptTermsPrefix,
+                                            style: const TextStyle(
+                                              color: Color(0xFF374151),
+                                              fontSize: 12.5,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                            children: [
+                                              TextSpan(
+                                                text: l10n.privacyPolicy,
+                                                style: const TextStyle(
+                                                  color: Color(0xFF6A2777),
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                                recognizer:
+                                                    TapGestureRecognizer()
+                                                      ..onTap = () {
+                                                        _showSnackBar(
+                                                          l10n.privacyPolicyDetails,
+                                                        );
+                                                      },
+                                              ),
+                                              TextSpan(text: l10n.andWord),
+                                              TextSpan(
+                                                text: l10n.termsOfService,
+                                                style: const TextStyle(
+                                                  color: Color(0xFF6A2777),
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                                recognizer:
+                                                    TapGestureRecognizer()
+                                                      ..onTap = () {
+                                                        _showSnackBar(
+                                                          l10n.termsOfServiceDetails,
+                                                        );
+                                                      },
+                                              ),
+                                              const TextSpan(
+                                                text: ' *',
+                                                style: TextStyle(
+                                                  color: Color(0xFFDC2626),
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                AuthErrorBanner(errorText: state.termsError),
+                                const SizedBox(height: 24),
+
+                                // Create Account Button
+                                SizedBox(
+                                  height: 44,
+                                  child: ElevatedButton(
+                                    onPressed:
+                                        state.isLoading
+                                            ? null
+                                            : _handleCreateAccount,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
+                                          state.isFormValid
+                                              ? const Color(0xFF6A2777)
+                                              : const Color(0xFFA581AB),
+                                      foregroundColor: Colors.white,
+                                      elevation: state.isFormValid ? 2 : 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          6.0,
+                                        ),
+                                      ),
+                                    ),
+                                    child:
+                                        state.isLoading
+                                            ? const SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                color: Colors.white,
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                            : Text(
+                                              l10n.createAccount,
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+
+                                // Sign In Redirect
+                                Center(
+                                  child: GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onTap: () => context.go(RouteNames.login),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 6,
+                                        horizontal: 12,
+                                      ),
+                                      child: Text(
+                                        '${l10n.alreadyHaveAccount}${l10n.signInNow}',
+                                        style: const TextStyle(
+                                          color: Color(0xFF6A2777),
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 40),
+                      ],
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 40),
-            ],
-          ),
-        ),
+            ),
+            bottomNavigationBar: const AppBottomNavBar(currentIndex: 3),
+          );
+        },
       ),
-    ),
-  ),
-  bottomNavigationBar: const AppBottomNavBar(currentIndex: 3),
     );
   }
 }

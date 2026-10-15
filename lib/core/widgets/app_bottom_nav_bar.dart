@@ -69,7 +69,8 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
   }) {
     final rh = ResponsiveHelper.of(context);
     final isSelected = widget.currentIndex == index;
-    final color = isSelected ? Colors.white : Colors.white.withValues(alpha: 0.72);
+    final color =
+        isSelected ? Colors.white : Colors.white.withValues(alpha: 0.72);
     final isCompact = rh.isCompact;
 
     return Expanded(
@@ -97,16 +98,18 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                   vertical: isCompact || rh.isShortScreen ? 2 : 3,
                 ),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? Colors.white.withValues(alpha: 0.20)
-                      : Colors.transparent,
+                  color:
+                      isSelected
+                          ? Colors.white.withValues(alpha: 0.20)
+                          : Colors.transparent,
                   borderRadius: BorderRadius.circular(16),
-                  border: isSelected
-                      ? Border.all(
-                          color: Colors.white.withValues(alpha: 0.28),
-                          width: 1.0,
-                        )
-                      : null,
+                  border:
+                      isSelected
+                          ? Border.all(
+                            color: Colors.white.withValues(alpha: 0.28),
+                            width: 1.0,
+                          )
+                          : null,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -126,7 +129,8 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                       style: TextStyle(
                         color: color,
                         fontSize: isCompact ? 9.0 : 10.5,
-                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w500,
                         letterSpacing: isCompact ? -0.1 : 0.1,
                       ),
                     ),
@@ -158,9 +162,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
         ),
         child: Center(
           child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: rh.bottomNavMaxWidth,
-            ),
+            constraints: BoxConstraints(maxWidth: rh.bottomNavMaxWidth),
             child: Container(
               height: rh.isShortScreen ? 54 : 64,
               padding: EdgeInsets.symmetric(

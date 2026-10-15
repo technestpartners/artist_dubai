@@ -2,44 +2,30 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "artist_dubai (Flutter 25098RA98I)",
+            "name": "artist_dubai (Phone: 25098RA98I)",
             "request": "launch",
             "type": "dart",
-            "deviceId": "25098RA98I"
+            "program": "lib/main.dart",
+            "deviceId": "355bfd29"
         },
         {
-            "name": "artist_dubai",
-            "request": "launch",
-            "type": "dart"
-        },
-        {
-            "name": "artist_dubai (Chrome - Port 8085)",
+            "name": "artist_dubai (Current Device)",
             "request": "launch",
             "type": "dart",
-            "deviceId": "chrome",
-            "args": [
-                "--web-hostname",
-                "127.0.0.1",
-                "--web-port",
-                "8085"
-            ]
+            "program": "lib/main.dart"
         },
         {
             "name": "artist_dubai (Chrome)",
             "request": "launch",
             "type": "dart",
-            "deviceId": "chrome",
-            "args": [
-                "--web-hostname",
-                "127.0.0.1",
-                "--web-port",
-                "8080"
-            ]
+            "program": "lib/main.dart",
+            "deviceId": "chrome"
         },
         {
             "name": "artist_dubai (Windows Desktop)",
             "request": "launch",
             "type": "dart",
+            "program": "lib/main.dart",
             "deviceId": "windows"
         }
     ]

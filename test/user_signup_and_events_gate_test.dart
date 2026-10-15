@@ -13,6 +13,8 @@ import 'package:artist_dubai/features/auth/presentation/views/register_view.dart
 import 'package:artist_dubai/features/events/presentation/views/events_view.dart';
 import 'package:artist_dubai/features/events/presentation/views/event_photos_view.dart';
 import 'package:artist_dubai/features/events/presentation/views/events_competition_view.dart';
+import 'package:artist_dubai/features/artists/presentation/views/create_artist_profile_view.dart';
+import 'package:artist_dubai/features/auth/presentation/views/login_view.dart';
 import 'package:artist_dubai/features/galleries/presentation/views/galleries_view.dart';
 
 class _TestHttpOverrides extends HttpOverrides {}
@@ -35,23 +37,28 @@ void main() {
   }
 
   group('User Sign Up & Auth Gate Tests', () {
-    testWidgets('RegisterView renders clean account registration form without role switcher', (tester) async {
-      SharedPreferences.setMockInitialValues({'is_logged_in': false});
-      await sl.reset();
-      await initDependencyInjection();
+    testWidgets(
+      'RegisterView renders clean account registration form without role switcher',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({'is_logged_in': false});
+        await sl.reset();
+        await initDependencyInjection();
 
-      tester.view.physicalSize = const Size(800, 1400);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(testApp(const RegisterView()));
-      await tester.pump(const Duration(milliseconds: 100));
+        await tester.pumpWidget(testApp(const RegisterView()));
+        await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byType(RegisterView), findsOneWidget);
-      expect(find.byType(TextField), findsWidgets);
-    });
+        expect(find.byType(RegisterView), findsOneWidget);
+        expect(find.byType(TextField), findsWidgets);
+      },
+    );
 
-    testWidgets('EventsView shows auth gate when user is not logged in', (tester) async {
+    testWidgets('EventsView shows auth gate when user is not logged in', (
+      tester,
+    ) async {
       SharedPreferences.setMockInitialValues({'is_logged_in': false});
       await sl.reset();
       await initDependencyInjection();
@@ -66,7 +73,9 @@ void main() {
       expect(find.byType(EventsView), findsOneWidget);
     });
 
-    testWidgets('GalleriesView shows auth gate when user is not logged in', (tester) async {
+    testWidgets('GalleriesView shows auth gate when user is not logged in', (
+      tester,
+    ) async {
       SharedPreferences.setMockInitialValues({'is_logged_in': false});
       await sl.reset();
       await initDependencyInjection();
@@ -81,7 +90,9 @@ void main() {
       expect(find.byType(GalleriesView), findsOneWidget);
     });
 
-    testWidgets('EventPhotosView shows auth gate when user is not logged in', (tester) async {
+    testWidgets('EventPhotosView shows auth gate when user is not logged in', (
+      tester,
+    ) async {
       SharedPreferences.setMockInitialValues({'is_logged_in': false});
       await sl.reset();
       await initDependencyInjection();
@@ -96,60 +107,108 @@ void main() {
       expect(find.byType(EventPhotosView), findsOneWidget);
     });
 
-    testWidgets('EventsCompetitionView shows auth gate when user is not logged in', (tester) async {
-      SharedPreferences.setMockInitialValues({'is_logged_in': false});
-      await sl.reset();
-      await initDependencyInjection();
+    testWidgets(
+      'EventsCompetitionView shows auth gate when user is not logged in',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({'is_logged_in': false});
+        await sl.reset();
+        await initDependencyInjection();
 
-      tester.view.physicalSize = const Size(800, 1400);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(testApp(const EventsCompetitionView()));
-      await tester.pump(const Duration(milliseconds: 100));
+        await tester.pumpWidget(testApp(const EventsCompetitionView()));
+        await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byType(EventsCompetitionView), findsOneWidget);
-    });
+        expect(find.byType(EventsCompetitionView), findsOneWidget);
+      },
+    );
 
-    testWidgets('AppBottomNavBar shows 4 options (Home, Artists, Events, Login) when logged out, and 3 when logged in', (tester) async {
-      SharedPreferences.setMockInitialValues({'is_logged_in': false});
-      await sl.reset();
-      await initDependencyInjection();
+    testWidgets(
+      'AppBottomNavBar shows 4 options (Home, Artists, Events, Login) when logged out, and 3 when logged in',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({'is_logged_in': false});
+        await sl.reset();
+        await initDependencyInjection();
 
-      await tester.pumpWidget(
-        testApp(
-          const Scaffold(
-            bottomNavigationBar: AppBottomNavBar(currentIndex: 0),
+        await tester.pumpWidget(
+          testApp(
+            const Scaffold(
+              bottomNavigationBar: AppBottomNavBar(currentIndex: 0),
+            ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      // Logged out: all 4 options are present (Home, Artists, Events, Sign In)
-      expect(find.byIcon(Icons.home_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.people_outline_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.calendar_today_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.login), findsOneWidget);
-      expect(find.text('Home'), findsOneWidget);
-      expect(find.text('Artists'), findsOneWidget);
-      expect(find.text('Events'), findsOneWidget);
-      expect(find.text('Sign In'), findsOneWidget);
+        // Logged out: all 4 options are present (Home, Artists, Events, Sign In)
+        expect(find.byIcon(Icons.home_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.people_outline_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.calendar_today_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.login), findsOneWidget);
+        expect(find.text('Home'), findsOneWidget);
+        expect(find.text('Artists'), findsOneWidget);
+        expect(find.text('Events'), findsOneWidget);
+        expect(find.text('Sign In'), findsOneWidget);
 
-      // Now simulate logged in
-      final storage = sl<StorageService>();
-      await storage.setBool('is_logged_in', true);
-      sl<LiveSyncService>().notifyAuthChanged(true);
-      await tester.pumpAndSettle();
+        // Now simulate logged in
+        final storage = sl<StorageService>();
+        await storage.setBool('is_logged_in', true);
+        sl<LiveSyncService>().notifyAuthChanged(true);
+        await tester.pumpAndSettle();
 
-      // Logged in: 3 options (Home, Artists, Events), Sign In is hidden
-      expect(find.byIcon(Icons.home_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.people_outline_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.calendar_today_outlined), findsOneWidget);
-      expect(find.text('Home'), findsOneWidget);
-      expect(find.text('Artists'), findsOneWidget);
-      expect(find.text('Events'), findsOneWidget);
-      expect(find.text('Sign In'), findsNothing);
-      expect(find.byIcon(Icons.login), findsNothing);
-    });
+        // Logged in: 3 options (Home, Artists, Events), Sign In is hidden
+        expect(find.byIcon(Icons.home_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.people_outline_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.calendar_today_outlined), findsOneWidget);
+        expect(find.text('Home'), findsOneWidget);
+        expect(find.text('Artists'), findsOneWidget);
+        expect(find.text('Events'), findsOneWidget);
+        expect(find.text('Sign In'), findsNothing);
+        expect(find.byIcon(Icons.login), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'CreateArtistProfileView renders LoginView when user is not logged in',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({'is_logged_in': false});
+        await sl.reset();
+        await initDependencyInjection();
+
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        await tester.pumpWidget(testApp(const CreateArtistProfileView()));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // When unauthenticated, CreateArtistProfileView renders LoginView
+        expect(find.byType(LoginView), findsOneWidget);
+        expect(find.text('Create Artist Profile'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'CreateArtistProfileView renders form when fromAdmin is true even if logged out',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({'is_logged_in': false});
+        await sl.reset();
+        await initDependencyInjection();
+
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        await tester.pumpWidget(
+          testApp(const CreateArtistProfileView(fromAdmin: true)),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Admin mode bypasses client auth gate
+        expect(find.byType(LoginView), findsNothing);
+        expect(find.byType(CreateArtistProfileView), findsOneWidget);
+      },
+    );
   });
 }

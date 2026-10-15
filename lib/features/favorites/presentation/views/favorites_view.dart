@@ -10,6 +10,8 @@ import '../../../../core/services/favorites_service.dart';
 import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
+import '../../../../core/widgets/app_empty_state.dart';
+import '../../../../core/widgets/app_loading_indicator.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../artists/domain/models/artist_model.dart';
 import '../../../events/domain/models/art_event_model.dart';
@@ -24,7 +26,8 @@ class FavoritesView extends StatefulWidget {
   State<FavoritesView> createState() => _FavoritesViewState();
 }
 
-class _FavoritesViewState extends State<FavoritesView> with SingleTickerProviderStateMixin {
+class _FavoritesViewState extends State<FavoritesView>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   List<ArtistModel> _favoritedArtists = [];
   List<ArtEventModel> _favoritedEvents = [];
@@ -52,9 +55,15 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
 
   void _mergeAndSetFavorites(Map<String, dynamic> data) {
     final favService = sl<FavoritesService>();
-    final serverEvents = List<ArtEventModel>.from(data['events'] as List<ArtEventModel>? ?? []);
-    final serverArtists = List<ArtistModel>.from(data['artists'] as List<ArtistModel>? ?? []);
-    final serverArtworks = List<Map<String, dynamic>>.from(data['artworks'] as List<Map<String, dynamic>>? ?? []);
+    final serverEvents = List<ArtEventModel>.from(
+      data['events'] as List<ArtEventModel>? ?? [],
+    );
+    final serverArtists = List<ArtistModel>.from(
+      data['artists'] as List<ArtistModel>? ?? [],
+    );
+    final serverArtworks = List<Map<String, dynamic>>.from(
+      data['artworks'] as List<Map<String, dynamic>>? ?? [],
+    );
 
     // Also include any locally favorited events that might not be in DB response yet
     final existingEventIds = serverEvents.map((e) => e.id).toSet();
@@ -91,10 +100,19 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
   }
 
   Future<void> _fetchFavorites({bool forceRefresh = false}) async {
-    setState(() => _isLoading = _favoritedArtists.isEmpty && _favoritedEvents.isEmpty && _favoritedArtworks.isEmpty);
+    setState(
+      () =>
+          _isLoading =
+              _favoritedArtists.isEmpty &&
+              _favoritedEvents.isEmpty &&
+              _favoritedArtworks.isEmpty,
+    );
     try {
       final userEmail = sl<FavoritesService>().getEffectiveEmail();
-      final data = await sl<ApiService>().getFavorites(email: userEmail, forceRefresh: forceRefresh);
+      final data = await sl<ApiService>().getFavorites(
+        email: userEmail,
+        forceRefresh: forceRefresh,
+      );
       if (mounted) {
         sl<FavoritesService>().updateFromServer(data);
         _mergeAndSetFavorites(data);
@@ -189,7 +207,12 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                 // 1. Header Title & Subtitle
                 Container(
                   width: double.infinity,
-                  padding: EdgeInsets.fromLTRB(rh.horizontalPadding, 16, rh.horizontalPadding, 12),
+                  padding: EdgeInsets.fromLTRB(
+                    rh.horizontalPadding,
+                    16,
+                    rh.horizontalPadding,
+                    12,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -200,83 +223,108 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                           fontWeight: FontWeight.w900,
                           color: Colors.white,
                           letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    l10n.myFavoritesSubtitle,
-                    style: const TextStyle(
-                      fontSize: 13.5,
-                      color: Color(0xFFE2D6F5),
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Segmented Tab Switcher
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 4,
                         ),
-                      ],
-                    ),
-                    child: TabBar(
-                      controller: _tabController,
-                      isScrollable: rh.isCompact,
-                      indicator: BoxDecoration(
-                        color: const Color(0xFF6B1C9B),
-                        borderRadius: BorderRadius.circular(9),
                       ),
-                      labelColor: Colors.white,
-                      unselectedLabelColor: const Color(0xFF64748B),
-                      labelStyle: TextStyle(fontSize: rh.sp(12.5), fontWeight: FontWeight.bold),
-                      padding: const EdgeInsets.all(3),
-                      tabs: [
-                        Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text('${l10n.artists} (${_favoritedArtists.length})'))),
-                        Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text('${l10n.events} (${_favoritedEvents.length})'))),
-                        Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text('${l10n.artworks} (${_favoritedArtworks.length})'))),
-                      ],
-                    ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.myFavoritesSubtitle,
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          color: Color(0xFFE2D6F5),
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Segmented Tab Switcher
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                        child: TabBar(
+                          controller: _tabController,
+                          isScrollable: rh.isCompact,
+                          indicator: BoxDecoration(
+                            color: const Color(0xFF6B1C9B),
+                            borderRadius: BorderRadius.circular(9),
+                          ),
+                          labelColor: Colors.white,
+                          unselectedLabelColor: const Color(0xFF64748B),
+                          labelStyle: TextStyle(
+                            fontSize: rh.sp(12.5),
+                            fontWeight: FontWeight.bold,
+                          ),
+                          padding: const EdgeInsets.all(3),
+                          tabs: [
+                            Tab(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  '${l10n.artists} (${_favoritedArtists.length})',
+                                ),
+                              ),
+                            ),
+                            Tab(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  '${l10n.events} (${_favoritedEvents.length})',
+                                ),
+                              ),
+                            ),
+                            Tab(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  '${l10n.artworks} (${_favoritedArtworks.length})',
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
 
-            // 2. Tab Content View
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator(color: Colors.white))
-                  : RefreshIndicator(
-                      color: const Color(0xFF6B1C9B),
-                      backgroundColor: Colors.white,
-                      onRefresh: _fetchFavorites,
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          // Tab 1: Favorited Artists List
-                          _buildArtistsTab(l10n),
+                // 2. Tab Content View
+                Expanded(
+                  child:
+                      _isLoading
+                          ? const AppLoadingIndicator()
+                          : RefreshIndicator(
+                            color: const Color(0xFF6B1C9B),
+                            backgroundColor: Colors.white,
+                            onRefresh: _fetchFavorites,
+                            child: TabBarView(
+                              controller: _tabController,
+                              children: [
+                                // Tab 1: Favorited Artists List
+                                _buildArtistsTab(l10n),
 
-                          // Tab 2: Favorited Events List
-                          _buildEventsTab(l10n),
+                                // Tab 2: Favorited Events List
+                                _buildEventsTab(l10n),
 
-                          // Tab 3: Favorited Artworks List
-                          _buildArtworksTab(l10n),
-                        ],
-                      ),
-                    ),
-            ),
+                                // Tab 3: Favorited Artworks List
+                                _buildArtworksTab(l10n),
+                              ],
+                            ),
+                          ),
+                ),
 
-            // Footer Attribution
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8.0),
-              child: HomeFooterWidget(),
-            ),
-          ],
+                // Footer Attribution
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                  child: HomeFooterWidget(),
+                ),
+              ],
             ),
           ),
         ),
@@ -329,25 +377,38 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                         width: 56,
                         height: 56,
                         color: const Color(0xFFF3E8FF),
-                        child: artist.avatarUrl.isNotEmpty
-                            ? AppCachedImage(
-                                imageUrl: artist.avatarUrl,
-                                width: 56,
-                                height: 56,
-                                fit: BoxFit.cover,
-                                errorWidget: Center(
+                        child:
+                            artist.avatarUrl.isNotEmpty
+                                ? AppCachedImage(
+                                  imageUrl: artist.avatarUrl,
+                                  width: 56,
+                                  height: 56,
+                                  fit: BoxFit.cover,
+                                  errorWidget: Center(
+                                    child: Text(
+                                      artist.name.isNotEmpty
+                                          ? artist.name[0].toUpperCase()
+                                          : 'A',
+                                      style: const TextStyle(
+                                        color: Color(0xFF6A2777),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 20,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                : Center(
                                   child: Text(
-                                    artist.name.isNotEmpty ? artist.name[0].toUpperCase() : 'A',
-                                    style: const TextStyle(color: Color(0xFF6A2777), fontWeight: FontWeight.bold, fontSize: 20),
+                                    artist.name.isNotEmpty
+                                        ? artist.name[0].toUpperCase()
+                                        : 'A',
+                                    style: const TextStyle(
+                                      color: Color(0xFF6A2777),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20,
+                                    ),
                                   ),
                                 ),
-                              )
-                            : Center(
-                                child: Text(
-                                  artist.name.isNotEmpty ? artist.name[0].toUpperCase() : 'A',
-                                  style: const TextStyle(color: Color(0xFF6A2777), fontWeight: FontWeight.bold, fontSize: 20),
-                                ),
-                              ),
                       ),
                     ),
                     const SizedBox(width: 14),
@@ -357,23 +418,38 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                         children: [
                           Text(
                             artist.localizedName(context),
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0F172A),
+                            ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             artist.localizedCategory(context),
-                            style: const TextStyle(fontSize: 13, color: Color(0xFF6A2777), fontWeight: FontWeight.w600),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF6A2777),
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             artist.localizedLocation(context),
-                            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF64748B),
+                            ),
                           ),
                         ],
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.share_outlined, color: Color(0xFF6A2777), size: 20),
+                      icon: const Icon(
+                        Icons.share_outlined,
+                        color: Color(0xFF6A2777),
+                        size: 20,
+                      ),
                       onPressed: () {
                         ShareHelper.shareArtist(
                           context: context,
@@ -386,7 +462,10 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                       tooltip: 'Share artist',
                     ),
                     IconButton(
-                      icon: const Icon(Icons.favorite, color: Color(0xFFEF4444)),
+                      icon: const Icon(
+                        Icons.favorite,
+                        color: Color(0xFFEF4444),
+                      ),
                       onPressed: () => _removeArtist(index),
                       tooltip: 'Remove from favorites',
                     ),
@@ -405,7 +484,8 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
       return _buildEmptyState(
         icon: Icons.event_busy_outlined,
         message: l10n.noFavoritedEventsYet,
-        subMessage: 'Discover upcoming art events and bookmark them for quick access.',
+        subMessage:
+            'Discover upcoming art events and bookmark them for quick access.',
         actionText: l10n.exploreEvents,
         onAction: () => context.go(RouteNames.events),
       );
@@ -440,7 +520,9 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                 children: [
                   if (event.imageUrl != null && event.imageUrl!.isNotEmpty)
                     ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(15),
+                      ),
                       child: AppCachedImage(
                         imageUrl: event.imageUrl!,
                         height: 140,
@@ -456,19 +538,30 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF3E8FF),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
                                 event.localizedCategory(context),
-                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF6A2777)),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF6A2777),
+                                ),
                               ),
                             ),
                             const Spacer(),
                             IconButton(
-                              icon: const Icon(Icons.share_outlined, color: Color(0xFF6A2777), size: 20),
+                              icon: const Icon(
+                                Icons.share_outlined,
+                                color: Color(0xFF6A2777),
+                                size: 20,
+                              ),
                               onPressed: () {
                                 ShareHelper.shareEvent(
                                   context: context,
@@ -485,7 +578,10 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                             ),
                             const SizedBox(width: 10),
                             IconButton(
-                              icon: const Icon(Icons.favorite, color: Color(0xFFEF4444)),
+                              icon: const Icon(
+                                Icons.favorite,
+                                color: Color(0xFFEF4444),
+                              ),
                               onPressed: () => _removeEvent(index),
                               tooltip: 'Remove from favorites',
                               padding: EdgeInsets.zero,
@@ -496,12 +592,19 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                         const SizedBox(height: 8),
                         Text(
                           event.localizedTitle(context),
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF0F172A),
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '${event.formattedDate} • ${event.localizedLocation(context)}',
-                          style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            color: Color(0xFF64748B),
+                          ),
                         ),
                         const SizedBox(height: 10),
                         Row(
@@ -509,17 +612,35 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                           children: [
                             Text(
                               event.localizedPrice(context),
-                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF0F172A),
+                              ),
                             ),
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF6A2777),
                                 foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
                               ),
-                              onPressed: () => context.go(RouteNames.eventDetailWithId(event.id)),
-                              child: Text(l10n.viewDetails, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                              onPressed:
+                                  () => context.go(
+                                    RouteNames.eventDetailWithId(event.id),
+                                  ),
+                              child: Text(
+                                l10n.viewDetails,
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -552,21 +673,32 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
       itemBuilder: (context, index) {
         final item = _favoritedArtworks[index];
         final title = (item['title']?.toString() ?? 'Artwork').trData(context);
-        final artist = (item['artist_name']?.toString() ?? item['artist']?.toString() ?? 'Artist').trData(context);
+        final artist = (item['artist_name']?.toString() ??
+                item['artist']?.toString() ??
+                'Artist')
+            .trData(context);
         final year = item['year']?.toString() ?? '2025';
-        final medium = (item['medium']?.toString() ?? item['details']?.toString() ?? 'Mixed Media').trData(context);
+        final medium = (item['medium']?.toString() ??
+                item['details']?.toString() ??
+                'Mixed Media')
+            .trData(context);
         final dimensions = item['dimensions']?.toString() ?? '120 x 80 cm';
-        final image = item['image_url']?.toString() ?? item['image']?.toString() ?? '';
+        final image =
+            item['image_url']?.toString() ?? item['image']?.toString() ?? '';
 
-        final artistId = item['artist_id']?.toString() ?? item['artistId']?.toString() ?? '';
+        final artistId =
+            item['artist_id']?.toString() ?? item['artistId']?.toString() ?? '';
 
         return Material(
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
-            onTap: artistId.isNotEmpty
-                ? () => context.go('${RouteNames.artistDetailWithId(artistId)}?artwork=${item['id']}')
-                : null,
+            onTap:
+                artistId.isNotEmpty
+                    ? () => context.go(
+                      '${RouteNames.artistDetailWithId(artistId)}?artwork=${item['id']}',
+                    )
+                    : null,
             child: Container(
               margin: const EdgeInsets.only(bottom: 14),
               decoration: BoxDecoration(
@@ -601,23 +733,40 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                         children: [
                           Text(
                             title,
-                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0F172A),
+                            ),
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            Localizations.localeOf(context).languageCode == 'ar' ? 'بواسطة $artist' : 'By $artist',
-                            style: const TextStyle(fontSize: 12.5, color: Color(0xFF6A2777), fontWeight: FontWeight.w600),
+                            Localizations.localeOf(context).languageCode == 'ar'
+                                ? 'بواسطة $artist'
+                                : 'By $artist',
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              color: Color(0xFF6A2777),
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             '$year • $medium • $dimensions',
-                            style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              color: Color(0xFF64748B),
+                            ),
                           ),
                         ],
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.share_outlined, color: Color(0xFF6A2777), size: 20),
+                      icon: const Icon(
+                        Icons.share_outlined,
+                        color: Color(0xFF6A2777),
+                        size: 20,
+                      ),
                       onPressed: () {
                         ShareHelper.shareArtwork(
                           context: context,
@@ -631,7 +780,10 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
                       tooltip: 'Share artwork',
                     ),
                     IconButton(
-                      icon: const Icon(Icons.favorite, color: Color(0xFFEF4444)),
+                      icon: const Icon(
+                        Icons.favorite,
+                        color: Color(0xFFEF4444),
+                      ),
                       onPressed: () => _removeArtwork(index),
                       tooltip: 'Remove artwork',
                     ),
@@ -652,38 +804,12 @@ class _FavoritesViewState extends State<FavoritesView> with SingleTickerProvider
     required String actionText,
     required VoidCallback onAction,
   }) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 54, color: Colors.white70),
-            const SizedBox(height: 16),
-            Text(
-              message,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              subMessage,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 13, color: Color(0xFFE2D6F5), height: 1.4),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF6B1C9B),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              ),
-              onPressed: onAction,
-              child: Text(actionText, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
-      ),
+    return AppEmptyState(
+      icon: icon,
+      title: message,
+      subtitle: subMessage,
+      actionText: actionText,
+      onAction: onAction,
     );
   }
 }

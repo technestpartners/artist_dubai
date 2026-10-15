@@ -38,113 +38,119 @@ void main() {
     );
   }
 
-  testWidgets('Admin Masters tab renders Categories and Experience Levels with CRUD', (tester) async {
-    tester.view.physicalSize = const Size(800, 1400);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
+  testWidgets(
+    'Admin Masters tab renders Categories and Experience Levels with CRUD',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
 
-    await tester.pumpWidget(testApp(const AdminDashboardView()));
-    await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpWidget(testApp(const AdminDashboardView()));
+      await tester.pump(const Duration(milliseconds: 100));
 
-    // Verify Masters tab button exists
-    final mastersTabFinder = find.text('Masters');
-    expect(mastersTabFinder, findsWidgets);
+      // Verify Masters tab button exists
+      final mastersTabFinder = find.text('Masters');
+      expect(mastersTabFinder, findsWidgets);
 
-    // Tap the Masters tab
-    await tester.tap(mastersTabFinder.first);
-    await tester.pumpAndSettle();
+      // Tap the Masters tab
+      await tester.tap(mastersTabFinder.first);
+      await tester.pumpAndSettle();
 
-    // Verify Master subtabs
-    expect(find.textContaining('Categories'), findsWidgets);
-    expect(find.textContaining('Levels'), findsWidgets);
-    expect(find.textContaining('Locations'), findsWidgets);
+      // Verify Master subtabs
+      expect(find.textContaining('Categories'), findsWidgets);
+      expect(find.textContaining('Levels'), findsWidgets);
+      expect(find.textContaining('Locations'), findsWidgets);
 
-    // Verify action button
-    expect(find.text('New Category'), findsOneWidget);
+      // Verify action button
+      expect(find.text('New Category'), findsOneWidget);
 
-    // Switch to Experience Levels subtab
-    final expTabFinder = find.textContaining('Levels');
-    await tester.tap(expTabFinder.first);
-    await tester.pumpAndSettle();
+      // Switch to Experience Levels subtab
+      final expTabFinder = find.textContaining('Levels');
+      await tester.tap(expTabFinder.first);
+      await tester.pumpAndSettle();
 
-    expect(find.text('New Level'), findsOneWidget);
+      expect(find.text('New Level'), findsOneWidget);
 
-    // Switch to Locations subtab
-    final locTabFinder = find.textContaining('Locations');
-    await tester.tap(locTabFinder.first);
-    await tester.pumpAndSettle();
+      // Switch to Locations subtab
+      final locTabFinder = find.textContaining('Locations');
+      await tester.tap(locTabFinder.first);
+      await tester.pumpAndSettle();
 
-    expect(find.text('New Location'), findsOneWidget);
+      expect(find.text('New Location'), findsOneWidget);
 
-    // Switch to Listing Plans subtab (replacing old Pricing tab)
-    final listingPlansTabFinder = find.textContaining('Listing Plans');
-    expect(listingPlansTabFinder, findsWidgets);
-    await tester.tap(listingPlansTabFinder.first);
-    await tester.pumpAndSettle();
+      // Switch to Listing Plans subtab (replacing old Pricing tab)
+      final listingPlansTabFinder = find.textContaining('Listing Plans');
+      expect(listingPlansTabFinder, findsWidgets);
+      await tester.tap(listingPlansTabFinder.first);
+      await tester.pumpAndSettle();
 
-    expect(find.text('New Plan'), findsOneWidget);
-    expect(find.text('Refresh'), findsOneWidget);
-    expect(find.text('Event Listing'), findsWidgets);
-    expect(find.text('199 AED'), findsWidgets);
-    expect(find.text('Gallery Listing'), findsWidgets);
-    expect(find.text('149 AED'), findsWidgets);
-    expect(find.text('Art Centre Listing'), findsWidgets);
-    expect(find.text('299 AED'), findsWidgets);
-  });
+      expect(find.text('New Plan'), findsOneWidget);
+      expect(find.text('Refresh'), findsOneWidget);
+      expect(find.text('Event Listing'), findsWidgets);
+      expect(find.text('199 AED'), findsWidgets);
+      expect(find.text('Gallery Listing'), findsWidgets);
+      expect(find.text('149 AED'), findsWidgets);
+      expect(find.text('Art Centre Listing'), findsWidgets);
+      expect(find.text('299 AED'), findsWidgets);
+    },
+  );
 
-  testWidgets('CreateArtistProfileView renders Location as a dropdown with Dubai, UAE default', (tester) async {
-    tester.view.physicalSize = const Size(800, 1400);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
+  testWidgets(
+    'CreateArtistProfileView renders Location as a dropdown with Dubai, UAE default',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
 
-    await tester.pumpWidget(
-      testApp(
-        const Scaffold(body: CreateArtistProfileView()),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        testApp(const Scaffold(body: CreateArtistProfileView())),
+      );
+      await tester.pumpAndSettle();
 
-    // Verify Location label exists
-    expect(find.text('Location *'), findsOneWidget);
+      // Verify Location label exists
+      expect(find.text('Location *'), findsOneWidget);
 
-    // Verify Dubai, UAE is selected and displayed
-    expect(find.text('Dubai, UAE'), findsWidgets);
+      // Verify Dubai, UAE is selected and displayed
+      expect(find.text('Dubai, UAE'), findsWidgets);
 
-    // Verify DropdownButtonFormField widgets exist
-    final dropdownFinder = find.byType(DropdownButtonFormField<String>);
-    expect(dropdownFinder, findsWidgets);
-  });
+      // Verify DropdownButtonFormField widgets exist
+      final dropdownFinder = find.byType(DropdownButtonFormField<String>);
+      expect(dropdownFinder, findsWidgets);
+    },
+  );
 
-  testWidgets('Admin Dashboard renders Language Switcher and toggles between EN and AR', (tester) async {
-    tester.view.physicalSize = const Size(800, 1400);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
+  testWidgets(
+    'Admin Dashboard renders Language Switcher and toggles between EN and AR',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
 
-    await tester.pumpWidget(testApp(const AdminDashboardView()));
-    await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpWidget(testApp(const AdminDashboardView()));
+      await tester.pump(const Duration(milliseconds: 100));
 
-    // Language switcher exists in AppBar (initial state EN)
-    expect(find.text('EN'), findsOneWidget);
+      // Language switcher exists in AppBar (initial state EN)
+      expect(find.text('EN'), findsOneWidget);
 
-    // Initial state is English
-    final localeProvider = sl<LocaleProvider>();
-    expect(localeProvider.isArabic, isFalse);
+      // Initial state is English
+      final localeProvider = sl<LocaleProvider>();
+      expect(localeProvider.isArabic, isFalse);
 
-    // Tap toggle button to switch to Arabic
-    await tester.tap(find.text('EN'));
-    await tester.pumpAndSettle();
+      // Tap toggle button to switch to Arabic
+      await tester.tap(find.text('EN'));
+      await tester.pumpAndSettle();
 
-    // Verify locale switched to Arabic and button now displays 'عربي'
-    expect(localeProvider.isArabic, isTrue);
-    expect(find.text('عربي'), findsOneWidget);
+      // Verify locale switched to Arabic and button now displays 'عربي'
+      expect(localeProvider.isArabic, isTrue);
+      expect(find.text('عربي'), findsOneWidget);
 
-    // Tap toggle button again to switch back to English
-    await tester.tap(find.text('عربي'));
-    await tester.pumpAndSettle();
+      // Tap toggle button again to switch back to English
+      await tester.tap(find.text('عربي'));
+      await tester.pumpAndSettle();
 
-    // Verify locale switched back to English and button displays 'EN'
-    expect(localeProvider.isArabic, isFalse);
-    expect(find.text('EN'), findsOneWidget);
-  });
+      // Verify locale switched back to English and button displays 'EN'
+      expect(localeProvider.isArabic, isFalse);
+      expect(find.text('EN'), findsOneWidget);
+    },
+  );
 }
-

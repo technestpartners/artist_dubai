@@ -11,7 +11,9 @@ class AppColors {
   // Gradient Colors (Sampled from image)
   static const Color gradientTop = Color(0xFF6B1C9B); // Vibrant Top Purple
   static const Color gradientMid = Color(0xFF58209B); // Mid Royal Purple
-  static const Color gradientBottom = Color(0xFF4D249E); // Bottom Luminous Purple
+  static const Color gradientBottom = Color(
+    0xFF4D249E,
+  ); // Bottom Luminous Purple
 
   // Card & Surface
   static const Color cardBg = Color(0xFF551478); // Deep Brand Purple

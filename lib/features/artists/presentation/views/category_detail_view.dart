@@ -52,16 +52,31 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
     _artistSub = sl<LiveSyncService>().artistsStream.listen((artists) {
       if (mounted && artists.isNotEmpty) {
         setState(() {
-          _categoryArtists = artists.where((a) {
-            final aCat = a.category.toLowerCase().trim();
-            final tLower = _title.toLowerCase().trim();
-            return aCat.contains(tLower) ||
-                tLower.contains(aCat) ||
-                DataTranslator.translate(aCat, isArabic: false).toLowerCase().contains(
-                    DataTranslator.translate(tLower, isArabic: false).toLowerCase()) ||
-                DataTranslator.translate(aCat, isArabic: true).toLowerCase().contains(
-                    DataTranslator.translate(tLower, isArabic: true).toLowerCase());
-          }).toList();
+          _categoryArtists =
+              artists.where((a) {
+                final aCat = a.category.toLowerCase().trim();
+                final tLower = _title.toLowerCase().trim();
+                return aCat.contains(tLower) ||
+                    tLower.contains(aCat) ||
+                    DataTranslator.translate(
+                      aCat,
+                      isArabic: false,
+                    ).toLowerCase().contains(
+                      DataTranslator.translate(
+                        tLower,
+                        isArabic: false,
+                      ).toLowerCase(),
+                    ) ||
+                    DataTranslator.translate(
+                      aCat,
+                      isArabic: true,
+                    ).toLowerCase().contains(
+                      DataTranslator.translate(
+                        tLower,
+                        isArabic: true,
+                      ).toLowerCase(),
+                    );
+              }).toList();
         });
       }
     });
@@ -106,27 +121,38 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
       );
       if (artists.isEmpty) {
         final all = await sl<ApiService>().getArtists(forceRefresh: false);
-        artists = all.where((a) {
-          final aCat = a.category.toLowerCase().trim();
-          final tCat = _title.toLowerCase().trim();
-          final aCatEn = DataTranslator.translate(aCat, isArabic: false).toLowerCase();
-          final tCatEn = DataTranslator.translate(tCat, isArabic: false).toLowerCase();
-          final aCatAr = DataTranslator.translate(aCat, isArabic: true).toLowerCase();
-          final tCatAr = DataTranslator.translate(tCat, isArabic: true).toLowerCase();
-          return aCat.contains(tCat) ||
-              tCat.contains(aCat) ||
-              aCatEn.contains(tCatEn) ||
-              tCatEn.contains(aCatEn) ||
-              aCatAr.contains(tCatAr) ||
-              tCatAr.contains(aCatAr);
-        }).toList();
+        artists =
+            all.where((a) {
+              final aCat = a.category.toLowerCase().trim();
+              final tCat = _title.toLowerCase().trim();
+              final aCatEn =
+                  DataTranslator.translate(aCat, isArabic: false).toLowerCase();
+              final tCatEn =
+                  DataTranslator.translate(tCat, isArabic: false).toLowerCase();
+              final aCatAr =
+                  DataTranslator.translate(aCat, isArabic: true).toLowerCase();
+              final tCatAr =
+                  DataTranslator.translate(tCat, isArabic: true).toLowerCase();
+              return aCat.contains(tCat) ||
+                  tCat.contains(aCat) ||
+                  aCatEn.contains(tCatEn) ||
+                  tCatEn.contains(aCatEn) ||
+                  aCatAr.contains(tCatAr) ||
+                  tCatAr.contains(aCatAr);
+            }).toList();
       }
       final artworks = await sl<ApiService>().getArtworks(forceRefresh: true);
-      final categoryArtistNames = artists.map((a) => a.name.toLowerCase().trim()).toSet();
-      final filteredArtworks = artworks.where((aw) {
-        final awArtist = (aw['artist_name'] ?? aw['artist'] ?? '').toString().toLowerCase().trim();
-        return categoryArtistNames.contains(awArtist);
-      }).toList();
+      final categoryArtistNames =
+          artists.map((a) => a.name.toLowerCase().trim()).toSet();
+      final filteredArtworks =
+          artworks.where((aw) {
+            final awArtist =
+                (aw['artist_name'] ?? aw['artist'] ?? '')
+                    .toString()
+                    .toLowerCase()
+                    .trim();
+            return categoryArtistNames.contains(awArtist);
+          }).toList();
 
       if (mounted) {
         setState(() {
@@ -160,9 +186,10 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
     final idx = _categoryArtists.indexWhere((a) => a.id == artist.id);
     if (idx != -1) {
       final old = _categoryArtists[idx];
-      final newLikes = wasLiked
-          ? (old.followersCount - 1).clamp(0, 999999)
-          : (old.followersCount + 1);
+      final newLikes =
+          wasLiked
+              ? (old.followersCount - 1).clamp(0, 999999)
+              : (old.followersCount + 1);
       setState(() {
         _categoryArtists[idx] = ArtistModel(
           id: old.id,
@@ -315,7 +342,10 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        Localizations.localeOf(context).languageCode == 'ar'
+                                        Localizations.localeOf(
+                                                  context,
+                                                ).languageCode ==
+                                                'ar'
                                             ? '${activeArtists.length} فنان'
                                             : '${activeArtists.length} Artists',
                                         style: const TextStyle(
@@ -335,7 +365,10 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        Localizations.localeOf(context).languageCode == 'ar'
+                                        Localizations.localeOf(
+                                                  context,
+                                                ).languageCode ==
+                                                'ar'
                                             ? '${_categoryArtworks.length} عمل فني'
                                             : '${_categoryArtworks.length} Artworks',
                                         style: const TextStyle(
@@ -375,7 +408,9 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                     color: Colors.white.withValues(alpha: 0.18),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.3),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.3,
+                                      ),
                                     ),
                                   ),
                                   child: Text(
@@ -401,7 +436,9 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                         fontWeight: FontWeight.w500,
                       ),
                       decoration: InputDecoration(
-                        hintText: 'Search artists or artworks...'.trData(context),
+                        hintText: 'Search artists or artworks...'.trData(
+                          context,
+                        ),
                         hintStyle: const TextStyle(
                           color: Color(0xFF64748B),
                           fontSize: 14,
@@ -714,7 +751,8 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                     const SizedBox(width: 6),
                                     Flexible(
                                       child: Text(
-                                        'Artists (${activeArtists.length})'.trData(context),
+                                        'Artists (${activeArtists.length})'
+                                            .trData(context),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
@@ -768,7 +806,8 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                                     const SizedBox(width: 6),
                                     Flexible(
                                       child: Text(
-                                        'Artworks (${_categoryArtworks.length})'.trData(context),
+                                        'Artworks (${_categoryArtworks.length})'
+                                            .trData(context),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
@@ -809,7 +848,9 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                           },
                         )
                       else
-                        _buildEmptyState('No artists found in this category yet.'),
+                        _buildEmptyState(
+                          'No artists found in this category yet.',
+                        ),
                     ] else ...[
                       if (_categoryArtworks.isNotEmpty)
                         ListView.separated(
@@ -823,7 +864,9 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                           },
                         )
                       else
-                        _buildEmptyState('No artworks found in this category yet.'),
+                        _buildEmptyState(
+                          'No artworks found in this category yet.',
+                        ),
                     ],
                     const SizedBox(height: 24),
                   ],
@@ -873,7 +916,10 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                   children: [
                     Text(
                       artist.localizedName(context).isEmpty
-                          ? (Localizations.localeOf(context).languageCode == 'ar' ? 'فنان' : 'Artist')
+                          ? (Localizations.localeOf(context).languageCode ==
+                                  'ar'
+                              ? 'فنان'
+                              : 'Artist')
                           : artist.localizedName(context),
                       style: const TextStyle(
                         fontSize: 17,
@@ -893,7 +939,12 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                         Expanded(
                           child: Text(
                             artist.localizedLocation(context).isEmpty
-                                ? (Localizations.localeOf(context).languageCode == 'ar' ? 'دبي، الإمارات' : 'Dubai, UAE')
+                                ? (Localizations.localeOf(
+                                          context,
+                                        ).languageCode ==
+                                        'ar'
+                                    ? 'دبي، الإمارات'
+                                    : 'Dubai, UAE')
                                 : artist.localizedLocation(context),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -940,22 +991,25 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: isLiked
-                          ? const Color(0xFFE11D48).withValues(alpha: 0.1)
-                          : Colors.transparent,
+                      color:
+                          isLiked
+                              ? const Color(0xFFE11D48).withValues(alpha: 0.1)
+                              : Colors.transparent,
                       border: Border.all(
-                        color: isLiked
-                            ? const Color(0xFFE11D48)
-                            : const Color(0xFFE2E8F0),
+                        color:
+                            isLiked
+                                ? const Color(0xFFE11D48)
+                                : const Color(0xFFE2E8F0),
                       ),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Icon(
                       isLiked ? Icons.favorite : Icons.favorite_border,
                       size: 16,
-                      color: isLiked
-                          ? const Color(0xFFE11D48)
-                          : const Color(0xFF64748B),
+                      color:
+                          isLiked
+                              ? const Color(0xFFE11D48)
+                              : const Color(0xFF64748B),
                     ),
                   ),
                 ),
@@ -967,7 +1021,9 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
           // Bio Snippet
           Text(
             artist.localizedBio(context).isEmpty
-                ? (Localizations.localeOf(context).languageCode == 'ar' ? 'فنان مقيم في دبي، الإمارات.' : 'Artist based in Dubai, UAE.')
+                ? (Localizations.localeOf(context).languageCode == 'ar'
+                    ? 'فنان مقيم في دبي، الإمارات.'
+                    : 'Artist based in Dubai, UAE.')
                 : artist.localizedBio(context),
             style: const TextStyle(
               fontSize: 13,
@@ -983,13 +1039,21 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.people_outline, size: 14, color: Color(0xFF64748B)),
+                  const Icon(
+                    Icons.people_outline,
+                    size: 14,
+                    color: Color(0xFF64748B),
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     Localizations.localeOf(context).languageCode == 'ar'
                         ? '${artist.followersCount} إعجاب'
                         : '${artist.followersCount} likes',
-                    style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      color: Color(0xFF64748B),
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ),
@@ -1029,7 +1093,10 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
               },
               child: Text(
                 'View Portfolio'.trData(context),
-                style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
@@ -1040,10 +1107,7 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
 
   Widget _buildEmptyState(String message) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        vertical: 48,
-        horizontal: 24,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -1076,12 +1140,15 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
 
   Widget _buildArtworkCard(Map<String, dynamic> item) {
     final title = (item['title'] ?? 'Artwork').toString().trData(context);
-    final artist = (item['artist_name'] ?? item['artist'] ?? 'Artist').toString().trData(context);
+    final artist = (item['artist_name'] ?? item['artist'] ?? 'Artist')
+        .toString()
+        .trData(context);
     final medium = (item['medium'] ?? '').toString().trData(context);
     final dimensions = (item['dimensions'] ?? '').toString().trData(context);
     final description = (item['description'] ?? '').toString().trData(context);
     final imageUrl = (item['image_url'] ?? item['image'] ?? '').toString();
-    final isFeatured = item['is_featured'] == 1 ||
+    final isFeatured =
+        item['is_featured'] == 1 ||
         item['is_featured'] == true ||
         item['is_featured']?.toString() == '1' ||
         item['is_featured']?.toString() == 'true';
@@ -1152,20 +1219,29 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
                 const SizedBox(height: 4),
                 Text(
                   'by $artist'.trData(context),
-                  style: const TextStyle(fontSize: 13.5, color: Color(0xFF64748B)),
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    color: Color(0xFF64748B),
+                  ),
                 ),
                 if (medium.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(
                     medium,
-                    style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF64748B),
+                    ),
                   ),
                 ],
                 if (dimensions.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(
                     dimensions,
-                    style: const TextStyle(fontSize: 12.5, color: Color(0xFF94A3B8)),
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      color: Color(0xFF94A3B8),
+                    ),
                   ),
                 ],
                 const SizedBox(height: 16),

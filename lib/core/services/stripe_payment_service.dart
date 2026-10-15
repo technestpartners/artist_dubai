@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+import '../config/app_config.dart';
 import '../constants/api_endpoints.dart';
 
 /// Stripe configuration settings.
@@ -11,16 +12,15 @@ import '../constants/api_endpoints.dart';
 class StripeConfig {
   StripeConfig._();
 
-  /// Live Publishable Key — loaded from backend at runtime.
+  /// Live Publishable Key — loaded from backend at runtime or environment.
   /// Falls back to this value only if the backend config endpoint is unreachable.
-  static String publishableKey =
-      'pk_live_51UM5UtDBfdT00Nk0l3Jzf'; // Visible in Stripe Dashboard
+  static String publishableKey = AppConfig.stripePublishableKey;
 
   /// Default currency for the Artist Dubai platform (UAE Dirham)
-  static String defaultCurrency = 'aed';
+  static String defaultCurrency = AppConfig.defaultCurrency;
 
   /// Merchant name shown on Stripe receipts
-  static String merchantName = 'Artist Dubai Cultural Services LLC';
+  static String merchantName = AppConfig.merchantName;
 
   /// Backend Stripe endpoint (served by api.php)
   static String get stripeEndpoint =>
@@ -193,12 +193,20 @@ class StripePaymentService {
             int.parse(cleaned.substring(0, 2)) <= 27)) {
       return 'MASTERCARD';
     }
-    if (cleaned.startsWith('34') || cleaned.startsWith('37')) { return 'AMEX'; }
+    if (cleaned.startsWith('34') || cleaned.startsWith('37')) {
+      return 'AMEX';
+    }
     if (cleaned.startsWith('6011') ||
         cleaned.startsWith('65') ||
-        cleaned.startsWith('644')) { return 'DISCOVER'; }
-    if (cleaned.startsWith('35')) { return 'JCB'; }
-    if (cleaned.startsWith('62')) { return 'UNIONPAY'; }
+        cleaned.startsWith('644')) {
+      return 'DISCOVER';
+    }
+    if (cleaned.startsWith('35')) {
+      return 'JCB';
+    }
+    if (cleaned.startsWith('62')) {
+      return 'UNIONPAY';
+    }
     return 'CARD';
   }
 
@@ -235,9 +243,10 @@ class StripePaymentService {
   }) async {
     final cleanedNumber = cardNumber.replaceAll(' ', '').trim();
     final brand = detectCardBrand(cleanedNumber);
-    final last4 = cleanedNumber.length >= 4
-        ? cleanedNumber.substring(cleanedNumber.length - 4)
-        : '4242';
+    final last4 =
+        cleanedNumber.length >= 4
+            ? cleanedNumber.substring(cleanedNumber.length - 4)
+            : '4242';
 
     // ── Step 1: Client-side validation ─────────────────────────────────────
     if (!validateCardNumber(cleanedNumber)) {
@@ -272,10 +281,12 @@ class StripePaymentService {
 
     // ── Step 2: Server-side PaymentIntent via PHP backend ──────────────────
     try {
-      final dio = Dio(BaseOptions(
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 45),
-      ));
+      final dio = Dio(
+        BaseOptions(
+          connectTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 45),
+        ),
+      );
 
       final response = await dio.post(
         '${StripeConfig.stripeEndpoint}&action=create_payment_intent',
@@ -314,7 +325,8 @@ class StripePaymentService {
           currency: currency,
         );
       } else if (response.data is Map) {
-        final message = (response.data['message'] as String?) ??
+        final message =
+            (response.data['message'] as String?) ??
             'Payment initialization failed.';
         // If backend fails, fall through to test simulation in debug mode
         if (!StripeConfig.enableTestMode) {
@@ -370,7 +382,8 @@ class StripePaymentService {
     // Standard Stripe test decline cards
     if (cleanedNumber.endsWith('0002') || cleanedNumber.endsWith('0069')) {
       return StripePaymentResult.failure(
-        errorMessage: 'Your card was declined. Please try another payment method.',
+        errorMessage:
+            'Your card was declined. Please try another payment method.',
         amount: amount,
         currency: currency,
         last4: last4,
@@ -379,8 +392,7 @@ class StripePaymentService {
     }
     if (cleanedNumber.endsWith('0005')) {
       return StripePaymentResult.failure(
-        errorMessage:
-            'Your card has insufficient funds for this transaction.',
+        errorMessage: 'Your card has insufficient funds for this transaction.',
         amount: amount,
         currency: currency,
         last4: last4,

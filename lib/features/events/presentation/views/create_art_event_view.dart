@@ -64,6 +64,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
   String _selectedPublishingPlan = 'six_month';
   PublishingPricingModel? _eventPricing;
   StreamSubscription<List<PublishingPricingModel>>? _pricingSub;
+  Map<String, dynamic>? _activeEventPlan;
 
   final _titleKey = GlobalKey();
   final _categoryKey = GlobalKey();
@@ -143,9 +144,10 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
         text: ev.organizer.isNotEmpty ? ev.organizer : prefilledOrganizer,
       );
       _contactEmailController = TextEditingController(
-        text: ev.organizerEmail != null && ev.organizerEmail!.isNotEmpty
-            ? ev.organizerEmail!
-            : prefilledEmail,
+        text:
+            ev.organizerEmail != null && ev.organizerEmail!.isNotEmpty
+                ? ev.organizerEmail!
+                : prefilledEmail,
       );
       _contactPhoneController = TextEditingController();
       _notesController = TextEditingController(text: ev.requirements);
@@ -155,11 +157,13 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       );
       _selectedCategory = ev.category.isNotEmpty ? ev.category : null;
       _selectedLocation = ev.location.isNotEmpty ? ev.location : 'Dubai, UAE';
-      if (_selectedLocation != null && !_locations.contains(_selectedLocation)) {
+      if (_selectedLocation != null &&
+          !_locations.contains(_selectedLocation)) {
         _locations.insert(0, _selectedLocation!);
       }
       _uploadedImageUrl = ev.imageUrl;
-      if (_selectedCategory != null && !_categories.contains(_selectedCategory)) {
+      if (_selectedCategory != null &&
+          !_categories.contains(_selectedCategory)) {
         _categories.insert(0, _selectedCategory!);
       }
       if (ev.publishingPlan != null && ev.publishingPlan!.isNotEmpty) {
@@ -179,7 +183,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       _selectedLocation = 'Dubai, UAE';
       _locationController = TextEditingController(text: 'Dubai, UAE');
       _venueController = TextEditingController();
-      _organizerNameController = TextEditingController(text: prefilledOrganizer);
+      _organizerNameController = TextEditingController(
+        text: prefilledOrganizer,
+      );
       _contactEmailController = TextEditingController(text: prefilledEmail);
       _contactPhoneController = TextEditingController();
       _notesController = TextEditingController();
@@ -189,25 +195,32 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     _loadDynamicCategories();
     _loadDynamicLocations();
     _loadPublishingPricing();
+    _loadUserActiveEventPlan();
 
     try {
-      _pricingSub = sl<LiveSyncService>().publishingPricingStream.listen((pricingList) {
+      _pricingSub = sl<LiveSyncService>().publishingPricingStream.listen((
+        pricingList,
+      ) {
         if (!mounted || pricingList.isEmpty) return;
         final evPricing = pricingList.firstWhere(
           (p) => p.itemType == 'event',
-          orElse: () => _eventPricing ?? const PublishingPricingModel(
-            id: 1,
-            itemType: 'event',
-            itemName: 'Event Publishing',
-            weeklyPrice: 'AED 150',
-            monthlyPrice: 'AED 500',
-            sixMonthPrice: 'AED 2,500',
-            yearlyPrice: 'AED 4,500',
-            sixMonthBadge: '180 days active',
-            yearlyBadge: '365 days active',
-            description: 'Publishing events is a paid service on Artist Dubai. Select your preferred promotion duration. Once reviewed and approved by the admin, your event will be broadcasted to art enthusiasts across Dubai.',
-            currency: 'AED',
-          ),
+          orElse:
+              () =>
+                  _eventPricing ??
+                  const PublishingPricingModel(
+                    id: 1,
+                    itemType: 'event',
+                    itemName: 'Event Publishing',
+                    weeklyPrice: 'AED 150',
+                    monthlyPrice: 'AED 500',
+                    sixMonthPrice: 'AED 2,500',
+                    yearlyPrice: 'AED 4,500',
+                    sixMonthBadge: '180 days active',
+                    yearlyBadge: '365 days active',
+                    description:
+                        'Publishing events is a paid service on Artist Dubai. Select your preferred promotion duration. Once reviewed and approved by the admin, your event will be broadcasted to art enthusiasts across Dubai.',
+                    currency: 'AED',
+                  ),
         );
         setState(() {
           _eventPricing = evPricing;
@@ -299,175 +312,189 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Drag Handle
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-
-              // Header Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      builder:
+          (ctx) => SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    'Upload Featured Image'.trData(context),
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF0F172A),
+                  // Drag Handle
+                  Center(
+                    child: Container(
+                      width: 44,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFCBD5E1),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 20, color: Color(0xFF64748B)),
-                    onPressed: () => Navigator.pop(ctx),
-                    splashRadius: 20,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+
+                  // Header Row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Upload Featured Image'.trData(context),
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.close,
+                          size: 20,
+                          color: Color(0xFF64748B),
+                        ),
+                        onPressed: () => Navigator.pop(ctx),
+                        splashRadius: 20,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Option 1: Choose from Gallery
+                  InkWell(
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _pickImage(ImageSource.gallery);
+                    },
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF3E8FF),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.photo_library_rounded,
+                              color: Color(0xFF6A2777),
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Choose from Gallery'.trData(context),
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF0F172A),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Select a banner or photo from your device'
+                                      .trData(context),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right,
+                            color: Color(0xFF94A3B8),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Option 2: Take a Photo
+                  InkWell(
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _pickImage(ImageSource.camera);
+                    },
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF3E8FF),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt_rounded,
+                              color: Color(0xFF6A2777),
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Take a Photo'.trData(context),
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF0F172A),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Use your camera to capture an event image'
+                                      .trData(context),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right,
+                            color: Color(0xFF94A3B8),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-
-              // Option 1: Choose from Gallery
-              InkWell(
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _pickImage(ImageSource.gallery);
-                },
-                borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF3E8FF),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          Icons.photo_library_rounded,
-                          color: Color(0xFF6A2777),
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Choose from Gallery'.trData(context),
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF0F172A),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Select a banner or photo from your device'.trData(context),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.chevron_right, color: Color(0xFF94A3B8)),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Option 2: Take a Photo
-              InkWell(
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _pickImage(ImageSource.camera);
-                },
-                borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF3E8FF),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          Icons.camera_alt_rounded,
-                          color: Color(0xFF6A2777),
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Take a Photo'.trData(context),
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF0F172A),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Use your camera to capture an event image'.trData(context),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.chevron_right, color: Color(0xFF94A3B8)),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 
   Future<void> _loadDynamicCategories() async {
     try {
       final fetched = await sl<ApiService>().getEventCategories();
-      final filtered = fetched.where((c) => c != 'All Categories' && c != 'All').toList();
+      final filtered =
+          fetched.where((c) => c != 'All Categories' && c != 'All').toList();
       if (mounted && filtered.isNotEmpty) {
         setState(() {
           final combined = <String>{..._categories, ...filtered}.toList();
@@ -480,7 +507,8 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
   Future<void> _loadDynamicLocations() async {
     try {
       final fetched = await sl<ApiService>().getLocations();
-      final names = fetched.map((l) => l.name).where((n) => n.trim().isNotEmpty).toList();
+      final names =
+          fetched.map((l) => l.name).where((n) => n.trim().isNotEmpty).toList();
       if (mounted && names.isNotEmpty) {
         setState(() {
           _locations = <String>{..._locations, ...names}.toList();
@@ -491,22 +519,26 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
   Future<void> _loadPublishingPricing() async {
     try {
-      final pricingList = await sl<ApiService>().getPublishingPricing(forceRefresh: true);
+      final pricingList = await sl<ApiService>().getPublishingPricing(
+        forceRefresh: true,
+      );
       final evPricing = pricingList.firstWhere(
         (p) => p.itemType == 'event',
-        orElse: () => const PublishingPricingModel(
-          id: 1,
-          itemType: 'event',
-          itemName: 'Event Publishing',
-          weeklyPrice: 'AED 150',
-          monthlyPrice: 'AED 500',
-          sixMonthPrice: 'AED 2,500',
-          yearlyPrice: 'AED 4,500',
-          sixMonthBadge: '180 days active',
-          yearlyBadge: '365 days active',
-          description: 'Publishing events is a paid service on Artist Dubai. Select your preferred promotion duration. Once reviewed and approved by the admin, your event will be broadcasted to art enthusiasts across Dubai.',
-          currency: 'AED',
-        ),
+        orElse:
+            () => const PublishingPricingModel(
+              id: 1,
+              itemType: 'event',
+              itemName: 'Event Publishing',
+              weeklyPrice: 'AED 150',
+              monthlyPrice: 'AED 500',
+              sixMonthPrice: 'AED 2,500',
+              yearlyPrice: 'AED 4,500',
+              sixMonthBadge: '180 days active',
+              yearlyBadge: '365 days active',
+              description:
+                  'Publishing events is a paid service on Artist Dubai. Select your preferred promotion duration. Once reviewed and approved by the admin, your event will be broadcasted to art enthusiasts across Dubai.',
+              currency: 'AED',
+            ),
       );
       if (mounted) {
         setState(() {
@@ -516,7 +548,20 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     } catch (_) {}
   }
 
-
+  Future<void> _loadUserActiveEventPlan() async {
+    try {
+      final active = await sl<ApiService>().getActivePlanForType('event');
+      if (mounted && active != null) {
+        setState(() {
+          _activeEventPlan = active;
+          final planName = active['plan_name']?.toString();
+          if (planName != null && planName.isNotEmpty) {
+            _selectedPublishingPlan = planName;
+          }
+        });
+      }
+    } catch (_) {}
+  }
 
   DateTime? _parseDateTimeString(String text) {
     if (text.trim().isEmpty) return null;
@@ -589,7 +634,8 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     if (pickedDate == null || !mounted) return;
 
     TimeOfDay initialTime = const TimeOfDay(hour: 18, minute: 0);
-    if (isEndDate && startDate != null &&
+    if (isEndDate &&
+        startDate != null &&
         pickedDate.year == startDate.year &&
         pickedDate.month == startDate.month &&
         pickedDate.day == startDate.day) {
@@ -615,9 +661,10 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
     final datePart =
         '${pickedDate.day.toString().padLeft(2, '0')}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.year}';
-    final formatted = pickedTime != null
-        ? '$datePart ${pickedTime.hour.toString().padLeft(2, '0')}:${pickedTime.minute.toString().padLeft(2, '0')}'
-        : datePart;
+    final formatted =
+        pickedTime != null
+            ? '$datePart ${pickedTime.hour.toString().padLeft(2, '0')}:${pickedTime.minute.toString().padLeft(2, '0')}'
+            : datePart;
 
     setState(() {
       controller.text = formatted;
@@ -630,7 +677,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       if (!isEndDate && _endDateController.text.isNotEmpty) {
         final newStart = _parseDateTimeString(formatted);
         final currentEnd = _parseDateTimeString(_endDateController.text);
-        if (newStart != null && currentEnd != null && currentEnd.isBefore(newStart)) {
+        if (newStart != null &&
+            currentEnd != null &&
+            currentEnd.isBefore(newStart)) {
           _endDateController.text = formatted;
         }
       }
@@ -638,7 +687,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       if (isEndDate && _eventDateController.text.isNotEmpty) {
         final currentStart = _parseDateTimeString(_eventDateController.text);
         final newEnd = _parseDateTimeString(formatted);
-        if (currentStart != null && newEnd != null && newEnd.isBefore(currentStart)) {
+        if (currentStart != null &&
+            newEnd != null &&
+            newEnd.isBefore(currentStart)) {
           controller.text = _eventDateController.text;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -731,9 +782,10 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     final startDt = _parseDateTimeString(eventDate);
     final endDt = _parseDateTimeString(_endDateController.text.trim());
     if (startDt != null && endDt != null && endDt.isBefore(startDt)) {
-      final msg = Localizations.localeOf(context).languageCode == 'ar'
-          ? 'تاريخ ووقت الانتهاء يجب أن يكون في أو بعد تاريخ البدء'
-          : 'End date and time must be on or after the start date and time';
+      final msg =
+          Localizations.localeOf(context).languageCode == 'ar'
+              ? 'تاريخ ووقت الانتهاء يجب أن يكون في أو بعد تاريخ البدء'
+              : 'End date and time must be on or after the start date and time';
       setState(() {
         _endDateError = msg;
       });
@@ -766,41 +818,65 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
         }
       } catch (_) {}
 
-      final parsedCapacity = int.tryParse(_maxTicketsController.text.trim()) ?? 100;
-      final selectedLoc = (_selectedLocation != null && _selectedLocation!.trim().isNotEmpty)
-          ? _selectedLocation!.trim()
-          : (_locationController.text.trim().isEmpty ? 'Dubai, UAE' : _locationController.text.trim());
-      final publishingAmount = _eventPricing?.getPriceForPlan(_selectedPublishingPlan) ??
+      final parsedCapacity =
+          int.tryParse(_maxTicketsController.text.trim()) ?? 100;
+      final selectedLoc =
+          (_selectedLocation != null && _selectedLocation!.trim().isNotEmpty)
+              ? _selectedLocation!.trim()
+              : (_locationController.text.trim().isEmpty
+                  ? 'Dubai, UAE'
+                  : _locationController.text.trim());
+      final publishingAmount =
+          _eventPricing?.getPriceForPlan(_selectedPublishingPlan) ??
           (_selectedPublishingPlan == 'monthly'
               ? 'AED 500'
               : (_selectedPublishingPlan == 'six_month'
                   ? 'AED 2,500'
-                  : (_selectedPublishingPlan == 'yearly' ? 'AED 4,500' : 'AED 150')));
+                  : (_selectedPublishingPlan == 'yearly'
+                      ? 'AED 4,500'
+                      : 'AED 150')));
       final txnRef = _transactionIdController.text.trim();
-      final hasPaymentProof = (_receiptUrl != null && _receiptUrl!.isNotEmpty) || txnRef.isNotEmpty;
-      final paymentStatus = isAdmin ? 'paid' : (hasPaymentProof ? 'submitted' : 'unpaid');
+      final hasPaymentProof =
+          (_receiptUrl != null && _receiptUrl!.isNotEmpty) || txnRef.isNotEmpty;
 
-      if (!isEdit && !isAdmin) {
+      final hasActiveEventPlan = _activeEventPlan != null;
+      final effectivePaymentStatus = (isAdmin || hasActiveEventPlan)
+          ? 'paid'
+          : (hasPaymentProof ? 'submitted' : 'unpaid');
+      final effectivePublishingPlan = hasActiveEventPlan
+          ? (_activeEventPlan!['plan_name']?.toString() ?? _selectedPublishingPlan)
+          : _selectedPublishingPlan;
+      final effectivePublishingAmount = hasActiveEventPlan
+          ? '0 AED (Included with ${_activeEventPlan!['plan_name'] ?? 'Active Plan'})'
+          : publishingAmount;
+
+      if (!isEdit && !isAdmin && !hasActiveEventPlan) {
         setState(() => _isSubmitting = false);
         context.push(
           RouteNames.planPayment,
           extra: {
             'itemType': 'event',
             'title': title,
-            'subtitle': '${_selectedCategory ?? 'Art Exhibition'} • $selectedLoc',
+            'subtitle':
+                '${_selectedCategory ?? 'Art Exhibition'} • $selectedLoc',
             'planId': _selectedPublishingPlan,
-            'planName': _selectedPublishingPlan == 'yearly'
-                ? (_eventPricing?.yearlyBadge.trim().isNotEmpty == true
-                    ? '${l10n.yearly} (${_eventPricing!.yearlyBadge.trim()})'
-                    : 'Yearly Plan (365 Days)')
-                : (_eventPricing?.sixMonthBadge.trim().isNotEmpty == true
-                    ? '${l10n.sixMonths} (${_eventPricing!.sixMonthBadge.trim()})'
-                    : '6 Months Plan (180 Days)'),
+            'planName':
+                _selectedPublishingPlan == 'yearly'
+                    ? (_eventPricing?.yearlyBadge.trim().isNotEmpty == true
+                        ? '${l10n.yearly} (${_eventPricing!.yearlyBadge.trim()})'
+                        : 'Yearly Plan (365 Days)')
+                    : (_eventPricing?.sixMonthBadge.trim().isNotEmpty == true
+                        ? '${l10n.sixMonths} (${_eventPricing!.sixMonthBadge.trim()})'
+                        : '6 Months Plan (180 Days)'),
             'planAmount': publishingAmount,
             'formData': {
               'title': title,
               'description': _descriptionController.text.trim(),
-              'category': _selectedCategory ?? (_categories.isNotEmpty ? _categories.first : 'Art Exhibition'),
+              'category':
+                  _selectedCategory ??
+                  (_categories.isNotEmpty
+                      ? _categories.first
+                      : 'Art Exhibition'),
               'event_date': eventDate,
               'end_date': _endDateController.text.trim(),
               'location': selectedLoc,
@@ -827,7 +903,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           'id': widget.event!.id,
           'title': title,
           'description': _descriptionController.text.trim(),
-          'category': _selectedCategory ?? (_categories.isNotEmpty ? _categories.first : 'Art Exhibition'),
+          'category':
+              _selectedCategory ??
+              (_categories.isNotEmpty ? _categories.first : 'Art Exhibition'),
           'event_date': eventDate,
           'end_date': _endDateController.text.trim(),
           'location': selectedLoc,
@@ -835,18 +913,22 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           'price': 'Free Entry',
           'max_attendees': parsedCapacity,
           'tags': _tagsController.text.trim(),
-          'publishing_plan': _selectedPublishingPlan,
-          'publishing_amount': publishingAmount,
-          'payment_status': paymentStatus,
-          if (_receiptUrl != null && _receiptUrl!.isNotEmpty) 'payment_proof_url': _receiptUrl!,
+          'publishing_plan': effectivePublishingPlan,
+          'publishing_amount': effectivePublishingAmount,
+          'payment_status': effectivePaymentStatus,
+          if (_receiptUrl != null && _receiptUrl!.isNotEmpty)
+            'payment_proof_url': _receiptUrl!,
           if (txnRef.isNotEmpty) 'payment_reference': txnRef,
-          if (_uploadedImageUrl != null && _uploadedImageUrl!.isNotEmpty) 'image_url': _uploadedImageUrl!,
+          if (_uploadedImageUrl != null && _uploadedImageUrl!.isNotEmpty)
+            'image_url': _uploadedImageUrl!,
         });
       } else {
         success = await sl<ApiService>().createEvent(
           title: title,
           description: _descriptionController.text.trim(),
-          category: _selectedCategory ?? (_categories.isNotEmpty ? _categories.first : 'Art Exhibition'),
+          category:
+              _selectedCategory ??
+              (_categories.isNotEmpty ? _categories.first : 'Art Exhibition'),
           eventDate: eventDate,
           endDate: _endDateController.text.trim(),
           location: selectedLoc,
@@ -859,12 +941,12 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           contactPhone: _contactPhoneController.text.trim(),
           tags: _tagsController.text.trim(),
           imageUrl: _uploadedImageUrl,
-          status: isAdmin ? 'active' : 'pending',
-          isActive: isAdmin,
+          status: isAdmin || hasActiveEventPlan ? 'active' : 'pending',
+          isActive: isAdmin || hasActiveEventPlan,
           fromAdmin: isAdmin,
-          publishingPlan: _selectedPublishingPlan,
-          publishingAmount: publishingAmount,
-          paymentStatus: paymentStatus,
+          publishingPlan: effectivePublishingPlan,
+          publishingAmount: effectivePublishingAmount,
+          paymentStatus: effectivePaymentStatus,
           paymentProofUrl: _receiptUrl,
           paymentReference: txnRef.isNotEmpty ? txnRef : null,
         );
@@ -884,8 +966,12 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
               SnackBar(
                 content: Text(
                   widget.isCalendar
-                      ? (isEdit ? l10n.calendarEventUpdatedSuccess : l10n.eventScheduledSuccess)
-                      : (isEdit ? l10n.eventUpdatedSuccess : l10n.eventCreatedSuccess),
+                      ? (isEdit
+                          ? l10n.calendarEventUpdatedSuccess
+                          : l10n.eventScheduledSuccess)
+                      : (isEdit
+                          ? l10n.eventUpdatedSuccess
+                          : l10n.eventCreatedSuccess),
                 ),
                 backgroundColor: const Color(0xFF6A2777),
                 behavior: SnackBarBehavior.floating,
@@ -894,87 +980,126 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
             if (context.canPop()) {
               context.pop();
             } else {
-              context.go(widget.fromAdmin ? RouteNames.adminDashboard : RouteNames.myEvents);
+              context.go(
+                widget.fromAdmin
+                    ? RouteNames.adminDashboard
+                    : RouteNames.myEvents,
+              );
             }
           } else {
             // User submitted event request to admin
             await showDialog(
               context: context,
               barrierDismissible: false,
-              builder: (ctx) => AlertDialog(
-                backgroundColor: Colors.white,
-                surfaceTintColor: Colors.transparent,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                title: Row(
-                  children: [
-                    const Icon(Icons.mark_email_read_outlined, color: Color(0xFF6A2777), size: 26),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Request Sent to Admin'.trData(context),
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                      ),
+              builder:
+                  (ctx) => AlertDialog(
+                    backgroundColor: Colors.white,
+                    surfaceTintColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                  ],
-                ),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Your event "$title" has been successfully submitted for administrative review.'.trData(context),
-                      style: const TextStyle(fontSize: 14, color: Color(0xFF334155), height: 1.4),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFEF3C7),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFFDE68A)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.info_outline, size: 18, color: Color(0xFFD97706)),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Once approved by the admin, it will be published in the public directory.'.trData(context),
-                              style: const TextStyle(fontSize: 12, color: Color(0xFFB45309)),
+                    title: Row(
+                      children: [
+                        const Icon(
+                          Icons.mark_email_read_outlined,
+                          color: Color(0xFF6A2777),
+                          size: 26,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Request Sent to Admin'.trData(context),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0F172A),
                             ),
                           ),
-                        ],
+                        ),
+                      ],
+                    ),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Your event "$title" has been successfully submitted for administrative review.'
+                              .trData(context),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF334155),
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF3C7),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFFDE68A)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.info_outline,
+                                size: 18,
+                                color: Color(0xFFD97706),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Once approved by the admin, it will be published in the public directory.'
+                                      .trData(context),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFFB45309),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(ctx).pop();
+                          if (context.canPop()) {
+                            context.pop();
+                          } else {
+                            context.go(RouteNames.myEvents);
+                          }
+                        },
+                        child: Text(
+                          'Close'.trData(context),
+                          style: const TextStyle(
+                            color: Color(0xFF64748B),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(ctx).pop();
-                      if (context.canPop()) {
-                        context.pop();
-                      } else {
-                        context.go(RouteNames.myEvents);
-                      }
-                    },
-                    child: Text('Close'.trData(context), style: const TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6A2777),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: () {
+                          Navigator.of(ctx).pop();
+                          context.go(RouteNames.myEvents);
+                        },
+                        child: Text(
+                          'View My Events'.trData(context),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
                   ),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6A2777),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    onPressed: () {
-                      Navigator.of(ctx).pop();
-                      context.go(RouteNames.myEvents);
-                    },
-                    child: Text('View My Events'.trData(context), style: const TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                ],
-              ),
             );
           }
         } else {
@@ -1003,17 +1128,26 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     final l10n = AppLocalizations.of(context);
     final isEdit = widget.event != null;
 
-    final appBarTitle = widget.isCalendar
-        ? (isEdit ? l10n.editCalendarEvent : l10n.addToCalendar)
-        : (isEdit ? l10n.editEvent : l10n.createEvent);
+    final appBarTitle =
+        widget.isCalendar
+            ? (isEdit ? l10n.editCalendarEvent : l10n.addToCalendar)
+            : (isEdit ? l10n.editEvent : l10n.createEvent);
 
-    final headerTitle = widget.isCalendar
-        ? (isEdit ? l10n.headerEditCalendarEvent : l10n.headerScheduleCalendarEvent)
-        : (isEdit ? l10n.headerEditArtEvent : l10n.headerCreateArtEvent);
+    final headerTitle =
+        widget.isCalendar
+            ? (isEdit
+                ? l10n.headerEditCalendarEvent
+                : l10n.headerScheduleCalendarEvent)
+            : (isEdit ? l10n.headerEditArtEvent : l10n.headerCreateArtEvent);
 
-    final headerSubtitle = widget.isCalendar
-        ? (isEdit ? l10n.headerSubtitleCalendarEdit : l10n.headerSubtitleCalendarCreate)
-        : (isEdit ? l10n.headerSubtitleEventEdit : l10n.headerSubtitleEventCreate);
+    final headerSubtitle =
+        widget.isCalendar
+            ? (isEdit
+                ? l10n.headerSubtitleCalendarEdit
+                : l10n.headerSubtitleCalendarCreate)
+            : (isEdit
+                ? l10n.headerSubtitleEventEdit
+                : l10n.headerSubtitleEventCreate);
 
     return Scaffold(
       backgroundColor: const Color(0xFF6B1C9B),
@@ -1032,7 +1166,11 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
             if (context.canPop()) {
               context.pop();
             } else {
-              context.go(widget.fromAdmin ? RouteNames.adminDashboard : RouteNames.events);
+              context.go(
+                widget.fromAdmin
+                    ? RouteNames.adminDashboard
+                    : RouteNames.events,
+              );
             }
           },
         ),
@@ -1051,493 +1189,814 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           children: [
             Expanded(
               child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: rh.horizontalPadding, vertical: 16.0),
+                padding: EdgeInsets.symmetric(
+                  horizontal: rh.horizontalPadding,
+                  vertical: 16.0,
+                ),
                 child: Center(
                   child: ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
                     child: Form(
                       key: _formKey,
                       child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header Card
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFCBD5E1)),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF6B1C9B).withValues(alpha: 0.15),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                widget.isCalendar ? Icons.calendar_month_rounded : Icons.event_note,
-                                color: const Color(0xFF6B1C9B),
-                                size: 24,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Header Card
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFCBD5E1),
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    headerTitle,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF1E1E1E),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    headerSubtitle,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Color(0xFF64748B),
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Featured Image Card
-                      _buildCardSection(
-                        title: l10n.featuredImage,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (_isUploadingImage) ...[
-                              Container(
-                                width: double.infinity,
-                                height: 140,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF8FAFC),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: const Color(0xFFCBD5E1)),
-                                ),
-                                child: Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const CircularProgressIndicator(color: Color(0xFF6A2777)),
-                                      const SizedBox(height: 8),
-                                      Text(l10n.uploadingImage, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ] else if (_selectedImage != null || (_uploadedImageUrl != null && _uploadedImageUrl!.isNotEmpty)) ...[
-                              Container(
-                                width: double.infinity,
-                                height: 160,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: const Color(0xFFCBD5E1)),
-                                ),
-                                child: Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(10),
-                                      child: _selectedImage != null
-                                          ? (kIsWeb
-                                              ? Image.network(_selectedImage!.path, fit: BoxFit.cover)
-                                              : Image.file(File(_selectedImage!.path), fit: BoxFit.cover))
-                                          : AppCachedImage(imageUrl: _uploadedImageUrl!, fit: BoxFit.cover),
-                                    ),
-                                    Positioned(
-                                      top: 8,
-                                      right: 8,
-                                      child: GestureDetector(
-                                        onTap: () {
-                                          setState(() {
-                                            _selectedImage = null;
-                                            _uploadedImageUrl = null;
-                                          });
-                                        },
-                                        child: Container(
-                                          padding: const EdgeInsets.all(6),
-                                          decoration: const BoxDecoration(
-                                            color: Colors.black54,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(Icons.delete_outline, color: Colors.white, size: 18),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  OutlinedButton.icon(
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: const Color(0xFF6A2777),
-                                      side: const BorderSide(color: Color(0xFF6A2777)),
-                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                    ),
-                                    icon: const Icon(Icons.refresh, size: 16),
-                                    label: Text(l10n.changeImage, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
-                                    onPressed: () => _showImageSourceActionSheet(context),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  const Icon(Icons.check_circle, color: Colors.green, size: 16),
-                                  const SizedBox(width: 4),
-                                  Text(l10n.uploaded, style: const TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.w600)),
-                                ],
-                              ),
-                            ] else ...[
-                              Row(
-                                children: [
-                                  OutlinedButton.icon(
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: const Color(0xFF1E293B),
-                                      side: const BorderSide(color: Color(0xFFCBD5E1)),
-                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                    ),
-                                    icon: const Icon(Icons.add_photo_alternate_rounded, size: 20, color: Color(0xFF6A2777)),
-                                    label: Text(l10n.uploadImage, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                                    onPressed: () => _showImageSourceActionSheet(context),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      l10n.uploadImagePrompt,
-                                      style: TextStyle(fontSize: 11, color: const Color(0xFF64748B).withValues(alpha: 0.8)),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Event Information Card
-                      _buildCardSection(
-                        title: l10n.eventInformation,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildLabel(l10n.eventTitle, isRequired: true, hasError: _titleError != null),
-                            _buildTextField(
-                              fieldKey: _titleKey,
-                              controller: _eventTitleController,
-                              focusNode: _titleFocusNode,
-                              errorText: _titleError,
-                              hintText: l10n.enterEventTitle,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildLabel(l10n.categoryLabel, isRequired: true, hasError: _categoryError != null),
-                            _buildDropdownField(
-                              fieldKey: _categoryKey,
-                              value: _selectedCategory,
-                              hintText: l10n.selectCategory,
-                              items: _categories,
-                              errorText: _categoryError,
-                              onChanged: (val) {
-                                setState(() {
-                                  _selectedCategory = val;
-                                  _categoryError = null;
-                                });
-                              },
-                            ),
-                            const SizedBox(height: 12),
-                            _buildLabel(l10n.descriptionLabel),
-                            _buildTextField(
-                              controller: _descriptionController,
-                              hintText: l10n.describeYourEvent,
-                              maxLines: 4,
-                              maxLength: 2000,
-                              showCounter: true,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Date & Time Card
-                      _buildCardSection(
-                        title: l10n.dateTime,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildLabel(l10n.startDateTime, isRequired: true, hasError: _dateError != null),
-                            _buildTextField(
-                              fieldKey: _dateKey,
-                              controller: _eventDateController,
-                              focusNode: _dateFocusNode,
-                              errorText: _dateError,
-                              hintText: 'dd-mm-yyyy --:--',
-                              suffixIcon: Icons.calendar_today_outlined,
-                              onTap: () => _pickDateTime(_eventDateController),
-                            ),
-                            const SizedBox(height: 12),
-                            _buildLabel(l10n.endDateTimeOptional, hasError: _endDateError != null),
-                            _buildTextField(
-                              fieldKey: _endDateKey,
-                              controller: _endDateController,
-                              focusNode: _endDateFocusNode,
-                              errorText: _endDateError,
-                              hintText: 'dd-mm-yyyy --:--',
-                              suffixIcon: Icons.calendar_today_outlined,
-                              onTap: () => _pickDateTime(_endDateController),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Location Card
-                      _buildCardSection(
-                        title: l10n.locationLabel,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildLabel(l10n.venueNameOptional),
-                            _buildTextField(
-                              controller: _venueController,
-                              hintText: l10n.venueNameHint,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildLabel(l10n.addressLocation),
-                            _buildSearchableLocationField(),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-
-                      // Additional Details Card
-                      _buildCardSection(
-                        title: l10n.additionalDetails,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildLabel(l10n.phoneOptional),
-                            _buildTextField(
-                              controller: _contactPhoneController,
-                              hintText: '+971 50 123 4567',
-                              keyboardType: TextInputType.phone,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildLabel(l10n.requirementsOptional),
-                            _buildTextField(
-                              controller: _notesController,
-                              hintText: l10n.requirementsHint,
-                              maxLines: 3,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildLabel(l10n.tagsOptional),
-                            _buildTextField(
-                              controller: _tagsController,
-                              hintText: l10n.tagsHint,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Event Publishing Notice (Paid Service)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFCBD5E1)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+                            child: Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF6B1C9B),
-                                    borderRadius: BorderRadius.circular(6),
+                                    color: const Color(
+                                      0xFF6B1C9B,
+                                    ).withValues(alpha: 0.15),
+                                    shape: BoxShape.circle,
                                   ),
-                                  child: Text(
-                                    l10n.paidPublishing,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 0.5,
-                                    ),
+                                  child: Icon(
+                                    widget.isCalendar
+                                        ? Icons.calendar_month_rounded
+                                        : Icons.event_note,
+                                    color: const Color(0xFF6B1C9B),
+                                    size: 24,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 12),
                                 Expanded(
-                                  child: Text(
-                                    l10n.choosePublishingPlan,
-                                    style: const TextStyle(
-                                      fontSize: 13.5,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF1E293B),
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        headerTitle,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF1E1E1E),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        headerSubtitle,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF64748B),
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              _eventPricing?.description != null && _eventPricing!.description!.trim().isNotEmpty
-                                  ? DataTranslator.tr(context, _eventPricing!.description!.trim())
-                                  : l10n.paidPublishingDesc,
-                              style: const TextStyle(
-                                fontSize: 12.5,
-                                color: Color(0xFF475569),
-                                height: 1.4,
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Featured Image Card
+                          _buildCardSection(
+                            title: l10n.featuredImage,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (_isUploadingImage) ...[
+                                  Container(
+                                    width: double.infinity,
+                                    height: 140,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF8FAFC),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: const Color(0xFFCBD5E1),
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const CircularProgressIndicator(
+                                            color: Color(0xFF6A2777),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            l10n.uploadingImage,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Color(0xFF64748B),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ] else if (_selectedImage != null ||
+                                    (_uploadedImageUrl != null &&
+                                        _uploadedImageUrl!.isNotEmpty)) ...[
+                                  Container(
+                                    width: double.infinity,
+                                    height: 160,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: const Color(0xFFCBD5E1),
+                                      ),
+                                    ),
+                                    child: Stack(
+                                      fit: StackFit.expand,
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                          child:
+                                              _selectedImage != null
+                                                  ? (kIsWeb
+                                                      ? Image.network(
+                                                        _selectedImage!.path,
+                                                        fit: BoxFit.cover,
+                                                      )
+                                                      : Image.file(
+                                                        File(
+                                                          _selectedImage!.path,
+                                                        ),
+                                                        fit: BoxFit.cover,
+                                                      ))
+                                                  : AppCachedImage(
+                                                    imageUrl:
+                                                        _uploadedImageUrl!,
+                                                    fit: BoxFit.cover,
+                                                  ),
+                                        ),
+                                        Positioned(
+                                          top: 8,
+                                          right: 8,
+                                          child: GestureDetector(
+                                            onTap: () {
+                                              setState(() {
+                                                _selectedImage = null;
+                                                _uploadedImageUrl = null;
+                                              });
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.all(6),
+                                              decoration: const BoxDecoration(
+                                                color: Colors.black54,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: const Icon(
+                                                Icons.delete_outline,
+                                                color: Colors.white,
+                                                size: 18,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 6,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    children: [
+                                      OutlinedButton.icon(
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: const Color(
+                                            0xFF6A2777,
+                                          ),
+                                          side: const BorderSide(
+                                            color: Color(0xFF6A2777),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 8,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                        ),
+                                        icon: const Icon(
+                                          Icons.refresh,
+                                          size: 16,
+                                        ),
+                                        label: Text(
+                                          l10n.changeImage,
+                                          style: const TextStyle(
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        onPressed:
+                                            () => _showImageSourceActionSheet(
+                                              context,
+                                            ),
+                                      ),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.check_circle,
+                                            color: Colors.green,
+                                            size: 16,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            l10n.uploaded,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.green,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ] else ...[
+                                  LayoutBuilder(
+                                    builder: (context, boxConstraints) {
+                                      final isNarrow =
+                                          boxConstraints.maxWidth < 360;
+                                      final btn = OutlinedButton.icon(
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: const Color(
+                                            0xFF1E293B,
+                                          ),
+                                          side: const BorderSide(
+                                            color: Color(0xFFCBD5E1),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 10,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                        ),
+                                        icon: const Icon(
+                                          Icons.add_photo_alternate_rounded,
+                                          size: 20,
+                                          color: Color(0xFF6A2777),
+                                        ),
+                                        label: Text(
+                                          l10n.uploadImage,
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        onPressed:
+                                            () => _showImageSourceActionSheet(
+                                              context,
+                                            ),
+                                      );
+
+                                      final promptText = Text(
+                                        l10n.uploadImagePrompt,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: const Color(
+                                            0xFF64748B,
+                                          ).withValues(alpha: 0.8),
+                                        ),
+                                      );
+
+                                      if (isNarrow) {
+                                        return Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            btn,
+                                            const SizedBox(height: 8),
+                                            promptText,
+                                          ],
+                                        );
+                                      }
+
+                                      return Row(
+                                        children: [
+                                          btn,
+                                          const SizedBox(width: 12),
+                                          Expanded(child: promptText),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Event Information Card
+                          _buildCardSection(
+                            title: l10n.eventInformation,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildLabel(
+                                  l10n.eventTitle,
+                                  isRequired: true,
+                                  hasError: _titleError != null,
+                                ),
+                                _buildTextField(
+                                  fieldKey: _titleKey,
+                                  controller: _eventTitleController,
+                                  focusNode: _titleFocusNode,
+                                  errorText: _titleError,
+                                  hintText: l10n.enterEventTitle,
+                                ),
+                                const SizedBox(height: 12),
+                                _buildLabel(
+                                  l10n.categoryLabel,
+                                  isRequired: true,
+                                  hasError: _categoryError != null,
+                                ),
+                                _buildDropdownField(
+                                  fieldKey: _categoryKey,
+                                  value: _selectedCategory,
+                                  hintText: l10n.selectCategory,
+                                  items: _categories,
+                                  errorText: _categoryError,
+                                  onChanged: (val) {
+                                    setState(() {
+                                      _selectedCategory = val;
+                                      _categoryError = null;
+                                    });
+                                  },
+                                ),
+                                const SizedBox(height: 12),
+                                _buildLabel(l10n.descriptionLabel),
+                                _buildTextField(
+                                  controller: _descriptionController,
+                                  hintText: l10n.describeYourEvent,
+                                  maxLines: 4,
+                                  maxLength: 2000,
+                                  showCounter: true,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Date & Time Card
+                          _buildCardSection(
+                            title: l10n.dateTime,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildLabel(
+                                  l10n.startDateTime,
+                                  isRequired: true,
+                                  hasError: _dateError != null,
+                                ),
+                                _buildTextField(
+                                  fieldKey: _dateKey,
+                                  controller: _eventDateController,
+                                  focusNode: _dateFocusNode,
+                                  errorText: _dateError,
+                                  hintText: 'dd-mm-yyyy --:--',
+                                  suffixIcon: Icons.calendar_today_outlined,
+                                  onTap:
+                                      () => _pickDateTime(_eventDateController),
+                                ),
+                                const SizedBox(height: 12),
+                                _buildLabel(
+                                  l10n.endDateTimeOptional,
+                                  hasError: _endDateError != null,
+                                ),
+                                _buildTextField(
+                                  fieldKey: _endDateKey,
+                                  controller: _endDateController,
+                                  focusNode: _endDateFocusNode,
+                                  errorText: _endDateError,
+                                  hintText: 'dd-mm-yyyy --:--',
+                                  suffixIcon: Icons.calendar_today_outlined,
+                                  onTap:
+                                      () => _pickDateTime(_endDateController),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Location Card
+                          _buildCardSection(
+                            title: l10n.locationLabel,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildLabel(l10n.venueNameOptional),
+                                _buildTextField(
+                                  controller: _venueController,
+                                  hintText: l10n.venueNameHint,
+                                ),
+                                const SizedBox(height: 12),
+                                _buildLabel(l10n.addressLocation),
+                                _buildSearchableLocationField(),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Additional Details Card
+                          _buildCardSection(
+                            title: l10n.additionalDetails,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildLabel(l10n.phoneOptional),
+                                _buildTextField(
+                                  controller: _contactPhoneController,
+                                  hintText: '+971 50 123 4567',
+                                  keyboardType: TextInputType.phone,
+                                ),
+                                const SizedBox(height: 12),
+                                _buildLabel(l10n.requirementsOptional),
+                                _buildTextField(
+                                  controller: _notesController,
+                                  hintText: l10n.requirementsHint,
+                                  maxLines: 3,
+                                ),
+                                const SizedBox(height: 12),
+                                _buildLabel(l10n.tagsOptional),
+                                _buildTextField(
+                                  controller: _tagsController,
+                                  hintText: l10n.tagsHint,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Event Publishing Notice (Paid Service)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFCBD5E1),
                               ),
                             ),
-                            const SizedBox(height: 14),
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                final isSmall = constraints.maxWidth < 460;
-                                final sixMonthPrice = _eventPricing?.sixMonthPrice ?? 'AED 2,500';
-                                final yearlyPrice = _eventPricing?.yearlyPrice ?? 'AED 4,500';
-                                final sixMonthSubtitle = _eventPricing?.sixMonthBadge.trim().isNotEmpty == true
-                                    ? DataTranslator.tr(context, _eventPricing!.sixMonthBadge.trim())
-                                    : l10n.daysActive180;
-                                final yearlySubtitle = _eventPricing?.yearlyBadge.trim().isNotEmpty == true
-                                    ? DataTranslator.tr(context, _eventPricing!.yearlyBadge.trim())
-                                    : l10n.daysActive365;
-
-                                final cards = [
-                                  _buildPricingPlanCard(
-                                    id: 'six_month',
-                                    title: l10n.sixMonths,
-                                    price: sixMonthPrice,
-                                    period: '/ 6 mo',
-                                    subtitle: sixMonthSubtitle,
-                                  ),
-                                  _buildPricingPlanCard(
-                                    id: 'yearly',
-                                    title: l10n.yearly,
-                                    price: yearlyPrice,
-                                    period: '/ year',
-                                    subtitle: yearlySubtitle,
-                                  ),
-                                ];
-
-                                if (isSmall) {
-                                  return Column(
-                                    children: [
-                                      cards[0],
-                                      const SizedBox(height: 10),
-                                      cards[1],
-                                    ],
-                                  );
-                                }
-
-                                return Row(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
                                   children: [
-                                    Expanded(child: cards[0]),
-                                    const SizedBox(width: 12),
-                                    Expanded(child: cards[1]),
-                                  ],
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (!widget.fromAdmin && !isEdit) ...[
-                        _buildPaymentNoticeCard(),
-                      ],
-                      const SizedBox(height: 20),
-
-                      // Action Row: Cancel & Update Event
-                      Wrap(
-                        alignment: WrapAlignment.end,
-                        spacing: 12,
-                        runSpacing: 10,
-                        children: [
-                          OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              backgroundColor: Colors.white.withValues(alpha: 0.15),
-                              foregroundColor: Colors.white,
-                              side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            ),
-                            onPressed: () {
-                              if (context.canPop()) {
-                                context.pop();
-                              } else {
-                                context.go(widget.fromAdmin ? RouteNames.adminDashboard : RouteNames.events);
-                              }
-                            },
-                            child: Text(l10n.cancel, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                          ),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: const Color(0xFF6B1C9B),
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            ),
-                            onPressed: _isSubmitting ? null : _submitEvent,
-                            child: _isSubmitting
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(color: Color(0xFF6B1C9B), strokeWidth: 2),
-                                  )
-                                : Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        isEdit
-                                            ? (widget.isCalendar ? l10n.updateCalendarEvent : l10n.updateEvent)
-                                            : (widget.fromAdmin
-                                                ? (widget.isCalendar ? l10n.scheduleCalendarEvent : l10n.createEvent)
-                                                : l10n.proceedToPayment),
-                                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
                                       ),
-                                      if (!isEdit && !widget.fromAdmin) ...[
-                                        const SizedBox(width: 6),
-                                        const Icon(Icons.arrow_forward_rounded, size: 16, color: Color(0xFF6B1C9B)),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF6B1C9B),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        l10n.paidPublishing,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        l10n.choosePublishingPlan,
+                                        style: const TextStyle(
+                                          fontSize: 13.5,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF1E293B),
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (_activeEventPlan != null) ...[
+                                  const SizedBox(height: 10),
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFECFDF5),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: const Color(0xFF10B981),
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.verified,
+                                              color: Color(0xFF059669),
+                                              size: 20,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                'Active Plan Applied: ${_activeEventPlan!['plan_name'] ?? 'Event Plan'}'
+                                                    .trData(context),
+                                                style: const TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Color(0xFF065F46),
+                                                ),
+                                              ),
+                                            ),
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 7,
+                                                    vertical: 2.5,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF10B981),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              child: Text(
+                                                '0 AED EXTRA'.trData(context),
+                                                style: const TextStyle(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Your active subscription covers this event listing. No additional payment required.'
+                                              .trData(context),
+                                          style: const TextStyle(
+                                            fontSize: 11.5,
+                                            color: Color(0xFF047857),
+                                            height: 1.3,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.timer_outlined,
+                                              size: 12,
+                                              color: Color(0xFF047857),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              '${_activeEventPlan!['days_left'] ?? 30} days remaining on this plan'
+                                                  .trData(context),
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                                color: Color(0xFF047857),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ],
-                                    ],
+                                    ),
                                   ),
+                                ],
+                                const SizedBox(height: 8),
+                                Text(
+                                  _eventPricing?.description != null &&
+                                          _eventPricing!.description!
+                                              .trim()
+                                              .isNotEmpty
+                                      ? DataTranslator.tr(
+                                        context,
+                                        _eventPricing!.description!.trim(),
+                                      )
+                                      : l10n.paidPublishingDesc,
+                                  style: const TextStyle(
+                                    fontSize: 12.5,
+                                    color: Color(0xFF475569),
+                                    height: 1.4,
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final isSmall = constraints.maxWidth < 460;
+                                    final sixMonthPrice =
+                                        _eventPricing?.sixMonthPrice ??
+                                        'AED 2,500';
+                                    final yearlyPrice =
+                                        _eventPricing?.yearlyPrice ??
+                                        'AED 4,500';
+                                    final sixMonthSubtitle =
+                                        _eventPricing?.sixMonthBadge
+                                                    .trim()
+                                                    .isNotEmpty ==
+                                                true
+                                            ? DataTranslator.tr(
+                                              context,
+                                              _eventPricing!.sixMonthBadge
+                                                  .trim(),
+                                            )
+                                            : l10n.daysActive180;
+                                    final yearlySubtitle =
+                                        _eventPricing?.yearlyBadge
+                                                    .trim()
+                                                    .isNotEmpty ==
+                                                true
+                                            ? DataTranslator.tr(
+                                              context,
+                                              _eventPricing!.yearlyBadge.trim(),
+                                            )
+                                            : l10n.daysActive365;
+
+                                    final cards = [
+                                      _buildPricingPlanCard(
+                                        id: 'six_month',
+                                        title: l10n.sixMonths,
+                                        price: sixMonthPrice,
+                                        period: '/ 6 mo',
+                                        subtitle: sixMonthSubtitle,
+                                      ),
+                                      _buildPricingPlanCard(
+                                        id: 'yearly',
+                                        title: l10n.yearly,
+                                        price: yearlyPrice,
+                                        period: '/ year',
+                                        subtitle: yearlySubtitle,
+                                      ),
+                                    ];
+
+                                    if (isSmall) {
+                                      return Column(
+                                        children: [
+                                          cards[0],
+                                          const SizedBox(height: 10),
+                                          cards[1],
+                                        ],
+                                      );
+                                    }
+
+                                    return Row(
+                                      children: [
+                                        Expanded(child: cards[0]),
+                                        const SizedBox(width: 12),
+                                        Expanded(child: cards[1]),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
+                          if (!widget.fromAdmin && !isEdit) ...[
+                            _buildPaymentNoticeCard(),
+                          ],
+                          const SizedBox(height: 20),
+
+                          // Action Row: Cancel & Update Event
+                          Wrap(
+                            alignment: WrapAlignment.end,
+                            spacing: 12,
+                            runSpacing: 10,
+                            children: [
+                              OutlinedButton(
+                                style: OutlinedButton.styleFrom(
+                                  backgroundColor: Colors.white.withValues(
+                                    alpha: 0.15,
+                                  ),
+                                  foregroundColor: Colors.white,
+                                  side: BorderSide(
+                                    color: Colors.white.withValues(alpha: 0.3),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  if (context.canPop()) {
+                                    context.pop();
+                                  } else {
+                                    context.go(
+                                      widget.fromAdmin
+                                          ? RouteNames.adminDashboard
+                                          : RouteNames.events,
+                                    );
+                                  }
+                                },
+                                child: Text(
+                                  l10n.cancel,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: const Color(0xFF6B1C9B),
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                onPressed: _isSubmitting ? null : _submitEvent,
+                                child:
+                                    _isSubmitting
+                                        ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            color: Color(0xFF6B1C9B),
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                        : Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Flexible(
+                                              child: Text(
+                                                isEdit
+                                                    ? (widget.isCalendar
+                                                        ? l10n.updateCalendarEvent
+                                                        : l10n.updateEvent)
+                                                    : (widget.fromAdmin
+                                                        ? (widget.isCalendar
+                                                            ? l10n
+                                                                .scheduleCalendarEvent
+                                                            : l10n.createEvent)
+                                                        : (_activeEventPlan != null
+                                                            ? 'Publish Event (Covered by Plan)'
+                                                                .trData(context)
+                                                            : l10n
+                                                                .proceedToPayment)),
+                                                style: const TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            if (!isEdit &&
+                                                !widget.fromAdmin) ...[
+                                              const SizedBox(width: 6),
+                                              const Icon(
+                                                Icons.arrow_forward_rounded,
+                                                size: 16,
+                                                color: Color(0xFF6B1C9B),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
                         ],
                       ),
-                      const SizedBox(height: 24),
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
+          ],
         ),
-      ],
-    ),
-  ),
-  bottomNavigationBar: (!widget.fromAdmin && !widget.isCalendar && widget.showBottomBar)
-          ? const AppBottomNavBar(currentIndex: 2)
-          : null,
+      ),
+      bottomNavigationBar:
+          (!widget.fromAdmin && !widget.isCalendar && widget.showBottomBar)
+              ? const AppBottomNavBar(currentIndex: 2)
+              : null,
     );
   }
 
@@ -1570,12 +2029,15 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
   Widget _buildPaymentNoticeCard() {
     final l10n = AppLocalizations.of(context);
-    final planAmount = _eventPricing?.getPriceForPlan(_selectedPublishingPlan) ??
+    final planAmount =
+        _eventPricing?.getPriceForPlan(_selectedPublishingPlan) ??
         (_selectedPublishingPlan == 'monthly'
             ? 'AED 500'
             : (_selectedPublishingPlan == 'six_month'
                 ? 'AED 2,500'
-                : (_selectedPublishingPlan == 'yearly' ? 'AED 4,500' : 'AED 150')));
+                : (_selectedPublishingPlan == 'yearly'
+                    ? 'AED 4,500'
+                    : 'AED 150')));
 
     return Container(
       width: double.infinity,
@@ -1594,7 +2056,11 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
               color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.payment_rounded, color: Colors.amberAccent, size: 18),
+            child: const Icon(
+              Icons.payment_rounded,
+              color: Colors.amberAccent,
+              size: 18,
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -1605,11 +2071,19 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                 Text.rich(
                   TextSpan(
                     text: l10n.paymentOnNextStep,
-                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                     children: [
                       TextSpan(
                         text: planAmount,
-                        style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: Colors.amberAccent),
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.amberAccent,
+                        ),
                       ),
                     ],
                   ),
@@ -1623,15 +2097,21 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
             ),
           ),
           const SizedBox(width: 6),
-          const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Colors.white70),
+          const Icon(
+            Icons.arrow_forward_ios_rounded,
+            size: 13,
+            color: Colors.white70,
+          ),
         ],
       ),
     );
   }
 
-
-
-  Widget _buildLabel(String label, {bool isRequired = false, bool hasError = false}) {
+  Widget _buildLabel(
+    String label, {
+    bool isRequired = false,
+    bool hasError = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6.0),
       child: RichText(
@@ -1642,17 +2122,18 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
             fontWeight: FontWeight.bold,
             color: hasError ? const Color(0xFFDC2626) : const Color(0xFF1E1E1E),
           ),
-          children: isRequired
-              ? const [
-                  TextSpan(
-                    text: ' *',
-                    style: TextStyle(
-                      color: Color(0xFFDC2626),
-                      fontWeight: FontWeight.bold,
+          children:
+              isRequired
+                  ? const [
+                    TextSpan(
+                      text: ' *',
+                      style: TextStyle(
+                        color: Color(0xFFDC2626),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                ]
-              : null,
+                  ]
+                  : null,
         ),
       ),
     );
@@ -1709,12 +2190,28 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           color: Color(0xFF64748B),
           fontWeight: FontWeight.normal,
         ),
-        prefixIcon: prefixIcon != null
-            ? Icon(prefixIcon, size: 18, color: hasError ? const Color(0xFFEF4444) : const Color(0xFF64748B))
-            : null,
-        suffixIcon: suffixIcon != null
-            ? Icon(suffixIcon, size: 18, color: hasError ? const Color(0xFFEF4444) : const Color(0xFF6A2777))
-            : null,
+        prefixIcon:
+            prefixIcon != null
+                ? Icon(
+                  prefixIcon,
+                  size: 18,
+                  color:
+                      hasError
+                          ? const Color(0xFFEF4444)
+                          : const Color(0xFF64748B),
+                )
+                : null,
+        suffixIcon:
+            suffixIcon != null
+                ? Icon(
+                  suffixIcon,
+                  size: 18,
+                  color:
+                      hasError
+                          ? const Color(0xFFEF4444)
+                          : const Color(0xFF6A2777),
+                )
+                : null,
         filled: true,
         fillColor: hasError ? const Color(0xFFFEF2F2) : Colors.white,
         contentPadding: const EdgeInsets.symmetric(
@@ -1760,10 +2257,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: onTap,
-          child: AbsorbPointer(
-            absorbing: true,
-            child: field,
-          ),
+          child: AbsorbPointer(absorbing: true, child: field),
         ),
       );
     }
@@ -1773,15 +2267,16 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       duration: const Duration(milliseconds: 300),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        boxShadow: hasError
-            ? [
-                BoxShadow(
-                  color: const Color(0xFFEF4444).withValues(alpha: 0.22),
-                  blurRadius: 10,
-                  spreadRadius: 2,
-                ),
-              ]
-            : null,
+        boxShadow:
+            hasError
+                ? [
+                  BoxShadow(
+                    color: const Color(0xFFEF4444).withValues(alpha: 0.22),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  ),
+                ]
+                : null,
       ),
       child: content,
     );
@@ -1797,10 +2292,11 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
   }) {
     final hasError = errorText != null && errorText.isNotEmpty;
     final uniqueItems = items.toSet().toList();
-    final validValue = (value != null && uniqueItems.contains(value)) ? value : null;
+    final validValue =
+        (value != null && uniqueItems.contains(value)) ? value : null;
 
     final dropdown = DropdownButtonFormField<String>(
-      value: validValue,
+      initialValue: validValue,
       isExpanded: true,
       dropdownColor: Colors.white,
       borderRadius: BorderRadius.circular(12),
@@ -1879,19 +2375,20 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           );
         }).toList();
       },
-      items: uniqueItems.map((item) {
-        return DropdownMenuItem<String>(
-          value: item,
-          child: Text(
-            DataTranslator.tr(context, item),
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF1E293B),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        );
-      }).toList(),
+      items:
+          uniqueItems.map((item) {
+            return DropdownMenuItem<String>(
+              value: item,
+              child: Text(
+                DataTranslator.tr(context, item),
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF1E293B),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            );
+          }).toList(),
       onChanged: onChanged,
     );
 
@@ -1900,15 +2397,16 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       duration: const Duration(milliseconds: 300),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        boxShadow: hasError
-            ? [
-                BoxShadow(
-                  color: const Color(0xFFEF4444).withValues(alpha: 0.22),
-                  blurRadius: 10,
-                  spreadRadius: 2,
-                ),
-              ]
-            : null,
+        boxShadow:
+            hasError
+                ? [
+                  BoxShadow(
+                    color: const Color(0xFFEF4444).withValues(alpha: 0.22),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  ),
+                ]
+                : null,
       ),
       child: dropdown,
     );
@@ -1923,11 +2421,20 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
             if (textEditingValue.text.isEmpty) {
               return _locations;
             }
-            return _locations.where((loc) =>
-                loc.toLowerCase().contains(textEditingValue.text.toLowerCase()) ||
-                DataTranslator.tr(context, loc).toLowerCase().contains(textEditingValue.text.toLowerCase()));
+            return _locations.where(
+              (loc) =>
+                  loc.toLowerCase().contains(
+                    textEditingValue.text.toLowerCase(),
+                  ) ||
+                  DataTranslator.tr(
+                    context,
+                    loc,
+                  ).toLowerCase().contains(textEditingValue.text.toLowerCase()),
+            );
           },
-          initialValue: TextEditingValue(text: DataTranslator.tr(context, _selectedLocation ?? 'Dubai, UAE')),
+          initialValue: TextEditingValue(
+            text: DataTranslator.tr(context, _selectedLocation ?? 'Dubai, UAE'),
+          ),
           onSelected: (String selection) {
             setState(() {
               _selectedLocation = selection;
@@ -1970,15 +2477,24 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1),
+                  borderSide: const BorderSide(
+                    color: Color(0xFFCBD5E1),
+                    width: 1,
+                  ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1),
+                  borderSide: const BorderSide(
+                    color: Color(0xFFCBD5E1),
+                    width: 1,
+                  ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF6A2777),
+                    width: 1.5,
+                  ),
                 ),
               ),
               onChanged: (val) {
@@ -2022,26 +2538,29 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                             vertical: 11,
                           ),
                           decoration: BoxDecoration(
-                            color: isSelected
-                                ? const Color(0xFFF5EBF7)
-                                : Colors.transparent,
-                            border: index < options.length - 1
-                                ? const Border(
-                                    bottom: BorderSide(
-                                      color: Color(0xFFF1F5F9),
-                                      width: 1,
-                                    ),
-                                  )
-                                : null,
+                            color:
+                                isSelected
+                                    ? const Color(0xFFF5EBF7)
+                                    : Colors.transparent,
+                            border:
+                                index < options.length - 1
+                                    ? const Border(
+                                      bottom: BorderSide(
+                                        color: Color(0xFFF1F5F9),
+                                        width: 1,
+                                      ),
+                                    )
+                                    : null,
                           ),
                           child: Row(
                             children: [
                               Icon(
                                 Icons.location_on_outlined,
                                 size: 16,
-                                color: isSelected
-                                    ? const Color(0xFF6A2777)
-                                    : const Color(0xFF64748B),
+                                color:
+                                    isSelected
+                                        ? const Color(0xFF6A2777)
+                                        : const Color(0xFF64748B),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
@@ -2049,12 +2568,14 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                   DataTranslator.tr(context, option),
                                   style: TextStyle(
                                     fontSize: 13.5,
-                                    color: isSelected
-                                        ? const Color(0xFF6A2777)
-                                        : const Color(0xFF1E293B),
-                                    fontWeight: isSelected
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
+                                    color:
+                                        isSelected
+                                            ? const Color(0xFF6A2777)
+                                            : const Color(0xFF1E293B),
+                                    fontWeight:
+                                        isSelected
+                                            ? FontWeight.w700
+                                            : FontWeight.w500,
                                   ),
                                 ),
                               ),
@@ -2102,18 +2623,20 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           color: isSelected ? const Color(0xFFFAF5FF) : Colors.white,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isSelected ? const Color(0xFF6B1C9B) : const Color(0xFFE2E8F0),
+            color:
+                isSelected ? const Color(0xFF6B1C9B) : const Color(0xFFE2E8F0),
             width: isSelected ? 2 : 1,
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF6B1C9B).withValues(alpha: 0.12),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
+          boxShadow:
+              isSelected
+                  ? [
+                    BoxShadow(
+                      color: const Color(0xFF6B1C9B).withValues(alpha: 0.12),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                  : null,
         ),
         child: Stack(
           clipBehavior: Clip.none,
@@ -2130,13 +2653,21 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: isSelected ? const Color(0xFF6B1C9B) : const Color(0xFF334155),
+                        color:
+                            isSelected
+                                ? const Color(0xFF6B1C9B)
+                                : const Color(0xFF334155),
                       ),
                     ),
                     Icon(
-                      isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                      isSelected
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked_rounded,
                       size: 18,
-                      color: isSelected ? const Color(0xFF6B1C9B) : const Color(0xFF94A3B8),
+                      color:
+                          isSelected
+                              ? const Color(0xFF6B1C9B)
+                              : const Color(0xFF94A3B8),
                     ),
                   ],
                 ),
@@ -2164,9 +2695,15 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                 top: -6,
                 right: 22,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 1.5,
+                  ),
                   decoration: BoxDecoration(
-                    color: tag == 'POPULAR' ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
+                    color:
+                        tag == 'POPULAR'
+                            ? const Color(0xFFF59E0B)
+                            : const Color(0xFF10B981),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(

@@ -35,9 +35,9 @@ class FavoritesService extends ChangeNotifier {
     required StorageService storage,
     required ApiService api,
     required LiveSyncService liveSync,
-  })  : _storage = storage,
-        _api = api,
-        _liveSync = liveSync {
+  }) : _storage = storage,
+       _api = api,
+       _liveSync = liveSync {
     _loadFromLocal();
     _listenToLiveSync();
     refreshFromServer();
@@ -47,19 +47,25 @@ class FavoritesService extends ChangeNotifier {
     try {
       final evJson = _storage.getString(_keyFavEvents);
       if (evJson != null && evJson.isNotEmpty) {
-        final list = (jsonDecode(evJson) as List<dynamic>).map((e) => e.toString().trim());
+        final list = (jsonDecode(evJson) as List<dynamic>).map(
+          (e) => e.toString().trim(),
+        );
         _eventIds.addAll(list.where((e) => e.isNotEmpty));
       }
 
       final arJson = _storage.getString(_keyFavArtists);
       if (arJson != null && arJson.isNotEmpty) {
-        final list = (jsonDecode(arJson) as List<dynamic>).map((e) => e.toString().trim());
+        final list = (jsonDecode(arJson) as List<dynamic>).map(
+          (e) => e.toString().trim(),
+        );
         _artistIds.addAll(list.where((e) => e.isNotEmpty));
       }
 
       final awJson = _storage.getString(_keyFavArtworks);
       if (awJson != null && awJson.isNotEmpty) {
-        final list = (jsonDecode(awJson) as List<dynamic>).map((e) => e.toString().trim());
+        final list = (jsonDecode(awJson) as List<dynamic>).map(
+          (e) => e.toString().trim(),
+        );
         _artworkIds.addAll(list.where((e) => e.isNotEmpty));
       }
     } catch (_) {}
@@ -79,7 +85,8 @@ class FavoritesService extends ChangeNotifier {
       if (email != null && email.isNotEmpty) return email.trim();
       email = _storage.getString('device_guest_id');
       if (email != null && email.isNotEmpty) return email.trim();
-      final newId = 'guest_${DateTime.now().millisecondsSinceEpoch}@artistdubai.com';
+      final newId =
+          'guest_${DateTime.now().millisecondsSinceEpoch}@artistdubai.com';
       _storage.setString('device_guest_id', newId);
       return newId;
     } catch (_) {
@@ -106,11 +113,7 @@ class FavoritesService extends ChangeNotifier {
 
     final email = getEffectiveEmail();
     try {
-      await _api.toggleFavorite(
-        email: email,
-        itemType: 'event',
-        itemId: id,
-      );
+      await _api.toggleFavorite(email: email, itemType: 'event', itemId: id);
     } catch (_) {}
 
     return willBeFavorite;
@@ -136,11 +139,7 @@ class FavoritesService extends ChangeNotifier {
         userEmail: email,
         action: willBeFavorite ? 'like' : 'unlike',
       );
-      await _api.toggleFavorite(
-        email: email,
-        itemType: 'artist',
-        itemId: id,
-      );
+      await _api.toggleFavorite(email: email, itemType: 'artist', itemId: id);
     } catch (_) {}
 
     return willBeFavorite;
@@ -161,11 +160,7 @@ class FavoritesService extends ChangeNotifier {
 
     final email = getEffectiveEmail();
     try {
-      await _api.toggleFavorite(
-        email: email,
-        itemType: 'artwork',
-        itemId: id,
-      );
+      await _api.toggleFavorite(email: email, itemType: 'artwork', itemId: id);
     } catch (_) {}
 
     return willBeFavorite;

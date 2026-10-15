@@ -63,7 +63,9 @@ void main() {
       expect(find.text('Skip'), findsOneWidget);
     });
 
-    testWidgets('Step 02: Register form manual data entry & validation', (tester) async {
+    testWidgets('Step 02: Register form manual data entry & validation', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -114,7 +116,9 @@ void main() {
       expect(find.text('ARTISTS'), findsWidgets);
     });
 
-    testWidgets('Step 05: Artist Profile Creation manual data entry', (tester) async {
+    testWidgets('Step 05: Artist Profile Creation manual data entry', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -127,7 +131,10 @@ void main() {
 
       // Enter manual artist details
       await tester.enterText(textFields.at(0), 'Layla Al-Khatib');
-      await tester.enterText(textFields.at(1), 'Contemporary Arab expressionism and textured canvas.');
+      await tester.enterText(
+        textFields.at(1),
+        'Contemporary Arab expressionism and textured canvas.',
+      );
       await tester.pump();
 
       expect(find.text('Layla Al-Khatib'), findsOneWidget);
@@ -162,13 +169,18 @@ void main() {
       expect(textFields, findsAtLeastNWidgets(2));
 
       await tester.enterText(textFields.at(0), 'Interactive 3D Art');
-      await tester.enterText(textFields.at(1), 'Immersive spatial 3D art installations.');
+      await tester.enterText(
+        textFields.at(1),
+        'Immersive spatial 3D art installations.',
+      );
       await tester.pump();
 
       expect(find.text('Interactive 3D Art'), findsWidgets);
     });
 
-    testWidgets('Step 08: Gallery Registration manual data entry', (tester) async {
+    testWidgets('Step 08: Gallery Registration manual data entry', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -201,21 +213,26 @@ void main() {
       expect(find.text('MY CREATED EVENTS'), findsOneWidget);
     });
 
-    testWidgets('Step 10: Government Portal live entities & directions verification', (tester) async {
-      tester.view.physicalSize = const Size(800, 1400);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'Step 10: Government Portal live entities & directions verification',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(wrapTestApp(const GovernmentPortalView()));
-      await tester.pump(const Duration(milliseconds: 100));
+        await tester.pumpWidget(wrapTestApp(const GovernmentPortalView()));
+        await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Government Portal'), findsOneWidget);
-      expect(find.text('Dubai Culture & Arts Authority'), findsOneWidget);
-      expect(find.text('Website'), findsWidgets);
-      expect(find.text('Directions'), findsWidgets);
-    });
+        expect(find.text('Government Portal'), findsOneWidget);
+        expect(find.text('Dubai Culture & Arts Authority'), findsOneWidget);
+        expect(find.text('Website'), findsWidgets);
+        expect(find.text('Directions'), findsWidgets);
+      },
+    );
 
-    testWidgets('Step 11: Explore Categories & Filter Segments', (tester) async {
+    testWidgets('Step 11: Explore Categories & Filter Segments', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -231,11 +248,16 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(wrapTestApp(EventDetailView(event: ArtEventModel.mockEvents.first)));
+      await tester.pumpWidget(
+        wrapTestApp(EventDetailView(event: ArtEventModel.mockEvents.first)),
+      );
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Event Details'), findsOneWidget);
-      expect(find.text('Dubai International Arabic Calligraphy Biennale'), findsOneWidget);
+      expect(
+        find.text('Dubai International Arabic Calligraphy Biennale'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('Step 13: Artists directory & layout toggle', (tester) async {

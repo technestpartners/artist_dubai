@@ -100,7 +100,8 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Category "${_nameController.text}" created successfully!'.trData(context),
+                'Category "${_nameController.text}" created successfully!'
+                    .trData(context),
               ),
               backgroundColor: const Color(0xFF6A2777),
               behavior: SnackBarBehavior.floating,
@@ -114,7 +115,11 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to save category. Please check your inputs.'.trData(context)),
+              content: Text(
+                'Failed to save category. Please check your inputs.'.trData(
+                  context,
+                ),
+              ),
               backgroundColor: Colors.redAccent,
               behavior: SnackBarBehavior.floating,
             ),
@@ -181,7 +186,8 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                           ),
                         ),
                         Text(
-                          'Add a new category for artists to showcase their work'.trData(context),
+                          'Add a new category for artists to showcase their work'
+                              .trData(context),
                           style: const TextStyle(
                             fontSize: 12,
                             color: Color(0xFFE2D6F5),
@@ -237,7 +243,8 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Fill in the information below to create a new category'.trData(context),
+                          'Fill in the information below to create a new category'
+                              .trData(context),
                           style: const TextStyle(
                             fontSize: 13,
                             color: Color(0xFF64748B),
@@ -265,12 +272,16 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                           onChanged: (_) => setState(() {}),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'Please enter category name'.trData(context);
+                              return 'Please enter category name'.trData(
+                                context,
+                              );
                             }
                             return null;
                           },
                           decoration: InputDecoration(
-                            hintText: 'e.g., Digital Photography'.trData(context),
+                            hintText: 'e.g., Digital Photography'.trData(
+                              context,
+                            ),
                             hintStyle: const TextStyle(
                               color: Color(0xFF64748B),
                               fontSize: 14,
@@ -317,7 +328,8 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                           ),
                           onChanged: (_) => setState(() {}),
                           decoration: InputDecoration(
-                            hintText: 'Describe what this category includes...'.trData(context),
+                            hintText: 'Describe what this category includes...'
+                                .trData(context),
                             hintStyle: const TextStyle(
                               color: Color(0xFF64748B),
                               fontSize: 14,
@@ -525,14 +537,14 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                                 value: _isFeatured,
                                 activeColor: const Color(0xFF6A2777),
                                 checkColor: Colors.white,
-                                fillColor: WidgetStateProperty.resolveWith(
-                                  (states) {
-                                    if (states.contains(WidgetState.selected)) {
-                                      return const Color(0xFF6A2777);
-                                    }
-                                    return Colors.white;
-                                  },
-                                ),
+                                fillColor: WidgetStateProperty.resolveWith((
+                                  states,
+                                ) {
+                                  if (states.contains(WidgetState.selected)) {
+                                    return const Color(0xFF6A2777);
+                                  }
+                                  return Colors.white;
+                                }),
                                 side: const BorderSide(
                                   color: Color(0xFF6A2777),
                                   width: 1.8,
@@ -619,7 +631,9 @@ class _CreateCategoryViewState extends State<CreateCategoryView> {
                                     const SizedBox(height: 2),
                                     Text(
                                       _descriptionController.text.trim().isEmpty
-                                          ? 'Category description'.trData(context)
+                                          ? 'Category description'.trData(
+                                            context,
+                                          )
                                           : _descriptionController.text.trim(),
                                       style: const TextStyle(
                                         fontSize: 12.5,

@@ -17,6 +17,7 @@ class GovernmentPortalView extends StatefulWidget {
   @override
   State<GovernmentPortalView> createState() => _GovernmentPortalViewState();
 }
+
 class _GovernmentPortalViewState extends State<GovernmentPortalView> {
   List<GovernmentEntity> _entities = sl<ApiService>().cachedGovEntities ?? [];
   bool _isLoading = true;
@@ -56,7 +57,9 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
 
   Future<void> _fetchEntities() async {
     try {
-      final liveEntities = await sl<ApiService>().getGovernmentEntities(forceRefresh: true);
+      final liveEntities = await sl<ApiService>().getGovernmentEntities(
+        forceRefresh: true,
+      );
       if (mounted) {
         setState(() {
           _entities = liveEntities;
@@ -127,7 +130,10 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
               strokeWidth: 2.8,
               onRefresh: _fetchEntities,
               child: ListView(
-                padding: EdgeInsets.symmetric(horizontal: rh.horizontalPadding, vertical: rh.verticalPadding),
+                padding: EdgeInsets.symmetric(
+                  horizontal: rh.horizontalPadding,
+                  vertical: rh.verticalPadding,
+                ),
                 children: [
                   // Page Header
                   Text(
@@ -161,7 +167,10 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
                   else if (entities.isEmpty)
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 36,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF551478),
                         borderRadius: BorderRadius.circular(18),
@@ -186,7 +195,8 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Official cultural entities and government authorities will appear here.'.trData(context),
+                            'Official cultural entities and government authorities will appear here.'
+                                .trData(context),
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 13.5,
@@ -198,7 +208,9 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
                       ),
                     )
                   else
-                    ...entities.map((entity) => _buildEntityCard(context, entity)),
+                    ...entities.map(
+                      (entity) => _buildEntityCard(context, entity),
+                    ),
                   const SizedBox(height: 16),
                 ],
               ),
@@ -294,10 +306,7 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
               const SizedBox(width: 5),
               Text(
                 '(${entity.reviewCount})',
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF64748B),
-                ),
+                style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
               ),
               const SizedBox(width: 4),
               const Text(

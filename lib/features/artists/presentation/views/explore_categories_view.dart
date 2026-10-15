@@ -21,7 +21,11 @@ class ExploreCategoriesView extends StatefulWidget {
 }
 
 class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
-  List<CategoryInfo> _categories = sl<ApiService>().cachedCategories ?? [];
+  List<CategoryInfo> _categories =
+      (sl<ApiService>().cachedCategories != null &&
+              sl<ApiService>().cachedCategories!.isNotEmpty)
+          ? sl<ApiService>().cachedCategories!
+          : ArtistModel.categoryList;
   List<ArtistModel> _allArtists = sl<ApiService>().cachedArtists ?? [];
   bool _isLoading = false;
   StreamSubscription<List<CategoryInfo>>? _catSub;
@@ -51,8 +55,12 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
 
   Future<void> _fetchCategoriesFromApi({bool forceRefresh = false}) async {
     try {
-      final categories = await sl<ApiService>().getCategories(forceRefresh: forceRefresh);
-      final artists = await sl<ApiService>().getArtists(forceRefresh: forceRefresh);
+      final categories = await sl<ApiService>().getCategories(
+        forceRefresh: forceRefresh,
+      );
+      final artists = await sl<ApiService>().getArtists(
+        forceRefresh: forceRefresh,
+      );
       if (mounted) {
         setState(() {
           _categories = categories;
@@ -133,7 +141,9 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
                 backgroundColor: Colors.white,
                 onRefresh: () => _fetchCategoriesFromApi(forceRefresh: true),
                 child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
+                  ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16.0,
                     vertical: 16.0,
@@ -141,38 +151,133 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                    // Explore Categories Header Section
-                    Row(
-                      children: [
-                        Container(
-                          width: 46,
-                          height: 46,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFF3E8FF),
-                            shape: BoxShape.circle,
+                      // Explore Categories Header Section
+                      Row(
+                        children: [
+                          Container(
+                            width: 46,
+                            height: 46,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFF3E8FF),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.palette_outlined,
+                              color: Color(0xFF6A2777),
+                              size: 24,
+                            ),
                           ),
-                          child: const Icon(
-                            Icons.palette_outlined,
-                            color: Color(0xFF6A2777),
-                            size: 24,
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  l10n.exploreCategories,
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  l10n.exploreCategoriesSubtitle,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFFE2D6F5),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // + Create Category Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 44,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFF6B1C9B),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: _showCreateCategoryModal,
+                          icon: const Icon(
+                            Icons.add,
+                            size: 18,
+                            color: Color(0xFF6B1C9B),
+                          ),
+                          label: Text(
+                            'Create Category'.trData(context),
+                            style: const TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF6B1C9B),
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 14),
-                        Expanded(
+                      ),
+                      const SizedBox(height: 18),
+                      Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: Colors.white.withValues(alpha: 0.18),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Categories Grid or Empty State
+                      if (_isLoading && _categories.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 40),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          ),
+                        )
+                      else if (_categories.isEmpty)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 40,
+                            horizontal: 20,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.2),
+                            ),
+                          ),
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              const Icon(
+                                Icons.category_outlined,
+                                color: Colors.white70,
+                                size: 48,
+                              ),
+                              const SizedBox(height: 12),
                               Text(
-                                l10n.exploreCategories,
+                                'No categories available'.trData(context),
                                 style: const TextStyle(
-                                  fontSize: 20,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                 ),
                               ),
-                              const SizedBox(height: 2),
+                              const SizedBox(height: 6),
                               Text(
-                                l10n.exploreCategoriesSubtitle,
+                                'Categories will appear here once added.'
+                                    .trData(context),
+                                textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   fontSize: 13,
                                   color: Color(0xFFE2D6F5),
@@ -180,193 +285,125 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-
-                    // + Create Category Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 44,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF6B1C9B),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        onPressed: _showCreateCategoryModal,
-                        icon: const Icon(Icons.add, size: 18, color: Color(0xFF6B1C9B)),
-                        label: Text(
-                          'Create Category'.trData(context),
-                          style: const TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF6B1C9B),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: Colors.white.withValues(alpha: 0.18),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Categories Grid or Empty State
-                    if (_isLoading && _categories.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 40),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2.5,
-                          ),
-                        ),
-                      )
-                    else if (_categories.isEmpty)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2),
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            const Icon(
-                              Icons.category_outlined,
-                              color: Colors.white70,
-                              size: 48,
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'No categories available'.trData(context),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                        )
+                      else
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 14,
+                                mainAxisSpacing: 14,
+                                childAspectRatio: 1.15,
                               ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Categories will appear here once added.'.trData(context),
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFFE2D6F5),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    else
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 14,
-                              mainAxisSpacing: 14,
-                              childAspectRatio: 1.15,
-                            ),
-                        itemCount: _categories.length,
-                        itemBuilder: (context, index) {
-                          final category = _categories[index];
-                          final count = _allArtists.where((a) {
-                          final aCat = a.category.toLowerCase().trim();
-                          final cName = category.name.toLowerCase().trim();
-                          return aCat == cName ||
-                              DataTranslator.translate(aCat, isArabic: false).toLowerCase() ==
-                                  DataTranslator.translate(cName, isArabic: false).toLowerCase() ||
-                              DataTranslator.translate(aCat, isArabic: true).toLowerCase() ==
-                                  DataTranslator.translate(cName, isArabic: true).toLowerCase();
-                        }).length;
-                        return InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (context) => CategoryDetailView(
-                                      categoryName: category.name,
-                                      emoji: category.emoji,
+                          itemCount: _categories.length,
+                          itemBuilder: (context, index) {
+                            final category = _categories[index];
+                            final count =
+                                _allArtists.where((a) {
+                                  final aCat = a.category.toLowerCase().trim();
+                                  final cName =
+                                      category.name.toLowerCase().trim();
+                                  return aCat == cName ||
+                                      DataTranslator.translate(
+                                            aCat,
+                                            isArabic: false,
+                                          ).toLowerCase() ==
+                                          DataTranslator.translate(
+                                            cName,
+                                            isArabic: false,
+                                          ).toLowerCase() ||
+                                      DataTranslator.translate(
+                                            aCat,
+                                            isArabic: true,
+                                          ).toLowerCase() ==
+                                          DataTranslator.translate(
+                                            cName,
+                                            isArabic: true,
+                                          ).toLowerCase();
+                                }).length;
+                            return InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) => CategoryDetailView(
+                                          categoryName: category.name,
+                                          emoji: category.emoji,
+                                        ),
+                                  ),
+                                );
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF28208C),
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.18,
+                                      ),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 3),
                                     ),
+                                  ],
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      category.emoji,
+                                      style: const TextStyle(fontSize: 30),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      category.localizedName(context),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                        height: 1.15,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      Localizations.localeOf(
+                                                context,
+                                              ).languageCode ==
+                                              'ar'
+                                          ? '$count فنان'
+                                          : '$count artists',
+                                      style: const TextStyle(
+                                        fontSize: 11.5,
+                                        color: Color(0xFFD6C8F2),
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             );
                           },
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF28208C),
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.18),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  category.emoji,
-                                  style: const TextStyle(fontSize: 30),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  category.localizedName(context),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    height: 1.15,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  Localizations.localeOf(context).languageCode == 'ar'
-                                      ? '$count فنان'
-                                      : '$count artists',
-                                  style: const TextStyle(
-                                    fontSize: 11.5,
-                                    color: Color(0xFFD6C8F2),
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                  ],
+                        ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
       bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
     );
   }

@@ -45,11 +45,13 @@ class LiveSyncService with WidgetsBindingObserver {
       StreamController<List<GovernmentEntity>>.broadcast();
   final StreamController<List<CategoryInfo>> _categoriesController =
       StreamController<List<CategoryInfo>>.broadcast();
-  final StreamController<List<ExperienceLevelModel>> _experienceLevelsController =
+  final StreamController<List<ExperienceLevelModel>>
+  _experienceLevelsController =
       StreamController<List<ExperienceLevelModel>>.broadcast();
   final StreamController<List<LocationModel>> _locationsController =
       StreamController<List<LocationModel>>.broadcast();
-  final StreamController<List<PublishingPricingModel>> _publishingPricingController =
+  final StreamController<List<PublishingPricingModel>>
+  _publishingPricingController =
       StreamController<List<PublishingPricingModel>>.broadcast();
   final StreamController<List<ListingPlanItem>> _listingPlansController =
       StreamController<List<ListingPlanItem>>.broadcast();
@@ -57,23 +59,37 @@ class LiveSyncService with WidgetsBindingObserver {
       StreamController<PaymentSettingsModel>.broadcast();
   final StreamController<Map<String, bool>> _menuPermissionsController =
       StreamController<Map<String, bool>>.broadcast();
+  final StreamController<Map<String, dynamic>> _aboutController =
+      StreamController<Map<String, dynamic>>.broadcast();
   final StreamController<bool> _authController =
       StreamController<bool>.broadcast();
 
   // Public Streams for UI consumption
   Stream<List<ArtistModel>> get artistsStream => _artistsController.stream;
   Stream<List<ArtEventModel>> get eventsStream => _eventsController.stream;
-  Stream<List<Map<String, dynamic>>> get bookingsStream => _bookingsController.stream;
-  Stream<Map<String, dynamic>> get favoritesStream => _favoritesController.stream;
-  Stream<List<Map<String, dynamic>>> get galleriesStream => _galleriesController.stream;
-  Stream<List<GovernmentEntity>> get governmentStream => _governmentController.stream;
-  Stream<List<CategoryInfo>> get categoriesStream => _categoriesController.stream;
-  Stream<List<ExperienceLevelModel>> get experienceLevelsStream => _experienceLevelsController.stream;
-  Stream<List<LocationModel>> get locationsStream => _locationsController.stream;
-  Stream<List<PublishingPricingModel>> get publishingPricingStream => _publishingPricingController.stream;
-  Stream<List<ListingPlanItem>> get listingPlansStream => _listingPlansController.stream;
-  Stream<PaymentSettingsModel> get paymentSettingsStream => _paymentSettingsController.stream;
-  Stream<Map<String, bool>> get menuPermissionsStream => _menuPermissionsController.stream;
+  Stream<List<Map<String, dynamic>>> get bookingsStream =>
+      _bookingsController.stream;
+  Stream<Map<String, dynamic>> get favoritesStream =>
+      _favoritesController.stream;
+  Stream<List<Map<String, dynamic>>> get galleriesStream =>
+      _galleriesController.stream;
+  Stream<List<GovernmentEntity>> get governmentStream =>
+      _governmentController.stream;
+  Stream<List<CategoryInfo>> get categoriesStream =>
+      _categoriesController.stream;
+  Stream<List<ExperienceLevelModel>> get experienceLevelsStream =>
+      _experienceLevelsController.stream;
+  Stream<List<LocationModel>> get locationsStream =>
+      _locationsController.stream;
+  Stream<List<PublishingPricingModel>> get publishingPricingStream =>
+      _publishingPricingController.stream;
+  Stream<List<ListingPlanItem>> get listingPlansStream =>
+      _listingPlansController.stream;
+  Stream<PaymentSettingsModel> get paymentSettingsStream =>
+      _paymentSettingsController.stream;
+  Stream<Map<String, bool>> get menuPermissionsStream =>
+      _menuPermissionsController.stream;
+  Stream<Map<String, dynamic>> get aboutStream => _aboutController.stream;
   Stream<bool> get authStream => _authController.stream;
 
   LiveSyncService(this._apiService) {
@@ -89,7 +105,8 @@ class LiveSyncService with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       _isPausedByLifecycle = false;
       syncAllSilently(forceRefresh: true);
-    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
       // Pause background polling when app is not visible to save battery & bandwidth
       _isPausedByLifecycle = true;
     } else if (state == AppLifecycleState.detached) {
@@ -103,7 +120,8 @@ class LiveSyncService with WidgetsBindingObserver {
 
   /// Emit to a stream only if data fingerprint changed — prevents unnecessary widget rebuilds
   bool _shouldEmit(String key, dynamic data) {
-    final fingerprint = data is List ? data.length ^ data.hashCode : data.hashCode;
+    final fingerprint =
+        data is List ? data.length ^ data.hashCode : data.hashCode;
     if (_streamFingerprints[key] == fingerprint) return false;
     _streamFingerprints[key] = fingerprint;
     return true;
@@ -122,7 +140,8 @@ class LiveSyncService with WidgetsBindingObserver {
   bool _isCurrentUserAdmin() {
     try {
       final role = sl<StorageService>().getString('role')?.toLowerCase();
-      final email = sl<StorageService>().getString('user_email')?.toLowerCase() ?? '';
+      final email =
+          sl<StorageService>().getString('user_email')?.toLowerCase() ?? '';
       return role == 'admin' || email.contains('admin');
     } catch (_) {
       return false;
@@ -136,7 +155,9 @@ class LiveSyncService with WidgetsBindingObserver {
     }
     try {
       final fresh = await _apiService.getArtists(forceRefresh: true);
-      if (!_artistsController.isClosed && _shouldEmit('artists', fresh)) _artistsController.add(fresh);
+      if (!_artistsController.isClosed && _shouldEmit('artists', fresh)) {
+        _artistsController.add(fresh);
+      }
     } catch (_) {}
   }
 
@@ -147,21 +168,33 @@ class LiveSyncService with WidgetsBindingObserver {
     }
     try {
       final isAdmin = _isCurrentUserAdmin();
-      final fresh = await _apiService.getEvents(forceRefresh: true, isAdmin: isAdmin);
-      if (!_eventsController.isClosed && _shouldEmit('events', fresh)) _eventsController.add(fresh);
+      final fresh = await _apiService.getEvents(
+        forceRefresh: true,
+        isAdmin: isAdmin,
+      );
+      if (!_eventsController.isClosed && _shouldEmit('events', fresh)) {
+        _eventsController.add(fresh);
+      }
     } catch (_) {}
   }
 
   /// Trigger sync for bookings when an Add / Update / Delete / View occurs
-  Future<void> notifyBookingsChanged([List<Map<String, dynamic>>? updatedList]) async {
+  Future<void> notifyBookingsChanged([
+    List<Map<String, dynamic>>? updatedList,
+  ]) async {
     if (updatedList != null && !_bookingsController.isClosed) {
       _bookingsController.add(updatedList);
     }
     try {
       String? userEmail = sl<StorageService>().getString('user_email');
       if (userEmail != null && userEmail.isNotEmpty) {
-        final fresh = await _apiService.getBookings(email: userEmail, forceRefresh: true);
-        if (!_bookingsController.isClosed && _shouldEmit('bookings', fresh)) _bookingsController.add(fresh);
+        final fresh = await _apiService.getBookings(
+          email: userEmail,
+          forceRefresh: true,
+        );
+        if (!_bookingsController.isClosed && _shouldEmit('bookings', fresh)) {
+          _bookingsController.add(fresh);
+        }
       }
       sl<NotificationService>().syncWithBackend();
     } catch (_) {}
@@ -173,7 +206,8 @@ class LiveSyncService with WidgetsBindingObserver {
       if (email != null && email.isNotEmpty) return email;
       email = sl<StorageService>().getString('device_guest_id');
       if (email != null && email.isNotEmpty) return email;
-      final newId = 'guest_${DateTime.now().millisecondsSinceEpoch}@artistdubai.com';
+      final newId =
+          'guest_${DateTime.now().millisecondsSinceEpoch}@artistdubai.com';
       sl<StorageService>().setString('device_guest_id', newId);
       return newId;
     } catch (_) {
@@ -182,97 +216,140 @@ class LiveSyncService with WidgetsBindingObserver {
   }
 
   /// Trigger sync for favorites when an Add / Update / Delete / View occurs
-  Future<void> notifyFavoritesChanged([Map<String, dynamic>? updatedFavorites]) async {
+  Future<void> notifyFavoritesChanged([
+    Map<String, dynamic>? updatedFavorites,
+  ]) async {
     if (updatedFavorites != null && !_favoritesController.isClosed) {
       _favoritesController.add(updatedFavorites);
     }
     try {
       final email = _getEffectiveEmail();
-      final fresh = await _apiService.getFavorites(email: email, forceRefresh: true);
-      if (!_favoritesController.isClosed && _shouldEmit('favorites', fresh)) _favoritesController.add(fresh);
+      final fresh = await _apiService.getFavorites(
+        email: email,
+        forceRefresh: true,
+      );
+      if (!_favoritesController.isClosed && _shouldEmit('favorites', fresh)) {
+        _favoritesController.add(fresh);
+      }
     } catch (_) {}
   }
 
   /// Trigger sync for galleries when an Add / Update / Delete / View occurs
-  Future<void> notifyGalleriesChanged([List<Map<String, dynamic>>? updatedGalleries]) async {
+  Future<void> notifyGalleriesChanged([
+    List<Map<String, dynamic>>? updatedGalleries,
+  ]) async {
     if (updatedGalleries != null && !_galleriesController.isClosed) {
       _galleriesController.add(updatedGalleries);
     }
     try {
       final isAdmin = _isCurrentUserAdmin();
-      final fresh = await _apiService.getGalleries(forceRefresh: true, isAdmin: isAdmin);
-      if (!_galleriesController.isClosed && _shouldEmit('galleries', fresh)) _galleriesController.add(fresh);
+      final fresh = await _apiService.getGalleries(
+        forceRefresh: true,
+        isAdmin: isAdmin,
+      );
+      if (!_galleriesController.isClosed && _shouldEmit('galleries', fresh)) {
+        _galleriesController.add(fresh);
+      }
     } catch (_) {}
   }
 
   /// Trigger sync for government entities when an Add / Update / Delete / View occurs
-  Future<void> notifyGovernmentChanged([List<GovernmentEntity>? updatedList]) async {
+  Future<void> notifyGovernmentChanged([
+    List<GovernmentEntity>? updatedList,
+  ]) async {
     if (updatedList != null && !_governmentController.isClosed) {
       _governmentController.add(updatedList);
     }
     try {
       final fresh = await _apiService.getGovernmentEntities(forceRefresh: true);
-      if (!_governmentController.isClosed && _shouldEmit('government', fresh)) _governmentController.add(fresh);
+      if (!_governmentController.isClosed && _shouldEmit('government', fresh)) {
+        _governmentController.add(fresh);
+      }
     } catch (_) {}
   }
 
   /// Trigger sync for categories when an Add / Update / Delete / View occurs
-  Future<void> notifyCategoriesChanged([List<CategoryInfo>? updatedList]) async {
+  Future<void> notifyCategoriesChanged([
+    List<CategoryInfo>? updatedList,
+  ]) async {
     if (updatedList != null && !_categoriesController.isClosed) {
       _categoriesController.add(updatedList);
     }
     try {
       final fresh = await _apiService.getCategories(forceRefresh: true);
-      if (!_categoriesController.isClosed && _shouldEmit('categories', fresh)) _categoriesController.add(fresh);
+      if (!_categoriesController.isClosed && _shouldEmit('categories', fresh)) {
+        _categoriesController.add(fresh);
+      }
     } catch (_) {}
   }
 
   /// Trigger sync for experience levels when an Add / Update / Delete occurs
-  Future<void> notifyExperienceLevelsChanged([List<ExperienceLevelModel>? updatedList]) async {
+  Future<void> notifyExperienceLevelsChanged([
+    List<ExperienceLevelModel>? updatedList,
+  ]) async {
     if (updatedList != null && !_experienceLevelsController.isClosed) {
       _experienceLevelsController.add(updatedList);
     }
     try {
       final fresh = await _apiService.getExperienceLevels(forceRefresh: true);
-      if (!_experienceLevelsController.isClosed && _shouldEmit('expLevels', fresh)) _experienceLevelsController.add(fresh);
+      if (!_experienceLevelsController.isClosed &&
+          _shouldEmit('expLevels', fresh)) {
+        _experienceLevelsController.add(fresh);
+      }
     } catch (_) {}
   }
 
   /// Trigger sync for locations when an Add / Update / Delete occurs
-  Future<void> notifyLocationsChanged([List<LocationModel>? updatedList]) async {
+  Future<void> notifyLocationsChanged([
+    List<LocationModel>? updatedList,
+  ]) async {
     if (updatedList != null && !_locationsController.isClosed) {
       _locationsController.add(updatedList);
     }
     try {
       final fresh = await _apiService.getLocations(forceRefresh: true);
-      if (!_locationsController.isClosed && _shouldEmit('locations', fresh)) _locationsController.add(fresh);
+      if (!_locationsController.isClosed && _shouldEmit('locations', fresh)) {
+        _locationsController.add(fresh);
+      }
     } catch (_) {}
   }
 
   /// Trigger sync for publishing pricing when an Admin Update occurs
-  Future<void> notifyPublishingPricingChanged([List<PublishingPricingModel>? updatedList]) async {
+  Future<void> notifyPublishingPricingChanged([
+    List<PublishingPricingModel>? updatedList,
+  ]) async {
     if (updatedList != null && !_publishingPricingController.isClosed) {
       _publishingPricingController.add(updatedList);
     }
     try {
       final fresh = await _apiService.getPublishingPricing(forceRefresh: true);
-      if (!_publishingPricingController.isClosed && _shouldEmit('pricing', fresh)) _publishingPricingController.add(fresh);
+      if (!_publishingPricingController.isClosed &&
+          _shouldEmit('pricing', fresh)) {
+        _publishingPricingController.add(fresh);
+      }
     } catch (_) {}
   }
 
   /// Trigger sync for listing plans when an Admin Update occurs
-  Future<void> notifyListingPlansChanged([List<ListingPlanItem>? updatedList]) async {
+  Future<void> notifyListingPlansChanged([
+    List<ListingPlanItem>? updatedList,
+  ]) async {
     if (updatedList != null && !_listingPlansController.isClosed) {
       _listingPlansController.add(updatedList);
     }
     try {
       final fresh = await _apiService.getListingPlans(forceRefresh: true);
-      if (!_listingPlansController.isClosed && _shouldEmit('listingPlans', fresh)) _listingPlansController.add(fresh);
+      if (!_listingPlansController.isClosed &&
+          _shouldEmit('listingPlans', fresh)) {
+        _listingPlansController.add(fresh);
+      }
     } catch (_) {}
   }
 
   /// Trigger sync for payment settings (QR Code &amp; Bank Details) when an Admin Update occurs
-  Future<void> notifyPaymentSettingsChanged([PaymentSettingsModel? updatedSettings]) async {
+  Future<void> notifyPaymentSettingsChanged([
+    PaymentSettingsModel? updatedSettings,
+  ]) async {
     if (updatedSettings != null && !_paymentSettingsController.isClosed) {
       if (_shouldEmit('payment', updatedSettings)) {
         _paymentSettingsController.add(updatedSettings);
@@ -281,19 +358,41 @@ class LiveSyncService with WidgetsBindingObserver {
     }
     try {
       final fresh = await _apiService.getPaymentSettings(forceRefresh: true);
-      if (!_paymentSettingsController.isClosed && _shouldEmit('payment', fresh)) _paymentSettingsController.add(fresh);
+      if (!_paymentSettingsController.isClosed && _shouldEmit('payment', fresh)) {
+        _paymentSettingsController.add(fresh);
+      }
     } catch (_) {}
   }
 
   /// Trigger sync for menu permissions when an Admin Update occurs
-  Future<void> notifyMenuPermissionsChanged([Map<String, bool>? updatedPermissions]) async {
+  Future<void> notifyMenuPermissionsChanged([
+    Map<String, bool>? updatedPermissions,
+  ]) async {
     if (updatedPermissions != null && !_menuPermissionsController.isClosed) {
       _menuPermissionsController.add(updatedPermissions);
       return;
     }
     try {
       final fresh = await _apiService.getMenuPermissions(forceRefresh: true);
-      if (!_menuPermissionsController.isClosed) _menuPermissionsController.add(fresh);
+      if (!_menuPermissionsController.isClosed) {
+        _menuPermissionsController.add(fresh);
+      }
+    } catch (_) {}
+  }
+
+  /// Trigger sync for About Us platform content when an Admin Update occurs
+  Future<void> notifyAboutUsChanged([
+    Map<String, dynamic>? updatedAbout,
+  ]) async {
+    if (updatedAbout != null && !_aboutController.isClosed) {
+      _aboutController.add(updatedAbout);
+      return;
+    }
+    try {
+      final fresh = await _apiService.getAboutData(forceRefresh: true);
+      if (!_aboutController.isClosed && fresh.isNotEmpty) {
+        _aboutController.add(fresh);
+      }
     } catch (_) {}
   }
 
@@ -327,7 +426,10 @@ class LiveSyncService with WidgetsBindingObserver {
   }
 
   /// Lightweight multi-device sync for active data from MySQL database
-  Future<void> syncAllSilently({bool forceRefresh = true, bool syncMasters = false}) async {
+  Future<void> syncAllSilently({
+    bool forceRefresh = true,
+    bool syncMasters = false,
+  }) async {
     if (_isSyncing) return;
     _isSyncing = true;
 
@@ -336,51 +438,112 @@ class LiveSyncService with WidgetsBindingObserver {
       final isAdmin = _isCurrentUserAdmin();
 
       // Phase 1: High-priority core streams (Artists, Events, Categories)
-      final artists = await _apiService.getArtists(forceRefresh: forceRefresh).catchError((_) => <ArtistModel>[]);
-      if (artists.isNotEmpty && !_artistsController.isClosed && _shouldEmit('artists', artists)) {
+      final artists = await _apiService
+          .getArtists(forceRefresh: forceRefresh)
+          .catchError((_) => <ArtistModel>[]);
+      if (artists.isNotEmpty &&
+          !_artistsController.isClosed &&
+          _shouldEmit('artists', artists)) {
         _artistsController.add(artists);
       }
 
-      final events = await _apiService.getEvents(forceRefresh: forceRefresh, isAdmin: isAdmin).catchError((_) => <ArtEventModel>[]);
-      if (events.isNotEmpty && !_eventsController.isClosed && _shouldEmit('events', events)) {
+      final events = await _apiService
+          .getEvents(forceRefresh: forceRefresh, isAdmin: isAdmin)
+          .catchError((_) => <ArtEventModel>[]);
+      if (events.isNotEmpty &&
+          !_eventsController.isClosed &&
+          _shouldEmit('events', events)) {
         _eventsController.add(events);
       }
 
-      final categories = await _apiService.getCategories(forceRefresh: forceRefresh).catchError((_) => <CategoryInfo>[]);
-      if (categories.isNotEmpty && !_categoriesController.isClosed && _shouldEmit('categories', categories)) {
+      final categories = await _apiService
+          .getCategories(forceRefresh: forceRefresh)
+          .catchError((_) => <CategoryInfo>[]);
+      if (categories.isNotEmpty &&
+          !_categoriesController.isClosed &&
+          _shouldEmit('categories', categories)) {
         _categoriesController.add(categories);
       }
 
       // Phase 2: Secondary streams (Galleries, Government, Favorites)
-      final galleries = await _apiService.getGalleries(forceRefresh: forceRefresh, isAdmin: isAdmin).catchError((_) => <Map<String, dynamic>>[]);
-      if (!_galleriesController.isClosed && _shouldEmit('galleries', galleries)) _galleriesController.add(galleries);
+      final galleries = await _apiService
+          .getGalleries(forceRefresh: forceRefresh, isAdmin: isAdmin)
+          .catchError((_) => <Map<String, dynamic>>[]);
+      if (!_galleriesController.isClosed && _shouldEmit('galleries', galleries)) {
+        _galleriesController.add(galleries);
+      }
 
-      final govEntities = await _apiService.getGovernmentEntities(forceRefresh: forceRefresh).catchError((_) => <GovernmentEntity>[]);
-      if (!_governmentController.isClosed && _shouldEmit('government', govEntities)) _governmentController.add(govEntities);
+      final govEntities = await _apiService
+          .getGovernmentEntities(forceRefresh: forceRefresh)
+          .catchError((_) => <GovernmentEntity>[]);
+      if (!_governmentController.isClosed &&
+          _shouldEmit('government', govEntities)) {
+        _governmentController.add(govEntities);
+      }
 
-      final favorites = await _apiService.getFavorites(email: effectiveEmail, forceRefresh: forceRefresh).catchError((_) => <String, dynamic>{});
-      if (!_favoritesController.isClosed && _shouldEmit('favorites', favorites)) _favoritesController.add(favorites);
+      final favorites = await _apiService
+          .getFavorites(email: effectiveEmail, forceRefresh: forceRefresh)
+          .catchError((_) => <String, dynamic>{});
+      if (!_favoritesController.isClosed && _shouldEmit('favorites', favorites)) {
+        _favoritesController.add(favorites);
+      }
 
       // Phase 3: Masters (Experience Levels, Locations, Publishing Pricing & Payment Settings)
       // Only fetch once at startup or when explicitly requested, as they are static admin configurations.
       if (!_hasLoadedMasters || syncMasters) {
-        final experienceLevels = await _apiService.getExperienceLevels(forceRefresh: forceRefresh).catchError((_) => <ExperienceLevelModel>[]);
-        if (!_experienceLevelsController.isClosed && _shouldEmit('expLevels', experienceLevels)) _experienceLevelsController.add(experienceLevels);
+        final experienceLevels = await _apiService
+            .getExperienceLevels(forceRefresh: forceRefresh)
+            .catchError((_) => <ExperienceLevelModel>[]);
+        if (!_experienceLevelsController.isClosed &&
+            _shouldEmit('expLevels', experienceLevels)) {
+          _experienceLevelsController.add(experienceLevels);
+        }
 
-        final locations = await _apiService.getLocations(forceRefresh: forceRefresh).catchError((_) => <LocationModel>[]);
-        if (!_locationsController.isClosed && _shouldEmit('locations', locations)) _locationsController.add(locations);
+        final locations = await _apiService
+            .getLocations(forceRefresh: forceRefresh)
+            .catchError((_) => <LocationModel>[]);
+        if (!_locationsController.isClosed &&
+            _shouldEmit('locations', locations)) {
+          _locationsController.add(locations);
+        }
 
-        final publishingPricing = await _apiService.getPublishingPricing(forceRefresh: forceRefresh).catchError((_) => <PublishingPricingModel>[]);
-        if (!_publishingPricingController.isClosed && _shouldEmit('pricing', publishingPricing)) _publishingPricingController.add(publishingPricing);
+        final publishingPricing = await _apiService
+            .getPublishingPricing(forceRefresh: forceRefresh)
+            .catchError((_) => <PublishingPricingModel>[]);
+        if (!_publishingPricingController.isClosed &&
+            _shouldEmit('pricing', publishingPricing)) {
+          _publishingPricingController.add(publishingPricing);
+        }
 
-        final listingPlans = await _apiService.getListingPlans(forceRefresh: forceRefresh).catchError((_) => <ListingPlanItem>[]);
-        if (!_listingPlansController.isClosed && _shouldEmit('listingPlans', listingPlans)) _listingPlansController.add(listingPlans);
+        final listingPlans = await _apiService
+            .getListingPlans(forceRefresh: forceRefresh)
+            .catchError((_) => <ListingPlanItem>[]);
+        if (!_listingPlansController.isClosed &&
+            _shouldEmit('listingPlans', listingPlans)) {
+          _listingPlansController.add(listingPlans);
+        }
 
-        final paymentSettings = await _apiService.getPaymentSettings(forceRefresh: forceRefresh).catchError((_) => PaymentSettingsModel.defaultSettings());
-        if (!_paymentSettingsController.isClosed && _shouldEmit('payment', paymentSettings)) _paymentSettingsController.add(paymentSettings);
+        final paymentSettings = await _apiService
+            .getPaymentSettings(forceRefresh: forceRefresh)
+            .catchError((_) => PaymentSettingsModel.defaultSettings());
+        if (!_paymentSettingsController.isClosed &&
+            _shouldEmit('payment', paymentSettings)) {
+          _paymentSettingsController.add(paymentSettings);
+        }
 
-        final menuPerms = await _apiService.getMenuPermissions(forceRefresh: forceRefresh).catchError((_) => <String, bool>{});
-        if (!_menuPermissionsController.isClosed && menuPerms.isNotEmpty) _menuPermissionsController.add(menuPerms);
+        final menuPerms = await _apiService
+            .getMenuPermissions(forceRefresh: forceRefresh)
+            .catchError((_) => <String, bool>{});
+        if (!_menuPermissionsController.isClosed && menuPerms.isNotEmpty) {
+          _menuPermissionsController.add(menuPerms);
+        }
+
+        final aboutData = await _apiService
+            .getAboutData(forceRefresh: forceRefresh)
+            .catchError((_) => <String, dynamic>{});
+        if (!_aboutController.isClosed && aboutData.isNotEmpty) {
+          _aboutController.add(aboutData);
+        }
 
         _hasLoadedMasters = true;
       }
@@ -413,6 +576,8 @@ class LiveSyncService with WidgetsBindingObserver {
     _publishingPricingController.close();
     _listingPlansController.close();
     _paymentSettingsController.close();
+    _menuPermissionsController.close();
+    _aboutController.close();
     _authController.close();
   }
 }

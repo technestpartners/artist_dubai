@@ -4,6 +4,7 @@ import '../../features/artists/domain/models/artist_model.dart';
 import '../../features/admin/domain/models/publishing_pricing_model.dart';
 import '../../features/admin/domain/models/payment_settings_model.dart';
 import '../../features/chat/domain/models/listing_plan_model.dart';
+import '../../features/chat/data/chat_service.dart';
 import '../../features/events/domain/models/art_event_model.dart';
 import '../../features/government/domain/models/government_entity.dart';
 import '../constants/api_endpoints.dart';
@@ -35,9 +36,10 @@ class PagedResult<T> {
     dynamic res,
     T Function(Map<String, dynamic>) fromJson,
   ) {
-    final list = (res['data'] as List<dynamic>)
-        .map((e) => fromJson(e as Map<String, dynamic>))
-        .toList();
+    final list =
+        (res['data'] as List<dynamic>)
+            .map((e) => fromJson(e as Map<String, dynamic>))
+            .toList();
     final p = res['pagination'] as Map<String, dynamic>? ?? {};
     return PagedResult<T>(
       data: list,
@@ -64,13 +66,18 @@ class ApiService {
   List<Map<String, dynamic>>? _cachedGalleries;
   Map<String, dynamic>? _cachedAbout;
   List<Map<String, dynamic>>? _cachedCompetitions;
-  Map<String, Set<String>>? _cachedInteractions; // liked/followed artist IDs per session
+  Map<String, Set<String>>?
+  _cachedInteractions; // liked/followed artist IDs per session
   List<String>? _cachedEventCategories;
 
   // TTL timestamps for cache entries
   final Map<String, DateTime> _cacheTimestamps = {};
-  static const Duration _dynamicTtl = Duration(minutes: 2);   // artists, events, galleries
-  static const Duration _masterTtl  = Duration(minutes: 10);  // categories, locations, pricing, etc.
+  static const Duration _dynamicTtl = Duration(
+    minutes: 2,
+  ); // artists, events, galleries
+  static const Duration _masterTtl = Duration(
+    minutes: 10,
+  ); // categories, locations, pricing, etc.
 
   /// Returns true if the named cache entry is still fresh within [ttl]
   bool _isCacheValid(String key, {Duration ttl = _dynamicTtl}) {
@@ -108,12 +115,18 @@ class ApiService {
   }
 
   bool _isSuccess(dynamic res) =>
-      res is Map<String, dynamic> && (res['status'] == 'success' || res['success'] == true);
+      res is Map<String, dynamic> &&
+      (res['status'] == 'success' || res['success'] == true);
 
   // 1. Categories (Instant Cache-First from MySQL — TTL 10 min)
-  Future<List<CategoryInfo>> getCategories({String type = 'all', bool forceRefresh = false}) async {
-    if (!forceRefresh && _cachedCategories != null && _cachedCategories!.isNotEmpty
-        && _isCacheValid('categories', ttl: _masterTtl)) {
+  Future<List<CategoryInfo>> getCategories({
+    String type = 'all',
+    bool forceRefresh = false,
+  }) async {
+    if (!forceRefresh &&
+        _cachedCategories != null &&
+        _cachedCategories!.isNotEmpty &&
+        _isCacheValid('categories', ttl: _masterTtl)) {
       return _cachedCategories!;
     }
 
@@ -124,15 +137,16 @@ class ApiService {
       );
       if (_isSuccess(res)) {
         final list = res['data'] as List<dynamic>;
-        _cachedCategories = list.map((item) {
-          if (item is Map<String, dynamic>) {
-            return CategoryInfo.fromJson(item);
-          }
-          return CategoryInfo(
-            name: item['name'] as String? ?? 'General',
-            emoji: item['emoji'] as String? ?? '🎨',
-          );
-        }).toList();
+        _cachedCategories =
+            list.map((item) {
+              if (item is Map<String, dynamic>) {
+                return CategoryInfo.fromJson(item);
+              }
+              return CategoryInfo(
+                name: item['name'] as String? ?? 'General',
+                emoji: item['emoji'] as String? ?? '🎨',
+              );
+            }).toList();
         _stampCache('categories');
         return _cachedCategories!;
       }
@@ -143,8 +157,10 @@ class ApiService {
 
   // 1b. Event Categories (Dynamic from MySQL — TTL 10 min)
   Future<List<String>> getEventCategories({bool forceRefresh = false}) async {
-    if (!forceRefresh && _cachedEventCategories != null && _cachedEventCategories!.isNotEmpty
-        && _isCacheValid('eventCategories', ttl: _masterTtl)) {
+    if (!forceRefresh &&
+        _cachedEventCategories != null &&
+        _cachedEventCategories!.isNotEmpty &&
+        _isCacheValid('eventCategories', ttl: _masterTtl)) {
       return _cachedEventCategories!;
     }
     try {
@@ -154,14 +170,16 @@ class ApiService {
       );
       if (_isSuccess(res)) {
         final list = res['data'] as List<dynamic>;
-        final fetched = list
-            .map((item) => (item['name'] ?? '').toString())
-            .where((name) => name.isNotEmpty)
-            .toList();
+        final fetched =
+            list
+                .map((item) => (item['name'] ?? '').toString())
+                .where((name) => name.isNotEmpty)
+                .toList();
         if (fetched.isNotEmpty) {
-          _cachedEventCategories = fetched.contains('All Categories')
-              ? fetched
-              : ['All Categories', ...fetched];
+          _cachedEventCategories =
+              fetched.contains('All Categories')
+                  ? fetched
+                  : ['All Categories', ...fetched];
           _stampCache('eventCategories');
           return _cachedEventCategories!;
         }
@@ -181,13 +199,18 @@ class ApiService {
   }) async {
     try {
       final queryParams = <String, dynamic>{'page': page, 'limit': limit};
-      if (category != null && category != 'All' && category != 'All Categories') {
+      if (category != null &&
+          category != 'All' &&
+          category != 'All Categories') {
         queryParams['category'] = category;
       }
       if (query != null && query.isNotEmpty) queryParams['q'] = query;
       if (featured != null) queryParams['featured'] = featured ? 1 : 0;
 
-      final res = await _client.get(ApiEndpoints.artists, queryParameters: queryParams);
+      final res = await _client.get(
+        ApiEndpoints.artists,
+        queryParameters: queryParams,
+      );
       if (_isSuccess(res)) {
         final result = PagedResult.fromResponse(res, ArtistModel.fromJson);
         result.data.sort((a, b) {
@@ -196,22 +219,32 @@ class ApiService {
           if (aId != bId) return bId.compareTo(aId);
           return b.createdAt.compareTo(a.createdAt);
         });
-        if (page == 1 && category == null && (query == null || query.isEmpty) && featured == null) {
+        if (page == 1 &&
+            category == null &&
+            (query == null || query.isEmpty) &&
+            featured == null) {
           _cachedArtists = result.data;
         }
         DataTranslator.prefetchBatch(
-          result.data.expand((a) => [a.location, a.bio, a.category, a.experienceLevel]).toList(),
+          result.data
+              .expand((a) => [a.location, a.bio, a.category, a.experienceLevel])
+              .toList(),
           isArabic: DataTranslator.isAppArabic,
         );
         return result;
       }
     } catch (_) {}
-    final fallbackList = (_cachedArtists != null && _cachedArtists!.isNotEmpty)
-        ? _cachedArtists!
-        : <ArtistModel>[];
+    final fallbackList =
+        (_cachedArtists != null && _cachedArtists!.isNotEmpty)
+            ? _cachedArtists!
+            : <ArtistModel>[];
     return PagedResult<ArtistModel>(
       data: page == 1 ? fallbackList : [],
-      page: page, limit: limit, total: fallbackList.length, totalPages: 1, hasMore: false,
+      page: page,
+      limit: limit,
+      total: fallbackList.length,
+      totalPages: 1,
+      hasMore: false,
     );
   }
 
@@ -222,15 +255,23 @@ class ApiService {
     bool? featured,
     bool forceRefresh = false,
   }) async {
-    final isDefaultQuery = (category == null || category == 'All') && (query == null || query.isEmpty) && featured == null;
+    final isDefaultQuery =
+        (category == null || category == 'All') &&
+        (query == null || query.isEmpty) &&
+        featured == null;
 
-    if (!forceRefresh && isDefaultQuery && _cachedArtists != null && _cachedArtists!.isNotEmpty) {
+    if (!forceRefresh &&
+        isDefaultQuery &&
+        _cachedArtists != null &&
+        _cachedArtists!.isNotEmpty) {
       return _cachedArtists!;
     }
 
     try {
       final queryParams = <String, dynamic>{'all': 1};
-      if (category != null && category != 'All' && category != 'All Categories') {
+      if (category != null &&
+          category != 'All' &&
+          category != 'All Categories') {
         queryParams['category'] = category;
       }
       if (query != null && query.isNotEmpty) {
@@ -247,7 +288,10 @@ class ApiService {
 
       if (_isSuccess(res)) {
         final list = res['data'] as List<dynamic>;
-        final artists = list.map((e) => ArtistModel.fromJson(e as Map<String, dynamic>)).toList();
+        final artists =
+            list
+                .map((e) => ArtistModel.fromJson(e as Map<String, dynamic>))
+                .toList();
         artists.sort((a, b) {
           final aId = int.tryParse(a.id) ?? 0;
           final bId = int.tryParse(b.id) ?? 0;
@@ -258,7 +302,9 @@ class ApiService {
           _cachedArtists = artists;
         }
         DataTranslator.prefetchBatch(
-          artists.expand((a) => [a.location, a.bio, a.category, a.experienceLevel]).toList(),
+          artists
+              .expand((a) => [a.location, a.bio, a.category, a.experienceLevel])
+              .toList(),
           isArabic: DataTranslator.isAppArabic,
         );
         return artists;
@@ -269,7 +315,6 @@ class ApiService {
         ? _cachedArtists!
         : <ArtistModel>[];
   }
-
 
   // 2b. Create Artist Profile (Save dynamically to MySQL)
   Future<Map<String, dynamic>?> createArtistProfile({
@@ -302,15 +347,18 @@ class ApiService {
           'instagram': instagram ?? '',
           'experience_level': experienceLevel ?? '',
           if (userId != null && userId.isNotEmpty) 'user_id': userId,
-          if (avatarUrl != null && avatarUrl.isNotEmpty) 'avatar_url': avatarUrl,
-          if (bannerUrl != null && bannerUrl.isNotEmpty) 'banner_url': bannerUrl,
+          if (avatarUrl != null && avatarUrl.isNotEmpty)
+            'avatar_url': avatarUrl,
+          if (bannerUrl != null && bannerUrl.isNotEmpty)
+            'banner_url': bannerUrl,
           if (artworks != null && artworks.isNotEmpty) 'artworks': artworks,
         },
       );
       if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
         _cachedArtists = null;
         final data = res['data'] as Map<String, dynamic>;
-        final artistId = data['artist_id']?.toString() ?? data['id']?.toString();
+        final artistId =
+            data['artist_id']?.toString() ?? data['id']?.toString();
         if (artistId != null) {
           try {
             final storage = sl<StorageService>();
@@ -340,7 +388,10 @@ class ApiService {
   }
 
   // 3. Artist Details
-  Future<ArtistModel> getArtistDetails(String id, {bool forceRefresh = false}) async {
+  Future<ArtistModel> getArtistDetails(
+    String id, {
+    bool forceRefresh = false,
+  }) async {
     if (!forceRefresh && _cachedArtistDetails.containsKey(id)) {
       return _cachedArtistDetails[id]!;
     }
@@ -351,7 +402,9 @@ class ApiService {
         queryParameters: {'id': id},
       );
       if (_isSuccess(res)) {
-        final artist = ArtistModel.fromJson(res['data'] as Map<String, dynamic>);
+        final artist = ArtistModel.fromJson(
+          res['data'] as Map<String, dynamic>,
+        );
         _cachedArtistDetails[id] = artist;
         return artist;
       }
@@ -366,10 +419,7 @@ class ApiService {
   // 4. Artist Registration
   Future<bool> registerArtist(Map<String, dynamic> data) async {
     try {
-      final res = await _client.post(
-        ApiEndpoints.artistRegister,
-        data: data,
-      );
+      final res = await _client.post(ApiEndpoints.artistRegister, data: data);
       if (_isSuccess(res)) {
         _cachedArtists = null; // Invalidate cache for fresh live read
         try {
@@ -389,9 +439,18 @@ class ApiService {
     bool isAdmin = false,
     String? userEmail,
   }) async {
-    final isDefaultQuery = !isAdmin && (userEmail == null || userEmail.isEmpty) && (category == null || category == 'All' || category == 'All Categories') && (query == null || query.isEmpty);
+    final isDefaultQuery =
+        !isAdmin &&
+        (userEmail == null || userEmail.isEmpty) &&
+        (category == null ||
+            category == 'All' ||
+            category == 'All Categories') &&
+        (query == null || query.isEmpty);
 
-    if (!forceRefresh && isDefaultQuery && _cachedEvents != null && _cachedEvents!.isNotEmpty) {
+    if (!forceRefresh &&
+        isDefaultQuery &&
+        _cachedEvents != null &&
+        _cachedEvents!.isNotEmpty) {
       return _cachedEvents!;
     }
 
@@ -403,7 +462,9 @@ class ApiService {
       if (userEmail != null && userEmail.isNotEmpty) {
         queryParams['user_email'] = userEmail;
       }
-      if (category != null && category != 'All Categories' && category != 'All') {
+      if (category != null &&
+          category != 'All Categories' &&
+          category != 'All') {
         queryParams['category'] = category;
       }
       if (query != null && query.isNotEmpty) {
@@ -417,7 +478,10 @@ class ApiService {
 
       if (_isSuccess(res)) {
         final list = res['data'] as List<dynamic>;
-        final events = list.map((e) => ArtEventModel.fromJson(e as Map<String, dynamic>)).toList();
+        final events =
+            list
+                .map((e) => ArtEventModel.fromJson(e as Map<String, dynamic>))
+                .toList();
         events.sort((a, b) {
           final aId = int.tryParse(a.id) ?? 0;
           final bId = int.tryParse(b.id) ?? 0;
@@ -428,7 +492,17 @@ class ApiService {
           _cachedEvents = events;
         }
         DataTranslator.prefetchBatch(
-          events.expand((e) => [e.title, e.description, e.location, e.category, e.price]).toList(),
+          events
+              .expand(
+                (e) => [
+                  e.title,
+                  e.description,
+                  e.location,
+                  e.category,
+                  e.price,
+                ],
+              )
+              .toList(),
           isArabic: DataTranslator.isAppArabic,
         );
         return events;
@@ -439,7 +513,10 @@ class ApiService {
   }
 
   // 5b. Event Details (Instant Cache-First)
-  Future<ArtEventModel> getEventDetails(String id, {bool forceRefresh = false}) async {
+  Future<ArtEventModel> getEventDetails(
+    String id, {
+    bool forceRefresh = false,
+  }) async {
     if (!forceRefresh && _cachedEventDetails.containsKey(id)) {
       return _cachedEventDetails[id]!;
     }
@@ -530,8 +607,12 @@ class ApiService {
   }
 
   // 6. Government Entities (Instant Cache-First)
-  Future<List<GovernmentEntity>> getGovernmentEntities({bool forceRefresh = false}) async {
-    if (!forceRefresh && _cachedGovEntities != null && _cachedGovEntities!.isNotEmpty) {
+  Future<List<GovernmentEntity>> getGovernmentEntities({
+    bool forceRefresh = false,
+  }) async {
+    if (!forceRefresh &&
+        _cachedGovEntities != null &&
+        _cachedGovEntities!.isNotEmpty) {
       return _cachedGovEntities!;
     }
 
@@ -539,9 +620,16 @@ class ApiService {
       final res = await _client.get(ApiEndpoints.government);
       if (_isSuccess(res)) {
         final list = res['data'] as List<dynamic>;
-        _cachedGovEntities = list.map((e) => GovernmentEntity.fromJson(e as Map<String, dynamic>)).toList();
+        _cachedGovEntities =
+            list
+                .map(
+                  (e) => GovernmentEntity.fromJson(e as Map<String, dynamic>),
+                )
+                .toList();
         DataTranslator.prefetchBatch(
-          _cachedGovEntities!.expand((g) => [g.name, g.category, g.location, g.defaultTiming]).toList(),
+          _cachedGovEntities!
+              .expand((g) => [g.name, g.category, g.location, g.defaultTiming])
+              .toList(),
           isArabic: DataTranslator.isAppArabic,
         );
         return _cachedGovEntities!;
@@ -564,14 +652,19 @@ class ApiService {
     int limit = 50,
     bool forceRefresh = false,
   }) async {
-    final isFullFetch = (artistId == null || artistId.isEmpty) &&
+    final isFullFetch =
+        (artistId == null || artistId.isEmpty) &&
         (artistName == null || artistName.isEmpty) &&
         (eventName == null || eventName.isEmpty) &&
         (eventId == null || eventId.isEmpty) &&
         !isAdmin &&
         status == null;
 
-    if (!forceRefresh && isFullFetch && page == 1 && _cachedGalleries != null && _cachedGalleries!.isNotEmpty) {
+    if (!forceRefresh &&
+        isFullFetch &&
+        page == 1 &&
+        _cachedGalleries != null &&
+        _cachedGalleries!.isNotEmpty) {
       return _cachedGalleries!;
     }
 
@@ -583,7 +676,9 @@ class ApiService {
         queryParams['artist_name'] = artistName;
       } else if (eventName != null && eventName.isNotEmpty) {
         queryParams['event_name'] = eventName;
-        if (eventId != null && eventId.isNotEmpty) queryParams['event_id'] = eventId;
+        if (eventId != null && eventId.isNotEmpty) {
+          queryParams['event_id'] = eventId;
+        }
       } else {
         // Full listing — use pagination
         queryParams['page'] = page;
@@ -609,24 +704,26 @@ class ApiService {
           _cachedGalleries = list;
         }
         DataTranslator.prefetchBatch(
-          list.expand((g) => [
-            g['name']?.toString(),
-            g['category']?.toString(),
-            g['location']?.toString(),
-            g['timing']?.toString(),
-            g['description']?.toString(),
-            g['about']?.toString(),
-          ]).toList(),
+          list
+              .expand(
+                (g) => [
+                  g['name']?.toString(),
+                  g['category']?.toString(),
+                  g['location']?.toString(),
+                  g['timing']?.toString(),
+                  g['description']?.toString(),
+                  g['about']?.toString(),
+                ],
+              )
+              .toList(),
           isArabic: DataTranslator.isAppArabic,
         );
         return list;
       }
-
     } catch (_) {}
 
     return _cachedGalleries ?? [];
   }
-
 
   // 7b. Create Gallery (MySQL Backend)
   Future<Map<String, dynamic>?> createGallery({
@@ -644,14 +741,19 @@ class ApiService {
         ApiEndpoints.galleries,
         data: {
           'title': title,
-          'description': description ?? (eventName != null ? 'Curated collection for $eventName' : 'Curated collection by Artist'),
+          'description':
+              description ??
+              (eventName != null
+                  ? 'Curated collection for $eventName'
+                  : 'Curated collection by Artist'),
           if (artistId != null) 'artist_id': artistId,
           if (artistName != null) 'artist_name': artistName,
           if (eventName != null) 'event_name': eventName,
           if (eventId != null) 'event_id': eventId,
           'image_url': imageUrl,
           'images': images,
-          'photo_count': images != null && images.isNotEmpty ? images.length : 1,
+          'photo_count':
+              images != null && images.isNotEmpty ? images.length : 1,
           'status': 'approved',
           'is_approved': 1,
           'is_public': 1,
@@ -669,7 +771,10 @@ class ApiService {
   }
 
   // 7c. Upload Image File / Bytes (MySQL Backend)
-  Future<String?> uploadImageBytes(List<int> bytes, {String ext = 'jpg'}) async {
+  Future<String?> uploadImageBytes(
+    List<int> bytes, {
+    String ext = 'jpg',
+  }) async {
     try {
       final cleanExt = ext.replaceAll('.', '').toLowerCase();
       final base64String = 'data:image/$cleanExt;base64,${base64Encode(bytes)}';
@@ -733,16 +838,21 @@ class ApiService {
         queryParameters: queryParams,
       );
       if (_isSuccess(res)) {
-        final list = (res['data'] as List<dynamic>)
-            .map((e) => e as Map<String, dynamic>)
-            .toList();
+        final list =
+            (res['data'] as List<dynamic>)
+                .map((e) => e as Map<String, dynamic>)
+                .toList();
         DataTranslator.prefetchBatch(
-          list.expand((aw) => [
-            aw['title']?.toString(),
-            aw['medium']?.toString(),
-            aw['description']?.toString(),
-            aw['price']?.toString(),
-          ]).toList(),
+          list
+              .expand(
+                (aw) => [
+                  aw['title']?.toString(),
+                  aw['medium']?.toString(),
+                  aw['description']?.toString(),
+                  aw['price']?.toString(),
+                ],
+              )
+              .toList(),
           isArabic: DataTranslator.isAppArabic,
         );
         return list;
@@ -750,7 +860,6 @@ class ApiService {
     } catch (_) {}
     return [];
   }
-
 
   // 7d. Create Artwork in MySQL
   Future<Map<String, dynamic>?> createArtwork({
@@ -795,10 +904,7 @@ class ApiService {
   // 8. Gallery Registration
   Future<bool> registerGallery(Map<String, dynamic> data) async {
     try {
-      final res = await _client.post(
-        ApiEndpoints.galleryRegister,
-        data: data,
-      );
+      final res = await _client.post(ApiEndpoints.galleryRegister, data: data);
       if (_isSuccess(res)) {
         _cachedGalleries = null; // Invalidate cache
         try {
@@ -823,19 +929,19 @@ class ApiService {
         final data = res['data'] as Map<String, dynamic>?;
         if (data != null) {
           final user = data['user'] as Map<String, dynamic>? ?? {};
-          final role = (user['role'] as String? ?? (cleanEmail.contains('admin') ? 'admin' : 'user')).toLowerCase();
-          final isAdmin = role == 'admin' ||
+          final role =
+              (user['role'] as String? ??
+                      (cleanEmail.contains('admin') ? 'admin' : 'user'))
+                  .toLowerCase();
+          final isAdmin =
+              role == 'admin' ||
               role == 'superadmin' ||
               role == 'super_admin' ||
               role == 'userpadmin' ||
               role.contains('admin') ||
               user['is_admin'] == true ||
               cleanEmail.contains('admin');
-          data['user'] = {
-            ...user,
-            'role': role,
-            'is_admin': isAdmin,
-          };
+          data['user'] = {...user, 'role': role, 'is_admin': isAdmin};
           final tokenVal = data['token'] ?? res['token'];
           if (tokenVal != null) {
             try {
@@ -881,10 +987,7 @@ class ApiService {
   // 11. Bookings
   Future<bool> createBooking(Map<String, dynamic> data) async {
     try {
-      final res = await _client.post(
-        ApiEndpoints.bookingCreate,
-        data: data,
-      );
+      final res = await _client.post(ApiEndpoints.bookingCreate, data: data);
       if (_isSuccess(res)) {
         try {
           sl<LiveSyncService>().notifyBookingsChanged();
@@ -899,10 +1002,7 @@ class ApiService {
     try {
       final res = await _client.post(
         ApiEndpoints.bookings,
-        data: {
-          'action': 'cancel',
-          'id': bookingId,
-        },
+        data: {'action': 'cancel', 'id': bookingId},
       );
       if (_isSuccess(res)) {
         try {
@@ -937,10 +1037,7 @@ class ApiService {
     try {
       final res = await _client.post(
         '${ApiEndpoints.bookings}&action=update_status',
-        data: {
-          'id': bookingId,
-          'status': status,
-        },
+        data: {'id': bookingId, 'status': status},
       );
       if (_isSuccess(res)) {
         try {
@@ -952,21 +1049,45 @@ class ApiService {
     return false;
   }
 
-  // 12. About Us (Instant Cache-First)
-  Future<Map<String, dynamic>?> getAboutData({bool forceRefresh = false}) async {
-    if (!forceRefresh && _cachedAbout != null) {
-      return _cachedAbout;
+  // 12. About Us Platform Content (Instant Cache-First)
+  Future<Map<String, dynamic>> getAboutData({
+    bool forceRefresh = false,
+  }) async {
+    if (!forceRefresh && _cachedAbout != null && _cachedAbout!.isNotEmpty) {
+      return _cachedAbout!;
     }
 
     try {
       final res = await _client.get(ApiEndpoints.aboutUs);
-      if (_isSuccess(res)) {
-        _cachedAbout = res['data'] as Map<String, dynamic>?;
-        return _cachedAbout;
+      if (_isSuccess(res) && res['data'] != null && res['data'] is Map) {
+        _cachedAbout = Map<String, dynamic>.from(res['data'] as Map);
+        return _cachedAbout!;
       }
     } catch (_) {}
 
-    return _cachedAbout;
+    return _cachedAbout ?? <String, dynamic>{};
+  }
+
+  Future<bool> updateAboutData(Map<String, dynamic> data) async {
+    try {
+      final res = await _client.post(
+        ApiEndpoints.aboutUs,
+        data: data,
+      );
+      if (_isSuccess(res)) {
+        if (res['data'] != null && res['data'] is Map) {
+          _cachedAbout = Map<String, dynamic>.from(res['data'] as Map);
+        } else {
+          _cachedAbout = null;
+        }
+        try {
+          sl<LiveSyncService>().notifyAboutUsChanged(_cachedAbout);
+        } catch (_) {}
+        await getAboutData(forceRefresh: true);
+        return true;
+      }
+    } catch (_) {}
+    return false;
   }
 
   // 13. Competitions & Open Calls (Instant Cache-First)
@@ -975,9 +1096,13 @@ class ApiService {
     String? query,
     bool forceRefresh = false,
   }) async {
-    final isDefaultQuery = (status == null || status.isEmpty) && (query == null || query.isEmpty);
+    final isDefaultQuery =
+        (status == null || status.isEmpty) && (query == null || query.isEmpty);
 
-    if (!forceRefresh && isDefaultQuery && _cachedCompetitions != null && _cachedCompetitions!.isNotEmpty) {
+    if (!forceRefresh &&
+        isDefaultQuery &&
+        _cachedCompetitions != null &&
+        _cachedCompetitions!.isNotEmpty) {
       return _cachedCompetitions!;
     }
 
@@ -1027,7 +1152,9 @@ class ApiService {
     try {
       final queryParams = <String, dynamic>{};
       if (userId != null && userId.isNotEmpty) queryParams['user_id'] = userId;
-      if (artistId != null && artistId.isNotEmpty) queryParams['artist_id'] = artistId;
+      if (artistId != null && artistId.isNotEmpty) {
+        queryParams['artist_id'] = artistId;
+      }
       if (email != null && email.isNotEmpty) queryParams['email'] = email;
 
       final res = await _client.get(
@@ -1055,8 +1182,10 @@ class ApiService {
       if (_isSuccess(res)) {
         final data = res['data'] as Map<String, dynamic>?;
         if (data != null) {
-          final returnedEmail = (data['email'] as String? ?? '').trim().toLowerCase();
-          if (returnedEmail.isNotEmpty && returnedEmail != email.trim().toLowerCase()) {
+          final returnedEmail =
+              (data['email'] as String? ?? '').trim().toLowerCase();
+          if (returnedEmail.isNotEmpty &&
+              returnedEmail != email.trim().toLowerCase()) {
             // Default user record fallback from PHP backend
             return null;
           }
@@ -1065,7 +1194,8 @@ class ApiService {
             final storage = sl<StorageService>();
             final role = (data['role'] as String? ?? '').toLowerCase();
             final cleanEmail = email.trim().toLowerCase();
-            final isAdmin = role.contains('admin') ||
+            final isAdmin =
+                role.contains('admin') ||
                 data['is_admin'] == true ||
                 cleanEmail.contains('admin') ||
                 cleanEmail == 'admin@artistdubai.com';
@@ -1075,9 +1205,15 @@ class ApiService {
             await storage.setBool('is_admin', isAdmin);
             if (artistProfile != null && artistProfile['id'] != null) {
               await storage.setBool('has_artist_profile', true);
-              await storage.setString('artist_profile_id', artistProfile['id'].toString());
+              await storage.setString(
+                'artist_profile_id',
+                artistProfile['id'].toString(),
+              );
               if (artistProfile['name'] != null) {
-                await storage.setString('artist_profile_name', artistProfile['name'].toString());
+                await storage.setString(
+                  'artist_profile_name',
+                  artistProfile['name'].toString(),
+                );
               }
             }
           } catch (_) {}
@@ -1096,10 +1232,7 @@ class ApiService {
     int limit = 100,
   }) async {
     try {
-      final queryParams = <String, dynamic>{
-        'page': page,
-        'limit': limit,
-      };
+      final queryParams = <String, dynamic>{'page': page, 'limit': limit};
       if (search != null && search.trim().isNotEmpty) {
         queryParams['q'] = search.trim();
       }
@@ -1110,7 +1243,8 @@ class ApiService {
       // Check current token - if dummy or empty for admin, auto-login with real credentials
       final storage = sl<StorageService>();
       final currentToken = storage.getString('auth_token') ?? '';
-      if (currentToken.isEmpty || currentToken == 'admin_auth_token_secure_dubai') {
+      if (currentToken.isEmpty ||
+          currentToken == 'admin_auth_token_secure_dubai') {
         await login('admin@artistdubai.com', 'Admin@Dubai2026!');
       }
 
@@ -1139,12 +1273,22 @@ class ApiService {
       try {
         await login('admin@artistdubai.com', 'Admin@Dubai2026!');
         final queryParams = <String, dynamic>{'page': page, 'limit': limit};
-        if (search != null && search.trim().isNotEmpty) queryParams['q'] = search.trim();
-        if (role != null && role.isNotEmpty && role != 'all') queryParams['role'] = role;
-        final retryRes = await _client.get(ApiEndpoints.users, queryParameters: queryParams);
+        if (search != null && search.trim().isNotEmpty) {
+          queryParams['q'] = search.trim();
+        }
+        if (role != null && role.isNotEmpty && role != 'all') {
+          queryParams['role'] = role;
+        }
+        final retryRes = await _client.get(
+          ApiEndpoints.users,
+          queryParameters: queryParams,
+        );
         if (_isSuccess(retryRes) && retryRes['data'] is List) {
           final rawList = retryRes['data'] as List;
-          return rawList.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+          return rawList
+              .whereType<Map>()
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList();
         }
       } catch (_) {}
     }
@@ -1159,10 +1303,7 @@ class ApiService {
     try {
       final res = await _client.post(
         '${ApiEndpoints.users}&action=update_role',
-        data: {
-          'user_id': userId,
-          'role': role,
-        },
+        data: {'user_id': userId, 'role': role},
       );
       return _isSuccess(res);
     } catch (_) {
@@ -1200,10 +1341,7 @@ class ApiService {
   }
 
   /// Admin: Permanently delete a user and their related data
-  Future<bool> adminDeleteUser({
-    required int userId,
-    String? email,
-  }) async {
+  Future<bool> adminDeleteUser({required int userId, String? email}) async {
     try {
       final res = await _client.post(
         '${ApiEndpoints.users}&action=delete_user',
@@ -1240,7 +1378,10 @@ class ApiService {
           final candidate = await getArtistDetails(savedId);
           final candidateEmail = candidate.email.trim().toLowerCase();
           final userEmail = email.toLowerCase();
-          if (candidateEmail == userEmail || (candidateEmail.isEmpty && candidate.name.trim().toLowerCase() == userName.toLowerCase())) {
+          if (candidateEmail == userEmail ||
+              (candidateEmail.isEmpty &&
+                  candidate.name.trim().toLowerCase() ==
+                      userName.toLowerCase())) {
             await storage.setBool('has_artist_profile', true);
             return candidate;
           }
@@ -1252,7 +1393,8 @@ class ApiService {
 
       // 1. Fetch user profile from MySQL backend
       final profile = await getUserProfile(email);
-      if (profile != null && profile['artist_profile'] is Map<String, dynamic>) {
+      if (profile != null &&
+          profile['artist_profile'] is Map<String, dynamic>) {
         final artistMap = profile['artist_profile'] as Map<String, dynamic>;
         final artist = ArtistModel.fromJson(artistMap);
         await storage.setBool('has_artist_profile', true);
@@ -1263,14 +1405,15 @@ class ApiService {
 
       // 2. Cross-check against all artists in MySQL by matching email strictly
       final allArtists = await getArtists(forceRefresh: forceRefresh);
-      final match = allArtists.where((a) {
-        final aEmail = a.email.trim().toLowerCase();
-        final uEmail = email.toLowerCase();
-        if (aEmail.isNotEmpty && aEmail == uEmail) {
-          return true;
-        }
-        return false;
-      }).firstOrNull;
+      final match =
+          allArtists.where((a) {
+            final aEmail = a.email.trim().toLowerCase();
+            final uEmail = email.toLowerCase();
+            if (aEmail.isNotEmpty && aEmail == uEmail) {
+              return true;
+            }
+            return false;
+          }).firstOrNull;
 
       if (match != null) {
         await storage.setBool('has_artist_profile', true);
@@ -1296,10 +1439,7 @@ class ApiService {
     try {
       final res = await _client.post(
         '${ApiEndpoints.login}&action=update_profile',
-        data: {
-          'email': email,
-          'full_name': fullName,
-        },
+        data: {'email': email, 'full_name': fullName},
       );
       if (_isSuccess(res)) {
         try {
@@ -1378,10 +1518,7 @@ class ApiService {
     try {
       final res = await _client.post(
         '${ApiEndpoints.categories}&action=delete',
-        data: {
-          'id': id,
-          if (name != null) 'name': name,
-        },
+        data: {'id': id, if (name != null) 'name': name},
       );
       if (_isSuccess(res)) {
         _cachedCategories = null;
@@ -1397,27 +1534,56 @@ class ApiService {
   // 15f. Experience Levels Master (MySQL Backend)
   List<ExperienceLevelModel>? _cachedExperienceLevels;
 
-  Future<List<ExperienceLevelModel>> getExperienceLevels({bool forceRefresh = false}) async {
-    if (!forceRefresh && _cachedExperienceLevels != null && _cachedExperienceLevels!.isNotEmpty) {
+  Future<List<ExperienceLevelModel>> getExperienceLevels({
+    bool forceRefresh = false,
+  }) async {
+    if (!forceRefresh &&
+        _cachedExperienceLevels != null &&
+        _cachedExperienceLevels!.isNotEmpty) {
       return _cachedExperienceLevels!;
     }
     try {
       final res = await _client.get(ApiEndpoints.experienceLevels);
       if (_isSuccess(res)) {
         final list = res['data'] as List<dynamic>;
-        _cachedExperienceLevels = list
-            .map((item) => ExperienceLevelModel.fromJson(item as Map<String, dynamic>))
-            .toList();
+        _cachedExperienceLevels =
+            list
+                .map(
+                  (item) => ExperienceLevelModel.fromJson(
+                    item as Map<String, dynamic>,
+                  ),
+                )
+                .toList();
         return _cachedExperienceLevels!;
       }
     } catch (_) {}
 
     return _cachedExperienceLevels ??
         const [
-          ExperienceLevelModel(id: 1, name: 'Beginner (1-2 years)', yearsRange: '1-2 years', displayOrder: 1),
-          ExperienceLevelModel(id: 2, name: 'Intermediate (3-5 years)', yearsRange: '3-5 years', displayOrder: 2),
-          ExperienceLevelModel(id: 3, name: 'Advanced (5-10 years)', yearsRange: '5-10 years', displayOrder: 3),
-          ExperienceLevelModel(id: 4, name: 'Professional (10+ years)', yearsRange: '10+ years', displayOrder: 4),
+          ExperienceLevelModel(
+            id: 1,
+            name: 'Beginner (1-2 years)',
+            yearsRange: '1-2 years',
+            displayOrder: 1,
+          ),
+          ExperienceLevelModel(
+            id: 2,
+            name: 'Intermediate (3-5 years)',
+            yearsRange: '3-5 years',
+            displayOrder: 2,
+          ),
+          ExperienceLevelModel(
+            id: 3,
+            name: 'Advanced (5-10 years)',
+            yearsRange: '5-10 years',
+            displayOrder: 3,
+          ),
+          ExperienceLevelModel(
+            id: 4,
+            name: 'Professional (10+ years)',
+            yearsRange: '10+ years',
+            displayOrder: 4,
+          ),
         ];
   }
 
@@ -1494,40 +1660,154 @@ class ApiService {
   List<LocationModel>? _cachedLocations;
 
   Future<List<LocationModel>> getLocations({bool forceRefresh = false}) async {
-    if (!forceRefresh && _cachedLocations != null && _cachedLocations!.isNotEmpty) {
+    if (!forceRefresh &&
+        _cachedLocations != null &&
+        _cachedLocations!.isNotEmpty) {
       return _cachedLocations!;
     }
     try {
       final res = await _client.get(ApiEndpoints.locations);
       if (_isSuccess(res)) {
         final list = res['data'] as List<dynamic>;
-        _cachedLocations = list
-            .map((item) => LocationModel.fromJson(item as Map<String, dynamic>))
-            .toList();
+        _cachedLocations =
+            list
+                .map(
+                  (item) =>
+                      LocationModel.fromJson(item as Map<String, dynamic>),
+                )
+                .toList();
         return _cachedLocations!;
       }
     } catch (_) {}
 
     return _cachedLocations ??
         const [
-          LocationModel(id: 1, name: 'Dubai, UAE', city: 'Dubai', country: 'UAE', displayOrder: 1),
-          LocationModel(id: 2, name: 'Dubai Design District (d3), Dubai', city: 'Dubai', country: 'UAE', displayOrder: 2),
-          LocationModel(id: 3, name: 'Alserkal Avenue, Al Quoz, Dubai', city: 'Dubai', country: 'UAE', displayOrder: 3),
-          LocationModel(id: 4, name: 'Downtown Dubai, UAE', city: 'Dubai', country: 'UAE', displayOrder: 4),
-          LocationModel(id: 5, name: 'DIFC, Dubai', city: 'Dubai', country: 'UAE', displayOrder: 5),
-          LocationModel(id: 6, name: 'Al Shindagha Historic District, Dubai', city: 'Dubai', country: 'UAE', displayOrder: 6),
-          LocationModel(id: 7, name: 'Jaddaf Waterfront, Dubai', city: 'Dubai', country: 'UAE', displayOrder: 7),
-          LocationModel(id: 8, name: 'Madinat Jumeirah, Dubai', city: 'Dubai', country: 'UAE', displayOrder: 8),
-          LocationModel(id: 9, name: 'Dubai Marina, UAE', city: 'Dubai', country: 'UAE', displayOrder: 9),
-          LocationModel(id: 10, name: 'Palm Jumeirah, Dubai', city: 'Dubai', country: 'UAE', displayOrder: 10),
-          LocationModel(id: 11, name: 'Jumeirah, Dubai', city: 'Dubai', country: 'UAE', displayOrder: 11),
-          LocationModel(id: 12, name: 'Business Bay, Dubai', city: 'Dubai', country: 'UAE', displayOrder: 12),
-          LocationModel(id: 13, name: 'Abu Dhabi, UAE', city: 'Abu Dhabi', country: 'UAE', displayOrder: 13),
-          LocationModel(id: 14, name: 'Sharjah, UAE', city: 'Sharjah', country: 'UAE', displayOrder: 14),
-          LocationModel(id: 15, name: 'Ajman, UAE', city: 'Ajman', country: 'UAE', displayOrder: 15),
-          LocationModel(id: 16, name: 'Ras Al Khaimah, UAE', city: 'Ras Al Khaimah', country: 'UAE', displayOrder: 16),
-          LocationModel(id: 17, name: 'Fujairah, UAE', city: 'Fujairah', country: 'UAE', displayOrder: 17),
-          LocationModel(id: 18, name: 'Umm Al Quwain, UAE', city: 'Umm Al Quwain', country: 'UAE', displayOrder: 18),
+          LocationModel(
+            id: 1,
+            name: 'Dubai, UAE',
+            city: 'Dubai',
+            country: 'UAE',
+            displayOrder: 1,
+          ),
+          LocationModel(
+            id: 2,
+            name: 'Dubai Design District (d3), Dubai',
+            city: 'Dubai',
+            country: 'UAE',
+            displayOrder: 2,
+          ),
+          LocationModel(
+            id: 3,
+            name: 'Alserkal Avenue, Al Quoz, Dubai',
+            city: 'Dubai',
+            country: 'UAE',
+            displayOrder: 3,
+          ),
+          LocationModel(
+            id: 4,
+            name: 'Downtown Dubai, UAE',
+            city: 'Dubai',
+            country: 'UAE',
+            displayOrder: 4,
+          ),
+          LocationModel(
+            id: 5,
+            name: 'DIFC, Dubai',
+            city: 'Dubai',
+            country: 'UAE',
+            displayOrder: 5,
+          ),
+          LocationModel(
+            id: 6,
+            name: 'Al Shindagha Historic District, Dubai',
+            city: 'Dubai',
+            country: 'UAE',
+            displayOrder: 6,
+          ),
+          LocationModel(
+            id: 7,
+            name: 'Jaddaf Waterfront, Dubai',
+            city: 'Dubai',
+            country: 'UAE',
+            displayOrder: 7,
+          ),
+          LocationModel(
+            id: 8,
+            name: 'Madinat Jumeirah, Dubai',
+            city: 'Dubai',
+            country: 'UAE',
+            displayOrder: 8,
+          ),
+          LocationModel(
+            id: 9,
+            name: 'Dubai Marina, UAE',
+            city: 'Dubai',
+            country: 'UAE',
+            displayOrder: 9,
+          ),
+          LocationModel(
+            id: 10,
+            name: 'Palm Jumeirah, Dubai',
+            city: 'Dubai',
+            country: 'UAE',
+            displayOrder: 10,
+          ),
+          LocationModel(
+            id: 11,
+            name: 'Jumeirah, Dubai',
+            city: 'Dubai',
+            country: 'UAE',
+            displayOrder: 11,
+          ),
+          LocationModel(
+            id: 12,
+            name: 'Business Bay, Dubai',
+            city: 'Dubai',
+            country: 'UAE',
+            displayOrder: 12,
+          ),
+          LocationModel(
+            id: 13,
+            name: 'Abu Dhabi, UAE',
+            city: 'Abu Dhabi',
+            country: 'UAE',
+            displayOrder: 13,
+          ),
+          LocationModel(
+            id: 14,
+            name: 'Sharjah, UAE',
+            city: 'Sharjah',
+            country: 'UAE',
+            displayOrder: 14,
+          ),
+          LocationModel(
+            id: 15,
+            name: 'Ajman, UAE',
+            city: 'Ajman',
+            country: 'UAE',
+            displayOrder: 15,
+          ),
+          LocationModel(
+            id: 16,
+            name: 'Ras Al Khaimah, UAE',
+            city: 'Ras Al Khaimah',
+            country: 'UAE',
+            displayOrder: 16,
+          ),
+          LocationModel(
+            id: 17,
+            name: 'Fujairah, UAE',
+            city: 'Fujairah',
+            country: 'UAE',
+            displayOrder: 17,
+          ),
+          LocationModel(
+            id: 18,
+            name: 'Umm Al Quwain, UAE',
+            city: 'Umm Al Quwain',
+            country: 'UAE',
+            displayOrder: 18,
+          ),
         ];
   }
 
@@ -1607,17 +1887,26 @@ class ApiService {
   // 15h. Publishing Pricing & Plans Master (MySQL Backend)
   List<PublishingPricingModel>? _cachedPublishingPricing;
 
-  Future<List<PublishingPricingModel>> getPublishingPricing({bool forceRefresh = false}) async {
-    if (!forceRefresh && _cachedPublishingPricing != null && _cachedPublishingPricing!.isNotEmpty) {
+  Future<List<PublishingPricingModel>> getPublishingPricing({
+    bool forceRefresh = false,
+  }) async {
+    if (!forceRefresh &&
+        _cachedPublishingPricing != null &&
+        _cachedPublishingPricing!.isNotEmpty) {
       return _cachedPublishingPricing!;
     }
     try {
       final res = await _client.get(ApiEndpoints.publishingPricing);
       if (_isSuccess(res)) {
         final list = res['data'] as List<dynamic>;
-        _cachedPublishingPricing = list
-            .map((item) => PublishingPricingModel.fromJson(item as Map<String, dynamic>))
-            .toList();
+        _cachedPublishingPricing =
+            list
+                .map(
+                  (item) => PublishingPricingModel.fromJson(
+                    item as Map<String, dynamic>,
+                  ),
+                )
+                .toList();
         return _cachedPublishingPricing!;
       }
     } catch (_) {}
@@ -1635,7 +1924,8 @@ class ApiService {
             sixMonthBadge: 'Save 17%',
             yearlyBadge: 'Best Value',
             currency: 'AED',
-            description: 'Standard rate for publishing art events, exhibitions, and symposiums on Artist Dubai.',
+            description:
+                'Standard rate for publishing art events, exhibitions, and symposiums on Artist Dubai.',
           ),
           PublishingPricingModel(
             id: 2,
@@ -1648,7 +1938,8 @@ class ApiService {
             sixMonthBadge: 'Save 15%',
             yearlyBadge: 'Best Value',
             currency: 'AED',
-            description: 'Premier directory listing, verified status badge, and spotlight showcase for Dubai art galleries.',
+            description:
+                'Premier directory listing, verified status badge, and spotlight showcase for Dubai art galleries.',
           ),
         ];
   }
@@ -1694,62 +1985,15 @@ class ApiService {
   // 15h2. Listing Plans (Event, Gallery, Art Centre) (MySQL Backend)
   List<ListingPlanItem>? _cachedListingPlans;
 
-  static const List<ListingPlanItem> defaultListingPlans = [
-    ListingPlanItem(
-      id: 1,
-      title: 'Event Listing',
-      category: 'Events',
-      badge: 'One-time',
-      price: '199 AED',
-      description: 'Publish a single event on Artist Dubai.',
-      features: [
-        'One event listing',
-        'Visible in Events and calendar',
-        'Gallery photos included',
-      ],
-      buttonText: 'Pay from My Listings',
-      itemType: 'event',
-      isActive: true,
-      sortOrder: 1,
-    ),
-    ListingPlanItem(
-      id: 2,
-      title: 'Gallery Listing',
-      category: 'Galleries',
-      badge: 'One-time',
-      price: '149 AED',
-      description: 'Publish a single gallery on Artist Dubai.',
-      features: [
-        'One gallery listing',
-        'Unlimited images',
-        'Shareable gallery page',
-      ],
-      buttonText: 'Pay from My Listings',
-      itemType: 'gallery',
-      isActive: true,
-      sortOrder: 2,
-    ),
-    ListingPlanItem(
-      id: 3,
-      title: 'Art Centre Listing',
-      category: 'Art Centres',
-      badge: 'One-time',
-      price: '299 AED',
-      description: 'Publish a single art centre on Artist Dubai.',
-      features: [
-        'One art centre listing',
-        'Verified venue badge',
-        'Direct booking inquiry button',
-      ],
-      buttonText: 'Pay from My Listings',
-      itemType: 'art_centre',
-      isActive: true,
-      sortOrder: 3,
-    ),
-  ];
+  static const List<ListingPlanItem> defaultListingPlans =
+      ListingPlanItem.defaultBaselinePlans;
 
-  Future<List<ListingPlanItem>> getListingPlans({bool forceRefresh = false}) async {
-    if (!forceRefresh && _cachedListingPlans != null && _cachedListingPlans!.isNotEmpty) {
+  Future<List<ListingPlanItem>> getListingPlans({
+    bool forceRefresh = false,
+  }) async {
+    if (!forceRefresh &&
+        _cachedListingPlans != null &&
+        _cachedListingPlans!.isNotEmpty) {
       return _cachedListingPlans!;
     }
     try {
@@ -1757,15 +2001,21 @@ class ApiService {
       if (_isSuccess(res) && res['data'] is List) {
         final list = res['data'] as List<dynamic>;
         if (list.isNotEmpty) {
-          _cachedListingPlans = list
-              .map((item) => ListingPlanItem.fromJson(item as Map<String, dynamic>))
-              .toList();
+          _cachedListingPlans =
+              list
+                  .map(
+                    (item) =>
+                        ListingPlanItem.fromJson(item as Map<String, dynamic>),
+                  )
+                  .toList();
           return _cachedListingPlans!;
         }
       }
     } catch (_) {}
 
-    return _cachedListingPlans ?? [];
+    return _cachedListingPlans != null && _cachedListingPlans!.isNotEmpty
+        ? _cachedListingPlans!
+        : defaultListingPlans;
   }
 
   Future<bool> updateListingPlan({
@@ -1827,6 +2077,7 @@ class ApiService {
       final res = await _client.post(
         ApiEndpoints.listingPlans,
         data: {
+          'action': 'create',
           'item_type': itemType,
           'title': title,
           'category': category,
@@ -1870,10 +2121,14 @@ class ApiService {
   }
 
   // 15h3. User Plans & Active Subscription Management (MySQL Backend)
-  Future<List<Map<String, dynamic>>> getUserPlans({String? email, bool forceRefresh = false}) async {
-    final targetEmail = (email != null && email.isNotEmpty)
-        ? email
-        : (sl<StorageService>().getString('user_email') ?? '');
+  Future<List<Map<String, dynamic>>> getUserPlans({
+    String? email,
+    bool forceRefresh = false,
+  }) async {
+    final targetEmail =
+        (email != null && email.isNotEmpty)
+            ? email
+            : (sl<StorageService>().getString('user_email') ?? '');
     if (targetEmail.isEmpty) return [];
 
     try {
@@ -1884,10 +2139,55 @@ class ApiService {
       if (_isSuccess(res) && res['data'] is Map) {
         final data = res['data'] as Map<String, dynamic>;
         if (data['plans'] is List) {
-          final list = (data['plans'] as List)
+          final list =
+              (data['plans'] as List)
+                  .map((e) => Map<String, dynamic>.from(e as Map))
+                  .toList();
+          return list;
+        }
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  /// Check whether a user has an active, non-expired purchased plan for a specific item type ('event', 'gallery', 'chat', 'artist')
+  Future<Map<String, dynamic>?> getActivePlanForType(
+    String type, {
+    String? email,
+  }) async {
+    final plans = await getUserPlans(email: email);
+    final target = type.toLowerCase().trim();
+    for (final p in plans) {
+      final pType = (p['plan_type'] ?? '').toString().toLowerCase().trim();
+      final pName = (p['plan_name'] ?? '').toString().toLowerCase();
+      final status = (p['status'] ?? '').toString().toLowerCase();
+      final isExpired =
+          p['is_expired'] == true ||
+          (p['days_left'] != null && (p['days_left'] as num) <= 0);
+      if (status == 'active' && !isExpired) {
+        if (pType == target ||
+            pType.contains(target) ||
+            pName.contains(target)) {
+          return p;
+        }
+      }
+    }
+    return null;
+  }
+
+  /// Admin method: fetch all user purchased plans and subscriptions across the system
+  Future<List<Map<String, dynamic>>> getAllUserPlans() async {
+    try {
+      final res = await _client.get(
+        ApiEndpoints.userPlans,
+        queryParameters: {'action': 'all'},
+      );
+      if (_isSuccess(res) && res['data'] is Map) {
+        final data = res['data'] as Map<String, dynamic>;
+        if (data['plans'] is List) {
+          return (data['plans'] as List)
               .map((e) => Map<String, dynamic>.from(e as Map))
               .toList();
-          return list;
         }
       }
     } catch (_) {}
@@ -1933,13 +2233,27 @@ class ApiService {
         try {
           sl<LiveSyncService>().notifyAuthChanged(true);
         } catch (_) {}
+        if (planType.toLowerCase().contains('chat') ||
+            planName.toLowerCase().contains('chat') ||
+            planName.toLowerCase().contains('vip') ||
+            planName.toLowerCase().contains('unlimited')) {
+          try {
+            await sl<ChatService>().upgradePlan(
+              planName: planName,
+              maxAllowance: 9999,
+            );
+          } catch (_) {}
+        }
         return true;
       }
     } catch (_) {}
     return false;
   }
 
-  Future<bool> cancelUserPlan({required int planId, required String email}) async {
+  Future<bool> cancelUserPlan({
+    required int planId,
+    required String email,
+  }) async {
     try {
       final res = await _client.post(
         ApiEndpoints.userPlans,
@@ -1963,14 +2277,18 @@ class ApiService {
   // 15i. Payment Settings & QR Code (MySQL Backend)
   PaymentSettingsModel? _cachedPaymentSettings;
 
-  Future<PaymentSettingsModel> getPaymentSettings({bool forceRefresh = false}) async {
+  Future<PaymentSettingsModel> getPaymentSettings({
+    bool forceRefresh = false,
+  }) async {
     if (!forceRefresh && _cachedPaymentSettings != null) {
       return _cachedPaymentSettings!;
     }
     try {
       final res = await _client.get(ApiEndpoints.paymentSettings);
       if (_isSuccess(res) && res['data'] != null) {
-        _cachedPaymentSettings = PaymentSettingsModel.fromJson(res['data'] as Map<String, dynamic>);
+        _cachedPaymentSettings = PaymentSettingsModel.fromJson(
+          res['data'] as Map<String, dynamic>,
+        );
         return _cachedPaymentSettings!;
       }
     } catch (_) {}
@@ -2013,8 +2331,12 @@ class ApiService {
   // 15j. Menu Permissions & Access Control (MySQL Backend)
   Map<String, bool>? _cachedMenuPermissions;
 
-  Future<Map<String, bool>> getMenuPermissions({bool forceRefresh = false}) async {
-    if (!forceRefresh && _cachedMenuPermissions != null && _cachedMenuPermissions!.isNotEmpty) {
+  Future<Map<String, bool>> getMenuPermissions({
+    bool forceRefresh = false,
+  }) async {
+    if (!forceRefresh &&
+        _cachedMenuPermissions != null &&
+        _cachedMenuPermissions!.isNotEmpty) {
       return _cachedMenuPermissions!;
     }
     try {
@@ -2024,8 +2346,10 @@ class ApiService {
         final map = <String, bool>{};
         for (final item in list) {
           if (item is Map) {
-            final route = item['route_name']?.toString() ?? item['routeName']?.toString();
-            final enabled = item['is_enabled'] == 1 ||
+            final route =
+                item['route_name']?.toString() ?? item['routeName']?.toString();
+            final enabled =
+                item['is_enabled'] == 1 ||
                 item['is_enabled'] == '1' ||
                 item['is_enabled'] == true ||
                 item['is_enabled'] == null;
@@ -2079,7 +2403,9 @@ class ApiService {
 
       // 2. Broadcast immediately so local UI updates without lag
       try {
-        sl<LiveSyncService>().notifyMenuPermissionsChanged(_cachedMenuPermissions);
+        sl<LiveSyncService>().notifyMenuPermissionsChanged(
+          _cachedMenuPermissions,
+        );
       } catch (_) {}
 
       // 3. Sync to backend MySQL
@@ -2110,10 +2436,12 @@ class ApiService {
       } catch (_) {}
 
       try {
-        final payload = permissions.entries.map((e) => {
-          'route_name': e.key,
-          'is_enabled': e.value ? 1 : 0,
-        }).toList();
+        final payload =
+            permissions.entries
+                .map(
+                  (e) => {'route_name': e.key, 'is_enabled': e.value ? 1 : 0},
+                )
+                .toList();
         final res = await _client.post(
           ApiEndpoints.menuPermissions,
           data: {'permissions': payload},
@@ -2126,7 +2454,6 @@ class ApiService {
     return false;
   }
 
-
   // 16. Change Password (MySQL Backend)
   Future<bool> changePassword({
     required String email,
@@ -2135,10 +2462,7 @@ class ApiService {
     try {
       final res = await _client.post(
         '${ApiEndpoints.login}&action=change_password',
-        data: {
-          'email': email,
-          'new_password': newPassword,
-        },
+        data: {'email': email, 'new_password': newPassword},
       );
       return _isSuccess(res);
     } catch (_) {}
@@ -2163,7 +2487,10 @@ class ApiService {
   }
 
   // 18. Dynamic Favorites (MySQL Backend)
-  Future<Map<String, dynamic>> getFavorites({String? email, bool forceRefresh = false}) async {
+  Future<Map<String, dynamic>> getFavorites({
+    String? email,
+    bool forceRefresh = false,
+  }) async {
     try {
       final queryParams = <String, dynamic>{};
       if (email != null && email.isNotEmpty) queryParams['email'] = email;
@@ -2179,15 +2506,31 @@ class ApiService {
         final eventsRaw = data['events'] as List<dynamic>? ?? [];
         final artworksRaw = data['artworks'] as List<dynamic>? ?? [];
 
-        final artists = artistsRaw.map((e) => ArtistModel.fromJson(e as Map<String, dynamic>)).toList();
-        final events = eventsRaw.map((e) => ArtEventModel.fromJson(e as Map<String, dynamic>)).toList();
-        final artworks = artworksRaw.map((e) => e as Map<String, dynamic>).toList();
+        final artists =
+            artistsRaw
+                .map((e) => ArtistModel.fromJson(e as Map<String, dynamic>))
+                .toList();
+        final events =
+            eventsRaw
+                .map((e) => ArtEventModel.fromJson(e as Map<String, dynamic>))
+                .toList();
+        final artworks =
+            artworksRaw.map((e) => e as Map<String, dynamic>).toList();
 
-        final artistIds = (data['artist_ids'] as List<dynamic>?)?.map((e) => e.toString().trim()).toList() ??
+        final artistIds =
+            (data['artist_ids'] as List<dynamic>?)
+                ?.map((e) => e.toString().trim())
+                .toList() ??
             artists.map((a) => a.id).toList();
-        final eventIds = (data['event_ids'] as List<dynamic>?)?.map((e) => e.toString().trim()).toList() ??
+        final eventIds =
+            (data['event_ids'] as List<dynamic>?)
+                ?.map((e) => e.toString().trim())
+                .toList() ??
             events.map((e) => e.id).toList();
-        final artworkIds = (data['artwork_ids'] as List<dynamic>?)?.map((e) => e.toString().trim()).toList() ??
+        final artworkIds =
+            (data['artwork_ids'] as List<dynamic>?)
+                ?.map((e) => e.toString().trim())
+                .toList() ??
             artworks.map((a) => (a['id'] ?? '').toString().trim()).toList();
 
         return {
@@ -2218,11 +2561,7 @@ class ApiService {
     try {
       final res = await _client.post(
         ApiEndpoints.favorites,
-        data: {
-          'user_email': email,
-          'item_type': itemType,
-          'item_id': itemId,
-        },
+        data: {'user_email': email, 'item_type': itemType, 'item_id': itemId},
       );
       if (_isSuccess(res)) {
         try {
@@ -2295,10 +2634,7 @@ class ApiService {
     try {
       final res = await _client.get(
         '${ApiEndpoints.artists}&action=status',
-        queryParameters: {
-          'artist_id': artistId,
-          'user_email': userEmail,
-        },
+        queryParameters: {'artist_id': artistId, 'user_email': userEmail},
       );
       if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
         return res['data'] as Map<String, dynamic>;
@@ -2327,7 +2663,9 @@ class ApiService {
     });
   }
 
-  Future<Map<String, Set<String>>> _fetchInteractionsFromDb(String userEmail) async {
+  Future<Map<String, Set<String>>> _fetchInteractionsFromDb(
+    String userEmail,
+  ) async {
     try {
       final res = await _client.get(
         '${ApiEndpoints.artists}&action=interactions',
@@ -2335,10 +2673,11 @@ class ApiService {
       );
       if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
         final data = res['data'] as Map<String, dynamic>;
-        final likedRaw    = (data['liked_artist_ids']    as List<dynamic>?) ?? [];
-        final followedRaw = (data['followed_artist_ids'] as List<dynamic>?) ?? [];
+        final likedRaw = (data['liked_artist_ids'] as List<dynamic>?) ?? [];
+        final followedRaw =
+            (data['followed_artist_ids'] as List<dynamic>?) ?? [];
         final result = {
-          'liked':    likedRaw.map((e) => e.toString()).toSet(),
+          'liked': likedRaw.map((e) => e.toString()).toSet(),
           'followed': followedRaw.map((e) => e.toString()).toSet(),
         };
         _cachedInteractions = result;
@@ -2608,10 +2947,7 @@ class ApiService {
   // 29. Create Government Entity
   Future<bool> createGovernmentEntity(Map<String, dynamic> data) async {
     try {
-      final res = await _client.post(
-        ApiEndpoints.government,
-        data: data,
-      );
+      final res = await _client.post(ApiEndpoints.government, data: data);
       if (_isSuccess(res)) {
         _cachedGovEntities = null;
         try {
@@ -2646,10 +2982,7 @@ class ApiService {
     try {
       final res = await _client.post(
         '${ApiEndpoints.government}&action=delete',
-        data: {
-          if (id != null) 'id': id,
-          if (name != null) 'name': name,
-        },
+        data: {if (id != null) 'id': id, if (name != null) 'name': name},
       );
       if (_isSuccess(res)) {
         _cachedGovEntities = null;
@@ -2665,10 +2998,7 @@ class ApiService {
   // 32. Create Art Center / Gallery
   Future<bool> createArtCenter(Map<String, dynamic> data) async {
     try {
-      final res = await _client.post(
-        ApiEndpoints.galleries,
-        data: data,
-      );
+      final res = await _client.post(ApiEndpoints.galleries, data: data);
       if (_isSuccess(res)) {
         _cachedGalleries = null;
         try {
@@ -2718,7 +3048,9 @@ class ApiService {
   }
 
   // 35. About Platform Metrics & Info (MySQL Backend)
-  Future<Map<String, dynamic>?> getAboutPlatform({bool forceRefresh = false}) async {
+  Future<Map<String, dynamic>?> getAboutPlatform({
+    bool forceRefresh = false,
+  }) async {
     if (!forceRefresh && _cachedAbout != null) {
       return _cachedAbout;
     }
@@ -2750,7 +3082,10 @@ class ApiService {
   }
 
   /// Restore a soft-deleted item back to active state
-  Future<bool> restoreFromTrash({required dynamic id, required String type}) async {
+  Future<bool> restoreFromTrash({
+    required dynamic id,
+    required String type,
+  }) async {
     try {
       final res = await _client.post(
         'api.php?resource=trash&action=restore',
@@ -2766,7 +3101,10 @@ class ApiService {
   }
 
   /// Permanently delete an item from the recycle bin (irreversible)
-  Future<bool> permanentlyDeleteFromTrash({required dynamic id, required String type}) async {
+  Future<bool> permanentlyDeleteFromTrash({
+    required dynamic id,
+    required String type,
+  }) async {
     try {
       final res = await _client.post(
         'api.php?resource=trash&action=permanent_delete',
@@ -2804,19 +3142,27 @@ class ApiService {
       case 'artists':
         _cachedArtists = null;
         _cachedArtistDetails.clear();
-        try { sl<LiveSyncService>().notifyArtistsChanged(); } catch (_) {}
+        try {
+          sl<LiveSyncService>().notifyArtistsChanged();
+        } catch (_) {}
         break;
       case 'events':
         _cachedEvents = null;
-        try { sl<LiveSyncService>().notifyEventsChanged(); } catch (_) {}
+        try {
+          sl<LiveSyncService>().notifyEventsChanged();
+        } catch (_) {}
         break;
       case 'galleries':
         _cachedGalleries = null;
-        try { sl<LiveSyncService>().notifyGalleriesChanged(); } catch (_) {}
+        try {
+          sl<LiveSyncService>().notifyGalleriesChanged();
+        } catch (_) {}
         break;
       case 'government_entities':
         _cachedGovEntities = null;
-        try { sl<LiveSyncService>().notifyGovernmentChanged(); } catch (_) {}
+        try {
+          sl<LiveSyncService>().notifyGovernmentChanged();
+        } catch (_) {}
         break;
       default:
         break;
@@ -2827,15 +3173,20 @@ class ApiService {
   // AI Chat Guide (MySQL Backend)
   // =========================================================================
 
-  Future<List<Map<String, dynamic>>> getAiChatSessions({String? userEmail, String? userId}) async {
+  Future<List<Map<String, dynamic>>> getAiChatSessions({
+    String? userEmail,
+    String? userId,
+  }) async {
     try {
       final storage = sl<StorageService>();
-      final effectiveEmail = (userEmail != null && userEmail.isNotEmpty)
-          ? userEmail
-          : storage.getString('user_email');
-      final effectiveUserId = (userId != null && userId.isNotEmpty)
-          ? userId
-          : storage.getString('user_id');
+      final effectiveEmail =
+          (userEmail != null && userEmail.isNotEmpty)
+              ? userEmail
+              : storage.getString('user_email');
+      final effectiveUserId =
+          (userId != null && userId.isNotEmpty)
+              ? userId
+              : storage.getString('user_id');
 
       if ((effectiveEmail == null || effectiveEmail.isEmpty) &&
           (effectiveUserId == null || effectiveUserId.isEmpty)) {
@@ -2849,8 +3200,12 @@ class ApiService {
       if (effectiveUserId != null && effectiveUserId.isNotEmpty) {
         queryParams['user_id'] = effectiveUserId;
       }
-      final res = await _client.get(ApiEndpoints.aiChat, queryParameters: queryParams);
-      final dynamic body = res is Map ? res : (res != null ? _tryExtractData(res) : null);
+      final res = await _client.get(
+        ApiEndpoints.aiChat,
+        queryParameters: queryParams,
+      );
+      final dynamic body =
+          res is Map ? res : (res != null ? _tryExtractData(res) : null);
       if (body is Map && body['data'] is List) {
         return List<Map<String, dynamic>>.from(body['data'] as List);
       }
@@ -2861,15 +3216,21 @@ class ApiService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getAiChatMessages(String sessionId, {String? userEmail, String? userId}) async {
+  Future<List<Map<String, dynamic>>> getAiChatMessages(
+    String sessionId, {
+    String? userEmail,
+    String? userId,
+  }) async {
     try {
       final storage = sl<StorageService>();
-      final effectiveEmail = (userEmail != null && userEmail.isNotEmpty)
-          ? userEmail
-          : storage.getString('user_email');
-      final effectiveUserId = (userId != null && userId.isNotEmpty)
-          ? userId
-          : storage.getString('user_id');
+      final effectiveEmail =
+          (userEmail != null && userEmail.isNotEmpty)
+              ? userEmail
+              : storage.getString('user_email');
+      final effectiveUserId =
+          (userId != null && userId.isNotEmpty)
+              ? userId
+              : storage.getString('user_id');
 
       final queryParams = <String, dynamic>{
         'action': 'messages',
@@ -2881,8 +3242,12 @@ class ApiService {
       if (effectiveUserId != null && effectiveUserId.isNotEmpty) {
         queryParams['user_id'] = effectiveUserId;
       }
-      final res = await _client.get(ApiEndpoints.aiChat, queryParameters: queryParams);
-      final dynamic body = res is Map ? res : (res != null ? _tryExtractData(res) : null);
+      final res = await _client.get(
+        ApiEndpoints.aiChat,
+        queryParameters: queryParams,
+      );
+      final dynamic body =
+          res is Map ? res : (res != null ? _tryExtractData(res) : null);
       if (body is Map && body['data'] is List) {
         return List<Map<String, dynamic>>.from(body['data'] as List);
       }
@@ -2903,12 +3268,14 @@ class ApiService {
   }) async {
     try {
       final storage = sl<StorageService>();
-      final effectiveEmail = (userEmail != null && userEmail.isNotEmpty)
-          ? userEmail
-          : storage.getString('user_email');
-      final effectiveUserId = (userId != null && userId.isNotEmpty)
-          ? userId
-          : storage.getString('user_id');
+      final effectiveEmail =
+          (userEmail != null && userEmail.isNotEmpty)
+              ? userEmail
+              : storage.getString('user_email');
+      final effectiveUserId =
+          (userId != null && userId.isNotEmpty)
+              ? userId
+              : storage.getString('user_id');
 
       final body = <String, dynamic>{
         'action': 'send',
@@ -2916,14 +3283,20 @@ class ApiService {
         'message': message,
       };
       if (title != null && title.isNotEmpty) body['title'] = title;
-      if (effectiveEmail != null && effectiveEmail.isNotEmpty) body['user_email'] = effectiveEmail;
-      if (effectiveUserId != null && effectiveUserId.isNotEmpty) body['user_id'] = effectiveUserId;
-      body['locale'] = (locale != null && locale.isNotEmpty)
-          ? locale
-          : (DataTranslator.isAppArabic ? 'ar' : 'en');
+      if (effectiveEmail != null && effectiveEmail.isNotEmpty) {
+        body['user_email'] = effectiveEmail;
+      }
+      if (effectiveUserId != null && effectiveUserId.isNotEmpty) {
+        body['user_id'] = effectiveUserId;
+      }
+      body['locale'] =
+          (locale != null && locale.isNotEmpty)
+              ? locale
+              : (DataTranslator.isAppArabic ? 'ar' : 'en');
 
       final res = await _client.post(ApiEndpoints.aiChat, data: body);
-      final dynamic respBody = res is Map ? res : (res != null ? _tryExtractData(res) : null);
+      final dynamic respBody =
+          res is Map ? res : (res != null ? _tryExtractData(res) : null);
       if (respBody is Map && respBody['data'] is Map) {
         return Map<String, dynamic>.from(respBody['data'] as Map);
       }
@@ -2934,22 +3307,32 @@ class ApiService {
     }
   }
 
-  Future<bool> deleteAiChatSession(String sessionId, {String? userEmail, String? userId}) async {
+  Future<bool> deleteAiChatSession(
+    String sessionId, {
+    String? userEmail,
+    String? userId,
+  }) async {
     try {
       final storage = sl<StorageService>();
-      final effectiveEmail = (userEmail != null && userEmail.isNotEmpty)
-          ? userEmail
-          : storage.getString('user_email');
-      final effectiveUserId = (userId != null && userId.isNotEmpty)
-          ? userId
-          : storage.getString('user_id');
+      final effectiveEmail =
+          (userEmail != null && userEmail.isNotEmpty)
+              ? userEmail
+              : storage.getString('user_email');
+      final effectiveUserId =
+          (userId != null && userId.isNotEmpty)
+              ? userId
+              : storage.getString('user_id');
 
       final body = <String, dynamic>{
         'action': 'delete',
         'session_id': sessionId,
       };
-      if (effectiveEmail != null && effectiveEmail.isNotEmpty) body['user_email'] = effectiveEmail;
-      if (effectiveUserId != null && effectiveUserId.isNotEmpty) body['user_id'] = effectiveUserId;
+      if (effectiveEmail != null && effectiveEmail.isNotEmpty) {
+        body['user_email'] = effectiveEmail;
+      }
+      if (effectiveUserId != null && effectiveUserId.isNotEmpty) {
+        body['user_id'] = effectiveUserId;
+      }
 
       final res = await _client.post(ApiEndpoints.aiChat, data: body);
       if (res is Map) {
@@ -2975,4 +3358,3 @@ class ApiService {
     }
   }
 }
-

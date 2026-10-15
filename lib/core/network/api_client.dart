@@ -236,14 +236,16 @@ class ApiClientImpl implements ApiClient {
         error.type == DioExceptionType.receiveTimeout ||
         error.type == DioExceptionType.sendTimeout) {
       throw const NetworkException(
-        message: 'Connection timed out. Please check your internet connection and try again.',
+        message:
+            'Connection timed out. Please check your internet connection and try again.',
       );
     }
 
     if (error.type == DioExceptionType.connectionError ||
         _isTransientNetworkError(error)) {
       throw const NetworkException(
-        message: 'Unable to reach server. Please check your internet connection and try again.',
+        message:
+            'Unable to reach server. Please check your internet connection and try again.',
       );
     }
 

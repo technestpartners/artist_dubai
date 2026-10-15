@@ -10,25 +10,46 @@ import 'package:artist_dubai/core/errors/failures.dart';
 
 void main() {
   group('1. Core Utility & Validator Unit Tests', () {
-    test('Email validator should correctly identify valid and invalid emails', () {
-      expect(Validators.validateEmail('allenbaiyee@me.com'), isNull);
-      expect(Validators.validateEmail('user@domain.co.ae'), isNull);
-      expect(Validators.validateEmail(''), equals('Email address is required'));
-      expect(Validators.validateEmail('invalid-email'), equals('Please enter a valid email address'));
-      expect(Validators.validateEmail('test@'), equals('Please enter a valid email address'));
-    });
+    test(
+      'Email validator should correctly identify valid and invalid emails',
+      () {
+        expect(Validators.validateEmail('allenbaiyee@me.com'), isNull);
+        expect(Validators.validateEmail('user@domain.co.ae'), isNull);
+        expect(
+          Validators.validateEmail(''),
+          equals('Email address is required'),
+        );
+        expect(
+          Validators.validateEmail('invalid-email'),
+          equals('Please enter a valid email address'),
+        );
+        expect(
+          Validators.validateEmail('test@'),
+          equals('Please enter a valid email address'),
+        );
+      },
+    );
 
     test('Password validator should enforce min length rules', () {
       expect(Validators.validatePassword('12345678'), isNull);
       expect(Validators.validatePassword('secretPass1'), isNull);
       expect(Validators.validatePassword(''), equals('Password is required'));
-      expect(Validators.validatePassword('12345'), equals('Password must be at least 6 characters'));
+      expect(
+        Validators.validatePassword('12345'),
+        equals('Password must be at least 6 characters'),
+      );
     });
 
     test('Name & Required Field validators', () {
       expect(Validators.validateRequired('Allen Baiyee', 'Full Name'), isNull);
-      expect(Validators.validateRequired('', 'Full Name'), equals('Full Name is required'));
-      expect(Validators.validateRequired('   ', 'Location'), equals('Location is required'));
+      expect(
+        Validators.validateRequired('', 'Full Name'),
+        equals('Full Name is required'),
+      );
+      expect(
+        Validators.validateRequired('   ', 'Location'),
+        equals('Location is required'),
+      );
     });
 
     test('DateFormatter formatting utility', () {
@@ -130,6 +151,32 @@ void main() {
 
       const failure = NetworkFailure(message: 'Connection reset');
       expect(failure.message, equals('Connection reset'));
+    });
+
+    test('Failure.fromException correctly transforms errors', () {
+      final netErr = Failure.fromException(
+        const NetworkException(message: 'No connection'),
+      );
+      expect(netErr, isA<NetworkFailure>());
+      expect(netErr.message, contains('No connection'));
+
+      final authErr = Failure.fromException(
+        const UnauthorizedException(message: 'Invalid session'),
+      );
+      expect(authErr, isA<UnauthorizedFailure>());
+      expect(authErr.message, contains('Invalid session'));
+
+      final valErr = Failure.fromException(
+        const ValidationException(message: 'Email invalid'),
+      );
+      expect(valErr, isA<ValidationFailure>());
+      expect(valErr.message, contains('Email invalid'));
+
+      final srvErr = Failure.fromException(
+        const ServerException(message: 'Server error'),
+      );
+      expect(srvErr, isA<ServerFailure>());
+      expect(srvErr.message, contains('Server error'));
     });
   });
 }

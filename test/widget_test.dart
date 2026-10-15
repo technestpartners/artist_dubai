@@ -56,7 +56,7 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      expect(find.text('Welcome to Dubai Artists'), findsOneWidget);
+      expect(find.textContaining('Artist Dubai'), findsWidgets);
       expect(find.text('Skip'), findsOneWidget);
 
       await tester.tap(find.text('Skip'));

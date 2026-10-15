@@ -78,25 +78,31 @@ class _MyBookingsViewState extends State<MyBookingsView> {
   Future<void> _cancelBooking(dynamic bookingId) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Cancel Booking'.trData(context)),
-        content: Text('Are you sure you want to cancel this booking reservation?'.trData(context)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Keep Booking'.trData(context)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
-              foregroundColor: Colors.white,
+      builder:
+          (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Yes, Cancel'.trData(context)),
+            title: Text('Cancel Booking'.trData(context)),
+            content: Text(
+              'Are you sure you want to cancel this booking reservation?'
+                  .trData(context),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text('Keep Booking'.trData(context)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFEF4444),
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text('Yes, Cancel'.trData(context)),
+              ),
+            ],
           ),
-        ],
-      ),
     );
 
     if (confirmed == true) {
@@ -113,7 +119,9 @@ class _MyBookingsViewState extends State<MyBookingsView> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to cancel booking. Please try again.'.trData(context)),
+              content: Text(
+                'Failed to cancel booking. Please try again.'.trData(context),
+              ),
               backgroundColor: const Color(0xFFEF4444),
             ),
           );
@@ -124,8 +132,12 @@ class _MyBookingsViewState extends State<MyBookingsView> {
 
   void _showTicketPassModal(Map<String, dynamic> b) {
     final ref = b['id']?.toString() ?? '1';
-    final title = b['event_title']?.toString() ?? b['artist_name']?.toString() ?? 'Dubai Cultural Event';
-    final name = b['full_name']?.toString() ?? b['name']?.toString() ?? 'Attendee';
+    final title =
+        b['event_title']?.toString() ??
+        b['artist_name']?.toString() ??
+        'Dubai Cultural Event';
+    final name =
+        b['full_name']?.toString() ?? b['name']?.toString() ?? 'Attendee';
     final date = b['event_date']?.toString() ?? 'Upcoming';
     final location = b['location']?.toString() ?? 'Dubai, UAE';
     final tickets = '${b['tickets_count'] ?? 1} Ticket(s)';
@@ -136,176 +148,198 @@ class _MyBookingsViewState extends State<MyBookingsView> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Digital Event Pass'.trData(context),
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF1E1E1E),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Booking Reference: #BK-$ref'.trData(context),
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: _primaryPurple,
-                ),
-              ),
-              const SizedBox(height: 20),
-              // Pass Card Container
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF6B1C9B), Color(0xFF4A1070)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+      builder:
+          (ctx) => Container(
+            padding: const EdgeInsets.all(20),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: [
-                    BoxShadow(
-                      color: _primaryPurple.withValues(alpha: 0.25),
-                      blurRadius: 15,
-                      offset: const Offset(0, 6),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Digital Event Pass'.trData(context),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF1E1E1E),
                     ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            title.trData(context),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            status.trData(context),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Booking Reference: #BK-$ref'.trData(context),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: _primaryPurple,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Pass Card Container
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF6B1C9B), Color(0xFF4A1070)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _primaryPurple.withValues(alpha: 0.25),
+                          blurRadius: 15,
+                          offset: const Offset(0, 6),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    _buildPassField('Attendee'.trData(context), name),
-                    const SizedBox(height: 10),
-                    _buildPassField('Date & Time'.trData(context), date.trData(context)),
-                    const SizedBox(height: 10),
-                    _buildPassField('Venue'.trData(context), location.trData(context)),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildPassField('Passes'.trData(context), tickets),
-                        _buildPassField('Amount'.trData(context), price),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    const Divider(color: Colors.white30),
-                    const SizedBox(height: 12),
-                    // Visual QR simulation barcode block
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Icon(Icons.qr_code_2, size: 36, color: Color(0xFF1E1E1E)),
-                            const SizedBox(width: 8),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'VALID AT GATE'.trData(context),
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w900,
-                                    color: Color(0xFF1E1E1E),
-                                  ),
+                            Flexible(
+                              child: Text(
+                                title.trData(context),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
                                 ),
-                                Text(
-                                  '#BK-$ref',
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    color: Color(0xFF64748B),
-                                  ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                status.trData(context),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
                                 ),
-                              ],
+                              ),
                             ),
                           ],
                         ),
-                      ),
+                        const SizedBox(height: 16),
+                        _buildPassField('Attendee'.trData(context), name),
+                        const SizedBox(height: 10),
+                        _buildPassField(
+                          'Date & Time'.trData(context),
+                          date.trData(context),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildPassField(
+                          'Venue'.trData(context),
+                          location.trData(context),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildPassField('Passes'.trData(context), tickets),
+                            _buildPassField('Amount'.trData(context), price),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        const Divider(color: Colors.white30),
+                        const SizedBox(height: 12),
+                        // Visual QR simulation barcode block
+                        Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.qr_code_2,
+                                  size: 36,
+                                  color: Color(0xFF1E1E1E),
+                                ),
+                                const SizedBox(width: 8),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'VALID AT GATE'.trData(context),
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w900,
+                                        color: Color(0xFF1E1E1E),
+                                      ),
+                                    ),
+                                    Text(
+                                      '#BK-$ref',
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        color: Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _primaryPurple,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  icon: const Icon(Icons.check_circle_outline, size: 20),
-                  label: Text(
-                    'Done'.trData(context),
-                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _primaryPurple,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: const Icon(Icons.check_circle_outline, size: 20),
+                      label: Text(
+                        'Done'.trData(context),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                        ),
+                      ),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
                   ),
-                  onPressed: () => Navigator.pop(ctx),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 
@@ -315,12 +349,20 @@ class _MyBookingsViewState extends State<MyBookingsView> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+            fontSize: 11,
+            color: Colors.white70,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         const SizedBox(height: 2),
         Text(
           value,
-          style: const TextStyle(fontSize: 13.5, color: Colors.white, fontWeight: FontWeight.w800),
+          style: const TextStyle(
+            fontSize: 13.5,
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+          ),
         ),
       ],
     );
@@ -339,7 +381,12 @@ class _MyBookingsViewState extends State<MyBookingsView> {
           onRefresh: _fetchBookings,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(rh.horizontalPadding, 10, rh.horizontalPadding, 30),
+            padding: EdgeInsets.fromLTRB(
+              rh.horizontalPadding,
+              10,
+              rh.horizontalPadding,
+              30,
+            ),
             child: Center(
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
@@ -350,7 +397,11 @@ class _MyBookingsViewState extends State<MyBookingsView> {
                     Row(
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Colors.white, size: 22),
+                          icon: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.white,
+                            size: 22,
+                          ),
                           onPressed: () {
                             if (Navigator.canPop(context)) {
                               Navigator.pop(context);
@@ -384,7 +435,10 @@ class _MyBookingsViewState extends State<MyBookingsView> {
                     else if (_bookings.isEmpty)
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 40,
+                          horizontal: 20,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(18),
@@ -407,7 +461,8 @@ class _MyBookingsViewState extends State<MyBookingsView> {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Explore cultural exhibitions and reserve your entry passes.'.trData(context),
+                              'Explore cultural exhibitions and reserve your entry passes.'
+                                  .trData(context),
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 fontSize: 13.5,
@@ -419,8 +474,13 @@ class _MyBookingsViewState extends State<MyBookingsView> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: _primaryPurple,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                               icon: const Icon(Icons.event, size: 18),
                               label: Text('Browse Events'.trData(context)),
@@ -438,13 +498,19 @@ class _MyBookingsViewState extends State<MyBookingsView> {
                         itemBuilder: (context, index) {
                           final b = _bookings[index];
                           final id = b['id']?.toString() ?? '$index';
-                          final title = b['event_title']?.toString() ?? b['artist_name']?.toString() ?? 'Event Reservation';
-                          final date = b['event_date']?.toString() ?? 'Upcoming';
-                          final location = b['location']?.toString() ?? 'Dubai, UAE';
+                          final title =
+                              b['event_title']?.toString() ??
+                              b['artist_name']?.toString() ??
+                              'Event Reservation';
+                          final date =
+                              b['event_date']?.toString() ?? 'Upcoming';
+                          final location =
+                              b['location']?.toString() ?? 'Dubai, UAE';
                           final tickets = b['tickets_count'] ?? 1;
                           final price = b['total_price']?.toString() ?? 'Free';
                           final status = b['status']?.toString() ?? 'Confirmed';
-                          final isConfirmed = status.toLowerCase() == 'confirmed';
+                          final isConfirmed =
+                              status.toLowerCase() == 'confirmed';
 
                           return Container(
                             decoration: BoxDecoration(
@@ -463,7 +529,8 @@ class _MyBookingsViewState extends State<MyBookingsView> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Flexible(
                                       child: Text(
@@ -478,11 +545,15 @@ class _MyBookingsViewState extends State<MyBookingsView> {
                                       ),
                                     ),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: isConfirmed
-                                            ? const Color(0xFFDEF7EC)
-                                            : const Color(0xFFFEF3C7),
+                                        color:
+                                            isConfirmed
+                                                ? const Color(0xFFDEF7EC)
+                                                : const Color(0xFFFEF3C7),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Text(
@@ -490,9 +561,10 @@ class _MyBookingsViewState extends State<MyBookingsView> {
                                         style: TextStyle(
                                           fontSize: 11.5,
                                           fontWeight: FontWeight.w800,
-                                          color: isConfirmed
-                                              ? const Color(0xFF03543F)
-                                              : const Color(0xFF92400E),
+                                          color:
+                                              isConfirmed
+                                                  ? const Color(0xFF03543F)
+                                                  : const Color(0xFF92400E),
                                         ),
                                       ),
                                     ),
@@ -501,7 +573,11 @@ class _MyBookingsViewState extends State<MyBookingsView> {
                                 const SizedBox(height: 8),
                                 Row(
                                   children: [
-                                    const Icon(Icons.calendar_today, size: 14, color: _primaryPurple),
+                                    const Icon(
+                                      Icons.calendar_today,
+                                      size: 14,
+                                      color: _primaryPurple,
+                                    ),
                                     const SizedBox(width: 6),
                                     Text(
                                       date.trData(context),
@@ -512,7 +588,11 @@ class _MyBookingsViewState extends State<MyBookingsView> {
                                       ),
                                     ),
                                     const SizedBox(width: 14),
-                                    const Icon(Icons.people_outline, size: 15, color: Color(0xFF64748B)),
+                                    const Icon(
+                                      Icons.people_outline,
+                                      size: 15,
+                                      color: Color(0xFF64748B),
+                                    ),
                                     const SizedBox(width: 4),
                                     Text(
                                       '$tickets ${'Tickets'.trData(context)}',
@@ -536,7 +616,11 @@ class _MyBookingsViewState extends State<MyBookingsView> {
                                 const SizedBox(height: 6),
                                 Row(
                                   children: [
-                                    const Icon(Icons.location_on_outlined, size: 14, color: Color(0xFF64748B)),
+                                    const Icon(
+                                      Icons.location_on_outlined,
+                                      size: 14,
+                                      color: Color(0xFF64748B),
+                                    ),
                                     const SizedBox(width: 6),
                                     Expanded(
                                       child: Text(
@@ -552,7 +636,10 @@ class _MyBookingsViewState extends State<MyBookingsView> {
                                   ],
                                 ),
                                 const SizedBox(height: 14),
-                                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                                const Divider(
+                                  height: 1,
+                                  color: Color(0xFFF1F5F9),
+                                ),
                                 const SizedBox(height: 10),
                                 Row(
                                   children: [
@@ -560,23 +647,40 @@ class _MyBookingsViewState extends State<MyBookingsView> {
                                       child: OutlinedButton.icon(
                                         style: OutlinedButton.styleFrom(
                                           foregroundColor: _primaryPurple,
-                                          side: const BorderSide(color: _primaryPurple),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(10),
+                                          side: const BorderSide(
+                                            color: _primaryPurple,
                                           ),
-                                          padding: const EdgeInsets.symmetric(vertical: 8),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 8,
+                                          ),
                                         ),
-                                        icon: const Icon(Icons.qr_code, size: 16),
+                                        icon: const Icon(
+                                          Icons.qr_code,
+                                          size: 16,
+                                        ),
                                         label: Text(
                                           'Digital Pass'.trData(context),
-                                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
-                                        onPressed: () => _showTicketPassModal(b),
+                                        onPressed:
+                                            () => _showTicketPassModal(b),
                                       ),
                                     ),
                                     const SizedBox(width: 10),
                                     IconButton(
-                                      icon: const Icon(Icons.cancel_outlined, color: Color(0xFFEF4444), size: 20),
+                                      icon: const Icon(
+                                        Icons.cancel_outlined,
+                                        color: Color(0xFFEF4444),
+                                        size: 20,
+                                      ),
                                       tooltip: 'Cancel Booking'.trData(context),
                                       onPressed: () => _cancelBooking(id),
                                     ),

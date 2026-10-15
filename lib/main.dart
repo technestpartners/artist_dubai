@@ -7,26 +7,32 @@ import 'core/services/live_sync_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Lock orientation to portrait by default
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-
-  // Set system UI overlay style
+  // Set system UI overlay style to eliminate any white status bar flash on launch
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
 
-  // Initialize Dependency Injection
-  await initDependencyInjection();
+  // Lock orientation and initialize dependency injection concurrently
+  await Future.wait([
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]),
+    initDependencyInjection(),
+  ]);
 
-  // Start Real-Time Multi-Device Database Live Sync
-  sl<LiveSyncService>().startMultiDeviceSync();
-
-  // Run Root Application
+  // Run Root Application immediately
   runApp(const ArtistDubaiApp());
+
+  // Start Real-Time Multi-Device Database Live Sync after initial frame render
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    try {
+      sl<LiveSyncService>().startMultiDeviceSync();
+    } catch (_) {}
+  });
 }

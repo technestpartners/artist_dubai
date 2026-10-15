@@ -75,7 +75,10 @@ void main() {
         equals('House of Wisdom & Arts, Dubai'),
       );
       expect(
-        DataTranslator.translate('اليوم • 11:00 صباحاً - 09:00 مساءً', isArabic: false),
+        DataTranslator.translate(
+          'اليوم • 11:00 صباحاً - 09:00 مساءً',
+          isArabic: false,
+        ),
         equals('Today • 11:00 AM - 09:00 PM'),
       );
     });
@@ -102,11 +105,17 @@ void main() {
         equals('اليوم • 11:00 صباحاً - 09:00 مساءً'),
       );
       expect(
-        DataTranslator.translate('This Week • 04:00 PM - 07:00 PM', isArabic: true),
+        DataTranslator.translate(
+          'This Week • 04:00 PM - 07:00 PM',
+          isArabic: true,
+        ),
         equals('هذا الأسبوع • 04:00 مساءً - 07:00 مساءً'),
       );
       expect(
-        DataTranslator.translate('House of Wisdom & Arts, Dubai', isArabic: true),
+        DataTranslator.translate(
+          'House of Wisdom & Arts, Dubai',
+          isArabic: true,
+        ),
         equals('بيت الحكمة والفنون، دبي'),
       );
       expect(
@@ -136,10 +145,7 @@ void main() {
         DataTranslator.translate('Braunschweig', isArabic: true),
         equals('براونشفايغ'),
       );
-      expect(
-        DataTranslator.translate('burj', isArabic: true),
-        equals('برج'),
-      );
+      expect(DataTranslator.translate('burj', isArabic: true), equals('برج'));
       expect(
         DataTranslator.translate('Germany', isArabic: true),
         equals('ألمانيا'),
@@ -149,7 +155,6 @@ void main() {
         equals('لندن'),
       );
     });
-
 
     test('Translates gallery strings and explore pattern matching', () {
       expect(
@@ -169,7 +174,10 @@ void main() {
         equals('مميز'),
       );
       expect(
-        DataTranslator.translate("Explore Shiv's collection of artworks", isArabic: true),
+        DataTranslator.translate(
+          "Explore Shiv's collection of artworks",
+          isArabic: true,
+        ),
         equals('استكشف مجموعة أعمال Shiv الفنية'),
       );
     });
@@ -183,51 +191,87 @@ void main() {
     });
 
     test('Translates test and demo terms accurately to Arabic', () {
-      expect(DataTranslator.translate('Test', isArabic: true), equals('اختبار'));
-      expect(DataTranslator.translate('test', isArabic: true), equals('اختبار'));
-      expect(DataTranslator.translate('tezt', isArabic: true), equals('اختبار'));
-      expect(DataTranslator.translate('demo', isArabic: true), equals('عرض تجريبي'));
-      expect(DataTranslator.translate('sample', isArabic: true), equals('عينة'));
+      expect(
+        DataTranslator.translate('Test', isArabic: true),
+        equals('اختبار'),
+      );
+      expect(
+        DataTranslator.translate('test', isArabic: true),
+        equals('اختبار'),
+      );
+      expect(
+        DataTranslator.translate('tezt', isArabic: true),
+        equals('اختبار'),
+      );
+      expect(
+        DataTranslator.translate('demo', isArabic: true),
+        equals('عرض تجريبي'),
+      );
+      expect(
+        DataTranslator.translate('sample', isArabic: true),
+        equals('عينة'),
+      );
       expect(DataTranslator.translate('good', isArabic: true), equals('جيد'));
     });
 
-    test('ArtEventModel recovers from backend dot translations using _en fallback', () {
-      final json = {
-        'id': 10,
-        'title': '.',
-        'title_en': 'test',
-        'description': '.',
-        'description_en': 'test',
-        'category': 'Gallery Opening',
-        'price': 'Free',
-      };
-      final model = ArtEventModel.fromJson(json);
-      // In Arabic environment, title and description will be translated from 'test' -> 'اختبار'
-      final arTitle = DataTranslator.translate(model.title, isArabic: true);
-      final arDesc = DataTranslator.translate(model.description, isArabic: true);
-      expect(arTitle, equals('اختبار'));
-      expect(arDesc, equals('اختبار'));
-    });
+    test(
+      'ArtEventModel recovers from backend dot translations using _en fallback',
+      () {
+        final json = {
+          'id': 10,
+          'title': '.',
+          'title_en': 'test',
+          'description': '.',
+          'description_en': 'test',
+          'category': 'Gallery Opening',
+          'price': 'Free',
+        };
+        final model = ArtEventModel.fromJson(json);
+        // In Arabic environment, title and description will be translated from 'test' -> 'اختبار'
+        final arTitle = DataTranslator.translate(model.title, isArabic: true);
+        final arDesc = DataTranslator.translate(
+          model.description,
+          isArabic: true,
+        );
+        expect(arTitle, equals('اختبار'));
+        expect(arDesc, equals('اختبار'));
+      },
+    );
 
     test('Translates artwork upload limits and profile messages to Arabic', () {
       expect(
-        DataTranslator.translate('Maximum 6 artwork uploads allowed.', isArabic: true),
+        DataTranslator.translate(
+          'Maximum 6 artwork uploads allowed.',
+          isArabic: true,
+        ),
         equals('الحد الأقصى المسموح به هو 6 أعمال فنية.'),
       );
       expect(
-        DataTranslator.translate('Maximum 6 artwork uploads allowed', isArabic: true),
+        DataTranslator.translate(
+          'Maximum 6 artwork uploads allowed',
+          isArabic: true,
+        ),
         equals('الحد الأقصى المسموح به هو 6 أعمال فنية.'),
       );
       expect(
-        DataTranslator.translate('.Maximum 6 artwork uploads allowed', isArabic: true),
+        DataTranslator.translate(
+          '.Maximum 6 artwork uploads allowed',
+          isArabic: true,
+        ),
         equals('الحد الأقصى المسموح به هو 6 أعمال فنية.'),
       );
       expect(
-        DataTranslator.translate('Artist Profile updated successfully!', isArabic: true),
+        DataTranslator.translate(
+          'Artist Profile updated successfully!',
+          isArabic: true,
+        ),
         equals('تم تحديث الملف الفني بنجاح!'),
       );
       expect(
-        DataTranslator.translate('Artist Profile & 4 Artworks created successfully!', isArabic: true),
+        DataTranslator.translate(
+          'Artist Profile & 4 Artworks created successfully!',
+          isArabic: true,
+        ),
         equals('تم إنشاء الملف الفني وإضافة 4 عمل فني بنجاح!'),
       );
     });

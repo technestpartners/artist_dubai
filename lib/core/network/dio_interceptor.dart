@@ -29,18 +29,25 @@ class DioInterceptor extends Interceptor {
     options.headers['Accept-Language'] = currentLocale;
     options.queryParameters['lang'] = currentLocale;
 
-    if (options.data != null || options.method == 'POST' || options.method == 'PUT' || options.method == 'PATCH') {
+    if (options.data != null ||
+        options.method == 'POST' ||
+        options.method == 'PUT' ||
+        options.method == 'PATCH') {
       options.headers['Content-Type'] = 'application/json';
     }
 
-    loggerService.debug('🌐 [HTTP] ${options.method} ${options.path} (lang: $currentLocale)');
+    loggerService.debug(
+      '🌐 [HTTP] ${options.method} ${options.path} (lang: $currentLocale)',
+    );
 
     return handler.next(options);
   }
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    loggerService.debug('✅ [HTTP ${response.statusCode}] ${response.requestOptions.path}');
+    loggerService.debug(
+      '✅ [HTTP ${response.statusCode}] ${response.requestOptions.path}',
+    );
     return handler.next(response);
   }
 

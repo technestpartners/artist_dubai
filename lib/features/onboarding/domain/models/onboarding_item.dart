@@ -13,9 +13,9 @@ class OnboardingItem {
 
   static const List<OnboardingItem> items = [
     OnboardingItem(
-      title: 'Welcome to Dubai Artists',
+      title: 'Welcome to ⚜️ Artist Dubai ⚜️',
       description:
-          'Discover the vibrant art scene of Dubai and connect with talented local artists',
+          'A modern digital platform connecting artists, art lovers, galleries, museums, and cultural events across Dubai. Discover exhibitions, photography, competitions, and cultural venues—all in one place.\n\nComing soon, don\'t miss out!',
       emoji: '🎨',
       imagePath: 'assets/icons/dashboard/about_us.png',
     ),

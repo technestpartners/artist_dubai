@@ -20,7 +20,7 @@
 </IfModule>
 
 # Block access to sensitive source files, databases, environments, and backups
-<FilesMatch "(?i)\.(sql|sqlite|sqlite3|db|env|git|gitignore|yml|yaml|bak|backup|log|conf|ini|lock|zip|tar|gz)$">
+<FilesMatch "(?i)\.(sql|sqlite|sqlite3|db|env|git|gitignore|yml|yaml|bak|backup|log|conf|ini|lock|zip|tar|gz|sh|bash|ps1|bat|cmd|phar|phtml)$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>

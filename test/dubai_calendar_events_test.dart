@@ -17,12 +17,18 @@ void main() {
   setUp(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     HttpOverrides.global = _TestHttpOverrides();
-    SharedPreferences.setMockInitialValues({'is_logged_in': true, 'user_email': 'test@example.com'});
+    SharedPreferences.setMockInitialValues({
+      'is_logged_in': true,
+      'user_email': 'test@example.com',
+    });
     await sl.reset();
     await initDependencyInjection();
   });
 
-  Widget buildTestableWidget(Widget child, [Locale locale = const Locale('en')]) {
+  Widget buildTestableWidget(
+    Widget child, [
+    Locale locale = const Locale('en'),
+  ]) {
     return ChangeNotifierProvider<LocaleProvider>(
       create: (_) => LocaleProvider(),
       child: MaterialApp(
@@ -33,148 +39,180 @@ void main() {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        supportedLocales: const [
-          Locale('en'),
-          Locale('ar'),
-        ],
+        supportedLocales: const [Locale('en'), Locale('ar')],
         home: child,
       ),
     );
   }
 
   group('Events Screen Layout & Theme Tests', () {
-    testWidgets('EventsView renders What\'s On header, filter pills, and bottom nav in Artist Dubai theme', (tester) async {
-      tester.view.physicalSize = const Size(800, 1200);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'EventsView renders What\'s On header, filter pills, and bottom nav in Artist Dubai theme',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1200);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(buildTestableWidget(const EventsView()));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(buildTestableWidget(const EventsView()));
+        await tester.pumpAndSettle();
 
-      // 1. Header elements
-      expect(find.text("What's on"), findsOneWidget);
-      expect(find.text('Search Events'), findsOneWidget);
+        // 1. Header elements
+        expect(find.text("What's on"), findsOneWidget);
+        expect(find.text('Search Events'), findsOneWidget);
 
-      // 2. Date Filter Pills
-      expect(find.text('Today'), findsOneWidget);
-      expect(find.text('This Week'), findsOneWidget);
-      expect(find.text('Custom Dates'), findsOneWidget);
+        // 2. Date Filter Pills
+        expect(find.text('Today'), findsOneWidget);
+        expect(find.text('This Week'), findsOneWidget);
+        expect(find.text('Custom Dates'), findsOneWidget);
 
-      // 3. Featured section and See All
-      expect(find.text('Featured'), findsOneWidget);
-      expect(find.text('SEE ALL'), findsOneWidget);
+        // 3. Featured section and See All
+        expect(find.text('Featured'), findsOneWidget);
+        expect(find.text('SEE ALL'), findsOneWidget);
 
-      // 4. Secondary Filter Chips
-      expect(find.text('Date'), findsNothing);
-      expect(find.text('Price'), findsNothing);
-      expect(find.text('Category'), findsOneWidget);
-      expect(find.text('Sort By'), findsOneWidget);
+        // 4. Secondary Filter Chips
+        expect(find.text('Date'), findsNothing);
+        expect(find.text('Price'), findsNothing);
+        expect(find.text('Category'), findsOneWidget);
+        expect(find.text('Sort By'), findsOneWidget);
 
-      // Verify no 'Buy Tickets' button on event cards
-      expect(find.text('Buy Tickets'), findsNothing);
-    });
+        // Verify no 'Buy Tickets' button on event cards
+        expect(find.text('Buy Tickets'), findsNothing);
+      },
+    );
 
-    testWidgets('Tapping SEE ALL switches to Search Results view with filter options', (tester) async {
-      tester.view.physicalSize = const Size(800, 1200);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'Tapping SEE ALL switches to Search Results view with filter options',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1200);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(buildTestableWidget(const EventsView()));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(buildTestableWidget(const EventsView()));
+        await tester.pumpAndSettle();
 
-      // Tap SEE ALL
-      await tester.tap(find.text('SEE ALL'));
-      await tester.pumpAndSettle();
+        // Tap SEE ALL
+        await tester.tap(find.text('SEE ALL'));
+        await tester.pumpAndSettle();
 
-      // Search Results
-      expect(find.text('Search Results'), findsOneWidget);
-    });
+        // Search Results
+        expect(find.text('Search Results'), findsOneWidget);
+      },
+    );
 
-    testWidgets('EventDetailView renders hero, purple date/time, expandable description, location, map, and no ticket buttons', (tester) async {
-      tester.view.physicalSize = const Size(800, 1200);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'EventDetailView renders hero, purple date/time, expandable description, location, map, and no ticket buttons',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1200);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      final sample = ArtEventModel.mockEvents.firstWhere((e) => e.title.contains('Ultra Trail'));
+        final sample = ArtEventModel.mockEvents.firstWhere(
+          (e) => e.title.contains('Ultra Trail'),
+        );
 
-      await tester.pumpWidget(buildTestableWidget(EventDetailView(event: sample)));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          buildTestableWidget(EventDetailView(event: sample)),
+        );
+        await tester.pumpAndSettle();
 
-      // Title & Date/Time
-      expect(find.text('Ultra Trail Dubai 2026'), findsOneWidget);
-      expect(find.text('06:00 AM • 27 Nov - 29 Nov'), findsOneWidget);
+        // Title & Date/Time
+        expect(find.text('Ultra Trail Dubai 2026'), findsOneWidget);
+        expect(find.text('06:00 AM • 27 Nov - 29 Nov'), findsOneWidget);
 
-      // Location
-      expect(find.textContaining('Hatta Wadi Hub'), findsWidgets);
+        // Location
+        expect(find.textContaining('Hatta Wadi Hub'), findsWidgets);
 
-      // Read More
-      expect(find.text('Read More'), findsOneWidget);
+        // Read More
+        expect(find.text('Read More'), findsOneWidget);
 
-      // Map labels
-      expect(find.text('Hatta Wadi Hub'), findsWidgets);
-      expect(find.text('Google'), findsOneWidget);
-      expect(find.text('Open Directions'), findsOneWidget);
-      expect(find.text('Birds lake'), findsNothing);
+        // Map labels
+        expect(find.text('Hatta Wadi Hub'), findsWidgets);
+        expect(find.text('Google'), findsOneWidget);
+        expect(find.text('Open Directions'), findsOneWidget);
+        expect(find.text('Birds lake'), findsNothing);
 
-      // Confirm "BUY TICKETS" is completely removed
-      expect(find.text('BUY TICKETS'), findsNothing);
-      expect(find.text('Buy Tickets'), findsNothing);
+        // Confirm "BUY TICKETS" is completely removed
+        expect(find.text('BUY TICKETS'), findsNothing);
+        expect(find.text('Buy Tickets'), findsNothing);
 
-      // Top Actions: Favorite, Share
-      expect(find.byIcon(Icons.favorite_border), findsAtLeastNWidgets(1));
-      expect(find.byIcon(Icons.ios_share), findsOneWidget);
-    });
+        // Top Actions: Favorite, Share
+        expect(find.byIcon(Icons.favorite_border), findsAtLeastNWidgets(1));
+        expect(find.byIcon(Icons.ios_share), findsOneWidget);
+      },
+    );
 
-    testWidgets('EventDetailView formats date/time without duplicate time strings', (tester) async {
-      tester.view.physicalSize = const Size(800, 1200);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'EventDetailView formats date/time without duplicate time strings',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1200);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      // Event 5 has both dateTime: 'Today • 09:00 AM - 06:00 PM' and timeRange: '09:00 AM - 06:00 PM'
-      final event5 = ArtEventModel.mockEvents.firstWhere((e) => e.id == '5');
-      await tester.pumpWidget(buildTestableWidget(EventDetailView(event: event5)));
-      await tester.pumpAndSettle();
+        // Event 5 has both dateTime: 'Today • 09:00 AM - 06:00 PM' and timeRange: '09:00 AM - 06:00 PM'
+        final event5 = ArtEventModel.mockEvents.firstWhere((e) => e.id == '5');
+        await tester.pumpWidget(
+          buildTestableWidget(EventDetailView(event: event5)),
+        );
+        await tester.pumpAndSettle();
 
-      // Must display clean non-duplicated schedule
-      expect(find.text('Today • 09:00 AM - 06:00 PM'), findsWidgets);
-      // Ensure the buggy duplicated string does NOT exist anywhere
-      expect(find.text('09:00 AM - 06:00 PM • Today • 09:00 AM - 06:00 PM'), findsNothing);
-      // Ensure price badge ('Free') is removed from similar event cards
-      expect(find.text('Free'), findsNothing);
-    });
-    testWidgets('Category filter properly filters events including Arabic Calligraphy', (tester) async {
-      tester.view.physicalSize = const Size(800, 1200);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+        // Must display clean non-duplicated schedule
+        expect(find.text('Today • 09:00 AM - 06:00 PM'), findsWidgets);
+        // Ensure the buggy duplicated string does NOT exist anywhere
+        expect(
+          find.text('09:00 AM - 06:00 PM • Today • 09:00 AM - 06:00 PM'),
+          findsNothing,
+        );
+        // Ensure price badge ('Free') is removed from similar event cards
+        expect(find.text('Free'), findsNothing);
+      },
+    );
+    testWidgets(
+      'Category filter properly filters events including Arabic Calligraphy',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1200);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(buildTestableWidget(const EventsView()));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(buildTestableWidget(const EventsView()));
+        await tester.pumpAndSettle();
 
-      // Tap on Category filter chip
-      await tester.tap(find.text('Category'));
-      await tester.pumpAndSettle();
+        // Tap on Category filter chip
+        await tester.tap(find.text('Category'));
+        await tester.pumpAndSettle();
 
-      // Select 'Arabic Calligraphy' from modal sheet
-      final calligraphyTile = find.widgetWithText(ListTile, 'Arabic Calligraphy');
-      expect(calligraphyTile, findsOneWidget);
-      await tester.tap(calligraphyTile);
-      await tester.pumpAndSettle();
+        // Select 'Arabic Calligraphy' from modal sheet
+        final calligraphyTile = find.widgetWithText(
+          ListTile,
+          'Arabic Calligraphy',
+        );
+        expect(calligraphyTile, findsOneWidget);
+        await tester.tap(calligraphyTile);
+        await tester.pumpAndSettle();
 
-      // Verify active badge shows 'Arabic Calligraphy'
-      expect(find.widgetWithText(GestureDetector, 'Arabic Calligraphy'), findsWidgets);
+        // Verify active badge shows 'Arabic Calligraphy'
+        expect(
+          find.widgetWithText(GestureDetector, 'Arabic Calligraphy'),
+          findsWidgets,
+        );
 
-      // Verify matching Arabic Calligraphy event is visible
-      expect(find.text('Dubai International Arabic Calligraphy Biennale'), findsOneWidget);
+        // Verify matching Arabic Calligraphy event is visible
+        expect(
+          find.text('Dubai International Arabic Calligraphy Biennale'),
+          findsOneWidget,
+        );
 
-      // Tap Clear All
-      await tester.tap(find.text('Clear All'));
-      await tester.pumpAndSettle();
+        // Tap Clear All
+        await tester.tap(find.text('Clear All'));
+        await tester.pumpAndSettle();
 
-      // Should return to What's On hub with Featured
-      expect(find.text('Featured'), findsOneWidget);
-    });
+        // Should return to What's On hub with Featured
+        expect(find.text('Featured'), findsOneWidget);
+      },
+    );
 
-    testWidgets('Quick date filter pills and search bar work properly', (tester) async {
+    testWidgets('Quick date filter pills and search bar work properly', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1200);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -195,45 +233,67 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify filtered search result is displayed
-      expect(find.text('Dubai International Arabic Calligraphy Biennale'), findsOneWidget);
+      expect(
+        find.text('Dubai International Arabic Calligraphy Biennale'),
+        findsOneWidget,
+      );
 
       // Clear search via clear icon
       await tester.tap(find.byIcon(Icons.close).first);
       await tester.pumpAndSettle();
     });
 
-    testWidgets('Favorites and Share icons align to the left in Arabic RTL mode', (tester) async {
-      tester.view.physicalSize = const Size(800, 1200);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'Favorites and Share icons align to the left in Arabic RTL mode',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1200);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(
-        buildTestableWidget(
-          const Directionality(
-            textDirection: TextDirection.rtl,
-            child: EventsView(),
+        await tester.pumpWidget(
+          buildTestableWidget(
+            const Directionality(
+              textDirection: TextDirection.rtl,
+              child: EventsView(),
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // 1. Horizontal featured card: icons must be on the left half of the card
-      final featuredShare = find.byIcon(Icons.share_outlined).first;
-      final featuredHeart = find.byIcon(Icons.favorite_border).first;
-      final featuredCardStack = find.ancestor(of: featuredShare, matching: find.byType(Stack)).first;
-      final featuredCardRect = tester.getRect(featuredCardStack);
+        // 1. Horizontal featured card: icons must be on the left half of the card
+        final featuredShare = find.byIcon(Icons.share_outlined).first;
+        final featuredHeart = find.byIcon(Icons.favorite_border).first;
+        final featuredCardStack =
+            find
+                .ancestor(of: featuredShare, matching: find.byType(Stack))
+                .first;
+        final featuredCardRect = tester.getRect(featuredCardStack);
 
-      expect(tester.getTopLeft(featuredShare).dx, lessThan(featuredCardRect.center.dx));
-      expect(tester.getTopLeft(featuredHeart).dx, lessThan(featuredCardRect.center.dx));
+        expect(
+          tester.getTopLeft(featuredShare).dx,
+          lessThan(featuredCardRect.center.dx),
+        );
+        expect(
+          tester.getTopLeft(featuredHeart).dx,
+          lessThan(featuredCardRect.center.dx),
+        );
 
-      // 2. Large event card: icons must also be on the left half of the card
-      final largeShare = find.byIcon(Icons.share_outlined).at(1);
-      final largeHeart = find.byIcon(Icons.favorite_border).at(1);
-      final largeCardStack = find.ancestor(of: largeShare, matching: find.byType(Stack)).first;
-      final largeCardRect = tester.getRect(largeCardStack);
+        // 2. Large event card: icons must also be on the left half of the card
+        final largeShare = find.byIcon(Icons.share_outlined).at(1);
+        final largeHeart = find.byIcon(Icons.favorite_border).at(1);
+        final largeCardStack =
+            find.ancestor(of: largeShare, matching: find.byType(Stack)).first;
+        final largeCardRect = tester.getRect(largeCardStack);
 
-      expect(tester.getTopLeft(largeShare).dx, lessThan(largeCardRect.center.dx));
-      expect(tester.getTopLeft(largeHeart).dx, lessThan(largeCardRect.center.dx));
-    });
+        expect(
+          tester.getTopLeft(largeShare).dx,
+          lessThan(largeCardRect.center.dx),
+        );
+        expect(
+          tester.getTopLeft(largeHeart).dx,
+          lessThan(largeCardRect.center.dx),
+        );
+      },
+    );
   });
 }

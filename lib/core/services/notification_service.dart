@@ -27,9 +27,10 @@ class AppNotificationItem {
     Color? iconBg,
     this.route,
     this.isRead = false,
-  })  : icon = icon ?? NotificationService.resolveIconAndColors(type).$1,
-        iconColor = iconColor ?? NotificationService.resolveIconAndColors(type).$2,
-        iconBg = iconBg ?? NotificationService.resolveIconAndColors(type).$3;
+  }) : icon = icon ?? NotificationService.resolveIconAndColors(type).$1,
+       iconColor =
+           iconColor ?? NotificationService.resolveIconAndColors(type).$2,
+       iconBg = iconBg ?? NotificationService.resolveIconAndColors(type).$3;
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -45,7 +46,9 @@ class AppNotificationItem {
 
   factory AppNotificationItem.fromJson(Map<String, dynamic> json) {
     final type = json['type'] as String? ?? 'general';
-    final (defIcon, defColor, defBg) = NotificationService.resolveIconAndColors(type);
+    final (defIcon, defColor, defBg) = NotificationService.resolveIconAndColors(
+      type,
+    );
     return AppNotificationItem(
       id: json['id']?.toString() ?? '0',
       title: json['title'] as String? ?? 'Notification',
@@ -53,12 +56,11 @@ class AppNotificationItem {
       timeAgo: json['time_ago'] as String? ?? 'Recent',
       type: type,
       icon: defIcon,
-      iconColor: json['icon_color'] != null
-          ? Color(json['icon_color'] as int)
-          : defColor,
-      iconBg: json['icon_bg'] != null
-          ? Color(json['icon_bg'] as int)
-          : defBg,
+      iconColor:
+          json['icon_color'] != null
+              ? Color(json['icon_color'] as int)
+              : defColor,
+      iconBg: json['icon_bg'] != null ? Color(json['icon_bg'] as int) : defBg,
       route: json['route'] as String?,
       isRead: json['is_read'] == true,
     );
@@ -77,7 +79,8 @@ class NotificationService extends ChangeNotifier {
 
   bool get isLoading => _isLoading;
 
-  List<AppNotificationItem> get notifications => List.unmodifiable(_notifications);
+  List<AppNotificationItem> get notifications =>
+      List.unmodifiable(_notifications);
 
   int get unreadCount => _notifications.where((n) => !n.isRead).length;
 
@@ -110,7 +113,9 @@ class NotificationService extends ChangeNotifier {
 
   void _saveToCache() {
     try {
-      final encoded = jsonEncode(_notifications.map((n) => n.toJson()).toList());
+      final encoded = jsonEncode(
+        _notifications.map((n) => n.toJson()).toList(),
+      );
       sl<StorageService>().setString(_cacheKey, encoded);
     } catch (_) {}
   }
@@ -123,7 +128,9 @@ class NotificationService extends ChangeNotifier {
         const Color(0xFF10B981),
         const Color(0xFFD1FAE5),
       );
-    } else if (t.contains('rsvp') || t.contains('booking') || t.contains('request')) {
+    } else if (t.contains('rsvp') ||
+        t.contains('booking') ||
+        t.contains('request')) {
       return (
         Icons.calendar_month_outlined,
         const Color(0xFF6A2777),
@@ -135,7 +142,9 @@ class NotificationService extends ChangeNotifier {
         const Color(0xFFD97706),
         const Color(0xFFFEF3C7),
       );
-    } else if (t.contains('artwork') || t.contains('piece') || t.contains('painting')) {
+    } else if (t.contains('artwork') ||
+        t.contains('piece') ||
+        t.contains('painting')) {
       return (
         Icons.auto_awesome_rounded,
         const Color(0xFFEC4899),
@@ -178,7 +187,10 @@ class NotificationService extends ChangeNotifier {
     _isLoading = true;
     try {
       final api = sl<ApiService>();
-      final res = await api.getNotifications(email: _userEmail, forceRefresh: true);
+      final res = await api.getNotifications(
+        email: _userEmail,
+        forceRefresh: true,
+      );
       final rawList = (res['notifications'] as List<dynamic>?) ?? [];
 
       _notifications.clear();
@@ -189,7 +201,8 @@ class NotificationService extends ChangeNotifier {
         final body = m['body'] as String? ?? '';
         final type = (m['type'] as String? ?? 'general').toLowerCase();
         final route = m['route'] as String?;
-        final isRead = m['is_read'] == true || m['is_read'] == 1 || m['is_read'] == '1';
+        final isRead =
+            m['is_read'] == true || m['is_read'] == 1 || m['is_read'] == '1';
         final timeAgo = m['time_ago'] as String? ?? 'Recent';
 
         final (icon, iconColor, iconBg) = resolveIconAndColors(type);
@@ -278,8 +291,11 @@ class NotificationService extends ChangeNotifier {
     String type = 'general',
     String? route,
   }) {
-    final (resolvedIcon, resolvedIconColor, resolvedIconBg) =
-        resolveIconAndColors(type);
+    final (
+      resolvedIcon,
+      resolvedIconColor,
+      resolvedIconBg,
+    ) = resolveIconAndColors(type);
 
     final id = DateTime.now().millisecondsSinceEpoch.toString();
     _notifications.insert(

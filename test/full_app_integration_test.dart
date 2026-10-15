@@ -51,19 +51,25 @@ void main() {
       expect(find.byType(TextField), findsNWidgets(2));
     });
 
-    testWidgets('2. Register View rendering & input test', (WidgetTester tester) async {
+    testWidgets('2. Register View rendering & input test', (
+      WidgetTester tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(testApp(const RegisterView(initialRole: 'artist')));
+      await tester.pumpWidget(
+        testApp(const RegisterView(initialRole: 'artist')),
+      );
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Create Your Account'), findsOneWidget);
       expect(find.byType(TextField), findsNWidgets(4));
     });
 
-    testWidgets('3. Events View & Event Card Interaction', (WidgetTester tester) async {
+    testWidgets('3. Events View & Event Card Interaction', (
+      WidgetTester tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -76,7 +82,9 @@ void main() {
       expect(find.byIcon(Icons.add), findsOneWidget);
     });
 
-    testWidgets('4. Create Art Event Form Rendering Test', (WidgetTester tester) async {
+    testWidgets('4. Create Art Event Form Rendering Test', (
+      WidgetTester tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -98,7 +106,9 @@ void main() {
       expect(find.text('MY CREATED EVENTS'), findsOneWidget);
     });
 
-    testWidgets('6. Government Portal View & Filtering', (WidgetTester tester) async {
+    testWidgets('6. Government Portal View & Filtering', (
+      WidgetTester tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);

@@ -62,17 +62,16 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: child,
-        theme: ThemeData(
-          useMaterial3: true,
-          fontFamily: 'Inter',
-        ),
+        theme: ThemeData(useMaterial3: true, fontFamily: 'Inter'),
       ),
     );
   }
 
   final testScreens = <String, Size>{
+    'Ultra-Narrow Mobile (300x650)': const Size(300, 650),
     'Compact Mobile (360x640)': const Size(360, 640),
     'Standard Mobile (390x844)': const Size(390, 844),
+    'Fold Display (650x700)': const Size(650, 700),
     'Tablet Portrait (768x1024)': const Size(768, 1024),
     'Desktop Web (1440x900)': const Size(1440, 900),
   };
@@ -83,7 +82,9 @@ void main() {
       final screenSize = entry.value;
 
       group('Screen Profile: $screenName', () {
-        testWidgets('1. Splash Screen & Brand Intro ($screenName)', (tester) async {
+        testWidgets('1. Splash Screen & Brand Intro ($screenName)', (
+          tester,
+        ) async {
           tester.view.physicalSize = screenSize;
           tester.view.devicePixelRatio = 1.0;
           addTearDown(tester.view.resetPhysicalSize);
@@ -95,7 +96,9 @@ void main() {
           expect(find.byType(SplashScreenView), findsOneWidget);
         });
 
-        testWidgets('2. Onboarding Screen Carousel ($screenName)', (tester) async {
+        testWidgets('2. Onboarding Screen Carousel ($screenName)', (
+          tester,
+        ) async {
           tester.view.physicalSize = screenSize;
           tester.view.devicePixelRatio = 1.0;
           addTearDown(tester.view.resetPhysicalSize);
@@ -107,7 +110,9 @@ void main() {
           expect(find.byType(OnboardingView), findsOneWidget);
         });
 
-        testWidgets('3. Home Dashboard 8-Card Matrix ($screenName)', (tester) async {
+        testWidgets('3. Home Dashboard 8-Card Matrix ($screenName)', (
+          tester,
+        ) async {
           tester.view.physicalSize = screenSize;
           tester.view.devicePixelRatio = 1.0;
           addTearDown(tester.view.resetPhysicalSize);
@@ -119,7 +124,9 @@ void main() {
           expect(find.byType(HomeView), findsOneWidget);
         });
 
-        testWidgets('4. Artists Directory & Filter Bar ($screenName)', (tester) async {
+        testWidgets('4. Artists Directory & Filter Bar ($screenName)', (
+          tester,
+        ) async {
           tester.view.physicalSize = screenSize;
           tester.view.devicePixelRatio = 1.0;
           addTearDown(tester.view.resetPhysicalSize);
@@ -131,31 +138,43 @@ void main() {
           expect(find.byType(ArtistsView), findsOneWidget);
         });
 
-        testWidgets('5. Artist Detail Profile & Portfolio Grid ($screenName)', (tester) async {
+        testWidgets('5. Artist Detail Profile & Portfolio Grid ($screenName)', (
+          tester,
+        ) async {
           tester.view.physicalSize = screenSize;
           tester.view.devicePixelRatio = 1.0;
           addTearDown(tester.view.resetPhysicalSize);
 
-          await tester.pumpWidget(buildTestHost(ArtistDetailView(artist: ArtistModel.mockArtists.first)));
+          await tester.pumpWidget(
+            buildTestHost(
+              ArtistDetailView(artist: ArtistModel.mockArtists.first),
+            ),
+          );
           await tester.pump(const Duration(milliseconds: 100));
 
           expect(tester.takeException(), isNull);
           expect(find.byType(ArtistDetailView), findsOneWidget);
         });
 
-        testWidgets('6. Create Artist Profile Multi-Step Form ($screenName)', (tester) async {
+        testWidgets('6. Create Artist Profile Multi-Step Form ($screenName)', (
+          tester,
+        ) async {
           tester.view.physicalSize = screenSize;
           tester.view.devicePixelRatio = 1.0;
           addTearDown(tester.view.resetPhysicalSize);
 
-          await tester.pumpWidget(buildTestHost(const CreateArtistProfileView()));
+          await tester.pumpWidget(
+            buildTestHost(const CreateArtistProfileView()),
+          );
           await tester.pump(const Duration(milliseconds: 100));
 
           expect(tester.takeException(), isNull);
           expect(find.byType(CreateArtistProfileView), findsOneWidget);
         });
 
-        testWidgets('7. Explore Categories 2-Column Grid ($screenName)', (tester) async {
+        testWidgets('7. Explore Categories 2-Column Grid ($screenName)', (
+          tester,
+        ) async {
           tester.view.physicalSize = screenSize;
           tester.view.devicePixelRatio = 1.0;
           addTearDown(tester.view.resetPhysicalSize);
@@ -167,7 +186,9 @@ void main() {
           expect(find.byType(ExploreCategoriesView), findsOneWidget);
         });
 
-        testWidgets('8. Category Detail Tab Switcher ($screenName)', (tester) async {
+        testWidgets('8. Category Detail Tab Switcher ($screenName)', (
+          tester,
+        ) async {
           tester.view.physicalSize = screenSize;
           tester.view.devicePixelRatio = 1.0;
           addTearDown(tester.view.resetPhysicalSize);
@@ -208,7 +229,11 @@ void main() {
           tester.view.devicePixelRatio = 1.0;
           addTearDown(tester.view.resetPhysicalSize);
 
-          await tester.pumpWidget(buildTestHost(EventDetailView(event: ArtEventModel.mockEvents.first)));
+          await tester.pumpWidget(
+            buildTestHost(
+              EventDetailView(event: ArtEventModel.mockEvents.first),
+            ),
+          );
           await tester.pump(const Duration(milliseconds: 100));
 
           expect(tester.takeException(), isNull);
@@ -239,7 +264,9 @@ void main() {
           expect(find.byType(MyEventsView), findsOneWidget);
         });
 
-        testWidgets('14. Events Competition View ($screenName)', (tester) async {
+        testWidgets('14. Events Competition View ($screenName)', (
+          tester,
+        ) async {
           tester.view.physicalSize = screenSize;
           tester.view.devicePixelRatio = 1.0;
           addTearDown(tester.view.resetPhysicalSize);
@@ -251,7 +278,9 @@ void main() {
           expect(find.byType(EventsCompetitionView), findsOneWidget);
         });
 
-        testWidgets('15. Event Photo Galleries View ($screenName)', (tester) async {
+        testWidgets('15. Event Photo Galleries View ($screenName)', (
+          tester,
+        ) async {
           tester.view.physicalSize = screenSize;
           tester.view.devicePixelRatio = 1.0;
           addTearDown(tester.view.resetPhysicalSize);
@@ -263,7 +292,9 @@ void main() {
           expect(find.byType(EventPhotosView), findsOneWidget);
         });
 
-        testWidgets('16. Galleries Art Center Directory ($screenName)', (tester) async {
+        testWidgets('16. Galleries Art Center Directory ($screenName)', (
+          tester,
+        ) async {
           tester.view.physicalSize = screenSize;
           tester.view.devicePixelRatio = 1.0;
           addTearDown(tester.view.resetPhysicalSize);
@@ -275,12 +306,16 @@ void main() {
           expect(find.byType(GalleriesView), findsOneWidget);
         });
 
-        testWidgets('17. Gallery Registration View ($screenName)', (tester) async {
+        testWidgets('17. Gallery Registration View ($screenName)', (
+          tester,
+        ) async {
           tester.view.physicalSize = screenSize;
           tester.view.devicePixelRatio = 1.0;
           addTearDown(tester.view.resetPhysicalSize);
 
-          await tester.pumpWidget(buildTestHost(const GalleryRegistrationView()));
+          await tester.pumpWidget(
+            buildTestHost(const GalleryRegistrationView()),
+          );
           await tester.pump(const Duration(milliseconds: 100));
 
           expect(tester.takeException(), isNull);
@@ -299,7 +334,9 @@ void main() {
           expect(find.byType(GovernmentPortalView), findsOneWidget);
         });
 
-        testWidgets('22. Favorites & Bookmarks Catalog ($screenName)', (tester) async {
+        testWidgets('22. Favorites & Bookmarks Catalog ($screenName)', (
+          tester,
+        ) async {
           tester.view.physicalSize = screenSize;
           tester.view.devicePixelRatio = 1.0;
           addTearDown(tester.view.resetPhysicalSize);
@@ -359,7 +396,9 @@ void main() {
           expect(find.byType(RegisterView), findsOneWidget);
         });
 
-        testWidgets('27. Admin Dashboard KPI & Management View ($screenName)', (tester) async {
+        testWidgets('27. Admin Dashboard KPI & Management View ($screenName)', (
+          tester,
+        ) async {
           tester.view.physicalSize = screenSize;
           tester.view.devicePixelRatio = 1.0;
           addTearDown(tester.view.resetPhysicalSize);
@@ -369,6 +408,14 @@ void main() {
 
           expect(tester.takeException(), isNull);
           expect(find.byType(AdminDashboardView), findsOneWidget);
+
+          // Test switching to Perms tab to audit permissions list cards
+          final permsIcon = find.byIcon(Icons.security);
+          if (permsIcon.evaluate().isNotEmpty) {
+            await tester.tap(permsIcon.first);
+            await tester.pump(const Duration(milliseconds: 100));
+            expect(tester.takeException(), isNull);
+          }
         });
 
         testWidgets('28. About Us View ($screenName)', (tester) async {
@@ -395,7 +442,9 @@ void main() {
           expect(find.byType(PrivacyPolicyView), findsOneWidget);
         });
 
-        testWidgets('30. Terms & Conditions View ($screenName)', (tester) async {
+        testWidgets('30. Terms & Conditions View ($screenName)', (
+          tester,
+        ) async {
           tester.view.physicalSize = screenSize;
           tester.view.devicePixelRatio = 1.0;
           addTearDown(tester.view.resetPhysicalSize);
@@ -407,7 +456,9 @@ void main() {
           expect(find.byType(TermsView), findsOneWidget);
         });
 
-        testWidgets('31. Coming Soon / Fallback View ($screenName)', (tester) async {
+        testWidgets('31. Coming Soon / Fallback View ($screenName)', (
+          tester,
+        ) async {
           tester.view.physicalSize = screenSize;
           tester.view.devicePixelRatio = 1.0;
           addTearDown(tester.view.resetPhysicalSize);

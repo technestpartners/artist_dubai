@@ -13,9 +13,9 @@ class AppTheme {
   ];
 
   static TextTheme _buildTextTheme(TextTheme base) {
-    return GoogleFonts.outfitTextTheme(base).apply(
-      fontFamilyFallback: _fontFallback,
-    );
+    return GoogleFonts.outfitTextTheme(
+      base,
+    ).apply(fontFamilyFallback: _fontFallback);
   }
 
   static ThemeData get darkTheme {
@@ -112,7 +112,8 @@ class AppTheme {
     final surface = isDark ? const Color(0xFF1F142B) : Colors.white;
     final onSurface = isDark ? Colors.white : const Color(0xFF1E293B);
     final rangeBg = isDark ? const Color(0xFF4A1970) : const Color(0xFFF3E8FF);
-    final mutedText = isDark ? const Color(0xFFA19BA8) : const Color(0xFF64748B);
+    final mutedText =
+        isDark ? const Color(0xFFA19BA8) : const Color(0xFF64748B);
 
     return DatePickerThemeData(
       backgroundColor: surface,

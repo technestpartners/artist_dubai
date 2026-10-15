@@ -73,12 +73,15 @@ class _HomeViewState extends State<HomeView> {
   }
 
   void _onCardTap(BuildContext context, MenuCardItem item) {
-    if (item.routeName == '/logout' || (_isLoggedIn && item.routeName == '/login')) {
+    if (item.routeName == '/logout' ||
+        (_isLoggedIn && item.routeName == '/login')) {
       _showLogoutDialog(context);
       return;
     }
 
-    final isAllowed = sl<StorageService>().isMenuPermissionEnabled(item.routeName);
+    final isAllowed = sl<StorageService>().isMenuPermissionEnabled(
+      item.routeName,
+    );
     if (!isAllowed) {
       context.push(
         RouteNames.comingSoon,
@@ -111,7 +114,10 @@ class _HomeViewState extends State<HomeView> {
           backgroundColor: Colors.white,
           surfaceTintColor: Colors.white,
           titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 8,
+          ),
           actionsPadding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
           title: Row(
             children: [
@@ -148,7 +154,10 @@ class _HomeViewState extends State<HomeView> {
               if (userEmail.isNotEmpty || userName.isNotEmpty) ...[
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF5F3FF),
                     borderRadius: BorderRadius.circular(12),
@@ -224,7 +233,10 @@ class _HomeViewState extends State<HomeView> {
               onPressed: () => Navigator.of(dialogContext).pop(),
               style: TextButton.styleFrom(
                 foregroundColor: Colors.grey.shade700,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
               ),
               child: Text(
                 isAr ? 'إلغاء' : 'Cancel',
@@ -249,7 +261,9 @@ class _HomeViewState extends State<HomeView> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
-                        isAr ? 'تم تسجيل الخروج بنجاح' : 'Logged out successfully',
+                        isAr
+                            ? 'تم تسجيل الخروج بنجاح'
+                            : 'Logged out successfully',
                       ),
                       backgroundColor: const Color(0xFF6B1C9B),
                       behavior: SnackBarBehavior.floating,
@@ -268,7 +282,10 @@ class _HomeViewState extends State<HomeView> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
               ),
               child: Text(
                 l10n.signOut,
@@ -308,9 +325,10 @@ class _HomeViewState extends State<HomeView> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final horizontalPadding = rh.horizontalPadding;
-              final gap = rh.isWide
-                  ? 12.0
-                  : (constraints.maxHeight * 0.009).clamp(5.0, 10.0);
+              final gap =
+                  rh.isWide
+                      ? 12.0
+                      : (constraints.maxHeight * 0.009).clamp(5.0, 10.0);
 
               // Tablet/Desktop/Fold: 2 rows × 5 cols  |  Mobile: 5 rows × 2 cols
               final rowCount = rh.isWide ? 2 : 5;
@@ -327,9 +345,13 @@ class _HomeViewState extends State<HomeView> {
                   Expanded(
                     child: Center(
                       child: ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
+                        constraints: BoxConstraints(
+                          maxWidth: rh.contentMaxWidth,
+                        ),
                         child: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: horizontalPadding,
+                          ),
                           child: _buildGrid(context, rowCount, colCount, gap),
                         ),
                       ),
@@ -378,9 +400,6 @@ class _HomeViewState extends State<HomeView> {
   Widget _buildCard(BuildContext context, List<MenuCardItem> items, int idx) {
     if (idx >= items.length) return const SizedBox.expand();
     final item = items[idx];
-    return MenuCardWidget(
-      item: item,
-      onTap: () => _onCardTap(context, item),
-    );
+    return MenuCardWidget(item: item, onTap: () => _onCardTap(context, item));
   }
 }

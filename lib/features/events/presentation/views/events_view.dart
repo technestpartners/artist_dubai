@@ -28,19 +28,19 @@ class EventsView extends StatefulWidget {
 }
 
 class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
-  late int _selectedViewMode; // 0 = What's On hub, 1 = Discover / Filtered results, 2 = Favourites
+  late int
+  _selectedViewMode; // 0 = What's On hub, 1 = Discover / Filtered results, 2 = Favourites
 
   final ScrollController _featuredScrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   String _selectedCategory = 'All Categories';
-  String _activeDateFilter = 'All'; // 'All', 'Today', 'This Week', 'Custom Dates'
+  String _activeDateFilter =
+      'All'; // 'All', 'Today', 'This Week', 'Custom Dates'
   DateTimeRange? _customDateRange;
   String _activePriceFilter = 'All'; // 'All', 'Free', 'Paid'
   String _sortBy = 'Soonest'; // 'Soonest', 'Title A-Z', 'Price'
 
-  static const List<String> _defaultCategories = [
-    'All Categories',
-  ];
+  static const List<String> _defaultCategories = ['All Categories'];
 
   List<ArtEventModel> _allEvents = [];
   late List<String> _categories = List<String>.from(_defaultCategories);
@@ -64,7 +64,10 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
     _likedEventIds.addAll(sl<FavoritesService>().eventIds);
     sl<FavoritesService>().addListener(_onFavoritesChanged);
     final initialEvents = sl<ApiService>().cachedEvents ?? [];
-    _allEvents = initialEvents.where((e) => e.isActive && e.status.toLowerCase() != 'pending').toList();
+    _allEvents =
+        initialEvents
+            .where((e) => e.isActive && e.status.toLowerCase() != 'pending')
+            .toList();
     _fetchEvents();
     _fetchCategories();
 
@@ -88,7 +91,12 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
     _eventsSub = sl<LiveSyncService>().eventsStream.listen((events) {
       if (mounted) {
         setState(() {
-          _allEvents = events.where((e) => e.isActive && e.status.toLowerCase() != 'pending').toList();
+          _allEvents =
+              events
+                  .where(
+                    (e) => e.isActive && e.status.toLowerCase() != 'pending',
+                  )
+                  .toList();
         });
       }
     });
@@ -167,7 +175,10 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
       final effectiveEmail = sl<FavoritesService>().getEffectiveEmail();
       final results = await Future.wait([
         sl<ApiService>().getEvents(forceRefresh: forceRefresh),
-        sl<ApiService>().getFavorites(email: effectiveEmail, forceRefresh: forceRefresh),
+        sl<ApiService>().getFavorites(
+          email: effectiveEmail,
+          forceRefresh: forceRefresh,
+        ),
       ]);
 
       final events = results[0] as List<ArtEventModel>;
@@ -176,7 +187,12 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
 
       if (mounted) {
         setState(() {
-          _allEvents = events.where((e) => e.isActive && e.status.toLowerCase() != 'pending').toList();
+          _allEvents =
+              events
+                  .where(
+                    (e) => e.isActive && e.status.toLowerCase() != 'pending',
+                  )
+                  .toList();
           _likedEventIds.clear();
           _likedEventIds.addAll(sl<FavoritesService>().eventIds);
         });
@@ -235,7 +251,11 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
 
   bool _matchesCategory(ArtEventModel e, String selectedCategory) {
     final sel = selectedCategory.trim().toLowerCase();
-    if (sel == 'all categories' || sel == 'all' || sel == 'الكل' || sel == 'جميع الفئات' || sel.isEmpty) {
+    if (sel == 'all categories' ||
+        sel == 'all' ||
+        sel == 'الكل' ||
+        sel == 'جميع الفئات' ||
+        sel.isEmpty) {
       return true;
     }
 
@@ -249,7 +269,8 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
     }
 
     // Token keyword match (tokens of length >= 4)
-    final selTokens = sel.split(RegExp(r'[\s&,/]+')).where((w) => w.length >= 4).toList();
+    final selTokens =
+        sel.split(RegExp(r'[\s&,/]+')).where((w) => w.length >= 4).toList();
     for (final token in selTokens) {
       if (cat.contains(token)) return true;
       for (final tag in e.tags) {
@@ -258,14 +279,19 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
     }
 
     // Title / Description matching
-    if (e.title.toLowerCase().contains(sel) || e.description.toLowerCase().contains(sel)) {
+    if (e.title.toLowerCase().contains(sel) ||
+        e.description.toLowerCase().contains(sel)) {
       return true;
     }
 
     return false;
   }
 
-  bool _matchesDate(ArtEventModel e, String filter, DateTimeRange? customRange) {
+  bool _matchesDate(
+    ArtEventModel e,
+    String filter,
+    DateTimeRange? customRange,
+  ) {
     if (filter == 'All') return true;
 
     final rawDate = '${e.dateTime} ${e.formattedDate}'.toLowerCase();
@@ -273,10 +299,24 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
     if (filter == 'Today') {
       if (rawDate.contains('today') || rawDate.contains('اليوم')) return true;
       final now = DateTime.now();
-      final todayIso = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final todayIso =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
       if (rawDate.contains(todayIso)) return true;
 
-      final months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+      final months = [
+        'jan',
+        'feb',
+        'mar',
+        'apr',
+        'may',
+        'jun',
+        'jul',
+        'aug',
+        'sep',
+        'oct',
+        'nov',
+        'dec',
+      ];
       final mStr = months[now.month - 1];
       final dayStr = now.day.toString();
       if (rawDate.contains(mStr) && rawDate.contains(dayStr)) return true;
@@ -285,13 +325,29 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
     }
 
     if (filter == 'This Week') {
-      if (rawDate.contains('today') || rawDate.contains('this week') || rawDate.contains('هذا الأسبوع') || rawDate.contains('tomorrow')) {
+      if (rawDate.contains('today') ||
+          rawDate.contains('this week') ||
+          rawDate.contains('هذا الأسبوع') ||
+          rawDate.contains('tomorrow')) {
         return true;
       }
       final now = DateTime.now();
       for (int i = 0; i < 7; i++) {
         final day = now.add(Duration(days: i));
-        final months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+        final months = [
+          'jan',
+          'feb',
+          'mar',
+          'apr',
+          'may',
+          'jun',
+          'jul',
+          'aug',
+          'sep',
+          'oct',
+          'nov',
+          'dec',
+        ];
         final mStr = months[day.month - 1];
         final dayStr = day.day.toString();
         if (rawDate.contains(mStr) && rawDate.contains(dayStr)) return true;
@@ -304,7 +360,20 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
       final start = customRange.start;
       final end = customRange.end;
       for (var d = start; !d.isAfter(end); d = d.add(const Duration(days: 1))) {
-        final months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+        final months = [
+          'jan',
+          'feb',
+          'mar',
+          'apr',
+          'may',
+          'jun',
+          'jul',
+          'aug',
+          'sep',
+          'oct',
+          'nov',
+          'dec',
+        ];
         final mStr = months[d.month - 1];
         final dayStr = d.day.toString();
         if (rawDate.contains(mStr) && rawDate.contains(dayStr)) return true;
@@ -320,10 +389,13 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
     final isoMatches = RegExp(r'\b\d{4}-\d{2}-\d{2}\b').allMatches(e.dateTime);
     if (isoMatches.isNotEmpty) {
       try {
-        final dates = isoMatches.map((m) => DateTime.parse(m.group(0)!)).toList();
+        final dates =
+            isoMatches.map((m) => DateTime.parse(m.group(0)!)).toList();
         if (dates.length == 1) {
           final d = dates.first;
-          return d.year == target.year && d.month == target.month && d.day == target.day;
+          return d.year == target.year &&
+              d.month == target.month &&
+              d.day == target.day;
         } else if (dates.length >= 2) {
           final start = dates[0];
           final end = dates[1];
@@ -337,7 +409,12 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
   bool _matchesPrice(ArtEventModel e, String filter) {
     if (filter == 'All') return true;
     final p = e.price.trim().toLowerCase();
-    final isFree = p == 'free' || p == '0' || p == '0 aed' || p.contains('مجاني') || p.isEmpty;
+    final isFree =
+        p == 'free' ||
+        p == '0' ||
+        p == '0 aed' ||
+        p.contains('مجاني') ||
+        p.isEmpty;
     if (filter == 'Free') return isFree;
     if (filter == 'Paid') return !isFree;
     return true;
@@ -346,44 +423,56 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
   List<ArtEventModel> _getFilteredEvents() {
     final query = _searchController.text.trim().toLowerCase();
 
-    var list = _combinedEvents.where((e) {
-      if (!e.isActive) return false;
-      final st = e.status.toLowerCase().trim();
-      if (st == 'cancelled' || st == 'inactive' || st == 'draft' || st == 'deleted' || st == 'pending') {
-        return false;
-      }
+    var list =
+        _combinedEvents.where((e) {
+          if (!e.isActive) return false;
+          final st = e.status.toLowerCase().trim();
+          if (st == 'cancelled' ||
+              st == 'inactive' ||
+              st == 'draft' ||
+              st == 'deleted' ||
+              st == 'pending') {
+            return false;
+          }
 
-      // 1. Category Filter
-      if (!_matchesCategory(e, _selectedCategory)) return false;
+          // 1. Category Filter
+          if (!_matchesCategory(e, _selectedCategory)) return false;
 
-      // 2. Query Filter
-      if (query.isNotEmpty) {
-        final matchesQuery = e.title.toLowerCase().contains(query) ||
-            e.localizedTitle(context).toLowerCase().contains(query) ||
-            e.description.toLowerCase().contains(query) ||
-            e.category.toLowerCase().contains(query) ||
-            e.organizer.toLowerCase().contains(query) ||
-            e.location.toLowerCase().contains(query) ||
-            e.tags.any((t) => t.toLowerCase().contains(query));
-        if (!matchesQuery) return false;
-      }
+          // 2. Query Filter
+          if (query.isNotEmpty) {
+            final matchesQuery =
+                e.title.toLowerCase().contains(query) ||
+                e.localizedTitle(context).toLowerCase().contains(query) ||
+                e.description.toLowerCase().contains(query) ||
+                e.category.toLowerCase().contains(query) ||
+                e.organizer.toLowerCase().contains(query) ||
+                e.location.toLowerCase().contains(query) ||
+                e.tags.any((t) => t.toLowerCase().contains(query));
+            if (!matchesQuery) return false;
+          }
 
-      // 3. Price Filter
-      if (!_matchesPrice(e, _activePriceFilter)) return false;
+          // 3. Price Filter
+          if (!_matchesPrice(e, _activePriceFilter)) return false;
 
-      // 4. Date Filter
-      if (!_matchesDate(e, _activeDateFilter, _customDateRange)) return false;
+          // 4. Date Filter
+          if (!_matchesDate(e, _activeDateFilter, _customDateRange)) {
+            return false;
+          }
 
-      return true;
-    }).toList();
+          return true;
+        }).toList();
 
     // Sorting
     if (_sortBy == 'Title (A - Z)' || _sortBy == 'Title A-Z') {
       list.sort((a, b) => a.title.compareTo(b.title));
     } else if (_sortBy == 'Price: Low to High') {
-      list.sort((a, b) => _extractPrice(a.price).compareTo(_extractPrice(b.price)));
+      list.sort(
+        (a, b) => _extractPrice(a.price).compareTo(_extractPrice(b.price)),
+      );
     } else if (_sortBy == 'Price: High to Low' || _sortBy == 'Price') {
-      list.sort((a, b) => _extractPrice(b.price).compareTo(_extractPrice(a.price)));
+      list.sort(
+        (a, b) => _extractPrice(b.price).compareTo(_extractPrice(a.price)),
+      );
     } else if (_sortBy == 'Most Popular') {
       list.sort((a, b) => b.attendeesCount.compareTo(a.attendeesCount));
     }
@@ -450,7 +539,10 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
           onRefresh: () => _fetchEvents(forceRefresh: true),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: rh.horizontalPadding, vertical: 12.0),
+            padding: EdgeInsets.symmetric(
+              horizontal: rh.horizontalPadding,
+              vertical: 12.0,
+            ),
             child: Center(
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
@@ -474,8 +566,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                     const SizedBox(height: 20),
 
                     // 5. Active Filter Badges (if filtered)
-                    if (_isFilterActive)
-                      _buildActiveFilterBadges(),
+                    if (_isFilterActive) _buildActiveFilterBadges(),
 
                     // 6. Main Content: If search/filter active or Discover mode selected, show Search Results; else show Featured + Recommended
                     if (_selectedViewMode == 1 || _isFilterActive)
@@ -510,7 +601,11 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
             borderRadius: BorderRadius.circular(20),
             onTap: () => Navigator.pop(context),
             child: const Padding(
-              padding: EdgeInsetsDirectional.only(end: 12.0, top: 4.0, bottom: 4.0),
+              padding: EdgeInsetsDirectional.only(
+                end: 12.0,
+                top: 4.0,
+                bottom: 4.0,
+              ),
               child: Icon(Icons.arrow_back, color: Colors.white, size: 22),
             ),
           ),
@@ -598,24 +693,40 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
       child: TextField(
         controller: _searchController,
         onChanged: (_) => setState(() {}),
-        style: const TextStyle(color: Colors.black, fontSize: 14.5, fontWeight: FontWeight.w500),
+        style: const TextStyle(
+          color: Colors.black,
+          fontSize: 14.5,
+          fontWeight: FontWeight.w500,
+        ),
         cursorColor: _primaryPurple,
         decoration: InputDecoration(
           hintText: 'Search Events'.trData(context),
           hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 14.5),
-          prefixIcon: const Icon(Icons.search, color: Color(0xFF64748B), size: 22),
-          suffixIcon: _searchController.text.isNotEmpty
-              ? GestureDetector(
-                  onTap: () {
-                    _searchController.clear();
-                    setState(() {});
-                  },
-                  child: const Icon(Icons.close, color: Color(0xFF64748B), size: 20),
-                )
-              : null,
+          prefixIcon: const Icon(
+            Icons.search,
+            color: Color(0xFF64748B),
+            size: 22,
+          ),
+          suffixIcon:
+              _searchController.text.isNotEmpty
+                  ? GestureDetector(
+                    onTap: () {
+                      _searchController.clear();
+                      setState(() {});
+                    },
+                    child: const Icon(
+                      Icons.close,
+                      color: Color(0xFF64748B),
+                      size: 20,
+                    ),
+                  )
+                  : null,
           filled: true,
           fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
@@ -637,7 +748,8 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
             isSelected: _activeDateFilter == 'Today',
             onTap: () {
               setState(() {
-                _activeDateFilter = _activeDateFilter == 'Today' ? 'All' : 'Today';
+                _activeDateFilter =
+                    _activeDateFilter == 'Today' ? 'All' : 'Today';
               });
             },
           ),
@@ -649,7 +761,8 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
             isSelected: _activeDateFilter == 'This Week',
             onTap: () {
               setState(() {
-                _activeDateFilter = _activeDateFilter == 'This Week' ? 'All' : 'This Week';
+                _activeDateFilter =
+                    _activeDateFilter == 'This Week' ? 'All' : 'This Week';
               });
             },
           ),
@@ -783,10 +896,16 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.18),
+            color:
+                isSelected
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: 0.18),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.35),
+              color:
+                  isSelected
+                      ? Colors.white
+                      : Colors.white.withValues(alpha: 0.35),
               width: 1.2,
             ),
           ),
@@ -815,15 +934,22 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
       child: Row(
         children: [
           _buildFilterChip(
-            label: _selectedCategory == 'All Categories' ? 'Category'.trData(context) : _selectedCategory.trData(context),
+            label:
+                _selectedCategory == 'All Categories'
+                    ? 'Category'.trData(context)
+                    : _selectedCategory.trData(context),
             isActive: _selectedCategory != 'All Categories',
             onTap: _showCategoryFilterDialog,
           ),
           const SizedBox(width: 8),
           _buildFilterChip(
-            label: _sortBy == 'Soonest'
-                ? (Localizations.maybeLocaleOf(context)?.languageCode == 'ar' ? 'ترتيب حسب' : 'Sort By')
-                : _sortBy.trData(context),
+            label:
+                _sortBy == 'Soonest'
+                    ? (Localizations.maybeLocaleOf(context)?.languageCode ==
+                            'ar'
+                        ? 'ترتيب حسب'
+                        : 'Sort By')
+                    : _sortBy.trData(context),
             isActive: _sortBy != 'Soonest',
             onTap: _showSortDialog,
           ),
@@ -845,7 +971,8 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
           color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.3),
+            color:
+                isActive ? Colors.white : Colors.white.withValues(alpha: 0.3),
             width: 1.0,
           ),
         ),
@@ -872,23 +999,28 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
         children: [
           if (_activeDateFilter != 'All')
             _buildActiveBadge(
-              label: _activeDateFilter == 'Custom Dates' && _customDateRange != null
-                  ? '${_customDateRange!.start.day}/${_customDateRange!.start.month} - ${_customDateRange!.end.day}/${_customDateRange!.end.month}'
-                  : _activeDateFilter.trData(context),
-              onRemove: () => setState(() {
-                _activeDateFilter = 'All';
-                _customDateRange = null;
-              }),
+              label:
+                  _activeDateFilter == 'Custom Dates' &&
+                          _customDateRange != null
+                      ? '${_customDateRange!.start.day}/${_customDateRange!.start.month} - ${_customDateRange!.end.day}/${_customDateRange!.end.month}'
+                      : _activeDateFilter.trData(context),
+              onRemove:
+                  () => setState(() {
+                    _activeDateFilter = 'All';
+                    _customDateRange = null;
+                  }),
             ),
           if (_activePriceFilter != 'All')
             _buildActiveBadge(
-              label: (_activePriceFilter == 'Free' ? 'Free Admission' : 'Paid').trData(context),
+              label: (_activePriceFilter == 'Free' ? 'Free Admission' : 'Paid')
+                  .trData(context),
               onRemove: () => setState(() => _activePriceFilter = 'All'),
             ),
           if (_selectedCategory != 'All Categories')
             _buildActiveBadge(
               label: _selectedCategory.trData(context),
-              onRemove: () => setState(() => _selectedCategory = 'All Categories'),
+              onRemove:
+                  () => setState(() => _selectedCategory = 'All Categories'),
             ),
           if (_searchController.text.isNotEmpty)
             _buildActiveBadge(
@@ -900,7 +1032,10 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildActiveBadge({required String label, required VoidCallback onRemove}) {
+  Widget _buildActiveBadge({
+    required String label,
+    required VoidCallback onRemove,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
@@ -912,7 +1047,11 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
         children: [
           Text(
             label,
-            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: _primaryPurple),
+            style: const TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              color: _primaryPurple,
+            ),
           ),
           const SizedBox(width: 4),
           GestureDetector(
@@ -934,12 +1073,20 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
         alignment: Alignment.center,
         child: Column(
           children: [
-            const Icon(Icons.event_busy_outlined, size: 52, color: Colors.white70),
+            const Icon(
+              Icons.event_busy_outlined,
+              size: 52,
+              color: Colors.white70,
+            ),
             const SizedBox(height: 14),
             Text(
               'No events available currently.'.trData(context),
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, color: Color(0xFFE2D6F5), fontWeight: FontWeight.w700),
+              style: const TextStyle(
+                fontSize: 16,
+                color: Color(0xFFE2D6F5),
+                fontWeight: FontWeight.w700,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
@@ -952,13 +1099,21 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
               ElevatedButton.icon(
                 onPressed: _clearAllFilters,
                 icon: const Icon(Icons.refresh, size: 16),
-                label: Text('Clear All Filters'.trData(context), style: const TextStyle(fontWeight: FontWeight.w700)),
+                label: Text(
+                  'Clear All Filters'.trData(context),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: _primaryPurple,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 11,
+                  ),
                 ),
               ),
             ],
@@ -968,9 +1123,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
     }
 
     final featuredEvents = events;
-    final recommendedEvents = events.length > 2
-        ? events.sublist(2)
-        : events;
+    final recommendedEvents = events.length > 2 ? events.sublist(2) : events;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -997,8 +1150,12 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                       onTap: () {
                         if (_featuredScrollController.hasClients) {
                           _featuredScrollController.animateTo(
-                            (_featuredScrollController.offset - 264)
-                                .clamp(0.0, _featuredScrollController.position.maxScrollExtent),
+                            (_featuredScrollController.offset - 264).clamp(
+                              0.0,
+                              _featuredScrollController
+                                  .position
+                                  .maxScrollExtent,
+                            ),
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeOut,
                           );
@@ -1011,7 +1168,11 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                           color: Colors.white.withValues(alpha: 0.18),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.chevron_left, color: Colors.white, size: 20),
+                        child: const Icon(
+                          Icons.chevron_left,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -1020,8 +1181,12 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                       onTap: () {
                         if (_featuredScrollController.hasClients) {
                           _featuredScrollController.animateTo(
-                            (_featuredScrollController.offset + 264)
-                                .clamp(0.0, _featuredScrollController.position.maxScrollExtent),
+                            (_featuredScrollController.offset + 264).clamp(
+                              0.0,
+                              _featuredScrollController
+                                  .position
+                                  .maxScrollExtent,
+                            ),
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeOut,
                           );
@@ -1034,7 +1199,11 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                           color: Colors.white.withValues(alpha: 0.18),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.chevron_right, color: Colors.white, size: 20),
+                        child: const Icon(
+                          Icons.chevron_right,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -1062,9 +1231,14 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
             height: 270,
             child: Listener(
               onPointerSignal: (pointerSignal) {
-                if (pointerSignal is PointerScrollEvent && _featuredScrollController.hasClients) {
-                  final target = (_featuredScrollController.offset + pointerSignal.scrollDelta.dy)
-                      .clamp(0.0, _featuredScrollController.position.maxScrollExtent);
+                if (pointerSignal is PointerScrollEvent &&
+                    _featuredScrollController.hasClients) {
+                  final target = (_featuredScrollController.offset +
+                          pointerSignal.scrollDelta.dy)
+                      .clamp(
+                        0.0,
+                        _featuredScrollController.position.maxScrollExtent,
+                      );
                   _featuredScrollController.jumpTo(target);
                 }
               },
@@ -1079,7 +1253,9 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                 ),
                 child: ListView.separated(
                   controller: _featuredScrollController,
-                  physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
+                  ),
                   scrollDirection: Axis.horizontal,
                   itemCount: featuredEvents.length,
                   separatorBuilder: (_, __) => const SizedBox(width: 14),
@@ -1148,12 +1324,20 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                   child: SizedBox(
                     height: 175,
                     width: 226,
-                    child: event.imageUrl != null && event.imageUrl!.isNotEmpty
-                        ? AppCachedImage(imageUrl: event.imageUrl!, fit: BoxFit.cover)
-                        : Container(
-                            color: const Color(0xFFF1F5F9),
-                            child: const Icon(Icons.event, size: 48, color: Colors.grey),
-                          ),
+                    child:
+                        event.imageUrl != null && event.imageUrl!.isNotEmpty
+                            ? AppCachedImage(
+                              imageUrl: event.imageUrl!,
+                              fit: BoxFit.cover,
+                            )
+                            : Container(
+                              color: const Color(0xFFF1F5F9),
+                              child: const Icon(
+                                Icons.event,
+                                size: 48,
+                                color: Colors.grey,
+                              ),
+                            ),
                   ),
                 ),
                 PositionedDirectional(
@@ -1231,7 +1415,8 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
 
             // Date
             Text(
-              (event.dateTime.isNotEmpty ? event.dateTime : event.formattedDate).trData(context),
+              (event.dateTime.isNotEmpty ? event.dateTime : event.formattedDate)
+                  .trData(context),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -1277,12 +1462,20 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                   child: SizedBox(
                     height: 190,
                     width: double.infinity,
-                    child: event.imageUrl != null && event.imageUrl!.isNotEmpty
-                        ? AppCachedImage(imageUrl: event.imageUrl!, fit: BoxFit.cover)
-                        : Container(
-                            color: const Color(0xFFF1F5F9),
-                            child: const Icon(Icons.event, size: 50, color: Colors.grey),
-                          ),
+                    child:
+                        event.imageUrl != null && event.imageUrl!.isNotEmpty
+                            ? AppCachedImage(
+                              imageUrl: event.imageUrl!,
+                              fit: BoxFit.cover,
+                            )
+                            : Container(
+                              color: const Color(0xFFF1F5F9),
+                              child: const Icon(
+                                Icons.event,
+                                size: 50,
+                                color: Colors.grey,
+                              ),
+                            ),
                   ),
                 ),
                 PositionedDirectional(
@@ -1356,7 +1549,8 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
             const SizedBox(height: 4),
 
             Text(
-              (event.dateTime.isNotEmpty ? event.dateTime : event.formattedDate).trData(context),
+              (event.dateTime.isNotEmpty ? event.dateTime : event.formattedDate)
+                  .trData(context),
               style: const TextStyle(
                 fontSize: 13.5,
                 fontWeight: FontWeight.w500,
@@ -1392,7 +1586,10 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                 onPressed: _clearAllFilters,
                 child: Text(
                   'Clear All'.trData(context),
-                  style: const TextStyle(color: Color(0xFFE2D6F5), fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    color: Color(0xFFE2D6F5),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
           ],
@@ -1405,16 +1602,25 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
             alignment: Alignment.center,
             child: Column(
               children: [
-                const Icon(Icons.event_busy_outlined, size: 52, color: Colors.white70),
+                const Icon(
+                  Icons.event_busy_outlined,
+                  size: 52,
+                  color: Colors.white70,
+                ),
                 const SizedBox(height: 14),
                 Text(
                   'No events found matching your search.'.trData(context),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 16, color: Color(0xFFE2D6F5), fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Color(0xFFE2D6F5),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Try adjusting your dates, category, or price filters.'.trData(context),
+                  'Try adjusting your dates, category, or price filters.'
+                      .trData(context),
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 13, color: Colors.white60),
                 ),
@@ -1422,13 +1628,21 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                 ElevatedButton.icon(
                   onPressed: _clearAllFilters,
                   icon: const Icon(Icons.refresh, size: 16),
-                  label: Text('Clear All Filters'.trData(context), style: const TextStyle(fontWeight: FontWeight.w700)),
+                  label: Text(
+                    'Clear All Filters'.trData(context),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: _primaryPurple,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 11,
+                    ),
                   ),
                 ),
               ],
@@ -1440,7 +1654,8 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
             physics: const NeverScrollableScrollPhysics(),
             itemCount: events.length,
             separatorBuilder: (_, __) => const SizedBox(height: 18),
-            itemBuilder: (context, index) => _buildLargeEventCard(events[index]),
+            itemBuilder:
+                (context, index) => _buildLargeEventCard(events[index]),
           ),
       ],
     );
@@ -1461,11 +1676,15 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
         String catSearch = '';
         return StatefulBuilder(
           builder: (bottomCtx, setModalState) {
-            final displayCats = _categories.where((c) {
-              if (catSearch.isEmpty) return true;
-              return c.toLowerCase().contains(catSearch.toLowerCase()) ||
-                  c.trData(context).toLowerCase().contains(catSearch.toLowerCase());
-            }).toList();
+            final displayCats =
+                _categories.where((c) {
+                  if (catSearch.isEmpty) return true;
+                  return c.toLowerCase().contains(catSearch.toLowerCase()) ||
+                      c
+                          .trData(context)
+                          .toLowerCase()
+                          .contains(catSearch.toLowerCase());
+                }).toList();
 
             return Container(
               height: MediaQuery.of(ctx).size.height * 0.65,
@@ -1489,17 +1708,27 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                     children: [
                       Text(
                         'Filter by Category'.trData(context),
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
                       ),
                       if (_selectedCategory != 'All Categories')
                         GestureDetector(
                           onTap: () {
                             Navigator.pop(ctx);
-                            setState(() => _selectedCategory = 'All Categories');
+                            setState(
+                              () => _selectedCategory = 'All Categories',
+                            );
                           },
                           child: Text(
                             'Reset'.trData(context),
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFFE2D6F5)),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFFE2D6F5),
+                            ),
                           ),
                         ),
                     ],
@@ -1507,16 +1736,31 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                   const SizedBox(height: 12),
                   // Search within categories
                   TextField(
-                    onChanged: (val) => setModalState(() => catSearch = val.trim()),
-                    style: const TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.w500),
+                    onChanged:
+                        (val) => setModalState(() => catSearch = val.trim()),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.black,
+                      fontWeight: FontWeight.w500,
+                    ),
                     cursorColor: _primaryPurple,
                     decoration: InputDecoration(
                       hintText: 'Search categories...'.trData(context),
-                      hintStyle: const TextStyle(fontSize: 13.5, color: Color(0xFF64748B)),
-                      prefixIcon: const Icon(Icons.search, size: 20, color: Color(0xFF64748B)),
+                      hintStyle: const TextStyle(
+                        fontSize: 13.5,
+                        color: Color(0xFF64748B),
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        size: 20,
+                        color: Color(0xFF64748B),
+                      ),
                       filled: true,
                       fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide.none,
@@ -1527,21 +1771,39 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                   Expanded(
                     child: ListView.separated(
                       itemCount: displayCats.length,
-                      separatorBuilder: (_, __) => Divider(height: 1, color: Colors.white.withValues(alpha: 0.15)),
+                      separatorBuilder:
+                          (_, __) => Divider(
+                            height: 1,
+                            color: Colors.white.withValues(alpha: 0.15),
+                          ),
                       itemBuilder: (context, index) {
                         final cat = displayCats[index];
                         final isSel = _selectedCategory == cat;
                         return ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           title: Text(
                             cat.trData(context),
                             style: TextStyle(
                               fontSize: 15,
-                              fontWeight: isSel ? FontWeight.w800 : FontWeight.w500,
-                              color: isSel ? Colors.white : const Color(0xFFE2D6F5),
+                              fontWeight:
+                                  isSel ? FontWeight.w800 : FontWeight.w500,
+                              color:
+                                  isSel
+                                      ? Colors.white
+                                      : const Color(0xFFE2D6F5),
                             ),
                           ),
-                          trailing: isSel ? const Icon(Icons.check_circle, color: Colors.white, size: 20) : null,
+                          trailing:
+                              isSel
+                                  ? const Icon(
+                                    Icons.check_circle,
+                                    color: Colors.white,
+                                    size: 20,
+                                  )
+                                  : null,
                           onTap: () {
                             Navigator.pop(ctx);
                             setState(() => _selectedCategory = cat);
@@ -1587,21 +1849,42 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                 const SizedBox(height: 14),
                 Text(
                   'Sort Events'.trData(context),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 16),
-                for (final opt in ['Soonest', 'Title (A - Z)', 'Price: Low to High', 'Price: High to Low', 'Most Popular']) ...[
+                for (final opt in [
+                  'Soonest',
+                  'Title (A - Z)',
+                  'Price: Low to High',
+                  'Price: High to Low',
+                  'Most Popular',
+                ]) ...[
                   ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 6),
                     title: Text(
                       opt.trData(context),
                       style: TextStyle(
                         fontSize: 15,
-                        fontWeight: _sortBy == opt ? FontWeight.w800 : FontWeight.w500,
-                        color: _sortBy == opt ? Colors.white : const Color(0xFFE2D6F5),
+                        fontWeight:
+                            _sortBy == opt ? FontWeight.w800 : FontWeight.w500,
+                        color:
+                            _sortBy == opt
+                                ? Colors.white
+                                : const Color(0xFFE2D6F5),
                       ),
                     ),
-                    trailing: _sortBy == opt ? const Icon(Icons.check_circle, color: Colors.white, size: 20) : null,
+                    trailing:
+                        _sortBy == opt
+                            ? const Icon(
+                              Icons.check_circle,
+                              color: Colors.white,
+                              size: 20,
+                            )
+                            : null,
                     onTap: () {
                       Navigator.pop(ctx);
                       setState(() => _sortBy = opt);

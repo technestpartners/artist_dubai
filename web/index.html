@@ -31,7 +31,27 @@
   <title>Artist Dubai - UAE Visual Art & Cultural Portal</title>
   <link rel="manifest" href="manifest.json">
 </head>
-<body style="margin: 0; padding: 0; background-color: #FAFAFA;">
+<body style="margin: 0; padding: 0; background-color: #160230; overflow: hidden;">
+  <div id="loading-splash" style="position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background-color: #160230; z-index: 99999; pointer-events: none;">
+    <picture style="width: 100vw; height: 100vh;">
+      <source media="(min-aspect-ratio: 1.15)" srcset="assets/images/splash_screen_art_wide.png">
+      <source media="(min-aspect-ratio: 0.65)" srcset="assets/images/splash_screen_art_tablet.png">
+      <source media="(min-aspect-ratio: 0.52)" srcset="assets/images/splash_screen_art_standard.png">
+      <source media="(min-aspect-ratio: 0.455)" srcset="assets/images/splash_screen_art_modern.png">
+      <source media="(max-aspect-ratio: 0.455)" srcset="assets/images/splash_screen_art_tall.png">
+      <img src="assets/images/splash_screen_art.png" alt="Artist Dubai Splash" style="width: 100vw; height: 100vh; object-fit: cover; display: block;" />
+    </picture>
+  </div>
+  <script>
+    window.addEventListener('flutter-first-frame', function() {
+      var splash = document.getElementById('loading-splash');
+      if (splash) {
+        splash.style.opacity = '0';
+        splash.style.transition = 'opacity 0.25s ease-out';
+        setTimeout(function() { splash.remove(); }, 250);
+      }
+    });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

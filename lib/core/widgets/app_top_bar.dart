@@ -77,7 +77,11 @@ class _AppTopBarState extends State<AppTopBar> {
       final cachedId = storage.getString('artist_profile_id');
       if (mounted) {
         setState(() {
-          _hasArtistProfile = _isLoggedIn && email.isNotEmpty && cachedHas && (cachedId != null && cachedId.isNotEmpty);
+          _hasArtistProfile =
+              _isLoggedIn &&
+              email.isNotEmpty &&
+              cachedHas &&
+              (cachedId != null && cachedId.isNotEmpty);
           _myArtistId = _hasArtistProfile ? cachedId : null;
         });
       }
@@ -138,10 +142,7 @@ class _AppTopBarState extends State<AppTopBar> {
         }
         context.push(
           RouteNames.artistRegistration,
-          extra: {
-            'isEditing': true,
-            'artistId': artistId,
-          },
+          extra: {'isEditing': true, 'artistId': artistId},
         );
         break;
 
@@ -189,7 +190,8 @@ class _AppTopBarState extends State<AppTopBar> {
       final storedRole = (storage.getString('user_role') ?? '').toLowerCase();
       userEmail = storage.getString('user_email') ?? '';
       final lowerEmail = userEmail.toLowerCase().trim();
-      isAdmin = storedAdmin ||
+      isAdmin =
+          storedAdmin ||
           storedRole.contains('admin') ||
           lowerEmail.contains('admin') ||
           lowerEmail == 'admin@artistdubai.com' ||
@@ -298,26 +300,43 @@ class _AppTopBarState extends State<AppTopBar> {
                   ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF5E227A).withValues(alpha: 0.08),
-                    border: Border.all(color: const Color(0xFF5E227A), width: isCompact ? 1.0 : 1.2),
+                    border: Border.all(
+                      color: const Color(0xFF5E227A),
+                      width: isCompact ? 1.0 : 1.2,
+                    ),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.language, size: isCompact ? 13 : 15, color: const Color(0xFF5E227A)),
+                      Icon(
+                        Icons.language,
+                        size: isCompact ? 13 : 15,
+                        color: const Color(0xFF5E227A),
+                      ),
                       SizedBox(width: isCompact ? 3 : 5),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1.5,
+                        ),
                         decoration: BoxDecoration(
-                          color: !isArabic ? const Color(0xFF5E227A) : Colors.transparent,
+                          color:
+                              !isArabic
+                                  ? const Color(0xFF5E227A)
+                                  : Colors.transparent,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
                           'EN',
                           style: TextStyle(
-                            color: !isArabic ? Colors.white : const Color(0xFF5E227A),
+                            color:
+                                !isArabic
+                                    ? Colors.white
+                                    : const Color(0xFF5E227A),
                             fontSize: isCompact ? 10.5 : 11.5,
-                            fontWeight: !isArabic ? FontWeight.bold : FontWeight.w600,
+                            fontWeight:
+                                !isArabic ? FontWeight.bold : FontWeight.w600,
                           ),
                         ),
                       ),
@@ -330,17 +349,27 @@ class _AppTopBarState extends State<AppTopBar> {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1.5,
+                        ),
                         decoration: BoxDecoration(
-                          color: isArabic ? const Color(0xFF5E227A) : Colors.transparent,
+                          color:
+                              isArabic
+                                  ? const Color(0xFF5E227A)
+                                  : Colors.transparent,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
                           'عربي',
                           style: TextStyle(
-                            color: isArabic ? Colors.white : const Color(0xFF5E227A),
+                            color:
+                                isArabic
+                                    ? Colors.white
+                                    : const Color(0xFF5E227A),
                             fontSize: isCompact ? 10.5 : 11.5,
-                            fontWeight: isArabic ? FontWeight.bold : FontWeight.w600,
+                            fontWeight:
+                                isArabic ? FontWeight.bold : FontWeight.w600,
                           ),
                         ),
                       ),
@@ -384,7 +413,10 @@ class _AppTopBarState extends State<AppTopBar> {
                       top: 2,
                       right: 2,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFE53935),
                           shape: BoxShape.circle,
@@ -440,7 +472,8 @@ class _AppTopBarState extends State<AppTopBar> {
                       avatarLetter,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: rh.isCompact ? 12.0 : (rh.isWide ? 16.0 : 14.0),
+                        fontSize:
+                            rh.isCompact ? 12.0 : (rh.isWide ? 16.0 : 14.0),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -457,7 +490,11 @@ class _AppTopBarState extends State<AppTopBar> {
           builder: (ctx) {
             final menuL10n = AppLocalizations.of(ctx);
             return PopupMenuButton<TopBarMenuItem>(
-              icon: const Icon(Icons.more_vert, color: Color(0xFF1E1E1E), size: 22),
+              icon: const Icon(
+                Icons.more_vert,
+                color: Color(0xFF1E1E1E),
+                size: 22,
+              ),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
               shape: RoundedRectangleBorder(
@@ -468,248 +505,309 @@ class _AppTopBarState extends State<AppTopBar> {
               elevation: 8,
               offset: const Offset(0, 48),
               onSelected: (item) => _onMenuItemSelected(ctx, item),
-              itemBuilder: (BuildContext context) => <PopupMenuEntry<TopBarMenuItem>>[
-                if (loggedIn) ...[
-                  // User Header inside Popup (dynamic from storage)
-                  PopupMenuItem<TopBarMenuItem>(
-                    enabled: false,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.only(bottom: 8.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            userName,
-                            style: const TextStyle(
+              itemBuilder:
+                  (BuildContext context) => <PopupMenuEntry<TopBarMenuItem>>[
+                    if (loggedIn) ...[
+                      // User Header inside Popup (dynamic from storage)
+                      PopupMenuItem<TopBarMenuItem>(
+                        enabled: false,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                userName,
+                                style: const TextStyle(
+                                  color: Color(0xFF1E1E1E),
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                userEmail,
+                                style: const TextStyle(
+                                  color: Color(0xFF64748B),
+                                  fontSize: 13,
+                                ),
+                              ),
+                              if (_hasArtistProfile &&
+                                  _myArtistCategory != null &&
+                                  _myArtistCategory!.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Artist • $_myArtistCategory',
+                                  style: const TextStyle(
+                                    color: Color(0xFF5E227A),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                      const PopupMenuDivider(height: 1),
+                      if (isAdmin) ...[
+                        PopupMenuItem<TopBarMenuItem>(
+                          value: TopBarMenuItem.adminDashboard,
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.admin_panel_settings_outlined,
+                                size: 18,
+                                color: Color(0xFF6A2777),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                Localizations.localeOf(ctx).languageCode == 'ar'
+                                    ? 'لوحة تحكم المسؤول'
+                                    : 'Admin Dashboard',
+                                style: const TextStyle(
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF6A2777),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      PopupMenuItem<TopBarMenuItem>(
+                        value: TopBarMenuItem.accountSettings,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.person_outline,
+                              size: 18,
                               color: Color(0xFF1E1E1E),
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            userEmail,
-                            style: const TextStyle(
-                              color: Color(0xFF64748B),
-                              fontSize: 13,
-                            ),
-                          ),
-                          if (_hasArtistProfile && _myArtistCategory != null && _myArtistCategory!.isNotEmpty) ...[
-                            const SizedBox(height: 2),
+                            const SizedBox(width: 10),
                             Text(
-                              'Artist • $_myArtistCategory',
+                              menuL10n.accountSettings,
                               style: const TextStyle(
-                                color: Color(0xFF5E227A),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                                fontSize: 14.5,
+                                color: Color(0xFF1E1E1E),
                               ),
                             ),
                           ],
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
-                  const PopupMenuDivider(height: 1),
-                  if (isAdmin) ...[
+                      PopupMenuItem<TopBarMenuItem>(
+                        value: TopBarMenuItem.artistChat,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.mail_outline,
+                              size: 18,
+                              color: Color(0xFF1E1E1E),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Artist chat'.trData(ctx),
+                              style: const TextStyle(
+                                fontSize: 14.5,
+                                color: Color(0xFF1E1E1E),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem<TopBarMenuItem>(
+                        value: TopBarMenuItem.myListings,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.event_note_outlined,
+                              size: 18,
+                              color: Color(0xFF1E1E1E),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'My Listings'.trData(ctx),
+                              style: const TextStyle(
+                                fontSize: 14.5,
+                                color: Color(0xFF1E1E1E),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem<TopBarMenuItem>(
+                        value: TopBarMenuItem.listingPlans,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.campaign_outlined,
+                              size: 18,
+                              color: Color(0xFF1E1E1E),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Listing Plans'.trData(ctx),
+                              style: const TextStyle(
+                                fontSize: 14.5,
+                                color: Color(0xFF1E1E1E),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (_hasArtistProfile)
+                        PopupMenuItem<TopBarMenuItem>(
+                          value: TopBarMenuItem.editArtistProfile,
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.palette_outlined,
+                                size: 18,
+                                color: Color(0xFF1E1E1E),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                menuL10n.editProfile,
+                                style: const TextStyle(
+                                  fontSize: 14.5,
+                                  color: Color(0xFF1E1E1E),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        PopupMenuItem<TopBarMenuItem>(
+                          value: TopBarMenuItem.createArtistProfile,
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.palette_outlined,
+                                size: 18,
+                                color: Color(0xFF1E1E1E),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                menuL10n.createArtistProfile,
+                                style: const TextStyle(
+                                  fontSize: 14.5,
+                                  color: Color(0xFF1E1E1E),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      const PopupMenuDivider(height: 1),
+                    ],
+
                     PopupMenuItem<TopBarMenuItem>(
-                      value: TopBarMenuItem.adminDashboard,
+                      value: TopBarMenuItem.privacyPolicy,
                       child: Row(
                         children: [
                           const Icon(
-                            Icons.admin_panel_settings_outlined,
+                            Icons.help_outline,
                             size: 18,
-                            color: Color(0xFF6A2777),
+                            color: Color(0xFF1E1E1E),
                           ),
                           const SizedBox(width: 10),
                           Text(
-                            Localizations.localeOf(ctx).languageCode == 'ar'
-                                ? 'لوحة تحكم المسؤول'
-                                : 'Admin Dashboard',
+                            menuL10n.privacyPolicy,
                             style: const TextStyle(
                               fontSize: 14.5,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF6A2777),
+                              color: Color(0xFF1E1E1E),
                             ),
                           ),
                         ],
                       ),
                     ),
+                    PopupMenuItem<TopBarMenuItem>(
+                      value: TopBarMenuItem.termsConditions,
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.settings_outlined,
+                            size: 18,
+                            color: Color(0xFF1E1E1E),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            menuL10n.termsAndConditions,
+                            style: const TextStyle(
+                              fontSize: 14.5,
+                              color: Color(0xFF1E1E1E),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    if (loggedIn) ...[
+                      const PopupMenuDivider(height: 1),
+                      PopupMenuItem<TopBarMenuItem>(
+                        value: TopBarMenuItem.signOut,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.logout,
+                              size: 18,
+                              color: Color(0xFF1E1E1E),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              menuL10n.signOut,
+                              style: const TextStyle(
+                                fontSize: 14.5,
+                                color: Color(0xFF1E1E1E),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      PopupMenuItem<TopBarMenuItem>(
+                        value: TopBarMenuItem.signIn,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.login,
+                              size: 18,
+                              color: Color(0xFF1E1E1E),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              menuL10n.signIn,
+                              style: const TextStyle(
+                                fontSize: 14.5,
+                                color: Color(0xFF1E1E1E),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem<TopBarMenuItem>(
+                        value: TopBarMenuItem.settings,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.settings_outlined,
+                              size: 18,
+                              color: Color(0xFF1E1E1E),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              menuL10n.settings,
+                              style: const TextStyle(
+                                fontSize: 14.5,
+                                color: Color(0xFF1E1E1E),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
-                  PopupMenuItem<TopBarMenuItem>(
-                    value: TopBarMenuItem.accountSettings,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.person_outline, size: 18, color: Color(0xFF1E1E1E)),
-                        const SizedBox(width: 10),
-                        Text(
-                          menuL10n.accountSettings,
-                          style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
-                        ),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem<TopBarMenuItem>(
-                    value: TopBarMenuItem.artistChat,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.mail_outline, size: 18, color: Color(0xFF1E1E1E)),
-                        const SizedBox(width: 10),
-                        Text(
-                          'Artist chat'.trData(ctx),
-                          style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
-                        ),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem<TopBarMenuItem>(
-                    value: TopBarMenuItem.myListings,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.event_note_outlined, size: 18, color: Color(0xFF1E1E1E)),
-                        const SizedBox(width: 10),
-                        Text(
-                          'My Listings'.trData(ctx),
-                          style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
-                        ),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem<TopBarMenuItem>(
-                    value: TopBarMenuItem.listingPlans,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.campaign_outlined, size: 18, color: Color(0xFF1E1E1E)),
-                        const SizedBox(width: 10),
-                        Text(
-                          'Listing Plans'.trData(ctx),
-                          style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (_hasArtistProfile)
-                    PopupMenuItem<TopBarMenuItem>(
-                      value: TopBarMenuItem.editArtistProfile,
-                      child: Row(
-                        children: [
-                          const Icon(Icons.palette_outlined, size: 18, color: Color(0xFF1E1E1E)),
-                          const SizedBox(width: 10),
-                          Text(
-                            menuL10n.editProfile,
-                            style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    PopupMenuItem<TopBarMenuItem>(
-                      value: TopBarMenuItem.createArtistProfile,
-                      child: Row(
-                        children: [
-                          const Icon(Icons.palette_outlined, size: 18, color: Color(0xFF1E1E1E)),
-                          const SizedBox(width: 10),
-                          Text(
-                            menuL10n.createArtistProfile,
-                            style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  const PopupMenuDivider(height: 1),
-                ],
-
-                PopupMenuItem<TopBarMenuItem>(
-                  value: TopBarMenuItem.privacyPolicy,
-                  child: Row(
-                    children: [
-                      const Icon(Icons.help_outline, size: 18, color: Color(0xFF1E1E1E)),
-                      const SizedBox(width: 10),
-                      Text(
-                        menuL10n.privacyPolicy,
-                        style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
-                      ),
-                    ],
-                  ),
-                ),
-                PopupMenuItem<TopBarMenuItem>(
-                  value: TopBarMenuItem.termsConditions,
-                  child: Row(
-                    children: [
-                      const Icon(Icons.settings_outlined, size: 18, color: Color(0xFF1E1E1E)),
-                      const SizedBox(width: 10),
-                      Text(
-                        menuL10n.termsAndConditions,
-                        style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
-                      ),
-                    ],
-                  ),
-                ),
-
-                if (loggedIn) ...[
-                  const PopupMenuDivider(height: 1),
-                  PopupMenuItem<TopBarMenuItem>(
-                    value: TopBarMenuItem.signOut,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.logout, size: 18, color: Color(0xFF1E1E1E)),
-                        const SizedBox(width: 10),
-                        Text(
-                          menuL10n.signOut,
-                          style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
-                        ),
-                      ],
-                    ),
-                  ),
-                ] else ...[
-                  PopupMenuItem<TopBarMenuItem>(
-                    value: TopBarMenuItem.signIn,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.login, size: 18, color: Color(0xFF1E1E1E)),
-                        const SizedBox(width: 10),
-                        Text(
-                          menuL10n.signIn,
-                          style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
-                        ),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem<TopBarMenuItem>(
-                    value: TopBarMenuItem.adminDashboard,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.admin_panel_settings_outlined, size: 18, color: Color(0xFF6A2777)),
-                        const SizedBox(width: 10),
-                        Text(
-                          Localizations.localeOf(ctx).languageCode == 'ar'
-                              ? 'بوابة المسؤول'
-                              : 'Admin Portal',
-                          style: const TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF6A2777),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem<TopBarMenuItem>(
-                    value: TopBarMenuItem.settings,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.settings_outlined, size: 18, color: Color(0xFF1E1E1E)),
-                        const SizedBox(width: 10),
-                        Text(
-                          menuL10n.settings,
-                          style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1E1E)),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
             );
           },
         ),

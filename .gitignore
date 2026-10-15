@@ -64,4 +64,5 @@ secrets.*
 credentials.json
 export_options.plist
 ExportOptions.plist
-
+.schema_provisioned
+**/.*schema_provisioned

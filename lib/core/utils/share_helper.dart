@@ -5,14 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../constants/api_endpoints.dart';
 
-enum ShareContentType {
-  artist,
-  event,
-  artwork,
-  gallery,
-  profile,
-  general,
-}
+enum ShareContentType { artist, event, artwork, gallery, profile, general }
 
 class ShareHelper {
   ShareHelper._();
@@ -23,7 +16,9 @@ class ShareHelper {
   static String? resolveImageUrl(String? rawUrl) {
     if (rawUrl == null || rawUrl.trim().isEmpty) return null;
     var trimmed = rawUrl.trim();
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image/')) {
+    if (trimmed.startsWith('http://') ||
+        trimmed.startsWith('https://') ||
+        trimmed.startsWith('data:image/')) {
       return trimmed;
     }
     if (trimmed.startsWith('/')) {
@@ -35,19 +30,6 @@ class ShareHelper {
   }
 
   static String getBaseUrl() {
-    if (kIsWeb) {
-      final origin = Uri.base.origin;
-      if (!origin.contains('localhost') && !origin.contains('127.0.0.1')) {
-        var path = Uri.base.path;
-        if (path.endsWith('index.html')) {
-          path = path.substring(0, path.length - 'index.html'.length);
-        }
-        if (!path.endsWith('/')) {
-          path = '$path/';
-        }
-        return '$origin$path';
-      }
-    }
     return webProductionUrl;
   }
 
@@ -94,15 +76,9 @@ class ShareHelper {
         );
       } else {
         if (await canLaunchUrl(uri)) {
-          return await launchUrl(
-            uri,
-            mode: LaunchMode.externalApplication,
-          );
+          return await launchUrl(uri, mode: LaunchMode.externalApplication);
         } else {
-          return await launchUrl(
-            uri,
-            mode: LaunchMode.platformDefault,
-          );
+          return await launchUrl(uri, mode: LaunchMode.platformDefault);
         }
       }
     } catch (_) {
@@ -125,7 +101,8 @@ class ShareHelper {
   }) async {
     final shareUrl = getArtistShareUrl(artistId);
     final resolvedImage = resolveImageUrl(avatarUrl);
-    final text = 'Discover $name, an inspiring ${category ?? 'artist'} on Artist Dubai: $shareUrl';
+    final text =
+        'Discover $name, an inspiring ${category ?? 'artist'} on Artist Dubai: $shareUrl';
     await share(
       context: context,
       title: name.isNotEmpty ? name : 'Artist Dubai',
@@ -157,7 +134,8 @@ class ShareHelper {
     } else {
       final shareUrl = getProfileShareUrl(profileId: email ?? name);
       final resolvedImage = resolveImageUrl(avatarUrl);
-      final text = 'Connect with $name on Artist Dubai - UAE VIP Art & Cultural Community: $shareUrl';
+      final text =
+          'Connect with $name on Artist Dubai - UAE VIP Art & Cultural Community: $shareUrl';
       await share(
         context: context,
         title: name.isNotEmpty ? name : 'Artist Dubai Member',
@@ -181,9 +159,12 @@ class ShareHelper {
   }) async {
     final shareUrl = getEventShareUrl(eventId);
     final resolvedImage = resolveImageUrl(imageUrl);
-    final dateSnippet = (dateTime != null && dateTime.trim().isNotEmpty) ? ' on $dateTime' : '';
-    final locSnippet = (location != null && location.trim().isNotEmpty) ? ' ($location)' : '';
-    final text = 'Join the event "$title"$dateSnippet$locSnippet on Artist Dubai: $shareUrl';
+    final dateSnippet =
+        (dateTime != null && dateTime.trim().isNotEmpty) ? ' on $dateTime' : '';
+    final locSnippet =
+        (location != null && location.trim().isNotEmpty) ? ' ($location)' : '';
+    final text =
+        'Join the event "$title"$dateSnippet$locSnippet on Artist Dubai: $shareUrl';
     await share(
       context: context,
       title: title.isNotEmpty ? title : 'Art Event',
@@ -251,13 +232,17 @@ class ShareHelper {
     String? imageUrl,
     ShareContentType contentType = ShareContentType.general,
   }) async {
-    final effectiveShareText = shareText ?? 'Check out $title on Artist Dubai: $shareUrl';
+    final effectiveShareText =
+        shareText ?? 'Check out $title on Artist Dubai: $shareUrl';
 
     // On mobile platforms (Android/iOS), try native OS share sheet first
-    if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
+    if (!kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS)) {
       try {
         final box = context.findRenderObject() as RenderBox?;
-        final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
+        final origin =
+            box != null ? box.localToGlobal(Offset.zero) & box.size : null;
         final result = await SharePlus.instance.share(
           ShareParams(
             text: effectiveShareText,
@@ -296,7 +281,8 @@ class ShareHelper {
     String? imageUrl,
     ShareContentType contentType = ShareContentType.general,
   }) async {
-    final effectiveShareText = shareText ?? 'Check out $title on Artist Dubai: $shareUrl';
+    final effectiveShareText =
+        shareText ?? 'Check out $title on Artist Dubai: $shareUrl';
     final resolvedImage = resolveImageUrl(imageUrl);
 
     String modalTitle;
@@ -394,7 +380,8 @@ class ShareHelper {
                           width: 48,
                           height: 48,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _buildAvatarFallback(title),
+                          errorBuilder:
+                              (_, __, ___) => _buildAvatarFallback(title),
                         ),
                       )
                     else
@@ -436,7 +423,10 @@ class ShareHelper {
 
               // Copy Link Box
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(10),
@@ -461,7 +451,9 @@ class ShareHelper {
                     const SizedBox(width: 8),
                     InkWell(
                       onTap: () {
-                        Clipboard.setData(ClipboardData(text: effectiveShareText));
+                        Clipboard.setData(
+                          ClipboardData(text: effectiveShareText),
+                        );
                         Navigator.pop(ctx);
                         if (context.mounted) {
                           _showCopiedFeedback(context, title);
@@ -469,7 +461,10 @@ class ShareHelper {
                       },
                       borderRadius: BorderRadius.circular(6),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFF6B1C9B),
                           borderRadius: BorderRadius.circular(6),
@@ -499,7 +494,8 @@ class ShareHelper {
                     label: 'WhatsApp',
                     onTap: () async {
                       Navigator.pop(ctx);
-                      final waUrl = 'https://wa.me/?text=${Uri.encodeComponent(effectiveShareText)}';
+                      final waUrl =
+                          'https://wa.me/?text=${Uri.encodeComponent(effectiveShareText)}';
                       await openUrl(waUrl);
                     },
                   ),
@@ -509,7 +505,8 @@ class ShareHelper {
                     label: 'X (Twitter)',
                     onTap: () async {
                       Navigator.pop(ctx);
-                      final xUrl = 'https://twitter.com/intent/tweet?text=${Uri.encodeComponent(effectiveShareText)}';
+                      final xUrl =
+                          'https://twitter.com/intent/tweet?text=${Uri.encodeComponent(effectiveShareText)}';
                       await openUrl(xUrl);
                     },
                   ),
@@ -519,7 +516,8 @@ class ShareHelper {
                     label: 'Facebook',
                     onTap: () async {
                       Navigator.pop(ctx);
-                      final fbUrl = 'https://www.facebook.com/sharer/sharer.php?u=${Uri.encodeComponent(shareUrl)}';
+                      final fbUrl =
+                          'https://www.facebook.com/sharer/sharer.php?u=${Uri.encodeComponent(shareUrl)}';
                       await openUrl(fbUrl);
                     },
                   ),
@@ -529,7 +527,8 @@ class ShareHelper {
                     label: 'Telegram',
                     onTap: () async {
                       Navigator.pop(ctx);
-                      final tgUrl = 'https://t.me/share/url?url=${Uri.encodeComponent(shareUrl)}&text=${Uri.encodeComponent(title)}';
+                      final tgUrl =
+                          'https://t.me/share/url?url=${Uri.encodeComponent(shareUrl)}&text=${Uri.encodeComponent(title)}';
                       await openUrl(tgUrl);
                     },
                   ),
@@ -549,7 +548,10 @@ class ShareHelper {
                       Navigator.pop(ctx);
                       try {
                         final box = context.findRenderObject() as RenderBox?;
-                        final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
+                        final origin =
+                            box != null
+                                ? box.localToGlobal(Offset.zero) & box.size
+                                : null;
                         await SharePlus.instance.share(
                           ShareParams(
                             text: effectiveShareText,
@@ -566,7 +568,8 @@ class ShareHelper {
                     label: 'LinkedIn',
                     onTap: () async {
                       Navigator.pop(ctx);
-                      final liUrl = 'https://www.linkedin.com/sharing/share-offsite/?url=${Uri.encodeComponent(shareUrl)}';
+                      final liUrl =
+                          'https://www.linkedin.com/sharing/share-offsite/?url=${Uri.encodeComponent(shareUrl)}';
                       await openUrl(liUrl);
                     },
                   ),
@@ -576,7 +579,8 @@ class ShareHelper {
                     label: 'Email',
                     onTap: () async {
                       Navigator.pop(ctx);
-                      final emailUrl = 'mailto:?subject=${Uri.encodeComponent('Artist Dubai: $title')}&body=${Uri.encodeComponent('$effectiveShareText\n\n$shareUrl')}';
+                      final emailUrl =
+                          'mailto:?subject=${Uri.encodeComponent('Artist Dubai: $title')}&body=${Uri.encodeComponent('$effectiveShareText\n\n$shareUrl')}';
                       await openUrl(emailUrl);
                     },
                   ),
@@ -585,7 +589,9 @@ class ShareHelper {
                     iconColor: const Color(0xFF475569),
                     label: 'Copy Link',
                     onTap: () {
-                      Clipboard.setData(ClipboardData(text: effectiveShareText));
+                      Clipboard.setData(
+                        ClipboardData(text: effectiveShareText),
+                      );
                       Navigator.pop(ctx);
                       if (context.mounted) {
                         _showCopiedFeedback(context, title);

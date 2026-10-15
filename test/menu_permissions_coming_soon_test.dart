@@ -31,22 +31,25 @@ void main() {
       }
     });
 
-    test('Disabling a menu permission is stored and detected correctly', () async {
-      // Turn OFF artists permission
-      await storage.setMenuPermissionEnabled('/artists', false);
+    test(
+      'Disabling a menu permission is stored and detected correctly',
+      () async {
+        // Turn OFF artists permission
+        await storage.setMenuPermissionEnabled('/artists', false);
 
-      expect(storage.isMenuPermissionEnabled('/artists'), isFalse);
-      expect(storage.isMenuPermissionEnabled('/government'), isTrue);
+        expect(storage.isMenuPermissionEnabled('/artists'), isFalse);
+        expect(storage.isMenuPermissionEnabled('/government'), isTrue);
 
-      // Turn OFF events permission (also covers /events-competition)
-      await storage.setMenuPermissionEnabled('/events', false);
-      expect(storage.isMenuPermissionEnabled('/events'), isFalse);
-      expect(storage.isMenuPermissionEnabled('/events-competition'), isFalse);
+        // Turn OFF events permission (also covers /events-competition)
+        await storage.setMenuPermissionEnabled('/events', false);
+        expect(storage.isMenuPermissionEnabled('/events'), isFalse);
+        expect(storage.isMenuPermissionEnabled('/events-competition'), isFalse);
 
-      // Re-enable
-      await storage.setMenuPermissionEnabled('/artists', true);
-      expect(storage.isMenuPermissionEnabled('/artists'), isTrue);
-    });
+        // Re-enable
+        await storage.setMenuPermissionEnabled('/artists', true);
+        expect(storage.isMenuPermissionEnabled('/artists'), isTrue);
+      },
+    );
 
     test('MenuPermissionModel serialization and localized titles', () {
       final item = const MenuPermissionModel(

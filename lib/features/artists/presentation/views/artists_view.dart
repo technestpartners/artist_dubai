@@ -56,7 +56,8 @@ class _ArtistsViewState extends State<ArtistsView> {
       if (email != null && email.isNotEmpty) return email;
       email = sl<StorageService>().getString('device_guest_id');
       if (email != null && email.isNotEmpty) return email;
-      final newId = 'guest_${DateTime.now().millisecondsSinceEpoch}@artistdubai.com';
+      final newId =
+          'guest_${DateTime.now().millisecondsSinceEpoch}@artistdubai.com';
       sl<StorageService>().setString('device_guest_id', newId);
       return newId;
     } catch (_) {
@@ -73,9 +74,8 @@ class _ArtistsViewState extends State<ArtistsView> {
     final updatedIndex = _allArtists.indexWhere((a) => a.id == artist.id);
     if (updatedIndex != -1) {
       final old = _allArtists[updatedIndex];
-      final newLikes = wasFav
-          ? (old.likesCount - 1).clamp(0, 999999)
-          : (old.likesCount + 1);
+      final newLikes =
+          wasFav ? (old.likesCount - 1).clamp(0, 999999) : (old.likesCount + 1);
       setState(() {
         _allArtists[updatedIndex] = old.copyWith(likesCount: newLikes);
       });
@@ -93,7 +93,8 @@ class _ArtistsViewState extends State<ArtistsView> {
                 ? 'Removed ${artist.name} from favorites'
                 : 'Added ${artist.name} to favorites! ❤️',
           ),
-          backgroundColor: wasFav ? const Color(0xFF475569) : const Color(0xFF6A2777),
+          backgroundColor:
+              wasFav ? const Color(0xFF475569) : const Color(0xFF6A2777),
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
         ),
@@ -201,55 +202,68 @@ class _ArtistsViewState extends State<ArtistsView> {
     }
 
     // Refresh categories in background
-    sl<ApiService>().getCategories(forceRefresh: true).then((cats) {
-      if (mounted && cats.isNotEmpty) {
-        setState(() => _categories = cats);
-      }
-    }).catchError((_) {});
+    sl<ApiService>()
+        .getCategories(forceRefresh: true)
+        .then((cats) {
+          if (mounted && cats.isNotEmpty) {
+            setState(() => _categories = cats);
+          }
+        })
+        .catchError((_) {});
 
     // Refresh user interactions in background
-    sl<ApiService>().getUserInteractions(userEmail: userEmail, forceRefresh: true).then((interactions) {
-      if (mounted) {
-        final serverLiked = interactions['liked'] ?? <String>{};
-        _favService.addServerArtistIds(serverLiked);
-        setState(() {
-          _followedArtistIds
-            ..clear()
-            ..addAll(interactions['followed'] ?? {});
-        });
-      }
-    }).catchError((_) {});
+    sl<ApiService>()
+        .getUserInteractions(userEmail: userEmail, forceRefresh: true)
+        .then((interactions) {
+          if (mounted) {
+            final serverLiked = interactions['liked'] ?? <String>{};
+            _favService.addServerArtistIds(serverLiked);
+            setState(() {
+              _followedArtistIds
+                ..clear()
+                ..addAll(interactions['followed'] ?? {});
+            });
+          }
+        })
+        .catchError((_) {});
   }
 
   void _silentRefresh(String userEmail) {
-    sl<ApiService>().getArtists(forceRefresh: true).then((artists) {
-      if (mounted && artists.isNotEmpty) {
-        setState(() => _allArtists = artists);
-      }
-    }).catchError((_) {});
+    sl<ApiService>()
+        .getArtists(forceRefresh: true)
+        .then((artists) {
+          if (mounted && artists.isNotEmpty) {
+            setState(() => _allArtists = artists);
+          }
+        })
+        .catchError((_) {});
 
-    sl<ApiService>().getUserInteractions(userEmail: userEmail, forceRefresh: true).then((interactions) {
-      if (mounted) {
-        final serverLiked = interactions['liked'] ?? <String>{};
-        _favService.addServerArtistIds(serverLiked);
-        setState(() {
-          _followedArtistIds
-            ..clear()
-            ..addAll(interactions['followed'] ?? {});
-        });
-      }
-    }).catchError((_) {});
+    sl<ApiService>()
+        .getUserInteractions(userEmail: userEmail, forceRefresh: true)
+        .then((interactions) {
+          if (mounted) {
+            final serverLiked = interactions['liked'] ?? <String>{};
+            _favService.addServerArtistIds(serverLiked);
+            setState(() {
+              _followedArtistIds
+                ..clear()
+                ..addAll(interactions['followed'] ?? {});
+            });
+          }
+        })
+        .catchError((_) {});
   }
 
   void _openArtistDetail(ArtistModel artist) async {
     await Navigator.push<void>(
       context,
       MaterialPageRoute(
-        builder: (context) => ArtistDetailView(
-          artist: artist,
-          initialIsFavorited: _favoritedArtistIds.contains(artist.id),
-          initialIsFollowing: _followedArtistIds.contains(artist.id),
-        ),
+        builder:
+            (context) => ArtistDetailView(
+              artist: artist,
+              initialIsFavorited: _favoritedArtistIds.contains(artist.id),
+              initialIsFollowing: _followedArtistIds.contains(artist.id),
+            ),
       ),
     );
     // On return — silently refresh from DB in background, no loading flash
@@ -267,12 +281,19 @@ class _ArtistsViewState extends State<ArtistsView> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final effectiveArtists = _allArtists.where((a) {
-      if (!a.isActive) return false;
-      final st = a.status.toLowerCase().trim();
-      if (st == 'inactive' || st == 'deactive' || st == 'suspended' || st == 'deleted' || st == 'pending') return false;
-      return true;
-    }).toList();
+    final effectiveArtists =
+        _allArtists.where((a) {
+          if (!a.isActive) return false;
+          final st = a.status.toLowerCase().trim();
+          if (st == 'inactive' ||
+              st == 'deactive' ||
+              st == 'suspended' ||
+              st == 'deleted' ||
+              st == 'pending') {
+            return false;
+          }
+          return true;
+        }).toList();
 
     // Sort latest artists first
     effectiveArtists.sort((a, b) {
@@ -285,20 +306,36 @@ class _ArtistsViewState extends State<ArtistsView> {
         _selectedCategory == null
             ? effectiveArtists
             : effectiveArtists.where((a) {
-                final selLower = _selectedCategory!.toLowerCase().trim();
-                final aCatLower = a.category.toLowerCase().trim();
-                final selEn = DataTranslator.translate(selLower, isArabic: false).toLowerCase();
-                final selAr = DataTranslator.translate(selLower, isArabic: true).toLowerCase();
-                final aCatEn = DataTranslator.translate(aCatLower, isArabic: false).toLowerCase();
-                final aCatAr = DataTranslator.translate(aCatLower, isArabic: true).toLowerCase();
+              final selLower = _selectedCategory!.toLowerCase().trim();
+              final aCatLower = a.category.toLowerCase().trim();
+              final selEn =
+                  DataTranslator.translate(
+                    selLower,
+                    isArabic: false,
+                  ).toLowerCase();
+              final selAr =
+                  DataTranslator.translate(
+                    selLower,
+                    isArabic: true,
+                  ).toLowerCase();
+              final aCatEn =
+                  DataTranslator.translate(
+                    aCatLower,
+                    isArabic: false,
+                  ).toLowerCase();
+              final aCatAr =
+                  DataTranslator.translate(
+                    aCatLower,
+                    isArabic: true,
+                  ).toLowerCase();
 
-                return aCatLower.contains(selLower) ||
-                    selLower.contains(aCatLower) ||
-                    aCatEn.contains(selEn) ||
-                    selEn.contains(aCatEn) ||
-                    aCatAr.contains(selAr) ||
-                    selAr.contains(aCatAr);
-              }).toList();
+              return aCatLower.contains(selLower) ||
+                  selLower.contains(aCatLower) ||
+                  aCatEn.contains(selEn) ||
+                  selEn.contains(aCatEn) ||
+                  aCatAr.contains(selAr) ||
+                  selAr.contains(aCatAr);
+            }).toList();
 
     final rh = ResponsiveHelper.of(context);
     final hPad = rh.horizontalPadding;
@@ -312,7 +349,9 @@ class _ArtistsViewState extends State<ArtistsView> {
           backgroundColor: Colors.white,
           onRefresh: _fetchData,
           child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
             padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 16.0),
             child: Center(
               child: ConstrainedBox(
@@ -320,143 +359,154 @@ class _ArtistsViewState extends State<ArtistsView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                // 1. Featured Artists Header
-                Center(
-                  child: Column(
-                    children: [
-                      Text(
-                        l10n.featuredArtists,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _isLoading && filteredArtists.isEmpty
-                            ? l10n.loadingArtists
-                            : filteredArtists.isEmpty
+                    // 1. Featured Artists Header
+                    Center(
+                      child: Column(
+                        children: [
+                          Text(
+                            l10n.featuredArtists,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _isLoading && filteredArtists.isEmpty
+                                ? l10n.loadingArtists
+                                : filteredArtists.isEmpty
                                 ? l10n.noArtistProfilesAvailable
-                                : l10n.discoverArtistsCount(filteredArtists.length),
-                        style: const TextStyle(
-                          fontSize: 13.5,
-                          color: Color(0xFFE2D6F5),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // 2. Artists List OR Loading State OR Empty State
-                if (_isLoading && filteredArtists.isEmpty) ...[
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 48.0),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2.5,
+                                : l10n.discoverArtistsCount(
+                                  filteredArtists.length,
+                                ),
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              color: Color(0xFFE2D6F5),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ] else if (filteredArtists.isEmpty) ...[
-                  Center(
-                    child: Column(
-                      children: [
-                        Text(
-                          l10n.noArtistsYet,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
+                    const SizedBox(height: 16),
+
+                    // 2. Artists List OR Loading State OR Empty State
+                    if (_isLoading && filteredArtists.isEmpty) ...[
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 48.0),
+                        child: Center(
+                          child: CircularProgressIndicator(
                             color: Colors.white,
+                            strokeWidth: 2.5,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          l10n.beTheFirstToCreateArtistProfile,
-                          style: const TextStyle(fontSize: 13.5, color: Color(0xFFE2D6F5)),
-                        ),
-                        const SizedBox(height: 14),
-                        SizedBox(
-                          height: 40,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: const Color(0xFF6B1C9B),
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 8,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            onPressed: () {
-                              if (_isLoggedIn) {
-                                context.push(RouteNames.artistRegistration);
-                              } else {
-                                context.push(RouteNames.login);
-                              }
-                            },
-                            child: Text(
-                              l10n.createArtistProfile,
-                              style: const TextStyle(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF6B1C9B),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ] else ...[  // Wide layout: 2-column GridView
-                  if (rh.isMobile)
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: filteredArtists.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 14),
-                    itemBuilder: (context, index) {
-                      final artist = filteredArtists[index];
-                      return _buildArtistCard(artist);
-                    },
-                  )
-                  else
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: rh.gridCrossAxisCount,
-                        crossAxisSpacing: 14,
-                        mainAxisSpacing: 14,
-                        childAspectRatio: rh.isDesktop ? 0.62 : (rh.isFold ? 0.64 : 0.66),
                       ),
-                      itemCount: filteredArtists.length,
-                    itemBuilder: (context, index) {
-                      return _buildArtistCard(filteredArtists[index]);
-                    },
-                  ),
-                  const SizedBox(height: 18),
-                ],
+                    ] else if (filteredArtists.isEmpty) ...[
+                      Center(
+                        child: Column(
+                          children: [
+                            Text(
+                              l10n.noArtistsYet,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              l10n.beTheFirstToCreateArtistProfile,
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                color: Color(0xFFE2D6F5),
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            SizedBox(
+                              height: 40,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: const Color(0xFF6B1C9B),
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 8,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  if (_isLoggedIn) {
+                                    context.push(RouteNames.artistRegistration);
+                                  } else {
+                                    context.push(RouteNames.login);
+                                  }
+                                },
+                                child: Text(
+                                  l10n.createArtistProfile,
+                                  style: const TextStyle(
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF6B1C9B),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ] else ...[
+                      // Wide layout: 2-column GridView
+                      if (rh.isMobile)
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: filteredArtists.length,
+                          separatorBuilder:
+                              (context, index) => const SizedBox(height: 14),
+                          itemBuilder: (context, index) {
+                            final artist = filteredArtists[index];
+                            return _buildArtistCard(artist);
+                          },
+                        )
+                      else
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: rh.gridCrossAxisCount,
+                                crossAxisSpacing: 14,
+                                mainAxisSpacing: 14,
+                                childAspectRatio:
+                                    rh.isDesktop
+                                        ? 0.62
+                                        : (rh.isFold ? 0.64 : 0.66),
+                              ),
+                          itemCount: filteredArtists.length,
+                          itemBuilder: (context, index) {
+                            return _buildArtistCard(filteredArtists[index]);
+                          },
+                        ),
+                      const SizedBox(height: 18),
+                    ],
 
-                // 3. Select a Category Input Box (Floating Dropdown)
-                _buildCategorySelectorField(),
-                const SizedBox(height: 16),
-              ],
+                    // 3. Select a Category Input Box (Floating Dropdown)
+                    _buildCategorySelectorField(),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
       ),
-    ),
-  ),
-  bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
-);
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
+    );
   }
 
   // Select a Category Field
@@ -479,9 +529,10 @@ class _ArtistsViewState extends State<ArtistsView> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: _isCategoryListExpanded
-                  ? const Color(0xFF5E227A)
-                  : Colors.black.withValues(alpha: 0.2),
+              color:
+                  _isCategoryListExpanded
+                      ? const Color(0xFF5E227A)
+                      : Colors.black.withValues(alpha: 0.2),
               width: _isCategoryListExpanded ? 1.5 : 1.0,
             ),
           ),
@@ -522,7 +573,8 @@ class _ArtistsViewState extends State<ArtistsView> {
   void _showCategoryOverlay() {
     _hideCategoryOverlay();
 
-    final renderBox = _selectorKey.currentContext?.findRenderObject() as RenderBox?;
+    final renderBox =
+        _selectorKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
 
     final size = renderBox.size;
@@ -532,17 +584,28 @@ class _ArtistsViewState extends State<ArtistsView> {
     final screenWidth = mediaQuery.size.width;
 
     // Compact dynamic popup height (approx 38px per item)
-    final double popupHeight = (_categories.length * 38.0 + 8.0).clamp(100.0, 245.0);
+    final double popupHeight = (_categories.length * 38.0 + 8.0).clamp(
+      100.0,
+      245.0,
+    );
 
-    final double spaceBelow = screenHeight - (offset.dy + size.height) - mediaQuery.padding.bottom;
+    final double spaceBelow =
+        screenHeight - (offset.dy + size.height) - mediaQuery.padding.bottom;
     final double spaceAbove = offset.dy - mediaQuery.padding.top;
 
     // Auto-adjust: If space below is insufficient, open above the selector
     final bool showAbove = spaceBelow < popupHeight && spaceAbove > spaceBelow;
 
-    final double topPosition = showAbove
-        ? (offset.dy - popupHeight - 2).clamp(mediaQuery.padding.top + 8.0, screenHeight - popupHeight)
-        : (offset.dy + size.height + 2).clamp(0.0, screenHeight - popupHeight - mediaQuery.padding.bottom);
+    final double topPosition =
+        showAbove
+            ? (offset.dy - popupHeight - 2).clamp(
+              mediaQuery.padding.top + 8.0,
+              screenHeight - popupHeight,
+            )
+            : (offset.dy + size.height + 2).clamp(
+              0.0,
+              screenHeight - popupHeight - mediaQuery.padding.bottom,
+            );
 
     _categoryOverlayEntry = OverlayEntry(
       builder: (overlayContext) {
@@ -558,7 +621,10 @@ class _ArtistsViewState extends State<ArtistsView> {
             ),
             // Floating Auto-Adjusting Overlay Card (Matching media_1787997749795.png)
             Positioned(
-              left: offset.dx.clamp(16.0, (screenWidth - size.width - 16.0).clamp(16.0, screenWidth)),
+              left: offset.dx.clamp(
+                16.0,
+                (screenWidth - size.width - 16.0).clamp(16.0, screenWidth),
+              ),
               top: topPosition,
               width: size.width,
               height: popupHeight,
@@ -586,18 +652,21 @@ class _ArtistsViewState extends State<ArtistsView> {
                       padding: const EdgeInsets.symmetric(vertical: 2),
                       shrinkWrap: true,
                       itemCount: _categories.length,
-                      separatorBuilder: (context, index) => const Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: Color(0xFFF1F5F9),
-                      ),
+                      separatorBuilder:
+                          (context, index) => const Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: Color(0xFFF1F5F9),
+                          ),
                       itemBuilder: (context, index) {
                         final cat = _categories[index];
-                        final count = _allArtists.where((a) {
-                          final catLow = cat.name.toLowerCase();
-                          final aLow = a.category.toLowerCase();
-                          return aLow.contains(catLow) || catLow.contains(aLow);
-                        }).length;
+                        final count =
+                            _allArtists.where((a) {
+                              final catLow = cat.name.toLowerCase();
+                              final aLow = a.category.toLowerCase();
+                              return aLow.contains(catLow) ||
+                                  catLow.contains(aLow);
+                            }).length;
                         final isSelected = _selectedCategory == cat.name;
 
                         return InkWell(
@@ -614,26 +683,44 @@ class _ArtistsViewState extends State<ArtistsView> {
                             ),
                             child: Row(
                               children: [
-                                Text(cat.emoji, style: const TextStyle(fontSize: 15)),
+                                Text(
+                                  cat.emoji,
+                                  style: const TextStyle(fontSize: 15),
+                                ),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
                                     DataTranslator.tr(context, cat.name),
                                     style: TextStyle(
                                       fontSize: 14,
-                                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                      color: isSelected ? const Color(0xFF5E227A) : const Color(0xFF1E1E1E),
+                                      fontWeight:
+                                          isSelected
+                                              ? FontWeight.w700
+                                              : FontWeight.w500,
+                                      color:
+                                          isSelected
+                                              ? const Color(0xFF5E227A)
+                                              : const Color(0xFF1E1E1E),
                                     ),
                                   ),
                                 ),
                                 Text(
-                                  Localizations.localeOf(context).languageCode == 'ar'
+                                  Localizations.localeOf(
+                                            context,
+                                          ).languageCode ==
+                                          'ar'
                                       ? '$count فنان'
                                       : '$count artists',
                                   style: TextStyle(
                                     fontSize: 12.5,
-                                    color: isSelected ? const Color(0xFF5E227A) : const Color(0xFF64748B),
-                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                    color:
+                                        isSelected
+                                            ? const Color(0xFF5E227A)
+                                            : const Color(0xFF64748B),
+                                    fontWeight:
+                                        isSelected
+                                            ? FontWeight.w600
+                                            : FontWeight.w400,
                                   ),
                                 ),
                               ],
@@ -690,243 +777,261 @@ class _ArtistsViewState extends State<ArtistsView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-          // Banner Image with Share & Favorite Buttons
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(15),
-                ),
-                child: AppCachedImage(
-                  imageUrl: artist.bannerUrl.isNotEmpty
-                      ? artist.bannerUrl
-                      : (artist.avatarUrl.isNotEmpty ? artist.avatarUrl : ''),
-                  height: bannerHeight,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              PositionedDirectional(
-                top: 10,
-                end: 10,
-                child: Row(
-                  children: [
-                    // Interactive Share Button
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () => _shareArtist(artist),
-                        borderRadius: BorderRadius.circular(18),
-                        child: Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.35),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.share_outlined,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
+              // Banner Image with Share & Favorite Buttons
+              Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(15),
                     ),
-                    const SizedBox(width: 8),
-
-                    // Interactive Favorite Heart Button
-                    Builder(
-                      builder: (context) {
-                        final isFav = _favoritedArtistIds.contains(artist.id);
-                        return Material(
+                    child: AppCachedImage(
+                      imageUrl:
+                          artist.bannerUrl.isNotEmpty
+                              ? artist.bannerUrl
+                              : (artist.avatarUrl.isNotEmpty
+                                  ? artist.avatarUrl
+                                  : ''),
+                      height: bannerHeight,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  PositionedDirectional(
+                    top: 10,
+                    end: 10,
+                    child: Row(
+                      children: [
+                        // Interactive Share Button
+                        Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            onTap: () => _toggleFavorite(artist),
+                            onTap: () => _shareArtist(artist),
                             borderRadius: BorderRadius.circular(18),
                             child: Container(
                               width: 36,
                               height: 36,
                               decoration: BoxDecoration(
-                                color: isFav
-                                    ? const Color(0xFFE11D48).withValues(alpha: 0.9)
-                                    : Colors.black.withValues(alpha: 0.35),
+                                color: Colors.black.withValues(alpha: 0.35),
                                 shape: BoxShape.circle,
                               ),
-                              child: Icon(
-                                isFav ? Icons.favorite : Icons.favorite_border,
+                              child: const Icon(
+                                Icons.share_outlined,
                                 color: Colors.white,
                                 size: 20,
                               ),
                             ),
                           ),
-                        );
-                      },
+                        ),
+                        const SizedBox(width: 8),
+
+                        // Interactive Favorite Heart Button
+                        Builder(
+                          builder: (context) {
+                            final isFav = _favoritedArtistIds.contains(
+                              artist.id,
+                            );
+                            return Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () => _toggleFavorite(artist),
+                                borderRadius: BorderRadius.circular(18),
+                                child: Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color:
+                                        isFav
+                                            ? const Color(
+                                              0xFFE11D48,
+                                            ).withValues(alpha: 0.9)
+                                            : Colors.black.withValues(
+                                              alpha: 0.35,
+                                            ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    isFav
+                                        ? Icons.favorite
+                                        : Icons.favorite_border,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              // Card Content
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Artist Name
+                    Text(
+                      artist.localizedName(context),
+                      style: const TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E1E1E),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+
+                    // Category Name
+                    Text(
+                      artist.localizedCategory(context),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF5F6368),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Location
+                    // Location
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on_outlined,
+                          size: 16,
+                          color: Color(0xFF757575),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            artist.localizedLocation(context),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              color: Color(0xFF757575),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Bio
+                    Text(
+                      artist.localizedBio(context),
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        color: Color(0xFF5F6368),
+                        height: 1.4,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Experience Badge (Professional 10+ years)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.black.withValues(alpha: 0.8),
+                          width: 1.0,
+                        ),
+                      ),
+                      child: Text(
+                        artist.localizedExperienceLevel(context).isNotEmpty
+                            ? artist.localizedExperienceLevel(context)
+                            : (Localizations.localeOf(context).languageCode ==
+                                    'ar'
+                                ? 'محترف (أكثر من 5 سنوات)'
+                                : 'Professional (5+ years)'),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1E1E1E),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Footer Row: Likes / Artworks & View Profile Button
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.people_outline,
+                                size: 18,
+                                color: Color(0xFF757575),
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  l10n.artistCardStats(
+                                    artist.likesCount,
+                                    artist.worksCount,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF757575),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          height: 40,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF5E227A),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: rh.isCompact ? 10 : 16,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            onPressed: () => _openArtistDetail(artist),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                AppLocalizations.of(context).viewProfile,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
             ],
           ),
-
-          // Card Content
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Artist Name
-                Text(
-                  artist.localizedName(context),
-                  style: const TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E1E1E),
-                  ),
-                ),
-                const SizedBox(height: 4),
-
-                // Category Name
-                Text(
-                  artist.localizedCategory(context),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF5F6368),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 8),
-
-                // Location
-                // Location
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.location_on_outlined,
-                      size: 16,
-                      color: Color(0xFF757575),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        artist.localizedLocation(context),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13.5,
-                          color: Color(0xFF757575),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-
-                // Bio
-                Text(
-                  artist.localizedBio(context),
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    color: Color(0xFF5F6368),
-                    height: 1.4,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 12),
-
-                // Experience Badge (Professional 10+ years)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.black.withValues(alpha: 0.8),
-                      width: 1.0,
-                    ),
-                  ),
-                  child: Text(
-                    artist.localizedExperienceLevel(context).isNotEmpty
-                        ? artist.localizedExperienceLevel(context)
-                        : (Localizations.localeOf(context).languageCode == 'ar'
-                            ? 'محترف (أكثر من 5 سنوات)'
-                            : 'Professional (5+ years)'),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E1E1E),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Footer Row: Likes / Artworks & View Profile Button
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.people_outline,
-                            size: 18,
-                            color: Color(0xFF757575),
-                          ),
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              l10n.artistCardStats(artist.likesCount, artist.worksCount),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF757575),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    SizedBox(
-                      height: 40,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF5E227A),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: EdgeInsets.symmetric(horizontal: rh.isCompact ? 10 : 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        onPressed: () => _openArtistDetail(artist),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            AppLocalizations.of(context).viewProfile,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
-    ),
-    ),
     );
   }
 }

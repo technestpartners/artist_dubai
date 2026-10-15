@@ -34,23 +34,49 @@ class ArtistMessageModel {
   factory ArtistMessageModel.fromJson(Map<String, dynamic> json) {
     return ArtistMessageModel(
       id: json['id']?.toString() ?? '',
-      senderId: json['sender_id']?.toString() ?? json['senderId']?.toString() ?? '',
-      senderName: json['sender_name']?.toString() ?? json['senderName']?.toString() ?? 'User',
-      senderEmail: json['sender_email']?.toString() ?? json['senderEmail']?.toString() ?? '',
-      senderAvatarUrl: json['sender_avatar_url']?.toString() ?? json['senderAvatarUrl']?.toString(),
-      recipientId: json['recipient_id']?.toString() ?? json['recipientId']?.toString() ?? '',
-      recipientName: json['recipient_name']?.toString() ?? json['recipientName']?.toString() ?? 'Artist',
-      recipientCategory: json['recipient_category']?.toString() ?? json['recipientCategory']?.toString() ?? 'Artist',
-      recipientAvatarUrl: json['recipient_avatar_url']?.toString() ?? json['recipientAvatarUrl']?.toString(),
+      senderId:
+          json['sender_id']?.toString() ?? json['senderId']?.toString() ?? '',
+      senderName:
+          json['sender_name']?.toString() ??
+          json['senderName']?.toString() ??
+          'User',
+      senderEmail:
+          json['sender_email']?.toString() ??
+          json['senderEmail']?.toString() ??
+          '',
+      senderAvatarUrl:
+          json['sender_avatar_url']?.toString() ??
+          json['senderAvatarUrl']?.toString(),
+      recipientId:
+          json['recipient_id']?.toString() ??
+          json['recipientId']?.toString() ??
+          '',
+      recipientName:
+          json['recipient_name']?.toString() ??
+          json['recipientName']?.toString() ??
+          'Artist',
+      recipientCategory:
+          json['recipient_category']?.toString() ??
+          json['recipientCategory']?.toString() ??
+          'Artist',
+      recipientAvatarUrl:
+          json['recipient_avatar_url']?.toString() ??
+          json['recipientAvatarUrl']?.toString(),
       subject: json['subject']?.toString() ?? '',
       message: json['message']?.toString() ?? '',
       flyerUrl: json['flyer_url']?.toString() ?? json['flyerUrl']?.toString(),
-      createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
-          : (json['createdAt'] != null
-              ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
-              : DateTime.now()),
-      isRead: json['is_read'] == true || json['is_read'] == 1 || json['isRead'] == true,
+      createdAt:
+          json['created_at'] != null
+              ? DateTime.tryParse(json['created_at'].toString()) ??
+                  DateTime.now()
+              : (json['createdAt'] != null
+                  ? DateTime.tryParse(json['createdAt'].toString()) ??
+                      DateTime.now()
+                  : DateTime.now()),
+      isRead:
+          json['is_read'] == true ||
+          json['is_read'] == 1 ||
+          json['isRead'] == true,
     );
   }
 

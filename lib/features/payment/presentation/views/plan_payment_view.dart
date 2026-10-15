@@ -28,7 +28,8 @@ class PlanPaymentView extends StatefulWidget {
 }
 
 class _PlanPaymentViewState extends State<PlanPaymentView> {
-  final TextEditingController _transactionIdController = TextEditingController();
+  final TextEditingController _transactionIdController =
+      TextEditingController();
   PaymentSettingsModel? _paymentSettings;
   StreamSubscription<PaymentSettingsModel>? _paymentSettingsSub;
 
@@ -45,7 +46,8 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
   bool _obscureCvv = true;
   bool _saveCard = true;
 
-  late final String _itemType; // 'event' or 'gallery' or 'artist' or 'art_centre'
+  late final String
+  _itemType; // 'event' or 'gallery' or 'artist' or 'art_centre'
   late final String _title;
   late final String _subtitle;
   late final String _planId;
@@ -68,40 +70,62 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
 
   void _parseArgs() {
     _itemType = (widget.args['itemType'] ?? 'event').toString().toLowerCase();
-    _formData = widget.args['formData'] is Map<String, dynamic>
-        ? Map<String, dynamic>.from(widget.args['formData'] as Map)
-        : (widget.args['formData'] is Map
+    _formData =
+        widget.args['formData'] is Map<String, dynamic>
             ? Map<String, dynamic>.from(widget.args['formData'] as Map)
-            : <String, dynamic>{});
-    _isPlanPurchase = widget.args['isPlanPurchase'] == true || _formData.isEmpty;
-    _features = widget.args['features'] is List
-        ? List<String>.from(widget.args['features'] as List)
-        : <String>[];
+            : (widget.args['formData'] is Map
+                ? Map<String, dynamic>.from(widget.args['formData'] as Map)
+                : <String, dynamic>{});
+    _isPlanPurchase =
+        widget.args['isPlanPurchase'] == true || _formData.isEmpty;
+    _features =
+        widget.args['features'] is List
+            ? List<String>.from(widget.args['features'] as List)
+            : <String>[];
 
     _planId = (widget.args['planId'] ?? 'one_time').toString();
-    _planName = widget.args['planName']?.toString().trim().isNotEmpty == true
-        ? widget.args['planName'].toString().trim()
-        : (_planId == 'yearly'
-            ? 'Yearly Plan (365 Days)'
-            : (_planId == 'monthly' ? 'Monthly Plan (30 Days)' : 'Listing Plan'));
-    _planAmount = (widget.args['planAmount'] ?? widget.args['amount'])?.toString().trim().isNotEmpty == true
-        ? (widget.args['planAmount'] ?? widget.args['amount']).toString().trim()
-        : (_itemType == 'gallery'
-            ? (_planId == 'yearly' ? 'AED 6,500' : (_planId == 'monthly' ? 'AED 750' : 'AED 3,800'))
-            : (_planId == 'yearly' ? 'AED 4,500' : (_planId == 'monthly' ? 'AED 500' : 'AED 2,500')));
+    _planName =
+        widget.args['planName']?.toString().trim().isNotEmpty == true
+            ? widget.args['planName'].toString().trim()
+            : (_planId == 'yearly'
+                ? 'Yearly Plan (365 Days)'
+                : (_planId == 'monthly'
+                    ? 'Monthly Plan (30 Days)'
+                    : 'Listing Plan'));
+    _planAmount =
+        (widget.args['planAmount'] ?? widget.args['amount'])
+                    ?.toString()
+                    .trim()
+                    .isNotEmpty ==
+                true
+            ? (widget.args['planAmount'] ?? widget.args['amount'])
+                .toString()
+                .trim()
+            : (_itemType == 'gallery'
+                ? (_planId == 'yearly'
+                    ? 'AED 6,500'
+                    : (_planId == 'monthly' ? 'AED 750' : 'AED 3,800'))
+                : (_planId == 'yearly'
+                    ? 'AED 4,500'
+                    : (_planId == 'monthly' ? 'AED 500' : 'AED 2,500')));
 
     if (_isPlanPurchase) {
       _title = _planName;
-      _subtitle = widget.args['planPeriod']?.toString().trim().isNotEmpty == true
-          ? widget.args['planPeriod'].toString().trim()
-          : 'Artist Dubai Platform Plan';
+      _subtitle =
+          widget.args['planPeriod']?.toString().trim().isNotEmpty == true
+              ? widget.args['planPeriod'].toString().trim()
+              : 'Artist Dubai Platform Plan';
     } else {
-      _title = widget.args['title']?.toString().trim().isNotEmpty == true
-          ? widget.args['title'].toString().trim()
-          : (_itemType == 'gallery' ? 'Art Gallery Registration' : 'Art Event Listing');
-      _subtitle = widget.args['subtitle']?.toString().trim().isNotEmpty == true
-          ? widget.args['subtitle'].toString().trim()
-          : 'Dubai, UAE';
+      _title =
+          widget.args['title']?.toString().trim().isNotEmpty == true
+              ? widget.args['title'].toString().trim()
+              : (_itemType == 'gallery'
+                  ? 'Art Gallery Registration'
+                  : 'Art Event Listing');
+      _subtitle =
+          widget.args['subtitle']?.toString().trim().isNotEmpty == true
+              ? widget.args['subtitle'].toString().trim()
+              : 'Dubai, UAE';
     }
   }
 
@@ -114,7 +138,9 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     } catch (_) {}
 
     try {
-      _paymentSettingsSub = sl<LiveSyncService>().paymentSettingsStream.listen((settings) {
+      _paymentSettingsSub = sl<LiveSyncService>().paymentSettingsStream.listen((
+        settings,
+      ) {
         if (mounted) {
           setState(() => _paymentSettings = settings);
         }
@@ -136,7 +162,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
   Future<void> _pickReceiptImage() async {
     try {
       final picker = ImagePicker();
-      final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+      final picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
       if (picked != null) {
         if (!mounted) return;
         setState(() => _isUploadingReceipt = true);
@@ -152,7 +181,9 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           if (url != null) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Payment receipt attached successfully!'.trData(context)),
+                content: Text(
+                  'Payment receipt attached successfully!'.trData(context),
+                ),
                 backgroundColor: const Color(0xFF6A2777),
                 behavior: SnackBarBehavior.floating,
               ),
@@ -167,53 +198,78 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
 
   void _onConfirmPressed() {
     final txnRef = _transactionIdController.text.trim();
-    final hasProof = (_receiptUrl != null && _receiptUrl!.isNotEmpty) || txnRef.isNotEmpty;
+    final hasProof =
+        (_receiptUrl != null && _receiptUrl!.isNotEmpty) || txnRef.isNotEmpty;
 
     if (!hasProof) {
       showDialog(
         context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.transparent,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              const Icon(Icons.info_outline_rounded, color: Color(0xFFD97706), size: 24),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'No Payment Proof Attached'.trData(context),
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+        builder:
+            (ctx) => AlertDialog(
+              backgroundColor: Colors.white,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Row(
+                children: [
+                  const Icon(
+                    Icons.info_outline_rounded,
+                    color: Color(0xFFD97706),
+                    size: 24,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'No Payment Proof Attached'.trData(context),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              content: Text(
+                'You haven\'t attached a receipt screenshot or entered a transaction reference number.\n\nYou can attach your proof now for faster verification, or submit anyway as pending transfer.'
+                    .trData(context),
+                style: const TextStyle(
+                  fontSize: 13,
+                  height: 1.4,
+                  color: Color(0xFF475569),
                 ),
               ),
-            ],
-          ),
-          content: Text(
-            'You haven\'t attached a receipt screenshot or entered a transaction reference number.\n\nYou can attach your proof now for faster verification, or submit anyway as pending transfer.'.trData(context),
-            style: const TextStyle(fontSize: 13, height: 1.4, color: Color(0xFF475569)),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                _pickReceiptImage();
-              },
-              child: Text('Attach Receipt'.trData(context), style: const TextStyle(color: Color(0xFF6A2777), fontWeight: FontWeight.bold)),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    _pickReceiptImage();
+                  },
+                  child: Text(
+                    'Attach Receipt'.trData(context),
+                    style: const TextStyle(
+                      color: Color(0xFF6A2777),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF6A2777),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    _submitPaymentAndListing();
+                  },
+                  child: Text('Submit Anyway'.trData(context)),
+                ),
+              ],
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6A2777),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                _submitPaymentAndListing();
-              },
-              child: Text('Submit Anyway'.trData(context)),
-            ),
-          ],
-        ),
       );
     } else {
       _submitPaymentAndListing();
@@ -225,7 +281,8 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     setState(() => _isSubmitting = true);
 
     final txnRef = _transactionIdController.text.trim();
-    final hasProof = (_receiptUrl != null && _receiptUrl!.isNotEmpty) || txnRef.isNotEmpty;
+    final hasProof =
+        (_receiptUrl != null && _receiptUrl!.isNotEmpty) || txnRef.isNotEmpty;
     final paymentStatus = hasProof ? 'submitted' : 'unpaid';
 
     bool success = false;
@@ -234,7 +291,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
       if (_isPlanPurchase) {
         final email = sl<StorageService>().getString('user_email') ?? '';
         success = await sl<ApiService>().recordPlanPurchase(
-          email: email.isNotEmpty ? email : (_formData['email'] ?? 'user@artistdubai.com'),
+          email:
+              email.isNotEmpty
+                  ? email
+                  : (_formData['email'] ?? 'user@artistdubai.com'),
           planName: _planName,
           planType: _itemType,
           itemTitle: _title,
@@ -257,7 +317,8 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           'email': _formData['email'] ?? '',
           'phone': _formData['phone'] ?? '',
           'about': _formData['about'] ?? '',
-          if (_formData['image_url'] != null && _formData['image_url'].toString().isNotEmpty)
+          if (_formData['image_url'] != null &&
+              _formData['image_url'].toString().isNotEmpty)
             'image_url': _formData['image_url'],
           'status': 'pending',
           'is_public': 0,
@@ -265,7 +326,8 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           'publishing_plan': _planId,
           'publishing_amount': _planAmount,
           'payment_status': paymentStatus,
-          if (_receiptUrl != null && _receiptUrl!.isNotEmpty) 'payment_proof_url': _receiptUrl!,
+          if (_receiptUrl != null && _receiptUrl!.isNotEmpty)
+            'payment_proof_url': _receiptUrl!,
           if (txnRef.isNotEmpty) 'payment_reference': txnRef,
         };
 
@@ -280,13 +342,18 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
         final title = (_formData['title'] ?? _title).toString();
         final description = (_formData['description'] ?? '').toString();
         final category = (_formData['category'] ?? 'Art Exhibition').toString();
-        final eventDate = (_formData['event_date'] ?? DateTime.now().toIso8601String().substring(0, 10)).toString();
+        final eventDate =
+            (_formData['event_date'] ??
+                    DateTime.now().toIso8601String().substring(0, 10))
+                .toString();
         final endDate = (_formData['end_date'] ?? '').toString();
         final location = (_formData['location'] ?? _subtitle).toString();
         final venue = (_formData['venue'] ?? '').toString();
         final isFree = _formData['is_free'] == true;
         final price = (_formData['price'] ?? 'Free Entry').toString();
-        final maxAttendees = int.tryParse(_formData['max_attendees']?.toString() ?? '100') ?? 100;
+        final maxAttendees =
+            int.tryParse(_formData['max_attendees']?.toString() ?? '100') ??
+            100;
         final organizerName = (_formData['organizer_name'] ?? '').toString();
         final contactEmail = (_formData['contact_email'] ?? '').toString();
         final contactPhone = (_formData['contact_phone'] ?? '').toString();
@@ -337,7 +404,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to submit listing. Please verify your connection and try again.'.trData(context)),
+          content: Text(
+            'Failed to submit listing. Please verify your connection and try again.'
+                .trData(context),
+          ),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
         ),
@@ -396,7 +466,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
       setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text((stripeResult.errorMessage ?? 'Payment authorization failed.').trData(context)),
+          content: Text(
+            (stripeResult.errorMessage ?? 'Payment authorization failed.')
+                .trData(context),
+          ),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
         ),
@@ -404,7 +477,9 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
       return;
     }
 
-    final ccRef = stripeResult.transactionId ?? 'pi_${DateTime.now().millisecondsSinceEpoch}';
+    final ccRef =
+        stripeResult.transactionId ??
+        'pi_${DateTime.now().millisecondsSinceEpoch}';
 
     bool success = false;
 
@@ -412,7 +487,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
       if (_isPlanPurchase) {
         final email = sl<StorageService>().getString('user_email') ?? '';
         success = await sl<ApiService>().recordPlanPurchase(
-          email: email.isNotEmpty ? email : (_formData['email'] ?? 'user@artistdubai.com'),
+          email:
+              email.isNotEmpty
+                  ? email
+                  : (_formData['email'] ?? 'user@artistdubai.com'),
           planName: _planName,
           planType: _itemType,
           itemTitle: _title,
@@ -435,7 +513,8 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           'email': _formData['email'] ?? '',
           'phone': _formData['phone'] ?? '',
           'about': _formData['about'] ?? '',
-          if (_formData['image_url'] != null && _formData['image_url'].toString().isNotEmpty)
+          if (_formData['image_url'] != null &&
+              _formData['image_url'].toString().isNotEmpty)
             'image_url': _formData['image_url'],
           'status': 'pending',
           'is_public': 0,
@@ -458,13 +537,18 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
         final title = (_formData['title'] ?? _title).toString();
         final description = (_formData['description'] ?? '').toString();
         final category = (_formData['category'] ?? 'Art Exhibition').toString();
-        final eventDate = (_formData['event_date'] ?? DateTime.now().toIso8601String().substring(0, 10)).toString();
+        final eventDate =
+            (_formData['event_date'] ??
+                    DateTime.now().toIso8601String().substring(0, 10))
+                .toString();
         final endDate = (_formData['end_date'] ?? '').toString();
         final location = (_formData['location'] ?? _subtitle).toString();
         final venue = (_formData['venue'] ?? '').toString();
         final isFree = _formData['is_free'] == true;
         final price = (_formData['price'] ?? 'Free Entry').toString();
-        final maxAttendees = int.tryParse(_formData['max_attendees']?.toString() ?? '100') ?? 100;
+        final maxAttendees =
+            int.tryParse(_formData['max_attendees']?.toString() ?? '100') ??
+            100;
         final organizerName = (_formData['organizer_name'] ?? '').toString();
         final contactEmail = (_formData['contact_email'] ?? '').toString();
         final contactPhone = (_formData['contact_phone'] ?? '').toString();
@@ -514,7 +598,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Payment processed, but submission encountered an issue. Please try again.'.trData(context)),
+          content: Text(
+            'Payment processed, but submission encountered an issue. Please try again.'
+                .trData(context),
+          ),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
         ),
@@ -526,149 +613,222 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: isCreditCard ? const Color(0xFFDCFCE7) : const Color(0xFFF3E8FF),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isCreditCard ? const Color(0xFF86EFAC) : const Color(0xFFD8B4FE),
-                  width: 2,
-                ),
-              ),
-              child: Icon(
-                Icons.check_circle_rounded,
-                color: isCreditCard ? const Color(0xFF16A34A) : const Color(0xFF6A2777),
-                size: 36,
-              ),
+      builder:
+          (ctx) => AlertDialog(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
             ),
-            const SizedBox(height: 18),
-            Text(
-              (_isPlanPurchase
-                      ? (isCreditCard ? 'Plan Purchased & Activated!' : 'Payment Submitted for Verification!')
-                      : (isCreditCard
-                          ? (_itemType == 'gallery' ? 'Gallery Registered & Paid!' : 'Event Published & Paid!')
-                          : (_itemType == 'gallery' ? 'Gallery Submitted for Review!' : 'Event Submitted for Review!')))
-                  .trData(context),
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              (_isPlanPurchase
-                      ? (isCreditCard
-                          ? 'Your subscription to $_planName is now active! All features have been enabled for your account.'
-                          : 'Your payment transfer details for $_planName have been received. Our team will verify and activate your benefits shortly.')
-                      : (isCreditCard
-                          ? (_itemType == 'gallery'
-                              ? 'Your credit card payment of $_planAmount was successful! Your art gallery registration has been approved and registered.'
-                              : 'Your credit card payment of $_planAmount was successful! Your event listing has been registered and is now published.')
-                          : (_itemType == 'gallery'
-                              ? 'Your gallery registration and payment proof have been submitted. Once verified by our administration team, your gallery will appear publicly.'
-                              : 'Your event listing and payment proof have been submitted. Our team will verify your transfer and publish your event within 24 hours.')))
-                  .trData(context),
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 13, height: 1.45, color: Color(0xFF475569)),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.verified_user_outlined, size: 18, color: Color(0xFF6A2777)),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '${'Plan'.trData(context)}: ${_planName.trData(context)} ($_planAmount)',
-                          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF334155)),
-                        ),
-                      ),
-                    ],
+            contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color:
+                        isCreditCard
+                            ? const Color(0xFFDCFCE7)
+                            : const Color(0xFFF3E8FF),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color:
+                          isCreditCard
+                              ? const Color(0xFF86EFAC)
+                              : const Color(0xFFD8B4FE),
+                      width: 2,
+                    ),
                   ),
-                  if (ccRef != null) ...[
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        const Icon(Icons.receipt_long_rounded, size: 18, color: Color(0xFF16A34A)),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '${'Transaction Ref'.trData(context)}: $ccRef',
-                            style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF16A34A)),
+                  child: Icon(
+                    Icons.check_circle_rounded,
+                    color:
+                        isCreditCard
+                            ? const Color(0xFF16A34A)
+                            : const Color(0xFF6A2777),
+                    size: 36,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  (_isPlanPurchase
+                          ? (isCreditCard
+                              ? 'Plan Purchased & Activated!'
+                              : 'Payment Submitted for Verification!')
+                          : (isCreditCard
+                              ? (_itemType == 'gallery'
+                                  ? 'Gallery Registered & Paid!'
+                                  : 'Event Published & Paid!')
+                              : (_itemType == 'gallery'
+                                  ? 'Gallery Submitted for Review!'
+                                  : 'Event Submitted for Review!')))
+                      .trData(context),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  (_isPlanPurchase
+                          ? (isCreditCard
+                              ? 'Your subscription to $_planName is now active! All features have been enabled for your account.'
+                              : 'Your payment transfer details for $_planName have been received. Our team will verify and activate your benefits shortly.')
+                          : (isCreditCard
+                              ? (_itemType == 'gallery'
+                                  ? 'Your credit card payment of $_planAmount was successful! Your art gallery registration has been approved and registered.'
+                                  : 'Your credit card payment of $_planAmount was successful! Your event listing has been registered and is now published.')
+                              : (_itemType == 'gallery'
+                                  ? 'Your gallery registration and payment proof have been submitted. Once verified by our administration team, your gallery will appear publicly.'
+                                  : 'Your event listing and payment proof have been submitted. Our team will verify your transfer and publish your event within 24 hours.')))
+                      .trData(context),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    height: 1.45,
+                    color: Color(0xFF475569),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.verified_user_outlined,
+                            size: 18,
+                            color: Color(0xFF6A2777),
                           ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '${'Plan'.trData(context)}: ${_planName.trData(context)} ($_planAmount)',
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF334155),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (ccRef != null) ...[
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.receipt_long_rounded,
+                              size: 18,
+                              color: Color(0xFF16A34A),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '${'Transaction Ref'.trData(context)}: $ccRef',
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF16A34A),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6A2777),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  if (_isPlanPurchase) {
-                    context.go(RouteNames.settings);
-                  } else if (_itemType == 'gallery') {
-                    context.go(RouteNames.galleries);
-                  } else {
-                    context.go(RouteNames.myEvents);
-                  }
-                },
-                child: Text(
-                  (_isPlanPurchase
-                          ? 'View My Active Plans'
-                          : (_itemType == 'gallery' ? 'Back to Galleries' : 'View My Events'))
-                      .trData(context),
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                ),
-              ),
-            ),
-            if (_isPlanPurchase) ...[
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.of(ctx).pop();
-                    context.go(RouteNames.home);
-                  },
-                  child: Text(
-                    'Return to Home'.trData(context),
-                    style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                    ],
                   ),
                 ),
-              ),
-            ],
-          ],
-        ),
-      ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6A2777),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      if (_isPlanPurchase) {
+                        final type = _itemType.toLowerCase().trim();
+                        if (type == 'event') {
+                          context.go(RouteNames.createArtEvent);
+                        } else if (type == 'gallery') {
+                          context.go(RouteNames.galleryRegistration);
+                        } else if (type == 'chat' || type == 'messaging') {
+                          context.go(RouteNames.artistChat);
+                        } else {
+                          context.go(RouteNames.listingPlans);
+                        }
+                      } else if (_itemType == 'gallery') {
+                        context.go(RouteNames.galleries);
+                      } else {
+                        context.go(RouteNames.myEvents);
+                      }
+                    },
+                    child: Text(
+                      (_isPlanPurchase
+                              ? (_itemType.toLowerCase() == 'event'
+                                  ? 'Create Event with Active Plan'
+                                  : (_itemType.toLowerCase() == 'gallery'
+                                      ? 'Register Gallery with Active Plan'
+                                      : (_itemType.toLowerCase() == 'chat' ||
+                                              _itemType.toLowerCase() ==
+                                                  'messaging'
+                                          ? 'Open Unlimited Chat'
+                                          : 'View Listing Plans')))
+                              : (_itemType == 'gallery'
+                                  ? 'Back to Galleries'
+                                  : 'View My Events'))
+                          .trData(context),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+                if (_isPlanPurchase) ...[
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                        context.go(RouteNames.home);
+                      },
+                      child: Text(
+                        'Return to Home'.trData(context),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF64748B),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
     );
   }
 
@@ -685,7 +845,11 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
         elevation: 0.5,
         title: Text(
           'Payment & Checkout'.trData(context),
-          style: TextStyle(fontSize: rh.sp(17), fontWeight: FontWeight.w800, color: const Color(0xFF0F172A)),
+          style: TextStyle(
+            fontSize: rh.sp(17),
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF0F172A),
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
@@ -693,14 +857,21 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
             if (context.canPop()) {
               context.pop();
             } else {
-              context.go(_itemType == 'gallery' ? RouteNames.galleryRegistration : RouteNames.createArtEvent);
+              context.go(
+                _itemType == 'gallery'
+                    ? RouteNames.galleryRegistration
+                    : RouteNames.createArtEvent,
+              );
             }
           },
         ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: rh.horizontalPadding, vertical: 20),
+          padding: EdgeInsets.symmetric(
+            horizontal: rh.horizontalPadding,
+            vertical: 20,
+          ),
           child: Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
@@ -766,7 +937,11 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
             ),
             child: const Text(
               '2',
-              style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(width: 10),
@@ -776,16 +951,28 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
               children: [
                 Text(
                   'Step 2 of 2: Payment & Verification'.trData(context),
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF6A2777)),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF6A2777),
+                  ),
                 ),
                 Text(
-                  'Pay securely with credit card or transfer via bank IBAN & QR code'.trData(context),
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF7E22CE)),
+                  'Pay securely with credit card or transfer via bank IBAN & QR code'
+                      .trData(context),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF7E22CE),
+                  ),
                 ),
               ],
             ),
           ),
-          const Icon(Icons.lock_outline_rounded, size: 18, color: Color(0xFF6A2777)),
+          const Icon(
+            Icons.lock_outline_rounded,
+            size: 18,
+            color: Color(0xFF6A2777),
+          ),
         ],
       ),
     );
@@ -814,18 +1001,32 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFEDE9FE),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  (_itemType == 'gallery' ? 'GALLERY REGISTRATION' : 'EVENT PUBLISHING').trData(context),
-                  style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF6A2777), letterSpacing: 0.5),
+                  (_itemType == 'gallery'
+                          ? 'GALLERY REGISTRATION'
+                          : 'EVENT PUBLISHING')
+                      .trData(context),
+                  style: const TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF6A2777),
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFEF3C7),
                   borderRadius: BorderRadius.circular(12),
@@ -834,11 +1035,19 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.verified_rounded, size: 14, color: Color(0xFFD97706)),
+                    const Icon(
+                      Icons.verified_rounded,
+                      size: 14,
+                      color: Color(0xFFD97706),
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       _planAmount,
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFFB45309)),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFFB45309),
+                      ),
                     ),
                   ],
                 ),
@@ -850,7 +1059,11 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
             _title.trData(context),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF0F172A),
+            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -869,7 +1082,11 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
               ),
               Text(
                 _planName.trData(context),
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF0F172A),
+                ),
               ),
             ],
           ),
@@ -879,11 +1096,19 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
             children: [
               Text(
                 'Total Payable:'.trData(context),
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF0F172A),
+                ),
               ),
               Text(
                 _planAmount,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF6A2777)),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF6A2777),
+                ),
               ),
             ],
           ),
@@ -913,11 +1138,19 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
         children: [
           Row(
             children: [
-              const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFF6A2777), size: 22),
+              const Icon(
+                Icons.qr_code_scanner_rounded,
+                color: Color(0xFF6A2777),
+                size: 22,
+              ),
               const SizedBox(width: 10),
               Text(
                 'Scan QR to Pay'.trData(context),
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                ),
               ),
             ],
           ),
@@ -936,25 +1169,39 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                 ),
               ],
             ),
-            child: settings.qrCodeUrl.isNotEmpty
-                ? AppCachedImage(
-                    imageUrl: settings.qrCodeUrl,
-                    width: 170,
-                    height: 170,
-                    fit: BoxFit.contain,
-                    errorWidget: const Center(
-                      child: Icon(Icons.qr_code_2_rounded, size: 70, color: Color(0xFF94A3B8)),
+            child:
+                settings.qrCodeUrl.isNotEmpty
+                    ? AppCachedImage(
+                      imageUrl: settings.qrCodeUrl,
+                      width: 170,
+                      height: 170,
+                      fit: BoxFit.contain,
+                      errorWidget: const Center(
+                        child: Icon(
+                          Icons.qr_code_2_rounded,
+                          size: 70,
+                          color: Color(0xFF94A3B8),
+                        ),
+                      ),
+                    )
+                    : const Center(
+                      child: Icon(
+                        Icons.qr_code_2_rounded,
+                        size: 70,
+                        color: Color(0xFF94A3B8),
+                      ),
                     ),
-                  )
-                : const Center(
-                    child: Icon(Icons.qr_code_2_rounded, size: 70, color: Color(0xFF94A3B8)),
-                  ),
           ),
           const SizedBox(height: 12),
           Text(
-            'Scan using your UAE Banking app, Apple Pay, Google Pay, or QR reader'.trData(context),
+            'Scan using your UAE Banking app, Apple Pay, Google Pay, or QR reader'
+                .trData(context),
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B), height: 1.3),
+            style: const TextStyle(
+              fontSize: 11.5,
+              color: Color(0xFF64748B),
+              height: 1.3,
+            ),
           ),
         ],
       ),
@@ -982,20 +1229,41 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
         children: [
           Row(
             children: [
-              const Icon(Icons.account_balance_rounded, color: Color(0xFF6A2777), size: 20),
+              const Icon(
+                Icons.account_balance_rounded,
+                color: Color(0xFF6A2777),
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Direct Bank Transfer Details'.trData(context),
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 14),
-          _buildInfoRow('Bank Name', settings.bankName, Icons.account_balance_rounded),
+          _buildInfoRow(
+            'Bank Name',
+            settings.bankName,
+            Icons.account_balance_rounded,
+          ),
           const SizedBox(height: 8),
-          _buildInfoRow('Account Title', settings.accountName, Icons.person_rounded),
+          _buildInfoRow(
+            'Account Title',
+            settings.accountName,
+            Icons.person_rounded,
+          ),
           const SizedBox(height: 8),
-          _buildInfoRow('IBAN / Account #', settings.accountNumber, Icons.tag_rounded, isCopyable: true),
+          _buildInfoRow(
+            'IBAN / Account #',
+            settings.accountNumber,
+            Icons.tag_rounded,
+            isCopyable: true,
+          ),
           if (settings.instructions.isNotEmpty) ...[
             const SizedBox(height: 12),
             Container(
@@ -1008,12 +1276,20 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFFD97706)),
+                  const Icon(
+                    Icons.info_outline_rounded,
+                    size: 16,
+                    color: Color(0xFFD97706),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       settings.instructions.trData(context),
-                      style: const TextStyle(fontSize: 11.5, color: Color(0xFF92400E), height: 1.35),
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        color: Color(0xFF92400E),
+                        height: 1.35,
+                      ),
                     ),
                   ),
                 ],
@@ -1025,7 +1301,12 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, IconData icon, {bool isCopyable = false}) {
+  Widget _buildInfoRow(
+    String label,
+    String value,
+    IconData icon, {
+    bool isCopyable = false,
+  }) {
     final trLabel = label.trData(context);
     final trValue = isCopyable ? value : value.trData(context);
     return Container(
@@ -1041,7 +1322,11 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           const SizedBox(width: 8),
           Text(
             '$trLabel: ',
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF64748B),
+            ),
           ),
           Expanded(
             child: Text(
@@ -1050,7 +1335,11 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
               overflow: TextOverflow.ellipsis,
               textDirection: isCopyable ? TextDirection.ltr : null,
               textAlign: isCopyable ? TextAlign.start : null,
-              style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+              style: const TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF0F172A),
+              ),
             ),
           ),
           if (isCopyable && value.isNotEmpty)
@@ -1059,7 +1348,9 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                 Clipboard.setData(ClipboardData(text: value));
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Copied $trLabel to clipboard!'.trData(context)),
+                    content: Text(
+                      'Copied $trLabel to clipboard!'.trData(context),
+                    ),
                     backgroundColor: const Color(0xFF6A2777),
                     duration: const Duration(seconds: 2),
                     behavior: SnackBarBehavior.floating,
@@ -1075,9 +1366,20 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.copy_rounded, size: 13, color: Color(0xFF6A2777)),
+                    const Icon(
+                      Icons.copy_rounded,
+                      size: 13,
+                      color: Color(0xFF6A2777),
+                    ),
                     const SizedBox(width: 4),
-                    Text('Copy'.trData(context), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF6A2777))),
+                    Text(
+                      'Copy'.trData(context),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF6A2777),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -1108,17 +1410,26 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
         children: [
           Row(
             children: [
-              const Icon(Icons.verified_outlined, color: Color(0xFF6A2777), size: 20),
+              const Icon(
+                Icons.verified_outlined,
+                color: Color(0xFF6A2777),
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Payment Verification & Proof'.trData(context),
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 6),
           Text(
-            'Attach your transfer receipt screenshot and/or enter transaction ID for instant verification.'.trData(context),
+            'Attach your transfer receipt screenshot and/or enter transaction ID for instant verification.'
+                .trData(context),
             style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
           ),
           const SizedBox(height: 14),
@@ -1126,20 +1437,38 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           // Transaction ID Field
           Text(
             'Transaction Reference / ID (Optional)'.trData(context),
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF334155)),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF334155),
+            ),
           ),
           const SizedBox(height: 6),
           TextFormField(
             controller: _transactionIdController,
-            style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.black),
+            style: const TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w600,
+              color: Colors.black,
+            ),
             cursorColor: const Color(0xFF6A2777),
             decoration: InputDecoration(
               hintText: 'e.g. TXN-98472918 or Bank Ref #'.trData(context),
-              hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF94A3B8)),
-              prefixIcon: const Icon(Icons.receipt_long_rounded, size: 18, color: Color(0xFF64748B)),
+              hintStyle: const TextStyle(
+                fontSize: 12.5,
+                color: Color(0xFF94A3B8),
+              ),
+              prefixIcon: const Icon(
+                Icons.receipt_long_rounded,
+                size: 18,
+                color: Color(0xFF64748B),
+              ),
               filled: true,
               fillColor: const Color(0xFFF8FAFC),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
@@ -1150,7 +1479,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5),
+                borderSide: const BorderSide(
+                  color: Color(0xFF6A2777),
+                  width: 1.5,
+                ),
               ),
             ),
           ),
@@ -1160,10 +1492,16 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: _receiptUrl != null ? const Color(0xFFF0FDF4) : const Color(0xFFF8FAFC),
+              color:
+                  _receiptUrl != null
+                      ? const Color(0xFFF0FDF4)
+                      : const Color(0xFFF8FAFC),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: _receiptUrl != null ? const Color(0xFF86EFAC) : const Color(0xFFE2E8F0),
+                color:
+                    _receiptUrl != null
+                        ? const Color(0xFF86EFAC)
+                        : const Color(0xFFE2E8F0),
               ),
             ),
             child: Column(
@@ -1179,7 +1517,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                           width: 48,
                           height: 48,
                           fit: BoxFit.cover,
-                          errorWidget: const Icon(Icons.receipt_rounded, color: Color(0xFF16A34A)),
+                          errorWidget: const Icon(
+                            Icons.receipt_rounded,
+                            color: Color(0xFF16A34A),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1191,13 +1532,22 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                               'Payment Proof Attached'.trData(context),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF15803D)),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF15803D),
+                              ),
                             ),
                             Text(
-                              'Receipt screenshot ready for review'.trData(context),
+                              'Receipt screenshot ready for review'.trData(
+                                context,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 11, color: Color(0xFF166534)),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF166534),
+                              ),
                             ),
                           ],
                         ),
@@ -1210,7 +1560,11 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                           color: const Color(0xFFEDE9FE),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(Icons.upload_file_rounded, color: Color(0xFF6A2777), size: 22),
+                        child: const Icon(
+                          Icons.upload_file_rounded,
+                          color: Color(0xFF6A2777),
+                          size: 22,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -1221,13 +1575,22 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                               'Attach Transfer Receipt'.trData(context),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF334155)),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF334155),
+                              ),
                             ),
                             Text(
-                              'Upload screenshot (PNG, JPG up to 10MB)'.trData(context),
+                              'Upload screenshot (PNG, JPG up to 10MB)'.trData(
+                                context,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF64748B),
+                              ),
                             ),
                           ],
                         ),
@@ -1241,28 +1604,40 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                   height: 40,
                   child: TextButton.icon(
                     onPressed: _isUploadingReceipt ? null : _pickReceiptImage,
-                    icon: _isUploadingReceipt
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6A2777)),
-                          )
-                        : Icon(
-                            _receiptUrl != null ? Icons.refresh_rounded : Icons.add_photo_alternate_rounded,
-                            size: 16,
-                            color: const Color(0xFF6A2777),
-                          ),
+                    icon:
+                        _isUploadingReceipt
+                            ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Color(0xFF6A2777),
+                              ),
+                            )
+                            : Icon(
+                              _receiptUrl != null
+                                  ? Icons.refresh_rounded
+                                  : Icons.add_photo_alternate_rounded,
+                              size: 16,
+                              color: const Color(0xFF6A2777),
+                            ),
                     label: Text(
                       _isUploadingReceipt
                           ? 'Uploading...'.trData(context)
                           : (_receiptUrl != null
                               ? 'Change Receipt Screenshot'.trData(context)
                               : 'Upload Receipt Screenshot'.trData(context)),
-                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF6A2777)),
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF6A2777),
+                      ),
                     ),
                     style: TextButton.styleFrom(
                       backgroundColor: const Color(0xFFF3E8FF),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ),
@@ -1286,45 +1661,62 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
               backgroundColor: const Color(0xFF6A2777),
               foregroundColor: Colors.white,
               elevation: 1,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
-            onPressed: _isSubmitting
-                ? null
-                : (isCreditCard ? _handleCreditCardPayment : _onConfirmPressed),
-            child: _isSubmitting
-                ? Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        isCreditCard
-                            ? 'Processing payment securely...'.trData(context)
-                            : 'Submitting listing...'.trData(context),
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                      ),
-                    ],
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        isCreditCard ? Icons.lock_rounded : Icons.check_circle_outline_rounded,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        isCreditCard
-                            ? '${'Pay'.trData(context)} $_planAmount ${'with Card'.trData(context)}'
-                            : '${'Confirm & Submit Listing'.trData(context)} ($_planAmount)',
-                        style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
-                      ),
-                    ],
-                  ),
+            onPressed:
+                _isSubmitting
+                    ? null
+                    : (isCreditCard
+                        ? _handleCreditCardPayment
+                        : _onConfirmPressed),
+            child:
+                _isSubmitting
+                    ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          isCreditCard
+                              ? 'Processing payment securely...'.trData(context)
+                              : 'Submitting listing...'.trData(context),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    )
+                    : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          isCreditCard
+                              ? Icons.lock_rounded
+                              : Icons.check_circle_outline_rounded,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          isCreditCard
+                              ? '${'Pay'.trData(context)} $_planAmount ${'with Card'.trData(context)}'
+                              : '${'Confirm & Submit Listing'.trData(context)} ($_planAmount)',
+                          style: const TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
           ),
         ),
         const SizedBox(height: 12),
@@ -1335,16 +1727,28 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFF475569),
               side: const BorderSide(color: Color(0xFFCBD5E1)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             onPressed: () {
               if (context.canPop()) {
                 context.pop();
               } else {
-                context.go(_itemType == 'gallery' ? RouteNames.galleryRegistration : RouteNames.createArtEvent);
+                context.go(
+                  _itemType == 'gallery'
+                      ? RouteNames.galleryRegistration
+                      : RouteNames.createArtEvent,
+                );
               }
             },
-            child: Text('Back to Edit Details'.trData(context), style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
+            child: Text(
+              'Back to Edit Details'.trData(context),
+              style: const TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ),
       ],
@@ -1357,11 +1761,19 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
       children: [
         Row(
           children: [
-            const Icon(Icons.payment_rounded, size: 18, color: Color(0xFF6A2777)),
+            const Icon(
+              Icons.payment_rounded,
+              size: 18,
+              color: Color(0xFF6A2777),
+            ),
             const SizedBox(width: 8),
             Text(
               'Payment Method'.trData(context),
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF0F172A),
+              ),
             ),
           ],
         ),
@@ -1413,7 +1825,8 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           color: isSelected ? const Color(0xFFFBF7FD) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFF6A2777) : const Color(0xFFE2E8F0),
+            color:
+                isSelected ? const Color(0xFF6A2777) : const Color(0xFFE2E8F0),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: [
@@ -1434,18 +1847,27 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                 Container(
                   padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFFEDE9FE) : const Color(0xFFF8FAFC),
+                    color:
+                        isSelected
+                            ? const Color(0xFFEDE9FE)
+                            : const Color(0xFFF8FAFC),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     icon,
                     size: 18,
-                    color: isSelected ? const Color(0xFF6A2777) : const Color(0xFF64748B),
+                    color:
+                        isSelected
+                            ? const Color(0xFF6A2777)
+                            : const Color(0xFF64748B),
                   ),
                 ),
                 if (isRecommended)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFEDE9FE),
                       borderRadius: BorderRadius.circular(4),
@@ -1461,9 +1883,14 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                   )
                 else
                   Icon(
-                    isSelected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                    isSelected
+                        ? Icons.radio_button_checked_rounded
+                        : Icons.radio_button_off_rounded,
                     size: 18,
-                    color: isSelected ? const Color(0xFF6A2777) : const Color(0xFFCBD5E1),
+                    color:
+                        isSelected
+                            ? const Color(0xFF6A2777)
+                            : const Color(0xFFCBD5E1),
                   ),
               ],
             ),
@@ -1475,7 +1902,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
-                color: isSelected ? const Color(0xFF6A2777) : const Color(0xFF0F172A),
+                color:
+                    isSelected
+                        ? const Color(0xFF6A2777)
+                        : const Color(0xFF0F172A),
               ),
             ),
             const SizedBox(height: 2),
@@ -1483,10 +1913,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
               subtitle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 10.5,
-                color: Color(0xFF64748B),
-              ),
+              style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
             ),
           ],
         ),
@@ -1530,11 +1957,19 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.credit_score_rounded, size: 18, color: Color(0xFF6A2777)),
+                    const Icon(
+                      Icons.credit_score_rounded,
+                      size: 18,
+                      color: Color(0xFF6A2777),
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'Card Details'.trData(context),
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                      ),
                     ),
                   ],
                 ),
@@ -1559,7 +1994,9 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                   ),
                   validator: (val) {
                     if (val == null || val.trim().isEmpty) {
-                      return 'Please enter the name on your card'.trData(context);
+                      return 'Please enter the name on your card'.trData(
+                        context,
+                      );
                     }
                     if (val.trim().length < 3) {
                       return 'Name is too short'.trData(context);
@@ -1602,7 +2039,9 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                       return 'Please enter your card number'.trData(context);
                     }
                     if (cleaned.length < 15) {
-                      return 'Please enter a valid 16-digit card number'.trData(context);
+                      return 'Please enter a valid 16-digit card number'.trData(
+                        context,
+                      );
                     }
                     return null;
                   },
@@ -1638,7 +2077,8 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                             decoration: _cardInputDecoration(
                               hint: 'MM/YY',
                               prefixIcon: Icons.calendar_today_rounded,
-                              hasValue: _expiryController.text.trim().isNotEmpty,
+                              hasValue:
+                                  _expiryController.text.trim().isNotEmpty,
                             ),
                             validator: (val) {
                               if (val == null || val.trim().isEmpty) {
@@ -1663,7 +2103,9 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildFieldLabel('Security Code (CVV)'.trData(context)),
+                          _buildFieldLabel(
+                            'Security Code (CVV)'.trData(context),
+                          ),
                           const SizedBox(height: 6),
                           TextFormField(
                             controller: _cvvController,
@@ -1686,11 +2128,16 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                               hasValue: _cvvController.text.trim().isNotEmpty,
                               suffix: IconButton(
                                 icon: Icon(
-                                  _obscureCvv ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                  _obscureCvv
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
                                   size: 18,
                                   color: const Color(0xFF64748B),
                                 ),
-                                onPressed: () => setState(() => _obscureCvv = !_obscureCvv),
+                                onPressed:
+                                    () => setState(
+                                      () => _obscureCvv = !_obscureCvv,
+                                    ),
                               ),
                             ),
                             validator: (val) {
@@ -1725,7 +2172,9 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                             value: _saveCard,
                             activeColor: const Color(0xFF6A2777),
                             checkColor: Colors.white,
-                            fillColor: WidgetStateProperty.resolveWith((states) {
+                            fillColor: WidgetStateProperty.resolveWith((
+                              states,
+                            ) {
                               if (states.contains(WidgetState.selected)) {
                                 return const Color(0xFF6A2777);
                               }
@@ -1735,17 +2184,27 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                               color: Color(0xFF6A2777),
                               width: 1.8,
                             ),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
                             visualDensity: VisualDensity.compact,
-                            onChanged: (val) => setState(() => _saveCard = val ?? true),
+                            onChanged:
+                                (val) =>
+                                    setState(() => _saveCard = val ?? true),
                           ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'Save card securely for 1-click renewals & future listings'.trData(context),
-                            style: const TextStyle(fontSize: 12, color: Color(0xFF475569), fontWeight: FontWeight.w500),
+                            'Save card securely for 1-click renewals & future listings'
+                                .trData(context),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF475569),
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ],
@@ -1765,7 +2224,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFF635BFF),
                           borderRadius: BorderRadius.circular(4),
@@ -1783,11 +2245,20 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Guaranteed safe & secure checkout powered by Stripe'.trData(context),
-                          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+                          'Guaranteed safe & secure checkout powered by Stripe'
+                              .trData(context),
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF334155),
+                          ),
                         ),
                       ),
-                      const Icon(Icons.lock_rounded, size: 16, color: Color(0xFF16A34A)),
+                      const Icon(
+                        Icons.lock_rounded,
+                        size: 16,
+                        color: Color(0xFF16A34A),
+                      ),
                     ],
                   ),
                 ),
@@ -1802,10 +2273,14 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
   Widget _buildCreditCardPreview(String cardBrand) {
     final rawNumber = _cardNumberController.text.trim();
     final displayNum = rawNumber.isEmpty ? '•••• •••• •••• ••••' : rawNumber;
-    final displayName = _cardHolderController.text.trim().isEmpty
-        ? 'CARDHOLDER NAME'
-        : _cardHolderController.text.trim().toUpperCase();
-    final displayExp = _expiryController.text.trim().isEmpty ? 'MM/YY' : _expiryController.text.trim();
+    final displayName =
+        _cardHolderController.text.trim().isEmpty
+            ? 'CARDHOLDER NAME'
+            : _cardHolderController.text.trim().toUpperCase();
+    final displayExp =
+        _expiryController.text.trim().isEmpty
+            ? 'MM/YY'
+            : _expiryController.text.trim();
 
     return Container(
       width: double.infinity,
@@ -1814,11 +2289,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF2E1065),
-            Color(0xFF6A2777),
-            Color(0xFF4C1D95),
-          ],
+          colors: [Color(0xFF2E1065), Color(0xFF6A2777), Color(0xFF4C1D95)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -1847,7 +2318,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                     decoration: BoxDecoration(
                       color: const Color(0xFFFCD34D),
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: const Color(0xFFF59E0B), width: 1),
+                      border: Border.all(
+                        color: const Color(0xFFF59E0B),
+                        width: 1,
+                      ),
                     ),
                     child: Stack(
                       children: [
@@ -1855,9 +2329,15 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                           child: Row(
                             children: [
                               const Spacer(),
-                              Container(width: 1, color: const Color(0xFFD97706)),
+                              Container(
+                                width: 1,
+                                color: const Color(0xFFD97706),
+                              ),
                               const Spacer(),
-                              Container(width: 1, color: const Color(0xFFD97706)),
+                              Container(
+                                width: 1,
+                                color: const Color(0xFFD97706),
+                              ),
                               const Spacer(),
                             ],
                           ),
@@ -1867,7 +2347,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                             width: 18,
                             height: 12,
                             decoration: BoxDecoration(
-                              border: Border.all(color: const Color(0xFFD97706), width: 0.8),
+                              border: Border.all(
+                                color: const Color(0xFFD97706),
+                                width: 0.8,
+                              ),
                               borderRadius: BorderRadius.circular(3),
                             ),
                           ),
@@ -1879,7 +2362,11 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                   // Contactless Wave
                   Transform.rotate(
                     angle: 1.5708,
-                    child: const Icon(Icons.wifi_rounded, color: Colors.white70, size: 20),
+                    child: const Icon(
+                      Icons.wifi_rounded,
+                      color: Colors.white70,
+                      size: 20,
+                    ),
                   ),
                 ],
               ),
@@ -1982,10 +2469,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(6),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 4,
-          ),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4),
         ],
       ),
       child: Text(
@@ -2024,11 +2508,19 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           ),
           Row(
             children: [
-              const Icon(Icons.lock_outline_rounded, size: 13, color: Color(0xFF16A34A)),
+              const Icon(
+                Icons.lock_outline_rounded,
+                size: 13,
+                color: Color(0xFF16A34A),
+              ),
               const SizedBox(width: 4),
               Text(
                 '256-bit SSL'.trData(context),
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF16A34A)),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF16A34A),
+                ),
               ),
             ],
           ),
@@ -2047,7 +2539,11 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: color),
+        style: TextStyle(
+          fontSize: 9.5,
+          fontWeight: FontWeight.w800,
+          color: color,
+        ),
       ),
     );
   }
@@ -2074,7 +2570,11 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
   Widget _buildFieldLabel(String label) {
     return Text(
       label,
-      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF334155)),
+      style: const TextStyle(
+        fontSize: 12.5,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF334155),
+      ),
     );
   }
 

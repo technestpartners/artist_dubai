@@ -31,21 +31,22 @@ class _ChatMessage {
   }) : timestamp = timestamp ?? DateTime.now();
 
   Map<String, dynamic> toJson() => {
-        'text': text,
-        'isUser': isUser,
-        'timestamp': timestamp.toIso8601String(),
-        'related_questions': relatedQuestions,
-      };
+    'text': text,
+    'isUser': isUser,
+    'timestamp': timestamp.toIso8601String(),
+    'related_questions': relatedQuestions,
+  };
 
   factory _ChatMessage.fromJson(Map<String, dynamic> json) => _ChatMessage(
-        text: json['text'] as String? ?? '',
-        isUser: json['isUser'] as bool? ?? false,
-        timestamp: DateTime.tryParse(json['timestamp'] as String? ?? '') ??
-            DateTime.now(),
-        relatedQuestions: (json['related_questions'] as List<dynamic>? ?? [])
+    text: json['text'] as String? ?? '',
+    isUser: json['isUser'] as bool? ?? false,
+    timestamp:
+        DateTime.tryParse(json['timestamp'] as String? ?? '') ?? DateTime.now(),
+    relatedQuestions:
+        (json['related_questions'] as List<dynamic>? ?? [])
             .map((e) => e.toString())
             .toList(),
-      );
+  );
 }
 
 class _ChatSession {
@@ -62,31 +63,29 @@ class _ChatSession {
   });
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'updatedAt': updatedAt.toIso8601String(),
-        'messages': messages.map((m) => m.toJson()).toList(),
-      };
+    'id': id,
+    'title': title,
+    'updatedAt': updatedAt.toIso8601String(),
+    'messages': messages.map((m) => m.toJson()).toList(),
+  };
 
   factory _ChatSession.fromJson(Map<String, dynamic> json) => _ChatSession(
-        id: json['id'] as String? ?? '',
-        title: json['title'] as String? ?? 'Chat',
-        updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
-            DateTime.now(),
-        messages: (json['messages'] as List<dynamic>? ?? [])
+    id: json['id'] as String? ?? '',
+    title: json['title'] as String? ?? 'Chat',
+    updatedAt:
+        DateTime.tryParse(json['updatedAt'] as String? ?? '') ?? DateTime.now(),
+    messages:
+        (json['messages'] as List<dynamic>? ?? [])
             .map((m) => _ChatMessage.fromJson(m as Map<String, dynamic>))
             .toList(),
-      );
+  );
 }
 
 class _SessionDateGroup {
   final String title;
   final List<_ChatSession> sessions;
 
-  const _SessionDateGroup({
-    required this.title,
-    required this.sessions,
-  });
+  const _SessionDateGroup({required this.title, required this.sessions});
 }
 
 class _AiArtGuideViewState extends State<AiArtGuideView> {
@@ -128,7 +127,6 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
     ];
   }
 
-
   @override
   void initState() {
     super.initState();
@@ -168,7 +166,9 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
         setState(() {
           _savedSessions.clear();
           for (final item in decoded) {
-            _savedSessions.add(_ChatSession.fromJson(item as Map<String, dynamic>));
+            _savedSessions.add(
+              _ChatSession.fromJson(item as Map<String, dynamic>),
+            );
           }
           _savedSessions.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
         });
@@ -183,7 +183,9 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
   void _saveSessionsToDisk() {
     try {
       final storage = sl<StorageService>();
-      final encoded = jsonEncode(_savedSessions.map((s) => s.toJson()).toList());
+      final encoded = jsonEncode(
+        _savedSessions.map((s) => s.toJson()).toList(),
+      );
       storage.setString(_currentStorageKey, encoded);
     } catch (_) {}
   }
@@ -195,26 +197,34 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
       final userId = storage.getString('user_id')?.trim();
 
       // If neither email nor userId is set, don't query remote user sessions
-      if ((email == null || email.isEmpty) && (userId == null || userId.isEmpty)) {
+      if ((email == null || email.isEmpty) &&
+          (userId == null || userId.isEmpty)) {
         return;
       }
 
       final api = sl<ApiService>();
-      final backendList = await api.getAiChatSessions(userEmail: email, userId: userId);
+      final backendList = await api.getAiChatSessions(
+        userEmail: email,
+        userId: userId,
+      );
       if (backendList.isNotEmpty && mounted) {
         setState(() {
           for (final item in backendList) {
             final id = item['id']?.toString() ?? '';
             final title = item['title']?.toString() ?? 'Chat';
-            final updatedAt = DateTime.tryParse(item['updated_at']?.toString() ?? '') ?? DateTime.now();
+            final updatedAt =
+                DateTime.tryParse(item['updated_at']?.toString() ?? '') ??
+                DateTime.now();
             final existingIndex = _savedSessions.indexWhere((s) => s.id == id);
             if (existingIndex < 0) {
-              _savedSessions.add(_ChatSession(
-                id: id,
-                title: title,
-                updatedAt: updatedAt,
-                messages: [],
-              ));
+              _savedSessions.add(
+                _ChatSession(
+                  id: id,
+                  title: title,
+                  updatedAt: updatedAt,
+                  messages: [],
+                ),
+              );
             } else {
               _savedSessions[existingIndex].title = title;
               _savedSessions[existingIndex].updatedAt = updatedAt;
@@ -234,9 +244,10 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
       _currentSessionId = 'chat_${DateTime.now().millisecondsSinceEpoch}';
       final newSession = _ChatSession(
         id: _currentSessionId!,
-        title: firstUserMessage.length > 40
-            ? '${firstUserMessage.substring(0, 37)}...'
-            : firstUserMessage,
+        title:
+            firstUserMessage.length > 40
+                ? '${firstUserMessage.substring(0, 37)}...'
+                : firstUserMessage,
         updatedAt: DateTime.now(),
         messages: List.from(_messages),
       );
@@ -271,17 +282,22 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
             final isUser = m['sender'] == 'user';
             List<String> related = [];
             if (m['related_questions'] is List) {
-              related = (m['related_questions'] as List)
-                  .map((e) => e.toString().trim())
-                  .where((e) => e.isNotEmpty)
-                  .toList();
+              related =
+                  (m['related_questions'] as List)
+                      .map((e) => e.toString().trim())
+                      .where((e) => e.isNotEmpty)
+                      .toList();
             }
-            _messages.add(_ChatMessage(
-              text: m['message']?.toString() ?? '',
-              isUser: isUser,
-              timestamp: DateTime.tryParse(m['created_at']?.toString() ?? '') ?? DateTime.now(),
-              relatedQuestions: related,
-            ));
+            _messages.add(
+              _ChatMessage(
+                text: m['message']?.toString() ?? '',
+                isUser: isUser,
+                timestamp:
+                    DateTime.tryParse(m['created_at']?.toString() ?? '') ??
+                    DateTime.now(),
+                relatedQuestions: related,
+              ),
+            );
           }
           session.messages = List.from(_messages);
         });
@@ -324,7 +340,8 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
     if (query.isEmpty) return;
 
     final isFirstMsg = _messages.isEmpty;
-    final isArabic = Provider.of<LocaleProvider>(context, listen: false).isArabic;
+    final isArabic =
+        Provider.of<LocaleProvider>(context, listen: false).isArabic;
 
     setState(() {
       _messages.add(_ChatMessage(text: query, isUser: true));
@@ -356,20 +373,25 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
         final replyText = res['ai_reply'].toString();
         List<String> relatedQuestions = [];
         if (res['related_questions'] is List) {
-          relatedQuestions = (res['related_questions'] as List)
-              .map((e) => e.toString().trim())
-              .where((e) => e.isNotEmpty)
-              .toList();
+          relatedQuestions =
+              (res['related_questions'] as List)
+                  .map((e) => e.toString().trim())
+                  .where((e) => e.isNotEmpty)
+                  .toList();
         }
         setState(() {
           _isTyping = false;
-          _messages.add(_ChatMessage(
-            text: replyText,
-            isUser: false,
-            relatedQuestions: relatedQuestions,
-          ));
+          _messages.add(
+            _ChatMessage(
+              text: replyText,
+              isUser: false,
+              relatedQuestions: relatedQuestions,
+            ),
+          );
         });
-        _syncCurrentSession(isFirstMsg ? query : _safeCurrentSessionTitle(query));
+        _syncCurrentSession(
+          isFirstMsg ? query : _safeCurrentSessionTitle(query),
+        );
         _scrollToBottom();
         return;
       }
@@ -379,16 +401,19 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
 
     // Honest network / service error if Gemini was unreachable (no hardcoded canned responses)
     if (mounted) {
-      final errorText = isArabic
-          ? 'عذراً، تعذر الاتصال بمحرك الذكاء الاصطناعي (Google Gemini) في الوقت الحالي. يرجى التحقق من اتصال الإنترنت والمحاولة مجدداً.'
-          : 'Unable to connect to Google Gemini AI service at the moment. Please check your internet connection and try again.';
+      final errorText =
+          isArabic
+              ? 'عذراً، تعذر الاتصال بمحرك الذكاء الاصطناعي (Google Gemini) في الوقت الحالي. يرجى التحقق من اتصال الإنترنت والمحاولة مجدداً.'
+              : 'Unable to connect to Google Gemini AI service at the moment. Please check your internet connection and try again.';
       setState(() {
         _isTyping = false;
-        _messages.add(_ChatMessage(
-          text: errorText,
-          isUser: false,
-          relatedQuestions: const [],
-        ));
+        _messages.add(
+          _ChatMessage(
+            text: errorText,
+            isUser: false,
+            relatedQuestions: const [],
+          ),
+        );
       });
       _syncCurrentSession(isFirstMsg ? query : _safeCurrentSessionTitle(query));
       _scrollToBottom();
@@ -437,16 +462,43 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
       final label = isArabic ? 'أمس' : 'Yesterday';
       return '$label • $timeStr';
     } else if (dt.year == now.year) {
-      const monthsEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const monthsAr = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
-      final monthName = isArabic ? monthsAr[dt.month - 1] : monthsEn[dt.month - 1];
+      const monthsEn = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+      const monthsAr = [
+        'يناير',
+        'فبراير',
+        'مارس',
+        'أبريل',
+        'مايو',
+        'يونيو',
+        'يوليو',
+        'أغسطس',
+        'سبتمبر',
+        'أكتوبر',
+        'نوفمبر',
+        'ديسمبر',
+      ];
+      final monthName =
+          isArabic ? monthsAr[dt.month - 1] : monthsEn[dt.month - 1];
       return '${dt.day} $monthName • $timeStr';
     } else {
-      final dateLabel = '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+      final dateLabel =
+          '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
       return '$dateLabel • $timeStr';
     }
   }
-
 
   List<_SessionDateGroup> _getGroupedSessions(bool isArabic) {
     final now = DateTime.now();
@@ -465,13 +517,17 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
       ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
 
     for (final s in sorted) {
-      if (s.updatedAt.isAfter(todayStart) || s.updatedAt.isAtSameMomentAs(todayStart)) {
+      if (s.updatedAt.isAfter(todayStart) ||
+          s.updatedAt.isAtSameMomentAs(todayStart)) {
         todaySessions.add(s);
-      } else if (s.updatedAt.isAfter(yesterdayStart) || s.updatedAt.isAtSameMomentAs(yesterdayStart)) {
+      } else if (s.updatedAt.isAfter(yesterdayStart) ||
+          s.updatedAt.isAtSameMomentAs(yesterdayStart)) {
         yesterdaySessions.add(s);
-      } else if (s.updatedAt.isAfter(sevenDaysAgo) || s.updatedAt.isAtSameMomentAs(sevenDaysAgo)) {
+      } else if (s.updatedAt.isAfter(sevenDaysAgo) ||
+          s.updatedAt.isAtSameMomentAs(sevenDaysAgo)) {
         last7DaysSessions.add(s);
-      } else if (s.updatedAt.isAfter(thirtyDaysAgo) || s.updatedAt.isAtSameMomentAs(thirtyDaysAgo)) {
+      } else if (s.updatedAt.isAfter(thirtyDaysAgo) ||
+          s.updatedAt.isAtSameMomentAs(thirtyDaysAgo)) {
         last30DaysSessions.add(s);
       } else {
         earlierSessions.add(s);
@@ -480,39 +536,48 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
 
     final List<_SessionDateGroup> groups = [];
     if (todaySessions.isNotEmpty) {
-      groups.add(_SessionDateGroup(
-        title: isArabic ? 'اليوم' : 'Today',
-        sessions: todaySessions,
-      ));
+      groups.add(
+        _SessionDateGroup(
+          title: isArabic ? 'اليوم' : 'Today',
+          sessions: todaySessions,
+        ),
+      );
     }
     if (yesterdaySessions.isNotEmpty) {
-      groups.add(_SessionDateGroup(
-        title: isArabic ? 'أمس' : 'Yesterday',
-        sessions: yesterdaySessions,
-      ));
+      groups.add(
+        _SessionDateGroup(
+          title: isArabic ? 'أمس' : 'Yesterday',
+          sessions: yesterdaySessions,
+        ),
+      );
     }
     if (last7DaysSessions.isNotEmpty) {
-      groups.add(_SessionDateGroup(
-        title: isArabic ? 'آخر 7 أيام' : 'Previous 7 Days',
-        sessions: last7DaysSessions,
-      ));
+      groups.add(
+        _SessionDateGroup(
+          title: isArabic ? 'آخر 7 أيام' : 'Previous 7 Days',
+          sessions: last7DaysSessions,
+        ),
+      );
     }
     if (last30DaysSessions.isNotEmpty) {
-      groups.add(_SessionDateGroup(
-        title: isArabic ? 'آخر 30 يوماً' : 'Previous 30 Days',
-        sessions: last30DaysSessions,
-      ));
+      groups.add(
+        _SessionDateGroup(
+          title: isArabic ? 'آخر 30 يوماً' : 'Previous 30 Days',
+          sessions: last30DaysSessions,
+        ),
+      );
     }
     if (earlierSessions.isNotEmpty) {
-      groups.add(_SessionDateGroup(
-        title: isArabic ? 'سابقاً' : 'Earlier',
-        sessions: earlierSessions,
-      ));
+      groups.add(
+        _SessionDateGroup(
+          title: isArabic ? 'سابقاً' : 'Earlier',
+          sessions: earlierSessions,
+        ),
+      );
     }
 
     return groups;
   }
-
 
   List<String> get _latestRelatedQuestions {
     for (int i = _messages.length - 1; i >= 0; i--) {
@@ -562,9 +627,10 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
 
               // 2. Chat / Suggestion Body
               Expanded(
-                child: _messages.isEmpty
-                    ? _buildEmptyState(rh, isArabic)
-                    : _buildMessageList(isArabic),
+                child:
+                    _messages.isEmpty
+                        ? _buildEmptyState(rh, isArabic)
+                        : _buildMessageList(isArabic),
               ),
 
               // 3. Related Questions docked on top of the text field
@@ -583,14 +649,15 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
   }
 
   Widget _buildChatsDrawer(BuildContext context, bool isArabic) {
-    final drawerWidth = (MediaQuery.of(context).size.width * 0.72).clamp(260.0, 360.0);
+    final drawerWidth = (MediaQuery.of(context).size.width * 0.72).clamp(
+      260.0,
+      360.0,
+    );
 
     return Drawer(
       backgroundColor: const Color(0xFF5E1788),
       width: drawerWidth,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -633,7 +700,10 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
 
             // New chat button inside drawer
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12.0,
+                vertical: 4.0,
+              ),
               child: InkWell(
                 onTap: () {
                   Navigator.of(context).pop();
@@ -642,7 +712,10 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(10),
@@ -678,9 +751,14 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
                   final groups = _getGroupedSessions(isArabic);
                   if (groups.isEmpty) {
                     return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20.0,
+                        vertical: 8.0,
+                      ),
                       child: Text(
-                        isArabic ? 'لا توجد محادثات سابقة بعد.' : 'No chats yet.',
+                        isArabic
+                            ? 'لا توجد محادثات سابقة بعد.'
+                            : 'No chats yet.',
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.8),
                           fontSize: 14.5,
@@ -691,160 +769,232 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
                   }
 
                   return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 4,
+                    ),
                     itemCount: groups.length,
                     itemBuilder: (context, groupIndex) {
                       final group = groups[groupIndex];
 
                       return Column(
                         crossAxisAlignment:
-                            isArabic ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                            isArabic
+                                ? CrossAxisAlignment.end
+                                : CrossAxisAlignment.start,
                         children: [
                           Padding(
                             padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
                             child: Row(
                               mainAxisAlignment:
-                                  isArabic ? MainAxisAlignment.end : MainAxisAlignment.start,
-                              children: isArabic
-                                  ? [
-                                      Text(
-                                        group.title.toUpperCase(),
-                                        style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.65),
-                                          fontSize: 11.0,
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: 0.6,
+                                  isArabic
+                                      ? MainAxisAlignment.end
+                                      : MainAxisAlignment.start,
+                              children:
+                                  isArabic
+                                      ? [
+                                        Text(
+                                          group.title.toUpperCase(),
+                                          style: TextStyle(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.65,
+                                            ),
+                                            fontSize: 11.0,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 0.6,
+                                          ),
+                                          textDirection: TextDirection.rtl,
                                         ),
-                                        textDirection: TextDirection.rtl,
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Icon(
-                                        Icons.calendar_today_rounded,
-                                        size: 11,
-                                        color: Colors.white.withValues(alpha: 0.50),
-                                      ),
-                                    ]
-                                  : [
-                                      Icon(
-                                        Icons.calendar_today_rounded,
-                                        size: 11,
-                                        color: Colors.white.withValues(alpha: 0.50),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        group.title.toUpperCase(),
-                                        style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.65),
-                                          fontSize: 11.0,
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: 0.6,
+                                        const SizedBox(width: 5),
+                                        Icon(
+                                          Icons.calendar_today_rounded,
+                                          size: 11,
+                                          color: Colors.white.withValues(
+                                            alpha: 0.50,
+                                          ),
                                         ),
-                                        textDirection: TextDirection.ltr,
-                                      ),
-                                    ],
+                                      ]
+                                      : [
+                                        Icon(
+                                          Icons.calendar_today_rounded,
+                                          size: 11,
+                                          color: Colors.white.withValues(
+                                            alpha: 0.50,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 5),
+                                        Text(
+                                          group.title.toUpperCase(),
+                                          style: TextStyle(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.65,
+                                            ),
+                                            fontSize: 11.0,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 0.6,
+                                          ),
+                                          textDirection: TextDirection.ltr,
+                                        ),
+                                      ],
                             ),
                           ),
                           ...group.sessions.map((session) {
                             final isSelected = session.id == _currentSessionId;
-                            final displayTitle = _translateSessionTitle(session.title, isArabic: isArabic);
-                            final arabicChars = RegExp(r'[\u0600-\u06FF]').allMatches(displayTitle).length;
-                            final latinChars = RegExp(r'[a-zA-Z]').allMatches(displayTitle).length;
-                            final isTitleArabic = isArabic ? (latinChars == 0 || arabicChars >= latinChars) : (arabicChars > 0 && latinChars == 0);
+                            final displayTitle = _translateSessionTitle(
+                              session.title,
+                              isArabic: isArabic,
+                            );
+                            final arabicChars =
+                                RegExp(
+                                  r'[\u0600-\u06FF]',
+                                ).allMatches(displayTitle).length;
+                            final latinChars =
+                                RegExp(
+                                  r'[a-zA-Z]',
+                                ).allMatches(displayTitle).length;
+                            final isTitleArabic =
+                                isArabic
+                                    ? (latinChars == 0 ||
+                                        arabicChars >= latinChars)
+                                    : (arabicChars > 0 && latinChars == 0);
 
                             return Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
                               decoration: BoxDecoration(
-                                color: isSelected
-                                    ? Colors.white.withValues(alpha: 0.16)
-                                    : Colors.white.withValues(alpha: 0.04),
+                                color:
+                                    isSelected
+                                        ? Colors.white.withValues(alpha: 0.16)
+                                        : Colors.white.withValues(alpha: 0.04),
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                  color: isSelected
-                                      ? Colors.white.withValues(alpha: 0.40)
-                                      : Colors.white.withValues(alpha: 0.10),
+                                  color:
+                                      isSelected
+                                          ? Colors.white.withValues(alpha: 0.40)
+                                          : Colors.white.withValues(
+                                            alpha: 0.10,
+                                          ),
                                   width: 1.0,
                                 ),
                               ),
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                                dense: true,
-                                title: Text(
-                                  displayTitle,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  textDirection: isTitleArabic ? TextDirection.rtl : TextDirection.ltr,
-                                  textAlign: isTitleArabic ? TextAlign.right : TextAlign.left,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w600,
+                              child: Material(
+                                color: Colors.transparent,
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 0,
                                   ),
-                                ),
-                                subtitle: Padding(
-                                  padding: const EdgeInsets.only(top: 3.0),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    mainAxisAlignment:
-                                        isArabic ? MainAxisAlignment.end : MainAxisAlignment.start,
-                                    children: isArabic
-                                        ? [
-                                            Flexible(
-                                              child: Text(
-                                                _formatSessionDateTime(session.updatedAt, isArabic: isArabic),
-                                                textDirection: TextDirection.rtl,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(
-                                                  color: Colors.white.withValues(alpha: 0.70),
-                                                  fontSize: 11.5,
-                                                  fontWeight: FontWeight.w500,
+                                  dense: true,
+                                  title: Text(
+                                    displayTitle,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    textDirection:
+                                        isTitleArabic
+                                            ? TextDirection.rtl
+                                            : TextDirection.ltr,
+                                    textAlign:
+                                        isTitleArabic
+                                            ? TextAlign.right
+                                            : TextAlign.left,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  subtitle: Padding(
+                                    padding: const EdgeInsets.only(top: 3.0),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      mainAxisAlignment:
+                                          isArabic
+                                              ? MainAxisAlignment.end
+                                              : MainAxisAlignment.start,
+                                      children:
+                                          isArabic
+                                              ? [
+                                                Flexible(
+                                                  child: Text(
+                                                    _formatSessionDateTime(
+                                                      session.updatedAt,
+                                                      isArabic: isArabic,
+                                                    ),
+                                                    textDirection:
+                                                        TextDirection.rtl,
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: TextStyle(
+                                                      color: Colors.white
+                                                          .withValues(
+                                                            alpha: 0.70,
+                                                          ),
+                                                      fontSize: 11.5,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
                                                 ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Icon(
-                                              Icons.access_time_rounded,
-                                              size: 11,
-                                              color: Colors.white.withValues(alpha: 0.55),
-                                            ),
-                                          ]
-                                        : [
-                                            Icon(
-                                              Icons.access_time_rounded,
-                                              size: 11,
-                                              color: Colors.white.withValues(alpha: 0.55),
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Flexible(
-                                              child: Text(
-                                                _formatSessionDateTime(session.updatedAt, isArabic: isArabic),
-                                                textDirection: TextDirection.ltr,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(
-                                                  color: Colors.white.withValues(alpha: 0.70),
-                                                  fontSize: 11.5,
-                                                  fontWeight: FontWeight.w500,
+                                                const SizedBox(width: 4),
+                                                Icon(
+                                                  Icons.access_time_rounded,
+                                                  size: 11,
+                                                  color: Colors.white.withValues(
+                                                    alpha: 0.55,
+                                                  ),
                                                 ),
-                                              ),
-                                            ),
-                                          ],
+                                              ]
+                                              : [
+                                                Icon(
+                                                  Icons.access_time_rounded,
+                                                  size: 11,
+                                                  color: Colors.white.withValues(
+                                                    alpha: 0.55,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Flexible(
+                                                  child: Text(
+                                                    _formatSessionDateTime(
+                                                      session.updatedAt,
+                                                      isArabic: isArabic,
+                                                    ),
+                                                    textDirection:
+                                                        TextDirection.ltr,
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: TextStyle(
+                                                      color: Colors.white
+                                                          .withValues(
+                                                            alpha: 0.70,
+                                                          ),
+                                                      fontSize: 11.5,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                    ),
                                   ),
-                                ),
-                                trailing: IconButton(
-                                  icon: const Icon(
-                                    Icons.delete_outline,
-                                    color: Colors.white70,
-                                    size: 18,
+                                  trailing: IconButton(
+                                    icon: const Icon(
+                                      Icons.delete_outline,
+                                      color: Colors.white70,
+                                      size: 18,
+                                    ),
+                                    tooltip:
+                                        isArabic ? 'حذف المحادثة' : 'Delete chat',
+                                    splashRadius: 18,
+                                    onPressed: () => _deleteSession(session.id),
                                   ),
-                                  tooltip: isArabic ? 'حذف المحادثة' : 'Delete chat',
-                                  splashRadius: 18,
-                                  onPressed: () => _deleteSession(session.id),
+                                  onTap: () {
+                                    Navigator.of(context).pop();
+                                    _loadSession(session);
+                                  },
                                 ),
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  _loadSession(session);
-                                },
                               ),
                             );
                           }),
@@ -914,7 +1064,10 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
                 ),
                 const SizedBox(width: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(10),
@@ -951,7 +1104,11 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
           // New Chat action
           IconButton(
             onPressed: _clearChat,
-            icon: const Icon(Icons.add_comment_outlined, color: Colors.white70, size: 20),
+            icon: const Icon(
+              Icons.add_comment_outlined,
+              color: Colors.white70,
+              size: 20,
+            ),
             tooltip: isArabic ? 'محادثة جديدة' : 'New chat',
             splashRadius: 20,
             padding: const EdgeInsets.all(4),
@@ -969,32 +1126,20 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
       padding: const EdgeInsets.symmetric(horizontal: 22.0, vertical: 12.0),
       child: Center(
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: rh.contentMaxWidth.clamp(320.0, 500.0)),
+          constraints: BoxConstraints(
+            maxWidth: rh.contentMaxWidth.clamp(320.0, 500.0),
+          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const SizedBox(height: 12),
 
-              // Central circular logo
-              Container(
-                width: 82,
-                height: 82,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.25),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: ClipOval(
-                  child: Image.asset(
-                    'assets/images/header_logo.png',
-                    fit: BoxFit.cover,
-                  ),
-                ),
+              // Direct logo as-is without outer round shape container
+              Image.asset(
+                'assets/images/header_logo.png',
+                width: 96,
+                height: 96,
+                fit: BoxFit.contain,
               ),
 
               const SizedBox(height: 20),
@@ -1021,7 +1166,8 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
                       ? 'اسأل عن الفنانين والفعاليات والمعارض والمراكز الفنية في دبي.'
                       : 'Ask about artists, events, galleries and art centers in Dubai.',
                   textAlign: TextAlign.center,
-                  textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+                  textDirection:
+                      isArabic ? TextDirection.rtl : TextDirection.ltr,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.72),
                     fontSize: 13.5,
@@ -1056,7 +1202,8 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
                       child: Text(
                         prompt,
                         textAlign: isArabic ? TextAlign.right : TextAlign.left,
-                        textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+                        textDirection:
+                            isArabic ? TextDirection.rtl : TextDirection.ltr,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 13.5,
@@ -1104,19 +1251,18 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
                     left: isArabic ? 8 : 0,
                     top: 4,
                   ),
-                  decoration: const BoxDecoration(shape: BoxShape.circle),
-                  child: ClipOval(
-                    child: Image.asset(
-                      'assets/images/header_logo.png',
-                      fit: BoxFit.cover,
-                    ),
+                  child: Image.asset(
+                    'assets/images/header_logo.png',
+                    fit: BoxFit.contain,
                   ),
                 ),
               ],
               Flexible(
                 child: Column(
                   crossAxisAlignment:
-                      isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                      isUser
+                          ? CrossAxisAlignment.end
+                          : CrossAxisAlignment.start,
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -1124,9 +1270,12 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
                         vertical: 10.0,
                       ),
                       decoration: BoxDecoration(
-                        color: isUser
-                            ? const Color(0xFF8A2BE2).withValues(alpha: 0.45)
-                            : Colors.white.withValues(alpha: 0.12),
+                        color:
+                            isUser
+                                ? const Color(
+                                  0xFF8A2BE2,
+                                ).withValues(alpha: 0.45)
+                                : Colors.white.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.only(
                           topLeft: const Radius.circular(14),
                           topRight: const Radius.circular(14),
@@ -1134,20 +1283,31 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
                           bottomRight: Radius.circular(isUser ? 4 : 14),
                         ),
                         border: Border.all(
-                          color: isUser
-                              ? const Color(0xFFD03BF7).withValues(alpha: 0.55)
-                              : Colors.white.withValues(alpha: 0.25),
+                          color:
+                              isUser
+                                  ? const Color(
+                                    0xFFD03BF7,
+                                  ).withValues(alpha: 0.55)
+                                  : Colors.white.withValues(alpha: 0.25),
                           width: 1.0,
                         ),
                       ),
                       child: _buildFormattedText(
-                        _getLocalizedMessageText(msg.text, isArabic: isArabic, isUser: isUser),
+                        _getLocalizedMessageText(
+                          msg.text,
+                          isArabic: isArabic,
+                          isUser: isUser,
+                        ),
                         isArabic: isArabic,
                         isUser: isUser,
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(top: 2.5, left: 4.0, right: 4.0),
+                      padding: const EdgeInsets.only(
+                        top: 2.5,
+                        left: 4.0,
+                        right: 4.0,
+                      ),
                       child: Text(
                         _formatSessionTime(msg.timestamp, isArabic: isArabic),
                         style: TextStyle(
@@ -1178,8 +1338,8 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
     return tr.isNotEmpty ? tr : trimmed;
   }
 
-  bool hasArabicTitleMatch(bool isTextArabic, bool isArabic) => isTextArabic == isArabic;
-
+  bool hasArabicTitleMatch(bool isTextArabic, bool isArabic) =>
+      isTextArabic == isArabic;
 
   String _translateQuestion(String q, {required bool isArabic}) {
     final trimmed = q.trim();
@@ -1198,6 +1358,16 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
     required bool isUser,
   }) {
     if (text.trim().isEmpty) return text;
+    if (!isArabic) {
+      text = text.replaceAll('(فنان دبي)', '').replaceAll('فنان دبي', '');
+    } else {
+      text = text.replaceAll('(Artist Dubai)', '');
+      text = text.replaceAll('Artist Dubai', 'فنان دبي');
+      text = text.replaceAll('فنان دبيبسيط', 'فنان دبي أمر بسيط');
+      text = text.replaceAll('فنان دبي فنان دبي', 'فنان دبي');
+      text = text.replaceAll('فنان دبيفنان دبي', 'فنان دبي');
+    }
+
     final arabicChars = RegExp(r'[\u0600-\u06FF]').allMatches(text).length;
     final latinChars = RegExp(r'[a-zA-Z]').allMatches(text).length;
     final isTextArabic = arabicChars > latinChars;
@@ -1205,20 +1375,31 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
 
     // Direct dictionary or cache translation
     final tr = DataTranslator.translate(text, isArabic: isArabic);
-    if (tr.isNotEmpty && tr != text) return tr;
-
-    // For multi-line text (e.g. AI formatted answers), translate each line
-    if (text.contains('\n')) {
+    String result = text;
+    if (tr.isNotEmpty && tr != text) {
+      result = tr;
+    } else if (text.contains('\n')) {
       final lines = text.split('\n');
-      final translatedLines = lines.map((line) {
-        if (line.trim().isEmpty) return line;
-        final trLine = DataTranslator.translate(line, isArabic: isArabic);
-        return trLine.isNotEmpty ? trLine : line;
-      }).toList();
-      return translatedLines.join('\n');
+      final translatedLines =
+          lines.map((line) {
+            if (line.trim().isEmpty) return line;
+            final trLine = DataTranslator.translate(line, isArabic: isArabic);
+            return trLine.isNotEmpty ? trLine : line;
+          }).toList();
+      result = translatedLines.join('\n');
     }
 
-    return text;
+    if (isArabic) {
+      result = result.replaceAll('(Artist Dubai)', '');
+      result = result.replaceAll('Artist Dubai', 'فنان دبي');
+      result = result.replaceAll('فنان دبيبسيط', 'فنان دبي أمر بسيط');
+      result = result.replaceAll('فنان دبي فنان دبي', 'فنان دبي');
+      result = result.replaceAll('فنان دبيفنان دبي', 'فنان دبي');
+    } else {
+      result = result.replaceAll('(فنان دبي)', '').replaceAll('فنان دبي', '');
+    }
+
+    return result;
   }
 
   Widget _buildFormattedText(
@@ -1226,12 +1407,19 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
     required bool isArabic,
     required bool isUser,
   }) {
+    if (!isArabic) {
+      text = text.replaceAll('(فنان دبي)', '').replaceAll('فنان دبي', '');
+    } else {
+      text = text.replaceAll('(Artist Dubai)', '');
+      text = text.replaceAll('Artist Dubai', 'فنان دبي');
+      text = text.replaceAll('فنان دبيبسيط', 'فنان دبي أمر بسيط');
+      text = text.replaceAll('فنان دبي فنان دبي', 'فنان دبي');
+      text = text.replaceAll('فنان دبيفنان دبي', 'فنان دبي');
+    }
+
     final arabicChars = RegExp(r'[\u0600-\u06FF]').allMatches(text).length;
     final latinChars = RegExp(r'[a-zA-Z]').allMatches(text).length;
 
-    // A message is considered RTL only if:
-    // 1) The user is explicitly in Arabic mode AND it's not overwhelmingly Latin English, OR
-    // 2) The text is predominantly Arabic (> Latin characters and substantial Arabic text)
     final bool isRtlText;
     if (isArabic) {
       isRtlText = latinChars == 0 || arabicChars >= latinChars;
@@ -1244,31 +1432,110 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
         ? TextAlign.right
         : (isUser && isArabic ? TextAlign.right : TextAlign.left);
 
-    // Parse markdown **bold**
-    final spans = <TextSpan>[];
-    final parts = text.split('**');
+    // Split into lines and render each with proper heading/inline styling
+    final lines = text.split('\n');
+    final lineWidgets = <Widget>[];
 
-    for (int i = 0; i < parts.length; i++) {
-      final part = parts[i];
-      if (part.isEmpty) continue;
-      final isBold = i.isOdd;
-      spans.add(
-        TextSpan(
-          text: part,
+    for (int lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+      final rawLine = lines[lineIdx];
+      final trimmed = rawLine.trim();
+
+      // Detect and strip heading level
+      int headingLevel = 0;
+      String lineContent = rawLine;
+      if (trimmed.startsWith('###')) {
+        headingLevel = 3;
+        lineContent = trimmed.replaceFirst(RegExp(r'^###\s*'), '');
+      } else if (trimmed.startsWith('##')) {
+        headingLevel = 2;
+        lineContent = trimmed.replaceFirst(RegExp(r'^##\s*'), '');
+      } else if (trimmed.startsWith('#')) {
+        headingLevel = 1;
+        lineContent = trimmed.replaceFirst(RegExp(r'^#\s*'), '');
+      }
+
+      final double fontSize = headingLevel == 1
+          ? 17.0
+          : headingLevel == 2
+              ? 15.5
+              : headingLevel == 3
+                  ? 14.5
+                  : 13.8;
+      final FontWeight baseFontWeight =
+          headingLevel > 0 ? FontWeight.w700 : FontWeight.w400;
+      final double topPadding =
+          headingLevel > 0 && lineIdx > 0 ? 6.0 : 0.0;
+
+      // Parse **bold** and *italic* inline
+      final inlineSpans = <TextSpan>[];
+      final inlineRegex = RegExp(r'\*\*(.+?)\*\*|\*(.+?)\*');
+      int lastEnd = 0;
+      for (final match in inlineRegex.allMatches(lineContent)) {
+        if (match.start > lastEnd) {
+          inlineSpans.add(TextSpan(
+            text: lineContent.substring(lastEnd, match.start),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: fontSize,
+              height: 1.45,
+              fontWeight: baseFontWeight,
+            ),
+          ));
+        }
+        final isBold = match.group(1) != null;
+        inlineSpans.add(TextSpan(
+          text: isBold ? match.group(1) : match.group(2),
           style: TextStyle(
             color: Colors.white,
-            fontSize: 13.8,
+            fontSize: fontSize,
             height: 1.45,
-            fontWeight: isBold ? FontWeight.w800 : FontWeight.w400,
+            fontWeight: isBold ? FontWeight.w800 : baseFontWeight,
+            fontStyle: isBold ? FontStyle.normal : FontStyle.italic,
+          ),
+        ));
+        lastEnd = match.end;
+      }
+      if (lastEnd < lineContent.length) {
+        inlineSpans.add(TextSpan(
+          text: lineContent.substring(lastEnd),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: fontSize,
+            height: 1.45,
+            fontWeight: baseFontWeight,
+          ),
+        ));
+      }
+      if (inlineSpans.isEmpty) {
+        inlineSpans.add(TextSpan(
+          text: lineContent,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: fontSize,
+            height: 1.45,
+            fontWeight: baseFontWeight,
+          ),
+        ));
+      }
+
+      lineWidgets.add(
+        Padding(
+          padding: EdgeInsets.only(top: topPadding),
+          child: SelectableText.rich(
+            TextSpan(children: inlineSpans),
+            textDirection: textDirection,
+            textAlign: textAlign,
           ),
         ),
       );
     }
 
-    return SelectableText.rich(
-      TextSpan(children: spans),
-      textDirection: textDirection,
-      textAlign: textAlign,
+    return Column(
+      crossAxisAlignment: isRtlText
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: lineWidgets,
     );
   }
 
@@ -1313,58 +1580,68 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
                 child: Row(
-                  children: questions.map((q) {
-                    final displayQ = _translateQuestion(q, isArabic: isArabic);
-                    final isQArabic = RegExp(r'[\u0600-\u06FF]').hasMatch(displayQ);
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        right: isArabic ? 0 : 8,
-                        left: isArabic ? 8 : 0,
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () => _sendMessage(displayQ),
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6.5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.08),
+                  children:
+                      questions.map((q) {
+                        final displayQ = _translateQuestion(
+                          q,
+                          isArabic: isArabic,
+                        );
+                        final isQArabic = RegExp(
+                          r'[\u0600-\u06FF]',
+                        ).hasMatch(displayQ);
+                        return Padding(
+                          padding: EdgeInsets.only(
+                            right: isArabic ? 0 : 8,
+                            left: isArabic ? 8 : 0,
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => _sendMessage(displayQ),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.35),
-                                width: 1.0,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  displayQ,
-                                  textDirection:
-                                      isQArabic ? TextDirection.rtl : TextDirection.ltr,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12.2,
-                                    fontWeight: FontWeight.w500,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6.5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.35),
+                                    width: 1.0,
                                   ),
                                 ),
-                                const SizedBox(width: 5),
-                                Icon(
-                                  isArabic ? Icons.arrow_back : Icons.arrow_forward,
-                                  size: 11,
-                                  color: Colors.white70,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      displayQ,
+                                      textDirection:
+                                          isQArabic
+                                              ? TextDirection.rtl
+                                              : TextDirection.ltr,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12.2,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Icon(
+                                      isArabic
+                                          ? Icons.arrow_back
+                                          : Icons.arrow_forward,
+                                      size: 11,
+                                      color: Colors.white70,
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                        );
+                      }).toList(),
                 ),
               ),
             ],
@@ -1386,16 +1663,16 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
               right: isArabic ? 0 : 8,
               left: isArabic ? 8 : 0,
             ),
-            decoration: const BoxDecoration(shape: BoxShape.circle),
-            child: ClipOval(
-              child: Image.asset(
-                'assets/images/header_logo.png',
-                fit: BoxFit.cover,
-              ),
+            child: Image.asset(
+              'assets/images/header_logo.png',
+              fit: BoxFit.contain,
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 14.0,
+              vertical: 8.0,
+            ),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(14),
@@ -1424,10 +1701,7 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
     );
   }
 
-  Widget _buildInputArea(
-    ResponsiveHelper rh,
-    bool isArabic,
-  ) {
+  Widget _buildInputArea(ResponsiveHelper rh, bool isArabic) {
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: _inputController,
       builder: (context, value, _) {
@@ -1445,9 +1719,10 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
                     color: const Color(0xFF2E0749).withValues(alpha: 0.75),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: hasText
-                          ? const Color(0xFFD03BF7).withValues(alpha: 0.85)
-                          : Colors.white.withValues(alpha: 0.35),
+                      color:
+                          hasText
+                              ? const Color(0xFFD03BF7).withValues(alpha: 0.85)
+                              : Colors.white.withValues(alpha: 0.35),
                       width: 1.2,
                     ),
                     boxShadow: [
@@ -1458,7 +1733,10 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
                       ),
                     ],
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14.0,
+                    vertical: 8.0,
+                  ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -1473,22 +1751,32 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
                           textCapitalization: TextCapitalization.sentences,
                           textInputAction: TextInputAction.send,
                           enabled: !_isTyping,
-                          textAlign: isArabic ? TextAlign.right : TextAlign.left,
-                          textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+                          textAlign:
+                              isArabic ? TextAlign.right : TextAlign.left,
+                          textDirection:
+                              isArabic ? TextDirection.rtl : TextDirection.ltr,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14.5,
                             height: 1.35,
                           ),
                           decoration: InputDecoration(
-                            hintText: isArabic ? 'اسأل مرشد الفن...' : 'Ask the art guide...',
-                            hintTextDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+                            hintText:
+                                isArabic
+                                    ? 'اسأل مرشد الفن...'
+                                    : 'Ask the art guide...',
+                            hintTextDirection:
+                                isArabic
+                                    ? TextDirection.rtl
+                                    : TextDirection.ltr,
                             hintStyle: TextStyle(
                               color: Colors.white.withValues(alpha: 0.55),
                               fontSize: 14,
                             ),
                             isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 8.0),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 8.0,
+                            ),
                             border: InputBorder.none,
                           ),
                           onSubmitted: (val) {
@@ -1524,44 +1812,56 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
                       Material(
                         color: Colors.transparent,
                         child: InkWell(
-                          onTap: (!_isTyping && hasText)
-                              ? () => _sendMessage(_inputController.text)
-                              : null,
+                          onTap:
+                              (!_isTyping && hasText)
+                                  ? () => _sendMessage(_inputController.text)
+                                  : null,
                           borderRadius: BorderRadius.circular(20),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
                             width: 38,
                             height: 38,
                             decoration: BoxDecoration(
-                              gradient: hasText && !_isTyping
-                                  ? const LinearGradient(
-                                      colors: [Color(0xFFB128E6), Color(0xFF6B189D)],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    )
-                                  : null,
-                              color: (hasText && !_isTyping)
-                                  ? null
-                                  : Colors.white.withValues(alpha: 0.12),
+                              gradient:
+                                  hasText && !_isTyping
+                                      ? const LinearGradient(
+                                        colors: [
+                                          Color(0xFFB128E6),
+                                          Color(0xFF6B189D),
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      )
+                                      : null,
+                              color:
+                                  (hasText && !_isTyping)
+                                      ? null
+                                      : Colors.white.withValues(alpha: 0.12),
                               shape: BoxShape.circle,
-                              boxShadow: (hasText && !_isTyping)
-                                  ? [
-                                      BoxShadow(
-                                        color: const Color(0xFFB128E6).withValues(alpha: 0.45),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ]
-                                  : null,
+                              boxShadow:
+                                  (hasText && !_isTyping)
+                                      ? [
+                                        BoxShadow(
+                                          color: const Color(
+                                            0xFFB128E6,
+                                          ).withValues(alpha: 0.45),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ]
+                                      : null,
                             ),
                             child: Center(
                               child: Transform.scale(
                                 scaleX: isArabic ? -1 : 1,
                                 child: Icon(
                                   Icons.send_rounded,
-                                  color: hasText && !_isTyping
-                                      ? Colors.white
-                                      : Colors.white.withValues(alpha: 0.35),
+                                  color:
+                                      hasText && !_isTyping
+                                          ? Colors.white
+                                          : Colors.white.withValues(
+                                            alpha: 0.35,
+                                          ),
                                   size: 18,
                                 ),
                               ),

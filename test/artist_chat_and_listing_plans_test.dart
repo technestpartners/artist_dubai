@@ -13,13 +13,19 @@ import 'package:artist_dubai/features/chat/data/chat_service.dart';
 import 'package:artist_dubai/features/chat/domain/models/artist_message_model.dart';
 import 'package:artist_dubai/features/chat/presentation/views/artist_chat_view.dart';
 import 'package:artist_dubai/features/chat/presentation/views/listing_plans_view.dart';
+import 'package:artist_dubai/features/artists/domain/models/artist_model.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
 
 class _TestHttpOverrides extends HttpOverrides {}
 
 class MockChatApiClient implements ApiClient {
   @override
-  Future<dynamic> get(String path, {Map<String, dynamic>? queryParameters, Options? options, CancelToken? cancelToken}) async {
+  Future<dynamic> get(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+  }) async {
     return Response(
       requestOptions: RequestOptions(path: path),
       data: {'status': 'success', 'data': []},
@@ -28,27 +34,66 @@ class MockChatApiClient implements ApiClient {
   }
 
   @override
-  Future<dynamic> post(String path, {dynamic data, Map<String, dynamic>? queryParameters, Options? options, CancelToken? cancelToken}) async {
+  Future<dynamic> post(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+  }) async {
     return Response(
       requestOptions: RequestOptions(path: path),
-      data: {'status': 'success', 'data': {'id': '1'}},
+      data: {
+        'status': 'success',
+        'data': {'id': '1'},
+      },
       statusCode: 200,
     );
   }
 
   @override
-  Future<dynamic> put(String path, {dynamic data, Map<String, dynamic>? queryParameters, Options? options, CancelToken? cancelToken}) async {
-    return Response(requestOptions: RequestOptions(path: path), data: {}, statusCode: 200);
+  Future<dynamic> put(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+  }) async {
+    return Response(
+      requestOptions: RequestOptions(path: path),
+      data: {},
+      statusCode: 200,
+    );
   }
 
   @override
-  Future<dynamic> delete(String path, {dynamic data, Map<String, dynamic>? queryParameters, Options? options, CancelToken? cancelToken}) async {
-    return Response(requestOptions: RequestOptions(path: path), data: {}, statusCode: 200);
+  Future<dynamic> delete(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+  }) async {
+    return Response(
+      requestOptions: RequestOptions(path: path),
+      data: {},
+      statusCode: 200,
+    );
   }
 
   @override
-  Future<dynamic> patch(String path, {dynamic data, Map<String, dynamic>? queryParameters, Options? options, CancelToken? cancelToken}) async {
-    return Response(requestOptions: RequestOptions(path: path), data: {}, statusCode: 200);
+  Future<dynamic> patch(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+  }) async {
+    return Response(
+      requestOptions: RequestOptions(path: path),
+      data: {},
+      statusCode: 200,
+    );
   }
 }
 
@@ -78,10 +123,7 @@ void main() {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        supportedLocales: const [
-          Locale('en'),
-          Locale('ar'),
-        ],
+        supportedLocales: const [Locale('en'), Locale('ar')],
         home: child,
       ),
     );
@@ -119,30 +161,33 @@ void main() {
   });
 
   group('ChatService Tests', () {
-    test('Default monthly allowance starts at 10 and decrements with messages', () async {
-      final chatService = sl<ChatService>();
+    test(
+      'Default monthly allowance starts at 10 and decrements with messages',
+      () async {
+        final chatService = sl<ChatService>();
 
-      expect(chatService.getMaxMonthlyAllowance(), 10);
-      expect(chatService.getRemainingAllowance(), 10);
-      expect(chatService.canSendMessage(), isTrue);
+        expect(chatService.getMaxMonthlyAllowance(), 10);
+        expect(chatService.getRemainingAllowance(), 10);
+        expect(chatService.canSendMessage(), isTrue);
 
-      // Send a message
-      final msg = await chatService.sendMessage(
-        recipientId: 'artist_99',
-        recipientName: 'Test Artist',
-        recipientCategory: 'Photography',
-        subject: 'Art Expo',
-        message: 'Are you participating in the upcoming event?',
-      );
+        // Send a message
+        final msg = await chatService.sendMessage(
+          recipientId: 'artist_99',
+          recipientName: 'Test Artist',
+          recipientCategory: 'Photography',
+          subject: 'Art Expo',
+          message: 'Are you participating in the upcoming event?',
+        );
 
-      expect(msg.recipientName, 'Test Artist');
-      expect(chatService.getRemainingAllowance(), 9);
+        expect(msg.recipientName, 'Test Artist');
+        expect(chatService.getRemainingAllowance(), 9);
 
-      // Get messages list
-      final list = await chatService.getMessages();
-      expect(list.length, 1);
-      expect(list.first.subject, 'Art Expo');
-    });
+        // Get messages list
+        final list = await chatService.getMessages();
+        expect(list.length, 1);
+        expect(list.first.subject, 'Art Expo');
+      },
+    );
 
     test('Upgrade plan increases maximum allowance', () async {
       final chatService = sl<ChatService>();
@@ -153,7 +198,9 @@ void main() {
   });
 
   group('ListingPlansView Widget Tests', () {
-    testWidgets('Renders all listing plans: Event, Gallery, and Art Centre', (tester) async {
+    testWidgets('Renders all listing plans: Event, Gallery, and Art Centre', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1080, 3600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -173,188 +220,286 @@ void main() {
   });
 
   group('ArtistChatView Widget Tests', () {
-    testWidgets('Renders allowance card and switches between Messages and Send tabs', (tester) async {
-      tester.view.physicalSize = const Size(1080, 3600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'Renders allowance card and switches between Messages and Send tabs',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 3600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(buildTestHost(const ArtistChatView()));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+        await tester.pumpWidget(buildTestHost(const ArtistChatView()));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
 
-      // Check header & allowance
-      expect(find.text('ARTIST CHAT'), findsOneWidget);
-      expect(find.textContaining('10 of 10 messages left this month'), findsOneWidget);
-      expect(find.text('Plans'), findsOneWidget);
-      expect(find.text('Messages'), findsOneWidget);
-      expect(find.text('Send'), findsOneWidget);
+        // Check header & allowance
+        expect(find.text('ARTIST CHAT'), findsOneWidget);
+        expect(
+          find.textContaining('10 of 10 messages left this month'),
+          findsOneWidget,
+        );
+        expect(find.text('Plans'), findsOneWidget);
+        expect(find.text('Messages'), findsOneWidget);
+        expect(find.text('Send'), findsOneWidget);
 
-      // In Messages tab, empty state is displayed
-      expect(find.text('No messages yet. Search for an artist in the Send tab to start a conversation.'), findsOneWidget);
+        // In Messages tab, empty state is displayed
+        expect(
+          find.text(
+            'No messages yet. Search for an artist in the Send tab to start a conversation.',
+          ),
+          findsOneWidget,
+        );
 
-      // Switch to Send tab
-      await tester.tap(find.text('Send'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+        // Switch to Send tab
+        await tester.tap(find.text('Send'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
 
-      // Check Send tab form elements
-      expect(find.text('Send to Artist'), findsOneWidget);
-      expect(find.text('Search artist by name...'), findsOneWidget);
-      expect(find.text('Subject'), findsOneWidget);
-      expect(find.text('Write your message...'), findsOneWidget);
-      expect(find.text('Attach a flyer image (optional)'), findsOneWidget);
-      expect(find.text('Select an Artist First'), findsOneWidget);
-    });
+        // Check Send tab form elements
+        expect(find.text('Send to Artist'), findsOneWidget);
+        expect(find.text('Search artist by name...'), findsOneWidget);
+        expect(find.text('Subject'), findsOneWidget);
+        expect(find.text('Write your message...'), findsOneWidget);
+        expect(find.text('Attach a flyer image (optional)'), findsOneWidget);
+        expect(find.text('Select an Artist First'), findsOneWidget);
+      },
+    );
 
-    testWidgets('Tapping Plans opens Chat Allowance Plans modal and allows upgrade', (tester) async {
-      tester.view.physicalSize = const Size(1080, 3600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'Tapping Plans opens Chat Allowance Plans modal and allows upgrade',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 3600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(buildTestHost(const ArtistChatView()));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+        await tester.pumpWidget(buildTestHost(const ArtistChatView()));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
 
-      expect(find.textContaining('10 of 10 messages left this month'), findsOneWidget);
+        expect(
+          find.textContaining('10 of 10 messages left this month'),
+          findsOneWidget,
+        );
 
-      // Tap Plans button
-      await tester.tap(find.text('Plans'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        // Tap Plans button
+        await tester.tap(find.text('Plans'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      // Modal is open
-      expect(find.text('Chat Allowance Plans'), findsOneWidget);
-      expect(find.text('Starter Plan'), findsOneWidget);
-      expect(find.text('Pro Artist'), findsOneWidget);
-      expect(find.text('Unlimited VIP'), findsOneWidget);
-      expect(find.text('49 AED'), findsOneWidget);
-      expect(find.text('Upgrade to Pro'), findsOneWidget);
+        // Modal is open
+        expect(find.text('Chat Allowance Plans'), findsOneWidget);
+        expect(find.text('Starter Plan'), findsOneWidget);
+        expect(find.text('Pro Artist'), findsOneWidget);
+        expect(find.text('Unlimited VIP'), findsOneWidget);
+        expect(find.text('49 AED'), findsOneWidget);
+        expect(find.text('Upgrade to Pro'), findsOneWidget);
 
-      // Tap Upgrade to Pro
-      await tester.tap(find.text('Upgrade to Pro'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        // Tap Upgrade to Pro
+        await tester.tap(find.text('Upgrade to Pro'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      // Modal closed and allowance card updated
-      expect(sl<ChatService>().getMaxMonthlyAllowance(), 50);
-      expect(find.textContaining('50 of 50 messages left this month'), findsOneWidget);
-    });
+        // Modal closed and allowance card updated
+        expect(sl<ChatService>().getMaxMonthlyAllowance(), 50);
+        expect(
+          find.textContaining('50 of 50 messages left this month'),
+          findsOneWidget,
+        );
+      },
+    );
 
-    testWidgets('Displays incoming messages with sender info and allows opening details with Reply button', (tester) async {
-      tester.view.physicalSize = const Size(1080, 3600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'Displays incoming messages with sender info and allows opening details with Reply button',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 3600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      // Prepopulate an incoming message in local storage
-      final now = DateTime.now();
-      final incomingMessage = ArtistMessageModel(
-        id: 'msg_incoming_1',
-        senderId: 'artist_42',
-        senderName: 'Sara Al Khateeb',
-        senderEmail: 'sara@artdubai.com',
-        recipientId: 'my_artist_1',
-        recipientName: 'My Profile',
-        recipientCategory: 'Calligraphy',
-        subject: 'Exhibition Invite',
-        message: 'We would love to feature your recent calligraphic sculptures.',
-        createdAt: now,
-        isRead: false,
-      );
+        // Prepopulate an incoming message in local storage
+        final now = DateTime.now();
+        final incomingMessage = ArtistMessageModel(
+          id: 'msg_incoming_1',
+          senderId: 'artist_42',
+          senderName: 'Sara Al Khateeb',
+          senderEmail: 'sara@artdubai.com',
+          recipientId: 'my_artist_1',
+          recipientName: 'My Profile',
+          recipientCategory: 'Calligraphy',
+          subject: 'Exhibition Invite',
+          message:
+              'We would love to feature your recent calligraphic sculptures.',
+          createdAt: now,
+          isRead: false,
+        );
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_email', 'myprofile@artdubai.com');
-      await prefs.setString('artist_profile_id', 'my_artist_1');
-      await prefs.setString('artist_chat_messages', jsonEncode([incomingMessage.toJson()]));
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_email', 'myprofile@artdubai.com');
+        await prefs.setString('artist_profile_id', 'my_artist_1');
+        await prefs.setString(
+          'artist_chat_messages',
+          jsonEncode([incomingMessage.toJson()]),
+        );
 
-      await tester.pumpWidget(buildTestHost(const ArtistChatView()));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+        await tester.pumpWidget(buildTestHost(const ArtistChatView()));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-      // Check if pills are shown
-      expect(find.textContaining('All (1)'), findsOneWidget);
-      expect(find.textContaining('Inbox (1)'), findsOneWidget);
-      expect(find.textContaining('Sent (0)'), findsOneWidget);
+        // Check if pills are shown
+        expect(find.textContaining('All (1)'), findsOneWidget);
+        expect(find.textContaining('Inbox (1)'), findsOneWidget);
+        expect(find.textContaining('Sent (0)'), findsOneWidget);
 
-      // Verify that the incoming message shows 'From: Sara Al Khateeb'
-      expect(find.textContaining('From: Sara Al Khateeb'), findsOneWidget);
-      expect(find.text('Exhibition Invite'), findsOneWidget);
-      expect(find.text('Inbox'), findsWidgets);
+        // Verify that the incoming message shows 'From: Sara Al Khateeb'
+        expect(find.textContaining('From: Sara Al Khateeb'), findsOneWidget);
+        expect(find.text('Exhibition Invite'), findsOneWidget);
+        expect(find.text('Inbox'), findsWidgets);
 
-      // Tap message to open detail modal
-      await tester.tap(find.text('Exhibition Invite'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
+        // Tap message to open detail modal
+        await tester.tap(find.text('Exhibition Invite'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
 
-      // Modal is open, showing sender email, full message, and Reply button
-      expect(find.text('sara@artdubai.com'), findsOneWidget);
-      expect(find.text('We would love to feature your recent calligraphic sculptures.'), findsWidgets);
-      expect(find.text('Reply'), findsOneWidget);
+        // Modal is open, showing sender email, full message, and Reply button
+        expect(find.text('sara@artdubai.com'), findsOneWidget);
+        expect(
+          find.text(
+            'We would love to feature your recent calligraphic sculptures.',
+          ),
+          findsWidgets,
+        );
+        expect(find.text('Reply'), findsOneWidget);
 
-      // Tap Reply button
-      await tester.tap(find.text('Reply'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
+        // Tap Reply button
+        await tester.tap(find.text('Reply'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
 
-      // Switches to Send tab with recipient set and prefilled subject
-      expect(find.text('Send to Artist'), findsOneWidget);
-      expect(find.textContaining('Sara Al Khateeb'), findsOneWidget);
-      expect(find.text('Re: Exhibition Invite'), findsOneWidget);
-    });
+        // Switches to Send tab with recipient set and prefilled subject
+        expect(find.text('Send to Artist'), findsOneWidget);
+        expect(find.textContaining('Sara Al Khateeb'), findsOneWidget);
+        expect(find.text('Re: Exhibition Invite'), findsOneWidget);
+      },
+    );
 
-    testWidgets('Displays sent messages, opens detail modal with recipient info and allows Reply/Follow-up', (tester) async {
-      tester.view.physicalSize = const Size(1080, 3600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'Displays sent messages, opens detail modal with recipient info and allows Reply/Follow-up',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 3600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      final now = DateTime.now();
-      final sentMessage = ArtistMessageModel(
-        id: 'msg_sent_1',
-        senderId: 'my_artist_1',
-        senderName: 'My Profile',
-        senderEmail: 'myprofile@artdubai.com',
-        recipientId: 'admin_1',
-        recipientName: 'Dubai Art Administrator',
-        recipientCategory: 'Arabic Calligraphy',
-        subject: 'Inquiry',
-        message: 'Hello, checking on the submission status.',
-        createdAt: now,
-        isRead: true,
-      );
+        final now = DateTime.now();
+        final sentMessage = ArtistMessageModel(
+          id: 'msg_sent_1',
+          senderId: 'my_artist_1',
+          senderName: 'My Profile',
+          senderEmail: 'myprofile@artdubai.com',
+          recipientId: 'admin_1',
+          recipientName: 'Dubai Art Administrator',
+          recipientCategory: 'Arabic Calligraphy',
+          subject: 'Inquiry',
+          message: 'Hello, checking on the submission status.',
+          createdAt: now,
+          isRead: true,
+        );
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_email', 'myprofile@artdubai.com');
-      await prefs.setString('artist_profile_id', 'my_artist_1');
-      await prefs.setString('artist_chat_messages', jsonEncode([sentMessage.toJson()]));
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_email', 'myprofile@artdubai.com');
+        await prefs.setString('artist_profile_id', 'my_artist_1');
+        await prefs.setString(
+          'artist_chat_messages',
+          jsonEncode([sentMessage.toJson()]),
+        );
 
-      await tester.pumpWidget(buildTestHost(const ArtistChatView()));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+        await tester.pumpWidget(buildTestHost(const ArtistChatView()));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.textContaining('Sent (1)'), findsOneWidget);
-      expect(find.textContaining('To: Dubai Art Administrator'), findsOneWidget);
+        expect(find.textContaining('Sent (1)'), findsOneWidget);
+        expect(
+          find.textContaining('To: Dubai Art Administrator'),
+          findsOneWidget,
+        );
 
-      // Open message detail modal
-      await tester.tap(find.textContaining('To: Dubai Art Administrator'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
+        // Open message detail modal
+        await tester.tap(find.textContaining('To: Dubai Art Administrator'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
 
-      // Modal is open with recipient details, subject, and Reply button
-      expect(find.text('Arabic Calligraphy'), findsWidgets);
-      expect(find.text('Inquiry'), findsWidgets);
-      expect(find.text('Hello, checking on the submission status.'), findsWidgets);
-      expect(find.text('Reply'), findsOneWidget);
+        // Modal is open with recipient details, subject, and Reply button
+        expect(find.text('Arabic Calligraphy'), findsWidgets);
+        expect(find.text('Inquiry'), findsWidgets);
+        expect(
+          find.text('Hello, checking on the submission status.'),
+          findsWidgets,
+        );
+        expect(find.text('Reply'), findsOneWidget);
 
-      // Tap Reply button
-      await tester.tap(find.text('Reply'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
+        // Tap Reply button
+        await tester.tap(find.text('Reply'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
 
-      // Switches to Send tab with recipient set and prefilled subject
-      expect(find.text('Send to Artist'), findsOneWidget);
-      expect(find.textContaining('Dubai Art Administrator'), findsOneWidget);
-      expect(find.text('Re: Inquiry'), findsOneWidget);
-    });
+        // Switches to Send tab with recipient set and prefilled subject
+        expect(find.text('Send to Artist'), findsOneWidget);
+        expect(find.textContaining('Dubai Art Administrator'), findsOneWidget);
+        expect(find.text('Re: Inquiry'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Opens directly to Send tab with pre-selected recipient when initialArtist is passed',
+      (WidgetTester tester) async {
+        const targetArtist = ArtistModel(
+          id: 'artist_42',
+          name: 'Fatima Al Mansoori',
+          category: 'Oil Painting',
+          location: 'Dubai, UAE',
+          bio: 'Contemporary artist',
+          avatarUrl: 'https://example.com/avatar.jpg',
+          bannerUrl: '',
+          followersCount: 120,
+          worksCount: 15,
+        );
+
+        await tester.pumpWidget(
+          buildTestHost(
+            const ArtistChatView(
+              initialArtist: targetArtist,
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Directly opens the Send tab
+        expect(find.text('Send to Artist'), findsOneWidget);
+        expect(find.textContaining('Fatima Al Mansoori'), findsOneWidget);
+        expect(find.textContaining('Oil Painting'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Opens directly to Send tab with pre-selected recipient when initialArgs map is passed',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          buildTestHost(
+            const ArtistChatView(
+              initialArgs: {
+                'artistId': 'artist_99',
+                'artistName': 'Rashid Al Nuaimi',
+                'artistCategory': 'Sculpture',
+                'artistAvatarUrl': 'https://example.com/rashid.jpg',
+              },
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.text('Send to Artist'), findsOneWidget);
+        expect(find.textContaining('Rashid Al Nuaimi'), findsOneWidget);
+        expect(find.textContaining('Sculpture'), findsOneWidget);
+      },
+    );
   });
 }
-
-

@@ -53,7 +53,7 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      expect(find.text('Welcome to Dubai Artists'), findsOneWidget);
+      expect(find.textContaining('Artist Dubai'), findsWidgets);
     });
 
     testWidgets('2. Tablet Responsive Render Test (768x1024)', (
@@ -78,9 +78,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(
-        testApp(
-          EventDetailView(event: ArtEventModel.mockEvents.first),
-        ),
+        testApp(EventDetailView(event: ArtEventModel.mockEvents.first)),
       );
       await tester.pumpAndSettle();
 
@@ -103,20 +101,17 @@ void main() {
       expect(find.text('Dubai Culture & Arts Authority'), findsOneWidget);
     });
 
-    testWidgets(
-      '5. ExploreCategoriesView renders search and categories',
-      (WidgetTester tester) async {
-        tester.view.physicalSize = const Size(800, 1600);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
+    testWidgets('5. ExploreCategoriesView renders search and categories', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
 
-        await tester.pumpWidget(
-          testApp(const ExploreCategoriesView()),
-        );
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(testApp(const ExploreCategoriesView()));
+      await tester.pumpAndSettle();
 
-        expect(find.text('Explore Categories'), findsOneWidget);
-      },
-    );
+      expect(find.text('Explore Categories'), findsOneWidget);
+    });
   });
 }

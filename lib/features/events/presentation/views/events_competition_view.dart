@@ -73,7 +73,9 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
       setState(() => _isLoading = true);
     }
     try {
-      final data = await sl<ApiService>().getCompetitions(forceRefresh: forceRefresh);
+      final data = await sl<ApiService>().getCompetitions(
+        forceRefresh: forceRefresh,
+      );
       if (mounted) {
         setState(() {
           _competitions = data;
@@ -104,224 +106,245 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Back Button Row
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white, size: 22),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onPressed: () {
-                          if (context.canPop()) {
-                            context.pop();
-                          } else {
-                            context.go(RouteNames.events);
-                          }
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        l10n.back,
-                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // 1. Header Title & Subtitle
-                Text(
-                  l10n.eventsCompetitionTitle,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  l10n.eventsCompetitionSubtitle,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-                const SizedBox(height: 18),
-
-                // Mode Switcher: Art Events | Competitions & Open Calls
-                Container(
-                  margin: const EdgeInsets.only(bottom: 20),
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(8),
-                          onTap: () {
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Back Button Row
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () {
                             if (context.canPop()) {
                               context.pop();
                             } else {
                               context.go(RouteNames.events);
                             }
                           },
-                          child: Padding(
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          l10n.back,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // 1. Header Title & Subtitle
+                  Text(
+                    l10n.eventsCompetitionTitle,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    l10n.eventsCompetitionSubtitle,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Mode Switcher: Art Events | Competitions & Open Calls
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 20),
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: () {
+                              if (context.canPop()) {
+                                context.pop();
+                              } else {
+                                context.go(RouteNames.events);
+                              }
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Center(
+                                child: Text(
+                                  l10n.eventsTitle,
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
                             child: Center(
                               child: Text(
-                                l10n.eventsTitle,
+                                l10n.eventsCompetitionTitle,
                                 style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF651B8A),
+                                  fontWeight: FontWeight.w700,
                                   fontSize: 13.5,
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Center(
-                            child: Text(
-                              l10n.eventsCompetitionTitle,
-                              style: const TextStyle(
-                                color: Color(0xFF651B8A),
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13.5,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // 2. Loading State OR Empty State OR Main Announcement List
-                if (_isLoading && _competitions.isEmpty) ...[
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 48.0),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2.5,
-                      ),
-                    ),
-                  ),
-                ] else if (_competitions.isEmpty) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
-                    decoration: BoxDecoration(
-                      color: _cardBg,
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.emoji_events_outlined,
-                          color: Colors.white,
-                          size: 46,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          l10n.noCompetitionsAvailable,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 17.5,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'New competitions will appear here as soon as they are published.'.trData(context),
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13.5,
-                            height: 1.4,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 36),
-                  Center(
-                    child: Text(
-                      'Hosted by Nizar Fahem'.trData(context),
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w500,
+
+                  // 2. Loading State OR Empty State OR Main Announcement List
+                  if (_isLoading && _competitions.isEmpty) ...[
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 48.0),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        ),
                       ),
                     ),
-                  ),
-                ] else ...[
-                  ..._competitions.map((c) => _buildCard(c)),
-                  const SizedBox(height: 24),
-                  Center(
-                    child: Text(
-                      'Hosted by Nizar Fahem'.trData(context),
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w500,
+                  ] else if (_competitions.isEmpty) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 36,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _cardBg,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.emoji_events_outlined,
+                            color: Colors.white,
+                            size: 46,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            l10n.noCompetitionsAvailable,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 17.5,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'New competitions will appear here as soon as they are published.'
+                                .trData(context),
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13.5,
+                              height: 1.4,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 36),
+                    Center(
+                      child: Text(
+                        'Hosted by Nizar Fahem'.trData(context),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    ..._competitions.map((c) => _buildCard(c)),
+                    const SizedBox(height: 24),
+                    Center(
+                      child: Text(
+                        'Hosted by Nizar Fahem'.trData(context),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-    bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
-  );
-}
-
-
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
+    );
+  }
 
   Widget _buildCard(Map<String, dynamic> c) {
     final status = c['status']?.toString() ?? 'open';
-    final entriesCount = (c['entries_count'] is num)
-        ? (c['entries_count'] as num).toInt()
-        : int.tryParse(c['entries_count']?.toString() ?? '') ?? 0;
-    final maxEntries = (c['max_entries'] is num)
-        ? (c['max_entries'] as num).toInt()
-        : int.tryParse(c['max_entries']?.toString() ?? '') ?? 500;
+    final entriesCount =
+        (c['entries_count'] is num)
+            ? (c['entries_count'] as num).toInt()
+            : int.tryParse(c['entries_count']?.toString() ?? '') ?? 0;
+    final maxEntries =
+        (c['max_entries'] is num)
+            ? (c['max_entries'] as num).toInt()
+            : int.tryParse(c['max_entries']?.toString() ?? '') ?? 500;
     final fillRatio = maxEntries > 0 ? entriesCount / maxEntries : 0.0;
 
     List<String> tags = [];
     if (c['tags'] is List) {
-      tags = (c['tags'] as List).map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList();
+      tags =
+          (c['tags'] as List)
+              .map((e) => e.toString().trim())
+              .where((e) => e.isNotEmpty)
+              .toList();
     } else if (c['tags'] is String && (c['tags'] as String).isNotEmpty) {
-      tags = (c['tags'] as String).split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      tags =
+          (c['tags'] as String)
+              .split(',')
+              .map((e) => e.trim())
+              .where((e) => e.isNotEmpty)
+              .toList();
     }
 
     Color badgeColor;
@@ -346,7 +369,9 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
     final theme = (c['theme']?.toString() ?? '').trData(context);
     final organizer = (c['organizer']?.toString() ?? '').trData(context);
     final deadline = (c['deadline']?.toString() ?? 'TBD').trData(context);
-    final location = (c['location']?.toString() ?? 'Dubai, UAE').trData(context);
+    final location = (c['location']?.toString() ?? 'Dubai, UAE').trData(
+      context,
+    );
     final entryFee = (c['entry_fee']?.toString() ?? 'Free').trData(context);
 
     return GestureDetector(
@@ -372,7 +397,9 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
             // Image
             if (imageUrl.isNotEmpty)
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(14),
+                ),
                 child: AppCachedImage(
                   imageUrl: imageUrl,
                   height: 160,
@@ -390,11 +417,16 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: badgeColor.withValues(alpha: 0.18),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: badgeColor.withValues(alpha: 0.5)),
+                          border: Border.all(
+                            color: badgeColor.withValues(alpha: 0.5),
+                          ),
                         ),
                         child: Text(
                           badgeLabel,
@@ -407,7 +439,11 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                       ),
                       const Spacer(),
                       if (prize.isNotEmpty) ...[
-                        const Icon(Icons.emoji_events, color: Colors.amber, size: 16),
+                        const Icon(
+                          Icons.emoji_events,
+                          color: Colors.amber,
+                          size: 16,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           prize,
@@ -436,7 +472,11 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                     const SizedBox(height: 4),
                     Text(
                       '${'Theme'.trData(context)}: $theme',
-                      style: const TextStyle(color: Colors.white70, fontSize: 12.5, fontStyle: FontStyle.italic),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12.5,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                   ],
 
@@ -445,20 +485,34 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                   // Info row: organizer & deadline
                   Row(
                     children: [
-                      const Icon(Icons.person_outline, size: 14, color: Colors.white54),
+                      const Icon(
+                        Icons.person_outline,
+                        size: 14,
+                        color: Colors.white54,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           organizer,
-                          style: const TextStyle(color: Colors.white60, fontSize: 12.5),
+                          style: const TextStyle(
+                            color: Colors.white60,
+                            fontSize: 12.5,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const Icon(Icons.schedule, size: 14, color: Colors.white54),
+                      const Icon(
+                        Icons.schedule,
+                        size: 14,
+                        color: Colors.white54,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         '${'Due'.trData(context)}: $deadline',
-                        style: const TextStyle(color: Colors.white60, fontSize: 12.5),
+                        style: const TextStyle(
+                          color: Colors.white60,
+                          fontSize: 12.5,
+                        ),
                       ),
                     ],
                   ),
@@ -468,24 +522,38 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                   // Location & entry fee
                   Row(
                     children: [
-                      const Icon(Icons.location_on_outlined, size: 14, color: Colors.white54),
+                      const Icon(
+                        Icons.location_on_outlined,
+                        size: 14,
+                        color: Colors.white54,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           location,
-                          style: const TextStyle(color: Colors.white60, fontSize: 12.5),
+                          style: const TextStyle(
+                            color: Colors.white60,
+                            fontSize: 12.5,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.10),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           entryFee,
-                          style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 11.5, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.85),
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],
@@ -498,12 +566,16 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                       children: [
                         Text(
                           '$entriesCount / $maxEntries entries'.trData(context),
-                          style: const TextStyle(color: Colors.white54, fontSize: 11.5),
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 11.5,
+                          ),
                         ),
                         Text(
                           '${(fillRatio * 100).toInt()}% full'.trData(context),
                           style: TextStyle(
-                            color: fillRatio > 0.9 ? _closedBadge : Colors.white54,
+                            color:
+                                fillRatio > 0.9 ? _closedBadge : Colors.white54,
                             fontSize: 11.5,
                           ),
                         ),
@@ -527,20 +599,27 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                     Wrap(
                       spacing: 6,
                       runSpacing: 4,
-                      children: tags.take(4).map((tag) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.white12),
-                          ),
-                          child: Text(
-                            '#$tag',
-                            style: const TextStyle(color: Colors.white54, fontSize: 11),
-                          ),
-                        );
-                      }).toList(),
+                      children:
+                          tags.take(4).map((tag) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: Colors.white12),
+                              ),
+                              child: Text(
+                                '#$tag',
+                                style: const TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            );
+                          }).toList(),
                     ),
                   ],
 
@@ -550,23 +629,32 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: status == 'closed' ? null : () => _showDetail(c),
+                      onPressed:
+                          status == 'closed' ? null : () => _showDetail(c),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: status == 'closed'
-                            ? Colors.white.withValues(alpha: 0.08)
-                            : _purpleLight,
-                        foregroundColor: status == 'closed' ? Colors.white38 : Colors.white,
+                        backgroundColor:
+                            status == 'closed'
+                                ? Colors.white.withValues(alpha: 0.08)
+                                : _purpleLight,
+                        foregroundColor:
+                            status == 'closed' ? Colors.white38 : Colors.white,
                         elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       child: Text(
                         (status == 'closed'
-                            ? 'Competition Closed'
-                            : status == 'upcoming'
+                                ? 'Competition Closed'
+                                : status == 'upcoming'
                                 ? 'View Details'
-                                : 'Apply Now').trData(context),
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                                : 'Apply Now')
+                            .trData(context),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
@@ -584,114 +672,201 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.88,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (_, controller) {
-          final modalImageUrl = c['image_url']?.toString() ?? '';
-          return Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFF4A1A7A), Color(0xFF2A1570)],
-              ),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Column(
-              children: [
-                const SizedBox(height: 10),
-                Container(
-                  width: 40, height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(2),
+      builder:
+          (context) => DraggableScrollableSheet(
+            initialChildSize: 0.88,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            builder: (_, controller) {
+              final modalImageUrl = c['image_url']?.toString() ?? '';
+              return Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xFF4A1A7A), Color(0xFF2A1570)],
                   ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                 ),
-                Expanded(
-                  child: ListView(
-                    controller: controller,
-                    padding: const EdgeInsets.all(20),
-                    children: [
-                      if (modalImageUrl.isNotEmpty)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: AppCachedImage(
-                            imageUrl: modalImageUrl,
-                            height: 200,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                    const SizedBox(height: 16),
-                    Text(
-                      (c['title']?.toString() ?? '').trData(context),
-                      style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900),
-                    ),
-                    if (c['theme'] != null && c['theme'].toString().isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text('${'Theme'.trData(context)}: ${(c['theme'].toString()).trData(context)}', style: const TextStyle(color: Colors.amber, fontSize: 13, fontStyle: FontStyle.italic)),
-                    ],
-                    const SizedBox(height: 12),
-                    _detailRow(Icons.emoji_events, 'Prize'.trData(context), (c['prize']?.toString() ?? 'N/A').trData(context), Colors.amber),
-                    _detailRow(Icons.schedule, 'Deadline'.trData(context), (c['deadline']?.toString() ?? 'TBD').trData(context), Colors.white),
-                    _detailRow(Icons.person_outline, 'Organizer'.trData(context), (c['organizer']?.toString() ?? '').trData(context), Colors.white),
-                    _detailRow(Icons.location_on_outlined, 'Location'.trData(context), (c['location']?.toString() ?? '').trData(context), Colors.white),
-                    _detailRow(Icons.sell_outlined, 'Entry Fee'.trData(context), (c['entry_fee']?.toString() ?? 'Free').trData(context), Colors.white),
-                    const SizedBox(height: 16),
-                    if (c['description'] != null && c['description'].toString().isNotEmpty) ...[
-                      _sectionTitle('About This Competition'.trData(context)),
-                      Text(c['description'].toString().trData(context), style: const TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.6)),
-                      const SizedBox(height: 16),
-                    ],
-                    if (c['eligibility'] != null && c['eligibility'].toString().isNotEmpty) ...[
-                      _sectionTitle('Eligibility'.trData(context)),
-                      Text(c['eligibility'].toString().trData(context), style: const TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.6)),
-                      const SizedBox(height: 16),
-                    ],
-                    if (c['rules'] != null && c['rules'].toString().isNotEmpty) ...[
-                      _sectionTitle('Rules & Submission'.trData(context)),
-                      Text(c['rules'].toString().trData(context), style: const TextStyle(color: Colors.white70, fontSize: 13.5, height: 1.6)),
-                      const SizedBox(height: 24),
-                    ],
-                    if (c['status'] != 'closed')
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Application submitted! We will contact you shortly.'.trData(context)),
-                                backgroundColor: const Color(0xFF22C55E),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.send_rounded, size: 18),
-                          label: Text('Submit Application'.trData(context), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _purpleLight,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                        ),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(2),
                       ),
+                    ),
+                    Expanded(
+                      child: ListView(
+                        controller: controller,
+                        padding: const EdgeInsets.all(20),
+                        children: [
+                          if (modalImageUrl.isNotEmpty)
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: AppCachedImage(
+                                imageUrl: modalImageUrl,
+                                height: 200,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          const SizedBox(height: 16),
+                          Text(
+                            (c['title']?.toString() ?? '').trData(context),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          if (c['theme'] != null &&
+                              c['theme'].toString().isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              '${'Theme'.trData(context)}: ${(c['theme'].toString()).trData(context)}',
+                              style: const TextStyle(
+                                color: Colors.amber,
+                                fontSize: 13,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 12),
+                          _detailRow(
+                            Icons.emoji_events,
+                            'Prize'.trData(context),
+                            (c['prize']?.toString() ?? 'N/A').trData(context),
+                            Colors.amber,
+                          ),
+                          _detailRow(
+                            Icons.schedule,
+                            'Deadline'.trData(context),
+                            (c['deadline']?.toString() ?? 'TBD').trData(
+                              context,
+                            ),
+                            Colors.white,
+                          ),
+                          _detailRow(
+                            Icons.person_outline,
+                            'Organizer'.trData(context),
+                            (c['organizer']?.toString() ?? '').trData(context),
+                            Colors.white,
+                          ),
+                          _detailRow(
+                            Icons.location_on_outlined,
+                            'Location'.trData(context),
+                            (c['location']?.toString() ?? '').trData(context),
+                            Colors.white,
+                          ),
+                          _detailRow(
+                            Icons.sell_outlined,
+                            'Entry Fee'.trData(context),
+                            (c['entry_fee']?.toString() ?? 'Free').trData(
+                              context,
+                            ),
+                            Colors.white,
+                          ),
+                          const SizedBox(height: 16),
+                          if (c['description'] != null &&
+                              c['description'].toString().isNotEmpty) ...[
+                            _sectionTitle(
+                              'About This Competition'.trData(context),
+                            ),
+                            Text(
+                              c['description'].toString().trData(context),
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13.5,
+                                height: 1.6,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          if (c['eligibility'] != null &&
+                              c['eligibility'].toString().isNotEmpty) ...[
+                            _sectionTitle('Eligibility'.trData(context)),
+                            Text(
+                              c['eligibility'].toString().trData(context),
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13.5,
+                                height: 1.6,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          if (c['rules'] != null &&
+                              c['rules'].toString().isNotEmpty) ...[
+                            _sectionTitle('Rules & Submission'.trData(context)),
+                            Text(
+                              c['rules'].toString().trData(context),
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13.5,
+                                height: 1.6,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+                          if (c['status'] != 'closed')
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Application submitted! We will contact you shortly.'
+                                            .trData(context),
+                                      ),
+                                      backgroundColor: const Color(0xFF22C55E),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.send_rounded, size: 18),
+                                label: Text(
+                                  'Submit Application'.trData(context),
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _purpleLight,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-              ),
-            ],
+              );
+            },
           ),
-        );
-      },
-    ),
-  );
-}
+    );
+  }
 
-  Widget _detailRow(IconData icon, String label, String value, Color iconColor) {
+  Widget _detailRow(
+    IconData icon,
+    String label,
+    String value,
+    Color iconColor,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -699,9 +874,19 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
         children: [
           Icon(icon, size: 16, color: iconColor.withValues(alpha: 0.7)),
           const SizedBox(width: 8),
-          Text('$label: ', style: const TextStyle(color: Colors.white60, fontSize: 13)),
+          Text(
+            '$label: ',
+            style: const TextStyle(color: Colors.white60, fontSize: 13),
+          ),
           Expanded(
-            child: Text(value, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
@@ -713,7 +898,11 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         title,
-        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

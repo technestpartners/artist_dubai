@@ -50,9 +50,12 @@ class MenuPermissionModel {
       key: json['key']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
       subtitle: json['subtitle']?.toString(),
-      routeName: json['route_name']?.toString() ?? json['routeName']?.toString() ?? '',
-      imagePath: json['image_path']?.toString() ?? json['imagePath']?.toString() ?? '',
-      isEnabled: json['is_enabled'] == null ||
+      routeName:
+          json['route_name']?.toString() ?? json['routeName']?.toString() ?? '',
+      imagePath:
+          json['image_path']?.toString() ?? json['imagePath']?.toString() ?? '',
+      isEnabled:
+          json['is_enabled'] == null ||
           json['is_enabled'] == 1 ||
           json['is_enabled'] == '1' ||
           json['is_enabled'] == true,

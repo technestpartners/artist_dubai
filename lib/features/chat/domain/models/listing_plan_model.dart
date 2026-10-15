@@ -27,10 +27,113 @@ class ListingPlanItem {
     this.sortOrder = 0,
   });
 
+  /// Comprehensive baseline plans covering all 5 core categories
+  static const List<ListingPlanItem> defaultBaselinePlans = [
+    ListingPlanItem(
+      id: 1,
+      title: 'Event Listing',
+      category: 'Events',
+      badge: 'Popular',
+      price: '199 AED',
+      description:
+          '30-day verified event showcase across mobile app and website',
+      features: [
+        '30-day verified event showcase across mobile app and website',
+        'Event calendar & push notification highlight',
+        'Direct ticket booking & RSVP link integration',
+        'Interactive venue map pin & directions',
+        'Featured badge & social media spotlight',
+      ],
+      buttonText: 'Pay from My Listings',
+      itemType: 'event',
+      isActive: true,
+      sortOrder: 1,
+    ),
+    ListingPlanItem(
+      id: 2,
+      title: 'Gallery Listing',
+      category: 'Galleries',
+      badge: 'Premium',
+      price: '149 AED',
+      description: 'Publish a single gallery on Artist Dubai.',
+      features: [
+        'Full digital gallery showroom & map listing',
+        'Unlimited exhibition postings for 12 months',
+        'Featured spot on Galleries directory',
+        'Direct visitor booking & VIP inquiries',
+        'Social media & push broadcast spotlight',
+      ],
+      buttonText: 'Pay from My Listings',
+      itemType: 'gallery',
+      isActive: true,
+      sortOrder: 2,
+    ),
+    ListingPlanItem(
+      id: 3,
+      title: 'Art Centre Listing',
+      category: 'Art Centres',
+      badge: 'VIP Partner',
+      price: '299 AED',
+      description: 'Publish a single art centre on Artist Dubai.',
+      features: [
+        'Official verified institution partner badge',
+        'Unlimited event & workshop listings',
+        'Direct ticket booking with instant notifications',
+        'Top banner rotation on mobile home screen',
+        'Dedicated account manager & support',
+      ],
+      buttonText: 'Pay from My Listings',
+      itemType: 'art_centre',
+      isActive: true,
+      sortOrder: 3,
+    ),
+    ListingPlanItem(
+      id: 4,
+      title: 'Chat & Messaging Pro',
+      category: 'Messaging',
+      badge: 'Recommended',
+      price: 'AED 49',
+      description:
+          'Direct unlimited artist & gallery messaging, artwork inquiries, and priority alerts',
+      features: [
+        'Unlimited direct messages with artists & collectors',
+        'Direct artwork purchase inquiries & commissions',
+        'High-res flyer & artwork attachments support',
+        'Instant push notification alerts on response',
+        'Priority delivery in recipient inbox',
+      ],
+      buttonText: 'Subscribe to Chat',
+      itemType: 'chat',
+      isActive: true,
+      sortOrder: 4,
+    ),
+    ListingPlanItem(
+      id: 5,
+      title: 'Pro Artist Portfolio',
+      category: 'Visual Arts',
+      badge: 'Best Choice',
+      price: 'AED 350',
+      description:
+          'Unlimited artwork uploads, custom bio, direct buyer messaging',
+      features: [
+        'Unlimited artwork & portfolio showcase uploads',
+        'Direct collector messaging & inquiry channel',
+        'Verified Artist badge on public profile',
+        'Priority ranking in search & category exploration',
+        'Custom biography, exhibition history & press links',
+      ],
+      buttonText: 'Upgrade Artist Profile',
+      itemType: 'artist',
+      isActive: true,
+      sortOrder: 5,
+    ),
+  ];
+
   factory ListingPlanItem.fromJson(Map<String, dynamic> json) {
     List<String> parsedFeatures = [];
     if (json['features'] is List) {
-      parsedFeatures = (json['features'] as List).map((e) => e.toString()).toList();
+      parsedFeatures =
+          (json['features'] as List).map((e) => e.toString()).toList();
     } else if (json['features_json'] != null) {
       try {
         final decoded = jsonDecode(json['features_json'].toString());
@@ -55,7 +158,8 @@ class ListingPlanItem {
       features: parsedFeatures,
       buttonText: json['button_text']?.toString() ?? 'Pay from My Listings',
       itemType: itemType,
-      isActive: json['is_active'] == null ||
+      isActive:
+          json['is_active'] == null ||
           json['is_active'] == 1 ||
           json['is_active'] == '1' ||
           json['is_active'] == true,
@@ -87,6 +191,15 @@ class ListingPlanItem {
           'Curator and featured artist roster spotlight',
           'Event host privileges with verified venue badge',
           'Direct collector inquiries & VIP preview access',
+        ];
+      case 'chat':
+      case 'messaging':
+        return [
+          'Unlimited direct messaging with artists & collectors',
+          'Direct artwork purchase inquiries & commissions',
+          'High-res flyer & artwork attachments support',
+          'Instant push notification alerts on response',
+          'Priority delivery in recipient inbox',
         ];
       case 'art_centre':
       case 'center':

@@ -12,7 +12,12 @@ class ComingSoonView extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final rh = ResponsiveHelper.of(context);
-    final logoSize = rh.isDesktop ? 260.0 : rh.isTablet ? 230.0 : 200.0;
+    final logoSize =
+        rh.isDesktop
+            ? 260.0
+            : rh.isTablet
+            ? 230.0
+            : 200.0;
 
     return Scaffold(
       backgroundColor: const Color(0xFF5D1F8E),
@@ -24,7 +29,11 @@ class ComingSoonView extends StatelessWidget {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 22),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                     tooltip: 'Back',
                     onPressed: () {
                       if (context.canPop()) {
@@ -65,12 +74,17 @@ class ComingSoonView extends StatelessWidget {
                 children: [
                   if (featureName != null) ...[
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 8,
+                      ),
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: Text(
                         featureName!,

@@ -57,71 +57,69 @@ void main() {
     await sl.reset();
   });
 
-  testWidgets('Admin Dashboard Government tab displays Close when open and Open when closed', (tester) async {
-    tester.view.physicalSize = const Size(800, 1400);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
+  testWidgets(
+    'Admin Dashboard Government tab displays Close when open and Open when closed',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: AdminDashboardView(),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(const MaterialApp(home: AdminDashboardView()));
+      await tester.pumpAndSettle();
 
-    // Tap Government tab
-    final govTabFinder = find.byIcon(Icons.assured_workload_outlined);
-    expect(govTabFinder, findsWidgets);
-    await tester.tap(govTabFinder.first);
-    await tester.pumpAndSettle();
+      // Tap Government tab
+      final govTabFinder = find.byIcon(Icons.assured_workload_outlined);
+      expect(govTabFinder, findsWidgets);
+      await tester.tap(govTabFinder.first);
+      await tester.pumpAndSettle();
 
-    // Verify Government entries are loaded
-    expect(find.text('Dubai Culture & Arts Authority'), findsWidgets);
+      // Verify Government entries are loaded
+      expect(find.text('Dubai Culture & Arts Authority'), findsWidgets);
 
-    // Initial state: it is Open, so tapping the Closed segment will close it
-    final closeToggleFinder = find.byKey(const Key('admin_toggle_close_btn'));
-    expect(closeToggleFinder, findsWidgets);
+      // Initial state: it is Open, so tapping the Closed segment will close it
+      final closeToggleFinder = find.byKey(const Key('admin_toggle_close_btn'));
+      expect(closeToggleFinder, findsWidgets);
 
-    // Click 'Closed' toggle segment to close the venue
-    await tester.tap(closeToggleFinder.first);
-    await tester.pumpAndSettle();
-
-    // Now it is Closed, so tapping 'Open' toggle segment re-opens it
-    final openToggleFinder = find.byKey(const Key('admin_toggle_open_btn'));
-    expect(openToggleFinder, findsWidgets);
-
-    // Click 'Open' toggle segment to re-open the venue
-    await tester.tap(openToggleFinder.first);
-    await tester.pumpAndSettle();
-
-    // It is open again
-    expect(find.byKey(const Key('admin_toggle_close_btn')), findsWidgets);
-  });
-
-  testWidgets('Admin Dashboard Art Centers tab displays Close when open and Open when closed', (tester) async {
-    tester.view.physicalSize = const Size(800, 1400);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: AdminDashboardView(),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    // Tap Art Centers tab
-    final artCentersTabFinder = find.text('Art Centers');
-    expect(artCentersTabFinder, findsWidgets);
-    await tester.tap(artCentersTabFinder.first);
-    await tester.pumpAndSettle();
-
-    // Verify toggle buttons exist in Art Centers
-    final closeToggleFinder = find.byKey(const Key('admin_toggle_close_btn'));
-    if (closeToggleFinder.evaluate().isNotEmpty) {
+      // Click 'Closed' toggle segment to close the venue
       await tester.tap(closeToggleFinder.first);
       await tester.pumpAndSettle();
-      expect(find.byKey(const Key('admin_toggle_open_btn')), findsWidgets);
-    }
-  });
+
+      // Now it is Closed, so tapping 'Open' toggle segment re-opens it
+      final openToggleFinder = find.byKey(const Key('admin_toggle_open_btn'));
+      expect(openToggleFinder, findsWidgets);
+
+      // Click 'Open' toggle segment to re-open the venue
+      await tester.tap(openToggleFinder.first);
+      await tester.pumpAndSettle();
+
+      // It is open again
+      expect(find.byKey(const Key('admin_toggle_close_btn')), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'Admin Dashboard Art Centers tab displays Close when open and Open when closed',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(const MaterialApp(home: AdminDashboardView()));
+      await tester.pumpAndSettle();
+
+      // Tap Art Centers tab
+      final artCentersTabFinder = find.text('Art Centers');
+      expect(artCentersTabFinder, findsWidgets);
+      await tester.tap(artCentersTabFinder.first);
+      await tester.pumpAndSettle();
+
+      // Verify toggle buttons exist in Art Centers
+      final closeToggleFinder = find.byKey(const Key('admin_toggle_close_btn'));
+      if (closeToggleFinder.evaluate().isNotEmpty) {
+        await tester.tap(closeToggleFinder.first);
+        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('admin_toggle_open_btn')), findsWidgets);
+      }
+    },
+  );
 }

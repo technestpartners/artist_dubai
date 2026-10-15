@@ -59,43 +59,80 @@ class DataTranslator {
     // AI Art Guide
     'ai art guide': 'مرشد الفن الذكي',
     'artist dubai guide': 'دليل فنان دبي الذكي',
-    'ask about artists, events, galleries and art centers in dubai.': 'اسأل عن الفنانين والفعاليات والمعارض والمراكز الفنية في دبي.',
-    'ask about artists, events, galleries and art centers in dubai': 'اسأل عن الفنانين والفعاليات والمعارض والمراكز الفنية في دبي',
-    'which art districts can i visit in dubai?': 'ما هي المناطق الفنية التي يمكنني زيارتها في دبي؟',
-    'which art districts can i visit in dubai': 'ما هي المناطق الفنية التي يمكنني زيارتها في دبي؟',
-    'how do i register as an artist in this app?': 'كيف أسجل كفنان في هذا التطبيق؟',
-    'how do i register as an artist in this app': 'كيف أسجل كفنان في هذا التطبيق؟',
-    'ideas for a weekend art tour in dubai': 'أفكار لجولة فنية في عطلة نهاية الأسبوع في دبي',
-    'is admission free at alserkal avenue galleries?': 'هل الدخول إلى معارض السركال أفنيو مجاني؟',
-    'is admission free at alserkal avenue galleries': 'هل الدخول إلى معارض السركال أفنيو مجاني؟',
-    'what are the opening hours for dubai design district (d3)?': 'ما هي أوقات عمل حي دبي للتصميم d3؟',
-    'what are the opening hours for dubai design district (d3)': 'ما هي أوقات عمل حي دبي للتصميم d3؟',
-    'how do i reach difc gate village by metro?': 'كيف أصل إلى قرية البوابة بمركز دبي المالي بالمترو؟',
-    'how do i reach difc gate village by metro': 'كيف أصل إلى قرية البوابة بمركز دبي المالي بالمترو؟',
-    'what are the requirements to get verified as an artist?': 'ما هي شروط توثيق حساب الفنان؟',
-    'what are the requirements to get verified as an artist': 'ما هي شروط توثيق حساب الفنان؟',
-    'can i sell my paintings and artworks directly on the app?': 'هل يمكنني بيع لوحاتي وأعمالي الفنية عبر التطبيق؟',
-    'can i sell my paintings and artworks directly on the app': 'هل يمكنني بيع لوحاتي وأعمالي الفنية عبر التطبيق؟',
-    'how do i submit an art event or exhibition?': 'كيف أضيف فعالية أو معرضاً فنياً؟',
-    'how do i submit an art event or exhibition': 'كيف أضيف فعالية أو معرضاً فنياً؟',
-    'what are the best art cafes in alserkal avenue?': 'ما هي أفضل المقاهي الفنية في السركال أفنيو؟',
-    'what are the best art cafes in alserkal avenue': 'ما هي أفضل المقاهي الفنية في السركال أفنيو؟',
-    'are there guided art tours in al fahidi historic district?': 'هل تتوفر جولات إرشادية في حي الفهيدي التاريخي؟',
-    'are there guided art tours in al fahidi historic district': 'هل تتوفر جولات إرشادية في حي الفهيدي التاريخي؟',
-    'what cultural events are happening this weekend?': 'ما هي الفعاليات الثقافية المقامة في عطلة نهاية الأسبوع؟',
-    'what cultural events are happening this weekend': 'ما هي الفعاليات الثقافية المقامة في عطلة نهاية الأسبوع؟',
-    'which galleries in dubai feature arabic calligraphy?': 'أي المعارض في دبي تركز على الخط العربي؟',
-    'which galleries in dubai feature arabic calligraphy': 'أي المعارض في دبي تركز على الخط العربي؟',
-    'how can i join workshops and residencies at tashkeel?': 'كيف أشترك في ورش العمل والإقامات الفنية في تشكيل؟',
-    'how can i join workshops and residencies at tashkeel': 'كيف أشترك في ورش العمل والإقامات الفنية في تشكيل؟',
-    'where can i find modern sculpture galleries in dubai?': 'أين تقع أفضل معارض النحت في دبي؟',
-    'where can i find modern sculpture galleries in dubai': 'أين تقع أفضل معارض النحت في دبي؟',
-    'what are the active art competitions with cash prizes?': 'ما هي الجوائز المقدمة في المسابقات الفنية الحالية؟',
-    'what are the active art competitions with cash prizes': 'ما هي الجوائز المقدمة في المسابقات الفنية الحالية؟',
-    'how can i exhibit my work in the sikka art festival?': 'كيف أشارك في مهرجان سكة للفنون والتصميم؟',
-    'how can i exhibit my work in the sikka art festival': 'كيف أشارك في مهرجان سكة للفنون والتصميم؟',
-    'are there free beginner art workshops in dubai?': 'هل توجد ورش عمل مجانية للفنانين المبتدئين؟',
-    'are there free beginner art workshops in dubai': 'هل توجد ورش عمل مجانية للفنانين المبتدئين؟',
+    'ask about artists, events, galleries and art centers in dubai.':
+        'اسأل عن الفنانين والفعاليات والمعارض والمراكز الفنية في دبي.',
+    'ask about artists, events, galleries and art centers in dubai':
+        'اسأل عن الفنانين والفعاليات والمعارض والمراكز الفنية في دبي',
+    'which art districts can i visit in dubai?':
+        'ما هي المناطق الفنية التي يمكنني زيارتها في دبي؟',
+    'which art districts can i visit in dubai':
+        'ما هي المناطق الفنية التي يمكنني زيارتها في دبي؟',
+    'how do i register as an artist in this app?':
+        'كيف أسجل كفنان في هذا التطبيق؟',
+    'how do i register as an artist in this app':
+        'كيف أسجل كفنان في هذا التطبيق؟',
+    'ideas for a weekend art tour in dubai':
+        'أفكار لجولة فنية في عطلة نهاية الأسبوع في دبي',
+    'is admission free at alserkal avenue galleries?':
+        'هل الدخول إلى معارض السركال أفنيو مجاني؟',
+    'is admission free at alserkal avenue galleries':
+        'هل الدخول إلى معارض السركال أفنيو مجاني؟',
+    'what are the opening hours for dubai design district (d3)?':
+        'ما هي أوقات عمل حي دبي للتصميم d3؟',
+    'what are the opening hours for dubai design district (d3)':
+        'ما هي أوقات عمل حي دبي للتصميم d3؟',
+    'how do i reach difc gate village by metro?':
+        'كيف أصل إلى قرية البوابة بمركز دبي المالي بالمترو؟',
+    'how do i reach difc gate village by metro':
+        'كيف أصل إلى قرية البوابة بمركز دبي المالي بالمترو؟',
+    'what are the requirements to get verified as an artist?':
+        'ما هي شروط توثيق حساب الفنان؟',
+    'what are the requirements to get verified as an artist':
+        'ما هي شروط توثيق حساب الفنان؟',
+    'can i sell my paintings and artworks directly on the app?':
+        'هل يمكنني بيع لوحاتي وأعمالي الفنية عبر التطبيق؟',
+    'can i sell my paintings and artworks directly on the app':
+        'هل يمكنني بيع لوحاتي وأعمالي الفنية عبر التطبيق؟',
+    'how do i submit an art event or exhibition?':
+        'كيف أضيف فعالية أو معرضاً فنياً؟',
+    'how do i submit an art event or exhibition':
+        'كيف أضيف فعالية أو معرضاً فنياً؟',
+    'what are the best art cafes in alserkal avenue?':
+        'ما هي أفضل المقاهي الفنية في السركال أفنيو؟',
+    'what are the best art cafes in alserkal avenue':
+        'ما هي أفضل المقاهي الفنية في السركال أفنيو؟',
+    'are there guided art tours in al fahidi historic district?':
+        'هل تتوفر جولات إرشادية في حي الفهيدي التاريخي؟',
+    'are there guided art tours in al fahidi historic district':
+        'هل تتوفر جولات إرشادية في حي الفهيدي التاريخي؟',
+    'what cultural events are happening this weekend?':
+        'ما هي الفعاليات الثقافية المقامة في عطلة نهاية الأسبوع؟',
+    'what cultural events are happening this weekend':
+        'ما هي الفعاليات الثقافية المقامة في عطلة نهاية الأسبوع؟',
+    'which galleries in dubai feature arabic calligraphy?':
+        'أي المعارض في دبي تركز على الخط العربي؟',
+    'which galleries in dubai feature arabic calligraphy':
+        'أي المعارض في دبي تركز على الخط العربي؟',
+    'how can i join workshops and residencies at tashkeel?':
+        'كيف أشترك في ورش العمل والإقامات الفنية في تشكيل؟',
+    'how can i join workshops and residencies at tashkeel':
+        'كيف أشترك في ورش العمل والإقامات الفنية في تشكيل؟',
+    'where can i find modern sculpture galleries in dubai?':
+        'أين تقع أفضل معارض النحت في دبي؟',
+    'where can i find modern sculpture galleries in dubai':
+        'أين تقع أفضل معارض النحت في دبي؟',
+    'what are the active art competitions with cash prizes?':
+        'ما هي الجوائز المقدمة في المسابقات الفنية الحالية؟',
+    'what are the active art competitions with cash prizes':
+        'ما هي الجوائز المقدمة في المسابقات الفنية الحالية؟',
+    'how can i exhibit my work in the sikka art festival?':
+        'كيف أشارك في مهرجان سكة للفنون والتصميم؟',
+    'how can i exhibit my work in the sikka art festival':
+        'كيف أشارك في مهرجان سكة للفنون والتصميم؟',
+    'are there free beginner art workshops in dubai?':
+        'هل توجد ورش عمل مجانية للفنانين المبتدئين؟',
+    'are there free beginner art workshops in dubai':
+        'هل توجد ورش عمل مجانية للفنانين المبتدئين؟',
     'ask the art guide...': 'اسأل مرشد الفن...',
     'ask the art guide': 'اسأل مرشد الفن',
     'your chats': 'محادثاتك',
@@ -124,12 +161,16 @@ class DataTranslator {
     'plans': 'الخطط',
     'select artist': 'اختيار فنان',
     'search artist by name or category...': 'ابحث عن فنان بالاسم أو الفئة...',
-    'no messages yet. search for an artist in the send tab to start a conversation.': 'لا توجد رسائل بعد. ابحث عن فنان في تبويب الإرسال لبدء محادثة.',
-    'send a private message to another artist.': 'أرسل رسالة خاصة إلى فنان آخر.',
-    'pay to publish your events, galleries and art centres on artist dubai.': 'ادفع لنشر فعالياتك ومعارضك ومراكزك الفنية على منصة فنان دبي.',
+    'no messages yet. search for an artist in the send tab to start a conversation.':
+        'لا توجد رسائل بعد. ابحث عن فنان في تبويب الإرسال لبدء محادثة.',
+    'send a private message to another artist.':
+        'أرسل رسالة خاصة إلى فنان آخر.',
+    'pay to publish your events, galleries and art centres on artist dubai.':
+        'ادفع لنشر فعالياتك ومعارضك ومراكزك الفنية على منصة فنان دبي.',
     'publish a single event on artist dubai.': 'نشر فعالية واحدة على فنان دبي.',
     'publish a single gallery on artist dubai.': 'نشر معرض واحد على فنان دبي.',
-    'publish a single art centre on artist dubai.': 'نشر مركز فني واحد على فنان دبي.',
+    'publish a single art centre on artist dubai.':
+        'نشر مركز فني واحد على فنان دبي.',
     'one event listing': 'إدراج فعالية واحدة',
     'visible in events and calendar': 'مرئي في الفعاليات والتقويم',
     'gallery photos included': 'تضمين صور المعرض',
@@ -141,10 +182,12 @@ class DataTranslator {
     'direct booking inquiry button': 'زر استفسار حجز مباشر',
     'flyer attached': 'تم إرفاق المنشور',
     'message sent successfully!': 'تم إرسال الرسالة بنجاح!',
-    'your allowance resets on the 1st. upgrade your plan for more.': 'يتم تجديد رصيدك في اليوم الأول من كل شهر. قم بترقية خطتك للحصول على المزيد.',
+    'your allowance resets on the 1st. upgrade your plan for more.':
+        'يتم تجديد رصيدك في اليوم الأول من كل شهر. قم بترقية خطتك للحصول على المزيد.',
     'unlimited messages left this month': 'رسائل غير محدودة هذا الشهر',
     'chat allowance plans': 'خطط رصيد المحادثة',
-    'upgrade to connect with more artists across dubai.': 'قم بالترقية للتواصل مع المزيد من الفنانين في دبي.',
+    'upgrade to connect with more artists across dubai.':
+        'قم بالترقية للتواصل مع المزيد من الفنانين في دبي.',
     'starter plan': 'خطة البداية',
     'pro artist': 'فنان محترف',
     'unlimited vip': 'غير محدود VIP',
@@ -157,17 +200,24 @@ class DataTranslator {
     '10 direct messages per month': '10 رسائل مباشرة شهرياً',
     '50 direct messages per month': '50 رسالة مباشرة شهرياً',
     'unlimited direct artist messages': 'رسائل مباشرة غير محدودة للفنانين',
-    'direct artist collaboration inquiries': 'استفسارات التعاون المباشر مع الفنانين',
-    'flyer & artwork attachment support': 'إمكانية إرفاق منشورات وصور الأعمال الفنية',
-    'allowance auto-resets on the 1st': 'تجديد تلقائي للرصيد في الأول من كل شهر',
-    'direct artist outreach & networking': 'تواصل مباشر وبناء علاقات مع الفنانين',
-    'priority delivery in artist inboxes': 'أولوية الظهور في صندوق وارد الفنانين',
+    'direct artist collaboration inquiries':
+        'استفسارات التعاون المباشر مع الفنانين',
+    'flyer & artwork attachment support':
+        'إمكانية إرفاق منشورات وصور الأعمال الفنية',
+    'allowance auto-resets on the 1st':
+        'تجديد تلقائي للرصيد في الأول من كل شهر',
+    'direct artist outreach & networking':
+        'تواصل مباشر وبناء علاقات مع الفنانين',
+    'priority delivery in artist inboxes':
+        'أولوية الظهور في صندوق وارد الفنانين',
     'high-resolution flyer attachments': 'إرفاق منشورات وصور عالية الدقة',
     'monthly reset on the 1st': 'تجديد شهري في الأول من كل شهر',
     'verified vip sender badge': 'شارة مرسل VIP موثق',
-    'ideal for galleries, curators & agencies': 'مثالي للمعارض والقيمين والوكالات',
+    'ideal for galleries, curators & agencies':
+        'مثالي للمعارض والقيمين والوكالات',
     'priority instant customer support': 'دعم فني فوري ذو أولوية',
-    'looking to publish events, galleries or art centres? view listing plans →': 'هل ترغب في نشر فعاليات أو معارض أو مراكز فنية؟ عرض خطط القوائم ←',
+    'looking to publish events, galleries or art centres? view listing plans →':
+        'هل ترغب في نشر فعاليات أو معارض أو مراكز فنية؟ عرض خطط القوائم ←',
     'for agencies & curators': 'للوكالات والقيمين الفنيين',
     'select plan': 'اختيار الخطة',
     'default': 'الافتراضي',
@@ -179,8 +229,10 @@ class DataTranslator {
     'close': 'إغلاق',
     'please write your message.': 'يرجى كتابة رسالتك.',
     'please write your message': 'يرجى كتابة رسالتك',
-    'monthly message limit reached. upgrade your plan for more.': 'تم الوصول إلى الحد الشهري للرسائل. قم بترقية خطتك للحصول على المزيد.',
-    'monthly message limit reached. upgrade your plan for more': 'تم الوصول إلى الحد الشهري للرسائل. قم بترقية خطتك للحصول على المزيد',
+    'monthly message limit reached. upgrade your plan for more.':
+        'تم الوصول إلى الحد الشهري للرسائل. قم بترقية خطتك للحصول على المزيد.',
+    'monthly message limit reached. upgrade your plan for more':
+        'تم الوصول إلى الحد الشهري للرسائل. قم بترقية خطتك للحصول على المزيد',
     'failed to send message:': 'فشل إرسال الرسالة:',
     'failed to send message': 'فشل إرسال الرسالة',
     'failed to pick image:': 'فشل في اختيار الصورة:',
@@ -329,7 +381,6 @@ class DataTranslator {
     'accept & publish': 'قبول ونشر',
     'events total': 'إجمالي الفعاليات',
 
-
     'beginner (1-2 years)': 'مبتدئ (١-٢ سنة)',
     'beginner 1-2 years': 'مبتدئ (١-٢ سنة)',
     'intermediate (3-5 years)': 'متوسط (٣-٥ سنوات)',
@@ -358,23 +409,31 @@ class DataTranslator {
     // Payment & Credit Card Checkout
     'payment method': 'طريقة الدفع',
     'credit / debit card': 'بطاقة ائتمان / خصم',
-    'pay with visa, mastercard, or amex instantly': 'ادفع بواسطة فيزا أو ماستركارد أو أمريكان إكسبريس فوراً',
+    'pay with visa, mastercard, or amex instantly':
+        'ادفع بواسطة فيزا أو ماستركارد أو أمريكان إكسبريس فوراً',
     'bank transfer & qr code': 'تحويل بنكي ورمز QR',
-    'direct iban transfer or scan qr code': 'تحويل مباشر عبر الآيبان أو مسح الرمز',
+    'direct iban transfer or scan qr code':
+        'تحويل مباشر عبر الآيبان أو مسح الرمز',
     'instant': 'فوري',
     'cardholder name': 'اسم حامل البطاقة',
     'full name on card': 'الاسم الكامل على البطاقة',
     'card number': 'رقم البطاقة',
     'expiry date': 'تاريخ الانتهاء',
     'security code': 'رمز الأمان',
-    'save card securely for 1-click renewals & future listings': 'حفظ البطاقة بأمان للتجديدات السريعة والمدفوعات المستقبلية',
-    'pci-dss level 1 certified · 256-bit ssl secure payment': 'معتمد بشهادة PCI-DSS المستوى 1 · دفع آمن بتشفير SSL 256 بت',
+    'save card securely for 1-click renewals & future listings':
+        'حفظ البطاقة بأمان للتجديدات السريعة والمدفوعات المستقبلية',
+    'pci-dss level 1 certified · 256-bit ssl secure payment':
+        'معتمد بشهادة PCI-DSS المستوى 1 · دفع آمن بتشفير SSL 256 بت',
     'pay with credit card': 'الدفع ببطاقة الائتمان',
     'processing payment securely...': 'جارٍ معالجة الدفع بأمان...',
-    'please enter the name on your card': 'يرجى إدخال الاسم الموجود على البطاقة',
-    'please enter a valid 16-digit card number': 'يرجى إدخال رقم بطاقة صالح مكون من 16 رقماً',
-    'please enter a valid expiry date (mm/yy)': 'يرجى إدخال تاريخ انتهاء صالح (شهر/سنة)',
-    'please enter a valid cvv (3-4 digits)': 'يرجى إدخال رمز أمان صالح (3-4 أرقام)',
+    'please enter the name on your card':
+        'يرجى إدخال الاسم الموجود على البطاقة',
+    'please enter a valid 16-digit card number':
+        'يرجى إدخال رقم بطاقة صالح مكون من 16 رقماً',
+    'please enter a valid expiry date (mm/yy)':
+        'يرجى إدخال تاريخ انتهاء صالح (شهر/سنة)',
+    'please enter a valid cvv (3-4 digits)':
+        'يرجى إدخال رمز أمان صالح (3-4 أرقام)',
     'payment & listing successful!': 'تم الدفع والتقديم بنجاح!',
     'payment & registration successful!': 'تم الدفع والتسجيل بنجاح!',
 
@@ -480,8 +539,10 @@ class DataTranslator {
     'house of wisdom & arts, dubai': 'بيت الحكمة والفنون، دبي',
     'house of wisdom & arts': 'بيت الحكمة والفنون',
     'house of wisdom': 'بيت الحكمة',
-    'difc gate village, building 03, dubai': 'قرية البوابة، المبنى 03، مركز دبي المالي العالمي، دبي',
-    'difc gate village, building 03': 'قرية البوابة، المبنى 03، مركز دبي المالي العالمي',
+    'difc gate village, building 03, dubai':
+        'قرية البوابة، المبنى 03، مركز دبي المالي العالمي، دبي',
+    'difc gate village, building 03':
+        'قرية البوابة، المبنى 03، مركز دبي المالي العالمي',
     'difc gate village': 'قرية البوابة، مركز دبي المالي العالمي',
     'dubai mall, level 2, downtown dubai': 'دبي مول، الطابق 2، وسط مدينة دبي',
     'dubai mall, level 2': 'دبي مول، الطابق 2',
@@ -491,14 +552,17 @@ class DataTranslator {
     'al fahidi': 'الفهيدي',
     'jumeirah art center, jumeirah 1, dubai': 'مركز جميرا للفنون، جميرا 1، دبي',
     'jumeirah art center': 'مركز جميرا للفنون',
-    'the pottery shed, warehouse 42, al quoz, dubai': 'ذا بوتري شيد، المستودع 42، القوز، دبي',
+    'the pottery shed, warehouse 42, al quoz, dubai':
+        'ذا بوتري شيد، المستودع 42، القوز، دبي',
     'the pottery shed': 'ذا بوتري شيد',
-    'hatta wadi hub, located off the dubai-hatta road, dubai': 'حتا وادي هب، طريق دبي-حتا، دبي',
+    'hatta wadi hub, located off the dubai-hatta road, dubai':
+        'حتا وادي هب، طريق دبي-حتا، دبي',
     'hatta wadi hub': 'حتا وادي هب',
     'dubai opera gallery, downtown dubai': 'معرض دبي أوبرا، وسط مدينة دبي',
 
     // Government Entities & Cultural Centers
-    'dubai culture & arts authority': 'هيئة الثقافة والفنون في دبي (دبي للثقافة)',
+    'dubai culture & arts authority':
+        'هيئة الثقافة والفنون في دبي (دبي للثقافة)',
     'ministry of culture & youth': 'وزارة الثقافة والشباب',
     'art dubai': 'آرت دبي',
     'dubai opera': 'دبي أوبرا',
@@ -509,7 +573,6 @@ class DataTranslator {
     'art fair · cultural event': 'معرض فني · حدث ثقافي',
     'arts district · gallery hub': 'حي الفنون · مجمع معارض',
     'performing arts · venue': 'فنون أدائية · مسرح وفعاليات',
-
 
     // Pricing & Plans
     'weekly plan': 'الخطة الأسبوعية',
@@ -528,29 +591,38 @@ class DataTranslator {
     'paid gallery publishing • choose plan': 'نشر المعارض المدفوع • اختر خطة',
     'paid gallery publishing': 'نشر المعارض المدفوع',
     'choose plan': 'اختر خطة',
-    'publishing your gallery on artist dubai is a premium feature. select your preferred showcase plan. once verified by the admin, your gallery will be featured prominently to art lovers across the uae.': 'نشر معرضك على منصة فنان دبي ميزة متميزة. اختر خطة العرض المناسبة. بمجرد التحقق من قِبل الإدارة، سيتم إبراز معرضك لعشاق الفن في جميع أنحاء الإمارات.',
+    'publishing your gallery on artist dubai is a premium feature. select your preferred showcase plan. once verified by the admin, your gallery will be featured prominently to art lovers across the uae.':
+        'نشر معرضك على منصة فنان دبي ميزة متميزة. اختر خطة العرض المناسبة. بمجرد التحقق من قِبل الإدارة، سيتم إبراز معرضك لعشاق الفن في جميع أنحاء الإمارات.',
     'payment on next step:': 'الدفع في الخطوة التالية:',
     'payment on next step': 'الدفع في الخطوة التالية',
-    'admin payment qr code & bank transfer details on checkout page.': 'رمز الاستجابة السريعة (QR) وتفاصيل التحويل المصرفي في صفحة إتمام الدفع.',
-    'admin payment qr code & bank transfer details on checkout page': 'رمز الاستجابة السريعة (QR) وتفاصيل التحويل المصرفي في صفحة إتمام الدفع',
+    'admin payment qr code & bank transfer details on checkout page.':
+        'رمز الاستجابة السريعة (QR) وتفاصيل التحويل المصرفي في صفحة إتمام الدفع.',
+    'admin payment qr code & bank transfer details on checkout page':
+        'رمز الاستجابة السريعة (QR) وتفاصيل التحويل المصرفي في صفحة إتمام الدفع',
     'select image source': 'تحديد مصدر الصورة',
     'choose from gallery': 'اختيار من المعرض',
     'select a photo from your device library': 'اختر صورة من مكتبة جهازك',
     'take a photo': 'التقاط صورة',
-    'use your camera to capture space photo': 'استخدم الكاميرا لالتقاط صورة للمساحة',
+    'use your camera to capture space photo':
+        'استخدم الكاميرا لالتقاط صورة للمساحة',
     'upload featured image': 'رفع الصورة البارزة',
-    'select a banner or photo from your device': 'اختر صورة غلاف أو صورة من جهازك',
-    'use your camera to capture an event image': 'استخدم الكاميرا لالتقاط صورة للفعالية',
+    'select a banner or photo from your device':
+        'اختر صورة غلاف أو صورة من جهازك',
+    'use your camera to capture an event image':
+        'استخدم الكاميرا لالتقاط صورة للفعالية',
     'upload photo': 'رفع صورة',
     'change photo': 'تغيير الصورة',
     'uploaded': 'تم الرفع',
-    'select showcase photo of the gallery/space (jpg, png, webp).': 'حدد صورة المعرض / المساحة الفنية (JPG, PNG, WebP).',
-    'select showcase photo of the gallery/space (jpg, png, .webp)': 'حدد صورة المعرض / المساحة الفنية (JPG, PNG, WebP)',
+    'select showcase photo of the gallery/space (jpg, png, webp).':
+        'حدد صورة المعرض / المساحة الفنية (JPG, PNG, WebP).',
+    'select showcase photo of the gallery/space (jpg, png, .webp)':
+        'حدد صورة المعرض / المساحة الفنية (JPG, PNG, WebP)',
     'please enter gallery name': 'الرجاء إدخال اسم المعرض',
     'please enter email': 'الرجاء إدخال البريد الإلكتروني',
     'please enter valid email': 'الرجاء إدخال بريد إلكتروني صحيح',
     'registration received': 'تم استلام طلب التسجيل',
-    'thank you. our team will review your gallery or art center and get in touch by email.': 'شكراً لك. سيقوم فريقنا بمراجعة معرضك أو مركزك الفني والتواصل معك عبر البريد الإلكتروني.',
+    'thank you. our team will review your gallery or art center and get in touch by email.':
+        'شكراً لك. سيقوم فريقنا بمراجعة معرضك أو مركزك الفني والتواصل معك عبر البريد الإلكتروني.',
     'back to home': 'العودة إلى الرئيسية',
     'registration': 'التسجيل',
     'hosted by nizar fahem': 'استضافة نزار فاهم',
@@ -568,8 +640,10 @@ class DataTranslator {
     'photos': 'صور',
     'permissions': 'الصلاحيات',
     'menu permissions': 'صلاحيات القائمة',
-    'home menu permissions & coming soon controls': 'صلاحيات القائمة والتحكم في صفحة قريباً',
-    'toggle menu access for users. when permission is off, clicking that menu opens the coming soon page.': 'التحكم في وصول المستخدمين للقوائم. عند إيقاف الصلاحية، يؤدي النقر عليها لفتح صفحة قريباً.',
+    'home menu permissions & coming soon controls':
+        'صلاحيات القائمة والتحكم في صفحة قريباً',
+    'toggle menu access for users. when permission is off, clicking that menu opens the coming soon page.':
+        'التحكم في وصول المستخدمين للقوائم. عند إيقاف الصلاحية، يؤدي النقر عليها لفتح صفحة قريباً.',
     'normal access': 'وصول عادي',
     'coming soon': 'قريباً',
     'enable all': 'تفعيل الكل',
@@ -606,15 +680,23 @@ class DataTranslator {
     'new': 'جديد',
     'cancel': 'إلغاء',
     'delete': 'حذف',
-    'click to select images or drag and drop': 'انقر لتحديد الصور أو اسحبها وأفلتها',
+    'click to select images or drag and drop':
+        'انقر لتحديد الصور أو اسحبها وأفلتها',
     'please enter a gallery title': 'الرجاء إدخال عنوان المعرض',
-    'please select at least one photo from your gallery': 'الرجاء تحديد صورة واحدة على الأقل من معرضك',
-    'failed to delete gallery. please try again.': 'فشل حذف المعرض. يرجى المحاولة مرة أخرى.',
-    'profile picture updated successfully!': 'تم تحديث صورة الملف الشخصي بنجاح!',
-    'please have at least one photo in the gallery': 'يجب أن يحتوي المعرض على صورة واحدة على الأقل',
-    'please have at least one photo in the gallery.': 'الرجاء إدراج صورة واحدة على الأقل في المعرض.',
-    'a gallery must have at least 1 photo': 'يجب أن يحتوي المعرض على صورة واحدة على الأقل',
-    'a gallery must have at least 1 photo.': 'يجب أن يحتوي المعرض على صورة واحدة على الأقل.',
+    'please select at least one photo from your gallery':
+        'الرجاء تحديد صورة واحدة على الأقل من معرضك',
+    'failed to delete gallery. please try again.':
+        'فشل حذف المعرض. يرجى المحاولة مرة أخرى.',
+    'profile picture updated successfully!':
+        'تم تحديث صورة الملف الشخصي بنجاح!',
+    'please have at least one photo in the gallery':
+        'يجب أن يحتوي المعرض على صورة واحدة على الأقل',
+    'please have at least one photo in the gallery.':
+        'الرجاء إدراج صورة واحدة على الأقل في المعرض.',
+    'a gallery must have at least 1 photo':
+        'يجب أن يحتوي المعرض على صورة واحدة على الأقل',
+    'a gallery must have at least 1 photo.':
+        'يجب أن يحتوي المعرض على صورة واحدة على الأقل.',
     'required details missing': 'بيانات مطلوبة مفقودة',
     'upload failed': 'فشل التحميل',
     'ok': 'موافق',
@@ -622,7 +704,8 @@ class DataTranslator {
     'delete photo': 'حذف الصورة',
     'remove photo': 'إزالة الصورة',
     'delete profile picture': 'حذف الصورة الشخصية',
-    'are you sure you want to remove your profile photo?': 'هل أنت متأكد أنك تريد إزالة صورتك الشخصية؟',
+    'are you sure you want to remove your profile photo?':
+        'هل أنت متأكد أنك تريد إزالة صورتك الشخصية؟',
     'profile photo removed': 'تمت إزالة صورة الملف الشخصي',
 
     // Events UI, Filters, Sorting & Dates
@@ -648,8 +731,10 @@ class DataTranslator {
     'search results': 'نتائج البحث',
     'clear all': 'مسح الكل',
     'clear all filters': 'مسح جميع الفلاتر',
-    'no events found matching your search.': 'لم يتم العثور على فعاليات تطابق بحثك.',
-    'try adjusting your dates, category, or price filters.': 'جرّب تعديل التاريخ أو الفئة أو فلاتر الأسعار.',
+    'no events found matching your search.':
+        'لم يتم العثور على فعاليات تطابق بحثك.',
+    'try adjusting your dates, category, or price filters.':
+        'جرّب تعديل التاريخ أو الفئة أو فلاتر الأسعار.',
     'reset': 'إعادة ضبط',
     'register art event': 'تسجيل فعالية فنية',
     'event details': 'تفاصيل الفعالية',
@@ -663,27 +748,43 @@ class DataTranslator {
     'share event': 'مشاركة الفعالية',
 
     // Specific Known Events & Cultural Venues
-    'live api test exhibition 8831': 'معرض اختبار واجهة برمجة التطبيق المباشر 8831',
+    'live api test exhibition 8831':
+        'معرض اختبار واجهة برمجة التطبيق المباشر 8831',
     'live api test exhibition': 'معرض اختبار واجهة برمجة التطبيق المباشر',
     'api test exhibition': 'معرض اختبار واجهة برمجة التطبيق',
     'api testing exhibition': 'معرض اختبار واجهة برمجة التطبيق',
     'sharjah calligraphy biennial': 'بينالي الشارقة للخط',
     'sharjah calligraphy meeting': 'ملتقى الشارقة للخط',
     'dubai modern art showcase': 'معرض دبي للفن الحديث',
-    'emirates contemporary design expo 2026': 'معرض الإمارات للتصميم المعاصر 2026',
+    'emirates contemporary design expo 2026':
+        'معرض الإمارات للتصميم المعاصر 2026',
     'heart of sharjah heritage area': 'قلب الشارقة التراثي',
     'dubai opera gallery': 'معرض دبي أوبرا',
     'alserkal avenue, warehouse 42': 'جادة السركال، المستودع 42',
 
     // Onboarding Strings
+    'welcome to ⚜️ artist dubai ⚜️': 'مرحباً بكم في ⚜️ فنان دبي ⚜️',
+    'welcome to ⚜️artist dubai⚜️': 'مرحباً بكم في ⚜️فنان دبي⚜️',
+    'welcome to artist dubai': 'مرحباً بكم في فنان دبي',
     'welcome to dubai artists': 'مرحباً بكم في فنان دبي',
-    'discover the vibrant art scene of dubai and connect with talented local artists': 'اكتشف مشهد الفن النابض في دبي وتواصل مع فنانين محليين موهوبين',
+    'a modern digital platform connecting artists, art lovers, galleries, museums, and cultural events across dubai. discover exhibitions, photography, competitions, and cultural venues—all in one place.\n\ncoming soon, don\'t miss out!':
+        'منصة رقمية حديثة تربط الفنانين وعشاق الفن والمعارض والمتاحف والفعاليات الثقافية في جميع أنحاء دبي. اكتشف المعارض والتصوير الفوتوغرافي والمسابقات والأماكن الثقافية—كلها في مكان واحد.\n\nقريباً، لا تفوت الفرصة!',
+    'a modern digital platform connecting artists, art lovers, galleries, museums, and cultural events across dubai. discover exhibitions, photography, competitions, and cultural venues—all in one place.\ncoming soon, don\'t miss out!':
+        'منصة رقمية حديثة تربط الفنانين وعشاق الفن والمعارض والمتاحف والفعاليات الثقافية في جميع أنحاء دبي. اكتشف المعارض والتصوير الفوتوغرافي والمسابقات والأماكن الثقافية—كلها في مكان واحد.\nقريباً، لا تفوت الفرصة!',
+    'a modern digital platform connecting artists, art lovers, galleries, museums, and cultural events across dubai. discover exhibitions, photography, competitions, and cultural venues—all in one place. coming soon, don\'t miss out!':
+        'منصة رقمية حديثة تربط الفنانين وعشاق الفن والمعارض والمتاحف والفعاليات الثقافية في جميع أنحاء دبي. اكتشف المعارض والتصوير الفوتوغرافي والمسابقات والأماكن الثقافية—كلها في مكان واحد. قريباً، لا تفوت الفرصة!',
+    'coming soon, don\'t miss out!': 'قريباً، لا تفوت الفرصة!',
+    'discover the vibrant art scene of dubai and connect with talented local artists':
+        'اكتشف مشهد الفن النابض في دبي وتواصل مع فنانين محليين موهوبين',
     'meet local artists': 'تعرف على الفنانين المحليين',
-    'connect directly with artists, learn about their stories and commission custom works': 'تواصل مباشرة مع الفنانين وتعرف على قصصهم واطلب أعمالاً خاصة',
+    'connect directly with artists, learn about their stories and commission custom works':
+        'تواصل مباشرة مع الفنانين وتعرف على قصصهم واطلب أعمالاً خاصة',
     'explore art galleries': 'استكشف المعارض الفنية',
-    'browse through curated collections and find your next favorite piece': 'تصفح المجموعات الفنية المختارة واعثر على عملك المفضل التالي',
+    'browse through curated collections and find your next favorite piece':
+        'تصفح المجموعات الفنية المختارة واعثر على عملك المفضل التالي',
     'art events & exhibitions': 'الفعاليات والمعارض الفنية',
-    'stay updated with the latest art events, exhibitions and cultural happenings in dubai': 'ابقَ على اطلاع بأحدث الفعاليات والمعارض والأنشطة الثقافية في دبي',
+    'stay updated with the latest art events, exhibitions and cultural happenings in dubai':
+        'ابقَ على اطلاع بأحدث الفعاليات والمعارض والأنشطة الثقافية في دبي',
     'skip': 'تخطي',
     'previous': 'السابق',
     'next': 'التالي',
@@ -691,8 +792,10 @@ class DataTranslator {
 
     // Galleries & Art Centers
     'no art centers listed yet': 'لا توجد مراكز فنية مدرجة حتى الآن',
-    'registered galleries and art centers will be shown here.': 'ستظهر المعارض والمراكز الفنية المسجلة هنا.',
-    'please log in to register an art gallery': 'يرجى تسجيل الدخول لتسجيل معرض فني',
+    'registered galleries and art centers will be shown here.':
+        'ستظهر المعارض والمراكز الفنية المسجلة هنا.',
+    'please log in to register an art gallery':
+        'يرجى تسجيل الدخول لتسجيل معرض فني',
     'art space': 'مساحة فنية',
     'art gallery': 'معرض فني',
 
@@ -703,7 +806,8 @@ class DataTranslator {
     'read less': 'قراءة أقل',
     'select date range': 'تحديد النطاق الزمني',
     'save': 'حفظ',
-    'submitted events are sent to the administrator for review and will be published once approved.': 'يتم إرسال الفعاليات المقدمة إلى المسؤول للمراجعة وسيتم نشرها بمجرد الموافقة عليها.',
+    'submitted events are sent to the administrator for review and will be published once approved.':
+        'يتم إرسال الفعاليات المقدمة إلى المسؤول للمراجعة وسيتم نشرها بمجرد الموافقة عليها.',
     'no images available': 'لا توجد صور متاحة',
     'free community entry': 'دخول مجاني للمجتمع',
     'pending review': 'قيد المراجعة',
@@ -731,8 +835,10 @@ class DataTranslator {
     'louvre abu dhabi': 'اللوفر أبوظبي',
 
     // Artist Profile Creation, Artwork Uploads & Validation
-    'maximum 6 artwork uploads allowed.': 'الحد الأقصى المسموح به هو 6 أعمال فنية.',
-    'maximum 6 artwork uploads allowed': 'الحد الأقصى المسموح به هو 6 أعمال فنية.',
+    'maximum 6 artwork uploads allowed.':
+        'الحد الأقصى المسموح به هو 6 أعمال فنية.',
+    'maximum 6 artwork uploads allowed':
+        'الحد الأقصى المسموح به هو 6 أعمال فنية.',
     'maximum 6 artworks allowed.': 'الحد الأقصى المسموح به هو 6 أعمال فنية.',
     'maximum 6 artworks allowed': 'الحد الأقصى المسموح به هو 6 أعمال فنية.',
     'maximum 6 artworks reached': 'تم الوصول للحد الأقصى (6 أعمال)',
@@ -743,25 +849,35 @@ class DataTranslator {
     'artist profile updated successfully!': 'تم تحديث الملف الفني بنجاح!',
     'artist profile updated successfully': 'تم تحديث الملف الفني بنجاح',
     'update failed': 'فشل التحديث',
-    'failed to update profile. please check your inputs.': 'فشل تحديث الملف الشخصي. يرجى التحقق من المدخلات.',
+    'failed to update profile. please check your inputs.':
+        'فشل تحديث الملف الشخصي. يرجى التحقق من المدخلات.',
     'failed to update profile.': 'فشل تحديث الملف الشخصي.',
     'failed to update profile': 'فشل تحديث الملف الشخصي',
     'save failed': 'فشل الحفظ',
-    'failed to save profile. please check your inputs.': 'فشل حفظ الملف الشخصي. يرجى التحقق من المدخلات.',
+    'failed to save profile. please check your inputs.':
+        'فشل حفظ الملف الشخصي. يرجى التحقق من المدخلات.',
     'failed to save profile.': 'فشل حفظ الملف الشخصي.',
     'failed to save profile': 'فشل حفظ الملف الشخصي',
-    'please enter your full name or stage name.': 'يرجى إدخال اسمك الكامل أو اسمك الفني.',
-    'please enter your full name or stage name': 'يرجى إدخال اسمك الكامل أو اسمك الفني',
+    'please enter your full name or stage name.':
+        'يرجى إدخال اسمك الكامل أو اسمك الفني.',
+    'please enter your full name or stage name':
+        'يرجى إدخال اسمك الكامل أو اسمك الفني',
     'please enter your email address.': 'يرجى إدخال بريدك الإلكتروني.',
     'please enter your email address': 'يرجى إدخال بريدك الإلكتروني',
     'invalid phone number': 'رقم الهاتف غير صالح',
-    'please enter a valid phone number (7-15 digits) or leave it empty.': 'يرجى إدخال رقم هاتف صالح (7-15 رقماً) أو تركه فارغاً.',
-    'please enter a valid phone number (7-15 digits) or leave it empty': 'يرجى إدخال رقم هاتف صالح (7-15 رقماً) أو تركه فارغاً',
+    'please enter a valid phone number (7-15 digits) or leave it empty.':
+        'يرجى إدخال رقم هاتف صالح (7-15 رقماً) أو تركه فارغاً.',
+    'please enter a valid phone number (7-15 digits) or leave it empty':
+        'يرجى إدخال رقم هاتف صالح (7-15 رقماً) أو تركه فارغاً',
     'agreement required': 'الموافقة مطلوبة',
-    'please agree to the privacy policy and terms & conditions.': 'يرجى الموافقة على سياسة الخصوصية والشروط والأحكام.',
-    'please agree to the privacy policy and terms & conditions': 'يرجى الموافقة على سياسة الخصوصية والشروط والأحكام',
-    'please complete all required fields before proceeding:': 'يرجى إكمال جميع الحقول المطلوبة قبل المتابعة:',
-    'please complete all required fields before proceeding': 'يرجى إكمال جميع الحقول المطلوبة قبل المتابعة',
+    'please agree to the privacy policy and terms & conditions.':
+        'يرجى الموافقة على سياسة الخصوصية والشروط والأحكام.',
+    'please agree to the privacy policy and terms & conditions':
+        'يرجى الموافقة على سياسة الخصوصية والشروط والأحكام',
+    'please complete all required fields before proceeding:':
+        'يرجى إكمال جميع الحقول المطلوبة قبل المتابعة:',
+    'please complete all required fields before proceeding':
+        'يرجى إكمال جميع الحقول المطلوبة قبل المتابعة',
     '• full name': '• الاسم الكامل',
     '• email': '• البريد الإلكتروني',
     '• profile photo': '• صورة الملف الشخصي',
@@ -776,8 +892,10 @@ class DataTranslator {
     // Payment & Checkout (Step 2)
     'payment & checkout': 'الدفع وإتمام الطلب',
     'step 2 of 2: payment & verification': 'الخطوة 2 من 2: الدفع والتحقق',
-    'scan the qr code or transfer via iban, then attach your receipt': 'امسح رمز QR أو حوّل عبر الآيبان، ثم أرفق إيصالك',
-    'scan the qr code or transfer via iban, then attach your receipt.': 'امسح رمز QR أو حوّل عبر الآيبان، ثم أرفق إيصالك.',
+    'scan the qr code or transfer via iban, then attach your receipt':
+        'امسح رمز QR أو حوّل عبر الآيبان، ثم أرفق إيصالك',
+    'scan the qr code or transfer via iban, then attach your receipt.':
+        'امسح رمز QR أو حوّل عبر الآيبان، ثم أرفق إيصالك.',
     'event publishing': 'نشر الفعالية',
     'gallery registration': 'تسجيل المعرض',
     'art event listing': 'إعلان فعالية فنية',
@@ -794,8 +912,10 @@ class DataTranslator {
     'plan:': 'الخطة:',
     'plan': 'الخطة',
     'scan qr to pay': 'امسح رمز QR للدفع',
-    'scan using your uae banking app, apple pay, google pay, or qr reader': 'امسح باستخدام تطبيقك المصرفي الإماراتي، Apple Pay، Google Pay، أو قارئ QR',
-    'scan using your uae banking app, apple pay, google pay, or qr reader.': 'امسح باستخدام تطبيقك المصرفي الإماراتي، Apple Pay، Google Pay، أو قارئ QR.',
+    'scan using your uae banking app, apple pay, google pay, or qr reader':
+        'امسح باستخدام تطبيقك المصرفي الإماراتي، Apple Pay، Google Pay، أو قارئ QR',
+    'scan using your uae banking app, apple pay, google pay, or qr reader.':
+        'امسح باستخدام تطبيقك المصرفي الإماراتي، Apple Pay، Google Pay، أو قارئ QR.',
     'direct bank transfer details': 'تفاصيل التحويل المصرفي المباشر',
     'bank name': 'اسم البنك',
     'bank name:': 'اسم البنك:',
@@ -809,47 +929,61 @@ class DataTranslator {
     'copied to clipboard!': 'تم النسخ إلى الحافظة!',
     'emirates nbd, dubai': 'بنك الإمارات دبي الوطني، دبي',
     'artist dubai cultural services llc': 'خدمات فنان دبي الثقافية ش.ذ.م.م',
-    'please scan the qr code with your mobile banking or payment app, or transfer directly via iban. once paid, enter your transaction reference number and upload the receipt screenshot.': 'يرجى مسح رمز QR باستخدام تطبيقك المصرفي أو تطبيق الدفع، أو التحويل مباشرة عبر الآيبان. بمجرد الدفع، أدخل الرقم المرجعي للمعاملة وارفع لقطة شاشة للإيصال.',
-    'please scan the qr code with your banking app or transfer via iban. once completed, enter the transaction reference and upload your receipt screenshot.': 'يرجى مسح رمز QR باستخدام تطبيقك المصرفي أو التحويل عبر الآيبان. بمجرد الانتهاء، أدخل الرقم المرجعي للمعاملة وارفع لقطة شاشة للإيصال.',
+    'please scan the qr code with your mobile banking or payment app, or transfer directly via iban. once paid, enter your transaction reference number and upload the receipt screenshot.':
+        'يرجى مسح رمز QR باستخدام تطبيقك المصرفي أو تطبيق الدفع، أو التحويل مباشرة عبر الآيبان. بمجرد الدفع، أدخل الرقم المرجعي للمعاملة وارفع لقطة شاشة للإيصال.',
+    'please scan the qr code with your banking app or transfer via iban. once completed, enter the transaction reference and upload your receipt screenshot.':
+        'يرجى مسح رمز QR باستخدام تطبيقك المصرفي أو التحويل عبر الآيبان. بمجرد الانتهاء، أدخل الرقم المرجعي للمعاملة وارفع لقطة شاشة للإيصال.',
     'payment verification & proof': 'إثبات وتأكيد الدفع',
-    'attach your transfer receipt screenshot and/or enter transaction id for instant verification.': 'أرفق لقطة شاشة لإيصال التحويل و/أو أدخل معرف المعاملة للتحقق الفوري.',
-    'attach your transfer receipt screenshot and/or enter transaction id for instant verification': 'أرفق لقطة شاشة لإيصال التحويل و/أو أدخل معرف المعاملة للتحقق الفوري',
-    'transaction reference / id (optional)': 'الرقم المرجعي للمعاملة / المعرف (اختياري)',
+    'attach your transfer receipt screenshot and/or enter transaction id for instant verification.':
+        'أرفق لقطة شاشة لإيصال التحويل و/أو أدخل معرف المعاملة للتحقق الفوري.',
+    'attach your transfer receipt screenshot and/or enter transaction id for instant verification':
+        'أرفق لقطة شاشة لإيصال التحويل و/أو أدخل معرف المعاملة للتحقق الفوري',
+    'transaction reference / id (optional)':
+        'الرقم المرجعي للمعاملة / المعرف (اختياري)',
     '# e.g. txn-98472918 or bank ref': 'مثال: TXN-98472918 أو المرجع البنكي #',
-    '# e.g. txn-98472918 or bank ref #': 'مثال: TXN-98472918 أو المرجع البنكي #',
+    '# e.g. txn-98472918 or bank ref #':
+        'مثال: TXN-98472918 أو المرجع البنكي #',
     'e.g. txn-98472918 or bank ref #': 'مثال: TXN-98472918 أو المرجع البنكي #',
     'payment proof attached': 'تم إرفاق إثبات الدفع',
     'receipt screenshot ready for review': 'لقطة شاشة الإيصال جاهزة للمراجعة',
     'attach transfer receipt': 'إرفاق إيصال التحويل',
-    'upload screenshot (png, jpg up to 10mb)': 'رفع لقطة شاشة (PNG، JPG حتى 10 ميغابايت)',
+    'upload screenshot (png, jpg up to 10mb)':
+        'رفع لقطة شاشة (PNG، JPG حتى 10 ميغابايت)',
     'upload receipt screenshot': 'رفع لقطة شاشة الإيصال',
     'change receipt screenshot': 'تغيير لقطة شاشة الإيصال',
     'uploading...': 'جارٍ الرفع...',
     'payment receipt attached successfully!': 'تم إرفاق إيصال الدفع بنجاح!',
     'confirm & submit listing': 'تأكيد وإرسال الإعلان',
     'back to edit details': 'العودة لتعديل التفاصيل',
-    'failed to submit listing. please verify your connection and try again.': 'فشل إرسال الإعلان. يرجى التحقق من اتصالك والمحاولة مرة أخرى.',
-    'failed to submit listing. please verify your connection and try again': 'فشل إرسال الإعلان. يرجى التحقق من اتصالك والمحاولة مرة أخرى',
+    'failed to submit listing. please verify your connection and try again.':
+        'فشل إرسال الإعلان. يرجى التحقق من اتصالك والمحاولة مرة أخرى.',
+    'failed to submit listing. please verify your connection and try again':
+        'فشل إرسال الإعلان. يرجى التحقق من اتصالك والمحاولة مرة أخرى',
     'no payment proof attached': 'لم يتم إرفاق إثبات الدفع',
     'attach receipt': 'إرفاق الإيصال',
     'submit anyway': 'إرسال على أي حال',
     'gallery submitted for review!': 'تم تقديم المعرض للمراجعة!',
     'event submitted for review!': 'تم تقديم الفعالية للمراجعة!',
-    'your gallery registration and payment proof have been submitted. once verified by our administration team, your gallery will appear publicly.': 'تم تقديم تسجيل معرضك وإثبات الدفع. بمجرد التحقق من قبل فريق الإدارة، سيظهر معرضك للجمهور.',
-    'your event listing and payment proof have been submitted. our team will verify your transfer and publish your event within 24 hours.': 'تم تقديم إعلان فعاليتك وإثبات الدفع. سيقوم فريقنا بالتحقق من التحويل ونشر فعاليتك خلال 24 ساعة.',
+    'your gallery registration and payment proof have been submitted. once verified by our administration team, your gallery will appear publicly.':
+        'تم تقديم تسجيل معرضك وإثبات الدفع. بمجرد التحقق من قبل فريق الإدارة، سيظهر معرضك للجمهور.',
+    'your event listing and payment proof have been submitted. our team will verify your transfer and publish your event within 24 hours.':
+        'تم تقديم إعلان فعاليتك وإثبات الدفع. سيقوم فريقنا بالتحقق من التحويل ونشر فعاليتك خلال 24 ساعة.',
     'back to galleries': 'العودة إلى المعارض',
     'view my events': 'عرض فعالياتي',
 
     // Server, network & API error messages
-    'database connection error. please try again later.': 'خطأ في الاتصال بقاعدة البيانات. يرجى المحاولة مرة أخرى لاحقاً.',
+    'database connection error. please try again later.':
+        'خطأ في الاتصال بقاعدة البيانات. يرجى المحاولة مرة أخرى لاحقاً.',
     'database connection error': 'خطأ في الاتصال بقاعدة البيانات',
     'database connection failed': 'فشل الاتصال بقاعدة البيانات',
     'mysql connection error': 'خطأ في الاتصال بـ MySQL',
     'server error': 'خطأ في الخادم',
     'internal server error': 'خطأ داخلي في الخادم',
     'something went wrong': 'حدث خطأ ما',
-    'something went wrong. please try again.': 'حدث خطأ ما. يرجى المحاولة مرة أخرى.',
-    'something went wrong. please try again': 'حدث خطأ ما. يرجى المحاولة مرة أخرى',
+    'something went wrong. please try again.':
+        'حدث خطأ ما. يرجى المحاولة مرة أخرى.',
+    'something went wrong. please try again':
+        'حدث خطأ ما. يرجى المحاولة مرة أخرى',
     'service temporarily unavailable': 'الخدمة غير متاحة مؤقتاً',
     'please try again later': 'يرجى المحاولة مرة أخرى لاحقاً',
     'request failed': 'فشل الطلب',
@@ -859,12 +993,16 @@ class DataTranslator {
     'timeout': 'انتهت مهلة الطلب',
     'connection refused': 'تم رفض الاتصال',
     'failed to load data': 'فشل تحميل البيانات',
-    'failed to load data. please check your connection.': 'فشل تحميل البيانات. يرجى التحقق من اتصالك.',
-    'failed to load data. please check your connection': 'فشل تحميل البيانات. يرجى التحقق من اتصالك',
+    'failed to load data. please check your connection.':
+        'فشل تحميل البيانات. يرجى التحقق من اتصالك.',
+    'failed to load data. please check your connection':
+        'فشل تحميل البيانات. يرجى التحقق من اتصالك',
     'unable to reach the server': 'تعذّر الوصول إلى الخادم',
     'unauthorized access': 'وصول غير مصرح به',
-    'session expired. please log in again.': 'انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.',
-    'session expired. please log in again': 'انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى',
+    'session expired. please log in again.':
+        'انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.',
+    'session expired. please log in again':
+        'انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى',
     'access denied': 'تم رفض الوصول',
     'not found': 'غير موجود',
     'invalid response from server': 'استجابة غير صالحة من الخادم',
@@ -883,44 +1021,54 @@ class DataTranslator {
     'use camera to capture a new photo': 'استخدم الكاميرا لالتقاط صورة جديدة',
     'create new gallery for': 'إنشاء معرض جديد لـ',
     'images': 'الصور',
-    'failed to upload selected images. please try again.': 'فشل رفع الصور المحددة. يرجى المحاولة مرة أخرى.',
+    'failed to upload selected images. please try again.':
+        'فشل رفع الصور المحددة. يرجى المحاولة مرة أخرى.',
     'share artwork': 'مشاركة العمل الفني',
     'edit gallery / photos': 'تعديل المعرض / الصور',
     'view details': 'عرض التفاصيل',
     'dimensions': 'الأبعاد',
     'medium': 'الوسيط الفني',
     'request sent to admin': 'تم إرسال الطلب إلى الإدارة',
-    'once approved by the admin, it will be published in the public directory.': 'بمجرد موافقة الإدارة، سيتم نشرها في الدليل العام.',
+    'once approved by the admin, it will be published in the public directory.':
+        'بمجرد موافقة الإدارة، سيتم نشرها في الدليل العام.',
     'account settings': 'إعدادات الحساب',
     'account information': 'معلومات الحساب',
-    'manage your account settings and preferences': 'إدارة إعدادات حسابك وتفضيلاتك',
+    'manage your account settings and preferences':
+        'إدارة إعدادات حسابك وتفضيلاتك',
     'member since': 'عضو منذ',
     'recently joined': 'انضم حديثاً',
     'no email provided': 'لم يتم تقديم بريد إلكتروني',
-    'your active artist profile details on artist dubai': 'تفاصيل ملفك الفني النشط على فنان دبي',
-    'create your artist profile to showcase your work': 'أنشئ ملفك الفني لعرض أعمالك',
+    'your active artist profile details on artist dubai':
+        'تفاصيل ملفك الفني النشط على فنان دبي',
+    'create your artist profile to showcase your work':
+        'أنشئ ملفك الفني لعرض أعمالك',
     'no artist profile': 'لا يوجد ملف فني',
-    'create your artist profile to be discoverable on the platform and showcase your portfolio.': 'أنشئ ملفك الفني لتكون قابلاً للاكتشاف على المنصة واستعراض معرض أعمالك.',
+    'create your artist profile to be discoverable on the platform and showcase your portfolio.':
+        'أنشئ ملفك الفني لتكون قابلاً للاكتشاف على المنصة واستعراض معرض أعمالك.',
     'create artist profile': 'إنشاء ملف فني',
     'account actions': 'إجراءات الحساب',
     'sign out or delete your account': 'تسجيل الخروج أو حذف حسابك',
     'change password': 'تغيير كلمة المرور',
-    'enter your new password. make sure it\'s secure and at least 6 characters long.': 'أدخل كلمة المرور الجديدة. تأكد من أنها آمنة ولا تقل عن 6 أحرف.',
+    'enter your new password. make sure it\'s secure and at least 6 characters long.':
+        'أدخل كلمة المرور الجديدة. تأكد من أنها آمنة ولا تقل عن 6 أحرف.',
     'new password': 'كلمة المرور الجديدة',
     'enter new password': 'أدخل كلمة المرور الجديدة',
     'confirm new password': 'تأكيد كلمة المرور الجديدة',
     'update password': 'تحديث كلمة المرور',
-    'password must be at least 6 characters.': 'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل.',
+    'password must be at least 6 characters.':
+        'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل.',
     'passwords do not match.': 'كلمتا المرور غير متطابقتين.',
     'password updated successfully!': 'تم تحديث كلمة المرور بنجاح!',
     'failed to update password.': 'فشل تحديث كلمة المرور.',
     'edit profile details': 'تعديل بيانات الملف الشخصي',
-    'update your full display name across artist dubai.': 'تحديث اسم العرض الكامل الخاص بك في فنان دبي.',
+    'update your full display name across artist dubai.':
+        'تحديث اسم العرض الكامل الخاص بك في فنان دبي.',
     'enter your full name': 'أدخل اسمك الكامل',
     'full name cannot be empty.': 'لا يمكن أن يكون الاسم الكامل فارغاً.',
     'profile updated successfully!': 'تم تحديث الملف الشخصي بنجاح!',
     'are you absolutely sure?': 'هل أنت متأكد تماماً؟',
-    'this action cannot be undone. this will permanently delete your account and remove all your data from our servers. this includes:': 'لا يمكن التراجع عن هذا الإجراء. سيؤدي هذا إلى حذف حسابك نهائياً وإزالة جميع بياناتك من خوادمنا. يشمل ذلك:',
+    'this action cannot be undone. this will permanently delete your account and remove all your data from our servers. this includes:':
+        'لا يمكن التراجع عن هذا الإجراء. سيؤدي هذا إلى حذف حسابك نهائياً وإزالة جميع بياناتك من خوادمنا. يشمل ذلك:',
     'your artist profile (if any)': 'ملفك الفني الشخصي (إن وجد)',
     'all your artwork images': 'جميع صور أعمالك الفنية',
     'your account information': 'معلومات حسابك',
@@ -973,9 +1121,11 @@ class DataTranslator {
     'please wait...': 'يرجى الانتظار...',
     'create category': 'إنشاء فئة',
     'create new category': 'إنشاء فئة جديدة',
-    'add a new category for artists to showcase their work': 'إضافة فئة جديدة للفنانين لعرض أعمالهم',
+    'add a new category for artists to showcase their work':
+        'إضافة فئة جديدة للفنانين لعرض أعمالهم',
     'category details': 'تفاصيل الفئة',
-    'fill in the information below to create a new category': 'املأ المعلومات أدناه لإنشاء فئة جديدة',
+    'fill in the information below to create a new category':
+        'املأ المعلومات أدناه لإنشاء فئة جديدة',
     'category name *': 'اسم الفئة *',
     'category name': 'اسم الفئة',
     'category description': 'وصف الفئة',
@@ -996,12 +1146,15 @@ class DataTranslator {
     'you can attach your proof now for faster verification, or submit anyway as pending transfer.':
         'يمكنك إرفاق الإثبات الآن لتسريع التحقق، أو الإرسال على أي حال كتحويل معلق.',
     'what\'s on': 'الفعاليات الحالية',
-    'this action is permanent and cannot be undone.': 'هذا الإجراء نهائي ولا يمكن التراجع عنه.',
+    'this action is permanent and cannot be undone.':
+        'هذا الإجراء نهائي ولا يمكن التراجع عنه.',
 
     // SnackBars & Toast Messages
     'category created successfully!': 'تم إنشاء الفئة بنجاح!',
-    'failed to save category. please check your inputs.': 'فشل حفظ الفئة. يرجى التحقق من المدخلات.',
-    'application submitted! we will contact you shortly.': 'تم تقديم الطلب! سنتواصل معك قريباً.',
+    'failed to save category. please check your inputs.':
+        'فشل حفظ الفئة. يرجى التحقق من المدخلات.',
+    'application submitted! we will contact you shortly.':
+        'تم تقديم الطلب! سنتواصل معك قريباً.',
     'removed artist from favorites': 'تمت إزالة الفنان من المفضلة',
     'removed event from favorites': 'تمت إزالة الفعالية من المفضلة',
     'removed artwork from favorites': 'تمت إزالة العمل الفني من المفضلة',
@@ -1035,7 +1188,8 @@ class DataTranslator {
     'invalid month': 'الشهر غير صالح',
     'security code (cvv)': 'رمز الأمان (CVV)',
     '3-4 digits': '٣-٤ أرقام',
-    'guaranteed safe & secure checkout powered by stripe': 'دفع آمن ومضمون مدعوم من Stripe',
+    'guaranteed safe & secure checkout powered by stripe':
+        'دفع آمن ومضمون مدعوم من Stripe',
     'cardholder': 'حامل البطاقة',
     'expires': 'تاريخ الانتهاء',
     '256-bit ssl': 'تشفير 256-بت SSL',
@@ -1056,8 +1210,10 @@ class DataTranslator {
     'payment settings and qr code updated successfully!':
         'تم تحديث إعدادات الدفع ورمز QR بنجاح!',
     'failed to update payment settings.': 'فشل تحديث إعدادات الدفع.',
-    'please enter 6-month and yearly amounts': 'يرجى إدخال مبالغ 6 أشهر والسنوية',
-    'failed to update rates. please check connection.': 'فشل تحديث الأسعار. يرجى التحقق من الاتصال.',
+    'please enter 6-month and yearly amounts':
+        'يرجى إدخال مبالغ 6 أشهر والسنوية',
+    'failed to update rates. please check connection.':
+        'فشل تحديث الأسعار. يرجى التحقق من الاتصال.',
     'publishing pricing rates refreshed from database':
         'تم تحديث أسعار النشر من قاعدة البيانات',
     'enter steps for user to follow when transferring and submitting receipt...':
@@ -1073,13 +1229,15 @@ class DataTranslator {
     if (_arToEn == null) {
       final map = <String, String>{
         // Explicit Arabic to English lookups for event titles and variations
-        'معرض اختبار واجهة برمجة التطبيق المباشر 8831': 'Live API Test Exhibition 8831',
+        'معرض اختبار واجهة برمجة التطبيق المباشر 8831':
+            'Live API Test Exhibition 8831',
         'معرض اختبار واجهة برمجة التطبيق المباشر': 'Live API Test Exhibition',
         'معرض اختبار واجهة برمجة التطبيق': 'API Test Exhibition',
         'بينالي الشارقة للخط': 'Sharjah Calligraphy Biennial',
         'ملتقى الشارقة للخط': 'Sharjah Calligraphy Meeting',
         'معرض دبي للفن الحديث': 'Dubai Modern Art Showcase',
-        'معرض الإمارات للتصميم المعاصر 2026': 'Emirates Contemporary Design Expo 2026',
+        'معرض الإمارات للتصميم المعاصر 2026':
+            'Emirates Contemporary Design Expo 2026',
         'قلب الشارقة التراثي': 'Heart of Sharjah Heritage Area',
         'معرض دبي أوبرا': 'Dubai Opera Gallery',
         'جادة السركال، المستودع 42': 'Alserkal Avenue, Warehouse 42',
@@ -1113,17 +1271,23 @@ class DataTranslator {
         'تسجيل فعالية فنية': 'Register Art Event',
         'معرض فني': 'Art Exhibition',
         'معرض': 'Exhibition',
-        'دخول مجاني': 'Free Entry',
-        'مجاني': 'Free',
         'نشط': 'Active',
-        'مرحباً بكم في فنان دبي': 'Welcome to Dubai Artists',
-        'اكتشف مشهد الفن النابض في دبي وتواصل مع فنانين محليين موهوبين': 'Discover the vibrant art scene of Dubai and connect with talented local artists',
+        'مرحباً بكم في ⚜️ فنان دبي ⚜️': 'Welcome to ⚜️ Artist Dubai ⚜️',
+        'مرحباً بكم في ⚜️فنان دبي⚜️': 'Welcome to ⚜️Artist Dubai⚜️',
+        'مرحباً بكم في فنان دبي': 'Welcome to Artist Dubai',
+        'قريباً، لا تفوت الفرصة!': 'Coming soon, don\'t miss out!',
+        'قريباً': 'Coming Soon',
+        'اكتشف مشهد الفن النابض في دبي وتواصل مع فنانين محليين موهوبين':
+            'Discover the vibrant art scene of Dubai and connect with talented local artists',
         'تعرف على الفنانين المحليين': 'Meet Local Artists',
-        'تواصل مباشرة مع الفنانين وتعرف على قصصهم واطلب أعمالاً خاصة': 'Connect directly with artists, learn about their stories and commission custom works',
+        'تواصل مباشرة مع الفنانين وتعرف على قصصهم واطلب أعمالاً خاصة':
+            'Connect directly with artists, learn about their stories and commission custom works',
         'استكشف المعارض الفنية': 'Explore Art Galleries',
-        'تصفح المجموعات الفنية المختارة واعثر على عملك المفضل التالي': 'Browse through curated collections and find your next favorite piece',
+        'تصفح المجموعات الفنية المختارة واعثر على عملك المفضل التالي':
+            'Browse through curated collections and find your next favorite piece',
         'الفعاليات والمعارض الفنية': 'Art Events & Exhibitions',
-        'ابقَ على اطلاع بأحدث الفعاليات والمعارض والأنشطة الثقافية في دبي': 'Stay updated with the latest art events, exhibitions and cultural happenings in Dubai',
+        'ابقَ على اطلاع بأحدث الفعاليات والمعارض والأنشطة الثقافية في دبي':
+            'Stay updated with the latest art events, exhibitions and cultural happenings in Dubai',
         'تخطي': 'Skip',
         'السابق': 'Previous',
         'التالي': 'Next',
@@ -1173,16 +1337,23 @@ class DataTranslator {
     _cacheInitialized = true;
     try {
       if (sl.isRegistered<StorageService>()) {
-        final raw = sl<StorageService>().getString('cached_dynamic_translations_v1');
+        final raw = sl<StorageService>().getString(
+          'cached_dynamic_translations_v1',
+        );
         if (raw != null && raw.isNotEmpty) {
           final decoded = jsonDecode(raw);
           if (decoded is Map) {
             decoded.forEach((k, v) {
               if (k is String && v is String) {
                 final trimmedV = v.trim();
-                final isJunk = trimmedV.isEmpty ||
-                    !RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(trimmedV) ||
-                    (k.startsWith('en_ar:') && !RegExp(r'[\u0600-\u06FF]').hasMatch(trimmedV));
+                final isJunk =
+                    trimmedV.isEmpty ||
+                    !RegExp(
+                      r'[\p{L}\p{N}]',
+                      unicode: true,
+                    ).hasMatch(trimmedV) ||
+                    (k.startsWith('en_ar:') &&
+                        !RegExp(r'[\u0600-\u06FF]').hasMatch(trimmedV));
                 if (!isJunk) {
                   _dynamicCache[k] = v;
                 }
@@ -1341,19 +1512,28 @@ class DataTranslator {
         final days = trimmed.replaceAll(RegExp(r'[^0-9]'), '');
         return 'منذ $days يوم';
       }
-      if (lower.startsWith('today • ') || lower.startsWith('today · ') || lower.startsWith('today - ')) {
+      if (lower.startsWith('today • ') ||
+          lower.startsWith('today · ') ||
+          lower.startsWith('today - ')) {
         final timePart = trimmed.substring(7).trim();
         return 'اليوم • ${_translateTimePart(timePart)}';
       }
-      if (lower.startsWith('this week • ') || lower.startsWith('this week · ') || lower.startsWith('this week - ')) {
+      if (lower.startsWith('this week • ') ||
+          lower.startsWith('this week · ') ||
+          lower.startsWith('this week - ')) {
         final timePart = trimmed.substring(11).trim();
         return 'هذا الأسبوع • ${_translateTimePart(timePart)}';
       }
-      if (lower.startsWith('explore ') && lower.contains('collection of artworks')) {
-        final name = trimmed
-            .substring(8, trimmed.toLowerCase().indexOf('collection of artworks'))
-            .replaceAll(RegExp(r"['’]s?\s*$"), '')
-            .trim();
+      if (lower.startsWith('explore ') &&
+          lower.contains('collection of artworks')) {
+        final name =
+            trimmed
+                .substring(
+                  8,
+                  trimmed.toLowerCase().indexOf('collection of artworks'),
+                )
+                .replaceAll(RegExp(r"['’]s?\s*$"), '')
+                .trim();
         final trName = _enToAr[name.toLowerCase()] ?? name;
         return 'استكشف مجموعة أعمال $trName الفنية';
       }
@@ -1398,35 +1578,52 @@ class DataTranslator {
       }
 
       // Gallery & Photo count dynamic patterns
-      if (lower.startsWith('gallery "') && lower.contains('" updated successfully')) {
-        final title = trimmed.split('"').length > 1 ? trimmed.split('"')[1] : '';
+      if (lower.startsWith('gallery "') &&
+          lower.contains('" updated successfully')) {
+        final title =
+            trimmed.split('"').length > 1 ? trimmed.split('"')[1] : '';
         return 'تم تحديث المعرض "$title" بنجاح!';
       }
-      if (lower.startsWith('gallery "') && lower.contains('" deleted successfully')) {
-        final title = trimmed.split('"').length > 1 ? trimmed.split('"')[1] : '';
+      if (lower.startsWith('gallery "') &&
+          lower.contains('" deleted successfully')) {
+        final title =
+            trimmed.split('"').length > 1 ? trimmed.split('"')[1] : '';
         return 'تم حذف المعرض "$title" بنجاح';
       }
-      if (lower.startsWith('gallery "') && lower.contains('" created successfully!')) {
-        final title = trimmed.split('"').length > 1 ? trimmed.split('"')[1] : '';
+      if (lower.startsWith('gallery "') &&
+          lower.contains('" created successfully!')) {
+        final title =
+            trimmed.split('"').length > 1 ? trimmed.split('"')[1] : '';
         return 'تم إنشاء المعرض "$title" بنجاح!';
       }
       if (lower.startsWith('create new gallery for ')) {
         final artist = trimmed.substring(23).trim();
         return 'إنشاء معرض جديد لـ $artist';
       }
-      if (lower.startsWith('are you sure you want to delete "') && lower.contains('"? this action will remove')) {
-        final title = trimmed.split('"').length > 1 ? trimmed.split('"')[1] : '';
+      if (lower.startsWith('are you sure you want to delete "') &&
+          lower.contains('"? this action will remove')) {
+        final title =
+            trimmed.split('"').length > 1 ? trimmed.split('"')[1] : '';
         return 'هل أنت متأكد أنك تريد حذف "$title"؟ سيؤدي هذا الإجراء إلى إزالة المعرض وصوره ولا يمكن التراجع عنه.';
       }
-      if (lower.startsWith('your event "') && lower.contains('" has been successfully submitted for administrative review')) {
-        final title = trimmed.split('"').length > 1 ? trimmed.split('"')[1] : '';
+      if (lower.startsWith('your event "') &&
+          lower.contains(
+            '" has been successfully submitted for administrative review',
+          )) {
+        final title =
+            trimmed.split('"').length > 1 ? trimmed.split('"')[1] : '';
         return 'تم تقديم فعاليتك "$title" بنجاح للمراجعة الإدارية.';
       }
-      if (lower.startsWith('photo ') && lower.contains(' of ') && lower.contains(' • ')) {
+      if (lower.startsWith('photo ') &&
+          lower.contains(' of ') &&
+          lower.contains(' • ')) {
         final parts = trimmed.split(' • ');
         final counter = parts[0]; // Photo X of Y
         final artistPart = parts.length > 1 ? parts[1] : '';
-        final countParts = counter.toLowerCase().replaceFirst('photo ', '').split(' of ');
+        final countParts = counter
+            .toLowerCase()
+            .replaceFirst('photo ', '')
+            .split(' of ');
         if (countParts.length == 2) {
           final cur = countParts[0].trim();
           final total = countParts[1].trim();
@@ -1434,7 +1631,10 @@ class DataTranslator {
           return 'صورة $cur من $total • $trArtist';
         }
       }
-      if (RegExp(r'^\d+\s+photo\(s\)$', caseSensitive: false).hasMatch(trimmed)) {
+      if (RegExp(
+        r'^\d+\s+photo\(s\)$',
+        caseSensitive: false,
+      ).hasMatch(trimmed)) {
         final count = trimmed.split(' ').first;
         if (count == '1') {
           return 'صورة واحدة';
@@ -1445,11 +1645,15 @@ class DataTranslator {
       }
 
       // Dynamic profile creation & upload error patterns
-      if (lower.startsWith('maximum 6 artworks allowed. added ') && lower.contains('artwork(s)')) {
-        final count = trimmed.replaceAll(RegExp(r'[^0-9]'), '').replaceFirst('6', '');
+      if (lower.startsWith('maximum 6 artworks allowed. added ') &&
+          lower.contains('artwork(s)')) {
+        final count = trimmed
+            .replaceAll(RegExp(r'[^0-9]'), '')
+            .replaceFirst('6', '');
         return 'الحد الأقصى المسموح به هو 6 أعمال فنية. تمت إضافة $count عمل (أعمال).';
       }
-      if (lower.startsWith('artist profile & ') && lower.contains('artworks created successfully!')) {
+      if (lower.startsWith('artist profile & ') &&
+          lower.contains('artworks created successfully!')) {
         final count = trimmed.replaceAll(RegExp(r'[^0-9]'), '');
         return 'تم إنشاء الملف الفني وإضافة $count عمل فني بنجاح!';
       }
@@ -1479,29 +1683,41 @@ class DataTranslator {
       }
 
       // Dynamic gallery & event notifications & popups
-      if (lower.startsWith('gallery "') && lower.endsWith('" created successfully!')) {
+      if (lower.startsWith('gallery "') &&
+          lower.endsWith('" created successfully!')) {
         final title = trimmed.substring(9, trimmed.length - 21);
         return 'تم إنشاء معرض "$title" بنجاح!';
       }
-      if (lower.startsWith('gallery "') && lower.endsWith('" deleted successfully')) {
+      if (lower.startsWith('gallery "') &&
+          lower.endsWith('" deleted successfully')) {
         final title = trimmed.substring(9, trimmed.length - 21);
         return 'تم حذف معرض "$title" بنجاح';
       }
-      if (lower.startsWith('gallery "') && lower.endsWith('" updated successfully!')) {
+      if (lower.startsWith('gallery "') &&
+          lower.endsWith('" updated successfully!')) {
         final title = trimmed.substring(9, trimmed.length - 21);
         return 'تم تحديث معرض "$title" بنجاح!';
       }
-      if (lower.startsWith('are you sure you want to delete "') && lower.contains('this action will remove the gallery')) {
-        final match = RegExp(r'^are you sure you want to delete "(.*?)"\?', caseSensitive: false).firstMatch(trimmed);
+      if (lower.startsWith('are you sure you want to delete "') &&
+          lower.contains('this action will remove the gallery')) {
+        final match = RegExp(
+          r'^are you sure you want to delete "(.*?)"\?',
+          caseSensitive: false,
+        ).firstMatch(trimmed);
         final title = match != null ? match.group(1) : '';
         return 'هل أنت متأكد أنك تريد حذف "$title"؟ سيؤدي هذا الإجراء إلى حذف المعرض وصوره ولا يمكن التراجع عنه.';
       }
-      if (lower.startsWith('your event "') && lower.contains('submitted for administrative review')) {
-        final match = RegExp(r'^your event "(.*?)" has been successfully submitted', caseSensitive: false).firstMatch(trimmed);
+      if (lower.startsWith('your event "') &&
+          lower.contains('submitted for administrative review')) {
+        final match = RegExp(
+          r'^your event "(.*?)" has been successfully submitted',
+          caseSensitive: false,
+        ).firstMatch(trimmed);
         final title = match != null ? match.group(1) : '';
         return 'تم إرسال فعاليتك "$title" بنجاح للمراجعة الإدارية.';
       }
-      if (lower.startsWith('category "') && lower.endsWith('" created successfully!')) {
+      if (lower.startsWith('category "') &&
+          lower.endsWith('" created successfully!')) {
         final name = trimmed.substring(10, trimmed.length - 21);
         return 'تم إنشاء فئة "$name" بنجاح!';
       }
@@ -1510,7 +1726,10 @@ class DataTranslator {
         return 'تم إلغاء الإعجاب بملف $name الشخصي';
       }
       if (lower.startsWith('liked ') && lower.contains("'s profile")) {
-        final name = trimmed.substring(6, trimmed.toLowerCase().indexOf("'s profile"));
+        final name = trimmed.substring(
+          6,
+          trimmed.toLowerCase().indexOf("'s profile"),
+        );
         return 'تم الإعجاب بملف $name الشخصي ❤️';
       }
       if (lower.startsWith('unliked ')) {
@@ -1561,7 +1780,10 @@ class DataTranslator {
         final name = trimmed.substring(23);
         return 'إنشاء معرض جديد لـ $name';
       }
-      if (RegExp(r'^\d+\s*/\s*\d+\s+entries$', caseSensitive: false).hasMatch(trimmed)) {
+      if (RegExp(
+        r'^\d+\s*/\s*\d+\s+entries$',
+        caseSensitive: false,
+      ).hasMatch(trimmed)) {
         final parts = trimmed.split(' ');
         final fraction = parts.first;
         return '$fraction مشاركة';
@@ -1571,15 +1793,28 @@ class DataTranslator {
         return 'مكتمل بنسبة $pct';
       }
       if (lower.startsWith('copied ') && lower.contains(' to clipboard')) {
-        final item = trimmed.substring(7, trimmed.toLowerCase().indexOf(' to clipboard')).trim();
+        final item =
+            trimmed
+                .substring(7, trimmed.toLowerCase().indexOf(' to clipboard'))
+                .trim();
         final trItem = translate(item, isArabic: true);
         return 'تم نسخ $trItem إلى الحافظة!';
       }
-      if (lower.startsWith('explore ') && lower.contains('\'s collection of artworks')) {
-        final artist = trimmed.substring(8, trimmed.toLowerCase().indexOf('\'s collection of artworks')).trim();
+      if (lower.startsWith('explore ') &&
+          lower.contains('\'s collection of artworks')) {
+        final artist =
+            trimmed
+                .substring(
+                  8,
+                  trimmed.toLowerCase().indexOf('\'s collection of artworks'),
+                )
+                .trim();
         return 'استكشف مجموعة أعمال $artist الفنية';
       }
-      final msgMatch = RegExp(r'^(\d+)\s+of\s+(\d+)\s+messages left this month$', caseSensitive: false).firstMatch(trimmed);
+      final msgMatch = RegExp(
+        r'^(\d+)\s+of\s+(\d+)\s+messages left this month$',
+        caseSensitive: false,
+      ).firstMatch(trimmed);
       if (msgMatch != null) {
         final rem = msgMatch.group(1);
         final total = msgMatch.group(2);
@@ -1613,6 +1848,11 @@ class DataTranslator {
 
       return trimmed;
     } else {
+      // Preserve explicit Arabic language labels without translating to English(en)
+      if (lower == 'العربية' || lower == 'العربية (ar)' || lower == 'عربي') {
+        return trimmed;
+      }
+
       // Arabic -> English lookup
       if (arToEn.containsKey(lower)) {
         return _capitalize(arToEn[lower]!);
@@ -1635,7 +1875,8 @@ class DataTranslator {
             .replaceAll('مساءً', 'PM');
         return 'Today • $enTime';
       }
-      if (trimmed.startsWith('هذا الأسبوع • ') || trimmed.startsWith('هذا الأسبوع · ')) {
+      if (trimmed.startsWith('هذا الأسبوع • ') ||
+          trimmed.startsWith('هذا الأسبوع · ')) {
         final timePart = trimmed.substring(13).trim();
         final enTime = timePart
             .replaceAll('صباحاً', 'AM')
@@ -1645,13 +1886,17 @@ class DataTranslator {
 
       if (trimmed.contains('\n')) {
         final lines = trimmed.split('\n');
-        final trLines = lines.map((l) => translate(l, isArabic: false)).toList();
+        final trLines =
+            lines.map((l) => translate(l, isArabic: false)).toList();
         return trLines.join('\n');
       }
 
       // If no Arabic characters, it is already English/Latin
       if (!RegExp(r'[\u0600-\u06FF]').hasMatch(trimmed)) {
-        if (trimmed.length < 25 && !trimmed.contains(':') && !trimmed.contains('.') && !trimmed.contains('\n')) {
+        if (trimmed.length < 25 &&
+            !trimmed.contains(':') &&
+            !trimmed.contains('.') &&
+            !trimmed.contains('\n')) {
           return _capitalize(trimmed);
         }
         return trimmed;
@@ -1679,7 +1924,9 @@ class DataTranslator {
     if (candidate.toUpperCase().contains('MYMEMORY WARNING')) return false;
     if (candidate.toLowerCase() == originalLower) return false;
     // Reject pure punctuation or whitespace
-    if (!RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(candidate)) return false;
+    if (!RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(candidate)) {
+      return false;
+    }
 
     // For Arabic target, it must contain at least one Arabic letter
     if (targetLang == 'ar' && !RegExp(r'[\u0600-\u06FF]').hasMatch(candidate)) {
@@ -1724,7 +1971,11 @@ class DataTranslator {
           String? bestCandidate;
           if (resData is Map && resData['translatedText'] != null) {
             final t = resData['translatedText'].toString().trim();
-            if (_isValidCandidate(t, targetLang: targetLang, originalLower: lower)) {
+            if (_isValidCandidate(
+              t,
+              targetLang: targetLang,
+              originalLower: lower,
+            )) {
               bestCandidate = t;
             }
           }
@@ -1732,7 +1983,11 @@ class DataTranslator {
             for (final m in data['matches']) {
               if (m is Map && m['translation'] != null) {
                 final t = m['translation'].toString().trim();
-                if (_isValidCandidate(t, targetLang: targetLang, originalLower: lower)) {
+                if (_isValidCandidate(
+                  t,
+                  targetLang: targetLang,
+                  originalLower: lower,
+                )) {
                   bestCandidate = t;
                   break;
                 }
@@ -1754,12 +2009,13 @@ class DataTranslator {
       final response = await _dio.get(
         url,
         options: Options(
-          headers: kIsWeb
-              ? null
-              : {
-                  'User-Agent':
-                      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                },
+          headers:
+              kIsWeb
+                  ? null
+                  : {
+                    'User-Agent':
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                  },
         ),
       );
       if (response.statusCode == 200 && response.data is List) {
@@ -1773,7 +2029,11 @@ class DataTranslator {
             }
           }
           final translated = buffer.toString().trim();
-          if (_isValidCandidate(translated, targetLang: targetLang, originalLower: lower)) {
+          if (_isValidCandidate(
+            translated,
+            targetLang: targetLang,
+            originalLower: lower,
+          )) {
             _dynamicCache[cacheKey] = translated;
             _saveCache();
             translationNotifier.value++;
@@ -1789,6 +2049,89 @@ class DataTranslator {
     return null;
   }
 
+  /// Public asynchronous translation with offline dictionary priority + online fallback
+  static Future<String> translateAsync(
+    String text, {
+    required bool toArabic,
+  }) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return '';
+
+    _ensureCacheLoaded();
+
+    // Preserve explicit language labels
+    if (trimmed == 'العربية' ||
+        trimmed == 'العربية (AR)' ||
+        trimmed == 'العربية (ar)' ||
+        trimmed == 'English' ||
+        trimmed == 'English (EN)' ||
+        trimmed == 'English (en)') {
+      return trimmed;
+    }
+
+    final lower = trimmed.toLowerCase();
+
+    // 1. Check offline dictionary first
+    if (toArabic) {
+      if (_enToAr.containsKey(lower)) {
+        return _enToAr[lower]!;
+      }
+      final cacheKey = 'en_ar:$lower';
+      if (_dynamicCache.containsKey(cacheKey)) {
+        final cached = _dynamicCache[cacheKey]!;
+        if (_isValidCandidate(cached, targetLang: 'ar', originalLower: lower)) {
+          return cached;
+        }
+      }
+      // If already pure Arabic without English, return as-is
+      if (RegExp(r'[\u0600-\u06FF]').hasMatch(trimmed) &&
+          !RegExp(r'[a-zA-Z]').hasMatch(trimmed)) {
+        return trimmed;
+      }
+    } else {
+      if (arToEn.containsKey(lower)) {
+        return _capitalize(arToEn[lower]!);
+      }
+      final cacheKey = 'ar_en:$lower';
+      if (_dynamicCache.containsKey(cacheKey)) {
+        final cached = _dynamicCache[cacheKey]!;
+        if (_isValidCandidate(cached, targetLang: 'en', originalLower: lower)) {
+          return cached;
+        }
+      }
+      // If already pure English without Arabic, return as-is
+      if (!RegExp(r'[\u0600-\u06FF]').hasMatch(trimmed)) {
+        return trimmed;
+      }
+    }
+
+    // 2. Multi-line handling (preserve paragraphs)
+    if (trimmed.contains('\n')) {
+      final lines = trimmed.split('\n');
+      final translatedLines = await Future.wait(
+        lines.map((line) {
+          final lTrim = line.trim();
+          return lTrim.isEmpty
+              ? Future.value('')
+              : translateAsync(lTrim, toArabic: toArabic);
+        }),
+      );
+      return translatedLines.join('\n');
+    }
+
+    // 3. Online fetch via MyMemory & Google Translate
+    final targetLang = toArabic ? 'ar' : 'en';
+    final onlineResult = await _fetchAndCacheTranslation(
+      trimmed,
+      targetLang: targetLang,
+    );
+    if (onlineResult != null && onlineResult.trim().isNotEmpty) {
+      return toArabic ? onlineResult.trim() : _capitalize(onlineResult.trim());
+    }
+
+    // 4. Synchronous fallback
+    return translate(trimmed, isArabic: toArabic);
+  }
 
   /// Batch prefetch translations for dynamic lists (e.g. from backend API)
   static Future<void> prefetchBatch(
@@ -1828,10 +2171,13 @@ class DataTranslator {
     // Process in batches of 4 concurrent requests
     const batchSize = 4;
     for (var i = 0; i < toFetch.length; i += batchSize) {
-      final end = (i + batchSize < toFetch.length) ? i + batchSize : toFetch.length;
+      final end =
+          (i + batchSize < toFetch.length) ? i + batchSize : toFetch.length;
       final chunk = toFetch.sublist(i, end);
       await Future.wait(
-        chunk.map((item) => _fetchAndCacheTranslation(item, targetLang: targetLang)),
+        chunk.map(
+          (item) => _fetchAndCacheTranslation(item, targetLang: targetLang),
+        ),
       );
     }
   }
@@ -1851,7 +2197,20 @@ class DataTranslator {
     if (specialCases.containsKey(s.toLowerCase().trim())) {
       return specialCases[s.toLowerCase().trim()]!;
     }
-    const minorWords = {'of', 'and', 'the', 'in', 'on', 'at', 'to', 'for', 'a', 'an', 'by', 'with'};
+    const minorWords = {
+      'of',
+      'and',
+      'the',
+      'in',
+      'on',
+      'at',
+      'to',
+      'for',
+      'a',
+      'an',
+      'by',
+      'with',
+    };
     final words = s.split(' ');
     for (var i = 0; i < words.length; i++) {
       final word = words[i];

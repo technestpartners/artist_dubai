@@ -10,7 +10,7 @@ import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 import '../../domain/models/art_event_model.dart';
-import '../widgets/event_gallery_modal.dart';
+import '../widgets/event_gallery_modal_widget.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
 import '../../../../core/utils/data_translator.dart';
 
@@ -77,17 +77,25 @@ class _EventPhotosViewState extends State<EventPhotosView> {
         u.startsWith('data:image/');
   }
 
-  void _processGalleries(List<Map<String, dynamic>> rawGalleries, List<ArtEventModel> events) {
+  void _processGalleries(
+    List<Map<String, dynamic>> rawGalleries,
+    List<ArtEventModel> events,
+  ) {
     final List<ArtEventModel> combined = [];
 
     // 1. Convert registered photo galleries from MySQL
     for (final g in rawGalleries) {
-      final title = g['name']?.toString() ?? g['title']?.toString() ?? 'Photo Gallery';
+      final title =
+          g['name']?.toString() ?? g['title']?.toString() ?? 'Photo Gallery';
       if (title.toLowerCase().contains('demo art event')) continue;
 
-      final subtitle = g['description']?.toString() ?? g['subtitle']?.toString() ?? g['about']?.toString();
-      final coverImage = g['image_url']?.toString() ?? g['image']?.toString() ?? '';
-      
+      final subtitle =
+          g['description']?.toString() ??
+          g['subtitle']?.toString() ??
+          g['about']?.toString();
+      final coverImage =
+          g['image_url']?.toString() ?? g['image']?.toString() ?? '';
+
       List<dynamic> rawImgs = [];
       if (g['images'] is List) {
         rawImgs = g['images'] as List<dynamic>;
@@ -97,10 +105,20 @@ class _EventPhotosViewState extends State<EventPhotosView> {
           if (decoded is List) {
             rawImgs = decoded;
           } else {
-            rawImgs = (g['images'] as String).split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+            rawImgs =
+                (g['images'] as String)
+                    .split(',')
+                    .map((e) => e.trim())
+                    .where((e) => e.isNotEmpty)
+                    .toList();
           }
         } catch (_) {
-          rawImgs = (g['images'] as String).split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+          rawImgs =
+              (g['images'] as String)
+                  .split(',')
+                  .map((e) => e.trim())
+                  .where((e) => e.isNotEmpty)
+                  .toList();
         }
       }
 
@@ -108,26 +126,37 @@ class _EventPhotosViewState extends State<EventPhotosView> {
       for (var idx = 0; idx < rawImgs.length; idx++) {
         final item = rawImgs[idx];
         if (item is String && _isValidImageUrl(item)) {
-          imagesList.add(GalleryImageItem(title: '$title #${idx + 1}', imageUrl: item.trim()));
+          imagesList.add(
+            GalleryImageItem(
+              title: '$title #${idx + 1}',
+              imageUrl: item.trim(),
+            ),
+          );
         } else if (item is Map) {
-          final u = item['image_url'] as String? ?? item['image'] as String? ?? '';
+          final u =
+              item['image_url'] as String? ?? item['image'] as String? ?? '';
           if (_isValidImageUrl(u)) {
-            imagesList.add(GalleryImageItem(
-              title: item['title'] as String? ?? '$title #${idx + 1}',
-              imageUrl: u.trim(),
-              caption: item['caption'] as String? ?? 'Gallery photo',
-            ));
+            imagesList.add(
+              GalleryImageItem(
+                title: item['title'] as String? ?? '$title #${idx + 1}',
+                imageUrl: u.trim(),
+                caption: item['caption'] as String? ?? 'Gallery photo',
+              ),
+            );
           }
         }
       }
 
       if (imagesList.isEmpty && _isValidImageUrl(coverImage)) {
-        imagesList.add(GalleryImageItem(title: title, imageUrl: coverImage.trim()));
+        imagesList.add(
+          GalleryImageItem(title: title, imageUrl: coverImage.trim()),
+        );
       }
 
-      final effectiveImage = _isValidImageUrl(coverImage)
-          ? coverImage.trim()
-          : (imagesList.isNotEmpty ? imagesList.first.imageUrl : '');
+      final effectiveImage =
+          _isValidImageUrl(coverImage)
+              ? coverImage.trim()
+              : (imagesList.isNotEmpty ? imagesList.first.imageUrl : '');
 
       if (effectiveImage.isNotEmpty || imagesList.isNotEmpty) {
         final photoGallery = EventPhotoGallery(
@@ -139,20 +168,22 @@ class _EventPhotosViewState extends State<EventPhotosView> {
           images: imagesList,
         );
 
-        combined.add(ArtEventModel(
-          id: 'gal-${g['id'] ?? combined.length}',
-          title: title,
-          category: g['category'] as String? ?? 'Photo Gallery',
-          price: 'Free',
-          description: subtitle ?? '',
-          dateTime: g['created_at'] as String? ?? '',
-          location: g['location'] as String? ?? 'Dubai, UAE',
-          attendeesCount: 0,
-          maxAttendees: 100,
-          organizer: g['artist_name'] as String? ?? 'Artist Dubai',
-          tags: ['gallery', 'photos'],
-          galleries: [photoGallery],
-        ));
+        combined.add(
+          ArtEventModel(
+            id: 'gal-${g['id'] ?? combined.length}',
+            title: title,
+            category: g['category'] as String? ?? 'Photo Gallery',
+            price: 'Free',
+            description: subtitle ?? '',
+            dateTime: g['created_at'] as String? ?? '',
+            location: g['location'] as String? ?? 'Dubai, UAE',
+            attendeesCount: 0,
+            maxAttendees: 100,
+            organizer: g['artist_name'] as String? ?? 'Artist Dubai',
+            tags: ['gallery', 'photos'],
+            galleries: [photoGallery],
+          ),
+        );
       }
     }
 
@@ -160,17 +191,33 @@ class _EventPhotosViewState extends State<EventPhotosView> {
     for (final e in events) {
       if (e.title.toLowerCase().contains('demo art event')) continue;
 
-      final validGalleries = e.galleries.map((gal) {
-        final validImgs = gal.images.where((img) => _isValidImageUrl(img.imageUrl)).toList();
-        return EventPhotoGallery(
-          title: gal.title,
-          subtitle: gal.subtitle,
-          photoCount: validImgs.length,
-          date: gal.date,
-          imageUrl: _isValidImageUrl(gal.imageUrl) ? gal.imageUrl : (validImgs.isNotEmpty ? validImgs.first.imageUrl : ''),
-          images: validImgs,
-        );
-      }).where((gal) => (gal.images.isNotEmpty || _isValidImageUrl(gal.imageUrl)) && !gal.title.toLowerCase().contains('demo art event')).toList();
+      final validGalleries =
+          e.galleries
+              .map((gal) {
+                final validImgs =
+                    gal.images
+                        .where((img) => _isValidImageUrl(img.imageUrl))
+                        .toList();
+                return EventPhotoGallery(
+                  title: gal.title,
+                  subtitle: gal.subtitle,
+                  photoCount: validImgs.length,
+                  date: gal.date,
+                  imageUrl:
+                      _isValidImageUrl(gal.imageUrl)
+                          ? gal.imageUrl
+                          : (validImgs.isNotEmpty
+                              ? validImgs.first.imageUrl
+                              : ''),
+                  images: validImgs,
+                );
+              })
+              .where(
+                (gal) =>
+                    (gal.images.isNotEmpty || _isValidImageUrl(gal.imageUrl)) &&
+                    !gal.title.toLowerCase().contains('demo art event'),
+              )
+              .toList();
 
       if (validGalleries.isNotEmpty) {
         combined.add(e.copyWith(galleries: validGalleries));
@@ -205,7 +252,11 @@ class _EventPhotosViewState extends State<EventPhotosView> {
     }
   }
 
-  void _openGallery(ArtEventModel event, EventPhotoGallery gallery, {int initialIndex = 0}) {
+  void _openGallery(
+    ArtEventModel event,
+    EventPhotoGallery gallery, {
+    int initialIndex = 0,
+  }) {
     EventGalleryModal.show(
       context,
       event: event,
@@ -228,164 +279,190 @@ class _EventPhotosViewState extends State<EventPhotosView> {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Back Button Row
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white, size: 22),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () {
-                        if (context.canPop()) {
-                          context.pop();
-                        } else {
-                          context.go(RouteNames.events);
-                        }
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      AppLocalizations.of(context).back,
-                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ),
-
-              // 1. Header Section
-              Padding(
-                padding: const EdgeInsets.only(left: 4, bottom: 4),
-                child: Text(
-                  AppLocalizations.of(context).eventsPhotosTitle,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(left: 4, bottom: 20),
-                child: Text(
-                  AppLocalizations.of(context).eventsPhotosSubtitle,
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    color: Color(0xFFE2D6F5),
-                  ),
-                ),
-              ),
-
-              // 2. Galleries Card List
-              if (_isLoading)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(32.0),
-                    child: CircularProgressIndicator(color: Colors.white),
-                  ),
-                )
-              else if (_eventsWithGalleries.isEmpty)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32.0),
-                    child: Text(
-                      AppLocalizations.of(context).noPhotosAvailable,
-                      style: const TextStyle(color: Color(0xFFE2D6F5), fontSize: 14),
-                    ),
-                  ),
-                )
-              else
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _eventsWithGalleries.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 16),
-                  itemBuilder: (context, eventIndex) {
-                    final event = _eventsWithGalleries[eventIndex];
-                    final gallery = event.galleries.first;
-                    final displayImages = gallery.images.where((img) => img.imageUrl.isNotEmpty).toList();
-                    final displayImageUrl = (gallery.imageUrl.isNotEmpty && _isValidImageUrl(gallery.imageUrl))
-                        ? gallery.imageUrl
-                        : (displayImages.isNotEmpty ? displayImages.first.imageUrl : '');
-
-                    return Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Back Button Row
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(
+                          Icons.arrow_back,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () {
+                          if (context.canPop()) {
+                            context.pop();
+                          } else {
+                            context.go(RouteNames.events);
+                          }
+                        },
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            gallery.title.trData(context),
-                            style: const TextStyle(
-                              fontSize: 16.5,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+                      const SizedBox(width: 8),
+                      Text(
+                        AppLocalizations.of(context).back,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 1. Header Section
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 4),
+                  child: Text(
+                    AppLocalizations.of(context).eventsPhotosTitle,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 20),
+                  child: Text(
+                    AppLocalizations.of(context).eventsPhotosSubtitle,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      color: Color(0xFFE2D6F5),
+                    ),
+                  ),
+                ),
+
+                // 2. Galleries Card List
+                if (_isLoading)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32.0),
+                      child: CircularProgressIndicator(color: Colors.white),
+                    ),
+                  )
+                else if (_eventsWithGalleries.isEmpty)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Text(
+                        AppLocalizations.of(context).noPhotosAvailable,
+                        style: const TextStyle(
+                          color: Color(0xFFE2D6F5),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _eventsWithGalleries.length,
+                    separatorBuilder:
+                        (context, index) => const SizedBox(height: 16),
+                    itemBuilder: (context, eventIndex) {
+                      final event = _eventsWithGalleries[eventIndex];
+                      final gallery = event.galleries.first;
+                      final displayImages =
+                          gallery.images
+                              .where((img) => img.imageUrl.isNotEmpty)
+                              .toList();
+                      final displayImageUrl =
+                          (gallery.imageUrl.isNotEmpty &&
+                                  _isValidImageUrl(gallery.imageUrl))
+                              ? gallery.imageUrl
+                              : (displayImages.isNotEmpty
+                                  ? displayImages.first.imageUrl
+                                  : '');
+
+                      return Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.15),
                           ),
-                          if (gallery.subtitle != null && gallery.subtitle!.isNotEmpty) ...[
-                             const SizedBox(height: 3),
-                             Text(
-                              gallery.subtitle!.trData(context),
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.white.withValues(alpha: 0.8),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              gallery.title.trData(context),
+                              style: const TextStyle(
+                                fontSize: 16.5,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
                               ),
                             ),
-                          ],
-                          const SizedBox(height: 14),
+                            if (gallery.subtitle != null &&
+                                gallery.subtitle!.isNotEmpty) ...[
+                              const SizedBox(height: 3),
+                              Text(
+                                gallery.subtitle!.trData(context),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 14),
 
-                          // Full-Width Hero Cover Photo (matching right window in media_1788382386234.png)
-                          if (displayImageUrl.isNotEmpty)
-                            GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: () => _openGallery(event, gallery),
-                              child: Container(
-                                height: 140,
+                            // Full-Width Hero Cover Photo (matching right window in media_1788382386234.png)
+                            if (displayImageUrl.isNotEmpty)
+                              GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () => _openGallery(event, gallery),
+                                child: Container(
+                                  height: 140,
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(14),
+                                    child: AppCachedImage(
+                                      imageUrl: displayImageUrl,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            else
+                              Container(
+                                height: 90,
                                 width: double.infinity,
                                 decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.06),
                                   borderRadius: BorderRadius.circular(14),
                                 ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(14),
-                                  child: AppCachedImage(
-                                    imageUrl: displayImageUrl,
-                                    fit: BoxFit.cover,
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.photo_library_outlined,
+                                    color: Colors.white54,
+                                    size: 28,
                                   ),
                                 ),
                               ),
-                            )
-                          else
-                            Container(
-                              height: 90,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.06),
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: const Center(
-                                child: Icon(Icons.photo_library_outlined, color: Colors.white54, size: 28),
-                              ),
-                            ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              const SizedBox(height: 40),
-            ],
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                const SizedBox(height: 40),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-    bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
     );
   }
 }

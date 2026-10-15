@@ -98,7 +98,9 @@ void main() {
       expect(find.text('COMMUNITY PLATFORM'), findsOneWidget);
     });
 
-    testWidgets('3. AboutUsView renders about section and mission', (tester) async {
+    testWidgets('3. AboutUsView renders about section and mission', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -110,7 +112,9 @@ void main() {
       expect(find.text('What does it mean to be an artist?'), findsOneWidget);
     });
 
-    testWidgets('4. ArtistsView renders category selector and directory', (tester) async {
+    testWidgets('4. ArtistsView renders category selector and directory', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -122,7 +126,9 @@ void main() {
       expect(find.text('Featured Artists'), findsOneWidget);
     });
 
-    testWidgets('5. ArtistDetailView renders profile and portfolio', (tester) async {
+    testWidgets('5. ArtistDetailView renders profile and portfolio', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -139,7 +145,9 @@ void main() {
       expect(find.text(customArtist.name), findsOneWidget);
     });
 
-    testWidgets('6. CreateArtistProfileView renders multi-step form', (tester) async {
+    testWidgets('6. CreateArtistProfileView renders multi-step form', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -151,7 +159,9 @@ void main() {
       expect(find.text('Basic Information'), findsOneWidget);
     });
 
-    testWidgets('7. ExploreCategoriesView renders category grid', (tester) async {
+    testWidgets('7. ExploreCategoriesView renders category grid', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -163,7 +173,9 @@ void main() {
       expect(find.text('Explore Categories'), findsOneWidget);
     });
 
-    testWidgets('8. CategoryDetailView renders tab filters and artist list', (tester) async {
+    testWidgets('8. CategoryDetailView renders tab filters and artist list', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -175,7 +187,9 @@ void main() {
       expect(find.text('Search artists or artworks...'), findsOneWidget);
     });
 
-    testWidgets('9. CreateCategoryView renders category creation form', (tester) async {
+    testWidgets('9. CreateCategoryView renders category creation form', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -199,19 +213,25 @@ void main() {
       expect(find.text('Today'), findsOneWidget);
     });
 
-    testWidgets('11. EventDetailView renders details and RSVP action', (tester) async {
+    testWidgets('11. EventDetailView renders details and RSVP action', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(testApp(EventDetailView(event: ArtEventModel.mockEvents.first)));
+      await tester.pumpWidget(
+        testApp(EventDetailView(event: ArtEventModel.mockEvents.first)),
+      );
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(EventDetailView), findsOneWidget);
       expect(find.textContaining('Dubai'), findsWidgets);
     });
 
-    testWidgets('12. CreateArtEventView renders event submission form', (tester) async {
+    testWidgets('12. CreateArtEventView renders event submission form', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -222,7 +242,9 @@ void main() {
       expect(find.text('Create Event'), findsWidgets);
     });
 
-    testWidgets('13. MyEventsView renders created events dashboard', (tester) async {
+    testWidgets('13. MyEventsView renders created events dashboard', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -234,7 +256,9 @@ void main() {
       expect(find.byType(MyEventsView), findsOneWidget);
     });
 
-    testWidgets('14. EventsCompetitionView renders competitions and filters', (tester) async {
+    testWidgets('14. EventsCompetitionView renders competitions and filters', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -246,7 +270,9 @@ void main() {
       expect(find.text('Events Competition'), findsWidgets);
     });
 
-    testWidgets('15. EventPhotosView renders photos and galleries', (tester) async {
+    testWidgets('15. EventPhotosView renders photos and galleries', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -258,7 +284,9 @@ void main() {
       expect(find.text('Events Photos'), findsOneWidget);
     });
 
-    testWidgets('16. GalleriesView renders art centers directory', (tester) async {
+    testWidgets('16. GalleriesView renders art centers directory', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -270,19 +298,24 @@ void main() {
       expect(find.text('Galleries & Art Center'), findsOneWidget);
     });
 
-    testWidgets('17. GalleryRegistrationView renders gallery registration form', (tester) async {
-      tester.view.physicalSize = const Size(800, 1600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      '17. GalleryRegistrationView renders gallery registration form',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(testApp(const GalleryRegistrationView()));
-      await tester.pump(const Duration(milliseconds: 100));
+        await tester.pumpWidget(testApp(const GalleryRegistrationView()));
+        await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byType(GalleryRegistrationView), findsOneWidget);
-      expect(find.text('Register Venue'), findsOneWidget);
-    });
+        expect(find.byType(GalleryRegistrationView), findsOneWidget);
+        expect(find.text('Register Venue'), findsOneWidget);
+      },
+    );
 
-    testWidgets('21. FavoritesView renders saved profiles & artworks', (tester) async {
+    testWidgets('21. FavoritesView renders saved profiles & artworks', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -294,7 +327,9 @@ void main() {
       expect(find.text('MY FAVORITES'), findsOneWidget);
     });
 
-    testWidgets('22. GovernmentPortalView renders entities & search', (tester) async {
+    testWidgets('22. GovernmentPortalView renders entities & search', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -306,7 +341,9 @@ void main() {
       expect(find.byType(GovernmentPortalView), findsOneWidget);
     });
 
-    testWidgets('23. LoginView renders email and password fields', (tester) async {
+    testWidgets('23. LoginView renders email and password fields', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -322,14 +359,18 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(testApp(const RegisterView(initialRole: 'artist')));
+      await tester.pumpWidget(
+        testApp(const RegisterView(initialRole: 'artist')),
+      );
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(RegisterView), findsOneWidget);
       expect(find.byType(TextField), findsWidgets);
     });
 
-    testWidgets('25. ProfileView renders profile settings and dialogs', (tester) async {
+    testWidgets('25. ProfileView renders profile settings and dialogs', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -340,7 +381,9 @@ void main() {
       expect(find.text('Account Settings'), findsOneWidget);
     });
 
-    testWidgets('26. SettingsView renders account preferences & actions', (tester) async {
+    testWidgets('26. SettingsView renders account preferences & actions', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -376,19 +419,24 @@ void main() {
       expect(find.text('Agreement to Terms'), findsOneWidget);
     });
 
-    testWidgets('29. ComingSoonView renders placeholder and return navigation', (tester) async {
-      tester.view.physicalSize = const Size(800, 1400);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      '29. ComingSoonView renders placeholder and return navigation',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(testApp(const ComingSoonView()));
-      await tester.pump(const Duration(milliseconds: 100));
+        await tester.pumpWidget(testApp(const ComingSoonView()));
+        await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Actively from'), findsOneWidget);
-      expect(find.text('back to home'), findsOneWidget);
-    });
+        expect(find.text('Actively from'), findsOneWidget);
+        expect(find.text('back to home'), findsOneWidget);
+      },
+    );
 
-    testWidgets('30. AdminDashboardView renders KPI metrics and tabs', (tester) async {
+    testWidgets('30. AdminDashboardView renders KPI metrics and tabs', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -404,21 +452,28 @@ void main() {
       expect(find.text('Art Centers'), findsWidgets);
     });
 
-    testWidgets('31. SplashScreenView renders animated intro and brand assets', (tester) async {
-      tester.view.physicalSize = const Size(800, 1400);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      '31. SplashScreenView renders animated intro and brand assets',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(testApp(const SplashScreenView()));
-      await tester.pump(const Duration(milliseconds: 100));
+        await tester.pumpWidget(testApp(const SplashScreenView()));
+        await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byType(SplashScreenView), findsOneWidget);
-      expect(find.text('Nizar Fahem'), findsOneWidget);
-      expect(find.textContaining('Hosted by'), findsOneWidget);
-    });
+        expect(find.byType(SplashScreenView), findsOneWidget);
+        expect(find.byType(Image), findsOneWidget);
+      },
+    );
 
-    testWidgets('32. Admin Login credentials and role privileges test', (tester) async {
-      final res = await sl<ApiService>().login('admin@artistdubai.com', 'admin123');
+    testWidgets('32. Admin Login credentials and role privileges test', (
+      tester,
+    ) async {
+      final res = await sl<ApiService>().login(
+        'admin@artistdubai.com',
+        'admin123',
+      );
       expect(res, isNotNull);
       final user = res!['user'] as Map<String, dynamic>;
       expect(user['role'], equals('admin'));

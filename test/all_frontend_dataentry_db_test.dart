@@ -44,7 +44,9 @@ void main() {
   }
 
   group('Frontend All Forms & Data Entry Comprehensive Verification', () {
-    testWidgets('1. RegisterView Data Entry Form UI & Submission Elements', (tester) async {
+    testWidgets('1. RegisterView Data Entry Form UI & Submission Elements', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -55,8 +57,14 @@ void main() {
       expect(find.byType(TextField), findsNWidgets(4));
       expect(find.text('Create Account'), findsWidgets);
 
-      await tester.enterText(find.byType(TextField).at(0), 'Fatima Calligrapher');
-      await tester.enterText(find.byType(TextField).at(1), 'fatima.new@artistdubai.com');
+      await tester.enterText(
+        find.byType(TextField).at(0),
+        'Fatima Calligrapher',
+      );
+      await tester.enterText(
+        find.byType(TextField).at(1),
+        'fatima.new@artistdubai.com',
+      );
       await tester.enterText(find.byType(TextField).at(2), 'Pass@123456');
       await tester.enterText(find.byType(TextField).at(3), 'Pass@123456');
       await tester.pump();
@@ -64,7 +72,9 @@ void main() {
       expect(find.text('Fatima Calligrapher'), findsOneWidget);
     });
 
-    testWidgets('2. LoginView Data Entry Form UI & Submission Elements', (tester) async {
+    testWidgets('2. LoginView Data Entry Form UI & Submission Elements', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -82,12 +92,16 @@ void main() {
       expect(find.text('renish@gmail.com'), findsOneWidget);
     });
 
-    testWidgets('3. CreateArtistProfileView Data Entry Form UI & Inputs', (tester) async {
+    testWidgets('3. CreateArtistProfileView Data Entry Form UI & Inputs', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(createTestWidget(const CreateArtistProfileView()));
+      await tester.pumpWidget(
+        createTestWidget(const CreateArtistProfileView()),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Full Name *'), findsOneWidget);
@@ -103,7 +117,9 @@ void main() {
       }
     });
 
-    testWidgets('4. CreateArtEventView Data Entry Form UI & Inputs', (tester) async {
+    testWidgets('4. CreateArtEventView Data Entry Form UI & Inputs', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -122,7 +138,9 @@ void main() {
       }
     });
 
-    testWidgets('5. CreateCategoryView Data Entry Form UI & Inputs', (tester) async {
+    testWidgets('5. CreateCategoryView Data Entry Form UI & Inputs', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -141,12 +159,16 @@ void main() {
       }
     });
 
-    testWidgets('6. GalleryRegistrationView Data Entry Form UI & Inputs', (tester) async {
+    testWidgets('6. GalleryRegistrationView Data Entry Form UI & Inputs', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(createTestWidget(const GalleryRegistrationView()));
+      await tester.pumpWidget(
+        createTestWidget(const GalleryRegistrationView()),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('ART VENUE'), findsOneWidget);
@@ -161,7 +183,9 @@ void main() {
       }
     });
 
-    testWidgets('7. MyEventsView Data Entry & Created Events UI', (tester) async {
+    testWidgets('7. MyEventsView Data Entry & Created Events UI', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -172,7 +196,9 @@ void main() {
       expect(find.text('MY CREATED EVENTS'), findsOneWidget);
     });
 
-    testWidgets('8. ProfileView Account Settings & Edit Profile UI', (tester) async {
+    testWidgets('8. ProfileView Account Settings & Edit Profile UI', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);

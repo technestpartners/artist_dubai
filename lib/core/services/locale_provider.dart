@@ -60,8 +60,6 @@ class LocaleProvider extends ChangeNotifier {
 
   /// Toggle between English and Arabic.
   Future<void> toggleLocale() async {
-    await setLocale(
-      isArabic ? const Locale('en') : const Locale('ar'),
-    );
+    await setLocale(isArabic ? const Locale('en') : const Locale('ar'));
   }
 }

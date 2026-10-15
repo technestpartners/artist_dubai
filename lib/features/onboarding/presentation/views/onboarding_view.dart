@@ -108,7 +108,10 @@ class _OnboardingViewState extends State<OnboardingView> {
                       builder: (context, localeProvider, _) {
                         final isArabic = localeProvider.isArabic;
                         return Tooltip(
-                          message: isArabic ? 'Switch to English' : 'التبديل إلى العربية',
+                          message:
+                              isArabic
+                                  ? 'Switch to English'
+                                  : 'التبديل إلى العربية',
                           child: InkWell(
                             onTap: () => localeProvider.toggleLocale(),
                             borderRadius: BorderRadius.circular(20),
@@ -128,7 +131,11 @@ class _OnboardingViewState extends State<OnboardingView> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.language, size: 15, color: Colors.white),
+                                  const Icon(
+                                    Icons.language,
+                                    size: 15,
+                                    color: Colors.white,
+                                  ),
                                   const SizedBox(width: 4),
                                   Text(
                                     isArabic ? 'English' : 'عربي',
@@ -249,64 +256,65 @@ class _OnboardingViewState extends State<OnboardingView> {
                       ],
                       isFirstPage
                           ? SizedBox(
-                              width: 130,
+                            width: 130,
+                            height: 56,
+                            child: ElevatedButton(
+                              onPressed: _onNext,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF5A396A),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(28),
+                                ),
+                              ),
+                              child: Text(
+                                'Next'.trData(context),
+                                style: const TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ),
+                          )
+                          : Expanded(
+                            flex: isLastPage ? 2 : 1,
+                            child: SizedBox(
                               height: 56,
                               child: ElevatedButton(
                                 onPressed: _onNext,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF5A396A),
-                                  foregroundColor: Colors.white,
+                                  backgroundColor:
+                                      isLastPage
+                                          ? Colors.white
+                                          : const Color(0xFF5A396A),
+                                  foregroundColor:
+                                      isLastPage
+                                          ? const Color(0xFF1E0A36)
+                                          : Colors.white,
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(28),
                                   ),
                                 ),
-                                child: Text(
-                                  'Next'.trData(context),
-                                  style: const TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-                              ),
-                            )
-                          : Expanded(
-                              flex: isLastPage ? 2 : 1,
-                              child: SizedBox(
-                                height: 56,
-                                child: ElevatedButton(
-                                  onPressed: _onNext,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        isLastPage
-                                            ? Colors.white
-                                            : const Color(0xFF5A396A),
-                                    foregroundColor:
-                                        isLastPage
-                                            ? const Color(0xFF1E0A36)
-                                            : Colors.white,
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(28),
-                                    ),
-                                  ),
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(
-                                      (isLastPage ? 'Get Started' : 'Next').trData(context),
-                                      maxLines: 1,
-                                      style: TextStyle(
-                                        fontSize: 17,
-                                        fontWeight:
-                                            isLastPage
-                                                ? FontWeight.w600
-                                                : FontWeight.w400,
-                                      ),
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    (isLastPage ? 'Get Started' : 'Next')
+                                        .trData(context),
+                                    maxLines: 1,
+                                    style: TextStyle(
+                                      fontSize: 17,
+                                      fontWeight:
+                                          isLastPage
+                                              ? FontWeight.w600
+                                              : FontWeight.w400,
                                     ),
                                   ),
                                 ),
                               ),
                             ),
+                          ),
                     ],
                   ),
                 ),

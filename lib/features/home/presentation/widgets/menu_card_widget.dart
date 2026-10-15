@@ -17,18 +17,34 @@ class MenuCardWidget extends StatelessWidget {
         final cardWidth = constraints.maxWidth;
 
         // Widen clamp maximums on tablet / desktop
-        final maxIconSize = rh.isDesktop ? 96.0 : rh.isTablet ? 84.0 : 66.0;
-        final maxTitleFont = rh.isDesktop ? 18.0 : rh.isTablet ? 16.5 : 15.0;
-        final maxSubFont = rh.isDesktop ? 14.0 : rh.isTablet ? 13.0 : 12.0;
+        final maxIconSize =
+            rh.isDesktop
+                ? 96.0
+                : rh.isTablet
+                ? 84.0
+                : 66.0;
+        final maxTitleFont =
+            rh.isDesktop
+                ? 18.0
+                : rh.isTablet
+                ? 16.5
+                : 15.0;
+        final maxSubFont =
+            rh.isDesktop
+                ? 14.0
+                : rh.isTablet
+                ? 13.0
+                : 12.0;
 
         final minIcon = rh.isWide ? 44.0 : 26.0;
         final minTitle = rh.isWide ? 12.0 : 9.0;
         final minSub = rh.isWide ? 10.0 : 7.5;
 
         final iconSize = (cardHeight * 0.36).clamp(minIcon, maxIconSize);
-        final titleFontSize = item.isLongTitle
-            ? (cardHeight * 0.095).clamp(minTitle, maxTitleFont - 2)
-            : (cardHeight * 0.112).clamp(minTitle, maxTitleFont);
+        final titleFontSize =
+            item.isLongTitle
+                ? (cardHeight * 0.095).clamp(minTitle, maxTitleFont - 2)
+                : (cardHeight * 0.112).clamp(minTitle, maxTitleFont);
         final subtitleFontSize = (cardHeight * 0.082).clamp(minSub, maxSubFont);
         final cornerRadius = (cardWidth * 0.12).clamp(10.0, 24.0);
 
@@ -90,8 +106,12 @@ class MenuCardWidget extends StatelessWidget {
                       flex: 2,
                       child: Builder(
                         builder: (context) {
-                          final localizedTitle = item.getLocalizedTitle(context);
-                          final localizedSubtitle = item.getLocalizedSubtitle(context);
+                          final localizedTitle = item.getLocalizedTitle(
+                            context,
+                          );
+                          final localizedSubtitle = item.getLocalizedSubtitle(
+                            context,
+                          );
                           return Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             crossAxisAlignment: CrossAxisAlignment.center,

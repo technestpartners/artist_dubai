@@ -18,17 +18,19 @@ class ChatService {
 
   static const int defaultMonthlyAllowance = 10;
 
-  final _messagesController = StreamController<List<ArtistMessageModel>>.broadcast();
-  Stream<List<ArtistMessageModel>> get messagesStream => _messagesController.stream;
+  final _messagesController =
+      StreamController<List<ArtistMessageModel>>.broadcast();
+  Stream<List<ArtistMessageModel>> get messagesStream =>
+      _messagesController.stream;
 
-  final _allowanceController = StreamController<Map<String, dynamic>>.broadcast();
-  Stream<Map<String, dynamic>> get allowanceStream => _allowanceController.stream;
+  final _allowanceController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get allowanceStream =>
+      _allowanceController.stream;
 
-  ChatService({
-    StorageService? storage,
-    ApiClient? apiClient,
-  })  : _storage = storage ?? sl<StorageService>(),
-        _apiClient = apiClient ?? sl<ApiClient>();
+  ChatService({StorageService? storage, ApiClient? apiClient})
+    : _storage = storage ?? sl<StorageService>(),
+      _apiClient = apiClient ?? sl<ApiClient>();
 
   /// Returns current calendar month as string, e.g. "2026-10"
   String _currentMonthKey() {
@@ -134,8 +136,10 @@ class ChatService {
       final dynamic body = _extractData(res);
       final dynamic data = (body is Map) ? body['data'] : null;
       if (data is Map) {
-        final maxAllowance = int.tryParse(data['max_allowance']?.toString() ?? '') ?? 10;
-        final usedMessages = int.tryParse(data['used_messages']?.toString() ?? '') ?? 0;
+        final maxAllowance =
+            int.tryParse(data['max_allowance']?.toString() ?? '') ?? 10;
+        final usedMessages =
+            int.tryParse(data['used_messages']?.toString() ?? '') ?? 0;
         final planName = data['plan_name']?.toString() ?? 'Basic (Free)';
 
         await _storage.setString(_keyMaxAllowance, maxAllowance.toString());
@@ -183,26 +187,52 @@ class ChatService {
     try {
       final cacheKey = _userLocalMessagesKey();
       // 1. First read from local cache (user-scoped or fallback to legacy global key)
-      final raw = _storage.getString(cacheKey) ?? _storage.getString(_keyLocalMessages);
+      final raw =
+          _storage.getString(cacheKey) ?? _storage.getString(_keyLocalMessages);
       List<ArtistMessageModel> messages = [];
       if (raw != null && raw.isNotEmpty) {
         try {
           final decoded = jsonDecode(raw) as List<dynamic>;
-          messages = decoded
-              .map((e) => ArtistMessageModel.fromJson(Map<String, dynamic>.from(e as Map)))
-              .toList();
+          messages =
+              decoded
+                  .map(
+                    (e) => ArtistMessageModel.fromJson(
+                      Map<String, dynamic>.from(e as Map),
+                    ),
+                  )
+                  .toList();
         } catch (_) {}
       }
 
       // 2. Try fetching from remote API
       try {
         final email = (_storage.getString('user_email') ?? '').trim();
-        final artistId = (_storage.getString('artist_profile_id') ?? '').trim();
+        var artistId = (_storage.getString('artist_profile_id') ?? '').trim();
         final userId = (_storage.getString('user_id') ?? '').trim();
+        final role = (_storage.getString('user_role') ?? '').trim().toLowerCase();
+        final profileName = (_storage.getString('artist_profile_name') ?? '').trim().toLowerCase();
+        final isAdminStored = _storage.getBool('is_admin') ?? false;
+        final isAdmin =
+            isAdminStored ||
+            role == 'admin' ||
+            profileName.contains('dubai art administrator') ||
+            [
+              'admin@artistdubai.com',
+              'admin@dubaiart.ae',
+              'admin@admin.com',
+              'admin@technestpartners.com',
+            ].contains(email.toLowerCase());
+
         final Map<String, dynamic> queryParams = {};
         if (email.isNotEmpty) queryParams['user_email'] = email;
         if (artistId.isNotEmpty) queryParams['artist_id'] = artistId;
         if (userId.isNotEmpty) queryParams['user_id'] = userId;
+        if (isAdmin) {
+          queryParams['is_admin'] = '1';
+          if (artistId.isEmpty) {
+            queryParams['artist_id'] = '28';
+          }
+        }
 
         final res = await _apiClient.get(
           'api.php?resource=messages',
@@ -211,32 +241,49 @@ class ChatService {
         final dynamic body = _extractData(res);
         final dynamic rawList = (body is Map) ? body['data'] : null;
         if (rawList is List) {
-          final serverList = rawList
-              .map((e) => ArtistMessageModel.fromJson(Map<String, dynamic>.from(e as Map)))
-              .toList();
+          final serverList =
+              rawList
+                  .map(
+                    (e) => ArtistMessageModel.fromJson(
+                      Map<String, dynamic>.from(e as Map),
+                    ),
+                  )
+                  .toList();
 
           // Merge: server records are authoritative, keep only pending optimistic messages that haven't been saved yet
           final now = DateTime.now();
-          final localOnly = messages.where((m) {
-            if (!m.id.startsWith('msg_')) return false;
-            // Purge optimistic messages older than 10 minutes so orphaned ones never linger forever
-            if (now.difference(m.createdAt).inMinutes >= 10) return false;
+          final localOnly =
+              messages.where((m) {
+                if (!m.id.startsWith('msg_')) return false;
+                // Purge optimistic messages older than 10 minutes so orphaned ones never linger forever
+                if (now.difference(m.createdAt).inMinutes >= 10) return false;
 
-            // Check if this optimistic message has already been received from server
-            final isAlreadyOnServer = serverList.any((s) {
-              final sameSender = s.senderEmail.trim().toLowerCase() == m.senderEmail.trim().toLowerCase() ||
-                                  (s.senderId.isNotEmpty && s.senderId == m.senderId);
-              final sameRecipient = s.recipientId.trim() == m.recipientId.trim() ||
-                                    s.recipientName.trim().toLowerCase() == m.recipientName.trim().toLowerCase();
-              final sameSubject = s.subject.trim().toLowerCase() == m.subject.trim().toLowerCase();
-              final sameMessage = s.message.trim() == m.message.trim();
-              final closeInTime = s.createdAt.difference(m.createdAt).abs().inMinutes < 5;
+                // Check if this optimistic message has already been received from server
+                final isAlreadyOnServer = serverList.any((s) {
+                  final sameSender =
+                      s.senderEmail.trim().toLowerCase() ==
+                          m.senderEmail.trim().toLowerCase() ||
+                      (s.senderId.isNotEmpty && s.senderId == m.senderId);
+                  final sameRecipient =
+                      s.recipientId.trim() == m.recipientId.trim() ||
+                      s.recipientName.trim().toLowerCase() ==
+                          m.recipientName.trim().toLowerCase();
+                  final sameSubject =
+                      s.subject.trim().toLowerCase() ==
+                      m.subject.trim().toLowerCase();
+                  final sameMessage = s.message.trim() == m.message.trim();
+                  final closeInTime =
+                      s.createdAt.difference(m.createdAt).abs().inMinutes < 5;
 
-              return sameSender && sameRecipient && sameSubject && sameMessage && closeInTime;
-            });
+                  return sameSender &&
+                      sameRecipient &&
+                      sameSubject &&
+                      sameMessage &&
+                      closeInTime;
+                });
 
-            return !isAlreadyOnServer;
-          }).toList();
+                return !isAlreadyOnServer;
+              }).toList();
 
           messages = [...serverList, ...localOnly];
           await _storage.setString(
@@ -256,12 +303,20 @@ class ChatService {
         if (m.id.isNotEmpty) seenIds.add(m.id);
 
         final isDuplicateContent = uniqueMessages.any((u) {
-          final sameSender = u.senderEmail.trim().toLowerCase() == m.senderEmail.trim().toLowerCase();
+          final sameSender =
+              u.senderEmail.trim().toLowerCase() ==
+              m.senderEmail.trim().toLowerCase();
           final sameRecipient = u.recipientId.trim() == m.recipientId.trim();
-          final sameSubject = u.subject.trim().toLowerCase() == m.subject.trim().toLowerCase();
+          final sameSubject =
+              u.subject.trim().toLowerCase() == m.subject.trim().toLowerCase();
           final sameMessage = u.message.trim() == m.message.trim();
-          final closeInTime = u.createdAt.difference(m.createdAt).abs().inMinutes < 2;
-          return sameSender && sameRecipient && sameSubject && sameMessage && closeInTime;
+          final closeInTime =
+              u.createdAt.difference(m.createdAt).abs().inMinutes < 2;
+          return sameSender &&
+              sameRecipient &&
+              sameSubject &&
+              sameMessage &&
+              closeInTime;
         });
 
         if (!isDuplicateContent) {
@@ -290,14 +345,25 @@ class ChatService {
     String? flyerUrl,
   }) async {
     if (!canSendMessage()) {
-      throw Exception('Monthly message limit reached. Upgrade your plan for more.');
+      throw Exception(
+        'Monthly message limit reached. Upgrade your plan for more.',
+      );
     }
 
     // Determine sender information
-    String senderName = _storage.getString('artist_profile_name') ?? _storage.getString('user_name') ?? 'Guest Artist';
-    String senderEmail = _storage.getString('user_email') ?? 'artist@artistdubai.com';
-    String senderId = _storage.getString('artist_profile_id') ?? _storage.getString('user_id') ?? 'user_${DateTime.now().millisecondsSinceEpoch}';
-    String? senderAvatar = _storage.getString('user_avatar') ?? _storage.getString('artist_profile_avatar');
+    String senderName =
+        _storage.getString('artist_profile_name') ??
+        _storage.getString('user_name') ??
+        'Guest Artist';
+    String senderEmail =
+        _storage.getString('user_email') ?? 'artist@artistdubai.com';
+    String senderId =
+        _storage.getString('artist_profile_id') ??
+        _storage.getString('user_id') ??
+        'user_${DateTime.now().millisecondsSinceEpoch}';
+    String? senderAvatar =
+        _storage.getString('user_avatar') ??
+        _storage.getString('artist_profile_avatar');
 
     final newMessage = ArtistMessageModel(
       id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
@@ -316,9 +382,19 @@ class ChatService {
       isRead: false,
     );
 
-    // Save to local cache
+    // Save to local cache — read raw cache directly to avoid triggering a
+    // network fetch (which can race with the POST below and cause duplicates).
     final cacheKey = _userLocalMessagesKey();
-    final currentList = await getMessages();
+    final rawCached = _storage.getString(cacheKey) ?? _storage.getString(_keyLocalMessages);
+    List<ArtistMessageModel> currentList = [];
+    if (rawCached != null && rawCached.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(rawCached) as List<dynamic>;
+        currentList = decoded
+            .map((e) => ArtistMessageModel.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
+      } catch (_) {}
+    }
     final updatedList = [newMessage, ...currentList];
     await _storage.setString(
       cacheKey,
@@ -331,14 +407,13 @@ class ChatService {
     // Fire stream update
     _messagesController.add(updatedList);
 
-    // Attempt remote save in background
+    // Attempt remote save — do NOT re-fetch after posting; the view will
+    // call getMessages() separately, which will deduplicate correctly.
     try {
       await _apiClient.post(
         'api.php?resource=messages',
         data: newMessage.toJson(),
       );
-      // Re-fetch to synchronize server-generated IDs and state
-      await getMessages();
     } catch (_) {
       // Safely stored locally
     }

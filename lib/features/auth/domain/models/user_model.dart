@@ -35,14 +35,18 @@ class UserModel {
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     final roleVal = json['role']?.toString().toLowerCase() ?? 'user';
-    final isAdminVal = json['is_admin'] == true ||
+    final isAdminVal =
+        json['is_admin'] == true ||
         roleVal == 'admin' ||
         roleVal == 'superadmin' ||
-        (json['email'] != null && json['email'].toString().toLowerCase().startsWith('admin@'));
+        (json['email'] != null &&
+            json['email'].toString().toLowerCase().startsWith('admin@'));
 
     ArtistModel? parsedArtist;
     if (json['artist_profile'] is Map<String, dynamic>) {
-      parsedArtist = ArtistModel.fromJson(json['artist_profile'] as Map<String, dynamic>);
+      parsedArtist = ArtistModel.fromJson(
+        json['artist_profile'] as Map<String, dynamic>,
+      );
     }
 
     return UserModel(
@@ -55,7 +59,8 @@ class UserModel {
       token: json['token']?.toString(),
       artistProfile: parsedArtist,
       chatPlan: json['chat_plan']?.toString() ?? 'Basic (Free)',
-      chatMaxAllowance: int.tryParse(json['chat_max_allowance']?.toString() ?? '10') ?? 10,
+      chatMaxAllowance:
+          int.tryParse(json['chat_max_allowance']?.toString() ?? '10') ?? 10,
     );
   }
 

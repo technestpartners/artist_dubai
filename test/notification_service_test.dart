@@ -44,13 +44,17 @@ class _FakeStorageService implements StorageService {
   Future<String?> readSecure(String key) async => _data[key] as String?;
 
   @override
-  Future<void> writeSecure(String key, String value) async => _data[key] = value;
+  Future<void> writeSecure(String key, String value) async =>
+      _data[key] = value;
 
   @override
   bool isMenuPermissionEnabled(String routeName) => true;
 
   @override
-  Future<void> setMenuPermissionEnabled(String routeName, bool isEnabled) async {}
+  Future<void> setMenuPermissionEnabled(
+    String routeName,
+    bool isEnabled,
+  ) async {}
 
   @override
   Map<String, bool> getAllMenuPermissions() => {};
@@ -64,7 +68,10 @@ class _FakeApiService extends Fake implements ApiService {
   int? deletedNotificationId;
 
   @override
-  Future<Map<String, dynamic>> getNotifications({String? email, bool forceRefresh = false}) async {
+  Future<Map<String, dynamic>> getNotifications({
+    String? email,
+    bool forceRefresh = false,
+  }) async {
     return {'notifications': [], 'unread_count': 0, 'total': 0};
   }
 
@@ -92,36 +99,42 @@ void main() {
     await sl.reset();
   });
 
-  test('NotificationService clearAll clears in-memory list and notifies backend', () async {
-    final service = NotificationService();
-    service.addNotification(
-      title: 'Test Notification',
-      body: 'Test Body',
-      icon: Icons.notifications,
-    );
+  test(
+    'NotificationService clearAll clears in-memory list and notifies backend',
+    () async {
+      final service = NotificationService();
+      service.addNotification(
+        title: 'Test Notification',
+        body: 'Test Body',
+        icon: Icons.notifications,
+      );
 
-    expect(service.notifications.length, 1);
+      expect(service.notifications.length, 1);
 
-    await service.clearAll();
+      await service.clearAll();
 
-    expect(service.notifications.isEmpty, true);
-    final fakeApi = sl<ApiService>() as _FakeApiService;
-    expect(fakeApi.clearAllCalled, true);
-  });
+      expect(service.notifications.isEmpty, true);
+      final fakeApi = sl<ApiService>() as _FakeApiService;
+      expect(fakeApi.clearAllCalled, true);
+    },
+  );
 
-  test('NotificationService dismiss removes notification and deletes on backend', () async {
-    final service = NotificationService();
-    service.addNotification(
-      title: 'Notice',
-      body: 'Body',
-      icon: Icons.notifications,
-    );
+  test(
+    'NotificationService dismiss removes notification and deletes on backend',
+    () async {
+      final service = NotificationService();
+      service.addNotification(
+        title: 'Notice',
+        body: 'Body',
+        icon: Icons.notifications,
+      );
 
-    expect(service.notifications.length, 1);
-    final id = service.notifications.first.id;
+      expect(service.notifications.length, 1);
+      final id = service.notifications.first.id;
 
-    await service.dismiss(id);
+      await service.dismiss(id);
 
-    expect(service.notifications.isEmpty, true);
-  });
+      expect(service.notifications.isEmpty, true);
+    },
+  );
 }

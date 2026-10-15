@@ -14,6 +14,10 @@ import '../services/locale_provider.dart';
 import '../services/logger_service.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
+import '../../features/auth/data/repositories/auth_repository_impl.dart';
+import '../../features/auth/domain/repositories/auth_repository.dart';
+import '../../features/auth/presentation/controllers/login_controller.dart';
+import '../../features/auth/presentation/controllers/register_controller.dart';
 import '../../features/chat/data/chat_service.dart';
 
 final sl = GetIt.instance;
@@ -61,17 +65,13 @@ Future<void> initDependencyInjection() async {
     ),
   );
 
-  sl.registerLazySingleton<ApiService>(
-    () => ApiService(sl<ApiClient>()),
-  );
+  sl.registerLazySingleton<ApiService>(() => ApiService(sl<ApiClient>()));
 
   sl.registerLazySingleton<LiveSyncService>(
     () => LiveSyncService(sl<ApiService>()),
   );
 
-  sl.registerLazySingleton<NotificationService>(
-    () => NotificationService(),
-  );
+  sl.registerLazySingleton<NotificationService>(() => NotificationService());
 
   sl.registerLazySingleton<FavoritesService>(
     () => FavoritesService(
@@ -86,11 +86,27 @@ Future<void> initDependencyInjection() async {
   sl.registerSingleton<LocaleProvider>(localeProvider);
 
   sl.registerLazySingleton<ChatService>(
-    () => ChatService(
-      storage: sl<StorageService>(),
-      apiClient: sl<ApiClient>(),
-    ),
+    () =>
+        ChatService(storage: sl<StorageService>(), apiClient: sl<ApiClient>()),
   );
 
   //! 3. Features (Auth, Home, Artists, Events, Profile)
+  sl.registerLazySingleton<AuthRepository>(
+    () => AuthRepositoryImpl(
+      apiService: sl<ApiService>(),
+      storageService: sl<StorageService>(),
+      liveSyncService: sl<LiveSyncService>(),
+    ),
+  );
+
+  sl.registerFactory<LoginController>(
+    () => LoginController(authRepository: sl<AuthRepository>()),
+  );
+
+  sl.registerFactoryParam<RegisterController, String, void>(
+    (initialRole, _) => RegisterController(
+      authRepository: sl<AuthRepository>(),
+      initialRole: initialRole,
+    ),
+  );
 }

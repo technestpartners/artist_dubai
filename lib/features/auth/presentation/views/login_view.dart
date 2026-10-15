@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:artist_dubai/l10n/app_localizations.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
-import '../../../../core/errors/exceptions.dart';
-import '../../../../core/services/api_service.dart';
-import '../../../../core/services/live_sync_service.dart';
-import '../../../../core/services/storage_service.dart';
 import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
-import 'package:artist_dubai/l10n/app_localizations.dart';
+import '../controllers/login_controller.dart';
+import '../widgets/auth_error_banner_widget.dart';
+import '../widgets/auth_text_field_widget.dart';
+import '../widgets/login_header_widget.dart';
+import '../widgets/login_submit_button_widget.dart';
 
+/// Clean presentation view for User and Admin authentication.
+/// Business logic and state management are fully delegated to [LoginController].
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
 
@@ -19,175 +23,57 @@ class LoginView extends StatefulWidget {
 }
 
 class _LoginViewState extends State<LoginView> {
+  late final LoginController _controller;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _obscurePassword = true;
-  bool _isLoading = false;
 
-  String? _emailError;
-  String? _passwordError;
+  @override
+  void initState() {
+    super.initState();
+    _controller = sl<LoginController>();
+    _controller.addListener(_onControllerStateChanged);
+  }
 
-  bool get _isLoginFormValid {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-    return email.isNotEmpty && email.contains('@') && password.isNotEmpty;
+  void _onControllerStateChanged() {
+    if (!mounted) return;
+    final generalErr = _controller.state.generalError;
+    if (generalErr != null && generalErr.isNotEmpty) {
+      _showSnackBar(generalErr);
+    }
+    setState(() {});
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_onControllerStateChanged);
+    _controller.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  void _onSignIn() async {
+  Future<void> _handleSignIn() async {
     final l10n = AppLocalizations.of(context);
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
 
-    setState(() {
-      _emailError = null;
-      _passwordError = null;
-    });
+    final session = await _controller.submitLogin(
+      enterEmailMsg: l10n.enterEmail,
+      enterValidEmailMsg: l10n.enterValidEmail,
+      enterPasswordMsg: l10n.enterPassword,
+      userNotFoundMsg: l10n.userNotAvailable,
+    );
 
-    bool hasError = false;
-
-    if (email.isEmpty) {
-      _emailError = l10n.enterEmail;
-      hasError = true;
-    } else if (!email.contains('@') || !email.contains('.')) {
-      _emailError = l10n.enterValidEmail;
-      hasError = true;
-    }
-
-    if (password.isEmpty) {
-      _passwordError = l10n.enterPassword;
-      hasError = true;
-    }
-
-    if (hasError) {
-      setState(() {});
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      final userData = await sl<ApiService>().login(email, password);
-      final storage = sl<StorageService>();
-
-      if (userData != null) {
-        final user = userData['user'] as Map<String, dynamic>? ?? {};
-        final userEmail = (user['email'] as String? ?? email).trim().toLowerCase();
-        final rawRole = (user['role'] as String? ?? 'user').toLowerCase();
-        final isAdmin = user['is_admin'] == true ||
-            rawRole == 'admin' ||
-            rawRole == 'superadmin' ||
-            rawRole == 'super_admin' ||
-            userEmail == 'admin@artistdubai.com' ||
-            userEmail == 'admin@dubaiart.ae' ||
-            userEmail == 'admin@admin.com';
-
-        await storage.setBool('is_logged_in', true);
-        await storage.setBool('is_admin', isAdmin);
-        await storage.setString('user_role', rawRole);
-        await storage.setString('user_email', user['email'] as String? ?? email);
-        await storage.setString('user_name', user['full_name'] as String? ?? (isAdmin ? 'Admin' : 'User'));
-        if (user['created_at'] != null) {
-          await storage.setString('user_created_at', user['created_at'].toString());
-        }
-        if (user['id'] != null) {
-          await storage.setString('user_id', user['id'].toString());
-        }
-        if (userData['token'] != null) {
-          final tokenStr = userData['token'].toString();
-          await storage.setString('auth_token', tokenStr);
-          try {
-            await storage.writeSecure('auth_token', tokenStr);
-          } catch (_) {}
-        }
-
-        // Hydrate artist profile immediately from login response if present
-        final dynamic rawArtist = userData['artist_profile'] ?? user['artist_profile'];
-        if (rawArtist is Map<String, dynamic> && rawArtist['id'] != null) {
-          await storage.setBool('has_artist_profile', true);
-          await storage.setString('artist_profile_id', rawArtist['id'].toString());
-          if (rawArtist['name'] != null) {
-            await storage.setString('artist_profile_name', rawArtist['name'].toString());
-          }
-        } else {
-          // Reset stale artist profile cache and sync live artist profile for this user
-          await storage.setBool('has_artist_profile', false);
-          await storage.remove('artist_profile_id');
-          await storage.remove('artist_profile_name');
-        }
-
-        try {
-          await sl<ApiService>().getMyArtistProfile(forceRefresh: true);
-        } catch (_) {}
-
-        try {
-          sl<LiveSyncService>().notifyAuthChanged(true);
-        } catch (_) {}
-
-        if (mounted) {
-          final currentL10n = AppLocalizations.of(context);
-          if (isAdmin) {
-            _showSnackBar(currentL10n.signedInAsAdmin);
-            context.go(RouteNames.adminDashboard);
-          } else {
-            _showSnackBar(currentL10n.loginSuccess);
-            if (context.canPop()) {
-              context.pop(true);
-            } else {
-              context.go(RouteNames.home);
-            }
-          }
-        }
+    if (session != null && mounted) {
+      final currentL10n = AppLocalizations.of(context);
+      if (session.isAdmin) {
+        _showSnackBar(currentL10n.signedInAsAdmin);
+        context.go(RouteNames.adminDashboard);
       } else {
-        if (mounted) {
-          final currentL10n = AppLocalizations.of(context);
-          setState(() {
-            _emailError = currentL10n.userNotAvailable;
-          });
-        }
-      }
-    } on ServerException catch (e) {
-      if (mounted) {
-        final msg = e.message;
-        final lower = msg.toLowerCase();
-        if (lower.contains('password')) {
-          setState(() => _passwordError = msg);
-        } else if (lower.contains('user') || lower.contains('account') || lower.contains('email') || lower.contains('available')) {
-          setState(() => _emailError = msg);
+        _showSnackBar(currentL10n.loginSuccess);
+        if (context.canPop()) {
+          context.pop(true);
         } else {
-          _showSnackBar(msg);
+          context.go(RouteNames.home);
         }
-      }
-    } on UnauthorizedException catch (e) {
-      if (mounted) {
-        final msg = e.message;
-        final lower = msg.toLowerCase();
-        if (lower.contains('password')) {
-          setState(() => _passwordError = msg);
-        } else {
-          setState(() => _emailError = msg);
-        }
-      }
-    } on NetworkException catch (e) {
-      if (mounted) {
-        _showSnackBar(e.message);
-      }
-    } catch (e) {
-      if (mounted) {
-        final currentL10n = AppLocalizations.of(context);
-        setState(() {
-          _emailError = currentL10n.userNotAvailable;
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
       }
     }
   }
@@ -209,355 +95,185 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
-  Widget _buildFieldError(String? error) {
-    if (error == null || error.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(top: 6.0, left: 2.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.error_outline, size: 14, color: Color(0xFFDC2626)),
-          const SizedBox(width: 5),
-          Expanded(
-            child: Text(
-              error,
-              style: const TextStyle(
-                color: Color(0xFFDC2626),
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  InputDecoration _buildInputDecoration({
-    required String hintText,
-    required IconData icon,
-    Widget? suffixIcon,
-    String? errorText,
-  }) {
-    final hasErr = errorText != null && errorText.isNotEmpty;
-    return InputDecoration(
-      hintText: hintText,
-      hintStyle: const TextStyle(
-        color: Color(0xFF9CA3AF),
-        fontSize: 14,
-      ),
-      prefixIcon: Icon(
-        icon,
-        color: hasErr ? const Color(0xFFDC2626) : Colors.black,
-        size: 20,
-      ),
-      suffixIcon: suffixIcon,
-      filled: true,
-      fillColor: hasErr ? const Color(0xFFFEF2F2) : const Color(0xFFF9FAFB),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 14,
-      ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8.0),
-        borderSide: BorderSide(
-          color: hasErr ? const Color(0xFFDC2626) : const Color(0xFFE5E7EB),
-        ),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8.0),
-        borderSide: BorderSide(
-          color: hasErr ? const Color(0xFFDC2626) : const Color(0xFFE5E7EB),
-        ),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8.0),
-        borderSide: BorderSide(
-          color: hasErr ? const Color(0xFFDC2626) : const Color(0xFF6A2777),
-          width: 1.5,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final rh = ResponsiveHelper.of(context);
     final hPad = rh.isWide ? rh.horizontalPadding : 16.0;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF6B1C9B),
-      appBar: const AppTopBar(backgroundColor: Colors.white),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: rh.isWide ? 520.0 : double.infinity),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Top Action Row (Back Arrow and Home button)
-                  Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: hPad,
-                      vertical: 12.0,
+    return ChangeNotifierProvider<LoginController>.value(
+      value: _controller,
+      child: Consumer<LoginController>(
+        builder: (context, controller, _) {
+          final state = controller.state;
+          return Scaffold(
+            backgroundColor: const Color(0xFF6B1C9B),
+            appBar: const AppTopBar(backgroundColor: Colors.white),
+            body: SafeArea(
+              child: SingleChildScrollView(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: rh.isWide ? 520.0 : double.infinity,
                     ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                      onPressed: () {
-                        if (context.canPop()) {
-                          context.pop();
-                        } else {
-                          context.go(RouteNames.home);
-                        }
-                      },
-                    ),
-                    InkWell(
-                      onTap: () => context.go(RouteNames.home),
-                      borderRadius: BorderRadius.circular(6),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8.0,
-                          vertical: 4.0,
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.home_outlined,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // 1. Navigation Header
+                        LoginHeader(horizontalPadding: hPad),
+
+                        // 2. Centered Login Card
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0,
+                            vertical: 8.0,
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24.0,
+                              vertical: 32.0,
+                            ),
+                            decoration: BoxDecoration(
                               color: Colors.white,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              l10n.home,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
+                              borderRadius: BorderRadius.circular(16.0),
+                              border: Border.all(
+                                color: const Color(0xFFE2E8F0),
                               ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.04),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Centered Elevated Login Card
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 8.0,
-                ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24.0,
-                    vertical: 32.0,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16.0),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        l10n.loginToYourAccount,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Color(0xFF1E1E1E),
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        l10n.welcomeBackLogin,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Color(0xFF6B7280),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-
-                      // Email Field
-                      Text(
-                        l10n.emailAddress,
-                        style: const TextStyle(
-                          color: Color(0xFF374151),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        onChanged: (_) {
-                          setState(() {
-                            _emailError = null;
-                          });
-                        },
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          fontFamilyFallback: ['Outfit', 'Roboto', 'Arial', 'sans-serif'],
-                        ),
-                        decoration: _buildInputDecoration(
-                          hintText: 'name@example.com',
-                          icon: Icons.email_outlined,
-                          errorText: _emailError,
-                        ),
-                      ),
-                      _buildFieldError(_emailError),
-                      const SizedBox(height: 18),
-
-                      // Password Field
-                      Text(
-                        l10n.passwordLabel,
-                        style: const TextStyle(
-                          color: Color(0xFF374151),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        onChanged: (_) {
-                          setState(() {
-                            _passwordError = null;
-                          });
-                        },
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          fontFamilyFallback: ['Outfit', 'Roboto', 'Arial', 'sans-serif'],
-                        ),
-                        decoration: _buildInputDecoration(
-                          hintText: l10n.enterYourPassword,
-                          icon: Icons.lock_outline,
-                          errorText: _passwordError,
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_off_outlined
-                                  : Icons.visibility_outlined,
-                              color: Colors.black,
-                              size: 20,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                      _buildFieldError(_passwordError),
-                      const SizedBox(height: 24),
-
-                      // Sign In Button
-                      SizedBox(
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _onSignIn,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _isLoginFormValid
-                                ? const Color(0xFF6A2777)
-                                : const Color(0xFFA581AB),
-                            disabledBackgroundColor: const Color(0xFF6A2777),
-                            foregroundColor: Colors.white,
-                            disabledForegroundColor: Colors.white,
-                            elevation: _isLoginFormValid ? 2 : 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
-                          ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : Text(
-                                  l10n.signIn,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(
+                                  l10n.loginToYourAccount,
+                                  textAlign: TextAlign.center,
                                   style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF1E1E1E),
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: -0.3,
                                   ),
                                 ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Sign Up Redirect
-                      Center(
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () => context.go(RouteNames.register, extra: 'user'),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-                            child: RichText(
-                              textAlign: TextAlign.center,
-                              text: TextSpan(
-                                style: const TextStyle(
-                                  color: Color(0xFF6B7280),
-                                  fontSize: 13,
+                                const SizedBox(height: 6),
+                                Text(
+                                  l10n.welcomeBackLogin,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Color(0xFF6B7280),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w400,
+                                  ),
                                 ),
-                                children: [
-                                  TextSpan(text: l10n.dontHaveAccount),
-                                  TextSpan(
-                                    text: l10n.signUpFree,
-                                    style: const TextStyle(
-                                      color: Color(0xFF6A2777),
-                                      fontWeight: FontWeight.w700,
+                                if (state.generalError != null &&
+                                    state.generalError!.isNotEmpty) ...[
+                                  AuthErrorBanner(message: state.generalError!),
+                                  const SizedBox(height: 16),
+                                ],
+
+                                // Email Input Field
+                                AuthTextField(
+                                  controller: _emailController,
+                                  label: l10n.emailAddress,
+                                  hintText: 'name@example.com',
+                                  prefixIcon: Icons.email_outlined,
+                                  keyboardType: TextInputType.emailAddress,
+                                  errorText: state.emailError,
+                                  onChanged: (val) => _controller.setEmail(val),
+                                ),
+                                const SizedBox(height: 18),
+
+                                // Password Input Field
+                                AuthTextField(
+                                  controller: _passwordController,
+                                  label: l10n.passwordLabel,
+                                  hintText: l10n.enterYourPassword,
+                                  prefixIcon: Icons.lock_outline,
+                                  obscureText: state.obscurePassword,
+                                  errorText: state.passwordError,
+                                  onChanged:
+                                      (val) => _controller.setPassword(val),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      state.obscurePassword
+                                          ? Icons.visibility_off_outlined
+                                          : Icons.visibility_outlined,
+                                      color: Colors.black,
+                                      size: 20,
+                                    ),
+                                    onPressed:
+                                        _controller.togglePasswordVisibility,
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+
+                                // Sign In Button
+                                LoginSubmitButton(
+                                  label: l10n.signIn,
+                                  isLoading: state.isLoading,
+                                  isEnabled: state.isFormValid,
+                                  onPressed: _handleSignIn,
+                                ),
+                                const SizedBox(height: 24),
+
+                                // Sign Up Link
+                                Center(
+                                  child: GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onTap:
+                                        () => context.go(
+                                          RouteNames.register,
+                                          extra: 'user',
+                                        ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 6,
+                                        horizontal: 12,
+                                      ),
+                                      child: RichText(
+                                        textAlign: TextAlign.center,
+                                        text: TextSpan(
+                                          style: const TextStyle(
+                                            color: Color(0xFF6B7280),
+                                            fontSize: 13,
+                                          ),
+                                          children: [
+                                            TextSpan(
+                                              text: l10n.dontHaveAccount,
+                                            ),
+                                            TextSpan(
+                                              text: l10n.signUpFree,
+                                              style: const TextStyle(
+                                                color: Color(0xFF6A2777),
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 40),
+                      ],
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 40),
-            ],
-          ),
-        ),
-        ),
+            ),
+            bottomNavigationBar: const AppBottomNavBar(currentIndex: 3),
+          );
+        },
       ),
-      ),
-      bottomNavigationBar: const AppBottomNavBar(currentIndex: 3),
     );
   }
 }

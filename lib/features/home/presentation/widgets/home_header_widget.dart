@@ -12,29 +12,32 @@ class HomeHeaderWidget extends StatelessWidget {
     final rh = ResponsiveHelper.of(context);
     final l10n = AppLocalizations.of(context);
 
-    final logoSize = rh.isDesktop
-        ? 110.0
-        : rh.isTablet
+    final logoSize =
+        rh.isDesktop
+            ? 110.0
+            : rh.isTablet
             ? 85.0
             : rh.isShortScreen
-                ? 40.0
-                : rh.isCompact
-                    ? 44.0
-                    : (rh.height * 0.070).clamp(46.0, 58.0);
-    final titleFontSize = rh.isDesktop
-        ? 26.0
-        : rh.isTablet
+            ? 40.0
+            : rh.isCompact
+            ? 44.0
+            : (rh.height * 0.070).clamp(46.0, 58.0);
+    final titleFontSize =
+        rh.isDesktop
+            ? 26.0
+            : rh.isTablet
             ? 22.0
             : rh.isCompact
-                ? 14.0
-                : (rh.width * 0.043).clamp(14.5, 18.0);
-    final subtitleFontSize = rh.isDesktop
-        ? 14.0
-        : rh.isTablet
+            ? 14.0
+            : (rh.width * 0.043).clamp(14.5, 18.0);
+    final subtitleFontSize =
+        rh.isDesktop
+            ? 14.0
+            : rh.isTablet
             ? 12.0
             : rh.isCompact
-                ? 8.5
-                : (rh.width * 0.023).clamp(8.5, 11.0);
+            ? 8.5
+            : (rh.width * 0.023).clamp(8.5, 11.0);
     final hPad = rh.isWide ? 16.0 : (rh.isCompact ? 4.0 : 8.0);
     final vPad = rh.isShortScreen ? 1.5 : (rh.isWide ? 6.0 : 2.5);
 
@@ -104,14 +107,18 @@ class HomeHeaderWidget extends StatelessWidget {
                   final isArabic = localeProvider.isArabic;
                   final isCompact = rh.isCompact;
                   return Tooltip(
-                    message: isArabic ? 'Switch to English' : 'التبديل إلى العربية',
+                    message:
+                        isArabic ? 'Switch to English' : 'التبديل إلى العربية',
                     child: InkWell(
                       onTap: () => localeProvider.toggleLocale(),
                       borderRadius: BorderRadius.circular(20),
                       child: Container(
                         padding: EdgeInsets.symmetric(
                           horizontal: isCompact ? 5.0 : (rh.isWide ? 8.0 : 6.0),
-                          vertical: isCompact || rh.isShortScreen ? 2.5 : (rh.isWide ? 4.5 : 3.5),
+                          vertical:
+                              isCompact || rh.isShortScreen
+                                  ? 2.5
+                                  : (rh.isWide ? 4.5 : 3.5),
                         ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.18),
@@ -124,20 +131,36 @@ class HomeHeaderWidget extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.language, size: isCompact ? 13 : 15, color: Colors.white),
+                            Icon(
+                              Icons.language,
+                              size: isCompact ? 13 : 15,
+                              color: Colors.white,
+                            ),
                             SizedBox(width: isCompact ? 3 : 5),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 1.5,
+                              ),
                               decoration: BoxDecoration(
-                                color: !isArabic ? Colors.white : Colors.transparent,
+                                color:
+                                    !isArabic
+                                        ? Colors.white
+                                        : Colors.transparent,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
                                 'EN',
                                 style: TextStyle(
-                                  color: !isArabic ? const Color(0xFF5E227A) : Colors.white,
+                                  color:
+                                      !isArabic
+                                          ? const Color(0xFF5E227A)
+                                          : Colors.white,
                                   fontSize: isCompact ? 10.0 : 11.5,
-                                  fontWeight: !isArabic ? FontWeight.bold : FontWeight.w500,
+                                  fontWeight:
+                                      !isArabic
+                                          ? FontWeight.bold
+                                          : FontWeight.w500,
                                 ),
                               ),
                             ),
@@ -150,17 +173,29 @@ class HomeHeaderWidget extends StatelessWidget {
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 1.5,
+                              ),
                               decoration: BoxDecoration(
-                                color: isArabic ? Colors.white : Colors.transparent,
+                                color:
+                                    isArabic
+                                        ? Colors.white
+                                        : Colors.transparent,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
                                 'عربي',
                                 style: TextStyle(
-                                  color: isArabic ? const Color(0xFF5E227A) : Colors.white,
+                                  color:
+                                      isArabic
+                                          ? const Color(0xFF5E227A)
+                                          : Colors.white,
                                   fontSize: isCompact ? 10.0 : 11.5,
-                                  fontWeight: isArabic ? FontWeight.bold : FontWeight.w500,
+                                  fontWeight:
+                                      isArabic
+                                          ? FontWeight.bold
+                                          : FontWeight.w500,
                                 ),
                               ),
                             ),

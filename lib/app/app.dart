@@ -13,11 +13,11 @@ class AppCustomScrollBehavior extends MaterialScrollBehavior {
 
   @override
   Set<PointerDeviceKind> get dragDevices => {
-        PointerDeviceKind.touch,
-        PointerDeviceKind.mouse,
-        PointerDeviceKind.trackpad,
-        PointerDeviceKind.stylus,
-      };
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.trackpad,
+    PointerDeviceKind.stylus,
+  };
 }
 
 class ArtistDubaiApp extends StatefulWidget {
@@ -27,7 +27,8 @@ class ArtistDubaiApp extends StatefulWidget {
   State<ArtistDubaiApp> createState() => _ArtistDubaiAppState();
 }
 
-class _ArtistDubaiAppState extends State<ArtistDubaiApp> with WidgetsBindingObserver {
+class _ArtistDubaiAppState extends State<ArtistDubaiApp>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -41,7 +42,9 @@ class _ArtistDubaiAppState extends State<ArtistDubaiApp> with WidgetsBindingObse
   }
 
   @override
-  Future<bool> didPushRouteInformation(RouteInformation routeInformation) async {
+  Future<bool> didPushRouteInformation(
+    RouteInformation routeInformation,
+  ) async {
     final uri = routeInformation.uri;
     final target = AppRouter.parseDeepLink(uri);
     if (target != null && target.isNotEmpty) {
@@ -76,7 +79,8 @@ class _ArtistDubaiAppState extends State<ArtistDubaiApp> with WidgetsBindingObse
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             localeResolutionCallback: (locale, supportedLocales) {
               for (final supported in supportedLocales) {
-                if (supported.languageCode == localeProvider.locale.languageCode) {
+                if (supported.languageCode ==
+                    localeProvider.locale.languageCode) {
                   return supported;
                 }
               }
@@ -89,9 +93,7 @@ class _ArtistDubaiAppState extends State<ArtistDubaiApp> with WidgetsBindingObse
                 maxScaleFactor: 1.15,
               );
               return MediaQuery(
-                data: mediaQuery.copyWith(
-                  textScaler: clampedTextScaler,
-                ),
+                data: mediaQuery.copyWith(textScaler: clampedTextScaler),
                 child: GestureDetector(
                   behavior: HitTestBehavior.translucent,
                   onTap: () {

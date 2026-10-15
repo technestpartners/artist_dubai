@@ -29,10 +29,18 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
     _TabDef('Artists', 'artists', Icons.palette_outlined),
     _TabDef('Events', 'events', Icons.event_outlined),
     _TabDef('Galleries', 'galleries', Icons.photo_library_outlined),
-    _TabDef('Gov. Entities', 'government_entities', Icons.account_balance_outlined),
+    _TabDef(
+      'Gov. Entities',
+      'government_entities',
+      Icons.account_balance_outlined,
+    ),
     _TabDef('Categories', 'categories', Icons.category_outlined),
     _TabDef('Locations', 'locations', Icons.location_on_outlined),
-    _TabDef('Exp. Levels', 'experience_levels', Icons.workspace_premium_outlined),
+    _TabDef(
+      'Exp. Levels',
+      'experience_levels',
+      Icons.workspace_premium_outlined,
+    ),
   ];
 
   @override
@@ -87,37 +95,48 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
   void _confirmRestore(Map<String, dynamic> item) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Restore Item',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
-        ),
-        content: Text(
-          'Restore "${item['display_name']}" (${item['label']}) so it becomes visible again in the app?',
-          style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
-          ),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _greenRestore,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      builder:
+          (ctx) => AlertDialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-            icon: const Icon(Icons.restore_rounded, size: 16),
-            label: const Text('Restore', style: TextStyle(fontWeight: FontWeight.bold)),
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await _restoreItem(item);
-            },
+            title: const Text(
+              'Restore Item',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+            ),
+            content: Text(
+              'Restore "${item['display_name']}" (${item['label']}) so it becomes visible again in the app?',
+              style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: Color(0xFF64748B)),
+                ),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _greenRestore,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                icon: const Icon(Icons.restore_rounded, size: 16),
+                label: const Text(
+                  'Restore',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  await _restoreItem(item);
+                },
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -125,37 +144,55 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
   void _confirmPermanentDelete(Map<String, dynamic> item) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E2E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          '⚠️  Delete Permanently',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.white),
-        ),
-        content: Text(
-          'This will permanently erase "${item['display_name']}" from the database. This action cannot be undone.',
-          style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.8)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: Colors.white.withValues(alpha: 0.7))),
-          ),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _redDanger,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      builder:
+          (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF1E1E2E),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-            icon: const Icon(Icons.delete_forever_rounded, size: 16),
-            label: const Text('Delete Forever', style: TextStyle(fontWeight: FontWeight.bold)),
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await _permanentDelete(item);
-            },
+            title: const Text(
+              '⚠️  Delete Permanently',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 17,
+                color: Colors.white,
+              ),
+            ),
+            content: Text(
+              'This will permanently erase "${item['display_name']}" from the database. This action cannot be undone.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.white.withValues(alpha: 0.8),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+                ),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _redDanger,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                icon: const Icon(Icons.delete_forever_rounded, size: 16),
+                label: const Text(
+                  'Delete Forever',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  await _permanentDelete(item);
+                },
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -163,37 +200,55 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
   void _confirmEmptyBin() {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E2E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          '🗑️  Empty Recycle Bin',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.white),
-        ),
-        content: Text(
-          'All ${_allItems.length} item(s) in the bin will be permanently erased. This cannot be undone.',
-          style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.8)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: Colors.white.withValues(alpha: 0.7))),
-          ),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _redDanger,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      builder:
+          (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF1E1E2E),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-            icon: const Icon(Icons.delete_sweep_rounded, size: 16),
-            label: const Text('Empty Bin', style: TextStyle(fontWeight: FontWeight.bold)),
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await _emptyBin();
-            },
+            title: const Text(
+              '🗑️  Empty Recycle Bin',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 17,
+                color: Colors.white,
+              ),
+            ),
+            content: Text(
+              'All ${_allItems.length} item(s) in the bin will be permanently erased. This cannot be undone.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.white.withValues(alpha: 0.8),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+                ),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _redDanger,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                icon: const Icon(Icons.delete_sweep_rounded, size: 16),
+                label: const Text(
+                  'Empty Bin',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  await _emptyBin();
+                },
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -204,19 +259,25 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
       type: item['type'] as String,
     );
     if (ok) {
-      setState(() => _allItems.removeWhere(
-            (i) => i['id'] == item['id'] && i['type'] == item['type'],
-          ));
-      messenger.showSnackBar(SnackBar(
-        content: Text('✅  "${item['display_name']}" restored successfully'),
-        backgroundColor: _greenRestore,
-        behavior: SnackBarBehavior.floating,
-      ));
+      setState(
+        () => _allItems.removeWhere(
+          (i) => i['id'] == item['id'] && i['type'] == item['type'],
+        ),
+      );
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('✅  "${item['display_name']}" restored successfully'),
+          backgroundColor: _greenRestore,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } else {
-      messenger.showSnackBar(const SnackBar(
-        content: Text('Failed to restore item. Please try again.'),
-        backgroundColor: _redDanger,
-      ));
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Failed to restore item. Please try again.'),
+          backgroundColor: _redDanger,
+        ),
+      );
     }
   }
 
@@ -227,19 +288,25 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
       type: item['type'] as String,
     );
     if (ok) {
-      setState(() => _allItems.removeWhere(
-            (i) => i['id'] == item['id'] && i['type'] == item['type'],
-          ));
-      messenger.showSnackBar(SnackBar(
-        content: Text('🗑️  "${item['display_name']}" permanently deleted'),
-        backgroundColor: const Color(0xFF475569),
-        behavior: SnackBarBehavior.floating,
-      ));
+      setState(
+        () => _allItems.removeWhere(
+          (i) => i['id'] == item['id'] && i['type'] == item['type'],
+        ),
+      );
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('🗑️  "${item['display_name']}" permanently deleted'),
+          backgroundColor: const Color(0xFF475569),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } else {
-      messenger.showSnackBar(const SnackBar(
-        content: Text('Failed to delete item. Please try again.'),
-        backgroundColor: _redDanger,
-      ));
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Failed to delete item. Please try again.'),
+          backgroundColor: _redDanger,
+        ),
+      );
     }
   }
 
@@ -248,43 +315,63 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
     final ok = await sl<ApiService>().emptyTrash();
     if (ok) {
       setState(() => _allItems.clear());
-      messenger.showSnackBar(const SnackBar(
-        content: Text('🗑️  Recycle bin emptied successfully'),
-        backgroundColor: Color(0xFF475569),
-        behavior: SnackBarBehavior.floating,
-      ));
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('🗑️  Recycle bin emptied successfully'),
+          backgroundColor: Color(0xFF475569),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } else {
-      messenger.showSnackBar(const SnackBar(
-        content: Text('Failed to empty bin. Please try again.'),
-        backgroundColor: _redDanger,
-      ));
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Failed to empty bin. Please try again.'),
+          backgroundColor: _redDanger,
+        ),
+      );
     }
   }
 
   // ── Helper: entity icon ───────────────────────────────────────────────────
   IconData _iconForType(String type) {
     switch (type) {
-      case 'artists': return Icons.palette_outlined;
-      case 'events': return Icons.event_outlined;
-      case 'galleries': return Icons.photo_library_outlined;
-      case 'government_entities': return Icons.account_balance_outlined;
-      case 'categories': return Icons.category_outlined;
-      case 'locations': return Icons.location_on_outlined;
-      case 'experience_levels': return Icons.workspace_premium_outlined;
-      default: return Icons.help_outline_rounded;
+      case 'artists':
+        return Icons.palette_outlined;
+      case 'events':
+        return Icons.event_outlined;
+      case 'galleries':
+        return Icons.photo_library_outlined;
+      case 'government_entities':
+        return Icons.account_balance_outlined;
+      case 'categories':
+        return Icons.category_outlined;
+      case 'locations':
+        return Icons.location_on_outlined;
+      case 'experience_levels':
+        return Icons.workspace_premium_outlined;
+      default:
+        return Icons.help_outline_rounded;
     }
   }
 
   Color _colorForType(String type) {
     switch (type) {
-      case 'artists': return const Color(0xFF6A2777);
-      case 'events': return const Color(0xFF0369A1);
-      case 'galleries': return const Color(0xFF7C3AED);
-      case 'government_entities': return const Color(0xFF0F766E);
-      case 'categories': return const Color(0xFFD97706);
-      case 'locations': return const Color(0xFFDC2626);
-      case 'experience_levels': return const Color(0xFF1D4ED8);
-      default: return const Color(0xFF64748B);
+      case 'artists':
+        return const Color(0xFF6A2777);
+      case 'events':
+        return const Color(0xFF0369A1);
+      case 'galleries':
+        return const Color(0xFF7C3AED);
+      case 'government_entities':
+        return const Color(0xFF0F766E);
+      case 'categories':
+        return const Color(0xFFD97706);
+      case 'locations':
+        return const Color(0xFFDC2626);
+      case 'experience_levels':
+        return const Color(0xFF1D4ED8);
+      default:
+        return const Color(0xFF64748B);
     }
   }
 
@@ -333,7 +420,10 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
                 if (_allItems.isNotEmpty) ...[
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFEF2F2),
                       borderRadius: BorderRadius.circular(8),
@@ -360,7 +450,6 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
               ),
             ),
           ],
-
         ),
         actions: [
           Consumer<LocaleProvider>(
@@ -372,30 +461,53 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
                   onTap: () => localeProvider.toggleLocale(),
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                    margin: const EdgeInsets.symmetric(
+                      vertical: 10,
+                      horizontal: 4,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 3.5,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF5E227A).withValues(alpha: 0.08),
-                      border: Border.all(color: const Color(0xFF5E227A), width: 1.2),
+                      border: Border.all(
+                        color: const Color(0xFF5E227A),
+                        width: 1.2,
+                      ),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.language, size: 15, color: Color(0xFF5E227A)),
+                        const Icon(
+                          Icons.language,
+                          size: 15,
+                          color: Color(0xFF5E227A),
+                        ),
                         const SizedBox(width: 4),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 1.5,
+                          ),
                           decoration: BoxDecoration(
-                            color: !isArabic ? const Color(0xFF5E227A) : Colors.transparent,
+                            color:
+                                !isArabic
+                                    ? const Color(0xFF5E227A)
+                                    : Colors.transparent,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
                             'EN',
                             style: TextStyle(
-                              color: !isArabic ? Colors.white : const Color(0xFF5E227A),
+                              color:
+                                  !isArabic
+                                      ? Colors.white
+                                      : const Color(0xFF5E227A),
                               fontSize: 11.5,
-                              fontWeight: !isArabic ? FontWeight.bold : FontWeight.w600,
+                              fontWeight:
+                                  !isArabic ? FontWeight.bold : FontWeight.w600,
                             ),
                           ),
                         ),
@@ -408,17 +520,27 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 1.5,
+                          ),
                           decoration: BoxDecoration(
-                            color: isArabic ? const Color(0xFF5E227A) : Colors.transparent,
+                            color:
+                                isArabic
+                                    ? const Color(0xFF5E227A)
+                                    : Colors.transparent,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
                             'عربي',
                             style: TextStyle(
-                              color: isArabic ? Colors.white : const Color(0xFF5E227A),
+                              color:
+                                  isArabic
+                                      ? Colors.white
+                                      : const Color(0xFF5E227A),
                               fontSize: 11.5,
-                              fontWeight: isArabic ? FontWeight.bold : FontWeight.w600,
+                              fontWeight:
+                                  isArabic ? FontWeight.bold : FontWeight.w600,
                             ),
                           ),
                         ),
@@ -432,10 +554,18 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
           if (_allItems.isNotEmpty)
             TextButton.icon(
               onPressed: _confirmEmptyBin,
-              icon: const Icon(Icons.delete_sweep_rounded, size: 18, color: Color(0xFFDC2626)),
+              icon: const Icon(
+                Icons.delete_sweep_rounded,
+                size: 18,
+                color: Color(0xFFDC2626),
+              ),
               label: const Text(
                 'Empty Bin',
-                style: TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.w700, fontSize: 13),
+                style: TextStyle(
+                  color: Color(0xFFDC2626),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
               ),
             ),
           IconButton(
@@ -459,87 +589,122 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
                   indicatorWeight: 2.5,
                   labelColor: const Color(0xFF6A2777),
                   unselectedLabelColor: const Color(0xFF64748B),
-                  labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                  unselectedLabelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-                  tabs: _tabs.map((t) {
-                    final index = _tabs.indexOf(t);
-                    final count = _itemsForTab(index).length;
-                    final isSelected = _tabController.index == index;
-                    return Tab(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(t.icon, size: 14),
-                          const SizedBox(width: 5),
-                          Text(t.label),
-                          if (count > 0) ...[
-                            const SizedBox(width: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: isSelected ? const Color(0xFFF3E8FF) : const Color(0xFFF1F5F9),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                '$count',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  color: isSelected ? const Color(0xFF6A2777) : const Color(0xFF64748B),
+                  labelStyle: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  tabs:
+                      _tabs.map((t) {
+                        final index = _tabs.indexOf(t);
+                        final count = _itemsForTab(index).length;
+                        final isSelected = _tabController.index == index;
+                        return Tab(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(t.icon, size: 14),
+                              const SizedBox(width: 5),
+                              Text(t.label),
+                              if (count > 0) ...[
+                                const SizedBox(width: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 5,
+                                    vertical: 1,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        isSelected
+                                            ? const Color(0xFFF3E8FF)
+                                            : const Color(0xFFF1F5F9),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    '$count',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      color:
+                                          isSelected
+                                              ? const Color(0xFF6A2777)
+                                              : const Color(0xFF64748B),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    );
-                  }).toList(),
+                              ],
+                            ],
+                          ),
+                        );
+                      }).toList(),
                 ),
-                const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+                const Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: Color(0xFFE2E8F0),
+                ),
               ],
             ),
           ),
         ),
       ),
-      body: _isLoading
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: _purple),
-                  SizedBox(height: 16),
-                  Text('Loading recycle bin...', style: TextStyle(color: Color(0xFF64748B))),
-                ],
-              ),
-            )
-          : _hasError
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.cloud_off_rounded, size: 64, color: Color(0xFFCBD5E1)),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Failed to load recycle bin',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
-                      ),
-                      const SizedBox(height: 8),
-                      ElevatedButton.icon(
-                        onPressed: _loadTrash,
-                        icon: const Icon(Icons.refresh_rounded),
-                        label: const Text('Retry'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _purple,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : TabBarView(
-                  controller: _tabController,
-                  children: List.generate(_tabs.length, (i) => _buildTabContent(i)),
+      body:
+          _isLoading
+              ? const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(color: _purple),
+                    SizedBox(height: 16),
+                    Text(
+                      'Loading recycle bin...',
+                      style: TextStyle(color: Color(0xFF64748B)),
+                    ),
+                  ],
                 ),
+              )
+              : _hasError
+              ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.cloud_off_rounded,
+                      size: 64,
+                      color: Color(0xFFCBD5E1),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Failed to load recycle bin',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton.icon(
+                      onPressed: _loadTrash,
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Retry'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _purple,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+              : TabBarView(
+                controller: _tabController,
+                children: List.generate(
+                  _tabs.length,
+                  (i) => _buildTabContent(i),
+                ),
+              ),
     );
   }
 
@@ -552,7 +717,9 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              tabIndex == 0 ? Icons.delete_outline_rounded : _tabs[tabIndex].icon,
+              tabIndex == 0
+                  ? Icons.delete_outline_rounded
+                  : _tabs[tabIndex].icon,
               size: 72,
               color: const Color(0xFFCBD5E1),
             ),
@@ -625,13 +792,19 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
                 borderRadius: BorderRadius.circular(10),
               ),
               clipBehavior: Clip.antiAlias,
-              child: imageUrl != null && imageUrl.isNotEmpty
-                  ? Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Icon(_iconForType(type), color: color, size: 26),
-                    )
-                  : Icon(_iconForType(type), color: color, size: 26),
+              child:
+                  imageUrl != null && imageUrl.isNotEmpty
+                      ? Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder:
+                            (_, __, ___) => Icon(
+                              _iconForType(type),
+                              color: color,
+                              size: 26,
+                            ),
+                      )
+                      : Icon(_iconForType(type), color: color, size: 26),
             ),
             const SizedBox(width: 12),
 
@@ -643,7 +816,10 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: color.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(4),
@@ -661,7 +837,10 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
                       if (deletedAt != null)
                         Text(
                           'deleted ${_timeAgo(deletedAt)}',
-                          style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Color(0xFF94A3B8),
+                          ),
                         ),
                     ],
                   ),
@@ -679,7 +858,10 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
                   if (sub != null && sub.isNotEmpty)
                     Text(
                       sub,
-                      style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF64748B),
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -701,8 +883,13 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
                       foregroundColor: Colors.white,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(horizontal: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
-                      textStyle: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     onPressed: () => _confirmRestore(item),
                     icon: const Icon(Icons.restore_rounded, size: 14),
@@ -718,8 +905,13 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
                       foregroundColor: _redDanger,
                       side: const BorderSide(color: Color(0xFFFECACA)),
                       padding: const EdgeInsets.symmetric(horizontal: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
-                      textStyle: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     onPressed: () => _confirmPermanentDelete(item),
                     icon: const Icon(Icons.delete_forever_rounded, size: 14),

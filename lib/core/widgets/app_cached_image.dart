@@ -33,9 +33,15 @@ class AppCachedImage extends StatelessWidget {
 
     // Replace PHP query resource URL with direct static uploads URL
     if (trimmed.contains('api.php?resource=uploads&file=')) {
-      trimmed = trimmed.replaceAll('api.php?resource=uploads&file=', 'uploads/');
+      trimmed = trimmed.replaceAll(
+        'api.php?resource=uploads&file=',
+        'uploads/',
+      );
     } else if (trimmed.contains('resource=uploads&file=')) {
-      trimmed = trimmed.replaceAll(RegExp(r'api\.php\?resource=uploads&file='), 'uploads/');
+      trimmed = trimmed.replaceAll(
+        RegExp(r'api\.php\?resource=uploads&file='),
+        'uploads/',
+      );
     }
 
     // Prepend base URL if relative uploads path
@@ -53,7 +59,10 @@ class AppCachedImage extends StatelessWidget {
       return _buildFallback();
     }
 
-    final isTest = !kIsWeb && (Platform.environment.containsKey('FLUTTER_TEST') || bool.hasEnvironment('FLUTTER_TEST'));
+    final isTest =
+        !kIsWeb &&
+        (Platform.environment.containsKey('FLUTTER_TEST') ||
+            bool.hasEnvironment('FLUTTER_TEST'));
     if (isTest) {
       Widget testWidget = errorWidget ?? _buildFallback();
       if (borderRadius != null) {
@@ -83,7 +92,9 @@ class AppCachedImage extends StatelessWidget {
               width: width,
               height: height,
               fit: fit,
-              loadingBuilder: (ctx, ch, prog) => prog == null ? ch : (placeholder ?? _buildPlaceholder()),
+              loadingBuilder:
+                  (ctx, ch, prog) =>
+                      prog == null ? ch : (placeholder ?? _buildPlaceholder()),
               errorBuilder: (ctx, err, st) => errorWidget ?? _buildFallback(),
             );
           }
@@ -117,17 +128,17 @@ class AppCachedImage extends StatelessWidget {
     }
 
     if (borderRadius != null) {
-      imageWidget = ClipRRect(
-        borderRadius: borderRadius!,
-        child: imageWidget,
-      );
+      imageWidget = ClipRRect(borderRadius: borderRadius!, child: imageWidget);
     }
 
     return imageWidget;
   }
 
   Widget _buildPlaceholder() {
-    final isTest = !kIsWeb && (Platform.environment.containsKey('FLUTTER_TEST') || bool.hasEnvironment('FLUTTER_TEST'));
+    final isTest =
+        !kIsWeb &&
+        (Platform.environment.containsKey('FLUTTER_TEST') ||
+            bool.hasEnvironment('FLUTTER_TEST'));
     if (isTest) {
       return Container(
         width: width,
@@ -165,11 +176,7 @@ class AppCachedImage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: const [
-            Icon(
-              Icons.palette_outlined,
-              color: Color(0xFF94A3B8),
-              size: 30,
-            ),
+            Icon(Icons.palette_outlined, color: Color(0xFF94A3B8), size: 30),
             SizedBox(height: 4),
             Text(
               'Artist Dubai',

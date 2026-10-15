@@ -35,21 +35,53 @@ class PublishingPricingModel {
   String localizedItemName([BuildContext? context]) => itemName.trData(context);
 
   factory PublishingPricingModel.fromJson(Map<String, dynamic> json) {
-    final type = (json['item_type'] ?? json['type'] ?? 'event').toString().toLowerCase().trim();
+    final type =
+        (json['item_type'] ?? json['type'] ?? 'event')
+            .toString()
+            .toLowerCase()
+            .trim();
     final defaultSixMonth = type == 'gallery' ? 'AED 3,800' : 'AED 2,500';
     final defaultSixMonthBadge = type == 'gallery' ? 'Save 15%' : 'Save 17%';
     return PublishingPricingModel(
       id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
       itemType: type,
-      itemName: (json['item_name'] ?? json['name'] ?? 'Publishing Plan').toString(),
-      weeklyPrice: (json['weekly_price'] ?? json['weekly'] ?? (type == 'gallery' ? 'AED 200' : 'AED 150')).toString(),
-      monthlyPrice: (json['monthly_price'] ?? json['monthly'] ?? (type == 'gallery' ? 'AED 750' : 'AED 500')).toString(),
-      sixMonthPrice: (json['six_month_price'] ?? json['six_month'] ?? json['sixMonthPrice'] ?? defaultSixMonth).toString(),
-      yearlyPrice: (json['yearly_price'] ?? json['yearly'] ?? (type == 'gallery' ? 'AED 6,500' : 'AED 4,500')).toString(),
-      sixMonthBadge: (json['six_month_badge'] ?? json['sixMonthBadge'] ?? defaultSixMonthBadge).toString(),
-      yearlyBadge: (json['yearly_badge'] ?? json['yearlyBadge'] ?? 'Best Value').toString(),
+      itemName:
+          (json['item_name'] ?? json['name'] ?? 'Publishing Plan').toString(),
+      weeklyPrice:
+          (json['weekly_price'] ??
+                  json['weekly'] ??
+                  (type == 'gallery' ? 'AED 200' : 'AED 150'))
+              .toString(),
+      monthlyPrice:
+          (json['monthly_price'] ??
+                  json['monthly'] ??
+                  (type == 'gallery' ? 'AED 750' : 'AED 500'))
+              .toString(),
+      sixMonthPrice:
+          (json['six_month_price'] ??
+                  json['six_month'] ??
+                  json['sixMonthPrice'] ??
+                  defaultSixMonth)
+              .toString(),
+      yearlyPrice:
+          (json['yearly_price'] ??
+                  json['yearly'] ??
+                  (type == 'gallery' ? 'AED 6,500' : 'AED 4,500'))
+              .toString(),
+      sixMonthBadge:
+          (json['six_month_badge'] ??
+                  json['sixMonthBadge'] ??
+                  defaultSixMonthBadge)
+              .toString(),
+      yearlyBadge:
+          (json['yearly_badge'] ?? json['yearlyBadge'] ?? 'Best Value')
+              .toString(),
       currency: (json['currency'] ?? 'AED').toString(),
-      isActive: json['is_active'] == null || json['is_active'] == 1 || json['is_active'] == '1' || json['is_active'] == true,
+      isActive:
+          json['is_active'] == null ||
+          json['is_active'] == 1 ||
+          json['is_active'] == '1' ||
+          json['is_active'] == true,
       description: json['description']?.toString(),
       updatedAt: json['updated_at']?.toString(),
     );

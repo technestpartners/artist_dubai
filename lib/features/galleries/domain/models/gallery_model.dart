@@ -56,14 +56,16 @@ class GalleryModel {
   String localizedName([BuildContext? context]) => name.trData(context);
   String localizedCategory([BuildContext? context]) => category.trData(context);
   String localizedLocation([BuildContext? context]) => location.trData(context);
-  String localizedDescription([BuildContext? context]) => description.trData(context);
+  String localizedDescription([BuildContext? context]) =>
+      description.trData(context);
   String localizedAbout([BuildContext? context]) => about.trData(context);
 
   factory GalleryModel.fromJson(Map<String, dynamic> json) {
     List<String> parsedImages = [];
     if (json['images'] is List) {
       parsedImages = (json['images'] as List).map((e) => e.toString()).toList();
-    } else if (json['images_json'] is String && (json['images_json'] as String).isNotEmpty) {
+    } else if (json['images_json'] is String &&
+        (json['images_json'] as String).isNotEmpty) {
       try {
         final decoded = (json['images_json'] as String);
         if (decoded.startsWith('[')) {
@@ -75,18 +77,27 @@ class GalleryModel {
     }
 
     final idVal = int.tryParse(json['id']?.toString() ?? '0') ?? 0;
-    final photoCountVal = int.tryParse(json['photo_count']?.toString() ?? '1') ?? 
+    final photoCountVal =
+        int.tryParse(json['photo_count']?.toString() ?? '1') ??
         (parsedImages.isNotEmpty ? parsedImages.length : 1);
 
     return GalleryModel(
       id: idVal,
       name: json['name']?.toString() ?? json['title']?.toString() ?? '',
-      category: json['category']?.toString() ?? json['type']?.toString() ?? 'Art Gallery',
-      location: json['location']?.toString() ?? json['address']?.toString() ?? 'Dubai, UAE',
-      description: json['description']?.toString() ?? json['subtitle']?.toString() ?? '',
+      category:
+          json['category']?.toString() ??
+          json['type']?.toString() ??
+          'Art Gallery',
+      location:
+          json['location']?.toString() ??
+          json['address']?.toString() ??
+          'Dubai, UAE',
+      description:
+          json['description']?.toString() ?? json['subtitle']?.toString() ?? '',
       timing: json['timing']?.toString() ?? '',
       website: json['website']?.toString() ?? '',
-      imageUrl: json['image_url']?.toString() ?? json['image']?.toString() ?? '',
+      imageUrl:
+          json['image_url']?.toString() ?? json['image']?.toString() ?? '',
       contactPerson: json['contact_person']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
       phone: json['phone']?.toString() ?? '',
@@ -98,8 +109,14 @@ class GalleryModel {
       photoCount: photoCountVal,
       images: parsedImages,
       status: json['status']?.toString() ?? 'approved',
-      isPublic: json['is_public'] == 1 || json['is_public'] == true || json['is_public'] == '1',
-      isApproved: json['is_approved'] == 1 || json['is_approved'] == true || json['is_approved'] == '1',
+      isPublic:
+          json['is_public'] == 1 ||
+          json['is_public'] == true ||
+          json['is_public'] == '1',
+      isApproved:
+          json['is_approved'] == 1 ||
+          json['is_approved'] == true ||
+          json['is_approved'] == '1',
       createdAt: json['created_at']?.toString(),
     );
   }

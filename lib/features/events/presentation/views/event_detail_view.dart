@@ -35,7 +35,8 @@ class _EventDetailViewState extends State<EventDetailView> {
   static const Color _primaryPurple = Color(0xFF6B1C9B);
   static const Color _darkBg = Color(0xFF6B1C9B);
 
-  String? get effectiveId => widget.eventId ?? widget.event?.id ?? _fetchedEvent?.id;
+  String? get effectiveId =>
+      widget.eventId ?? widget.event?.id ?? _fetchedEvent?.id;
 
   ArtEventModel? get event {
     if (_fetchedEvent != null) return _fetchedEvent!;
@@ -98,7 +99,9 @@ class _EventDetailViewState extends State<EventDetailView> {
   Future<void> _checkInitialFavorite() async {
     try {
       final effectiveEmail = sl<FavoritesService>().getEffectiveEmail();
-      final favData = await sl<ApiService>().getFavorites(email: effectiveEmail);
+      final favData = await sl<ApiService>().getFavorites(
+        email: effectiveEmail,
+      );
       sl<FavoritesService>().updateFromServer(favData);
       if (mounted) {
         setState(() {
@@ -114,7 +117,10 @@ class _EventDetailViewState extends State<EventDetailView> {
     if (id == null || id.isEmpty) return;
 
     try {
-      final res = await sl<ApiService>().getEventDetails(id, forceRefresh: true);
+      final res = await sl<ApiService>().getEventDetails(
+        id,
+        forceRefresh: true,
+      );
       if (mounted) {
         setState(() {
           _fetchedEvent = res;
@@ -183,7 +189,9 @@ class _EventDetailViewState extends State<EventDetailView> {
 
   Future<void> _openMapDirections(String locationQuery) async {
     final encoded = Uri.encodeComponent(locationQuery);
-    await ShareHelper.openUrl('https://www.google.com/maps/search/?api=1&query=$encoded');
+    await ShareHelper.openUrl(
+      'https://www.google.com/maps/search/?api=1&query=$encoded',
+    );
   }
 
   @override
@@ -211,160 +219,178 @@ class _EventDetailViewState extends State<EventDetailView> {
     }
     final rh = ResponsiveHelper.of(context);
     final isLiked = _likedEventIds.contains(ev.id);
-    final similarEvents = (sl<ApiService>().cachedEvents ?? []).where((e) => e.id != ev.id).toList();
+    final similarEvents =
+        (sl<ApiService>().cachedEvents ?? [])
+            .where((e) => e.id != ev.id)
+            .toList();
 
     return Scaffold(
       backgroundColor: _darkBg,
       appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(rh.horizontalPadding, 6, rh.horizontalPadding, 24),
+          padding: EdgeInsets.fromLTRB(
+            rh.horizontalPadding,
+            6,
+            rh.horizontalPadding,
+            24,
+          ),
           child: Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-              // 1. Sub-Header: Back button, Title, Actions (Heart, Calendar, Share)
-              _buildSubHeader(isLiked, ev),
-              const SizedBox(height: 12),
+                  // 1. Sub-Header: Back button, Title, Actions (Heart, Calendar, Share)
+                  _buildSubHeader(isLiked, ev),
+                  const SizedBox(height: 12),
 
-              // 2. Hero Banner Image (Reference Screenshot 4)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: SizedBox(
-                  height: 240,
-                  width: double.infinity,
-                  child: ev.imageUrl != null && ev.imageUrl!.isNotEmpty
-                      ? AppCachedImage(imageUrl: ev.imageUrl!, fit: BoxFit.cover)
-                      : Container(
-                          color: const Color(0xFFE2E8F0),
-                          child: const Icon(Icons.event, size: 64, color: Colors.grey),
-                        ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // 3. Event Details Card (White Container)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.12),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title
-                    Text(
-                      ev.localizedTitle(context),
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF1E1E1E),
-                        height: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Date & Time (Purple text)
-                    Text(
-                      ev.displaySchedule.trData(context),
-                      style: const TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w800,
-                        color: _primaryPurple,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Expandable Description with "Read More"
-                    _buildExpandableDescription(ev.localizedDescription(context)),
-                    const SizedBox(height: 16),
-                    const Divider(height: 1, color: Color(0xFFE2E8F0)),
-                    const SizedBox(height: 16),
-
-                    // Location Row with pin
-                    GestureDetector(
-                      onTap: () => _openMapDirections(ev.location),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(
-                            Icons.location_on,
-                            color: _primaryPurple,
-                            size: 22,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              (ev.location.isNotEmpty
-                                      ? ev.location
-                                      : 'Hatta Wadi Hub, located off the Dubai-Hatta road, Dubai')
-                                  .trData(context),
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF334155),
-                                height: 1.35,
+                  // 2. Hero Banner Image (Reference Screenshot 4)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: SizedBox(
+                      height: 240,
+                      width: double.infinity,
+                      child:
+                          ev.imageUrl != null && ev.imageUrl!.isNotEmpty
+                              ? AppCachedImage(
+                                imageUrl: ev.imageUrl!,
+                                fit: BoxFit.cover,
+                              )
+                              : Container(
+                                color: const Color(0xFFE2E8F0),
+                                child: const Icon(
+                                  Icons.event,
+                                  size: 64,
+                                  color: Colors.grey,
+                                ),
                               ),
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
-                    const SizedBox(height: 16),
+                  ),
+                  const SizedBox(height: 16),
 
-                    // Map Preview Card (Reference Screenshot 4 & 5)
-                    _buildMapPreviewWidget(ev),
-                    const SizedBox(height: 20),
+                  // 3. Event Details Card (White Container)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.12),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Title
+                        Text(
+                          ev.localizedTitle(context),
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF1E1E1E),
+                            height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
 
-                    // 4. Ticket Booking & RSVP Action Card
-                    _buildBookTicketSection(ev),
-                  ],
-                ),
+                        // Date & Time (Purple text)
+                        Text(
+                          ev.displaySchedule.trData(context),
+                          style: const TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w800,
+                            color: _primaryPurple,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Expandable Description with "Read More"
+                        _buildExpandableDescription(
+                          ev.localizedDescription(context),
+                        ),
+                        const SizedBox(height: 16),
+                        const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                        const SizedBox(height: 16),
+
+                        // Location Row with pin
+                        GestureDetector(
+                          onTap: () => _openMapDirections(ev.location),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(
+                                Icons.location_on,
+                                color: _primaryPurple,
+                                size: 22,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  (ev.location.isNotEmpty
+                                          ? ev.location
+                                          : 'Hatta Wadi Hub, located off the Dubai-Hatta road, Dubai')
+                                      .trData(context),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xFF334155),
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Map Preview Card (Reference Screenshot 4 & 5)
+                        _buildMapPreviewWidget(ev),
+                        const SizedBox(height: 20),
+
+                        // 4. Ticket Booking & RSVP Action Card
+                        _buildBookTicketSection(ev),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // 4. "Similar Events You Might Like" Section
+                  Text(
+                    'Similar Events You Might Like'.trData(context),
+                    style: const TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Horizontal list of similar events
+                  SizedBox(
+                    height: 290,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: similarEvents.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 14),
+                      itemBuilder: (context, index) {
+                        return _buildSimilarEventCard(similarEvents[index]);
+                      },
+                    ),
+                  ),
+                ],
               ),
-
-              const SizedBox(height: 24),
-
-              // 4. "Similar Events You Might Like" Section
-              Text(
-                'Similar Events You Might Like'.trData(context),
-                style: const TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 14),
-
-              // Horizontal list of similar events
-              SizedBox(
-                height: 290,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: similarEvents.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 14),
-                  itemBuilder: (context, index) {
-                    return _buildSimilarEventCard(similarEvents[index]);
-                  },
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
-    ),
-  ),
-);
+    );
   }
 
   // Sub-header with back button and top action icons (Reference Screenshot 4)
@@ -436,15 +462,17 @@ class _EventDetailViewState extends State<EventDetailView> {
   }
 
   Widget _buildExpandableDescription(String rawText) {
-    final text = rawText.isNotEmpty
-        ? rawText
-        : "Get ready to push your limits at Ultra Trail Dubai (UTD), one of the region's most exciting and inclusive ultra trail events. Held from 27-29 November in the rugged wilderness of Hatta, runners will experience breathtaking mountain trails, steep climbs, and picturesque valley vistas. Whether you are a beginner or a seasoned endurance athlete, there are distances suited for everyone.";
+    final text =
+        rawText.isNotEmpty
+            ? rawText
+            : "Get ready to push your limits at Ultra Trail Dubai (UTD), one of the region's most exciting and inclusive ultra trail events. Held from 27-29 November in the rugged wilderness of Hatta, runners will experience breathtaking mountain trails, steep climbs, and picturesque valley vistas. Whether you are a beginner or a seasoned endurance athlete, there are distances suited for everyone.";
 
     const int maxCollapsedChars = 170;
     final isLong = text.length > maxCollapsedChars;
-    final displayText = (!_isDescriptionExpanded && isLong)
-        ? '${text.substring(0, maxCollapsedChars)}...'
-        : text;
+    final displayText =
+        (!_isDescriptionExpanded && isLong)
+            ? '${text.substring(0, maxCollapsedChars)}...'
+            : text;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -463,7 +491,11 @@ class _EventDetailViewState extends State<EventDetailView> {
                 WidgetSpan(
                   alignment: PlaceholderAlignment.middle,
                   child: GestureDetector(
-                    onTap: () => setState(() => _isDescriptionExpanded = !_isDescriptionExpanded),
+                    onTap:
+                        () => setState(
+                          () =>
+                              _isDescriptionExpanded = !_isDescriptionExpanded,
+                        ),
                     child: Text(
                       _isDescriptionExpanded
                           ? 'Read Less'.trData(context)
@@ -520,11 +552,7 @@ class _EventDetailViewState extends State<EventDetailView> {
           child: Stack(
             children: [
               // 1. Realistic Vector Map Canvas
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: _MapCanvasPainter(),
-                ),
-              ),
+              Positioned.fill(child: CustomPaint(painter: _MapCanvasPainter())),
 
               // 2. Interactive Center Pin with Floating Venue Callout
               Center(
@@ -533,11 +561,17 @@ class _EventDetailViewState extends State<EventDetailView> {
                   children: [
                     // Floating Venue Badge Callout
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+                        border: Border.all(
+                          color: const Color(0xFFE2E8F0),
+                          width: 1,
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.16),
@@ -634,7 +668,10 @@ class _EventDetailViewState extends State<EventDetailView> {
                   children: [
                     // Google Logo Watermark
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(6),
@@ -657,7 +694,10 @@ class _EventDetailViewState extends State<EventDetailView> {
                         fit: BoxFit.scaleDown,
                         alignment: AlignmentDirectional.centerEnd,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 5,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(20),
@@ -672,7 +712,11 @@ class _EventDetailViewState extends State<EventDetailView> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.directions, size: 13, color: _primaryPurple),
+                              const Icon(
+                                Icons.directions,
+                                size: 13,
+                                color: _primaryPurple,
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 'Open Directions'.trData(context),
@@ -698,9 +742,10 @@ class _EventDetailViewState extends State<EventDetailView> {
   }
 
   Widget _buildBookTicketSection(ArtEventModel ev) {
-    final priceLabel = (ev.price.isNotEmpty && ev.price.toLowerCase() != 'free')
-        ? ev.price
-        : 'Complimentary Entry';
+    final priceLabel =
+        (ev.price.isNotEmpty && ev.price.toLowerCase() != 'free')
+            ? ev.price
+            : 'Complimentary Entry';
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -724,7 +769,11 @@ class _EventDetailViewState extends State<EventDetailView> {
                         color: _primaryPurple.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.confirmation_number_outlined, color: _primaryPurple, size: 22),
+                      child: const Icon(
+                        Icons.confirmation_number_outlined,
+                        color: _primaryPurple,
+                        size: 22,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Flexible(
@@ -758,7 +807,10 @@ class _EventDetailViewState extends State<EventDetailView> {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFDEF7EC),
                   borderRadius: BorderRadius.circular(8),
@@ -819,227 +871,302 @@ class _EventDetailViewState extends State<EventDetailView> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) => StatefulBuilder(
-        builder: (ctx, setSheetState) => Container(
-          padding: EdgeInsets.fromLTRB(
-            20,
-            20,
-            20,
-            MediaQuery.of(ctx).viewInsets.bottom + 20,
-          ),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
+      builder:
+          (sheetContext) => StatefulBuilder(
+            builder:
+                (ctx, setSheetState) => Container(
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    20,
+                    20,
+                    MediaQuery.of(ctx).viewInsets.bottom + 20,
+                  ),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(24),
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Reserve Entry Ticket'.trData(context),
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF1E1E1E),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  ev.localizedTitle(context),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: _primaryPurple,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Ticket Quantity Row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Number of Tickets:'.trData(context),
-                      style: const TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1E1E1E),
-                      ),
-                    ),
-                    Row(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.remove_circle_outline, color: _primaryPurple),
-                          onPressed: ticketCount > 1
-                              ? () => setSheetState(() => ticketCount--)
-                              : null,
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
                         ),
+                        const SizedBox(height: 16),
                         Text(
-                          '$ticketCount',
-                          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                          'Reserve Entry Ticket'.trData(context),
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF1E1E1E),
+                          ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.add_circle_outline, color: _primaryPurple),
-                          onPressed: ticketCount < 10
-                              ? () => setSheetState(() => ticketCount++)
-                              : null,
+                        const SizedBox(height: 4),
+                        Text(
+                          ev.localizedTitle(context),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: _primaryPurple,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        // Ticket Quantity Row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Number of Tickets:'.trData(context),
+                              style: const TextStyle(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF1E1E1E),
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.remove_circle_outline,
+                                    color: _primaryPurple,
+                                  ),
+                                  onPressed:
+                                      ticketCount > 1
+                                          ? () =>
+                                              setSheetState(() => ticketCount--)
+                                          : null,
+                                ),
+                                Text(
+                                  '$ticketCount',
+                                  style: const TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.add_circle_outline,
+                                    color: _primaryPurple,
+                                  ),
+                                  onPressed:
+                                      ticketCount < 10
+                                          ? () =>
+                                              setSheetState(() => ticketCount++)
+                                          : null,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: nameController,
+                          decoration: InputDecoration(
+                            labelText: 'Full Name'.trData(context),
+                            prefixIcon: const Icon(
+                              Icons.person_outline,
+                              size: 20,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: InputDecoration(
+                            labelText: 'Email Address'.trData(context),
+                            prefixIcon: const Icon(
+                              Icons.email_outlined,
+                              size: 20,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: phoneController,
+                          keyboardType: TextInputType.phone,
+                          decoration: InputDecoration(
+                            labelText: 'Mobile Phone (Optional)'.trData(
+                              context,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.phone_outlined,
+                              size: 20,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _primaryPurple,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed:
+                                isSubmitting
+                                    ? null
+                                    : () async {
+                                      final name = nameController.text.trim();
+                                      final email = emailController.text.trim();
+                                      if (name.isEmpty || email.isEmpty) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Please enter your name and email.'
+                                                  .trData(context),
+                                            ),
+                                            backgroundColor: const Color(
+                                              0xFFEF4444,
+                                            ),
+                                          ),
+                                        );
+                                        return;
+                                      }
+                                      setSheetState(() => isSubmitting = true);
+                                      final success = await sl<ApiService>()
+                                          .createBooking({
+                                            'name': name,
+                                            'full_name': name,
+                                            'email': email,
+                                            'phone':
+                                                phoneController.text.trim(),
+                                            'event_id': ev.id,
+                                            'event_title': ev.title,
+                                            'event_date': ev.displaySchedule,
+                                            'location': ev.location,
+                                            'booking_type': 'Event Ticket',
+                                            'tickets_count': ticketCount,
+                                            'total_price':
+                                                ev.price.isNotEmpty
+                                                    ? ev.price
+                                                    : 'Free',
+                                            'status': 'Confirmed',
+                                          });
+                                      setSheetState(() => isSubmitting = false);
+                                      if (sheetContext.mounted) {
+                                        Navigator.pop(sheetContext);
+                                      }
+                                      if (mounted) {
+                                        if (success) {
+                                          _showBookingSuccessDialog(
+                                            ev,
+                                            ticketCount,
+                                          );
+                                        } else {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Could not confirm reservation. Please try again.'
+                                                    .trData(context),
+                                              ),
+                                              backgroundColor: const Color(
+                                                0xFFEF4444,
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                            child:
+                                isSubmitting
+                                    ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2.5,
+                                      ),
+                                    )
+                                    : Text(
+                                      'Confirm Reservation ($ticketCount ${ticketCount == 1 ? "Ticket" : "Tickets"})'
+                                          .trData(context),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                          ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: nameController,
-                  decoration: InputDecoration(
-                    labelText: 'Full Name'.trData(context),
-                    prefixIcon: const Icon(Icons.person_outline, size: 20),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    labelText: 'Email Address'.trData(context),
-                    prefixIcon: const Icon(Icons.email_outlined, size: 20),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: phoneController,
-                  keyboardType: TextInputType.phone,
-                  decoration: InputDecoration(
-                    labelText: 'Mobile Phone (Optional)'.trData(context),
-                    prefixIcon: const Icon(Icons.phone_outlined, size: 20),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _primaryPurple,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: isSubmitting
-                        ? null
-                        : () async {
-                            final name = nameController.text.trim();
-                            final email = emailController.text.trim();
-                            if (name.isEmpty || email.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Please enter your name and email.'.trData(context)),
-                                  backgroundColor: const Color(0xFFEF4444),
-                                ),
-                              );
-                              return;
-                            }
-                            setSheetState(() => isSubmitting = true);
-                            final success = await sl<ApiService>().createBooking({
-                              'name': name,
-                              'full_name': name,
-                              'email': email,
-                              'phone': phoneController.text.trim(),
-                              'event_id': ev.id,
-                              'event_title': ev.title,
-                              'event_date': ev.displaySchedule,
-                              'location': ev.location,
-                              'booking_type': 'Event Ticket',
-                              'tickets_count': ticketCount,
-                              'total_price': ev.price.isNotEmpty ? ev.price : 'Free',
-                              'status': 'Confirmed',
-                            });
-                            setSheetState(() => isSubmitting = false);
-                            if (sheetContext.mounted) {
-                              Navigator.pop(sheetContext);
-                            }
-                            if (mounted) {
-                              if (success) {
-                                _showBookingSuccessDialog(ev, ticketCount);
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Could not confirm reservation. Please try again.'.trData(context)),
-                                    backgroundColor: const Color(0xFFEF4444),
-                                  ),
-                                );
-                              }
-                            }
-                          },
-                    child: isSubmitting
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-                          )
-                        : Text(
-                            'Confirm Reservation ($ticketCount ${ticketCount == 1 ? "Ticket" : "Tickets"})'.trData(context),
-                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                          ),
-                  ),
-                ),
-              ],
-            ),
           ),
-        ),
-      ),
     );
   }
 
   void _showBookingSuccessDialog(ArtEventModel ev, int tickets) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Row(
-          children: [
-            const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 26),
-            const SizedBox(width: 8),
-            Flexible(child: Text('Booking Confirmed!'.trData(context))),
-          ],
-        ),
-        content: Text(
-          'Your entry pass for ${ev.localizedTitle(context)} ($tickets ticket${tickets > 1 ? "s" : ""}) has been reserved successfully.'.trData(context),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Done'.trData(context)),
-          ),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _primaryPurple,
-              foregroundColor: Colors.white,
+      builder:
+          (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
             ),
-            icon: const Icon(Icons.confirmation_number, size: 16),
-            label: Text('View My Passes'.trData(context)),
-            onPressed: () {
-              Navigator.pop(ctx);
-              context.push(RouteNames.bookings);
-            },
+            title: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle,
+                  color: Color(0xFF10B981),
+                  size: 26,
+                ),
+                const SizedBox(width: 8),
+                Flexible(child: Text('Booking Confirmed!'.trData(context))),
+              ],
+            ),
+            content: Text(
+              'Your entry pass for ${ev.localizedTitle(context)} ($tickets ticket${tickets > 1 ? "s" : ""}) has been reserved successfully.'
+                  .trData(context),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('Done'.trData(context)),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primaryPurple,
+                  foregroundColor: Colors.white,
+                ),
+                icon: const Icon(Icons.confirmation_number, size: 16),
+                label: Text('View My Passes'.trData(context)),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  context.push(RouteNames.bookings);
+                },
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -1047,7 +1174,9 @@ class _EventDetailViewState extends State<EventDetailView> {
     final isLiked = _likedEventIds.contains(item.id);
 
     return GestureDetector(
-      onTap: () => context.push(RouteNames.eventDetailWithId(item.id), extra: item),
+      onTap:
+          () =>
+              context.push(RouteNames.eventDetailWithId(item.id), extra: item),
       child: Container(
         width: 245,
         padding: const EdgeInsets.all(12),
@@ -1072,14 +1201,22 @@ class _EventDetailViewState extends State<EventDetailView> {
                   child: SizedBox(
                     height: 145,
                     width: double.infinity,
-                    child: item.imageUrl != null && item.imageUrl!.isNotEmpty
-                        ? AppCachedImage(imageUrl: item.imageUrl!, fit: BoxFit.cover)
-                        : Container(
-                            color: const Color(0xFFF1F5F9),
-                            child: const Center(
-                              child: Icon(Icons.palette_outlined, size: 42, color: Color(0xFF94A3B8)),
+                    child:
+                        item.imageUrl != null && item.imageUrl!.isNotEmpty
+                            ? AppCachedImage(
+                              imageUrl: item.imageUrl!,
+                              fit: BoxFit.cover,
+                            )
+                            : Container(
+                              color: const Color(0xFFF1F5F9),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.palette_outlined,
+                                  size: 42,
+                                  color: Color(0xFF94A3B8),
+                                ),
+                              ),
                             ),
-                          ),
                   ),
                 ),
                 // Category Chip on Top Start
@@ -1088,7 +1225,10 @@ class _EventDetailViewState extends State<EventDetailView> {
                     top: 8,
                     start: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.65),
                         borderRadius: BorderRadius.circular(8),
@@ -1213,32 +1353,57 @@ class _MapCanvasPainter extends CustomPainter {
 
     // 2. Green Park Area (natural curved park)
     final parkPaint = Paint()..color = const Color(0xFFD8F1D8);
-    final parkPath = Path()
-      ..moveTo(size.width * 0.72, size.height)
-      ..cubicTo(size.width * 0.74, size.height * 0.7, size.width * 0.85, size.height * 0.65, size.width, size.height * 0.62)
-      ..lineTo(size.width, size.height)
-      ..close();
+    final parkPath =
+        Path()
+          ..moveTo(size.width * 0.72, size.height)
+          ..cubicTo(
+            size.width * 0.74,
+            size.height * 0.7,
+            size.width * 0.85,
+            size.height * 0.65,
+            size.width,
+            size.height * 0.62,
+          )
+          ..lineTo(size.width, size.height)
+          ..close();
     canvas.drawPath(parkPath, parkPaint);
 
     // 3. Water Body / Canal (soft Google Maps blue)
     final waterPaint = Paint()..color = const Color(0xFFC7E4F0);
-    final waterPath = Path()
-      ..moveTo(0, size.height * 0.35)
-      ..cubicTo(size.width * 0.25, size.height * 0.32, size.width * 0.45, size.height * 0.2, size.width * 0.7, size.height * 0.12)
-      ..cubicTo(size.width * 0.85, size.height * 0.08, size.width * 0.95, size.height * 0.04, size.width, 0)
-      ..lineTo(0, 0)
-      ..close();
+    final waterPath =
+        Path()
+          ..moveTo(0, size.height * 0.35)
+          ..cubicTo(
+            size.width * 0.25,
+            size.height * 0.32,
+            size.width * 0.45,
+            size.height * 0.2,
+            size.width * 0.7,
+            size.height * 0.12,
+          )
+          ..cubicTo(
+            size.width * 0.85,
+            size.height * 0.08,
+            size.width * 0.95,
+            size.height * 0.04,
+            size.width,
+            0,
+          )
+          ..lineTo(0, 0)
+          ..close();
     canvas.drawPath(waterPath, waterPaint);
 
     // 4. Urban Minor Streets Grid (White with subtle borders)
-    final minorBorderPaint = Paint()
-      ..color = const Color(0xFFE8E5DF)
-      ..strokeWidth = 3.5
-      ..style = PaintingStyle.stroke;
-    final minorRoadPaint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 2.2
-      ..style = PaintingStyle.stroke;
+    final minorBorderPaint =
+        Paint()
+          ..color = const Color(0xFFE8E5DF)
+          ..strokeWidth = 3.5
+          ..style = PaintingStyle.stroke;
+    final minorRoadPaint =
+        Paint()
+          ..color = Colors.white
+          ..strokeWidth = 2.2
+          ..style = PaintingStyle.stroke;
 
     final gridPath = Path();
     // Horizontal streets
@@ -1262,38 +1427,58 @@ class _MapCanvasPainter extends CustomPainter {
     canvas.drawPath(gridPath, minorRoadPaint);
 
     // 5. Major Arterial Highway (Yellow/Gold with amber borders)
-    final highwayBorderPaint = Paint()
-      ..color = const Color(0xFFE5CE82)
-      ..strokeWidth = 7.5
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-    final highwayPaint = Paint()
-      ..color = const Color(0xFFFDE896)
-      ..strokeWidth = 5.5
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
+    final highwayBorderPaint =
+        Paint()
+          ..color = const Color(0xFFE5CE82)
+          ..strokeWidth = 7.5
+          ..strokeCap = StrokeCap.round
+          ..style = PaintingStyle.stroke;
+    final highwayPaint =
+        Paint()
+          ..color = const Color(0xFFFDE896)
+          ..strokeWidth = 5.5
+          ..strokeCap = StrokeCap.round
+          ..style = PaintingStyle.stroke;
 
-    final highwayPath = Path()
-      ..moveTo(0, size.height * 0.78)
-      ..cubicTo(size.width * 0.3, size.height * 0.75, size.width * 0.52, size.height * 0.55, size.width * 0.75, size.height * 0.38)
-      ..lineTo(size.width, size.height * 0.24);
+    final highwayPath =
+        Path()
+          ..moveTo(0, size.height * 0.78)
+          ..cubicTo(
+            size.width * 0.3,
+            size.height * 0.75,
+            size.width * 0.52,
+            size.height * 0.55,
+            size.width * 0.75,
+            size.height * 0.38,
+          )
+          ..lineTo(size.width, size.height * 0.24);
 
     canvas.drawPath(highwayPath, highwayBorderPaint);
     canvas.drawPath(highwayPath, highwayPaint);
 
     // 6. Secondary Branch Avenue
-    final secondaryBorder = Paint()
-      ..color = const Color(0xFFDEDBD4)
-      ..strokeWidth = 6.0
-      ..style = PaintingStyle.stroke;
-    final secondaryRoad = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 4.2
-      ..style = PaintingStyle.stroke;
+    final secondaryBorder =
+        Paint()
+          ..color = const Color(0xFFDEDBD4)
+          ..strokeWidth = 6.0
+          ..style = PaintingStyle.stroke;
+    final secondaryRoad =
+        Paint()
+          ..color = Colors.white
+          ..strokeWidth = 4.2
+          ..style = PaintingStyle.stroke;
 
-    final branchPath = Path()
-      ..moveTo(size.width * 0.46, size.height * 0.6)
-      ..cubicTo(size.width * 0.52, size.height * 0.75, size.width * 0.58, size.height * 0.88, size.width * 0.68, size.height);
+    final branchPath =
+        Path()
+          ..moveTo(size.width * 0.46, size.height * 0.6)
+          ..cubicTo(
+            size.width * 0.52,
+            size.height * 0.75,
+            size.width * 0.58,
+            size.height * 0.88,
+            size.width * 0.68,
+            size.height,
+          );
 
     canvas.drawPath(branchPath, secondaryBorder);
     canvas.drawPath(branchPath, secondaryRoad);

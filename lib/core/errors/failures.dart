@@ -6,6 +6,37 @@ abstract class Failure extends Equatable {
 
   const Failure({required this.message, this.statusCode});
 
+  /// Factory helper that maps domain and system exceptions to typed Failures.
+  factory Failure.fromException(Object error) {
+    if (error is Failure) return error;
+    final typeName = error.runtimeType.toString();
+    final errStr = error.toString();
+    if (typeName == 'NetworkException' ||
+        errStr.contains('NetworkException') ||
+        errStr.contains('SocketException') ||
+        errStr.contains('TimeoutException') ||
+        errStr.contains('No internet connection')) {
+      return NetworkFailure(message: errStr.replaceFirst('Exception: ', ''));
+    }
+    if (typeName == 'UnauthorizedException' ||
+        errStr.contains('UnauthorizedException') ||
+        errStr.contains('401') ||
+        errStr.contains('403')) {
+      return UnauthorizedFailure(
+        message: errStr.replaceFirst('Exception: ', ''),
+      );
+    }
+    if (typeName == 'ValidationException' ||
+        errStr.contains('ValidationException') ||
+        errStr.contains('422')) {
+      return ValidationFailure(message: errStr.replaceFirst('Exception: ', ''));
+    }
+    if (typeName == 'CacheException' || errStr.contains('CacheException')) {
+      return CacheFailure(message: errStr.replaceFirst('Exception: ', ''));
+    }
+    return ServerFailure(message: errStr.replaceFirst('Exception: ', ''));
+  }
+
   @override
   List<Object?> get props => [message, statusCode];
 }

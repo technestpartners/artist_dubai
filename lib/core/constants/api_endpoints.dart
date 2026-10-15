@@ -1,18 +1,22 @@
+import '../config/app_config.dart';
+
 class ApiEndpoints {
   ApiEndpoints._();
 
-  // Live Hostinger Production URL (Must end with / so relative paths append correctly)
-  static const String liveProductionUrl = 'https://technestpartners.com/api/';
-  static const String localDevUrl = 'https://technestpartners.com/api/';
+  // Environment-driven Configuration (loaded via AppConfig)
+  static const String liveProductionUrl = AppConfig.liveProductionUrl;
+  static const String localDevUrl = AppConfig.localDevUrl;
 
-  // Always use live Hostinger API across the whole app
-  static const bool useLiveApi = true;
+  // Use live Hostinger API setting
+  static const bool useLiveApi = AppConfig.useLiveApi;
 
-  // Live Production Hostinger PHP MySQL API Server
-  static String get baseUrl => liveProductionUrl;
+  // Base API Server URL (Production Only)
+  static String get baseUrl => AppConfig.liveProductionUrl;
 
-  static const Duration connectionTimeout = Duration(seconds: 30);
-  static const Duration receiveTimeout = Duration(seconds: 45);
+  static Duration get connectionTimeout =>
+      Duration(seconds: AppConfig.connectionTimeoutSeconds);
+  static Duration get receiveTimeout =>
+      Duration(seconds: AppConfig.receiveTimeoutSeconds);
 
   // Auth (MySQL Backend)
   static const String login = 'api.php?resource=login';
@@ -60,7 +64,7 @@ class ApiEndpoints {
   static const String notifications = 'api.php?resource=notifications';
 
   // About Platform (MySQL Backend)
-  static const String aboutUs = 'api.php?resource=about';
+  static const String aboutUs = 'api.php?resource=about_us';
 
   // Publishing Pricing & Plans (MySQL Backend)
   static const String publishingPricing = 'api.php?resource=publishing_pricing';
@@ -83,7 +87,5 @@ class ApiEndpoints {
   static const String stripeGateway = 'api.php?resource=stripe';
   static const String stripePaymentIntent =
       'api.php?resource=stripe&action=create_payment_intent';
-  static const String stripeConfig =
-      'api.php?resource=stripe&action=config';
+  static const String stripeConfig = 'api.php?resource=stripe&action=config';
 }
-

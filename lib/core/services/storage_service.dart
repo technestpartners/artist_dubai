@@ -170,7 +170,8 @@ class StorageServiceImpl implements StorageService {
       final decoded = jsonDecode(raw) as Map<String, dynamic>;
       final result = Map<String, bool>.from(_defaultPermissionsMap);
       decoded.forEach((key, value) {
-        result[key] = value == true || value == 1 || value == '1' || value == 'true';
+        result[key] =
+            value == true || value == 1 || value == '1' || value == 'true';
       });
       return result;
     } catch (_) {
@@ -179,7 +180,10 @@ class StorageServiceImpl implements StorageService {
   }
 
   @override
-  Future<void> setMenuPermissionEnabled(String routeName, bool isEnabled) async {
+  Future<void> setMenuPermissionEnabled(
+    String routeName,
+    bool isEnabled,
+  ) async {
     final current = getAllMenuPermissions();
     final clean = routeName.split('?').first.trim();
     current[clean] = isEnabled;
@@ -196,4 +200,3 @@ class StorageServiceImpl implements StorageService {
     await prefs.setString(keyMenuPermissions, jsonEncode(permissions));
   }
 }
-

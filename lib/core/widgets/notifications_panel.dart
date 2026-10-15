@@ -17,18 +17,21 @@ void showNotificationsPanel(BuildContext context, GlobalKey bellKey) {
   // Position panel to align with bell, clamped inside screen
   double left = offset.dx - panelWidth + renderBox.size.width + 10;
   if (left < 10) left = 10;
-  if (left + panelWidth > screenWidth - 10) left = screenWidth - panelWidth - 10;
+  if (left + panelWidth > screenWidth - 10) {
+    left = screenWidth - panelWidth - 10;
+  }
   final top = offset.dy + renderBox.size.height + 6;
 
   showDialog(
     context: context,
     barrierColor: Colors.transparent,
     barrierDismissible: true,
-    builder: (ctx) => _NotificationsPanelDialog(
-      left: left,
-      top: top,
-      panelWidth: panelWidth,
-    ),
+    builder:
+        (ctx) => _NotificationsPanelDialog(
+          left: left,
+          top: top,
+          panelWidth: panelWidth,
+        ),
   );
 }
 
@@ -120,7 +123,9 @@ class _NotificationsPanelDialogState extends State<_NotificationsPanelDialog> {
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
-                                  isArabic ? '$unreadCount جديد' : '$unreadCount new',
+                                  isArabic
+                                      ? '$unreadCount جديد'
+                                      : '$unreadCount new',
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 10,
@@ -136,9 +141,12 @@ class _NotificationsPanelDialogState extends State<_NotificationsPanelDialog> {
                                   _notificationService.markAllAsRead();
                                 },
                                 style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
                                   minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
                                 ),
                                 child: Text(
                                   l10n.markAllAsRead,
@@ -185,18 +193,24 @@ class _NotificationsPanelDialogState extends State<_NotificationsPanelDialog> {
                             shrinkWrap: true,
                             padding: EdgeInsets.zero,
                             itemCount: items.length,
-                            separatorBuilder: (_, __) => const Divider(
-                              height: 1,
-                              color: Color(0xFFF1F5F9),
-                            ),
-                            itemBuilder: (_, index) => _buildItem(context, items[index], isArabic),
+                            separatorBuilder:
+                                (_, __) => const Divider(
+                                  height: 1,
+                                  color: Color(0xFFF1F5F9),
+                                ),
+                            itemBuilder:
+                                (_, index) =>
+                                    _buildItem(context, items[index], isArabic),
                           ),
                         ),
 
                       if (items.isNotEmpty) ...[
                         const Divider(height: 1, color: Color(0xFFE2E8F0)),
                         Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 4,
+                            horizontal: 12,
+                          ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -206,7 +220,10 @@ class _NotificationsPanelDialogState extends State<_NotificationsPanelDialog> {
                                   _notificationService.clearAll();
                                 },
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 8,
+                                  ),
                                   child: Text(
                                     l10n.clearAll,
                                     style: const TextStyle(
@@ -221,7 +238,10 @@ class _NotificationsPanelDialogState extends State<_NotificationsPanelDialog> {
                                 borderRadius: BorderRadius.circular(6),
                                 onTap: () => Navigator.pop(context),
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 8,
+                                  ),
                                   child: Text(
                                     l10n.close,
                                     style: const TextStyle(
@@ -247,7 +267,11 @@ class _NotificationsPanelDialogState extends State<_NotificationsPanelDialog> {
     );
   }
 
-  Widget _buildItem(BuildContext context, AppNotificationItem n, bool isArabic) {
+  Widget _buildItem(
+    BuildContext context,
+    AppNotificationItem n,
+    bool isArabic,
+  ) {
     return InkWell(
       onTap: () {
         _notificationService.markAsRead(n.id);
@@ -289,7 +313,8 @@ class _NotificationsPanelDialogState extends State<_NotificationsPanelDialog> {
                           _cleanText(n.title, isArabic),
                           style: TextStyle(
                             fontSize: 13,
-                            fontWeight: n.isRead ? FontWeight.w500 : FontWeight.w700,
+                            fontWeight:
+                                n.isRead ? FontWeight.w500 : FontWeight.w700,
                             color: const Color(0xFF1E1E1E),
                           ),
                         ),
@@ -331,7 +356,10 @@ class _NotificationsPanelDialogState extends State<_NotificationsPanelDialog> {
                     _cleanText(n.body, isArabic),
                     style: TextStyle(
                       fontSize: 12,
-                      color: n.isRead ? const Color(0xFF64748B) : const Color(0xFF475569),
+                      color:
+                          n.isRead
+                              ? const Color(0xFF64748B)
+                              : const Color(0xFF475569),
                       height: 1.35,
                     ),
                   ),
@@ -359,7 +387,10 @@ class _NotificationsPanelDialogState extends State<_NotificationsPanelDialog> {
       return 'الآن';
     }
 
-    final regex = RegExp(r'^(\d+)\s*(mo|[smhdwyo])(?:\s*ago)?$', caseSensitive: false);
+    final regex = RegExp(
+      r'^(\d+)\s*(mo|[smhdwyo])(?:\s*ago)?$',
+      caseSensitive: false,
+    );
     final match = regex.firstMatch(clean);
     if (match != null) {
       final count = int.tryParse(match.group(1)!) ?? 1;

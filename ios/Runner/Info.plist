@@ -85,9 +85,7 @@
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-		<key>NSAllowsArbitraryLoadsInWebContent</key>
-		<true/>
+		<false/>
 	</dict>
 
 	<!-- URL Launcher Schemes -->

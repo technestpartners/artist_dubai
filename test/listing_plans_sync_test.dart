@@ -69,37 +69,71 @@ class MockListingApiClient implements ApiClient {
   ];
 
   @override
-  Future<dynamic> get(String path, {Map<String, dynamic>? queryParameters, Options? options, CancelToken? cancelToken}) async {
+  Future<dynamic> get(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+  }) async {
     return {'status': 'success', 'data': plansDb};
   }
 
   @override
-  Future<dynamic> post(String path, {dynamic data, Map<String, dynamic>? queryParameters, Options? options, CancelToken? cancelToken}) async {
+  Future<dynamic> post(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+  }) async {
     if (data is Map && data['action'] == 'update') {
-      final index = plansDb.indexWhere((p) => p['id'] == data['id'] || p['item_type'] == data['item_type']);
+      final index = plansDb.indexWhere(
+        (p) => p['id'] == data['id'] || p['item_type'] == data['item_type'],
+      );
       if (index != -1) {
         plansDb[index] = {
           ...plansDb[index],
           ...Map<String, dynamic>.from(data),
         };
       }
-      return {'status': 'success', 'data': {'updated': true}};
+      return {
+        'status': 'success',
+        'data': {'updated': true},
+      };
     }
     return {'status': 'success'};
   }
 
   @override
-  Future<dynamic> put(String path, {dynamic data, Map<String, dynamic>? queryParameters, Options? options, CancelToken? cancelToken}) async {
+  Future<dynamic> put(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+  }) async {
     return {'status': 'success'};
   }
 
   @override
-  Future<dynamic> delete(String path, {dynamic data, Map<String, dynamic>? queryParameters, Options? options, CancelToken? cancelToken}) async {
+  Future<dynamic> delete(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+  }) async {
     return {'status': 'success'};
   }
 
   @override
-  Future<dynamic> patch(String path, {dynamic data, Map<String, dynamic>? queryParameters, Options? options, CancelToken? cancelToken}) async {
+  Future<dynamic> patch(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+  }) async {
     return {'status': 'success'};
   }
 }
@@ -110,7 +144,10 @@ void main() {
   setUp(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     HttpOverrides.global = _TestHttpOverrides();
-    SharedPreferences.setMockInitialValues({'is_logged_in': true, 'user_role': 'admin'});
+    SharedPreferences.setMockInitialValues({
+      'is_logged_in': true,
+      'user_role': 'admin',
+    });
     await sl.reset();
     await initDependencyInjection();
 
@@ -132,32 +169,37 @@ void main() {
     );
   }
 
-  test('ApiService getListingPlans and updateListingPlan connects and updates', () async {
-    final api = sl<ApiService>();
-    final plans = await api.getListingPlans(forceRefresh: true);
-    expect(plans.length, 3);
-    expect(plans[0].title, 'Event Listing');
-    expect(plans[0].price, '199 AED');
+  test(
+    'ApiService getListingPlans and updateListingPlan connects and updates',
+    () async {
+      final api = sl<ApiService>();
+      final plans = await api.getListingPlans(forceRefresh: true);
+      expect(plans.length, 3);
+      expect(plans[0].title, 'Event Listing');
+      expect(plans[0].price, '199 AED');
 
-    final updated = await api.updateListingPlan(
-      id: 1,
-      itemType: 'event',
-      title: 'Event Listing VIP',
-      category: 'Events',
-      badge: 'Popular',
-      price: '249 AED',
-      description: 'Updated description for VIP event.',
-      features: ['Feature 1', 'Feature 2'],
-    );
-    expect(updated, true);
+      final updated = await api.updateListingPlan(
+        id: 1,
+        itemType: 'event',
+        title: 'Event Listing VIP',
+        category: 'Events',
+        badge: 'Popular',
+        price: '249 AED',
+        description: 'Updated description for VIP event.',
+        features: ['Feature 1', 'Feature 2'],
+      );
+      expect(updated, true);
 
-    final refreshedPlans = await api.getListingPlans(forceRefresh: true);
-    expect(refreshedPlans[0].title, 'Event Listing VIP');
-    expect(refreshedPlans[0].price, '249 AED');
-    expect(refreshedPlans[0].badge, 'Popular');
-  });
+      final refreshedPlans = await api.getListingPlans(forceRefresh: true);
+      expect(refreshedPlans[0].title, 'Event Listing VIP');
+      expect(refreshedPlans[0].price, '249 AED');
+      expect(refreshedPlans[0].badge, 'Popular');
+    },
+  );
 
-  testWidgets('ListingPlansView receives dynamic updates via LiveSync', (tester) async {
+  testWidgets('ListingPlansView receives dynamic updates via LiveSync', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);

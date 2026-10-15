@@ -17,7 +17,8 @@ class GalleryRegistrationView extends StatefulWidget {
   const GalleryRegistrationView({super.key});
 
   @override
-  State<GalleryRegistrationView> createState() => _GalleryRegistrationViewState();
+  State<GalleryRegistrationView> createState() =>
+      _GalleryRegistrationViewState();
 }
 
 class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
@@ -35,7 +36,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
   bool _isUploadingImage = false;
 
   bool _hasValidated = false;
-  final bool _isSubmitted = false;
+  bool _isSubmitted = false;
+  bool _isSubmitting = false;
+  Map<String, dynamic>? _activeGalleryPlan;
   Locale? _lastLocale;
 
   String _selectedPublishingPlan = 'six_month';
@@ -49,24 +52,30 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
   void initState() {
     super.initState();
     _loadPublishingPricing();
+    _loadUserActiveGalleryPlan();
 
     try {
-      _pricingSub = sl<LiveSyncService>().publishingPricingStream.listen((pricingList) {
+      _pricingSub = sl<LiveSyncService>().publishingPricingStream.listen((
+        pricingList,
+      ) {
         if (!mounted || pricingList.isEmpty) return;
         final galPricing = pricingList.firstWhere(
           (p) => p.itemType == 'gallery',
-          orElse: () => _galleryPricing ?? const PublishingPricingModel(
-            id: 2,
-            itemType: 'gallery',
-            itemName: 'Gallery Showcase',
-            weeklyPrice: 'AED 200',
-            monthlyPrice: 'AED 750',
-            sixMonthPrice: 'AED 3,800',
-            yearlyPrice: 'AED 6,500',
-            sixMonthBadge: '180 days showcase',
-            yearlyBadge: '365 days showcase',
-            currency: 'AED',
-          ),
+          orElse:
+              () =>
+                  _galleryPricing ??
+                  const PublishingPricingModel(
+                    id: 2,
+                    itemType: 'gallery',
+                    itemName: 'Gallery Showcase',
+                    weeklyPrice: 'AED 200',
+                    monthlyPrice: 'AED 750',
+                    sixMonthPrice: 'AED 3,800',
+                    yearlyPrice: 'AED 6,500',
+                    sixMonthBadge: '180 days showcase',
+                    yearlyBadge: '365 days showcase',
+                    currency: 'AED',
+                  ),
         );
         setState(() {
           _galleryPricing = galPricing;
@@ -79,7 +88,8 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final currentLocale = Localizations.localeOf(context);
-    if (_lastLocale != null && _lastLocale?.languageCode != currentLocale.languageCode) {
+    if (_lastLocale != null &&
+        _lastLocale?.languageCode != currentLocale.languageCode) {
       if (_hasValidated) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && _hasValidated) {
@@ -93,26 +103,45 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
 
   Future<void> _loadPublishingPricing() async {
     try {
-      final pricingList = await sl<ApiService>().getPublishingPricing(forceRefresh: true);
+      final pricingList = await sl<ApiService>().getPublishingPricing(
+        forceRefresh: true,
+      );
       final galPricing = pricingList.firstWhere(
         (p) => p.itemType == 'gallery',
-        orElse: () => const PublishingPricingModel(
-          id: 2,
-          itemType: 'gallery',
-          itemName: 'Gallery Showcase',
-          weeklyPrice: 'AED 200',
-          monthlyPrice: 'AED 750',
-          sixMonthPrice: 'AED 3,800',
-          yearlyPrice: 'AED 6,500',
-          sixMonthBadge: '180 days showcase',
-          yearlyBadge: '365 days showcase',
-          description: 'Premier directory listing, verified status badge, and spotlight showcase for Dubai art galleries.',
-          currency: 'AED',
-        ),
+        orElse:
+            () => const PublishingPricingModel(
+              id: 2,
+              itemType: 'gallery',
+              itemName: 'Gallery Showcase',
+              weeklyPrice: 'AED 200',
+              monthlyPrice: 'AED 750',
+              sixMonthPrice: 'AED 3,800',
+              yearlyPrice: 'AED 6,500',
+              sixMonthBadge: '180 days showcase',
+              yearlyBadge: '365 days showcase',
+              description:
+                  'Premier directory listing, verified status badge, and spotlight showcase for Dubai art galleries.',
+              currency: 'AED',
+            ),
       );
       if (mounted) {
         setState(() {
           _galleryPricing = galPricing;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadUserActiveGalleryPlan() async {
+    try {
+      final active = await sl<ApiService>().getActivePlanForType('gallery');
+      if (mounted && active != null) {
+        setState(() {
+          _activeGalleryPlan = active;
+          final planName = active['plan_name']?.toString();
+          if (planName != null && planName.isNotEmpty) {
+            _selectedPublishingPlan = planName;
+          }
         });
       }
     } catch (_) {}
@@ -176,186 +205,266 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      builder:
+          (ctx) => SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    'Select Image Source'.trData(context),
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF0F172A),
+                  Center(
+                    child: Container(
+                      width: 44,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFCBD5E1),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 20, color: Color(0xFF64748B)),
-                    onPressed: () => Navigator.of(ctx).pop(),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Select Image Source'.trData(context),
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.close,
+                          size: 20,
+                          color: Color(0xFF64748B),
+                        ),
+                        onPressed: () => Navigator.of(ctx).pop(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: () {
+                      Navigator.of(ctx).pop();
+                      _pickImage(ImageSource.gallery);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEDE9FE),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.photo_library_rounded,
+                              color: Color(0xFF6A2777),
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Choose from Gallery'.trData(context),
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF0F172A),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Select a photo from your device library'
+                                      .trData(context),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right,
+                            color: Color(0xFF94A3B8),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: () {
+                      Navigator.of(ctx).pop();
+                      _pickImage(ImageSource.camera);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF3E8FF),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt_rounded,
+                              color: Color(0xFF6A2777),
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Take a Photo'.trData(context),
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF0F172A),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Use your camera to capture space photo'
+                                      .trData(context),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right,
+                            color: Color(0xFF94A3B8),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
-              InkWell(
-                borderRadius: BorderRadius.circular(14),
-                onTap: () {
-                  Navigator.of(ctx).pop();
-                  _pickImage(ImageSource.gallery);
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEDE9FE),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          Icons.photo_library_rounded,
-                          color: Color(0xFF6A2777),
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Choose from Gallery'.trData(context),
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF0F172A),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Select a photo from your device library'.trData(context),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.chevron_right, color: Color(0xFF94A3B8)),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              InkWell(
-                borderRadius: BorderRadius.circular(14),
-                onTap: () {
-                  Navigator.of(ctx).pop();
-                  _pickImage(ImageSource.camera);
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF3E8FF),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          Icons.camera_alt_rounded,
-                          color: Color(0xFF6A2777),
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Take a Photo'.trData(context),
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF0F172A),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Use your camera to capture space photo'.trData(context),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.chevron_right, color: Color(0xFF94A3B8)),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 
-  void _submitForm() {
+  void _submitForm() async {
     setState(() => _hasValidated = true);
     if (!_formKey.currentState!.validate()) return;
 
-    final publishingAmount = _galleryPricing?.getPriceForPlan(_selectedPublishingPlan) ??
+    final publishingAmount =
+        _galleryPricing?.getPriceForPlan(_selectedPublishingPlan) ??
         (_selectedPublishingPlan == 'monthly'
             ? 'AED 750'
             : (_selectedPublishingPlan == 'six_month'
                 ? 'AED 3,800'
-                : (_selectedPublishingPlan == 'yearly' ? 'AED 6,500' : 'AED 200')));
+                : (_selectedPublishingPlan == 'yearly'
+                    ? 'AED 6,500'
+                    : 'AED 200')));
+
+    final hasActiveGalleryPlan = _activeGalleryPlan != null;
+    if (hasActiveGalleryPlan) {
+      setState(() => _isSubmitting = true);
+      final payload = {
+        'name': _nameController.text.trim(),
+        'category':
+            _typeController.text.trim().isNotEmpty
+                ? _typeController.text.trim()
+                : 'Art Gallery',
+        'type': _typeController.text.trim(),
+        'address': _addressController.text.trim(),
+        'location':
+            _addressController.text.trim().isNotEmpty
+                ? _addressController.text.trim()
+                : 'Dubai, UAE',
+        'website': _websiteController.text.trim(),
+        'contact_person': _contactPersonController.text.trim(),
+        'email': _emailController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'about': _aboutController.text.trim(),
+        'image_url': _uploadedImageUrl ?? '',
+        'publishing_plan':
+            _activeGalleryPlan!['plan_name'] ?? _selectedPublishingPlan,
+        'payment_status': 'paid',
+        'payment_method': 'active_plan',
+      };
+
+      final success = await sl<ApiService>().registerGallery(payload);
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        if (success) {
+          try {
+            sl<LiveSyncService>().notifyGalleriesChanged();
+          } catch (_) {}
+          setState(() => _isSubmitted = true);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Registration failed. Please try again.'.trData(context),
+              ),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
+      }
+      return;
+    }
 
     context.push(
       RouteNames.planPayment,
       extra: {
         'itemType': 'gallery',
         'title': _nameController.text.trim(),
-        'subtitle': _addressController.text.trim().isNotEmpty ? _addressController.text.trim() : 'Dubai, UAE',
+        'subtitle':
+            _addressController.text.trim().isNotEmpty
+                ? _addressController.text.trim()
+                : 'Dubai, UAE',
         'planId': _selectedPublishingPlan,
         'planAmount': publishingAmount,
         'formData': {
           'name': _nameController.text.trim(),
-          'category': _typeController.text.trim().isNotEmpty ? _typeController.text.trim() : 'Art Gallery',
+          'category':
+              _typeController.text.trim().isNotEmpty
+                  ? _typeController.text.trim()
+                  : 'Art Gallery',
           'type': _typeController.text.trim(),
           'address': _addressController.text.trim(),
-          'location': _addressController.text.trim().isNotEmpty ? _addressController.text.trim() : 'Dubai, UAE',
+          'location':
+              _addressController.text.trim().isNotEmpty
+                  ? _addressController.text.trim()
+                  : 'Dubai, UAE',
           'website': _websiteController.text.trim(),
           'contact_person': _contactPersonController.text.trim(),
           'email': _emailController.text.trim(),
@@ -386,7 +495,10 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
         borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: Color(0xFF5E227A), width: 1.8),
       ),
-      errorStyle: const TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.bold),
+      errorStyle: const TextStyle(
+        color: Colors.amberAccent,
+        fontWeight: FontWeight.bold,
+      ),
     );
   }
 
@@ -401,7 +513,12 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Padding(
-            padding: EdgeInsets.fromLTRB(rh.horizontalPadding, 24, rh.horizontalPadding, 24),
+            padding: EdgeInsets.fromLTRB(
+              rh.horizontalPadding,
+              24,
+              rh.horizontalPadding,
+              24,
+            ),
             child: Center(
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
@@ -460,17 +577,28 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 // Field 1: Gallery / center name *
                 Text(
                   '${l10n.galleryCenterName} *',
-                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _nameController,
-                  style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                   decoration: _whiteInputDecoration(),
                   validator: (v) {
-                    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+                    final isAr =
+                        Localizations.localeOf(context).languageCode == 'ar';
                     if (v == null || v.trim().isEmpty) {
-                      return isAr ? 'الرجاء إدخال اسم المعرض' : 'Please enter gallery name';
+                      return isAr
+                          ? 'الرجاء إدخال اسم المعرض'
+                          : 'Please enter gallery name';
                     }
                     return null;
                   },
@@ -481,13 +609,23 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 // Field 2: Type
                 Text(
                   l10n.venueType,
-                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _typeController,
-                  style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500),
-                  decoration: _whiteInputDecoration(hintText: l10n.venueTypeHint),
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  decoration: _whiteInputDecoration(
+                    hintText: l10n.venueTypeHint,
+                  ),
                   textInputAction: TextInputAction.next,
                 ),
                 const SizedBox(height: 14),
@@ -495,12 +633,20 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 // Field 3: Address
                 Text(
                   l10n.address,
-                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _addressController,
-                  style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                   decoration: _whiteInputDecoration(),
                   textInputAction: TextInputAction.next,
                 ),
@@ -509,12 +655,20 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 // Field 4: Website
                 Text(
                   l10n.website,
-                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _websiteController,
-                  style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                   keyboardType: TextInputType.url,
                   decoration: _whiteInputDecoration(hintText: 'https://...'),
                   textInputAction: TextInputAction.next,
@@ -524,12 +678,20 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 // Field 5: Contact person
                 Text(
                   l10n.contactPerson,
-                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _contactPersonController,
-                  style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                   decoration: _whiteInputDecoration(),
                   textInputAction: TextInputAction.next,
                 ),
@@ -538,21 +700,34 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 // Field 6: Email *
                 Text(
                   '${l10n.emailLabel} *',
-                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _emailController,
-                  style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                   keyboardType: TextInputType.emailAddress,
                   decoration: _whiteInputDecoration(),
                   validator: (v) {
-                    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+                    final isAr =
+                        Localizations.localeOf(context).languageCode == 'ar';
                     if (v == null || v.trim().isEmpty) {
-                      return isAr ? 'الرجاء إدخال البريد الإلكتروني' : 'Please enter email';
+                      return isAr
+                          ? 'الرجاء إدخال البريد الإلكتروني'
+                          : 'Please enter email';
                     }
                     if (!v.contains('@')) {
-                      return isAr ? 'الرجاء إدخال بريد إلكتروني صالح' : 'Please enter valid email';
+                      return isAr
+                          ? 'الرجاء إدخال بريد إلكتروني صالح'
+                          : 'Please enter valid email';
                     }
                     return null;
                   },
@@ -563,12 +738,20 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 // Field 7: Phone
                 Text(
                   l10n.phone,
-                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _phoneController,
-                  style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                   keyboardType: TextInputType.phone,
                   decoration: _whiteInputDecoration(),
                   textInputAction: TextInputAction.next,
@@ -578,12 +761,20 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 // Field 8: About the space
                 Text(
                   l10n.aboutTheSpace,
-                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _aboutController,
-                  style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                   maxLines: 4,
                   decoration: _whiteInputDecoration(),
                 ),
@@ -592,7 +783,11 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 // Field 9: Gallery / Space Photo
                 Text(
                   l10n.gallerySpacePhotoOptional,
-                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.white),
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Container(
@@ -601,7 +796,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -612,16 +809,24 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                             const SizedBox(
                               width: 18,
                               height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Text(
                               l10n.uploadingImage,
-                              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ],
                         ),
-                      ] else if (_uploadedImageUrl != null && _uploadedImageUrl!.isNotEmpty) ...[
+                      ] else if (_uploadedImageUrl != null &&
+                          _uploadedImageUrl!.isNotEmpty) ...[
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: Stack(
@@ -631,28 +836,38 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                                 height: 160,
                                 width: double.infinity,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
-                                  height: 120,
-                                  color: Colors.black26,
-                                  child: const Center(
-                                    child: Icon(Icons.broken_image, color: Colors.white54, size: 36),
-                                  ),
-                                ),
+                                errorBuilder:
+                                    (_, __, ___) => Container(
+                                      height: 120,
+                                      color: Colors.black26,
+                                      child: const Center(
+                                        child: Icon(
+                                          Icons.broken_image,
+                                          color: Colors.white54,
+                                          size: 36,
+                                        ),
+                                      ),
+                                    ),
                               ),
                               Positioned(
                                 top: 8,
                                 right: 8,
                                 child: InkWell(
-                                  onTap: () => setState(() {
-                                    _uploadedImageUrl = null;
-                                  }),
+                                  onTap:
+                                      () => setState(() {
+                                        _uploadedImageUrl = null;
+                                      }),
                                   child: Container(
                                     padding: const EdgeInsets.all(6),
                                     decoration: const BoxDecoration(
                                       color: Colors.black54,
                                       shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(Icons.delete_outline, color: Colors.white, size: 18),
+                                    child: const Icon(
+                                      Icons.delete_outline,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -660,49 +875,133 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        Row(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             OutlinedButton.icon(
                               style: OutlinedButton.styleFrom(
-                                backgroundColor: Colors.white.withValues(alpha: 0.18),
+                                backgroundColor: Colors.white.withValues(
+                                  alpha: 0.18,
+                                ),
                                 foregroundColor: Colors.white,
-                                side: const BorderSide(color: Colors.white, width: 1.2),
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                side: const BorderSide(
+                                  color: Colors.white,
+                                  width: 1.2,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
                               ),
-                              icon: const Icon(Icons.add_photo_alternate_rounded, size: 18, color: Colors.white),
-                              label: Text('Change Photo'.trData(context), style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Colors.white)),
-                              onPressed: () => _showImageSourceActionSheet(context),
+                              icon: const Icon(
+                                Icons.add_photo_alternate_rounded,
+                                size: 18,
+                                color: Colors.white,
+                              ),
+                              label: Text(
+                                'Change Photo'.trData(context),
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              onPressed:
+                                  () => _showImageSourceActionSheet(context),
                             ),
-                            const SizedBox(width: 8),
-                            const Icon(Icons.check_circle, color: Color(0xFF4ADE80), size: 16),
-                            const SizedBox(width: 4),
-                            Text('Uploaded'.trData(context), style: const TextStyle(fontSize: 12, color: Color(0xFF4ADE80), fontWeight: FontWeight.w600)),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.check_circle,
+                                  color: Color(0xFF4ADE80),
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Uploaded'.trData(context),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF4ADE80),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ] else ...[
-                        Row(
-                          children: [
-                            OutlinedButton.icon(
+                        LayoutBuilder(
+                          builder: (context, boxConstraints) {
+                            final isNarrow = boxConstraints.maxWidth < 360;
+                            final btn = OutlinedButton.icon(
                               style: OutlinedButton.styleFrom(
-                                backgroundColor: Colors.white.withValues(alpha: 0.18),
+                                backgroundColor: Colors.white.withValues(
+                                  alpha: 0.18,
+                                ),
                                 foregroundColor: Colors.white,
-                                side: const BorderSide(color: Colors.white, width: 1.2),
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                side: const BorderSide(
+                                  color: Colors.white,
+                                  width: 1.2,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 10,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
                               ),
-                              icon: const Icon(Icons.add_photo_alternate_rounded, size: 20, color: Colors.white),
-                              label: Text('Upload Photo'.trData(context), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
-                              onPressed: () => _showImageSourceActionSheet(context),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'Select showcase photo of the gallery/space (JPG, PNG, WebP).'.trData(context),
-                                style: const TextStyle(fontSize: 11, color: Colors.white70),
+                              icon: const Icon(
+                                Icons.add_photo_alternate_rounded,
+                                size: 20,
+                                color: Colors.white,
                               ),
-                            ),
-                          ],
+                              label: Text(
+                                'Upload Photo'.trData(context),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              onPressed:
+                                  () => _showImageSourceActionSheet(context),
+                            );
+
+                            final promptText = Text(
+                              'Select showcase photo of the gallery/space (JPG, PNG, WebP).'
+                                  .trData(context),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Colors.white70,
+                              ),
+                            );
+
+                            if (isNarrow) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  btn,
+                                  const SizedBox(height: 8),
+                                  promptText,
+                                ],
+                              );
+                            }
+
+                            return Row(
+                              children: [
+                                btn,
+                                const SizedBox(width: 12),
+                                Expanded(child: promptText),
+                              ],
+                            );
+                          },
                         ),
                       ],
                     ],
@@ -717,18 +1016,26 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.stars_rounded, color: Colors.amberAccent, size: 18),
+                          const Icon(
+                            Icons.stars_rounded,
+                            color: Colors.amberAccent,
+                            size: 18,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Paid Gallery Publishing • Choose Plan'.trData(context),
+                              'Paid Gallery Publishing • Choose Plan'.trData(
+                                context,
+                              ),
                               style: const TextStyle(
                                 color: Colors.amberAccent,
                                 fontSize: 13,
@@ -741,9 +1048,14 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        _galleryPricing?.description != null && _galleryPricing!.description!.trim().isNotEmpty
-                            ? DataTranslator.tr(context, _galleryPricing!.description!.trim())
-                            : 'Publishing your gallery on Artist Dubai is a premium feature. Select your preferred showcase plan. Once verified by the admin, your gallery will be featured prominently to art lovers across the UAE.'.trData(context),
+                        _galleryPricing?.description != null &&
+                                _galleryPricing!.description!.trim().isNotEmpty
+                            ? DataTranslator.tr(
+                              context,
+                              _galleryPricing!.description!.trim(),
+                            )
+                            : 'Publishing your gallery on Artist Dubai is a premium feature. Select your preferred showcase plan. Once verified by the admin, your gallery will be featured prominently to art lovers across the UAE.'
+                                .trData(context),
                         style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 12,
@@ -754,14 +1066,28 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                       LayoutBuilder(
                         builder: (context, constraints) {
                           final isSmall = constraints.maxWidth < 460;
-                          final sixMonthPrice = _galleryPricing?.sixMonthPrice ?? 'AED 3,800';
-                          final yearlyPrice = _galleryPricing?.yearlyPrice ?? 'AED 6,500';
-                          final sixMonthSubtitle = _galleryPricing?.sixMonthBadge.trim().isNotEmpty == true
-                              ? DataTranslator.tr(context, _galleryPricing!.sixMonthBadge.trim())
-                              : '180 days showcase'.trData(context);
-                          final yearlySubtitle = _galleryPricing?.yearlyBadge.trim().isNotEmpty == true
-                              ? DataTranslator.tr(context, _galleryPricing!.yearlyBadge.trim())
-                              : '365 days showcase'.trData(context);
+                          final sixMonthPrice =
+                              _galleryPricing?.sixMonthPrice ?? 'AED 3,800';
+                          final yearlyPrice =
+                              _galleryPricing?.yearlyPrice ?? 'AED 6,500';
+                          final sixMonthSubtitle =
+                              _galleryPricing?.sixMonthBadge
+                                          .trim()
+                                          .isNotEmpty ==
+                                      true
+                                  ? DataTranslator.tr(
+                                    context,
+                                    _galleryPricing!.sixMonthBadge.trim(),
+                                  )
+                                  : '180 days showcase'.trData(context);
+                          final yearlySubtitle =
+                              _galleryPricing?.yearlyBadge.trim().isNotEmpty ==
+                                      true
+                                  ? DataTranslator.tr(
+                                    context,
+                                    _galleryPricing!.yearlyBadge.trim(),
+                                  )
+                                  : '365 days showcase'.trData(context);
 
                           final cards = [
                             _buildGalleryPricingCard(
@@ -815,17 +1141,32 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                       backgroundColor: Colors.white,
                       foregroundColor: const Color(0xFF1E1E1E),
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    onPressed: _submitForm,
-                    child: Text(
-                      l10n.registerVenue,
-                      style: const TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E1E1E),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
+                    onPressed: _isSubmitting ? null : _submitForm,
+                    child:
+                        _isSubmitting
+                            ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF1E1E1E),
+                                strokeWidth: 2,
+                              ),
+                            )
+                            : Text(
+                              _activeGalleryPlan != null
+                                  ? 'Register Venue (Covered by Active Plan)'
+                                      .trData(context)
+                                  : l10n.registerVenue,
+                              style: const TextStyle(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1E1E1E),
+                              ),
+                            ),
                   ),
                 ),
               ],
@@ -894,11 +1235,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 2.2),
                 ),
-                child: const Icon(
-                  Icons.check,
-                  size: 32,
-                  color: Colors.white,
-                ),
+                child: const Icon(Icons.check, size: 32, color: Colors.white),
               ),
               const SizedBox(height: 18),
               Text(
@@ -912,7 +1249,8 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
               ),
               const SizedBox(height: 10),
               Text(
-                'Thank you. Our team will review your gallery or art center and get in touch by email.'.trData(context),
+                'Thank you. Our team will review your gallery or art center and get in touch by email.'
+                    .trData(context),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 14,
@@ -925,7 +1263,10 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: const Color(0xFF1E1E1E),
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 28,
+                    vertical: 12,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -981,21 +1322,26 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.1),
+          color:
+              isSelected ? Colors.white : Colors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isSelected ? Colors.amberAccent : Colors.white.withValues(alpha: 0.25),
+            color:
+                isSelected
+                    ? Colors.amberAccent
+                    : Colors.white.withValues(alpha: 0.25),
             width: isSelected ? 2 : 1,
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
+          boxShadow:
+              isSelected
+                  ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                  : null,
         ),
         child: Stack(
           clipBehavior: Clip.none,
@@ -1012,13 +1358,17 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: isSelected ? const Color(0xFF5A1684) : Colors.white,
+                        color:
+                            isSelected ? const Color(0xFF5A1684) : Colors.white,
                       ),
                     ),
                     Icon(
-                      isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                      isSelected
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked_rounded,
                       size: 16,
-                      color: isSelected ? const Color(0xFF5A1684) : Colors.white60,
+                      color:
+                          isSelected ? const Color(0xFF5A1684) : Colors.white60,
                     ),
                   ],
                 ),
@@ -1036,7 +1386,8 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                   subtitle,
                   style: TextStyle(
                     fontSize: 10.5,
-                    color: isSelected ? const Color(0xFF64748B) : Colors.white70,
+                    color:
+                        isSelected ? const Color(0xFF64748B) : Colors.white70,
                   ),
                 ),
               ],
@@ -1046,13 +1397,17 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 top: -6,
                 right: 18,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 1,
+                  ),
                   decoration: BoxDecoration(
-                    color: tag == 'POPULAR'
-                        ? const Color(0xFFF59E0B)
-                        : (tag.startsWith('SAVE')
-                            ? const Color(0xFFE11D48)
-                            : const Color(0xFF10B981)),
+                    color:
+                        tag == 'POPULAR'
+                            ? const Color(0xFFF59E0B)
+                            : (tag.startsWith('SAVE')
+                                ? const Color(0xFFE11D48)
+                                : const Color(0xFF10B981)),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -1073,12 +1428,61 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
   }
 
   Widget _buildPaymentNoticeCard() {
-    final planAmount = _galleryPricing?.getPriceForPlan(_selectedPublishingPlan) ??
+    if (_activeGalleryPlan != null) {
+      final planName =
+          _activeGalleryPlan!['plan_name']?.toString() ?? 'Gallery Plan';
+      final daysLeft = _activeGalleryPlan!['days_left']?.toString() ?? '30';
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFECFDF5),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFF10B981), width: 1.5),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Icon(Icons.verified, color: Color(0xFF059669), size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Active Plan Applied: $planName'.trData(context),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF065F46),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Your active subscription covers this venue listing at 0 AED ($daysLeft days remaining).'
+                        .trData(context),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFF047857),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final planAmount =
+        _galleryPricing?.getPriceForPlan(_selectedPublishingPlan) ??
         (_selectedPublishingPlan == 'monthly'
             ? 'AED 750'
             : (_selectedPublishingPlan == 'six_month'
                 ? 'AED 3,800'
-                : (_selectedPublishingPlan == 'yearly' ? 'AED 6,500' : 'AED 200')));
+                : (_selectedPublishingPlan == 'yearly'
+                    ? 'AED 6,500'
+                    : 'AED 200')));
 
     return Container(
       width: double.infinity,
@@ -1097,7 +1501,11 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
               color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.payment_rounded, color: Colors.amberAccent, size: 18),
+            child: const Icon(
+              Icons.payment_rounded,
+              color: Colors.amberAccent,
+              size: 18,
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -1108,25 +1516,38 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 Text.rich(
                   TextSpan(
                     text: 'Payment on Next Step: '.trData(context),
-                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                     children: [
                       TextSpan(
                         text: planAmount,
-                        style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: Colors.amberAccent),
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.amberAccent,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Admin Payment QR code & bank transfer details on checkout page.'.trData(context),
+                  'Admin Payment QR code & bank transfer details on checkout page.'
+                      .trData(context),
                   style: const TextStyle(fontSize: 11, color: Colors.white70),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 6),
-          const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Colors.white70),
+          const Icon(
+            Icons.arrow_forward_ios_rounded,
+            size: 13,
+            color: Colors.white70,
+          ),
         ],
       ),
     );

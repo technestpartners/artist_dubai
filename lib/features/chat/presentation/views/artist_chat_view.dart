@@ -16,7 +16,14 @@ import '../../data/chat_service.dart';
 import '../../domain/models/artist_message_model.dart';
 
 class ArtistChatView extends StatefulWidget {
-  const ArtistChatView({super.key});
+  final ArtistModel? initialArtist;
+  final Map<String, dynamic>? initialArgs;
+
+  const ArtistChatView({
+    super.key,
+    this.initialArtist,
+    this.initialArgs,
+  });
 
   @override
   State<ArtistChatView> createState() => _ArtistChatViewState();
@@ -46,39 +53,100 @@ class _ArtistChatViewState extends State<ArtistChatView> {
   StreamSubscription<List<ArtistMessageModel>>? _messagesSub;
   Timer? _pollingTimer;
 
-  String get _currentEmail => (sl<StorageService>().getString('user_email') ?? '').trim().toLowerCase();
-  String get _currentArtistId => (sl<StorageService>().getString('artist_profile_id') ?? '').trim();
-  String get _currentUserId => (sl<StorageService>().getString('user_id') ?? '').trim();
+  String get _currentEmail =>
+      (sl<StorageService>().getString('user_email') ?? '').trim().toLowerCase();
+  String get _currentArtistId =>
+      (sl<StorageService>().getString('artist_profile_id') ?? '').trim();
+  String get _currentUserId =>
+      (sl<StorageService>().getString('user_id') ?? '').trim();
+  String get _currentName =>
+      (sl<StorageService>().getString('artist_profile_name') ??
+              sl<StorageService>().getString('user_name') ??
+              '')
+          .trim()
+          .toLowerCase();
+  bool get _isAdmin =>
+      (sl<StorageService>().getBool('is_admin') ?? false) ||
+      [
+        'admin@artistdubai.com',
+        'admin@dubaiart.ae',
+        'admin@admin.com',
+        'admin@technestpartners.com',
+      ].contains(_currentEmail);
 
   bool _isIncomingMessage(ArtistMessageModel msg) {
     final myEmail = _currentEmail;
     final myArtistId = _currentArtistId;
     final myUserId = _currentUserId;
+    final myName = _currentName;
+    final isAdmin = _isAdmin;
 
-    // Messages sent by me are sent, not incoming
+    // 1. If viewing as Admin or Dubai Art Administrator profile
+    if (isAdmin ||
+        myName.contains('dubai art administrator') ||
+        myEmail == 'admin@artistdubai.com' ||
+        myArtistId == '28') {
+      final isAddressedToAdmin =
+          msg.recipientId == '28' ||
+          msg.recipientName.toLowerCase().contains('dubai art administrator') ||
+          msg.recipientId.toLowerCase() == 'admin@artistdubai.com';
+      final isSentByAdmin =
+          msg.senderId == '28' ||
+          msg.senderEmail.toLowerCase() == 'admin@artistdubai.com' ||
+          msg.senderName.toLowerCase().contains('dubai art administrator');
+
+      if (isAddressedToAdmin && !isSentByAdmin) return true;
+      if (isSentByAdmin && !isAddressedToAdmin) return false;
+    }
+
+    // 2. Direct checks: Messages sent by me are sent, not incoming
     if (myEmail.isNotEmpty && msg.senderEmail.toLowerCase() == myEmail) {
       return false;
     }
     if (myArtistId.isNotEmpty && msg.senderId == myArtistId) {
       return false;
     }
-    if (myUserId.isNotEmpty && (msg.senderId == myUserId || msg.senderId == 'user_$myUserId')) {
+    if (myUserId.isNotEmpty &&
+        (msg.senderId == myUserId || msg.senderId == 'user_$myUserId')) {
+      return false;
+    }
+    if (myName.isNotEmpty &&
+        msg.senderName.trim().toLowerCase() == myName &&
+        msg.recipientName.trim().toLowerCase() != myName) {
       return false;
     }
 
-    // Messages addressed to my artist profile, email, or user id are incoming
+    // 3. Direct checks: Messages addressed to my artist profile, email, or user id are incoming
     if (myArtistId.isNotEmpty && msg.recipientId == myArtistId) {
       return true;
     }
-    if (myEmail.isNotEmpty && (msg.recipientId.toLowerCase() == myEmail || msg.recipientName.toLowerCase() == myEmail)) {
+    if (myEmail.isNotEmpty &&
+        (msg.recipientId.toLowerCase() == myEmail ||
+            msg.recipientName.toLowerCase() == myEmail)) {
       return true;
     }
-    if (myUserId.isNotEmpty && (msg.recipientId == myUserId || msg.recipientId == 'user_$myUserId')) {
+    if (myUserId.isNotEmpty &&
+        (msg.recipientId == myUserId || msg.recipientId == 'user_$myUserId')) {
+      return true;
+    }
+    if (myName.isNotEmpty &&
+        (msg.recipientName.trim().toLowerCase() == myName ||
+            msg.recipientName.trim().toLowerCase().contains(myName))) {
       return true;
     }
 
-    // Fallback: if sender is different from my email, treat as incoming
-    return myEmail.isNotEmpty && msg.senderEmail.toLowerCase() != myEmail;
+    // 4. Fallback when myEmail is known
+    if (myEmail.isNotEmpty) {
+      return msg.senderEmail.toLowerCase() != myEmail;
+    }
+
+    // 5. Default fallback if recipient is Dubai Art Administrator (the admin artist profile)
+    if (msg.recipientName.toLowerCase().contains('dubai art administrator') ||
+        msg.recipientId == '28') {
+      return true;
+    }
+
+    return false;
   }
 
   void _handleReplyToMessage(ArtistMessageModel msg) {
@@ -86,22 +154,34 @@ class _ArtistChatViewState extends State<ArtistChatView> {
     final targetId = isIncoming ? msg.senderId : msg.recipientId;
     final targetName = isIncoming ? msg.senderName : msg.recipientName;
     final targetEmail = isIncoming ? msg.senderEmail : '';
-    final targetAvatarUrl = isIncoming ? msg.senderAvatarUrl : msg.recipientAvatarUrl;
-    final targetCategory = isIncoming
-        ? 'Artist'
-        : (msg.recipientCategory.isNotEmpty ? msg.recipientCategory : 'Artist');
+    final targetAvatarUrl =
+        isIncoming ? msg.senderAvatarUrl : msg.recipientAvatarUrl;
+    final targetCategory =
+        isIncoming
+            ? 'Artist'
+            : (msg.recipientCategory.isNotEmpty
+                ? msg.recipientCategory
+                : 'Artist');
 
     ArtistModel? replyArtist;
     try {
       replyArtist = _allArtists.firstWhere(
-        (a) => (targetEmail.isNotEmpty && a.email.toLowerCase() == targetEmail.toLowerCase()) ||
-               (targetId.isNotEmpty && a.id == targetId) ||
-               (targetName.isNotEmpty && a.name.toLowerCase() == targetName.toLowerCase()),
+        (a) =>
+            (targetEmail.isNotEmpty &&
+                a.email.toLowerCase() == targetEmail.toLowerCase()) ||
+            (targetId.isNotEmpty && a.id == targetId) ||
+            (targetName.isNotEmpty &&
+                a.name.toLowerCase() == targetName.toLowerCase()),
       );
     } catch (_) {}
 
     replyArtist ??= ArtistModel(
-      id: targetId.isNotEmpty ? targetId : (targetEmail.isNotEmpty ? targetEmail : 'artist_${DateTime.now().millisecondsSinceEpoch}'),
+      id:
+          targetId.isNotEmpty
+              ? targetId
+              : (targetEmail.isNotEmpty
+                  ? targetEmail
+                  : 'artist_${DateTime.now().millisecondsSinceEpoch}'),
       name: targetName.isNotEmpty ? targetName : 'Artist',
       category: targetCategory,
       location: 'Dubai',
@@ -118,7 +198,8 @@ class _ArtistChatViewState extends State<ArtistChatView> {
       _selectedTabIndex = 1; // Switch to Send tab
       final sub = msg.subject.trim();
       if (sub.isNotEmpty) {
-        _subjectController.text = sub.toLowerCase().startsWith('re:') ? sub : 'Re: $sub';
+        _subjectController.text =
+            sub.toLowerCase().startsWith('re:') ? sub : 'Re: $sub';
       }
     });
   }
@@ -126,6 +207,35 @@ class _ArtistChatViewState extends State<ArtistChatView> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialArtist != null) {
+      _selectedArtist = widget.initialArtist;
+      _selectedTabIndex = 1;
+    } else if (widget.initialArgs != null) {
+      final args = widget.initialArgs!;
+      final artistObj = args['artist'];
+      if (artistObj is ArtistModel) {
+        _selectedArtist = artistObj;
+        _selectedTabIndex = 1;
+      } else {
+        final id = (args['artistId'] ?? args['id'] ?? '').toString();
+        final name = (args['artistName'] ?? args['name'] ?? '').toString();
+        if (id.isNotEmpty || name.isNotEmpty) {
+          _selectedArtist = ArtistModel(
+            id: id,
+            name: name.isNotEmpty ? name : 'Artist',
+            category: (args['artistCategory'] ?? args['category'] ?? 'Artist').toString(),
+            location: (args['artistLocation'] ?? args['location'] ?? 'Dubai').toString(),
+            bio: '',
+            avatarUrl: (args['artistAvatarUrl'] ?? args['avatarUrl'] ?? '').toString(),
+            bannerUrl: '',
+            followersCount: 0,
+            worksCount: 0,
+            email: (args['artistEmail'] ?? args['email'] ?? '').toString(),
+          );
+          _selectedTabIndex = 1;
+        }
+      }
+    }
     DataTranslator.translationNotifier.addListener(_onTranslationChanged);
     final chatService = sl<ChatService>();
     _remainingMessages = chatService.getRemainingAllowance();
@@ -168,6 +278,18 @@ class _ArtistChatViewState extends State<ArtistChatView> {
   }
 
   @override
+  void didUpdateWidget(covariant ArtistChatView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialArtist != null &&
+        widget.initialArtist != oldWidget.initialArtist) {
+      setState(() {
+        _selectedArtist = widget.initialArtist;
+        _selectedTabIndex = 1;
+      });
+    }
+  }
+
+  @override
   void dispose() {
     DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
     _allowanceSub?.cancel();
@@ -199,6 +321,16 @@ class _ArtistChatViewState extends State<ArtistChatView> {
         setState(() {
           _allArtists = res;
           _isLoadingArtists = false;
+          if (_selectedArtist != null) {
+            final match = res.where((a) =>
+              (a.id.isNotEmpty && a.id == _selectedArtist!.id) ||
+              (a.email.isNotEmpty && _selectedArtist!.email.isNotEmpty && a.email.toLowerCase() == _selectedArtist!.email.toLowerCase()) ||
+              (a.name.isNotEmpty && a.name.toLowerCase() == _selectedArtist!.name.toLowerCase())
+            ).firstOrNull;
+            if (match != null) {
+              _selectedArtist = match;
+            }
+          }
         });
       }
     } catch (_) {
@@ -206,7 +338,9 @@ class _ArtistChatViewState extends State<ArtistChatView> {
     }
   }
 
-  Future<void> _pickFlyerImage([ImageSource source = ImageSource.gallery]) async {
+  Future<void> _pickFlyerImage([
+    ImageSource source = ImageSource.gallery,
+  ]) async {
     try {
       final picker = ImagePicker();
       final file = await picker.pickImage(
@@ -241,79 +375,182 @@ class _ArtistChatViewState extends State<ArtistChatView> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFCBD5E1),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Attach Flyer or Artwork'.trData(context),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E1E1E),
-                ),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF3E8FF),
-                    borderRadius: BorderRadius.circular(8),
+      builder:
+          (ctx) => SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCBD5E1),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                  child: const Icon(Icons.photo_library_outlined, color: Color(0xFF5E227A)),
-                ),
-                title: Text(
-                  'Choose from Gallery'.trData(context),
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                ),
-                subtitle: Text(
-                  'Select an image from your photos'.trData(context),
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _pickFlyerImage(ImageSource.gallery);
-                },
-              ),
-              const SizedBox(height: 6),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF3E8FF),
-                    borderRadius: BorderRadius.circular(8),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Attach Flyer or Artwork'.trData(context),
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF0F172A),
+                    ),
                   ),
-                  child: const Icon(Icons.camera_alt_outlined, color: Color(0xFF5E227A)),
-                ),
-                title: Text(
-                  'Take a Photo'.trData(context),
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                ),
-                subtitle: Text(
-                  'Use camera to capture flyer'.trData(context),
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _pickFlyerImage(ImageSource.camera);
-                },
+                  const SizedBox(height: 18),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _pickFlyerImage(ImageSource.gallery);
+                      },
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 13,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: const Color(0xFFE2E8F0),
+                            width: 1.2,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 46,
+                              height: 46,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF3E8FF),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.photo_library_outlined,
+                                color: Color(0xFF5E227A),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Choose from Gallery'.trData(context),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 15,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    'Select an image from your photos'.trData(
+                                      context,
+                                    ),
+                                    style: const TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xFF475569),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right_rounded,
+                              color: Color(0xFF94A3B8),
+                              size: 22,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _pickFlyerImage(ImageSource.camera);
+                      },
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 13,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: const Color(0xFFE2E8F0),
+                            width: 1.2,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 46,
+                              height: 46,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF3E8FF),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt_outlined,
+                                color: Color(0xFF5E227A),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Take a Photo'.trData(context),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 15,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    'Use camera to capture flyer'.trData(
+                                      context,
+                                    ),
+                                    style: const TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xFF475569),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right_rounded,
+                              color: Color(0xFF94A3B8),
+                              size: 22,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 
@@ -321,64 +558,112 @@ class _ArtistChatViewState extends State<ArtistChatView> {
     if (_attachedFlyerBytes == null) return;
     showDialog(
       context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Stack(
-              alignment: Alignment.topRight,
-              children: [
-                InteractiveViewer(
-                  child: Image.memory(
-                    _attachedFlyerBytes!,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: CircleAvatar(
-                    backgroundColor: Colors.black54,
-                    radius: 16,
-                    child: IconButton(
-                      icon: const Icon(Icons.close, size: 16, color: Colors.white),
-                      onPressed: () => Navigator.pop(ctx),
-                      padding: EdgeInsets.zero,
-                    ),
-                  ),
-                ),
-              ],
+      builder:
+          (ctx) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
+            backgroundColor: Colors.white,
+            clipBehavior: Clip.antiAlias,
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 24,
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 520,
+                maxHeight: MediaQuery.of(ctx).size.height * 0.82,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: Text(
-                      _attachedFlyerName ?? 'Flyer preview'.trData(context),
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  Flexible(
+                    child: Stack(
+                      alignment: Alignment.topRight,
+                      children: [
+                        Container(
+                          color: const Color(0xFF0F172A),
+                          width: double.infinity,
+                          alignment: Alignment.center,
+                          child: InteractiveViewer(
+                            clipBehavior: Clip.antiAlias,
+                            minScale: 1.0,
+                            maxScale: 4.0,
+                            child: Image.memory(
+                              _attachedFlyerBytes!,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 10,
+                          right: 10,
+                          child: Material(
+                            color: Colors.black54,
+                            shape: const CircleBorder(),
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              onTap: () => Navigator.pop(ctx),
+                              child: const Padding(
+                                padding: EdgeInsets.all(7),
+                                child: Icon(
+                                  Icons.close_rounded,
+                                  size: 18,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  TextButton.icon(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      _showFlyerPickerSheet();
-                    },
-                    icon: const Icon(Icons.swap_horiz_rounded, size: 18),
-                    label: Text('Change'.trData(context)),
-                    style: TextButton.styleFrom(foregroundColor: const Color(0xFF5E227A)),
+                  Container(
+                    color: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.attachment_rounded,
+                          size: 18,
+                          color: Color(0xFF5E227A),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _attachedFlyerName ??
+                                'Flyer preview'.trData(context),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF0F172A),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _showFlyerPickerSheet();
+                          },
+                          icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+                          label: Text('Change'.trData(context)),
+                          style: TextButton.styleFrom(
+                            foregroundColor: const Color(0xFF5E227A),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -391,13 +676,14 @@ class _ArtistChatViewState extends State<ArtistChatView> {
         String searchQuery = '';
         return StatefulBuilder(
           builder: (modalCtx, setModalState) {
-            final filtered = _allArtists.where((a) {
-              if (searchQuery.trim().isEmpty) return true;
-              final q = searchQuery.toLowerCase();
-              return a.name.toLowerCase().contains(q) ||
-                  a.category.toLowerCase().contains(q) ||
-                  a.location.toLowerCase().contains(q);
-            }).toList();
+            final filtered =
+                _allArtists.where((a) {
+                  if (searchQuery.trim().isEmpty) return true;
+                  final q = searchQuery.toLowerCase();
+                  return a.name.toLowerCase().contains(q) ||
+                      a.category.toLowerCase().contains(q) ||
+                      a.location.toLowerCase().contains(q);
+                }).toList();
 
             return Container(
               height: MediaQuery.of(ctx).size.height * 0.75,
@@ -429,7 +715,7 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close),
+                        icon: const Icon(Icons.close, color: Color(0xFF1E1E1E)),
                         onPressed: () => Navigator.pop(ctx),
                       ),
                     ],
@@ -437,12 +723,29 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                   const SizedBox(height: 8),
                   TextField(
                     autofocus: true,
+                    style: const TextStyle(
+                      color: Color(0xFF0F172A),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
                     decoration: InputDecoration(
-                      hintText: 'Search artist by name or category...'.trData(modalCtx),
-                      prefixIcon: const Icon(Icons.search, color: Color(0xFF5E227A)),
+                      hintText: 'Search artist by name or category...'.trData(
+                        modalCtx,
+                      ),
+                      hintStyle: const TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 14,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: Color(0xFF5E227A),
+                      ),
                       filled: true,
                       fillColor: const Color(0xFFF1F5F9),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide.none,
@@ -456,65 +759,86 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                   ),
                   const SizedBox(height: 12),
                   Expanded(
-                    child: _isLoadingArtists
-                        ? const Center(child: CircularProgressIndicator(color: Color(0xFF5E227A)))
-                        : filtered.isEmpty
+                    child:
+                        _isLoadingArtists
+                            ? const Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF5E227A),
+                              ),
+                            )
+                            : filtered.isEmpty
                             ? Center(
-                                child: Text(
-                                  'No artists found'.trData(modalCtx),
-                                  style: const TextStyle(color: Color(0xFF64748B)),
+                              child: Text(
+                                'No artists found'.trData(modalCtx),
+                                style: const TextStyle(
+                                  color: Color(0xFF64748B),
                                 ),
-                              )
+                              ),
+                            )
                             : ListView.separated(
-                                itemCount: filtered.length,
-                                separatorBuilder: (_, __) => const Divider(height: 1),
-                                itemBuilder: (itemCtx, index) {
-                                  final artist = filtered[index];
-                                  final isSelected = _selectedArtist?.id == artist.id;
-                                  return ListTile(
-                                    leading: CircleAvatar(
-                                      radius: 20,
-                                      backgroundColor: const Color(0xFF5E227A),
-                                      backgroundImage: artist.avatarUrl.isNotEmpty
-                                          ? NetworkImage(artist.avatarUrl)
-                                          : null,
-                                      child: artist.avatarUrl.isEmpty
-                                          ? Text(
+                              itemCount: filtered.length,
+                              separatorBuilder:
+                                  (_, __) => const Divider(height: 1),
+                              itemBuilder: (itemCtx, index) {
+                                final artist = filtered[index];
+                                final isSelected =
+                                    _selectedArtist?.id == artist.id;
+                                return ListTile(
+                                  leading: CircleAvatar(
+                                    radius: 20,
+                                    backgroundColor: const Color(0xFF5E227A),
+                                    backgroundImage:
+                                        artist.avatarUrl.isNotEmpty
+                                            ? NetworkImage(artist.avatarUrl)
+                                            : null,
+                                    child:
+                                        artist.avatarUrl.isEmpty
+                                            ? Text(
                                               artist.name.isNotEmpty
-                                                  ? artist.name.trData(modalCtx)[0].toUpperCase()
+                                                  ? artist.name
+                                                      .trData(modalCtx)[0]
+                                                      .toUpperCase()
                                                   : 'A',
                                               style: const TextStyle(
                                                 color: Colors.white,
                                                 fontWeight: FontWeight.bold,
                                               ),
                                             )
+                                            : null,
+                                  ),
+                                  title: Text(
+                                    artist.name.trData(modalCtx),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color:
+                                          isSelected
+                                              ? const Color(0xFF5E227A)
+                                              : const Color(0xFF1E1E1E),
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    '${artist.category.trData(modalCtx)} • ${artist.location.trData(modalCtx)}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF64748B),
+                                    ),
+                                  ),
+                                  trailing:
+                                      isSelected
+                                          ? const Icon(
+                                            Icons.check_circle,
+                                            color: Color(0xFF5E227A),
+                                          )
                                           : null,
-                                    ),
-                                    title: Text(
-                                      artist.name.trData(modalCtx),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        color: isSelected
-                                            ? const Color(0xFF5E227A)
-                                            : const Color(0xFF1E1E1E),
-                                      ),
-                                    ),
-                                    subtitle: Text(
-                                      '${artist.category.trData(modalCtx)} • ${artist.location.trData(modalCtx)}',
-                                      style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                                    ),
-                                    trailing: isSelected
-                                        ? const Icon(Icons.check_circle, color: Color(0xFF5E227A))
-                                        : null,
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedArtist = artist;
-                                      });
-                                      Navigator.pop(ctx);
-                                    },
-                                  );
-                                },
-                              ),
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedArtist = artist;
+                                    });
+                                    Navigator.pop(ctx);
+                                  },
+                                );
+                              },
+                            ),
                   ),
                 ],
               ),
@@ -543,7 +867,11 @@ class _ArtistChatViewState extends State<ArtistChatView> {
     if (!chatService.canSendMessage()) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Monthly message limit reached. Upgrade your plan for more.'.trData(context)),
+          content: Text(
+            'Monthly message limit reached. Upgrade your plan for more.'.trData(
+              context,
+            ),
+          ),
           backgroundColor: const Color(0xFFEF4444),
           action: SnackBarAction(
             label: 'Plans'.trData(context),
@@ -560,7 +888,10 @@ class _ArtistChatViewState extends State<ArtistChatView> {
     try {
       String? flyerUrl;
       if (_attachedFlyerBytes != null) {
-        flyerUrl = await sl<ApiService>().uploadImageBytes(_attachedFlyerBytes!, ext: 'jpg');
+        flyerUrl = await sl<ApiService>().uploadImageBytes(
+          _attachedFlyerBytes!,
+          ext: 'jpg',
+        );
       }
 
       await chatService.sendMessage(
@@ -568,7 +899,10 @@ class _ArtistChatViewState extends State<ArtistChatView> {
         recipientName: _selectedArtist!.name,
         recipientCategory: _selectedArtist!.category,
         recipientAvatarUrl: _selectedArtist!.avatarUrl,
-        subject: _subjectController.text.trim().isEmpty ? 'Direct Artist Message' : _subjectController.text.trim(),
+        subject:
+            _subjectController.text.trim().isEmpty
+                ? 'Direct Artist Message'
+                : _subjectController.text.trim(),
         message: message,
         flyerUrl: flyerUrl,
       );
@@ -580,7 +914,8 @@ class _ArtistChatViewState extends State<ArtistChatView> {
         _attachedFlyerBytes = null;
         _attachedFlyerName = null;
         _selectedTabIndex = 0; // Switch to Messages tab
-        _messageFilterIndex = 0; // Show in All so the user immediately sees the sent card
+        _messageFilterIndex =
+            0; // Show in All so the user immediately sees the sent card
       });
 
       await _loadMessages();
@@ -611,62 +946,122 @@ class _ArtistChatViewState extends State<ArtistChatView> {
   void _showNetworkFlyerPreview(BuildContext context, String url) {
     showDialog(
       context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Stack(
-              alignment: Alignment.topRight,
-              children: [
-                InteractiveViewer(
-                  child: Image.network(
-                    url,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 200,
-                      color: const Color(0xFFF1F5F9),
-                      alignment: Alignment.center,
-                      child: const Icon(Icons.broken_image_outlined, size: 40, color: Color(0xFF94A3B8)),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: CircleAvatar(
-                    backgroundColor: Colors.black54,
-                    radius: 16,
-                    child: IconButton(
-                      icon: const Icon(Icons.close, size: 16, color: Colors.white),
-                      onPressed: () => Navigator.pop(ctx),
-                      padding: EdgeInsets.zero,
-                    ),
-                  ),
-                ),
-              ],
+      builder:
+          (ctx) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            backgroundColor: Colors.white,
+            clipBehavior: Clip.antiAlias,
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 24,
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 520,
+                maxHeight: MediaQuery.of(ctx).size.height * 0.82,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    'Flyer Attachment'.trData(context),
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  Flexible(
+                    child: Stack(
+                      alignment: Alignment.topRight,
+                      children: [
+                        Container(
+                          color: const Color(0xFF0F172A),
+                          width: double.infinity,
+                          alignment: Alignment.center,
+                          child: InteractiveViewer(
+                            clipBehavior: Clip.antiAlias,
+                            minScale: 1.0,
+                            maxScale: 4.0,
+                            child: Image.network(
+                              url,
+                              fit: BoxFit.contain,
+                              errorBuilder:
+                                  (_, __, ___) => Container(
+                                    height: 200,
+                                    color: const Color(0xFFF1F5F9),
+                                    alignment: Alignment.center,
+                                    child: const Icon(
+                                      Icons.broken_image_outlined,
+                                      size: 40,
+                                      color: Color(0xFF94A3B8),
+                                    ),
+                                  ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 10,
+                          right: 10,
+                          child: Material(
+                            color: Colors.black54,
+                            shape: const CircleBorder(),
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              onTap: () => Navigator.pop(ctx),
+                              child: const Padding(
+                                padding: EdgeInsets.all(7),
+                                child: Icon(
+                                  Icons.close_rounded,
+                                  size: 18,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: Text('Close'.trData(context)),
+                  Container(
+                    color: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.image_outlined,
+                              size: 18,
+                              color: Color(0xFF5E227A),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Flyer Attachment'.trData(context),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF0F172A),
+                              ),
+                            ),
+                          ],
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          style: TextButton.styleFrom(
+                            foregroundColor: const Color(0xFF5E227A),
+                          ),
+                          child: Text(
+                            'Close'.trData(context),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -677,20 +1072,38 @@ class _ArtistChatViewState extends State<ArtistChatView> {
       builder: (ctx) {
         final translatedRecipientName = msg.recipientName.trData(ctx);
         final translatedSenderName = msg.senderName.trData(ctx);
-        final translatedSubject = msg.subject.isNotEmpty ? msg.subject.trData(ctx) : '';
+        final translatedSubject =
+            msg.subject.isNotEmpty ? msg.subject.trData(ctx) : '';
         final translatedMessage = msg.message.trData(ctx);
         final translatedCategory = msg.recipientCategory.trData(ctx);
 
-        final displayName = isIncoming ? translatedSenderName : translatedRecipientName;
-        final displaySubtitle = isIncoming
-            ? (msg.senderEmail.isNotEmpty ? msg.senderEmail : 'Artist'.trData(ctx))
-            : (translatedCategory.isNotEmpty ? translatedCategory : 'Artist'.trData(ctx));
-        final displayAvatarUrl = isIncoming ? msg.senderAvatarUrl : msg.recipientAvatarUrl;
+        final displayName =
+            isIncoming ? translatedSenderName : translatedRecipientName;
+        final displaySubtitle =
+            isIncoming
+                ? (msg.senderEmail.isNotEmpty
+                    ? msg.senderEmail
+                    : 'Artist'.trData(ctx))
+                : (translatedCategory.isNotEmpty
+                    ? translatedCategory
+                    : 'Artist'.trData(ctx));
+        final displayAvatarUrl =
+            isIncoming ? msg.senderAvatarUrl : msg.recipientAvatarUrl;
 
         final date = msg.createdAt;
         final months = [
-          'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec',
         ];
         final monthName = months[(date.month - 1).clamp(0, 11)];
         final hour = date.hour;
@@ -698,13 +1111,19 @@ class _ArtistChatViewState extends State<ArtistChatView> {
         final isPm = hour >= 12;
         final formattedHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
         final timeAmPm = '$formattedHour:$minute ${isPm ? 'PM' : 'AM'}';
-        final formattedDateStr = '$monthName ${date.day}, ${date.year} • $timeAmPm';
+        final formattedDateStr =
+            '$monthName ${date.day}, ${date.year} • $timeAmPm';
 
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           backgroundColor: Colors.white,
           clipBehavior: Clip.antiAlias,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 18,
+            vertical: 24,
+          ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
             child: Column(
@@ -720,19 +1139,25 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                       CircleAvatar(
                         radius: 22,
                         backgroundColor: const Color(0xFF5E227A),
-                        backgroundImage: (displayAvatarUrl != null && displayAvatarUrl.isNotEmpty)
-                            ? NetworkImage(displayAvatarUrl)
-                            : null,
-                        child: (displayAvatarUrl == null || displayAvatarUrl.isEmpty)
-                            ? Text(
-                                displayName.isNotEmpty ? displayName[0].toUpperCase() : 'A',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              )
-                            : null,
+                        backgroundImage:
+                            (displayAvatarUrl != null &&
+                                    displayAvatarUrl.isNotEmpty)
+                                ? NetworkImage(displayAvatarUrl)
+                                : null,
+                        child:
+                            (displayAvatarUrl == null ||
+                                    displayAvatarUrl.isEmpty)
+                                ? Text(
+                                  displayName.isNotEmpty
+                                      ? displayName[0].toUpperCase()
+                                      : 'A',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                )
+                                : null,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -757,12 +1182,21 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                                 ),
                                 const SizedBox(width: 6),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 2.5,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: isIncoming ? const Color(0xFFDCFCE7) : const Color(0xFFFAF5FF),
+                                    color:
+                                        isIncoming
+                                            ? const Color(0xFFDCFCE7)
+                                            : const Color(0xFFFAF5FF),
                                     borderRadius: BorderRadius.circular(6),
                                     border: Border.all(
-                                      color: isIncoming ? const Color(0xFF86EFAC) : const Color(0xFFE9D5FF),
+                                      color:
+                                          isIncoming
+                                              ? const Color(0xFF86EFAC)
+                                              : const Color(0xFFE9D5FF),
                                       width: 1,
                                     ),
                                   ),
@@ -770,17 +1204,28 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Icon(
-                                        isIncoming ? Icons.mark_email_read_outlined : Icons.check_circle_outline_rounded,
+                                        isIncoming
+                                            ? Icons.mark_email_read_outlined
+                                            : Icons
+                                                .check_circle_outline_rounded,
                                         size: 11,
-                                        color: isIncoming ? const Color(0xFF15803D) : const Color(0xFF5E227A),
+                                        color:
+                                            isIncoming
+                                                ? const Color(0xFF15803D)
+                                                : const Color(0xFF5E227A),
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
-                                        isIncoming ? 'Inbox'.trData(ctx) : 'Sent'.trData(ctx),
+                                        isIncoming
+                                            ? 'Inbox'.trData(ctx)
+                                            : 'Sent'.trData(ctx),
                                         style: TextStyle(
                                           fontSize: 10,
                                           fontWeight: FontWeight.bold,
-                                          color: isIncoming ? const Color(0xFF15803D) : const Color(0xFF5E227A),
+                                          color:
+                                              isIncoming
+                                                  ? const Color(0xFF15803D)
+                                                  : const Color(0xFF5E227A),
                                         ),
                                       ),
                                     ],
@@ -803,7 +1248,11 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 20, color: Color(0xFF64748B)),
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          size: 20,
+                          color: Color(0xFF64748B),
+                        ),
                         tooltip: 'Close'.trData(ctx),
                         onPressed: () => Navigator.pop(ctx),
                         padding: const EdgeInsets.all(6),
@@ -826,11 +1275,17 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                         if (translatedSubject.isNotEmpty) ...[
                           Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFFAF5FF),
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: const Color(0xFFE9D5FF), width: 1.2),
+                              border: Border.all(
+                                color: const Color(0xFFE9D5FF),
+                                width: 1.2,
+                              ),
                             ),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -846,7 +1301,8 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Subject:'.trData(ctx),
@@ -907,7 +1363,8 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                         ),
 
                         // Attached Flyer Section
-                        if (msg.flyerUrl != null && msg.flyerUrl!.isNotEmpty) ...[
+                        if (msg.flyerUrl != null &&
+                            msg.flyerUrl!.isNotEmpty) ...[
                           const SizedBox(height: 14),
                           Text(
                             'ATTACHED FLYER'.trData(ctx),
@@ -920,11 +1377,17 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                           ),
                           const SizedBox(height: 6),
                           GestureDetector(
-                            onTap: () => _showNetworkFlyerPreview(context, msg.flyerUrl!),
+                            onTap:
+                                () => _showNetworkFlyerPreview(
+                                  context,
+                                  msg.flyerUrl!,
+                                ),
                             child: Container(
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFE2E8F0)),
+                                border: Border.all(
+                                  color: const Color(0xFFE2E8F0),
+                                ),
                               ),
                               clipBehavior: Clip.antiAlias,
                               child: Stack(
@@ -935,31 +1398,49 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                                     fit: BoxFit.cover,
                                     width: double.infinity,
                                     height: 180,
-                                    errorBuilder: (_, __, ___) => Container(
-                                      height: 80,
-                                      color: const Color(0xFFF1F5F9),
-                                      alignment: Alignment.center,
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          const Icon(Icons.broken_image_outlined, size: 20, color: Color(0xFF94A3B8)),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            'Flyer preview unavailable'.trData(ctx),
-                                            style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                                    errorBuilder:
+                                        (_, __, ___) => Container(
+                                          height: 80,
+                                          color: const Color(0xFFF1F5F9),
+                                          alignment: Alignment.center,
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              const Icon(
+                                                Icons.broken_image_outlined,
+                                                size: 20,
+                                                color: Color(0xFF94A3B8),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                'Flyer preview unavailable'
+                                                    .trData(ctx),
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  color: Color(0xFF94A3B8),
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                        ],
-                                      ),
-                                    ),
+                                        ),
                                   ),
                                   Container(
                                     width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 6,
+                                      horizontal: 10,
+                                    ),
                                     color: Colors.black.withValues(alpha: 0.6),
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
-                                        const Icon(Icons.zoom_in, color: Colors.white, size: 14),
+                                        const Icon(
+                                          Icons.zoom_in,
+                                          color: Colors.white,
+                                          size: 14,
+                                        ),
                                         const SizedBox(width: 6),
                                         Text(
                                           'Tap to view full flyer'.trData(ctx),
@@ -983,11 +1464,18 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                         // Timestamp Row
                         Row(
                           children: [
-                            const Icon(Icons.schedule_rounded, size: 13, color: Color(0xFF94A3B8)),
+                            const Icon(
+                              Icons.schedule_rounded,
+                              size: 13,
+                              color: Color(0xFF94A3B8),
+                            ),
                             const SizedBox(width: 6),
                             Text(
                               formattedDateStr,
-                              style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                color: Color(0xFF64748B),
+                              ),
                             ),
                           ],
                         ),
@@ -1000,7 +1488,10 @@ class _ArtistChatViewState extends State<ArtistChatView> {
 
                 // 3. Actions Row
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 12,
+                  ),
                   child: Row(
                     children: [
                       Expanded(
@@ -1010,11 +1501,16 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                             foregroundColor: const Color(0xFF475569),
                             side: const BorderSide(color: Color(0xFFCBD5E1)),
                             padding: const EdgeInsets.symmetric(vertical: 11),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                           ),
                           child: Text(
                             'Close'.trData(ctx),
-                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ),
@@ -1029,13 +1525,18 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                           icon: const Icon(Icons.reply_rounded, size: 16),
                           label: Text(
                             'Reply'.trData(ctx),
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13.5,
+                            ),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF5E227A),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 11),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                             elevation: 0,
                           ),
                         ),
@@ -1091,10 +1592,16 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF5E227A).withValues(alpha: 0.1),
+                            color: const Color(
+                              0xFF5E227A,
+                            ).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.workspace_premium_rounded, color: Color(0xFF5E227A), size: 26),
+                          child: const Icon(
+                            Icons.workspace_premium_rounded,
+                            color: Color(0xFF5E227A),
+                            size: 26,
+                          ),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -1111,7 +1618,8 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Upgrade to connect with more artists across dubai.'.trData(modalCtx),
+                                'Upgrade to connect with more artists across dubai.'
+                                    .trData(modalCtx),
                                 style: const TextStyle(
                                   fontSize: 12,
                                   color: Color(0xFF64748B),
@@ -1121,7 +1629,10 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close, color: Color(0xFF64748B)),
+                          icon: const Icon(
+                            Icons.close,
+                            color: Color(0xFF64748B),
+                          ),
                           onPressed: () => Navigator.pop(sheetCtx),
                         ),
                       ],
@@ -1146,7 +1657,12 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                               'Allowance auto-resets on the 1st',
                             ],
                             isCurrent: isStarter,
-                            onUpgrade: () => _handleUpgradePlan('Starter Plan', 10, sheetCtx),
+                            onUpgrade:
+                                () => _handleUpgradePlan(
+                                  'Starter Plan',
+                                  10,
+                                  sheetCtx,
+                                ),
                           ),
                           const SizedBox(height: 14),
                           _buildPlanTierCard(
@@ -1164,7 +1680,12 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                               'Monthly reset on the 1st',
                             ],
                             isCurrent: isPro,
-                            onUpgrade: () => _handleUpgradePlan('Pro Artist', 50, sheetCtx),
+                            onUpgrade:
+                                () => _handleUpgradePlan(
+                                  'Pro Artist',
+                                  50,
+                                  sheetCtx,
+                                ),
                           ),
                           const SizedBox(height: 14),
                           _buildPlanTierCard(
@@ -1180,7 +1701,12 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                               'Priority instant customer support',
                             ],
                             isCurrent: isUnlimited,
-                            onUpgrade: () => _handleUpgradePlan('Unlimited VIP', 9999, sheetCtx),
+                            onUpgrade:
+                                () => _handleUpgradePlan(
+                                  'Unlimited VIP',
+                                  9999,
+                                  sheetCtx,
+                                ),
                           ),
                           const SizedBox(height: 20),
                           InkWell(
@@ -1190,19 +1716,29 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                             },
                             borderRadius: BorderRadius.circular(12),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF8FAFC),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFE2E8F0)),
+                                border: Border.all(
+                                  color: const Color(0xFFE2E8F0),
+                                ),
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.campaign_outlined, color: Color(0xFF5E227A), size: 20),
+                                  const Icon(
+                                    Icons.campaign_outlined,
+                                    color: Color(0xFF5E227A),
+                                    size: 20,
+                                  ),
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: Text(
-                                      'Looking to publish events, galleries or art centres? View Listing Plans →'.trData(modalCtx),
+                                      'Looking to publish events, galleries or art centres? View Listing Plans →'
+                                          .trData(modalCtx),
                                       style: const TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
@@ -1227,7 +1763,11 @@ class _ArtistChatViewState extends State<ArtistChatView> {
     );
   }
 
-  Future<void> _handleUpgradePlan(String planName, int maxAllowance, BuildContext sheetCtx) async {
+  Future<void> _handleUpgradePlan(
+    String planName,
+    int maxAllowance,
+    BuildContext sheetCtx,
+  ) async {
     Navigator.pop(sheetCtx);
     final success = await sl<ChatService>().upgradePlan(
       planName: planName,
@@ -1238,8 +1778,10 @@ class _ArtistChatViewState extends State<ArtistChatView> {
         SnackBar(
           content: Text(
             maxAllowance >= 9000
-                ? 'Upgraded to $planName! You now have unlimited messages.'.trData(context)
-                : 'Upgraded to $planName! Your monthly allowance is now $maxAllowance messages.'.trData(context),
+                ? 'Upgraded to $planName! You now have unlimited messages.'
+                    .trData(context)
+                : 'Upgraded to $planName! Your monthly allowance is now $maxAllowance messages.'
+                    .trData(context),
           ),
           backgroundColor: const Color(0xFF10B981),
           behavior: SnackBarBehavior.floating,
@@ -1264,9 +1806,10 @@ class _ArtistChatViewState extends State<ArtistChatView> {
         color: isFeatured ? const Color(0xFFFAF5FF) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isCurrent
-              ? const Color(0xFF10B981)
-              : isFeatured
+          color:
+              isCurrent
+                  ? const Color(0xFF10B981)
+                  : isFeatured
                   ? const Color(0xFF5E227A)
                   : const Color(0xFFE2E8F0),
           width: isFeatured || isCurrent ? 2 : 1,
@@ -1300,9 +1843,15 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                   if (badge != null) ...[
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
-                        color: isFeatured ? const Color(0xFF5E227A) : const Color(0xFFF1F5F9),
+                        color:
+                            isFeatured
+                                ? const Color(0xFF5E227A)
+                                : const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -1310,7 +1859,10 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: isFeatured ? Colors.white : const Color(0xFF64748B),
+                          color:
+                              isFeatured
+                                  ? Colors.white
+                                  : const Color(0xFF64748B),
                         ),
                       ),
                     ),
@@ -1319,7 +1871,10 @@ class _ArtistChatViewState extends State<ArtistChatView> {
               ),
               if (isCurrent)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFDCFCE7),
                     borderRadius: BorderRadius.circular(6),
@@ -1327,7 +1882,11 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.check_circle, size: 12, color: Color(0xFF10B981)),
+                      const Icon(
+                        Icons.check_circle,
+                        size: 12,
+                        color: Color(0xFF10B981),
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'Active Plan'.trData(context),
@@ -1403,8 +1962,12 @@ class _ArtistChatViewState extends State<ArtistChatView> {
             child: ElevatedButton(
               onPressed: isCurrent ? null : onUpgrade,
               style: ElevatedButton.styleFrom(
-                backgroundColor: isFeatured ? const Color(0xFF5E227A) : const Color(0xFFF1F5F9),
-                foregroundColor: isFeatured ? Colors.white : const Color(0xFF1E1E1E),
+                backgroundColor:
+                    isFeatured
+                        ? const Color(0xFF5E227A)
+                        : const Color(0xFFF1F5F9),
+                foregroundColor:
+                    isFeatured ? Colors.white : const Color(0xFF1E1E1E),
                 disabledBackgroundColor: const Color(0xFFE2E8F0),
                 disabledForegroundColor: const Color(0xFF94A3B8),
                 padding: const EdgeInsets.symmetric(vertical: 10),
@@ -1417,8 +1980,10 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                 isCurrent
                     ? 'Current Plan'.trData(context)
                     : isFeatured
-                        ? 'Upgrade to Pro'.trData(context)
-                        : (price == 'Free' ? 'Select Plan' : 'Upgrade').trData(context),
+                    ? 'Upgrade to Pro'.trData(context)
+                    : (price == 'Free' ? 'Select Plan' : 'Upgrade').trData(
+                      context,
+                    ),
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
@@ -1459,28 +2024,61 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        'ARTIST CHAT'.trData(context),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Send a private message to another artist.'.trData(context),
-                        style: const TextStyle(
-                          color: Color(0xFFE2D4F0),
-                          fontSize: 13.5,
-                        ),
+                      Row(
+                        children: [
+                          if (Navigator.of(context).canPop()) ...[
+                            IconButton(
+                              icon: const Icon(
+                                Icons.arrow_back,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () {
+                                if (Navigator.of(context).canPop()) {
+                                  Navigator.of(context).pop();
+                                }
+                              },
+                            ),
+                            const SizedBox(width: 12),
+                          ],
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'ARTIST CHAT'.trData(context),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Send a private message to another artist.'.trData(
+                                    context,
+                                  ),
+                                  style: const TextStyle(
+                                    color: Color(0xFFE2D4F0),
+                                    fontSize: 13.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
 
                       // Allowance Card
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
@@ -1499,12 +2097,15 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                               children: [
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         _maxMessages >= 9000
-                                            ? 'Unlimited messages left this month'.trData(context)
-                                            : '$_remainingMessages of $_maxMessages messages left this month'.trData(context),
+                                            ? 'Unlimited messages left this month'
+                                                .trData(context)
+                                            : '$_remainingMessages of $_maxMessages messages left this month'
+                                                .trData(context),
                                         style: const TextStyle(
                                           color: Color(0xFF1E1E1E),
                                           fontSize: 14.5,
@@ -1513,7 +2114,8 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
-                                        'Your allowance resets on the 1st. Upgrade your plan for more.'.trData(context),
+                                        'Your allowance resets on the 1st. Upgrade your plan for more.'
+                                            .trData(context),
                                         style: const TextStyle(
                                           color: Color(0xFF64748B),
                                           fontSize: 12,
@@ -1527,7 +2129,10 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF5E227A),
                                     foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 10,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(8),
                                     ),
@@ -1547,11 +2152,14 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                             ClipRRect(
                               borderRadius: BorderRadius.circular(4),
                               child: LinearProgressIndicator(
-                                value: _maxMessages >= 9000
-                                    ? 1.0
-                                    : (_maxMessages > 0
-                                        ? (_remainingMessages / _maxMessages).clamp(0.0, 1.0)
-                                        : 0.0),
+                                value:
+                                    _maxMessages >= 9000
+                                        ? 1.0
+                                        : (_maxMessages > 0
+                                            ? (_remainingMessages /
+                                                    _maxMessages)
+                                                .clamp(0.0, 1.0)
+                                            : 0.0),
                                 minHeight: 6,
                                 backgroundColor: const Color(0xFFE2E8F0),
                                 valueColor: AlwaysStoppedAnimation<Color>(
@@ -1588,20 +2196,33 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                                 },
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: _selectedTabIndex == 0
-                                        ? const Color(0xFF5E227A)
-                                        : Colors.transparent,
+                                    color:
+                                        _selectedTabIndex == 0
+                                            ? const Color(0xFF5E227A)
+                                            : Colors.transparent,
                                     borderRadius: BorderRadius.circular(10),
-                                    border: _selectedTabIndex == 0
-                                        ? Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1)
-                                        : null,
+                                    border:
+                                        _selectedTabIndex == 0
+                                            ? Border.all(
+                                              color: Colors.white.withValues(
+                                                alpha: 0.3,
+                                              ),
+                                              width: 1,
+                                            )
+                                            : null,
                                   ),
                                   alignment: Alignment.center,
                                   child: Text(
                                     'Messages'.trData(context),
                                     style: TextStyle(
-                                      color: _selectedTabIndex == 0 ? Colors.white : const Color(0xFFD4BEE4),
-                                      fontWeight: _selectedTabIndex == 0 ? FontWeight.bold : FontWeight.w500,
+                                      color:
+                                          _selectedTabIndex == 0
+                                              ? Colors.white
+                                              : const Color(0xFFD4BEE4),
+                                      fontWeight:
+                                          _selectedTabIndex == 0
+                                              ? FontWeight.bold
+                                              : FontWeight.w500,
                                       fontSize: 14,
                                     ),
                                   ),
@@ -1611,23 +2232,37 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                             Expanded(
                               child: GestureDetector(
                                 behavior: HitTestBehavior.opaque,
-                                onTap: () => setState(() => _selectedTabIndex = 1),
+                                onTap:
+                                    () => setState(() => _selectedTabIndex = 1),
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: _selectedTabIndex == 1
-                                        ? const Color(0xFF5E227A)
-                                        : Colors.transparent,
+                                    color:
+                                        _selectedTabIndex == 1
+                                            ? const Color(0xFF5E227A)
+                                            : Colors.transparent,
                                     borderRadius: BorderRadius.circular(10),
-                                    border: _selectedTabIndex == 1
-                                        ? Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1)
-                                        : null,
+                                    border:
+                                        _selectedTabIndex == 1
+                                            ? Border.all(
+                                              color: Colors.white.withValues(
+                                                alpha: 0.3,
+                                              ),
+                                              width: 1,
+                                            )
+                                            : null,
                                   ),
                                   alignment: Alignment.center,
                                   child: Text(
                                     'Send'.trData(context),
                                     style: TextStyle(
-                                      color: _selectedTabIndex == 1 ? Colors.white : const Color(0xFFD4BEE4),
-                                      fontWeight: _selectedTabIndex == 1 ? FontWeight.bold : FontWeight.w500,
+                                      color:
+                                          _selectedTabIndex == 1
+                                              ? Colors.white
+                                              : const Color(0xFFD4BEE4),
+                                      fontWeight:
+                                          _selectedTabIndex == 1
+                                              ? FontWeight.bold
+                                              : FontWeight.w500,
                                       fontSize: 14,
                                     ),
                                   ),
@@ -1696,10 +2331,15 @@ class _ArtistChatViewState extends State<ArtistChatView> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.chat_bubble_outline_rounded, size: 40, color: Color(0xFF94A3B8)),
+            const Icon(
+              Icons.chat_bubble_outline_rounded,
+              size: 40,
+              color: Color(0xFF94A3B8),
+            ),
             const SizedBox(height: 12),
             Text(
-              'No messages yet. Search for an artist in the Send tab to start a conversation.'.trData(context),
+              'No messages yet. Search for an artist in the Send tab to start a conversation.'
+                  .trData(context),
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Color(0xFF475569),
@@ -1718,8 +2358,13 @@ class _ArtistChatViewState extends State<ArtistChatView> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF5E227A),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 elevation: 0,
               ),
             ),
@@ -1733,11 +2378,14 @@ class _ArtistChatViewState extends State<ArtistChatView> {
       final result = <ArtistMessageModel>[];
       for (final m in list) {
         // Unique identity key based on IDs or content
-        final contentKey = '${m.senderEmail.trim().toLowerCase()}_${m.recipientId.trim()}_${m.subject.trim().toLowerCase()}_${m.message.trim()}';
+        final contentKey =
+            '${m.senderEmail.trim().toLowerCase()}_${m.recipientId.trim()}_${m.subject.trim().toLowerCase()}_${m.message.trim()}';
         final isDupe = result.any((r) {
           if (r.id.isNotEmpty && m.id.isNotEmpty && r.id == m.id) return true;
-          final rKey = '${r.senderEmail.trim().toLowerCase()}_${r.recipientId.trim()}_${r.subject.trim().toLowerCase()}_${r.message.trim()}';
-          return rKey == contentKey && r.createdAt.difference(m.createdAt).abs().inMinutes < 2;
+          final rKey =
+              '${r.senderEmail.trim().toLowerCase()}_${r.recipientId.trim()}_${r.subject.trim().toLowerCase()}_${r.message.trim()}';
+          return rKey == contentKey &&
+              r.createdAt.difference(m.createdAt).abs().inMinutes < 2;
         });
         if (!isDupe) {
           result.add(m);
@@ -1748,7 +2396,8 @@ class _ArtistChatViewState extends State<ArtistChatView> {
 
     final uniqueAll = deduplicateForUi(_messages);
     final inboxMessages = uniqueAll.where(_isIncomingMessage).toList();
-    final sentMessages = uniqueAll.where((m) => !_isIncomingMessage(m)).toList();
+    final sentMessages =
+        uniqueAll.where((m) => !_isIncomingMessage(m)).toList();
 
     List<ArtistMessageModel> displayedMessages;
     if (_messageFilterIndex == 1) {
@@ -1780,7 +2429,8 @@ class _ArtistChatViewState extends State<ArtistChatView> {
               _buildFilterPill(
                 title: '${'Inbox'.trData(context)} (${inboxMessages.length})',
                 isSelected: _messageFilterIndex == 1,
-                badgeColor: inboxMessages.isNotEmpty ? const Color(0xFF10B981) : null,
+                badgeColor:
+                    inboxMessages.isNotEmpty ? const Color(0xFF10B981) : null,
                 onTap: () => setState(() => _messageFilterIndex = 1),
               ),
               _buildFilterPill(
@@ -1805,10 +2455,7 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                   ? 'No messages in inbox'.trData(context)
                   : 'No sent messages'.trData(context),
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF64748B),
-                fontSize: 13.5,
-              ),
+              style: const TextStyle(color: Color(0xFF64748B), fontSize: 13.5),
             ),
           )
         else
@@ -1824,21 +2471,25 @@ class _ArtistChatViewState extends State<ArtistChatView> {
     final rawSubject = msg.subject.trim();
     final translatedMessage = msg.message.trData(context);
 
-    final displayName = isIncoming ? translatedSenderName : translatedRecipientName;
-    final displaySubtitle = msg.recipientCategory.isNotEmpty
-        ? msg.recipientCategory.trData(context)
-        : '';
+    final displayName =
+        isIncoming ? translatedSenderName : translatedRecipientName;
+    final displaySubtitle =
+        msg.recipientCategory.isNotEmpty
+            ? msg.recipientCategory.trData(context)
+            : 'Artist'.trData(context);
     final avatarUrl = isIncoming ? msg.senderAvatarUrl : msg.recipientAvatarUrl;
 
     final now = DateTime.now();
-    final isToday = now.year == msg.createdAt.year &&
+    final isToday =
+        now.year == msg.createdAt.year &&
         now.month == msg.createdAt.month &&
         now.day == msg.createdAt.day;
     final timeStr =
         '${msg.createdAt.hour.toString().padLeft(2, '0')}:${msg.createdAt.minute.toString().padLeft(2, '0')}';
-    final dateDisplay = isToday
-        ? '${'Today'.trData(context)}, $timeStr'
-        : '${msg.createdAt.month}/${msg.createdAt.day}, $timeStr';
+    final dateDisplay =
+        isToday
+            ? '${'Today'.trData(context)}, $timeStr'
+            : '${msg.createdAt.month}/${msg.createdAt.day}, $timeStr';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1871,19 +2522,23 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                     CircleAvatar(
                       radius: 20,
                       backgroundColor: const Color(0xFF5E227A),
-                      backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
-                          ? NetworkImage(avatarUrl)
-                          : null,
-                      child: (avatarUrl == null || avatarUrl.isEmpty)
-                          ? Text(
-                              displayName.isNotEmpty ? displayName[0].toUpperCase() : 'A',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
-                            )
-                          : null,
+                      backgroundImage:
+                          (avatarUrl != null && avatarUrl.isNotEmpty)
+                              ? NetworkImage(avatarUrl)
+                              : null,
+                      child:
+                          (avatarUrl == null || avatarUrl.isEmpty)
+                              ? Text(
+                                displayName.isNotEmpty
+                                    ? displayName[0].toUpperCase()
+                                    : 'A',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              )
+                              : null,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -1908,9 +2563,14 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                               ),
                               const SizedBox(width: 4),
                               Icon(
-                                isIncoming ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+                                isIncoming
+                                    ? Icons.arrow_downward_rounded
+                                    : Icons.arrow_upward_rounded,
                                 size: 12,
-                                color: isIncoming ? const Color(0xFF10B981) : const Color(0xFF5E227A),
+                                color:
+                                    isIncoming
+                                        ? const Color(0xFF10B981)
+                                        : const Color(0xFF5E227A),
                               ),
                             ],
                           ),
@@ -1931,12 +2591,21 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
-                        color: isIncoming ? const Color(0xFFDCFCE7) : const Color(0xFFFAF5FF),
+                        color:
+                            isIncoming
+                                ? const Color(0xFFDCFCE7)
+                                : const Color(0xFFFAF5FF),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                          color: isIncoming ? const Color(0xFF86EFAC) : const Color(0xFFE9D5FF),
+                          color:
+                              isIncoming
+                                  ? const Color(0xFF86EFAC)
+                                  : const Color(0xFFE9D5FF),
                           width: 1,
                         ),
                       ),
@@ -1944,17 +2613,27 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            isIncoming ? Icons.mark_email_read_outlined : Icons.check_circle_outline_rounded,
+                            isIncoming
+                                ? Icons.mark_email_read_outlined
+                                : Icons.check_circle_outline_rounded,
                             size: 11,
-                            color: isIncoming ? const Color(0xFF15803D) : const Color(0xFF5E227A),
+                            color:
+                                isIncoming
+                                    ? const Color(0xFF15803D)
+                                    : const Color(0xFF5E227A),
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            isIncoming ? 'Inbox'.trData(context) : 'Sent'.trData(context),
+                            isIncoming
+                                ? 'Inbox'.trData(context)
+                                : 'Sent'.trData(context),
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
-                              color: isIncoming ? const Color(0xFF15803D) : const Color(0xFF5E227A),
+                              color:
+                                  isIncoming
+                                      ? const Color(0xFF15803D)
+                                      : const Color(0xFF5E227A),
                             ),
                           ),
                         ],
@@ -1969,11 +2648,17 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                 if (rawSubject.isNotEmpty) ...[
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+                      border: Border.all(
+                        color: const Color(0xFFE2E8F0),
+                        width: 1,
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -2026,7 +2711,10 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                 if (msg.flyerUrl != null && msg.flyerUrl!.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFAF5FF),
                       borderRadius: BorderRadius.circular(8),
@@ -2041,11 +2729,12 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                             width: 26,
                             height: 26,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Icon(
-                              Icons.image,
-                              size: 20,
-                              color: Color(0xFF5E227A),
-                            ),
+                            errorBuilder:
+                                (_, __, ___) => const Icon(
+                                  Icons.image,
+                                  size: 20,
+                                  color: Color(0xFF5E227A),
+                                ),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -2081,11 +2770,18 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.access_time_rounded, size: 12, color: Color(0xFF94A3B8)),
+                        const Icon(
+                          Icons.access_time_rounded,
+                          size: 12,
+                          color: Color(0xFF94A3B8),
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           dateDisplay,
-                          style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF94A3B8),
+                          ),
                         ),
                       ],
                     ),
@@ -2126,15 +2822,16 @@ class _ArtistChatViewState extends State<ArtistChatView> {
           decoration: BoxDecoration(
             color: isSelected ? Colors.white : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
-                    ),
-                  ]
-                : null,
+            boxShadow:
+                isSelected
+                    ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ]
+                    : null,
           ),
           alignment: Alignment.center,
           child: Text(
@@ -2197,29 +2894,34 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                   const Icon(Icons.search, color: Color(0xFFD4BEE4), size: 18),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: hasArtist
-                        ? Text(
-                            '${_selectedArtist!.name.trData(context)} (${_selectedArtist!.category.trData(context)})',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w600,
+                    child:
+                        hasArtist
+                            ? Text(
+                              '${_selectedArtist!.name.trData(context)} (${_selectedArtist!.category.trData(context)})',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            )
+                            : Text(
+                              'Search artist by name...'.trData(context),
+                              style: const TextStyle(
+                                color: Color(0xFFD4BEE4),
+                                fontSize: 13.5,
+                              ),
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          )
-                        : Text(
-                            'Search artist by name...'.trData(context),
-                            style: const TextStyle(
-                              color: Color(0xFFD4BEE4),
-                              fontSize: 13.5,
-                            ),
-                          ),
                   ),
                   if (hasArtist)
                     GestureDetector(
                       onTap: () => setState(() => _selectedArtist = null),
-                      child: const Icon(Icons.close, color: Colors.white, size: 18),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     )
                   else
                     const Icon(Icons.arrow_drop_down, color: Color(0xFFD4BEE4)),
@@ -2240,9 +2942,15 @@ class _ArtistChatViewState extends State<ArtistChatView> {
               style: const TextStyle(color: Colors.white, fontSize: 13.5),
               decoration: InputDecoration(
                 hintText: 'Subject'.trData(context),
-                hintStyle: const TextStyle(color: Color(0xFFD4BEE4), fontSize: 13.5),
+                hintStyle: const TextStyle(
+                  color: Color(0xFFD4BEE4),
+                  fontSize: 13.5,
+                ),
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
               ),
             ),
           ),
@@ -2260,7 +2968,10 @@ class _ArtistChatViewState extends State<ArtistChatView> {
               style: const TextStyle(color: Colors.white, fontSize: 13.5),
               decoration: InputDecoration(
                 hintText: 'Write your message...'.trData(context),
-                hintStyle: const TextStyle(color: Color(0xFFD4BEE4), fontSize: 13.5),
+                hintStyle: const TextStyle(
+                  color: Color(0xFFD4BEE4),
+                  fontSize: 13.5,
+                ),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.all(14),
               ),
@@ -2274,11 +2985,17 @@ class _ArtistChatViewState extends State<ArtistChatView> {
               onTap: _showFlyerPickerSheet,
               borderRadius: BorderRadius.circular(8),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFAF5FF),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFE9D5FF), width: 1.2),
+                  border: Border.all(
+                    color: const Color(0xFFE9D5FF),
+                    width: 1.2,
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -2319,7 +3036,10 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF5E227A),
                         borderRadius: BorderRadius.circular(6),
@@ -2327,7 +3047,11 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.file_upload_outlined, size: 14, color: Colors.white),
+                          const Icon(
+                            Icons.file_upload_outlined,
+                            size: 14,
+                            color: Colors.white,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             'Browse'.trData(context),
@@ -2376,7 +3100,11 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                               color: Colors.black54,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.zoom_in, size: 11, color: Colors.white),
+                            child: const Icon(
+                              Icons.zoom_in,
+                              size: 11,
+                              color: Colors.white,
+                            ),
                           ),
                         ],
                       ),
@@ -2388,7 +3116,8 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _attachedFlyerName ?? 'Flyer selected'.trData(context),
+                          _attachedFlyerName ??
+                              'Flyer selected'.trData(context),
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -2400,7 +3129,11 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                         const SizedBox(height: 3),
                         Row(
                           children: [
-                            const Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF10B981)),
+                            const Icon(
+                              Icons.check_circle_rounded,
+                              size: 14,
+                              color: Color(0xFF10B981),
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               'Flyer attached'.trData(context),
@@ -2417,12 +3150,20 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                   ),
                   IconButton(
                     tooltip: 'Change'.trData(context),
-                    icon: const Icon(Icons.swap_horiz_rounded, color: Color(0xFF5E227A), size: 22),
+                    icon: const Icon(
+                      Icons.swap_horiz_rounded,
+                      color: Color(0xFF5E227A),
+                      size: 22,
+                    ),
                     onPressed: _showFlyerPickerSheet,
                   ),
                   IconButton(
                     tooltip: 'Remove'.trData(context),
-                    icon: const Icon(Icons.close_rounded, color: Color(0xFFEF4444), size: 20),
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: Color(0xFFEF4444),
+                      size: 20,
+                    ),
                     onPressed: () {
                       setState(() {
                         _attachedFlyerBytes = null;
@@ -2437,7 +3178,8 @@ class _ArtistChatViewState extends State<ArtistChatView> {
           const SizedBox(height: 12),
 
           Text(
-            'This is a private message to the selected artist and uses 1 of your 10 monthly messages.'.trData(context),
+            'This is a private message to the selected artist and uses 1 of your 10 monthly messages.'
+                .trData(context),
             style: const TextStyle(
               fontSize: 11.5,
               color: Color(0xFF64748B),
@@ -2452,7 +3194,10 @@ class _ArtistChatViewState extends State<ArtistChatView> {
             child: ElevatedButton(
               onPressed: (!hasArtist || _isSending) ? null : _handleSendMessage,
               style: ElevatedButton.styleFrom(
-                backgroundColor: hasArtist ? const Color(0xFF5E227A) : const Color(0xFFBCA6C8),
+                backgroundColor:
+                    hasArtist
+                        ? const Color(0xFF5E227A)
+                        : const Color(0xFFBCA6C8),
                 foregroundColor: Colors.white,
                 disabledBackgroundColor: const Color(0xFFBCA6C8),
                 disabledForegroundColor: Colors.white.withValues(alpha: 0.9),
@@ -2461,28 +3206,32 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                 ),
                 elevation: 0,
               ),
-              child: _isSending
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.send_outlined, size: 18),
-                        const SizedBox(width: 8),
-                        Text(
-                          hasArtist
-                              ? 'Send Message'.trData(context)
-                              : 'Select an Artist First'.trData(context),
-                          style: const TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.bold,
-                          ),
+              child:
+                  _isSending
+                      ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
                         ),
-                      ],
-                    ),
+                      )
+                      : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.send_outlined, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            hasArtist
+                                ? 'Send Message'.trData(context)
+                                : 'Select an Artist First'.trData(context),
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
             ),
           ),
         ],

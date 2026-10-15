@@ -1,16 +1,48 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:video_player/video_player.dart';
 import '../../../../app/routes/app_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
-import '../../../../core/utils/data_translator.dart';
+
+/// Consistent alias matching the `<feature>_view` naming convention.
+typedef SplashView = SplashScreenView;
 
 class SplashScreenView extends StatefulWidget {
   const SplashScreenView({super.key});
+
+  static const String splashImagePath = 'assets/images/splash_screen_art.png';
+  static const String splashTallPath = 'assets/images/splash_screen_art_tall.png';
+  static const String splashModernPath = 'assets/images/splash_screen_art_modern.png';
+  static const String splashStandardPath = 'assets/images/splash_screen_art_standard.png';
+  static const String splashTabletPath = 'assets/images/splash_screen_art_tablet.png';
+  static const String splashWidePath = 'assets/images/splash_screen_art_wide.png';
+
+  /// Resolves the optimal splash artwork tailored to the device screen aspect ratio.
+  static String resolveSplashAsset(Size size) {
+    if (size.height <= 0 || size.width <= 0) return splashImagePath;
+    final ratio = size.width / size.height;
+
+    if (ratio >= 1.15) {
+      // Landscape / Desktop / Web screens (16:9, 16:10, ultrawide)
+      return splashWidePath;
+    } else if (ratio >= 0.65) {
+      // Tablets, iPads, Foldables in tablet mode (3:4, 4:3, 10:16)
+      return splashTabletPath;
+    } else if (ratio >= 0.52) {
+      // Standard classic smartphones (9:16 = 0.5625)
+      return splashStandardPath;
+    } else if (ratio >= 0.455) {
+      // Modern flagship smartphones (9:19.5 = 0.4615, iPhone 13/14/15/16)
+      return splashModernPath;
+    } else {
+      // Ultra-tall modern smartphones (9:20 = 0.45, 9:20.5, 9:21, 9:22)
+      return splashTallPath;
+    }
+  }
 
   @override
   State<SplashScreenView> createState() => _SplashScreenViewState();
@@ -18,159 +50,69 @@ class SplashScreenView extends StatefulWidget {
 
 class _SplashScreenViewState extends State<SplashScreenView>
     with SingleTickerProviderStateMixin {
-  VideoPlayerController? _videoController;
-  bool _isVideoInitialized = false;
-
-  late final AnimationController _footerController;
-  late final Animation<double> _footerFade;
-  late final Animation<Offset> _footerSlide;
-
-  Timer? _fallbackTimer;
-  Timer? _footerTimer;
-  Timer? _errorTimer;
+  late final AnimationController _animController;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<double> _scaleAnimation;
+  Timer? _navigationTimer;
   bool _hasNavigated = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Pre-cache the optimal splash variant for seamless instant rendering
+    final asset = SplashScreenView.resolveSplashAsset(MediaQuery.sizeOf(context));
+    precacheImage(AssetImage(asset), context).catchError((_) {});
+    precacheImage(const AssetImage(SplashScreenView.splashImagePath), context).catchError((_) {});
+  }
 
   @override
   void initState() {
     super.initState();
 
-    // Pre-warm data caches in background during splash
-    try {
-      sl<LiveSyncService>().syncAllSilently(forceRefresh: true);
-      sl<LiveSyncService>().startMultiDeviceSync();
-    } catch (_) {}
-
-    // Footer entrance animation
-    _footerController = AnimationController(
+    // 1. Setup smooth entrance animation to directly play our created splash screen
+    _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 850),
     );
 
-    _footerFade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _footerController,
-        curve: Curves.easeIn,
-      ),
+    _fadeAnimation = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOutCubic,
     );
 
-    _footerSlide = Tween<Offset>(
-      begin: const Offset(0, 0.4),
-      end: Offset.zero,
-    ).animate(
+    _scaleAnimation = Tween<double>(begin: 0.96, end: 1.0).animate(
       CurvedAnimation(
-        parent: _footerController,
+        parent: _animController,
         curve: Curves.easeOutCubic,
       ),
     );
 
-    // Initialize intro2.mp4 video
-    _initVideo();
+    _animController.forward();
 
-    // Fade in footer smoothly
-    _footerTimer = Timer(const Duration(milliseconds: 1200), () {
-      if (mounted) {
-        _footerController.forward();
-      }
+    // 2. Pre-warm data caches in background during splash after first frame is drawn
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        sl<LiveSyncService>().syncAllSilently(forceRefresh: true);
+      } catch (_) {}
     });
 
-    // Hard-cap fallback timer: guarantees navigation after 4.5 seconds no matter what
-    _fallbackTimer = Timer(const Duration(milliseconds: 4500), () {
+    // 3. Splash dwell timer: auto change after 2 seconds (or tap anywhere to proceed immediately)
+    _navigationTimer = Timer(const Duration(seconds: 2), () {
       _navigateToNext();
     });
-  }
-
-  Future<void> _initVideo() async {
-    if (WidgetsBinding.instance.runtimeType.toString().contains('Test')) {
-      _isVideoInitialized = true;
-      return;
-    }
-    try {
-      final controller = VideoPlayerController.asset('assets/videos/intro2.mp4');
-      _videoController = controller;
-      await controller.initialize();
-      if (!mounted) {
-        controller.dispose();
-        return;
-      }
-
-      controller.setLooping(false);
-      controller.setVolume(1.0);
-      await controller.play();
-
-      setState(() {
-        _isVideoInitialized = true;
-      });
-
-      final duration = controller.value.duration;
-      if (duration > Duration.zero) {
-        // Schedule fallback slightly after duration (or max 4.5s)
-        final safeFallbackMs = (duration.inMilliseconds + 300).clamp(2000, 4500);
-        _fallbackTimer?.cancel();
-        _fallbackTimer = Timer(Duration(milliseconds: safeFallbackMs), () {
-          _navigateToNext();
-        });
-      }
-
-      controller.addListener(_onVideoTick);
-    } catch (e) {
-      debugPrint('Error initializing splash intro video: $e');
-      _errorTimer?.cancel();
-      _errorTimer = Timer(const Duration(milliseconds: 1500), () {
-        _navigateToNext();
-      });
-    }
-  }
-
-  void _onVideoTick() {
-    if (_hasNavigated || _videoController == null) return;
-    final val = _videoController!.value;
-    if (val.hasError) {
-      _navigateToNext();
-      return;
-    }
-
-    final position = val.position;
-    final duration = val.duration;
-
-    // Detect if video reached end through any standard completion condition
-    final isFinished = val.isCompleted ||
-        (duration > Duration.zero && position >= duration - const Duration(milliseconds: 300)) ||
-        (!val.isPlaying &&
-            duration > Duration.zero &&
-            position >= duration - const Duration(milliseconds: 800) &&
-            position > Duration.zero) ||
-        (duration > Duration.zero &&
-            duration.inMilliseconds > 0 &&
-            position.inMilliseconds >= (duration.inMilliseconds * 0.95).round());
-
-    if (isFinished) {
-      _navigateToNext();
-    }
   }
 
   @override
   void dispose() {
-    _fallbackTimer?.cancel();
-    _footerTimer?.cancel();
-    _errorTimer?.cancel();
-    if (_videoController != null) {
-      _videoController!.removeListener(_onVideoTick);
-      _videoController!.dispose();
-    }
-    _footerController.dispose();
+    _navigationTimer?.cancel();
+    _animController.dispose();
     super.dispose();
   }
 
   void _navigateToNext() {
     if (_hasNavigated) return;
     _hasNavigated = true;
-    _fallbackTimer?.cancel();
-    _errorTimer?.cancel();
-
-    try {
-      _videoController?.removeListener(_onVideoTick);
-      _videoController?.pause();
-    } catch (_) {}
+    _navigationTimer?.cancel();
 
     void performNavigation() {
       try {
@@ -193,7 +135,8 @@ class _SplashScreenViewState extends State<SplashScreenView>
 
         final storage = sl<StorageService>();
         final hasCompleted =
-            storage.getBool(StorageServiceImpl.keyHasCompletedOnboarding) ?? false;
+            storage.getBool(StorageServiceImpl.keyHasCompletedOnboarding) ??
+            false;
         final target = hasCompleted ? RouteNames.home : RouteNames.onboarding;
 
         if (mounted) {
@@ -215,7 +158,6 @@ class _SplashScreenViewState extends State<SplashScreenView>
       }
     }
 
-    // Attempt direct navigation immediately, and ensure fallback in post-frame callback
     try {
       performNavigation();
     } catch (_) {
@@ -227,112 +169,48 @@ class _SplashScreenViewState extends State<SplashScreenView>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF160424),
-      body: GestureDetector(
-        onTap: _navigateToNext,
-        behavior: HitTestBehavior.opaque,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // 1. Luxury dark gradient background behind video
-            Positioned.fill(
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFF35204C),
-                      Color(0xFF160424),
-                      Color(0xFF0E0715),
-                    ],
-                  ),
+    final splashAsset = SplashScreenView.resolveSplashAsset(MediaQuery.sizeOf(context));
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+      child: Scaffold(
+        backgroundColor: const Color(0xFF160230),
+        body: GestureDetector(
+          onTap: _navigateToNext,
+          behavior: HitTestBehavior.opaque,
+          child: SizedBox.expand(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: ScaleTransition(
+                scale: _scaleAnimation,
+                child: Image.asset(
+                  splashAsset,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                  alignment: Alignment.center,
+                  filterQuality: FilterQuality.high,
+                  gaplessPlayback: true,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Image.asset(
+                      SplashScreenView.splashImagePath,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      alignment: Alignment.center,
+                      filterQuality: FilterQuality.high,
+                      gaplessPlayback: true,
+                    );
+                  },
                 ),
               ),
             ),
-
-            // 2. Intro video: elegant, slightly scaled and fully visible without cutting edges
-            if (_isVideoInitialized && _videoController != null)
-              Positioned.fill(
-                child: Center(
-                  child: FractionallySizedBox(
-                    widthFactor: 0.90,
-                    heightFactor: 0.85,
-                    child: Center(
-                      child: AspectRatio(
-                        aspectRatio: _videoController!.value.aspectRatio > 0
-                            ? _videoController!.value.aspectRatio
-                            : (_videoController!.value.size.width /
-                                (_videoController!.value.size.height > 0
-                                    ? _videoController!.value.size.height
-                                    : 1)),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: VideoPlayer(_videoController!),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-            // 2. Elegant "Hosted by Nizar Fahem" Footer
-            SafeArea(
-              child: Column(
-                children: [
-                  const Spacer(),
-                  SlideTransition(
-                    position: _footerSlide,
-                    child: FadeTransition(
-                      opacity: _footerFade,
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 24),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 22,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Hosted by'.trData(context),
-                              style: TextStyle(
-                                fontSize: 11.0,
-                                color: Colors.white.withValues(alpha: 0.72),
-                                fontWeight: FontWeight.w400,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Nizar Fahem',
-                              style: TextStyle(
-                                fontSize: 15.5,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1.4,
-                                shadows: [
-                                  Shadow(
-                                    color: const Color(0xFFFFD54F).withValues(alpha: 0.5),
-                                    blurRadius: 8,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

@@ -36,17 +36,22 @@ import '../../features/splash/presentation/views/splash_screen_view.dart';
 import '../../features/chat/presentation/views/artist_chat_view.dart';
 import '../../features/chat/presentation/views/listing_plans_view.dart';
 import '../../features/placeholder/presentation/views/coming_soon_view.dart';
+import '../../core/di/injection_container.dart';
+import '../../core/services/storage_service.dart';
 import 'route_names.dart';
 
 class AppRouter {
   AppRouter._();
 
-  static final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> rootNavigatorKey =
+      GlobalKey<NavigatorState>();
 
   static String? parseDeepLink(Uri uri) {
     // 1. Direct query parameter inspection (e.g. ?artist=18, ?event=5, ?artwork=10)
-    final artistId = uri.queryParameters['artist'] ?? uri.queryParameters['artist_id'];
-    final artworkId = uri.queryParameters['artwork'] ?? uri.queryParameters['artwork_id'];
+    final artistId =
+        uri.queryParameters['artist'] ?? uri.queryParameters['artist_id'];
+    final artworkId =
+        uri.queryParameters['artwork'] ?? uri.queryParameters['artwork_id'];
     if (artistId != null && artistId.isNotEmpty) {
       if (artworkId != null && artworkId.isNotEmpty) {
         return '/artist/$artistId?artwork=$artworkId';
@@ -54,21 +59,25 @@ class AppRouter {
       return '/artist/$artistId';
     }
     if (artworkId != null && artworkId.isNotEmpty) {
-      final aId = uri.queryParameters['artist_id'] ?? uri.queryParameters['artist'];
+      final aId =
+          uri.queryParameters['artist_id'] ?? uri.queryParameters['artist'];
       if (aId != null && aId.isNotEmpty) {
         return '/artist/$aId?artwork=$artworkId';
       }
       return '/artworks?id=$artworkId';
     }
-    final eventId = uri.queryParameters['event'] ?? uri.queryParameters['event_id'];
+    final eventId =
+        uri.queryParameters['event'] ?? uri.queryParameters['event_id'];
     if (eventId != null && eventId.isNotEmpty) {
       return '/event-detail?id=$eventId';
     }
-    final galleryId = uri.queryParameters['gallery'] ?? uri.queryParameters['gallery_id'];
+    final galleryId =
+        uri.queryParameters['gallery'] ?? uri.queryParameters['gallery_id'];
     if (galleryId != null && galleryId.isNotEmpty) {
       return '/galleries?id=$galleryId';
     }
-    final profileId = uri.queryParameters['profile'] ?? uri.queryParameters['user_id'];
+    final profileId =
+        uri.queryParameters['profile'] ?? uri.queryParameters['user_id'];
     if (profileId != null && profileId.isNotEmpty) {
       return RouteNames.profile;
     }
@@ -77,7 +86,10 @@ class AppRouter {
     var frag = uri.fragment;
     if (frag.isNotEmpty) {
       if (!frag.startsWith('/')) frag = '/$frag';
-      if (frag != '/' && frag != '/splash' && frag != '/home' && frag != '/onboarding') {
+      if (frag != '/' &&
+          frag != '/splash' &&
+          frag != '/home' &&
+          frag != '/onboarding') {
         return frag;
       }
     }
@@ -153,7 +165,8 @@ class AppRouter {
           return link;
         }
       } else {
-        final defaultRoute = WidgetsBinding.instance.platformDispatcher.defaultRouteName;
+        final defaultRoute =
+            WidgetsBinding.instance.platformDispatcher.defaultRouteName;
         if (defaultRoute.isNotEmpty &&
             defaultRoute != '/' &&
             defaultRoute != '/splash' &&
@@ -221,10 +234,7 @@ class AppRouter {
             begin: const Offset(0.05, 0.0),
             end: Offset.zero,
           ).animate(curvedAnimation),
-          child: FadeTransition(
-            opacity: curvedAnimation,
-            child: child,
-          ),
+          child: FadeTransition(opacity: curvedAnimation, child: child),
         );
       },
     );
@@ -234,70 +244,95 @@ class AppRouter {
     navigatorKey: rootNavigatorKey,
     initialLocation: initialLocation,
     redirect: (context, state) {
+      if (state.matchedLocation == RouteNames.root ||
+          state.uri.path == '/' ||
+          state.uri.path.isEmpty) {
+        return RouteNames.splash;
+      }
       final parsed = parseDeepLink(state.uri);
-      if (parsed != null && parsed != state.matchedLocation && parsed != state.uri.toString()) {
+      if (parsed != null &&
+          parsed != state.matchedLocation &&
+          parsed != state.uri.toString()) {
         return parsed;
       }
       return null;
     },
     routes: [
       GoRoute(
+        path: RouteNames.root,
+        name: 'root',
+        pageBuilder:
+            (context, state) => _buildFadePage(
+              context: context,
+              state: state,
+              child: const SplashScreenView(),
+            ),
+      ),
+      GoRoute(
         path: RouteNames.splash,
         name: 'splash',
-        pageBuilder: (context, state) => _buildFadePage(
-          context: context,
-          state: state,
-          child: const SplashScreenView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildFadePage(
+              context: context,
+              state: state,
+              child: const SplashScreenView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.onboarding,
         name: 'onboarding',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const OnboardingView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildSlidePage(
+              context: context,
+              state: state,
+              child: const OnboardingView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.home,
         name: 'home',
-        pageBuilder: (context, state) => _buildFadePage(
-          context: context,
-          state: state,
-          child: const HomeView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildFadePage(
+              context: context,
+              state: state,
+              child: const HomeView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.aboutUs,
         name: 'aboutUs',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const AboutUsView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildSlidePage(
+              context: context,
+              state: state,
+              child: const AboutUsView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.artists,
         name: 'artists',
-        pageBuilder: (context, state) => _buildFadePage(
-          context: context,
-          state: state,
-          child: const ArtistsView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildFadePage(
+              context: context,
+              state: state,
+              child: const ArtistsView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.artistDetail,
         name: 'artistDetail',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: ArtistDetailView(
-            artist: state.extra as ArtistModel?,
-            artistId: state.pathParameters['id'],
-            initialArtworkId: state.uri.queryParameters['artwork'] ?? state.uri.queryParameters['artwork_id'],
-          ),
-        ),
+        pageBuilder:
+            (context, state) => _buildSlidePage(
+              context: context,
+              state: state,
+              child: ArtistDetailView(
+                artist: state.extra as ArtistModel?,
+                artistId: state.pathParameters['id'],
+                initialArtworkId:
+                    state.uri.queryParameters['artwork'] ??
+                    state.uri.queryParameters['artwork_id'],
+              ),
+            ),
       ),
       GoRoute(
         path: '/artists/:id',
@@ -306,7 +341,9 @@ class AppRouter {
       GoRoute(
         path: '/artist',
         redirect: (context, state) {
-          final id = state.uri.queryParameters['id'] ?? state.uri.queryParameters['artist'];
+          final id =
+              state.uri.queryParameters['id'] ??
+              state.uri.queryParameters['artist'];
           if (id != null && id.isNotEmpty) {
             return '/artist/$id';
           }
@@ -315,17 +352,25 @@ class AppRouter {
       ),
       GoRoute(
         path: '/event/:id',
-        redirect: (context, state) => '/event-detail?id=${state.pathParameters['id']}',
+        redirect:
+            (context, state) =>
+                '/event-detail?id=${state.pathParameters['id']}',
       ),
       GoRoute(
         path: '/events/:id',
-        redirect: (context, state) => '/event-detail?id=${state.pathParameters['id']}',
+        redirect:
+            (context, state) =>
+                '/event-detail?id=${state.pathParameters['id']}',
       ),
       GoRoute(
         path: '/artworks',
         redirect: (context, state) {
-          final artistId = state.uri.queryParameters['artist_id'] ?? state.uri.queryParameters['artist'];
-          final artworkId = state.uri.queryParameters['id'] ?? state.uri.queryParameters['artwork'];
+          final artistId =
+              state.uri.queryParameters['artist_id'] ??
+              state.uri.queryParameters['artist'];
+          final artworkId =
+              state.uri.queryParameters['id'] ??
+              state.uri.queryParameters['artwork'];
           if (artistId != null && artistId.isNotEmpty) {
             if (artworkId != null && artworkId.isNotEmpty) {
               return '/artist/$artistId?artwork=$artworkId';
@@ -337,118 +382,137 @@ class AppRouter {
       ),
       GoRoute(
         path: '/artwork/:id',
-        redirect: (context, state) => '/artworks?id=${state.pathParameters['id']}',
+        redirect:
+            (context, state) => '/artworks?id=${state.pathParameters['id']}',
       ),
       GoRoute(
         path: '/artworks/:id',
-        redirect: (context, state) => '/artworks?id=${state.pathParameters['id']}',
+        redirect:
+            (context, state) => '/artworks?id=${state.pathParameters['id']}',
       ),
       GoRoute(
         path: '/api.php',
-        redirect: (context, state) => parseDeepLink(state.uri) ?? RouteNames.home,
+        redirect:
+            (context, state) => parseDeepLink(state.uri) ?? RouteNames.home,
       ),
       GoRoute(
         path: '/api/api.php',
-        redirect: (context, state) => parseDeepLink(state.uri) ?? RouteNames.home,
+        redirect:
+            (context, state) => parseDeepLink(state.uri) ?? RouteNames.home,
       ),
       GoRoute(
         path: '/share.php',
-        redirect: (context, state) => parseDeepLink(state.uri) ?? RouteNames.home,
+        redirect:
+            (context, state) => parseDeepLink(state.uri) ?? RouteNames.home,
       ),
       GoRoute(
         path: '/api/share.php',
-        redirect: (context, state) => parseDeepLink(state.uri) ?? RouteNames.home,
+        redirect:
+            (context, state) => parseDeepLink(state.uri) ?? RouteNames.home,
       ),
       GoRoute(
         path: '/share',
-        redirect: (context, state) => parseDeepLink(state.uri) ?? RouteNames.home,
+        redirect:
+            (context, state) => parseDeepLink(state.uri) ?? RouteNames.home,
       ),
       GoRoute(
         path: '/api/share',
-        redirect: (context, state) => parseDeepLink(state.uri) ?? RouteNames.home,
+        redirect:
+            (context, state) => parseDeepLink(state.uri) ?? RouteNames.home,
       ),
       GoRoute(
         path: RouteNames.government,
         name: 'government',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const GovernmentPortalView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildSlidePage(
+              context: context,
+              state: state,
+              child: const GovernmentPortalView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.events,
         name: 'events',
-        pageBuilder: (context, state) => _buildFadePage(
-          context: context,
-          state: state,
-          child: const EventsView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildFadePage(
+              context: context,
+              state: state,
+              child: const EventsView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.myEvents,
         name: 'myEvents',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const MyEventsView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildSlidePage(
+              context: context,
+              state: state,
+              child: const MyEventsView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.bookings,
         name: 'bookings',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const MyBookingsView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildSlidePage(
+              context: context,
+              state: state,
+              child: const MyBookingsView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.favorites,
         name: 'favorites',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const FavoritesView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildSlidePage(
+              context: context,
+              state: state,
+              child: const FavoritesView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.eventsCompetition,
         name: 'eventsCompetition',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const EventsView(initialTabIndex: 1),
-        ),
+        pageBuilder:
+            (context, state) => _buildSlidePage(
+              context: context,
+              state: state,
+              child: const EventsView(initialTabIndex: 1),
+            ),
       ),
       GoRoute(
         path: RouteNames.galleries,
         name: 'galleries',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: GalleriesView(
-            initialGalleryId: state.uri.queryParameters['id'] ?? state.uri.queryParameters['gallery'],
-          ),
-        ),
+        pageBuilder:
+            (context, state) => _buildSlidePage(
+              context: context,
+              state: state,
+              child: GalleriesView(
+                initialGalleryId:
+                    state.uri.queryParameters['id'] ??
+                    state.uri.queryParameters['gallery'],
+              ),
+            ),
       ),
       GoRoute(
         path: RouteNames.eventsPhotos,
         name: 'eventsPhotos',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const EventPhotosView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildSlidePage(
+              context: context,
+              state: state,
+              child: const EventPhotosView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.galleryRegistration,
         name: 'galleryRegistration',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const GalleryRegistrationView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildSlidePage(
+              context: context,
+              state: state,
+              child: const GalleryRegistrationView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.createArtEvent,
@@ -475,7 +539,8 @@ class AppRouter {
           if (state.uri.queryParameters['mode'] == 'calendar') {
             isCalendar = true;
           }
-          if (state.uri.queryParameters['fromAdmin'] == 'true' || state.uri.queryParameters['admin'] == '1') {
+          if (state.uri.queryParameters['fromAdmin'] == 'true' ||
+              state.uri.queryParameters['admin'] == '1') {
             fromAdmin = true;
           }
 
@@ -494,46 +559,51 @@ class AppRouter {
       GoRoute(
         path: RouteNames.profile,
         name: 'profile',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const ProfileView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildSlidePage(
+              context: context,
+              state: state,
+              child: const ProfileView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.settings,
         name: 'settings',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const SettingsView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildSlidePage(
+              context: context,
+              state: state,
+              child: const SettingsView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.ai,
         name: 'ai',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const AiArtGuideView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildSlidePage(
+              context: context,
+              state: state,
+              child: const AiArtGuideView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.login,
         name: 'login',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const LoginView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildSlidePage(
+              context: context,
+              state: state,
+              child: const LoginView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.register,
         name: 'register',
         pageBuilder: (context, state) {
-          final role = state.extra is String
-              ? state.extra as String
-              : (state.uri.queryParameters['role'] ?? 'user');
+          final role =
+              state.extra is String
+                  ? state.extra as String
+                  : (state.uri.queryParameters['role'] ?? 'user');
           return _buildSlidePage(
             context: context,
             state: state,
@@ -544,6 +614,21 @@ class AppRouter {
       GoRoute(
         path: RouteNames.artistRegistration,
         name: 'artistRegistration',
+        redirect: (context, state) {
+          bool fromAdmin = false;
+          if (state.extra is Map && (state.extra as Map)['fromAdmin'] == true) {
+            fromAdmin = true;
+          }
+          if (state.uri.queryParameters['fromAdmin'] == 'true') {
+            fromAdmin = true;
+          }
+          final bool isLoggedIn =
+              sl<StorageService>().getBool('is_logged_in') ?? false;
+          if (!isLoggedIn && !fromAdmin) {
+            return RouteNames.login;
+          }
+          return null;
+        },
         pageBuilder: (context, state) {
           bool fromAdmin = false;
           bool isEditing = false;
@@ -554,7 +639,9 @@ class AppRouter {
             final map = state.extra as Map;
             if (map['fromAdmin'] == true) fromAdmin = true;
             if (map['isEditing'] == true) isEditing = true;
-            if (map['artist'] is ArtistModel) artist = map['artist'] as ArtistModel;
+            if (map['artist'] is ArtistModel) {
+              artist = map['artist'] as ArtistModel;
+            }
             if (map['artistId'] != null) artistId = map['artistId'].toString();
           }
           if (state.uri.queryParameters['fromAdmin'] == 'true') {
@@ -582,65 +669,72 @@ class AppRouter {
       GoRoute(
         path: RouteNames.privacyPolicy,
         name: 'privacyPolicy',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const PrivacyPolicyView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildSlidePage(
+              context: context,
+              state: state,
+              child: const PrivacyPolicyView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.termsConditions,
         name: 'termsConditions',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const TermsView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildSlidePage(
+              context: context,
+              state: state,
+              child: const TermsView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.categories,
         name: 'categories',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const ExploreCategoriesView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildSlidePage(
+              context: context,
+              state: state,
+              child: const ExploreCategoriesView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.categoryDetail,
         name: 'categoryDetail',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const CategoryDetailView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildSlidePage(
+              context: context,
+              state: state,
+              child: const CategoryDetailView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.createCategory,
         name: 'createCategory',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const CreateCategoryView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildSlidePage(
+              context: context,
+              state: state,
+              child: const CreateCategoryView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.adminDashboard,
         name: 'adminDashboard',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const AdminDashboardView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildSlidePage(
+              context: context,
+              state: state,
+              child: const AdminDashboardView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.adminRecycleBin,
         name: 'adminRecycleBin',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const AdminRecycleBinView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildSlidePage(
+              context: context,
+              state: state,
+              child: const AdminRecycleBinView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.eventDetail,
@@ -656,7 +750,9 @@ class AppRouter {
             if (map['event'] is ArtEventModel) {
               event = map['event'] as ArtEventModel;
             } else if (map['event'] is Map<String, dynamic>) {
-              event = ArtEventModel.fromJson(map['event'] as Map<String, dynamic>);
+              event = ArtEventModel.fromJson(
+                map['event'] as Map<String, dynamic>,
+              );
             }
             if (map['id'] != null) {
               eventId = map['id'].toString();
@@ -678,9 +774,12 @@ class AppRouter {
         path: RouteNames.planPayment,
         name: 'planPayment',
         pageBuilder: (context, state) {
-          final extra = state.extra is Map<String, dynamic>
-              ? state.extra as Map<String, dynamic>
-              : (state.extra is Map ? Map<String, dynamic>.from(state.extra as Map) : <String, dynamic>{});
+          final extra =
+              state.extra is Map<String, dynamic>
+                  ? state.extra as Map<String, dynamic>
+                  : (state.extra is Map
+                      ? Map<String, dynamic>.from(state.extra as Map)
+                      : <String, dynamic>{});
           return _buildSlidePage(
             context: context,
             state: state,
@@ -691,20 +790,34 @@ class AppRouter {
       GoRoute(
         path: RouteNames.artistChat,
         name: 'artistChat',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const ArtistChatView(),
-        ),
+        pageBuilder: (context, state) {
+          final extra = state.extra;
+          ArtistModel? initialArtist;
+          Map<String, dynamic>? initialArgs;
+          if (extra is ArtistModel) {
+            initialArtist = extra;
+          } else if (extra is Map) {
+            initialArgs = Map<String, dynamic>.from(extra);
+          }
+          return _buildSlidePage(
+            context: context,
+            state: state,
+            child: ArtistChatView(
+              initialArtist: initialArtist,
+              initialArgs: initialArgs,
+            ),
+          );
+        },
       ),
       GoRoute(
         path: RouteNames.listingPlans,
         name: 'listingPlans',
-        pageBuilder: (context, state) => _buildSlidePage(
-          context: context,
-          state: state,
-          child: const ListingPlansView(),
-        ),
+        pageBuilder:
+            (context, state) => _buildSlidePage(
+              context: context,
+              state: state,
+              child: const ListingPlansView(),
+            ),
       ),
       GoRoute(
         path: RouteNames.myListings,
@@ -715,9 +828,10 @@ class AppRouter {
         path: RouteNames.comingSoon,
         name: 'comingSoon',
         pageBuilder: (context, state) {
-          final featureName = state.extra is Map
-              ? (state.extra as Map)['featureName'] as String?
-              : (state.extra is String ? state.extra as String : null);
+          final featureName =
+              state.extra is Map
+                  ? (state.extra as Map)['featureName'] as String?
+                  : (state.extra is String ? state.extra as String : null);
           return _buildFadePage(
             context: context,
             state: state,
@@ -733,7 +847,9 @@ class AppRouter {
           final afterArtist = target.substring('/artist/'.length);
           final artistId = afterArtist.split('?').first;
           final uri = Uri.tryParse(target) ?? state.uri;
-          final artworkId = uri.queryParameters['artwork'] ?? uri.queryParameters['artwork_id'];
+          final artworkId =
+              uri.queryParameters['artwork'] ??
+              uri.queryParameters['artwork_id'];
           return ArtistDetailView(
             artistId: artistId.isNotEmpty ? artistId : null,
             initialArtworkId: artworkId,
@@ -741,20 +857,31 @@ class AppRouter {
         }
         if (target.startsWith('/event-detail')) {
           final uri = Uri.tryParse(target) ?? state.uri;
-          final eventId = uri.queryParameters['id'] ?? uri.queryParameters['event'] ?? uri.queryParameters['event_id'];
+          final eventId =
+              uri.queryParameters['id'] ??
+              uri.queryParameters['event'] ??
+              uri.queryParameters['event_id'];
           return EventDetailView(eventId: eventId);
         }
         if (target.startsWith('/galleries')) {
           final uri = Uri.tryParse(target) ?? state.uri;
-          final galleryId = uri.queryParameters['id'] ?? uri.queryParameters['gallery'] ?? uri.queryParameters['gallery_id'];
+          final galleryId =
+              uri.queryParameters['id'] ??
+              uri.queryParameters['gallery'] ??
+              uri.queryParameters['gallery_id'];
           return GalleriesView(initialGalleryId: galleryId);
         }
         if (target.startsWith('/artworks')) {
           final uri = Uri.tryParse(target) ?? state.uri;
-          final artworkId = uri.queryParameters['id'] ?? uri.queryParameters['artwork'];
-          final artistId = uri.queryParameters['artist_id'] ?? uri.queryParameters['artist'];
+          final artworkId =
+              uri.queryParameters['id'] ?? uri.queryParameters['artwork'];
+          final artistId =
+              uri.queryParameters['artist_id'] ?? uri.queryParameters['artist'];
           if (artistId != null && artistId.isNotEmpty) {
-            return ArtistDetailView(artistId: artistId, initialArtworkId: artworkId);
+            return ArtistDetailView(
+              artistId: artistId,
+              initialArtworkId: artworkId,
+            );
           }
           return const ArtistsView();
         }
