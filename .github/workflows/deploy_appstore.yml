@@ -1,4 +1,4 @@
-name: Publish to App Store (Production 3.2.6(13))
+name: Publish to App Store (Production 3.2.5(2))
 
 on:
   workflow_dispatch:
@@ -11,13 +11,13 @@ on:
           - 'Promote Existing TestFlight Build'
         default: 'Build & Submit New Binary'
       app_version:
-        description: 'App Version (e.g. 3.2.6)'
+        description: 'App Version (e.g. 3.2.5)'
         required: false
-        default: '3.2.6'
+        default: '3.2.5'
       build_number:
-        description: 'Build Number (e.g. 13)'
+        description: 'Build Number (e.g. 2)'
         required: false
-        default: '13'
+        default: '2'
       submit_for_review:
         description: 'Automatically submit for Apple App Review?'
         type: boolean

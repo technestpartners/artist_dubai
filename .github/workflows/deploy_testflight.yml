@@ -1,4 +1,4 @@
-name: Deploy to TestFlight (iOS 3.2.6(13))
+name: Deploy to TestFlight (iOS 3.2.5(2))
 
 on:
   push:
@@ -9,17 +9,17 @@ on:
   workflow_dispatch:
     inputs:
       version_name:
-        description: 'App Version Name (e.g., 3.2.6)'
+        description: 'App Version Name (e.g., 3.2.5)'
         required: false
-        default: '3.2.6'
+        default: '3.2.5'
       build_number:
-        description: 'App Build Number (e.g., 13)'
+        description: 'App Build Number (e.g., 2)'
         required: false
-        default: '13'
+        default: '2'
       changelog:
         description: 'TestFlight What to Test / Changelog'
         required: false
-        default: 'Version 3.2.6 (Build 13) - Plan duration management updates, dynamic multi-language localization, and stability improvements.'
+        default: 'Version 3.2.5 (Build 2) - Plan duration management updates, dynamic multi-language localization, and stability improvements.'
       skip_waiting:
         description: 'Skip waiting for TestFlight build processing in CI'
         type: boolean
