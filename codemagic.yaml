@@ -76,6 +76,10 @@ workflows:
       - name: Build Flutter iOS IPA
         script: |
           set -e
+          cd ios
+          xcrun agvtool new-version -all 2
+          xcrun agvtool new-marketing-version 3.2.5
+          cd ..
           EXPORT_PLIST="/Users/builder/export_options.plist"
           if [ ! -f "$EXPORT_PLIST" ]; then
             EXPORT_PLIST="ios/ExportOptions.plist"

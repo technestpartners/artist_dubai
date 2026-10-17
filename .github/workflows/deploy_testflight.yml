@@ -123,6 +123,10 @@ jobs:
 
       - name: Build Flutter iOS IPA
         run: |
+          cd ios
+          xcrun agvtool new-version -all "${{ steps.build_info.outputs.BUILD_NUMBER }}"
+          xcrun agvtool new-marketing-version "${{ steps.build_info.outputs.VERSION_NAME }}"
+          cd ..
           flutter build ipa --release \
             --build-name="${{ steps.build_info.outputs.VERSION_NAME }}" \
             --build-number="${{ steps.build_info.outputs.BUILD_NUMBER }}" \
