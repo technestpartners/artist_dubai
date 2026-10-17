@@ -30,7 +30,7 @@ class AppConfig {
   /// Stripe Publishable Key
   static const String stripePublishableKey = String.fromEnvironment(
     'STRIPE_PUBLISHABLE_KEY',
-    defaultValue: 'pk_live_51UM5UtDBfdT00Nk0l3Jzf',
+    defaultValue: 'pk_test_51UM5UtGzTs49HgxK3LffMmD1PThSWUTnF6ewF8G0iLdnHCqIpElBmdbRI5bF65lXaIszIndsUYbWpLwYwhB5bfIT00SCbR8BEy',
   );
 
   /// Default Currency

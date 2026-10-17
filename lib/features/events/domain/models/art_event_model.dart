@@ -47,6 +47,7 @@ class ArtEventModel {
   final int maxAttendees;
   final String organizer;
   final String? organizerEmail;
+  final String? organizerPhone;
   final List<String> tags;
   final String? imageUrl;
   final List<EventPhotoGallery> galleries;
@@ -79,6 +80,7 @@ class ArtEventModel {
     required this.maxAttendees,
     required this.organizer,
     this.organizerEmail,
+    this.organizerPhone,
     required this.tags,
     this.imageUrl,
     this.galleries = const [],
@@ -246,6 +248,7 @@ class ArtEventModel {
     int? maxAttendees,
     String? organizer,
     String? organizerEmail,
+    String? organizerPhone,
     List<String>? tags,
     String? imageUrl,
     List<EventPhotoGallery>? galleries,
@@ -278,6 +281,7 @@ class ArtEventModel {
       maxAttendees: maxAttendees ?? this.maxAttendees,
       organizer: organizer ?? this.organizer,
       organizerEmail: organizerEmail ?? this.organizerEmail,
+      organizerPhone: organizerPhone ?? this.organizerPhone,
       tags: tags ?? this.tags,
       imageUrl: imageUrl ?? this.imageUrl,
       galleries: galleries ?? this.galleries,
@@ -418,7 +422,15 @@ class ArtEventModel {
           json['organizer'] as String? ??
           'Artist Dubai',
       organizerEmail:
-          json['contact_email'] as String? ?? json['organizerEmail'] as String?,
+          json['contact_email'] as String? ??
+          json['organizer_email'] as String? ??
+          json['user_email'] as String? ??
+          json['email'] as String? ??
+          json['organizerEmail'] as String?,
+      organizerPhone:
+          json['contact_phone'] as String? ??
+          json['organizer_phone'] as String? ??
+          json['phone'] as String?,
       tags: parsedTags,
       imageUrl: json['image_url'] as String? ?? json['imageUrl'] as String?,
       galleries: parsedGalleries,

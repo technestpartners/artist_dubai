@@ -734,24 +734,123 @@ class _MyEventsViewState extends State<MyEventsView> {
                                                         mainAxisSize:
                                                             MainAxisSize.min,
                                                         children: [
-                                                          Flexible(
-                                                            child: Text(
-                                                              l10n.localeName ==
-                                                                      'ar'
-                                                                  ? 'السعة: ${event.maxAttendees} حاضر'
-                                                                  : 'Capacity: ${event.maxAttendees} attendees',
-                                                              maxLines: 1,
-                                                              overflow:
-                                                                  TextOverflow
-                                                                      .ellipsis,
-                                                              style: const TextStyle(
-                                                                fontSize: 12,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w600,
-                                                                color: Color(
-                                                                  0xFF6A2777,
+                                                          // Edit Button
+                                                          InkWell(
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  6,
                                                                 ),
+                                                            onTap: () async {
+                                                              await context.push(
+                                                                RouteNames.createArtEvent,
+                                                                extra: event,
+                                                              );
+                                                              _fetchMyEvents();
+                                                            },
+                                                            child: Container(
+                                                              padding:
+                                                                  const EdgeInsets.symmetric(
+                                                                    horizontal: 7,
+                                                                    vertical: 4,
+                                                                  ),
+                                                              decoration: BoxDecoration(
+                                                                color: const Color(
+                                                                  0xFFEDE9FE,
+                                                                ),
+                                                                borderRadius:
+                                                                    BorderRadius.circular(
+                                                                      6,
+                                                                    ),
+                                                              ),
+                                                              child: Row(
+                                                                mainAxisSize:
+                                                                    MainAxisSize.min,
+                                                                children: [
+                                                                  const Icon(
+                                                                    Icons.edit_outlined,
+                                                                    size: 13,
+                                                                    color: Color(
+                                                                      0xFF6D28D9,
+                                                                    ),
+                                                                  ),
+                                                                  const SizedBox(width: 3),
+                                                                  Text(
+                                                                    l10n.localeName == 'ar'
+                                                                        ? 'تعديل'
+                                                                        : 'Edit',
+                                                                    style: const TextStyle(
+                                                                      fontSize: 11,
+                                                                      fontWeight:
+                                                                          FontWeight.bold,
+                                                                      color: Color(
+                                                                        0xFF6D28D9,
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          const SizedBox(width: 6),
+                                                          InkWell(
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  6,
+                                                                ),
+                                                            onTap: () =>
+                                                                _confirmDeleteEvent(
+                                                                  event,
+                                                                ),
+                                                            child: Container(
+                                                              padding:
+                                                                  const EdgeInsets.symmetric(
+                                                                    horizontal:
+                                                                        8,
+                                                                    vertical: 4,
+                                                                  ),
+                                                              decoration: BoxDecoration(
+                                                                color:
+                                                                    const Color(
+                                                                      0xFFFEE2E2,
+                                                                    ),
+                                                                borderRadius:
+                                                                    BorderRadius.circular(
+                                                                      6,
+                                                                    ),
+                                                              ),
+                                                              child: Row(
+                                                                mainAxisSize:
+                                                                    MainAxisSize
+                                                                        .min,
+                                                                children: [
+                                                                  const Icon(
+                                                                    Icons
+                                                                        .delete_outline_rounded,
+                                                                    size: 13,
+                                                                    color: Color(
+                                                                      0xFFDC2626,
+                                                                    ),
+                                                                  ),
+                                                                  const SizedBox(
+                                                                    width: 4,
+                                                                  ),
+                                                                  Text(
+                                                                    l10n.localeName ==
+                                                                            'ar'
+                                                                        ? 'حذف'
+                                                                        : 'Delete',
+                                                                    style: const TextStyle(
+                                                                      fontSize:
+                                                                          11.5,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                      color: Color(
+                                                                        0xFFDC2626,
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                ],
                                                               ),
                                                             ),
                                                           ),
@@ -863,6 +962,123 @@ class _MyEventsViewState extends State<MyEventsView> {
       ),
       bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
     );
+  }
+
+  void _confirmDeleteEvent(ArtEventModel event) {
+    final l10n = AppLocalizations.of(context);
+    final isAr = l10n.localeName == 'ar';
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(isAr ? 'حذف الفعالية؟' : 'Delete Event?'),
+        content: Text(
+          isAr
+              ? 'هل أنت متأكد من رغبتك في حذف "${event.title}"؟ لا يمكن التراجع عن هذا الإجراء.'
+              : 'Are you sure you want to delete "${event.title}"? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              isAr ? 'إلغاء' : 'Cancel',
+              style: const TextStyle(color: Color(0xFF64748B)),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _performDeleteEvent(event);
+            },
+            child: Text(isAr ? 'حذف' : 'Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _performDeleteEvent(ArtEventModel event) async {
+    final l10n = AppLocalizations.of(context);
+    final isAr = l10n.localeName == 'ar';
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(isAr ? 'جارٍ حذف الفعالية...' : 'Deleting event...'),
+          ],
+        ),
+        duration: const Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    try {
+      final success = await sl<ApiService>().deleteEvent(
+        event.id,
+        userEmail: sl<StorageService>().getString('user_email'),
+      );
+      if (!mounted) return;
+
+      if (success) {
+        setState(() {
+          _myCreatedEvents.removeWhere((e) => e.id == event.id);
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isAr ? 'تم حذف الفعالية بنجاح' : 'Event deleted successfully',
+            ),
+            backgroundColor: const Color(0xFF16A34A),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+
+        _fetchMyEvents();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isAr
+                  ? 'فشل حذف الفعالية، يرجى المحاولة مرة أخرى'
+                  : 'Failed to delete event. Please try again.',
+            ),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isAr
+                ? 'فشل حذف الفعالية، يرجى المحاولة مرة أخرى'
+                : 'Failed to delete event. Please try again.',
+          ),
+          backgroundColor: const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Widget _buildMetricCard({

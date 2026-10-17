@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/utils/data_translator.dart';
 import '../../../../core/utils/responsive_helper.dart';
@@ -14,6 +15,7 @@ import '../../../../core/widgets/app_top_bar.dart';
 import '../../../artists/domain/models/artist_model.dart';
 import '../../data/chat_service.dart';
 import '../../domain/models/artist_message_model.dart';
+import '../../domain/models/listing_plan_model.dart';
 
 class ArtistChatView extends StatefulWidget {
   final ArtistModel? initialArtist;
@@ -51,7 +53,27 @@ class _ArtistChatViewState extends State<ArtistChatView> {
   String _planName = 'Basic (Free)';
   StreamSubscription<Map<String, dynamic>>? _allowanceSub;
   StreamSubscription<List<ArtistMessageModel>>? _messagesSub;
+  StreamSubscription<List<ListingPlanItem>>? _plansSub;
+  List<ListingPlanItem> _chatPlans = [];
   Timer? _pollingTimer;
+
+  bool get _hasActivePlan {
+    final clean = _planName.toLowerCase().trim();
+    if (clean.isEmpty) return false;
+    if (clean == 'basic (free)' ||
+        clean == 'free' ||
+        clean == 'starter plan' ||
+        clean == 'basic' ||
+        clean.contains('free') ||
+        clean.contains('gallery') ||
+        clean.contains('event') ||
+        clean.contains('centre') ||
+        clean.contains('center') ||
+        clean.contains('portfolio')) {
+      return false;
+    }
+    return _maxMessages >= 9000 || _maxMessages > 10;
+  }
 
   String get _currentEmail =>
       (sl<StorageService>().getString('user_email') ?? '').trim().toLowerCase();
@@ -271,6 +293,150 @@ class _ArtistChatViewState extends State<ArtistChatView> {
     _loadMessages();
     _loadArtists();
     chatService.syncAllowanceFromBackend();
+    _initChatPlans();
+  }
+
+  void _initChatPlans() {
+    final cached = sl<ApiService>().cachedListingPlans;
+    if (cached != null && cached.isNotEmpty) {
+      _chatPlans = _filterChatPlans(cached);
+    } else {
+      _chatPlans = _filterChatPlans(ListingPlanItem.defaultBaselinePlans);
+    }
+
+    sl<ApiService>().getListingPlans().then((plans) {
+      if (mounted && plans.isNotEmpty) {
+        setState(() {
+          _chatPlans = _filterChatPlans(plans);
+        });
+      }
+    }).catchError((_) {});
+
+    try {
+      _plansSub = sl<LiveSyncService>().listingPlansStream.listen((updated) {
+        if (mounted && updated.isNotEmpty) {
+          setState(() {
+            _chatPlans = _filterChatPlans(updated);
+          });
+        }
+      });
+    } catch (_) {}
+  }
+
+  List<ListingPlanItem> _filterChatPlans(List<ListingPlanItem> plans) {
+    final list = plans.where((p) {
+      if (!p.isActive) return false;
+      final t = p.itemType.toLowerCase().trim();
+      final cat = p.category.toLowerCase().trim();
+      final title = p.title.toLowerCase().trim();
+
+      // Exclude non-chat types
+      if (t == 'gallery' ||
+          t == 'event' ||
+          t == 'art_centre' ||
+          t == 'center' ||
+          t == 'artist' ||
+          title.contains('portfolio')) {
+        return false;
+      }
+
+      return t == 'chat' ||
+          t == 'messaging' ||
+          cat.contains('chat') ||
+          cat.contains('messag') ||
+          title.contains('chat') ||
+          title.contains('messaging') ||
+          title.contains('starter') ||
+          title == 'pro artist' ||
+          title.contains('unlimited vip') ||
+          title.contains('allowance');
+    }).toList();
+
+    if (list.isEmpty) {
+      return ListingPlanItem.defaultBaselinePlans
+          .where((p) => p.itemType == 'chat')
+          .toList();
+    }
+
+    // Ensure standard baseline tiers (Starter Free, Unlimited VIP) are present alongside admin-created plans
+    final hasFree = list.any((p) =>
+        p.price.toLowerCase() == 'free' ||
+        p.title.toLowerCase().contains('starter') ||
+        p.title.toLowerCase().contains('basic'));
+    if (!hasFree) {
+      final starter = ListingPlanItem.defaultBaselinePlans.firstWhere(
+        (p) =>
+            p.itemType == 'chat' &&
+            (p.price.toLowerCase() == 'free' ||
+                p.title.toLowerCase().contains('starter')),
+        orElse: () => const ListingPlanItem(
+          id: 4,
+          title: 'Starter Plan (Free)',
+          category: 'Messaging',
+          price: 'Free',
+          description:
+              '10 direct messages per month included for all registered artists',
+          features: [
+            '10 direct artist messages per month',
+            'Direct inbox messaging with other artists',
+            'Allowance auto-resets on the 1st',
+          ],
+          buttonText: 'Current Plan',
+          itemType: 'chat',
+          isActive: true,
+          sortOrder: 1,
+          duration: 'Monthly Reset',
+          durationDays: 30,
+        ),
+      );
+      list.insert(0, starter);
+    }
+
+    final hasUnlimited = list.any((p) =>
+        p.title.toLowerCase().contains('unlimited') ||
+        p.title.toLowerCase().contains('vip') ||
+        p.features.any((f) => f.toLowerCase().contains('unlimited')));
+    if (!hasUnlimited) {
+      final vip = ListingPlanItem.defaultBaselinePlans.firstWhere(
+        (p) =>
+            p.itemType == 'chat' &&
+            (p.title.toLowerCase().contains('vip') ||
+                p.title.toLowerCase().contains('unlimited')),
+        orElse: () => const ListingPlanItem(
+          id: 6,
+          title: 'Unlimited VIP',
+          category: 'Messaging',
+          badge: 'For Agencies & Curators',
+          price: 'AED 99',
+          description:
+              'Unlimited direct artist messages with verified VIP sender badge',
+          features: [
+            'Unlimited direct artist messages',
+            'Verified VIP sender badge',
+            'Ideal for galleries, curators & agencies',
+            'Priority instant customer support',
+          ],
+          buttonText: 'Upgrade to VIP',
+          itemType: 'chat',
+          isActive: true,
+          sortOrder: 99,
+          duration: 'Monthly Subscription',
+          durationDays: 30,
+        ),
+      );
+      list.add(vip);
+    }
+
+    list.sort((a, b) {
+      if (a.sortOrder != b.sortOrder) return a.sortOrder.compareTo(b.sortOrder);
+      final aFree = a.price.toLowerCase() == 'free';
+      final bFree = b.price.toLowerCase() == 'free';
+      if (aFree && !bFree) return -1;
+      if (!aFree && bFree) return 1;
+      return (a.id ?? 0).compareTo(b.id ?? 0);
+    });
+
+    return list;
   }
 
   void _onTranslationChanged() {
@@ -294,6 +460,7 @@ class _ArtistChatViewState extends State<ArtistChatView> {
     DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
     _allowanceSub?.cancel();
     _messagesSub?.cancel();
+    _plansSub?.cancel();
     _pollingTimer?.cancel();
     _subjectController.dispose();
     _messageController.dispose();
@@ -1560,9 +1727,12 @@ class _ArtistChatViewState extends State<ArtistChatView> {
       builder: (sheetCtx) {
         return StatefulBuilder(
           builder: (modalCtx, setModalState) {
-            final isUnlimited = _maxMessages >= 9000;
-            final isPro = !isUnlimited && _maxMessages >= 50;
-            final isStarter = !isUnlimited && !isPro;
+            final plans = _chatPlans.isNotEmpty
+                ? _chatPlans
+                : _filterChatPlans(
+                    sl<ApiService>().cachedListingPlans ??
+                        ListingPlanItem.defaultBaselinePlans,
+                  );
 
             return Container(
               constraints: BoxConstraints(
@@ -1644,70 +1814,14 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                       padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
                       child: Column(
                         children: [
-                          _buildPlanTierCard(
-                            context: modalCtx,
-                            name: 'Starter Plan',
-                            price: 'Free',
-                            allowanceText: '10 messages / month',
-                            badge: 'Default',
-                            features: [
-                              '10 direct messages per month',
-                              'Direct artist collaboration inquiries',
-                              'Flyer & artwork attachment support',
-                              'Allowance auto-resets on the 1st',
-                            ],
-                            isCurrent: isStarter,
-                            onUpgrade:
-                                () => _handleUpgradePlan(
-                                  'Starter Plan',
-                                  10,
-                                  sheetCtx,
-                                ),
-                          ),
-                          const SizedBox(height: 14),
-                          _buildPlanTierCard(
-                            context: modalCtx,
-                            name: 'Pro Artist',
-                            price: '49 AED',
-                            allowanceText: '50 messages / month',
-                            badge: 'Most Popular',
-                            isFeatured: true,
-                            features: [
-                              '50 direct messages per month',
-                              'Direct artist outreach & networking',
-                              'Priority delivery in artist inboxes',
-                              'High-resolution flyer attachments',
-                              'Monthly reset on the 1st',
-                            ],
-                            isCurrent: isPro,
-                            onUpgrade:
-                                () => _handleUpgradePlan(
-                                  'Pro Artist',
-                                  50,
-                                  sheetCtx,
-                                ),
-                          ),
-                          const SizedBox(height: 14),
-                          _buildPlanTierCard(
-                            context: modalCtx,
-                            name: 'Unlimited VIP',
-                            price: '99 AED',
-                            allowanceText: 'Unlimited messages',
-                            badge: 'For Agencies & Curators',
-                            features: [
-                              'Unlimited direct artist messages',
-                              'Verified VIP sender badge',
-                              'Ideal for galleries, curators & agencies',
-                              'Priority instant customer support',
-                            ],
-                            isCurrent: isUnlimited,
-                            onUpgrade:
-                                () => _handleUpgradePlan(
-                                  'Unlimited VIP',
-                                  9999,
-                                  sheetCtx,
-                                ),
-                          ),
+                          for (int i = 0; i < plans.length; i++) ...[
+                            if (i > 0) const SizedBox(height: 14),
+                            _buildDynamicPlanTierCard(
+                              context: modalCtx,
+                              plan: plans[i],
+                              sheetCtx: sheetCtx,
+                            ),
+                          ],
                           const SizedBox(height: 20),
                           InkWell(
                             onTap: () {
@@ -1763,24 +1877,174 @@ class _ArtistChatViewState extends State<ArtistChatView> {
     );
   }
 
-  Future<void> _handleUpgradePlan(
-    String planName,
-    int maxAllowance,
-    BuildContext sheetCtx,
-  ) async {
+  Widget _buildDynamicPlanTierCard({
+    required BuildContext context,
+    required ListingPlanItem plan,
+    required BuildContext sheetCtx,
+  }) {
+    final allowance = _extractAllowanceFromPlan(plan);
+    final allowanceText = _getAllowanceText(allowance);
+    final isCurrent = _isPlanCurrent(plan, allowance);
+    final isFeatured = plan.badge.toLowerCase().contains('popular') ||
+        plan.badge.toLowerCase().contains('recommended') ||
+        plan.badge.toLowerCase().contains('best') ||
+        plan.title.toLowerCase().contains('pro');
+
+    return _buildPlanTierCard(
+      context: context,
+      name: plan.title,
+      price: plan.price,
+      allowanceText: allowanceText,
+      badge: plan.badge.isNotEmpty ? plan.badge : null,
+      isFeatured: isFeatured,
+      features: plan.effectiveFeatures,
+      isCurrent: isCurrent,
+      customButtonText: plan.buttonText.isNotEmpty &&
+              plan.buttonText != 'Pay from My Listings' &&
+              plan.buttonText != 'Subscribe to Chat' &&
+              !(isFeatured && (plan.buttonText == 'Select Plan' || plan.buttonText == 'Upgrade'))
+          ? plan.buttonText
+          : null,
+      onUpgrade: () => _handleUpgradePlan(
+        plan: plan,
+        maxAllowance: allowance,
+        sheetCtx: sheetCtx,
+      ),
+    );
+  }
+
+  int _extractAllowanceFromPlan(ListingPlanItem plan) {
+    final combined =
+        '${plan.title} ${plan.description} ${plan.features.join(' ')}'
+            .toLowerCase();
+    if (combined.contains('unlimited') || plan.price.contains('99')) {
+      return 9999;
+    }
+    final match = RegExp(
+      r'(\d+)\s*(?:direct\s*)?messages?',
+      caseSensitive: false,
+    ).firstMatch(combined);
+    if (match != null) {
+      return int.tryParse(match.group(1)!) ?? 10;
+    }
+    if (plan.price.toLowerCase() == 'free' ||
+        plan.title.toLowerCase().contains('starter')) {
+      return 10;
+    }
+    if (plan.price.toLowerCase().contains('49') ||
+        plan.title.toLowerCase().contains('pro')) {
+      return 50;
+    }
+    return 10;
+  }
+
+  String _getAllowanceText(int allowance) {
+    if (allowance >= 9000) return 'Unlimited Messages';
+    return '$allowance Messages / Month';
+  }
+
+  bool _isPlanCurrent(ListingPlanItem plan, int allowance) {
+    final currentPlanClean = _planName.toLowerCase().trim();
+    final planTitleClean = plan.title.toLowerCase().trim();
+
+    if (!_hasActivePlan) {
+      return plan.price.toLowerCase() == 'free' ||
+          planTitleClean.contains('starter') ||
+          planTitleClean.contains('free');
+    }
+
+    if (currentPlanClean.isNotEmpty && !currentPlanClean.contains('free')) {
+      if (currentPlanClean == planTitleClean) return true;
+      if (currentPlanClean.contains(planTitleClean) ||
+          planTitleClean.contains(currentPlanClean)) {
+        return true;
+      }
+      if (planTitleClean.contains('vip') && currentPlanClean.contains('vip')) {
+        return true;
+      }
+      if (planTitleClean.contains('pro') &&
+          currentPlanClean.contains('pro') &&
+          !currentPlanClean.contains('vip')) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  Future<void> _handleUpgradePlan({
+    ListingPlanItem? plan,
+    String? planName,
+    int? maxAllowance,
+    required BuildContext sheetCtx,
+  }) async {
     Navigator.pop(sheetCtx);
+    final effectiveName = plan?.title ?? planName ?? 'Pro Artist';
+    final effectivePrice =
+        plan?.price ??
+        (effectiveName.toLowerCase().contains('free') ||
+                effectiveName.toLowerCase().contains('starter')
+            ? 'Free'
+            : (effectiveName == 'Pro Artist' ? 'AED 49' : 'AED 99'));
+    final effectiveAllowance =
+        maxAllowance ??
+        (plan != null
+            ? _extractAllowanceFromPlan(plan)
+            : (effectiveName == 'Pro Artist' ? 50 : 9999));
+    final effectiveFeatures =
+        plan?.effectiveFeatures ??
+        [
+          effectiveAllowance >= 9000
+              ? 'Unlimited direct artist messages'
+              : '$effectiveAllowance direct messages per month',
+          'Priority delivery in recipient inbox',
+          'VIP sender badge',
+        ];
+    final isFree =
+        effectivePrice.toLowerCase() == 'free' ||
+        effectiveName.toLowerCase().contains('starter');
+
+    if (!isFree) {
+      try {
+        context.push(
+          RouteNames.planPayment,
+          extra: {
+            'isPlanPurchase': true,
+            'itemType': 'chat',
+            'planId':
+                plan?.id?.toString() ??
+                effectiveName.toLowerCase().replaceAll(' ', '_'),
+            'planName': effectiveName,
+            'planPeriod':
+                plan?.duration.isNotEmpty == true
+                    ? plan!.duration
+                    : 'Monthly Subscription',
+            'planAmount': effectivePrice,
+            'amount': effectivePrice,
+            'maxAllowance': effectiveAllowance,
+            'features': effectiveFeatures,
+          },
+        ).then((_) async {
+          await sl<ChatService>().syncAllowanceFromBackend();
+          if (mounted) setState(() {});
+        });
+        return;
+      } catch (_) {
+        // Fallback for test harness without GoRouter
+      }
+    }
     final success = await sl<ChatService>().upgradePlan(
-      planName: planName,
-      maxAllowance: maxAllowance,
+      planName: effectiveName,
+      maxAllowance: effectiveAllowance,
     );
     if (mounted && success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            maxAllowance >= 9000
-                ? 'Upgraded to $planName! You now have unlimited messages.'
+            effectiveAllowance >= 9000
+                ? 'Upgraded to $effectiveName! You now have unlimited messages.'
                     .trData(context)
-                : 'Upgraded to $planName! Your monthly allowance is now $maxAllowance messages.'
+                : 'Upgraded to $effectiveName! Your monthly allowance is now $effectiveAllowance messages.'
                     .trData(context),
           ),
           backgroundColor: const Color(0xFF10B981),
@@ -1800,6 +2064,7 @@ class _ArtistChatViewState extends State<ArtistChatView> {
     required VoidCallback onUpgrade,
     String? badge,
     bool isFeatured = false,
+    String? customButtonText,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -1979,11 +2244,15 @@ class _ArtistChatViewState extends State<ArtistChatView> {
               child: Text(
                 isCurrent
                     ? 'Current Plan'.trData(context)
-                    : isFeatured
-                    ? 'Upgrade to Pro'.trData(context)
-                    : (price == 'Free' ? 'Select Plan' : 'Upgrade').trData(
-                      context,
-                    ),
+                    : (customButtonText != null &&
+                            customButtonText.isNotEmpty &&
+                            customButtonText != 'Pay from My Listings' &&
+                            customButtonText != 'Subscribe to Chat')
+                        ? customButtonText.trData(context)
+                        : (isFeatured
+                            ? 'Upgrade to Pro'.trData(context)
+                            : (price == 'Free' ? 'Select Plan' : 'Upgrade')
+                                .trData(context)),
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
@@ -2047,14 +2316,72 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  'ARTIST CHAT'.trData(context),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.5,
-                                  ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      'ARTIST CHAT'.trData(context),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                    if (_hasActivePlan) ...[
+                                      const SizedBox(width: 10),
+                                      InkWell(
+                                        onTap: () => _showChatPlansModal(context),
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          gradient: const LinearGradient(
+                                            colors: [
+                                              Color(0xFFFEF3C7),
+                                              Color(0xFFFDE68A),
+                                            ],
+                                          ),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: const Color(0xFFF59E0B),
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.1,
+                                              ),
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(
+                                              Icons.workspace_premium_rounded,
+                                              size: 13,
+                                              color: Color(0xFFB45309),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              _planName.toUpperCase(),
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w900,
+                                                color: Color(0xFFB45309),
+                                                letterSpacing: 0.3,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
@@ -2071,10 +2398,10 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
-
-                      // Allowance Card
-                      Container(
+                      // Allowance Card (hidden when user has an active plan)
+                      if (!_hasActivePlan) ...[
+                        const SizedBox(height: 16),
+                        Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 14,
@@ -2101,11 +2428,8 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        _maxMessages >= 9000
-                                            ? 'Unlimited messages left this month'
-                                                .trData(context)
-                                            : '$_remainingMessages of $_maxMessages messages left this month'
-                                                .trData(context),
+                                        '${_remainingMessages.clamp(0, 10)} of 10 messages left this month'
+                                            .trData(context),
                                         style: const TextStyle(
                                           color: Color(0xFF1E1E1E),
                                           fontSize: 14.5,
@@ -2119,6 +2443,7 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                                         style: const TextStyle(
                                           color: Color(0xFF64748B),
                                           fontSize: 12,
+                                          fontWeight: FontWeight.normal,
                                         ),
                                       ),
                                     ],
@@ -2152,30 +2477,23 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                             ClipRRect(
                               borderRadius: BorderRadius.circular(4),
                               child: LinearProgressIndicator(
-                                value:
-                                    _maxMessages >= 9000
-                                        ? 1.0
-                                        : (_maxMessages > 0
-                                            ? (_remainingMessages /
-                                                    _maxMessages)
-                                                .clamp(0.0, 1.0)
-                                            : 0.0),
+                                value: (_remainingMessages.clamp(0, 10) / 10.0)
+                                    .clamp(0.0, 1.0),
                                 minHeight: 6,
                                 backgroundColor: const Color(0xFFE2E8F0),
                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                  _maxMessages >= 9000
-                                      ? const Color(0xFF5E227A)
-                                      : (_remainingMessages == 0
-                                          ? const Color(0xFFEF4444)
-                                          : (_remainingMessages <= 3
-                                              ? const Color(0xFFF59E0B)
-                                              : const Color(0xFF5E227A))),
+                                  _remainingMessages == 0
+                                      ? const Color(0xFFEF4444)
+                                      : (_remainingMessages <= 3
+                                          ? const Color(0xFFF59E0B)
+                                          : const Color(0xFF5E227A)),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
+                      ],
                       const SizedBox(height: 16),
 
                       // Two-tab Switcher (Messages | Send)

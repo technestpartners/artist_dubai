@@ -87,11 +87,11 @@ void main() {
       expect(find.text('New Plan'), findsOneWidget);
       expect(find.text('Refresh'), findsOneWidget);
       expect(find.text('Event Listing'), findsWidgets);
-      expect(find.text('199 AED'), findsWidgets);
+      expect(find.text('AED 199'), findsWidgets);
       expect(find.text('Gallery Listing'), findsWidgets);
-      expect(find.text('149 AED'), findsWidgets);
+      expect(find.text('AED 149'), findsWidgets);
       expect(find.text('Art Centre Listing'), findsWidgets);
-      expect(find.text('299 AED'), findsWidgets);
+      expect(find.text('AED 299'), findsWidgets);
     },
   );
 

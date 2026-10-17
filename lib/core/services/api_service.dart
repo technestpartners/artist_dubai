@@ -505,9 +505,25 @@ class ApiService {
               .toList(),
           isArabic: DataTranslator.isAppArabic,
         );
+        if (userEmail != null && userEmail.trim().isNotEmpty) {
+          final clean = userEmail.trim().toLowerCase();
+          return events.where((e) {
+            final evEmail = (e.organizerEmail ?? '').trim().toLowerCase();
+            return evEmail == clean;
+          }).toList();
+        }
+
         return events;
       }
     } catch (_) {}
+
+    if (userEmail != null && userEmail.trim().isNotEmpty) {
+      final clean = userEmail.trim().toLowerCase();
+      return (_cachedEvents ?? []).where((e) {
+        final evEmail = (e.organizerEmail ?? '').trim().toLowerCase();
+        return evEmail == clean;
+      }).toList();
+    }
 
     return _cachedEvents ?? [];
   }
@@ -2004,8 +2020,9 @@ class ApiService {
           _cachedListingPlans =
               list
                   .map(
-                    (item) =>
-                        ListingPlanItem.fromJson(item as Map<String, dynamic>),
+                    (item) => ListingPlanItem.fromJson(
+                      Map<String, dynamic>.from(item as Map),
+                    ),
                   )
                   .toList();
           return _cachedListingPlans!;
@@ -2030,6 +2047,8 @@ class ApiService {
     String buttonText = 'Pay from My Listings',
     bool isActive = true,
     int sortOrder = 0,
+    String? duration,
+    int? durationDays,
   }) async {
     try {
       final res = await _client.post(
@@ -2047,6 +2066,8 @@ class ApiService {
           'button_text': buttonText,
           'is_active': isActive ? 1 : 0,
           'sort_order': sortOrder,
+          if (duration != null && duration.isNotEmpty) 'duration': duration,
+          if (durationDays != null) 'duration_days': durationDays,
         },
       );
       if (_isSuccess(res)) {
@@ -2072,6 +2093,8 @@ class ApiService {
     String buttonText = 'Pay from My Listings',
     bool isActive = true,
     int sortOrder = 0,
+    String? duration,
+    int? durationDays,
   }) async {
     try {
       final res = await _client.post(
@@ -2088,6 +2111,8 @@ class ApiService {
           'button_text': buttonText,
           'is_active': isActive ? 1 : 0,
           'sort_order': sortOrder,
+          if (duration != null && duration.isNotEmpty) 'duration': duration,
+          if (durationDays != null) 'duration_days': durationDays,
         },
       );
       if (_isSuccess(res)) {
@@ -2155,23 +2180,64 @@ class ApiService {
     String type, {
     String? email,
   }) async {
-    final plans = await getUserPlans(email: email);
     final target = type.toLowerCase().trim();
-    for (final p in plans) {
-      final pType = (p['plan_type'] ?? '').toString().toLowerCase().trim();
-      final pName = (p['plan_name'] ?? '').toString().toLowerCase();
-      final status = (p['status'] ?? '').toString().toLowerCase();
-      final isExpired =
-          p['is_expired'] == true ||
-          (p['days_left'] != null && (p['days_left'] as num) <= 0);
-      if (status == 'active' && !isExpired) {
-        if (pType == target ||
-            pType.contains(target) ||
-            pName.contains(target)) {
-          return p;
+    try {
+      final plans = await getUserPlans(email: email);
+      for (final p in plans) {
+        final pType = (p['plan_type'] ?? '').toString().toLowerCase().trim();
+        final pName = (p['plan_name'] ?? '').toString().toLowerCase();
+        final status = (p['status'] ?? '').toString().toLowerCase();
+        final isExpired =
+            p['is_expired'] == true ||
+            (p['days_left'] != null && (p['days_left'] as num) <= 0);
+        if (status == 'active' && !isExpired) {
+          if (target == 'chat') {
+            final isChat = (pType == 'chat' || pType == 'messaging') &&
+                !pName.contains('gallery') &&
+                !pName.contains('event') &&
+                !pName.contains('centre') &&
+                !pName.contains('center') &&
+                !pName.contains('portfolio');
+            if (isChat) return p;
+          } else {
+            if (pType == target ||
+                pType.contains(target) ||
+                pName.contains(target)) {
+              return p;
+            }
+          }
         }
       }
-    }
+    } catch (_) {}
+
+    // Storage fallback for immediate offline access or instant activation after checkout
+    try {
+      final storage = sl<StorageService>();
+      final localPlan = storage.getString('active_plan_$target') ??
+          (target == 'chat'
+              ? (storage.getString('chat_plan') ??
+                  storage.getString('chat_plan_name'))
+              : null);
+      if (localPlan != null && localPlan.isNotEmpty) {
+        final lower = localPlan.toLowerCase();
+        if (target == 'chat' &&
+            (lower.contains('gallery') ||
+                lower.contains('event') ||
+                lower.contains('centre') ||
+                lower.contains('center') ||
+                lower.contains('portfolio'))) {
+          // Ignore non-chat plan mistakenly cached in chat key
+        } else {
+          return {
+            'plan_name': localPlan,
+            'item_type': target,
+            'status': 'active',
+            'is_expired': false,
+          };
+        }
+      }
+    } catch (_) {}
+
     return null;
   }
 
@@ -2205,6 +2271,7 @@ class ApiService {
     String? paymentMethod,
     String? paymentProofUrl,
     List<String>? features,
+    String? duration,
     int? durationDays,
   }) async {
     if (email.isEmpty) return false;
@@ -2226,6 +2293,7 @@ class ApiService {
           if (paymentProofUrl != null && paymentProofUrl.isNotEmpty)
             'payment_proof_url': paymentProofUrl,
           'features': features ?? [],
+          if (duration != null && duration.isNotEmpty) 'duration': duration,
           if (durationDays != null) 'duration_days': durationDays,
         },
       );
@@ -2843,11 +2911,15 @@ class ApiService {
   }
 
   // 26. Delete Event (MySQL Backend)
-  Future<bool> deleteEvent(dynamic id) async {
+  Future<bool> deleteEvent(dynamic id, {String? userEmail}) async {
     try {
+      final email = userEmail ?? sl<StorageService>().getString('user_email');
       final res = await _client.post(
         '${ApiEndpoints.events}&action=delete',
-        data: {'id': id},
+        data: {
+          'id': id,
+          if (email != null && email.isNotEmpty) 'email': email,
+        },
       );
       if (_isSuccess(res)) {
         _cachedEvents = null;

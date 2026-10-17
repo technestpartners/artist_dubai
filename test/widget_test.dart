@@ -7,7 +7,6 @@ import 'package:artist_dubai/features/artists/presentation/views/category_detail
 import 'package:artist_dubai/features/artists/presentation/views/create_category_view.dart';
 import 'package:artist_dubai/features/artists/presentation/views/explore_categories_view.dart';
 import 'package:artist_dubai/features/profile/presentation/views/profile_view.dart';
-import 'package:artist_dubai/features/splash/presentation/views/splash_screen_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -48,13 +47,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(const ArtistDubaiApp());
-      await tester.pump(const Duration(milliseconds: 100));
-
-      // Tap splash screen to skip directly to onboarding
-      if (find.byType(SplashScreenView).evaluate().isNotEmpty) {
-        await tester.tap(find.byType(SplashScreenView));
-        await tester.pumpAndSettle();
-      }
+      await tester.pumpAndSettle();
 
       expect(find.textContaining('Artist Dubai'), findsWidgets);
       expect(find.text('Skip'), findsOneWidget);

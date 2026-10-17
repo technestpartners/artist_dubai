@@ -37,8 +37,7 @@ lib/
 │   ├── payment/          # Plan checkout & Stripe payment flows
 │   ├── placeholder/      # Coming soon & feature gateways
 │   ├── profile/          # User profile view & edit forms
-│   ├── settings/         # App preferences, language switcher, logout
-│   └── splash/           # Animated splash screen & deep-link router
+│   └── settings/         # App preferences, language switcher, logout
 ├── l10n/                 # Localization ARB files (English & Arabic)
 └── main.dart             # App initialization entrypoint
 ```

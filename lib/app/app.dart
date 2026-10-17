@@ -18,6 +18,17 @@ class AppCustomScrollBehavior extends MaterialScrollBehavior {
     PointerDeviceKind.trackpad,
     PointerDeviceKind.stylus,
   };
+
+  @override
+  Widget buildScrollbar(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
+    // Prevent "The Scrollbar's ScrollController has no ScrollPosition attached"
+    // crash on Windows/Web/Desktop when scrollable widgets do not have an attached controller.
+    return child;
+  }
 }
 
 class ArtistDubaiApp extends StatefulWidget {

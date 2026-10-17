@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:artist_dubai/app/app.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -32,7 +33,6 @@ import 'package:artist_dubai/features/onboarding/presentation/views/onboarding_v
 import 'package:artist_dubai/features/placeholder/presentation/views/coming_soon_view.dart';
 import 'package:artist_dubai/features/profile/presentation/views/profile_view.dart';
 import 'package:artist_dubai/features/settings/presentation/views/settings_view.dart';
-import 'package:artist_dubai/features/splash/presentation/views/splash_screen_view.dart';
 import 'package:artist_dubai/core/services/locale_provider.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -82,18 +82,18 @@ void main() {
       final screenSize = entry.value;
 
       group('Screen Profile: $screenName', () {
-        testWidgets('1. Splash Screen & Brand Intro ($screenName)', (
+        testWidgets('1. App Clean Launch ($screenName)', (
           tester,
         ) async {
           tester.view.physicalSize = screenSize;
           tester.view.devicePixelRatio = 1.0;
           addTearDown(tester.view.resetPhysicalSize);
 
-          await tester.pumpWidget(buildTestHost(const SplashScreenView()));
-          await tester.pump(const Duration(milliseconds: 100));
+          await tester.pumpWidget(const ArtistDubaiApp());
+          await tester.pumpAndSettle();
 
           expect(tester.takeException(), isNull);
-          expect(find.byType(SplashScreenView), findsOneWidget);
+          expect(find.byType(ArtistDubaiApp), findsOneWidget);
         });
 
         testWidgets('2. Onboarding Screen Carousel ($screenName)', (

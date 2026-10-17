@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../../../core/di/injection_container.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/services/api_service.dart';
 import '../../../core/services/storage_service.dart';
 import '../domain/models/artist_message_model.dart';
 
@@ -50,21 +51,68 @@ class ChatService {
 
   /// Get total monthly allowance
   int getMaxMonthlyAllowance() {
+    final plan = getChatPlanName().toLowerCase();
+    if (plan.contains('unlimited') || plan.contains('vip')) {
+      return 9999;
+    }
+    if (plan.contains('pro')) {
+      return 50;
+    }
+    if (plan.contains('free') ||
+        plan.contains('basic') ||
+        plan.contains('starter') ||
+        plan.isEmpty) {
+      return defaultMonthlyAllowance;
+    }
     final maxStr = _storage.getString(_keyMaxAllowance);
     if (maxStr != null && maxStr.isNotEmpty) {
-      return int.tryParse(maxStr) ?? defaultMonthlyAllowance;
+      final parsed = int.tryParse(maxStr);
+      if (parsed != null) {
+        if (parsed >= 9000) return 9999;
+        return parsed;
+      }
     }
     return defaultMonthlyAllowance;
   }
 
   /// Get active chat plan name
   String getChatPlanName() {
-    return _storage.getString(_keyChatPlanName) ?? 'Basic (Free)';
+    final localPlan = _storage.getString('active_plan_chat') ??
+        _storage.getString('chat_plan') ??
+        _storage.getString(_keyChatPlanName);
+    if (localPlan != null && localPlan.isNotEmpty) {
+      final lower = localPlan.toLowerCase();
+      if (!lower.contains('gallery') &&
+          !lower.contains('event') &&
+          !lower.contains('centre') &&
+          !lower.contains('center') &&
+          !lower.contains('portfolio')) {
+        return localPlan;
+      }
+    }
+    return 'Basic (Free)';
   }
 
   /// Set higher allowance (e.g., when upgrading via Plans)
-  Future<void> setMaxMonthlyAllowance(int max) async {
+  Future<void> setMaxMonthlyAllowance(int max, {String? planName}) async {
     await _storage.setString(_keyMaxAllowance, max.toString());
+    if (planName != null && planName.isNotEmpty) {
+      await _storage.setString(_keyChatPlanName, planName);
+      await _storage.setString('active_plan_chat', planName);
+      await _storage.setString('chat_plan', planName);
+    } else if (max >= 9000) {
+      await _storage.setString(_keyChatPlanName, 'Unlimited VIP');
+      await _storage.setString('active_plan_chat', 'Unlimited VIP');
+      await _storage.setString('chat_plan', 'Unlimited VIP');
+    } else if (max > defaultMonthlyAllowance) {
+      await _storage.setString(_keyChatPlanName, 'Chat & Messaging Pro');
+      await _storage.setString('active_plan_chat', 'Chat & Messaging Pro');
+      await _storage.setString('chat_plan', 'Chat & Messaging Pro');
+    } else {
+      await _storage.setString(_keyChatPlanName, 'Basic (Free)');
+      await _storage.remove('active_plan_chat');
+      await _storage.remove('chat_plan');
+    }
     _notifyAllowanceChanged();
   }
 
@@ -126,6 +174,41 @@ class ChatService {
   Future<void> syncAllowanceFromBackend() async {
     try {
       final email = (_storage.getString('user_email') ?? '').trim();
+
+      // Clean up legacy non-chat plans mistakenly cached in chat keys
+      final storedChat = _storage.getString('chat_plan') ?? '';
+      final storedActiveChat = _storage.getString('active_plan_chat') ?? '';
+      final storedKeyName = _storage.getString(_keyChatPlanName) ?? '';
+      final combinedStored = '$storedChat $storedActiveChat $storedKeyName'.toLowerCase();
+      if (combinedStored.contains('gallery') ||
+          combinedStored.contains('event') ||
+          combinedStored.contains('centre') ||
+          combinedStored.contains('center') ||
+          combinedStored.contains('portfolio')) {
+        await _storage.remove('active_plan_chat');
+        await _storage.remove('chat_plan');
+        await _storage.setString(_keyChatPlanName, 'Basic (Free)');
+        await _storage.setString(_keyMaxAllowance, '10');
+      }
+
+      // Check for active purchased chat plan first
+      try {
+        final activeChat = await sl<ApiService>().getActivePlanForType('chat', email: email);
+        if (activeChat != null) {
+          final pName = activeChat['plan_name']?.toString() ?? 'Chat & Messaging Pro';
+          final pLower = pName.toLowerCase();
+          if (!pLower.contains('gallery') && !pLower.contains('event') && !pLower.contains('centre') && !pLower.contains('center') && !pLower.contains('portfolio')) {
+            await _storage.setString(_keyChatPlanName, pName);
+            await _storage.setString('active_plan_chat', pName);
+            await _storage.setString('chat_plan', pName);
+            final allowance = (pLower.contains('pro') && !pLower.contains('vip') && !pLower.contains('unlimited')) ? '50' : '9999';
+            await _storage.setString(_keyMaxAllowance, allowance);
+            _notifyAllowanceChanged();
+            return;
+          }
+        }
+      } catch (_) {}
+
       final res = await _apiClient.get(
         'api.php?resource=messages',
         queryParameters: {
@@ -162,6 +245,8 @@ class ChatService {
     try {
       await _storage.setString(_keyMaxAllowance, maxAllowance.toString());
       await _storage.setString(_keyChatPlanName, planName);
+      await _storage.setString('active_plan_chat', planName);
+      await _storage.setString('chat_plan', planName);
       _notifyAllowanceChanged();
 
       final email = _storage.getString('user_email') ?? '';

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'app/app.dart';
 import 'core/di/injection_container.dart';
 import 'core/services/live_sync_service.dart';
+import 'core/services/local_notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,9 +30,11 @@ void main() async {
   // Run Root Application immediately
   runApp(const ArtistDubaiApp());
 
-  // Start Real-Time Multi-Device Database Live Sync after initial frame render
+  // Start Real-Time Multi-Device Database Live Sync & Push Notifications after initial frame render
   WidgetsBinding.instance.addPostFrameCallback((_) {
     try {
+      sl<LocalNotificationService>().initialize();
+      sl<LiveSyncService>().syncAllSilently(forceRefresh: true);
       sl<LiveSyncService>().startMultiDeviceSync();
     } catch (_) {}
   });

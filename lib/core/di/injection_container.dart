@@ -11,6 +11,7 @@ import '../services/api_service.dart';
 import '../services/favorites_service.dart';
 import '../services/live_sync_service.dart';
 import '../services/locale_provider.dart';
+import '../services/local_notification_service.dart';
 import '../services/logger_service.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
@@ -69,6 +70,10 @@ Future<void> initDependencyInjection() async {
 
   sl.registerLazySingleton<LiveSyncService>(
     () => LiveSyncService(sl<ApiService>()),
+  );
+
+  sl.registerLazySingleton<LocalNotificationService>(
+    () => LocalNotificationService(),
   );
 
   sl.registerLazySingleton<NotificationService>(() => NotificationService());

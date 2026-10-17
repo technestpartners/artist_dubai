@@ -75,6 +75,7 @@ class AppTheme {
         side: const BorderSide(color: Color(0xFF6A2777), width: 1.8),
       ),
       datePickerTheme: _buildDatePickerTheme(isDark: true),
+      timePickerTheme: _buildTimePickerTheme(isDark: true),
       textTheme: _buildTextTheme(ThemeData.dark().textTheme),
       textSelectionTheme: const TextSelectionThemeData(
         cursorColor: Color(0xFF6A2777),
@@ -113,11 +114,15 @@ class AppTheme {
     final onSurface = isDark ? Colors.white : const Color(0xFF1E293B);
     final rangeBg = isDark ? const Color(0xFF4A1970) : const Color(0xFFF3E8FF);
     final mutedText =
-        isDark ? const Color(0xFFA19BA8) : const Color(0xFF64748B);
+        isDark ? const Color(0xFFD8B4FE) : const Color(0xFF64748B);
+    final disabledText =
+        isDark ? const Color(0xFF71717A) : const Color(0xFF94A3B8);
+    final accent = isDark ? const Color(0xFF9333EA) : AppColors.primary;
 
     return DatePickerThemeData(
       backgroundColor: surface,
       surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       headerBackgroundColor: AppColors.primary,
       headerForegroundColor: Colors.white,
       headerHeadlineStyle: GoogleFonts.outfit(
@@ -126,9 +131,9 @@ class AppTheme {
         color: Colors.white,
       ),
       headerHelpStyle: GoogleFonts.outfit(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        color: Colors.white.withValues(alpha: 0.8),
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: Colors.white.withValues(alpha: 0.85),
       ),
       rangePickerBackgroundColor: surface,
       rangePickerSurfaceTintColor: Colors.transparent,
@@ -140,9 +145,9 @@ class AppTheme {
         color: Colors.white,
       ),
       rangePickerHeaderHelpStyle: GoogleFonts.outfit(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        color: Colors.white.withValues(alpha: 0.8),
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: Colors.white.withValues(alpha: 0.85),
       ),
       rangeSelectionBackgroundColor: rangeBg,
       rangeSelectionOverlayColor: WidgetStateProperty.all(
@@ -153,13 +158,13 @@ class AppTheme {
           return Colors.white;
         }
         if (states.contains(WidgetState.disabled)) {
-          return mutedText.withValues(alpha: 0.4);
+          return disabledText;
         }
         return onSurface;
       }),
       dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return AppColors.primary;
+          return accent;
         }
         return null;
       }),
@@ -167,13 +172,97 @@ class AppTheme {
         if (states.contains(WidgetState.selected)) {
           return Colors.white;
         }
-        return AppColors.primary;
+        return isDark ? const Color(0xFFC084FC) : AppColors.primary;
       }),
-      todayBorder: const BorderSide(color: AppColors.primary, width: 1.5),
+      todayBorder: BorderSide(
+        color: isDark ? const Color(0xFFC084FC) : AppColors.primary,
+        width: 1.5,
+      ),
       weekdayStyle: GoogleFonts.outfit(
         fontSize: 13,
         fontWeight: FontWeight.w700,
         color: mutedText,
+      ),
+      yearForegroundColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return Colors.white;
+        }
+        if (states.contains(WidgetState.disabled)) {
+          return disabledText;
+        }
+        return onSurface;
+      }),
+      yearBackgroundColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return accent;
+        }
+        return null;
+      }),
+      yearStyle: GoogleFonts.outfit(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+      ),
+      dividerColor: isDark ? const Color(0xFF3B2550) : const Color(0xFFE2E8F0),
+      cancelButtonStyle: TextButton.styleFrom(
+        foregroundColor: isDark ? const Color(0xFFD8B4FE) : const Color(0xFF64748B),
+        textStyle: GoogleFonts.outfit(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.3,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      ),
+      confirmButtonStyle: TextButton.styleFrom(
+        backgroundColor: accent,
+        foregroundColor: Colors.white,
+        textStyle: GoogleFonts.outfit(
+          fontSize: 14,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.3,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  }
+
+  static TimePickerThemeData _buildTimePickerTheme({required bool isDark}) {
+    final surface = isDark ? const Color(0xFF1F142B) : Colors.white;
+    final accent = isDark ? const Color(0xFF9333EA) : AppColors.primary;
+
+    return TimePickerThemeData(
+      backgroundColor: surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      hourMinuteColor: isDark ? const Color(0xFF2A1B3B) : const Color(0xFFF1F5F9),
+      hourMinuteTextColor: isDark ? Colors.white : const Color(0xFF1E293B),
+      dayPeriodColor: isDark ? const Color(0xFF2A1B3B) : const Color(0xFFF1F5F9),
+      dayPeriodTextColor: isDark ? const Color(0xFFD8B4FE) : AppColors.primary,
+      dialBackgroundColor:
+          isDark ? const Color(0xFF2A1B3B) : const Color(0xFFF8FAFC),
+      dialHandColor: accent,
+      dialTextColor: isDark ? Colors.white : const Color(0xFF1E293B),
+      entryModeIconColor: isDark ? const Color(0xFFD8B4FE) : AppColors.primary,
+      cancelButtonStyle: TextButton.styleFrom(
+        foregroundColor: isDark ? const Color(0xFFD8B4FE) : const Color(0xFF64748B),
+        textStyle: GoogleFonts.outfit(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      ),
+      confirmButtonStyle: TextButton.styleFrom(
+        backgroundColor: accent,
+        foregroundColor: Colors.white,
+        textStyle: GoogleFonts.outfit(
+          fontSize: 14,
+          fontWeight: FontWeight.w800,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
       ),
     );
   }
@@ -220,6 +309,7 @@ class AppTheme {
         side: const BorderSide(color: Color(0xFF6A2777), width: 1.8),
       ),
       datePickerTheme: _buildDatePickerTheme(isDark: false),
+      timePickerTheme: _buildTimePickerTheme(isDark: false),
       textTheme: _buildTextTheme(ThemeData.light().textTheme),
       textSelectionTheme: const TextSelectionThemeData(
         cursorColor: Color(0xFF6A2777),

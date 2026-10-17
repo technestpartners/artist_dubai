@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../di/injection_container.dart';
 import 'api_service.dart';
+import 'local_notification_service.dart';
 import 'storage_service.dart';
 
 class AppNotificationItem {
@@ -14,6 +15,7 @@ class AppNotificationItem {
   final Color iconColor;
   final Color iconBg;
   final String? route;
+  final String? userEmail;
   bool isRead;
 
   AppNotificationItem({
@@ -26,6 +28,7 @@ class AppNotificationItem {
     Color? iconColor,
     Color? iconBg,
     this.route,
+    this.userEmail,
     this.isRead = false,
   }) : icon = icon ?? NotificationService.resolveIconAndColors(type).$1,
        iconColor =
@@ -41,6 +44,7 @@ class AppNotificationItem {
     'icon_color': iconColor.toARGB32(),
     'icon_bg': iconBg.toARGB32(),
     'route': route,
+    'user_email': userEmail,
     'is_read': isRead,
   };
 
@@ -62,6 +66,7 @@ class AppNotificationItem {
               : defColor,
       iconBg: json['icon_bg'] != null ? Color(json['icon_bg'] as int) : defBg,
       route: json['route'] as String?,
+      userEmail: json['user_email'] as String?,
       isRead: json['is_read'] == true,
     );
   }
@@ -70,6 +75,8 @@ class AppNotificationItem {
 class NotificationService extends ChangeNotifier {
   static const String _kCacheKeyPrefix = 'cached_notifications_';
   final List<AppNotificationItem> _notifications = [];
+  final Set<String> _alertedNotificationIds = {};
+  bool _hasInitializedAlerts = false;
   bool _isLoading = false;
 
   NotificationService() {
@@ -87,27 +94,50 @@ class NotificationService extends ChangeNotifier {
   String? get _userEmail {
     try {
       final email = sl<StorageService>().getString('user_email');
-      return (email != null && email.isNotEmpty) ? email : null;
+      return (email != null && email.trim().isNotEmpty) ? email.trim() : null;
     } catch (_) {
       return null;
     }
   }
 
-  String get _cacheKey => '$_kCacheKeyPrefix${_userEmail ?? 'guest'}';
+  String get _cacheKey {
+    final clean = _userEmail?.toLowerCase() ?? 'guest';
+    return '$_kCacheKeyPrefix$clean';
+  }
+
+  void onUserChanged() {
+    _loadFromCache();
+    syncWithBackend();
+  }
 
   void _loadFromCache() {
     try {
+      final cleanEmail = _userEmail?.toLowerCase();
       final raw = sl<StorageService>().getString(_cacheKey);
+      _notifications.clear();
       if (raw != null && raw.isNotEmpty) {
         final list = jsonDecode(raw) as List<dynamic>;
-        _notifications.clear();
         for (final item in list) {
           if (item is Map<String, dynamic>) {
-            _notifications.add(AppNotificationItem.fromJson(item));
+            final notif = AppNotificationItem.fromJson(item);
+            final notifEmail = notif.userEmail?.toLowerCase();
+            // Client-side isolation: do not load notifications belonging to another user
+            if (cleanEmail != null &&
+                notifEmail != null &&
+                notifEmail.isNotEmpty &&
+                notifEmail != cleanEmail) {
+              continue;
+            }
+            if (cleanEmail == null &&
+                notifEmail != null &&
+                notifEmail.isNotEmpty) {
+              continue;
+            }
+            _notifications.add(notif);
           }
         }
-        notifyListeners();
       }
+      notifyListeners();
     } catch (_) {}
   }
 
@@ -184,11 +214,22 @@ class NotificationService extends ChangeNotifier {
   }
 
   Future<void> syncWithBackend() async {
+    _loadFromCache();
+    final cleanEmail = _userEmail?.toLowerCase();
+
+    // If guest / not logged in, clear notifications and do not fetch personal notifications
+    if (cleanEmail == null || cleanEmail.isEmpty) {
+      _notifications.clear();
+      _saveToCache();
+      notifyListeners();
+      return;
+    }
+
     _isLoading = true;
     try {
       final api = sl<ApiService>();
       final res = await api.getNotifications(
-        email: _userEmail,
+        email: cleanEmail,
         forceRefresh: true,
       );
       final rawList = (res['notifications'] as List<dynamic>?) ?? [];
@@ -196,10 +237,26 @@ class NotificationService extends ChangeNotifier {
       _notifications.clear();
       for (final item in rawList) {
         final m = item as Map<String, dynamic>;
+        final notifUserEmail =
+            (m['user_email'] as String?)?.trim().toLowerCase();
+        final type = (m['type'] as String? ?? 'general').toLowerCase();
+
+        // Strict user-wise client filter:
+        // If notifUserEmail is specified and doesn't match cleanEmail, skip it!
+        if (notifUserEmail != null &&
+            notifUserEmail.isNotEmpty &&
+            notifUserEmail != cleanEmail) {
+          continue;
+        }
+        // If it's a private chat/message or booking and doesn't belong to current user, skip it!
+        if ((type == 'message' || type.contains('chat') || type == 'booking') &&
+            notifUserEmail != cleanEmail) {
+          continue;
+        }
+
         final id = m['id']?.toString() ?? '0';
         final title = m['title'] as String? ?? 'Notification';
         final body = m['body'] as String? ?? '';
-        final type = (m['type'] as String? ?? 'general').toLowerCase();
         final route = m['route'] as String?;
         final isRead =
             m['is_read'] == true || m['is_read'] == 1 || m['is_read'] == '1';
@@ -207,21 +264,39 @@ class NotificationService extends ChangeNotifier {
 
         final (icon, iconColor, iconBg) = resolveIconAndColors(type);
 
-        _notifications.add(
-          AppNotificationItem(
-            id: id,
-            title: title,
-            body: body,
-            timeAgo: timeAgo,
-            type: type,
-            icon: icon,
-            iconColor: iconColor,
-            iconBg: iconBg,
-            route: route,
-            isRead: isRead,
-          ),
+        final notifItem = AppNotificationItem(
+          id: id,
+          title: title,
+          body: body,
+          timeAgo: timeAgo,
+          type: type,
+          icon: icon,
+          iconColor: iconColor,
+          iconBg: iconBg,
+          route: route,
+          isRead: isRead,
+          userEmail: notifUserEmail ?? cleanEmail,
         );
+
+        _notifications.add(notifItem);
+
+        // Alert on newly arrived unread notifications during active session
+        if (!isRead && !_alertedNotificationIds.contains(id)) {
+          _alertedNotificationIds.add(id);
+          if (_hasInitializedAlerts) {
+            try {
+              sl<LocalNotificationService>().showNotification(
+                id: int.tryParse(id),
+                title: title,
+                body: body,
+                payload: route,
+                type: type,
+              );
+            } catch (_) {}
+          }
+        }
       }
+      _hasInitializedAlerts = true;
       _saveToCache();
     } catch (_) {
       // Offline fallback: keep existing cache in memory
@@ -310,11 +385,24 @@ class NotificationService extends ChangeNotifier {
         iconColor: iconColor ?? resolvedIconColor,
         iconBg: iconBg ?? resolvedIconBg,
         route: route,
+        userEmail: _userEmail?.toLowerCase(),
         isRead: false,
       ),
     );
+    _alertedNotificationIds.add(id);
     _saveToCache();
     notifyListeners();
+
+    // Trigger local push notification alert immediately
+    try {
+      sl<LocalNotificationService>().showNotification(
+        id: int.tryParse(id),
+        title: title,
+        body: body,
+        payload: route,
+        type: type,
+      );
+    } catch (_) {}
 
     // Also persist to backend asynchronously if online
     try {

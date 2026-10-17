@@ -25,6 +25,7 @@ class _ProfileViewState extends State<ProfileView> {
   String _userEmail = '';
   String _memberSince = '';
   Map<String, dynamic>? _artistProfile;
+  List<Map<String, dynamic>> _userActivePlans = [];
   StreamSubscription<List<dynamic>>? _liveSub;
 
   @override
@@ -54,6 +55,8 @@ class _ProfileViewState extends State<ProfileView> {
       _memberSince = _formatMemberSince(createdAt);
     });
 
+    _loadUserPlans();
+
     if (email.isNotEmpty) {
       try {
         final profile = await sl<ApiService>().getUserProfile(email);
@@ -80,6 +83,64 @@ class _ProfileViewState extends State<ProfileView> {
         }
       } catch (_) {}
     }
+  }
+
+  Future<void> _loadUserPlans() async {
+    try {
+      final storage = sl<StorageService>();
+      final email = storage.getString('user_email') ?? '';
+      List<Map<String, dynamic>> activeList = [];
+      if (email.isNotEmpty) {
+        try {
+          final plans = await sl<ApiService>().getUserPlans(email: email);
+          activeList = plans.where((p) {
+            final status = (p['status'] ?? '').toString().toLowerCase();
+            final isExpired =
+                p['is_expired'] == true ||
+                (p['days_left'] != null && (p['days_left'] as num) <= 0);
+            return status == 'active' && !isExpired;
+          }).toList();
+        } catch (_) {}
+      }
+
+      // Merge local active plans from StorageService
+      for (final type in ['event', 'gallery', 'chat', 'artist', 'art_centre', 'plan']) {
+        final local = storage.getString('active_plan_$type');
+        if (local != null && local.isNotEmpty) {
+          final already = activeList.any((p) =>
+              (p['plan_name'] ?? '').toString().toLowerCase() == local.toLowerCase() ||
+              (p['item_type'] ?? '').toString().toLowerCase() == type);
+          if (!already) {
+            activeList.add({
+              'plan_name': local,
+              'item_type': type,
+              'status': 'active',
+              'price': storage.getString('last_payment_amount') ?? 'Paid',
+            });
+          }
+        }
+      }
+      final chatPlan = storage.getString('chat_plan') ?? storage.getString('chat_plan_name');
+      if (chatPlan != null && chatPlan.isNotEmpty && !chatPlan.toLowerCase().contains('free')) {
+        final already = activeList.any((p) =>
+            (p['item_type'] ?? '').toString().toLowerCase() == 'chat' ||
+            (p['plan_name'] ?? '').toString().toLowerCase() == chatPlan.toLowerCase());
+        if (!already) {
+          activeList.add({
+            'plan_name': chatPlan,
+            'item_type': 'chat',
+            'status': 'active',
+            'price': 'Paid',
+          });
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _userActivePlans = activeList;
+        });
+      }
+    } catch (_) {}
   }
 
   String _formatMemberSince(String? dateStr) {
@@ -969,6 +1030,135 @@ class _ProfileViewState extends State<ProfileView> {
                                   ),
                                 ],
                               ),
+                              const SizedBox(height: 14),
+                              Text(
+                                'Membership Badges'.trData(context),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  if (_userActivePlans.isEmpty) ...[
+                                    _buildBadgeChip(
+                                      icon: Icons.check_circle_outline,
+                                      label: 'Registered Member',
+                                      color: const Color(0xFF64748B),
+                                      bgColor: const Color(0xFFF1F5F9),
+                                      borderColor: const Color(0xFFCBD5E1),
+                                    ),
+                                  ] else ...[
+                                    for (final p in _userActivePlans) ...[
+                                      _buildPlanBadgeForUserPlan(p),
+                                    ],
+                                  ],
+                                  if (_artistProfile != null) ...[
+                                    _buildBadgeChip(
+                                      icon: Icons.verified_rounded,
+                                      label: 'Verified Artist',
+                                      color: const Color(0xFF6A2777),
+                                      bgColor: const Color(0xFFF3E8FF),
+                                      borderColor: const Color(0xFFD8B4FE),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Card: Active Subscriptions & Listing Plans
+                        _buildSectionCard(
+                          icon: Icons.workspace_premium_outlined,
+                          title: 'Active Subscriptions & Plans'.trData(context),
+                          subtitle: _userActivePlans.isNotEmpty
+                              ? 'Your active platform plans and publishing coverage'
+                                  .trData(context)
+                              : 'Manage or subscribe to platform publishing plans'
+                                  .trData(context),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (_userActivePlans.isNotEmpty) ...[
+                                for (final p in _userActivePlans) ...[
+                                  _buildUserActivePlanItem(p),
+                                  const SizedBox(height: 10),
+                                ],
+                              ] else ...[
+                                Container(
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF8FAFC),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: const Color(0xFFE2E8F0),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.info_outline,
+                                        color: Color(0xFF64748B),
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          'Unlock unlimited chat messaging, event publishing, and gallery directory listings.'
+                                              .trData(context),
+                                          style: const TextStyle(
+                                            fontSize: 12.5,
+                                            color: Color(0xFF64748B),
+                                            height: 1.35,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+                              SizedBox(
+                                width: double.infinity,
+                                height: 42,
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF5E227A),
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    context
+                                        .push(RouteNames.listingPlans)
+                                        .then((_) {
+                                      _loadUserPlans();
+                                    });
+                                  },
+                                  icon: const Icon(
+                                    Icons.tune_rounded,
+                                    size: 16,
+                                  ),
+                                  label: Text(
+                                    (_userActivePlans.isNotEmpty
+                                            ? 'Manage / Browse Listing Plans'
+                                            : 'Explore Listing Plans')
+                                        .trData(context),
+                                    style: const TextStyle(
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -1493,6 +1683,219 @@ class _ProfileViewState extends State<ProfileView> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildBadgeChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required Color bgColor,
+    required Color borderColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label.trData(context),
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlanBadgeForUserPlan(Map<String, dynamic> p) {
+    final type = (p['item_type'] ?? '').toString().toLowerCase();
+    final name = (p['plan_name'] ?? '').toString();
+    if (type == 'chat' || name.toLowerCase().contains('chat')) {
+      return _buildBadgeChip(
+        icon: Icons.workspace_premium_rounded,
+        label: name.isNotEmpty ? name : 'VIP Sender',
+        color: const Color(0xFF0F766E),
+        bgColor: const Color(0xFFCCFBF1),
+        borderColor: const Color(0xFF99F6E4),
+      );
+    }
+    if (type == 'gallery' || name.toLowerCase().contains('gall')) {
+      return _buildBadgeChip(
+        icon: Icons.museum_outlined,
+        label: name.isNotEmpty ? name : 'Gallery Partner',
+        color: const Color(0xFF0284C7),
+        bgColor: const Color(0xFFE0F2FE),
+        borderColor: const Color(0xFFBAE6FD),
+      );
+    }
+    if (type == 'event' || name.toLowerCase().contains('event')) {
+      return _buildBadgeChip(
+        icon: Icons.event_available_rounded,
+        label: name.isNotEmpty ? name : 'Event Host',
+        color: const Color(0xFF6A2777),
+        bgColor: const Color(0xFFF5E8FF),
+        borderColor: const Color(0xFFE9D5FF),
+      );
+    }
+    return _buildBadgeChip(
+      icon: Icons.star_rounded,
+      label: name.isNotEmpty ? name : 'Active Plan',
+      color: const Color(0xFFD97706),
+      bgColor: const Color(0xFFFEF3C7),
+      borderColor: const Color(0xFFFDE68A),
+    );
+  }
+
+  Widget _buildUserActivePlanItem(Map<String, dynamic> p) {
+    final type = (p['item_type'] ?? '').toString().toLowerCase();
+    final name = (p['plan_name'] ?? 'Active Plan').toString();
+    final price = p['price']?.toString() ?? 'Covered';
+
+    IconData icon;
+    Color iconColor;
+    Color iconBg;
+    VoidCallback? onAction;
+    String actionLabel = '';
+
+    if (type == 'chat' || name.toLowerCase().contains('chat')) {
+      icon = Icons.forum_rounded;
+      iconColor = const Color(0xFF0F766E);
+      iconBg = const Color(0xFFCCFBF1);
+      actionLabel = 'Open Chat';
+      onAction = () => context.push(RouteNames.artistChat);
+    } else if (type == 'gallery' || name.toLowerCase().contains('gall')) {
+      icon = Icons.museum_outlined;
+      iconColor = const Color(0xFF0284C7);
+      iconBg = const Color(0xFFE0F2FE);
+      actionLabel = 'Register Gallery';
+      onAction = () => context.push(RouteNames.galleryRegistration);
+    } else if (type == 'event' || name.toLowerCase().contains('event')) {
+      icon = Icons.event_available_rounded;
+      iconColor = const Color(0xFF6A2777);
+      iconBg = const Color(0xFFF5E8FF);
+      actionLabel = 'Create Event';
+      onAction = () => context.push(RouteNames.createArtEvent);
+    } else {
+      icon = Icons.workspace_premium_rounded;
+      iconColor = const Color(0xFFD97706);
+      iconBg = const Color(0xFFFEF3C7);
+      actionLabel = 'View Plans';
+      onAction = () => context.push(RouteNames.listingPlans);
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFF10B981).withValues(alpha: 0.4),
+          width: 1.2,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: iconBg,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: iconColor, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        name.trData(context),
+                        style: const TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1E1E1E),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2.5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFECFDF5),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFA7F3D0)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.check_circle,
+                            size: 11,
+                            color: Color(0xFF059669),
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            'Active'.trData(context),
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF059669),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      price.trData(context),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    InkWell(
+                      onTap: onAction,
+                      child: Text(
+                        actionLabel.trData(context),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: iconColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

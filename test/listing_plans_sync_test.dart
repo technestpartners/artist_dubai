@@ -21,7 +21,7 @@ class MockListingApiClient implements ApiClient {
       'title': 'Event Listing',
       'category': 'Events',
       'badge': 'One-time',
-      'price': '199 AED',
+      'price': 'AED 199',
       'description': 'Publish a single event on Artist Dubai.',
       'features': [
         'One event listing',
@@ -38,7 +38,7 @@ class MockListingApiClient implements ApiClient {
       'title': 'Gallery Listing',
       'category': 'Galleries',
       'badge': 'One-time',
-      'price': '149 AED',
+      'price': 'AED 149',
       'description': 'Publish a single gallery on Artist Dubai.',
       'features': [
         'One gallery listing',
@@ -55,7 +55,7 @@ class MockListingApiClient implements ApiClient {
       'title': 'Art Centre Listing',
       'category': 'Art Centres',
       'badge': 'One-time',
-      'price': '299 AED',
+      'price': 'AED 299',
       'description': 'Publish a single art centre on Artist Dubai.',
       'features': [
         'One art centre listing',
@@ -176,7 +176,7 @@ void main() {
       final plans = await api.getListingPlans(forceRefresh: true);
       expect(plans.length, 3);
       expect(plans[0].title, 'Event Listing');
-      expect(plans[0].price, '199 AED');
+      expect(plans[0].price, 'AED 199');
 
       final updated = await api.updateListingPlan(
         id: 1,
@@ -184,7 +184,7 @@ void main() {
         title: 'Event Listing VIP',
         category: 'Events',
         badge: 'Popular',
-        price: '249 AED',
+        price: 'AED 249',
         description: 'Updated description for VIP event.',
         features: ['Feature 1', 'Feature 2'],
       );
@@ -192,7 +192,7 @@ void main() {
 
       final refreshedPlans = await api.getListingPlans(forceRefresh: true);
       expect(refreshedPlans[0].title, 'Event Listing VIP');
-      expect(refreshedPlans[0].price, '249 AED');
+      expect(refreshedPlans[0].price, 'AED 249');
       expect(refreshedPlans[0].badge, 'Popular');
     },
   );
@@ -209,7 +209,7 @@ void main() {
 
     expect(find.text('LISTING PLANS'), findsOneWidget);
     expect(find.text('Event Listing'), findsOneWidget);
-    expect(find.text('199 AED'), findsOneWidget);
+    expect(find.text('AED 199'), findsOneWidget);
 
     // Now update plan via ApiService (simulating Admin edit)
     await sl<ApiService>().updateListingPlan(
@@ -218,7 +218,7 @@ void main() {
       title: 'Exclusive Event Listing',
       category: 'Events',
       badge: 'Featured',
-      price: '350 AED',
+      price: 'AED 350',
       description: 'Premium event listing in Dubai.',
       features: ['Priority calendar placement', 'Social shoutout'],
     );
@@ -226,7 +226,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Exclusive Event Listing'), findsOneWidget);
-    expect(find.text('350 AED'), findsOneWidget);
+    expect(find.text('AED 350'), findsOneWidget);
     expect(find.text('Featured'), findsOneWidget);
   });
 }

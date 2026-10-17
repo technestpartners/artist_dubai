@@ -5,7 +5,6 @@ import 'package:artist_dubai/features/artists/presentation/views/explore_categor
 import 'package:artist_dubai/features/events/domain/models/art_event_model.dart';
 import 'package:artist_dubai/features/events/presentation/views/event_detail_view.dart';
 import 'package:artist_dubai/features/government/presentation/views/government_portal_view.dart';
-import 'package:artist_dubai/features/splash/presentation/views/splash_screen_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -46,12 +45,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(const ArtistDubaiApp());
-      await tester.pump(const Duration(milliseconds: 100));
-
-      if (find.byType(SplashScreenView).evaluate().isNotEmpty) {
-        await tester.tap(find.byType(SplashScreenView));
-        await tester.pumpAndSettle();
-      }
+      await tester.pumpAndSettle();
 
       expect(find.textContaining('Artist Dubai'), findsWidgets);
     });

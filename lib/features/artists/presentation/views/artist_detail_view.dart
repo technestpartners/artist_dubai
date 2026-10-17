@@ -635,6 +635,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
   }
 
   void _showCreateGalleryModal(String artistName) {
+    if (!_isMyProfile(_effectiveArtist ?? widget.artist)) return;
     final titleController = TextEditingController();
     final descController = TextEditingController();
     final ImagePicker picker = ImagePicker();
@@ -1233,6 +1234,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
   }
 
   void _confirmDeleteGallery(Map<String, dynamic> gallery) {
+    if (!_isMyProfile(_effectiveArtist ?? widget.artist)) return;
     final title =
         (gallery['title'] ?? gallery['name'] ?? 'Photo Gallery').toString();
     final galleryId = gallery['id'];
@@ -1370,6 +1372,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
   }
 
   void _showEditGalleryModal(Map<String, dynamic> gallery) {
+    if (!_isMyProfile(_effectiveArtist ?? widget.artist)) return;
     final title = (gallery['title'] ?? gallery['name'] ?? '').toString();
     final subtitle =
         (gallery['subtitle'] ?? gallery['description'] ?? '').toString();
@@ -2745,38 +2748,39 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                       color: Color(0xFF1E1E1E),
                                     ),
                                   ),
-                                  OutlinedButton.icon(
-                                    style: OutlinedButton.styleFrom(
-                                      side: const BorderSide(
-                                        color: Color(0xFF333333),
-                                        width: 1.0,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 6,
-                                      ),
-                                    ),
-                                    onPressed:
-                                        () => _showCreateGalleryModal(
-                                          currentArtist.name,
+                                  if (_isMyProfile(currentArtist))
+                                    OutlinedButton.icon(
+                                      style: OutlinedButton.styleFrom(
+                                        side: const BorderSide(
+                                          color: Color(0xFF333333),
+                                          width: 1.0,
                                         ),
-                                    icon: const Icon(
-                                      Icons.add,
-                                      size: 16,
-                                      color: Color(0xFF1E1E1E),
-                                    ),
-                                    label: Text(
-                                      'Create Gallery'.trData(context),
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 6,
+                                        ),
+                                      ),
+                                      onPressed:
+                                          () => _showCreateGalleryModal(
+                                            currentArtist.name,
+                                          ),
+                                      icon: const Icon(
+                                        Icons.add,
+                                        size: 16,
                                         color: Color(0xFF1E1E1E),
                                       ),
+                                      label: Text(
+                                        'Create Gallery'.trData(context),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF1E1E1E),
+                                        ),
+                                      ),
                                     ),
-                                  ),
                                 ],
                               ),
                               const SizedBox(height: 20),
@@ -3339,8 +3343,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                       ],
                     ),
                   ),
-                  PopupMenuButton<String>(
-                    icon: const Icon(
+                  if (_isMyProfile(_effectiveArtist ?? widget.artist))
+                    PopupMenuButton<String>(
+                      icon: const Icon(
                       Icons.more_vert,
                       size: 20,
                       color: Color(0xFF64748B),
@@ -3529,30 +3534,32 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                               ],
                             ),
                           ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.edit_outlined,
-                              color: Colors.white,
-                              size: 20,
+                          if (_isMyProfile(_effectiveArtist ?? widget.artist)) ...[
+                            IconButton(
+                              icon: const Icon(
+                                Icons.edit_outlined,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              tooltip: 'Edit Gallery / Photos'.trData(context),
+                              onPressed: () {
+                                Navigator.pop(context);
+                                _showEditGalleryModal(gallery);
+                              },
                             ),
-                            tooltip: 'Edit Gallery / Photos'.trData(context),
-                            onPressed: () {
-                              Navigator.pop(context);
-                              _showEditGalleryModal(gallery);
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.delete_outline,
-                              color: Color(0xFFEF4444),
-                              size: 20,
+                            IconButton(
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: Color(0xFFEF4444),
+                                size: 20,
+                              ),
+                              tooltip: 'Delete Gallery'.trData(context),
+                              onPressed: () {
+                                Navigator.pop(context);
+                                _confirmDeleteGallery(gallery);
+                              },
                             ),
-                            tooltip: 'Delete Gallery'.trData(context),
-                            onPressed: () {
-                              Navigator.pop(context);
-                              _confirmDeleteGallery(gallery);
-                            },
-                          ),
+                          ],
                           IconButton(
                             icon: const Icon(
                               Icons.share_outlined,

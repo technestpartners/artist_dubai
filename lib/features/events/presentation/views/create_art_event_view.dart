@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -17,13 +18,16 @@ import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 
 import '../../../admin/domain/models/publishing_pricing_model.dart';
+import '../../../chat/domain/models/listing_plan_model.dart';
 import '../../domain/models/art_event_model.dart';
+import '../../../../core/services/event_draft_service.dart';
 
 class CreateArtEventView extends StatefulWidget {
   final ArtEventModel? event;
   final bool isCalendar;
   final bool fromAdmin;
   final bool showBottomBar;
+  final Map<String, dynamic>? initialDraft;
 
   const CreateArtEventView({
     super.key,
@@ -31,6 +35,7 @@ class CreateArtEventView extends StatefulWidget {
     this.isCalendar = false,
     this.fromAdmin = false,
     this.showBottomBar = true,
+    this.initialDraft,
   });
 
   @override
@@ -64,21 +69,26 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
   String _selectedPublishingPlan = 'six_month';
   PublishingPricingModel? _eventPricing;
   StreamSubscription<List<PublishingPricingModel>>? _pricingSub;
+  List<ListingPlanItem> _eventListingPlans = [];
+  StreamSubscription<List<ListingPlanItem>>? _listingPlansSub;
   Map<String, dynamic>? _activeEventPlan;
 
   final _titleKey = GlobalKey();
   final _categoryKey = GlobalKey();
   final _dateKey = GlobalKey();
   final _endDateKey = GlobalKey();
+  final _phoneKey = GlobalKey();
 
   final _titleFocusNode = FocusNode();
   final _dateFocusNode = FocusNode();
   final _endDateFocusNode = FocusNode();
+  final _phoneFocusNode = FocusNode();
 
   String? _titleError;
   String? _categoryError;
   String? _dateError;
   String? _endDateError;
+  String? _phoneError;
 
   final _transactionIdController = TextEditingController();
   String? _receiptUrl;
@@ -117,6 +127,16 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     'Umm Al Quwain, UAE',
   ];
 
+  String _normalizeDateTimeString(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return trimmed;
+    final ddmmyyyy = RegExp(r'^(\d{2})-(\d{2})-(\d{4})$');
+    if (ddmmyyyy.hasMatch(trimmed)) {
+      return '$trimmed 06:00 PM';
+    }
+    return trimmed;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -131,11 +151,59 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     } catch (_) {}
 
     final ev = widget.event;
-    if (ev != null) {
+    final draft = widget.initialDraft ??
+        (ev == null ? EventDraftService.getDraft()?.rawFormData : null);
+
+    if (draft != null && ev == null) {
+      _eventTitleController =
+          TextEditingController(text: draft['title']?.toString() ?? '');
+      _descriptionController =
+          TextEditingController(text: draft['description']?.toString() ?? '');
+      _eventDateController = TextEditingController(
+        text: _normalizeDateTimeString(draft['event_date']?.toString() ?? ''),
+      );
+      _endDateController = TextEditingController(
+        text: _normalizeDateTimeString(draft['end_date']?.toString() ?? ''),
+      );
+      _selectedLocation =
+          draft['location']?.toString() ?? 'Dubai, UAE';
+      _locationController = TextEditingController(text: _selectedLocation);
+      _venueController =
+          TextEditingController(text: draft['venue']?.toString() ?? '');
+      _organizerNameController = TextEditingController(
+        text: draft['organizer_name']?.toString() ?? prefilledOrganizer,
+      );
+      _contactEmailController = TextEditingController(
+        text: draft['contact_email']?.toString() ?? prefilledEmail,
+      );
+      _contactPhoneController =
+          TextEditingController(text: draft['contact_phone']?.toString() ?? '');
+      _notesController = TextEditingController();
+      _tagsController =
+          TextEditingController(text: draft['tags']?.toString() ?? '');
+      _maxTicketsController = TextEditingController(
+        text: draft['max_attendees']?.toString() ?? '100',
+      );
+      _selectedCategory = draft['category']?.toString();
+      _uploadedImageUrl = draft['image_url']?.toString();
+      if (_selectedLocation != null &&
+          !_locations.contains(_selectedLocation)) {
+        _locations.insert(0, _selectedLocation!);
+      }
+      if (_selectedCategory != null &&
+          !_categories.contains(_selectedCategory)) {
+        _categories.insert(0, _selectedCategory!);
+      }
+      if (draft['planId'] != null && draft['planId'].toString().isNotEmpty) {
+        _selectedPublishingPlan = draft['planId'].toString();
+      }
+    } else if (ev != null) {
       _eventTitleController = TextEditingController(text: ev.title);
       _descriptionController = TextEditingController(text: ev.description);
       _eventDateController = TextEditingController(
-        text: ev.dateTime.isNotEmpty ? ev.dateTime : ev.formattedDate,
+        text: _normalizeDateTimeString(
+          ev.dateTime.isNotEmpty ? ev.dateTime : ev.formattedDate,
+        ),
       );
       _endDateController = TextEditingController();
       _locationController = TextEditingController(text: ev.location);
@@ -195,6 +263,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     _loadDynamicCategories();
     _loadDynamicLocations();
     _loadPublishingPricing();
+    _loadEventListingPlans();
     _loadUserActiveEventPlan();
 
     try {
@@ -228,6 +297,30 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       });
     } catch (_) {}
 
+    try {
+      _listingPlansSub = sl<LiveSyncService>().listingPlansStream.listen((plans) {
+        if (!mounted) return;
+        final eventPlans = plans
+            .where((p) =>
+                p.isActive &&
+                (p.itemType.toLowerCase() == 'event' ||
+                    p.category.toLowerCase().contains('event') ||
+                    p.title.toLowerCase().contains('event')))
+            .toList();
+        setState(() {
+          _eventListingPlans = eventPlans;
+          if (_eventListingPlans.isNotEmpty &&
+              !_eventListingPlans.any((p) =>
+                  p.id?.toString() == _selectedPublishingPlan ||
+                  p.title == _selectedPublishingPlan)) {
+            _selectedPublishingPlan =
+                _eventListingPlans.first.id?.toString() ??
+                    _eventListingPlans.first.title;
+          }
+        });
+      });
+    } catch (_) {}
+
     _eventTitleController.addListener(() {
       if (_titleError != null && _eventTitleController.text.trim().isNotEmpty) {
         setState(() => _titleError = null);
@@ -243,6 +336,38 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
         setState(() => _endDateError = null);
       }
     });
+    _contactPhoneController.addListener(() {
+      if (_phoneError != null) {
+        setState(() => _phoneError = _validatePhone(_contactPhoneController.text));
+      }
+    });
+  }
+
+  String? _validatePhone(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return null;
+    }
+    final trimmed = value.trim();
+    final digitsOnly = trimmed.replaceAll(RegExp(r'\D'), '');
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+
+    if (RegExp(r'[a-zA-Z]').hasMatch(trimmed)) {
+      return isArabic
+          ? 'رقم الهاتف لا يمكن أن يحتوي على أحرف'
+          : 'Phone number cannot contain letters';
+    }
+
+    if (digitsOnly.length < 7) {
+      return isArabic
+          ? 'رقم الهاتف يجب أن يتكون من 7 أرقام على الأقل'
+          : 'Phone number must be at least 7 digits';
+    }
+    if (digitsOnly.length > 15) {
+      return isArabic
+          ? 'رقم الهاتف لا يمكن أن يتجاوز 15 رقماً'
+          : 'Phone number cannot exceed 15 digits';
+    }
+    return null;
   }
 
   void _scrollToField(GlobalKey key, {FocusNode? focusNode}) {
@@ -548,6 +673,31 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     } catch (_) {}
   }
 
+  Future<void> _loadEventListingPlans() async {
+    try {
+      final plans = await sl<ApiService>().getListingPlans();
+      if (!mounted) return;
+      final eventPlans = plans
+          .where((p) =>
+              p.isActive &&
+              (p.itemType.toLowerCase() == 'event' ||
+                  p.category.toLowerCase().contains('event') ||
+                  p.title.toLowerCase().contains('event')))
+          .toList();
+      setState(() {
+        _eventListingPlans = eventPlans;
+        if (_eventListingPlans.isNotEmpty &&
+            !_eventListingPlans.any((p) =>
+                p.id?.toString() == _selectedPublishingPlan ||
+                p.title == _selectedPublishingPlan)) {
+          _selectedPublishingPlan =
+              _eventListingPlans.first.id?.toString() ??
+                  _eventListingPlans.first.title;
+        }
+      });
+    } catch (_) {}
+  }
+
   Future<void> _loadUserActiveEventPlan() async {
     try {
       final active = await sl<ApiService>().getActivePlanForType('event');
@@ -559,26 +709,52 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
             _selectedPublishingPlan = planName;
           }
         });
+        return;
+      }
+      final storage = sl<StorageService>();
+      final local = storage.getString('active_plan_event');
+      if (mounted && local != null && local.isNotEmpty) {
+        setState(() {
+          _activeEventPlan = {'plan_name': local, 'status': 'active'};
+          _selectedPublishingPlan = local;
+        });
       }
     } catch (_) {}
   }
 
+  String _formatDateTime(DateTime date, TimeOfDay time) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final year = date.year.toString();
+    final hourOfPeriod = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+    final hour = hourOfPeriod.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
+    return '$day-$month-$year $hour:$minute $period';
+  }
+
   DateTime? _parseDateTimeString(String text) {
-    if (text.trim().isEmpty) return null;
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return null;
     try {
-      final parts = text.trim().split(' ');
+      final parts = trimmed.split(RegExp(r'\s+'));
       final dateParts = parts[0].split('-');
       if (dateParts.length == 3) {
         final day = int.parse(dateParts[0]);
         final month = int.parse(dateParts[1]);
         final year = int.parse(dateParts[2]);
-        int hour = 0;
+        int hour = 18;
         int minute = 0;
         if (parts.length > 1) {
           final timeParts = parts[1].split(':');
           if (timeParts.length >= 2) {
             hour = int.parse(timeParts[0]);
             minute = int.parse(timeParts[1]);
+            if (parts.length > 2) {
+              final ampm = parts[2].toUpperCase();
+              if (ampm == 'PM' && hour < 12) hour += 12;
+              if (ampm == 'AM' && hour == 12) hour = 0;
+            }
           }
         }
         return DateTime(year, month, day, hour, minute);
@@ -594,6 +770,17 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     final isEndDate = controller == _endDateController;
     DateTime? startDate;
 
+    TimeOfDay initialTime = const TimeOfDay(hour: 18, minute: 0);
+
+    // Extract initial date and time from current controller text if available
+    if (controller.text.trim().isNotEmpty) {
+      final parsed = _parseDateTimeString(controller.text);
+      if (parsed != null) {
+        initialDate = parsed;
+        initialTime = TimeOfDay(hour: parsed.hour, minute: parsed.minute);
+      }
+    }
+
     if (isEndDate) {
       startDate = _parseDateTimeString(_eventDateController.text);
       if (startDate != null) {
@@ -601,14 +788,26 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
         final currentEndDate = _parseDateTimeString(_endDateController.text);
         if (currentEndDate != null && !currentEndDate.isBefore(firstDate)) {
           initialDate = currentEndDate;
+          initialTime = TimeOfDay(
+            hour: currentEndDate.hour,
+            minute: currentEndDate.minute,
+          );
         } else {
           initialDate = firstDate;
+          initialTime = TimeOfDay(
+            hour: startDate.hour,
+            minute: startDate.minute,
+          );
         }
       }
     } else {
       final currentStartDate = _parseDateTimeString(_eventDateController.text);
       if (currentStartDate != null && !currentStartDate.isBefore(firstDate)) {
         initialDate = currentStartDate;
+        initialTime = TimeOfDay(
+          hour: currentStartDate.hour,
+          minute: currentStartDate.minute,
+        );
       }
     }
 
@@ -633,7 +832,6 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
     if (pickedDate == null || !mounted) return;
 
-    TimeOfDay initialTime = const TimeOfDay(hour: 18, minute: 0);
     if (isEndDate &&
         startDate != null &&
         pickedDate.year == startDate.year &&
@@ -659,12 +857,11 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       },
     );
 
-    final datePart =
-        '${pickedDate.day.toString().padLeft(2, '0')}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.year}';
-    final formatted =
-        pickedTime != null
-            ? '$datePart ${pickedTime.hour.toString().padLeft(2, '0')}:${pickedTime.minute.toString().padLeft(2, '0')}'
-            : datePart;
+    if (!mounted) return;
+
+    // Guarantee that both Date AND Time are always populated (fallback to initialTime if time dialog dismissed)
+    final effectiveTime = pickedTime ?? initialTime;
+    final formatted = _formatDateTime(pickedDate, effectiveTime);
 
     setState(() {
       controller.text = formatted;
@@ -726,7 +923,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     _titleFocusNode.dispose();
     _dateFocusNode.dispose();
     _endDateFocusNode.dispose();
+    _phoneFocusNode.dispose();
     _pricingSub?.cancel();
+    _listingPlansSub?.cancel();
     super.dispose();
   }
 
@@ -800,11 +999,29 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       return;
     }
 
+    final phoneVal = _contactPhoneController.text.trim();
+    final phoneErr = _validatePhone(phoneVal);
+    if (phoneErr != null) {
+      setState(() {
+        _phoneError = phoneErr;
+      });
+      _scrollToField(_phoneKey, focusNode: _phoneFocusNode);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(phoneErr),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _titleError = null;
       _categoryError = null;
       _dateError = null;
       _endDateError = null;
+      _phoneError = null;
       _isSubmitting = true;
     });
 
@@ -826,15 +1043,35 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
               : (_locationController.text.trim().isEmpty
                   ? 'Dubai, UAE'
                   : _locationController.text.trim());
-      final publishingAmount =
-          _eventPricing?.getPriceForPlan(_selectedPublishingPlan) ??
-          (_selectedPublishingPlan == 'monthly'
-              ? 'AED 500'
-              : (_selectedPublishingPlan == 'six_month'
-                  ? 'AED 2,500'
-                  : (_selectedPublishingPlan == 'yearly'
-                      ? 'AED 4,500'
-                      : 'AED 150')));
+      // Resolve dynamic plan selection from admin listing plans or baseline pricing
+      String publishingAmount = 'AED 2,500';
+      String resolvedPlanName = 'Event Publishing';
+
+      if (_eventListingPlans.isNotEmpty) {
+        final matchingPlan = _eventListingPlans.firstWhere(
+          (p) =>
+              p.id?.toString() == _selectedPublishingPlan ||
+              p.title.toLowerCase() == _selectedPublishingPlan.toLowerCase(),
+          orElse: () => _eventListingPlans.first,
+        );
+        publishingAmount = matchingPlan.price;
+        resolvedPlanName = matchingPlan.title;
+      } else {
+        publishingAmount =
+            _eventPricing?.getPriceForPlan(_selectedPublishingPlan) ??
+            (_selectedPublishingPlan == 'monthly'
+                ? 'AED 500'
+                : (_selectedPublishingPlan == 'yearly'
+                    ? 'AED 4,500'
+                    : 'AED 2,500'));
+        resolvedPlanName = _selectedPublishingPlan == 'yearly'
+            ? (_eventPricing?.yearlyBadge.trim().isNotEmpty == true
+                ? '${l10n.yearly} (${_eventPricing!.yearlyBadge.trim()})'
+                : 'Yearly Plan (365 Days)')
+            : (_eventPricing?.sixMonthBadge.trim().isNotEmpty == true
+                ? '${l10n.sixMonths} (${_eventPricing!.sixMonthBadge.trim()})'
+                : '6 Months Plan (180 Days)');
+      }
       final txnRef = _transactionIdController.text.trim();
       final hasPaymentProof =
           (_receiptUrl != null && _receiptUrl!.isNotEmpty) || txnRef.isNotEmpty;
@@ -844,14 +1081,50 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           ? 'paid'
           : (hasPaymentProof ? 'submitted' : 'unpaid');
       final effectivePublishingPlan = hasActiveEventPlan
-          ? (_activeEventPlan!['plan_name']?.toString() ?? _selectedPublishingPlan)
-          : _selectedPublishingPlan;
+          ? (_activeEventPlan!['plan_name']?.toString() ?? resolvedPlanName)
+          : resolvedPlanName;
       final effectivePublishingAmount = hasActiveEventPlan
           ? '0 AED (Included with ${_activeEventPlan!['plan_name'] ?? 'Active Plan'})'
           : publishingAmount;
 
       if (!isEdit && !isAdmin && !hasActiveEventPlan) {
         setState(() => _isSubmitting = false);
+
+        final eventFormData = <String, dynamic>{
+          'title': title,
+          'description': _descriptionController.text.trim(),
+          'category':
+              _selectedCategory ??
+              (_categories.isNotEmpty
+                  ? _categories.first
+                  : 'Art Exhibition'),
+          'event_date': eventDate,
+          'end_date': _endDateController.text.trim(),
+          'location': selectedLoc,
+          'venue': _venueController.text.trim(),
+          'is_free': true,
+          'price': 'Free Entry',
+          'max_attendees': parsedCapacity,
+          'organizer_name': _organizerNameController.text.trim(),
+          'contact_email': _contactEmailController.text.trim(),
+          'contact_phone': _contactPhoneController.text.trim(),
+          'tags': _tagsController.text.trim(),
+          'image_url': _uploadedImageUrl,
+          'is_calendar': widget.isCalendar,
+        };
+
+        // Persist draft so user can resume anytime if they back out or close at payment
+        await EventDraftService.saveDraft(
+          title: title,
+          subtitle: '${_selectedCategory ?? 'Art Exhibition'} • $selectedLoc',
+          planId: _selectedPublishingPlan,
+          planName: resolvedPlanName,
+          planAmount: publishingAmount,
+          formData: eventFormData,
+          userEmail: _contactEmailController.text.trim(),
+        );
+
+        if (!mounted) return;
         context.push(
           RouteNames.planPayment,
           extra: {
@@ -860,37 +1133,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
             'subtitle':
                 '${_selectedCategory ?? 'Art Exhibition'} • $selectedLoc',
             'planId': _selectedPublishingPlan,
-            'planName':
-                _selectedPublishingPlan == 'yearly'
-                    ? (_eventPricing?.yearlyBadge.trim().isNotEmpty == true
-                        ? '${l10n.yearly} (${_eventPricing!.yearlyBadge.trim()})'
-                        : 'Yearly Plan (365 Days)')
-                    : (_eventPricing?.sixMonthBadge.trim().isNotEmpty == true
-                        ? '${l10n.sixMonths} (${_eventPricing!.sixMonthBadge.trim()})'
-                        : '6 Months Plan (180 Days)'),
+            'planName': resolvedPlanName,
             'planAmount': publishingAmount,
-            'formData': {
-              'title': title,
-              'description': _descriptionController.text.trim(),
-              'category':
-                  _selectedCategory ??
-                  (_categories.isNotEmpty
-                      ? _categories.first
-                      : 'Art Exhibition'),
-              'event_date': eventDate,
-              'end_date': _endDateController.text.trim(),
-              'location': selectedLoc,
-              'venue': _venueController.text.trim(),
-              'is_free': true,
-              'price': 'Free Entry',
-              'max_attendees': parsedCapacity,
-              'organizer_name': _organizerNameController.text.trim(),
-              'contact_email': _contactEmailController.text.trim(),
-              'contact_phone': _contactPhoneController.text.trim(),
-              'tags': _tagsController.text.trim(),
-              'image_url': _uploadedImageUrl,
-              'is_calendar': widget.isCalendar,
-            },
+            'formData': eventFormData,
           },
         );
         return;
@@ -1568,7 +1813,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                   controller: _eventDateController,
                                   focusNode: _dateFocusNode,
                                   errorText: _dateError,
-                                  hintText: 'dd-mm-yyyy --:--',
+                                  hintText: 'dd-mm-yyyy hh:mm AM/PM',
                                   suffixIcon: Icons.calendar_today_outlined,
                                   onTap:
                                       () => _pickDateTime(_eventDateController),
@@ -1583,7 +1828,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                   controller: _endDateController,
                                   focusNode: _endDateFocusNode,
                                   errorText: _endDateError,
-                                  hintText: 'dd-mm-yyyy --:--',
+                                  hintText: 'dd-mm-yyyy hh:mm AM/PM',
                                   suffixIcon: Icons.calendar_today_outlined,
                                   onTap:
                                       () => _pickDateTime(_endDateController),
@@ -1620,9 +1865,22 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                               children: [
                                 _buildLabel(l10n.phoneOptional),
                                 _buildTextField(
+                                  fieldKey: _phoneKey,
+                                  focusNode: _phoneFocusNode,
                                   controller: _contactPhoneController,
                                   hintText: '+971 50 123 4567',
                                   keyboardType: TextInputType.phone,
+                                  errorText: _phoneError,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.allow(RegExp(r'[\d\s\+\-\(\)]')),
+                                    LengthLimitingTextInputFormatter(20),
+                                  ],
+                                  validator: _validatePhone,
+                                  onChanged: (val) {
+                                    if (_phoneError != null) {
+                                      setState(() => _phoneError = _validatePhone(val));
+                                    }
+                                  },
                                 ),
                                 const SizedBox(height: 12),
                                 _buildLabel(l10n.requirementsOptional),
@@ -1768,8 +2026,13 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                             ),
                                             const SizedBox(width: 4),
                                             Text(
-                                              '${_activeEventPlan!['days_left'] ?? 30} days remaining on this plan'
-                                                  .trData(context),
+                                              _activeEventPlan!['duration_label'] != null
+                                                  ? _activeEventPlan!['duration_label'].toString().trData(context)
+                                                  : (_activeEventPlan!['days_left'] != null
+                                                      ? '${_activeEventPlan!['days_left']} days remaining on this plan'.trData(context)
+                                                      : (_activeEventPlan!['duration'] != null
+                                                          ? _activeEventPlan!['duration'].toString().trData(context)
+                                                          : 'Active Event Pass'.trData(context))),
                                               style: const TextStyle(
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.w600,
@@ -1782,7 +2045,8 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                     ),
                                   ),
                                 ],
-                                const SizedBox(height: 8),
+                                if (_activeEventPlan == null) ...[
+                                  const SizedBox(height: 8),
                                 Text(
                                   _eventPricing?.description != null &&
                                           _eventPricing!.description!
@@ -1803,57 +2067,89 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                 LayoutBuilder(
                                   builder: (context, constraints) {
                                     final isSmall = constraints.maxWidth < 460;
-                                    final sixMonthPrice =
-                                        _eventPricing?.sixMonthPrice ??
-                                        'AED 2,500';
-                                    final yearlyPrice =
-                                        _eventPricing?.yearlyPrice ??
-                                        'AED 4,500';
-                                    final sixMonthSubtitle =
-                                        _eventPricing?.sixMonthBadge
-                                                    .trim()
-                                                    .isNotEmpty ==
-                                                true
-                                            ? DataTranslator.tr(
-                                              context,
-                                              _eventPricing!.sixMonthBadge
-                                                  .trim(),
-                                            )
-                                            : l10n.daysActive180;
-                                    final yearlySubtitle =
-                                        _eventPricing?.yearlyBadge
-                                                    .trim()
-                                                    .isNotEmpty ==
-                                                true
-                                            ? DataTranslator.tr(
-                                              context,
-                                              _eventPricing!.yearlyBadge.trim(),
-                                            )
-                                            : l10n.daysActive365;
 
-                                    final cards = [
-                                      _buildPricingPlanCard(
-                                        id: 'six_month',
-                                        title: l10n.sixMonths,
-                                        price: sixMonthPrice,
-                                        period: '/ 6 mo',
-                                        subtitle: sixMonthSubtitle,
-                                      ),
-                                      _buildPricingPlanCard(
-                                        id: 'yearly',
-                                        title: l10n.yearly,
-                                        price: yearlyPrice,
-                                        period: '/ year',
-                                        subtitle: yearlySubtitle,
-                                      ),
-                                    ];
+                                    List<Widget> cards = [];
+                                    if (_eventListingPlans.isNotEmpty) {
+                                      cards = _eventListingPlans.map((plan) {
+                                        final planId =
+                                            plan.id?.toString() ?? plan.title;
+                                        final subtitle = (plan.features.isNotEmpty &&
+                                                plan.features.first.trim().isNotEmpty)
+                                            ? plan.features.first.trim()
+                                            : (plan.description.trim().isNotEmpty
+                                                ? plan.description.trim()
+                                                : (plan.category.trim().isNotEmpty
+                                                    ? plan.category.trim()
+                                                    : 'Verified Event Showcase'));
+                                        return _buildPricingPlanCard(
+                                          id: planId,
+                                          title: plan.title,
+                                          price: plan.price,
+                                          period: '',
+                                          subtitle: subtitle,
+                                          tag:
+                                              plan.badge.isNotEmpty
+                                                  ? plan.badge
+                                                  : null,
+                                        );
+                                      }).toList();
+                                    } else {
+                                      final sixMonthPrice =
+                                          _eventPricing?.sixMonthPrice ??
+                                          'AED 2,500';
+                                      final yearlyPrice =
+                                          _eventPricing?.yearlyPrice ??
+                                          'AED 4,500';
+                                      final sixMonthSubtitle =
+                                          _eventPricing?.sixMonthBadge
+                                                      .trim()
+                                                      .isNotEmpty ==
+                                                  true
+                                              ? DataTranslator.tr(
+                                                context,
+                                                _eventPricing!.sixMonthBadge
+                                                    .trim(),
+                                              )
+                                              : l10n.daysActive180;
+                                      final yearlySubtitle =
+                                          _eventPricing?.yearlyBadge
+                                                      .trim()
+                                                      .isNotEmpty ==
+                                                  true
+                                              ? DataTranslator.tr(
+                                                context,
+                                                _eventPricing!.yearlyBadge.trim(),
+                                              )
+                                              : l10n.daysActive365;
 
-                                    if (isSmall) {
+                                      cards = [
+                                        _buildPricingPlanCard(
+                                          id: 'six_month',
+                                          title: l10n.sixMonths,
+                                          price: sixMonthPrice,
+                                          period: '/ 6 mo',
+                                          subtitle: sixMonthSubtitle,
+                                        ),
+                                        _buildPricingPlanCard(
+                                          id: 'yearly',
+                                          title: l10n.yearly,
+                                          price: yearlyPrice,
+                                          period: '/ year',
+                                          subtitle: yearlySubtitle,
+                                        ),
+                                      ];
+                                    }
+
+                                    if (isSmall || cards.length != 2) {
                                       return Column(
                                         children: [
-                                          cards[0],
-                                          const SizedBox(height: 10),
-                                          cards[1],
+                                          for (int i = 0;
+                                              i < cards.length;
+                                              i++) ...[
+                                            if (i > 0)
+                                              const SizedBox(height: 10),
+                                            cards[i],
+                                          ],
                                         ],
                                       );
                                     }
@@ -1868,8 +2164,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                   },
                                 ),
                               ],
-                            ),
+                            ],
                           ),
+                        ),
                           if (!widget.fromAdmin && !isEdit) ...[
                             _buildPaymentNoticeCard(),
                           ],
@@ -2029,15 +2326,26 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
   Widget _buildPaymentNoticeCard() {
     final l10n = AppLocalizations.of(context);
-    final planAmount =
-        _eventPricing?.getPriceForPlan(_selectedPublishingPlan) ??
-        (_selectedPublishingPlan == 'monthly'
-            ? 'AED 500'
-            : (_selectedPublishingPlan == 'six_month'
-                ? 'AED 2,500'
-                : (_selectedPublishingPlan == 'yearly'
-                    ? 'AED 4,500'
-                    : 'AED 150')));
+    String planAmount = 'AED 2,500';
+    if (_eventListingPlans.isNotEmpty) {
+      final matching = _eventListingPlans.firstWhere(
+        (p) =>
+            p.id?.toString() == _selectedPublishingPlan ||
+            p.title.toLowerCase() == _selectedPublishingPlan.toLowerCase(),
+        orElse: () => _eventListingPlans.first,
+      );
+      planAmount = matching.price;
+    } else {
+      planAmount =
+          _eventPricing?.getPriceForPlan(_selectedPublishingPlan) ??
+          (_selectedPublishingPlan == 'monthly'
+              ? 'AED 500'
+              : (_selectedPublishingPlan == 'six_month'
+                  ? 'AED 2,500'
+                  : (_selectedPublishingPlan == 'yearly'
+                      ? 'AED 4,500'
+                      : 'AED 150')));
+    }
 
     return Container(
       width: double.infinity,
@@ -2149,6 +2457,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     IconData? prefixIcon,
     IconData? suffixIcon,
     TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
+    FormFieldValidator<String>? validator,
+    AutovalidateMode? autovalidateMode,
     int maxLines = 1,
     int? maxLength,
     bool showCounter = false,
@@ -2159,6 +2470,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       controller: controller,
       focusNode: focusNode,
       keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
+      validator: validator,
+      autovalidateMode: autovalidateMode,
       maxLines: maxLines,
       maxLength: maxLength,
       readOnly: onTap != null,
@@ -2609,115 +2923,165 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     String? tag,
   }) {
     final isSelected = _selectedPublishingPlan == id;
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _selectedPublishingPlan = id;
-        });
-      },
-      borderRadius: BorderRadius.circular(10),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFAF5FF) : Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color:
-                isSelected ? const Color(0xFF6B1C9B) : const Color(0xFFE2E8F0),
-            width: isSelected ? 2 : 1,
-          ),
-          boxShadow:
-              isSelected
-                  ? [
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _selectedPublishingPlan = id;
+          });
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFFFAF5FF) : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? const Color(0xFF6B1C9B) : const Color(0xFFE2E8F0),
+              width: isSelected ? 1.8 : 1.0,
+            ),
+            boxShadow: isSelected
+                ? [
                     BoxShadow(
                       color: const Color(0xFF6B1C9B).withValues(alpha: 0.12),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
                     ),
                   ]
-                  : null,
-        ),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      title,
+                : null,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Text(
+                      title.trData(context),
                       style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color:
-                            isSelected
-                                ? const Color(0xFF6B1C9B)
-                                : const Color(0xFF334155),
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                        color: isSelected
+                            ? const Color(0xFF6B1C9B)
+                            : const Color(0xFF1E293B),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (tag != null && tag.isNotEmpty) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFFF3E8FF)
+                            : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: isSelected
+                              ? const Color(0xFFD8B4FE)
+                              : const Color(0xFFCBD5E1),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Text(
+                        tag.trData(context),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: isSelected
+                              ? const Color(0xFF6B1C9B)
+                              : const Color(0xFF475569),
+                        ),
                       ),
                     ),
-                    Icon(
-                      isSelected
-                          ? Icons.check_circle_rounded
-                          : Icons.radio_button_unchecked_rounded,
-                      size: 18,
-                      color:
-                          isSelected
-                              ? const Color(0xFF6B1C9B)
-                              : const Color(0xFF94A3B8),
+                  ],
+                  const SizedBox(width: 8),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: isSelected
+                          ? const LinearGradient(
+                              colors: [Color(0xFF6B1C9B), Color(0xFF9333EA)],
+                            )
+                          : null,
+                      border: isSelected
+                          ? null
+                          : Border.all(
+                              color: const Color(0xFFCBD5E1),
+                              width: 1.6,
+                            ),
+                    ),
+                    child: isSelected
+                        ? const Icon(
+                            Icons.check_rounded,
+                            size: 14,
+                            color: Colors.white,
+                          )
+                        : null,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    price.trData(context),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  if (period.isNotEmpty) ...[
+                    const SizedBox(width: 4),
+                    Text(
+                      period.trData(context),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF64748B),
+                      ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  price,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF0F172A),
+                ],
+              ),
+              const SizedBox(height: 3),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.check_circle_outline_rounded,
+                    size: 12,
+                    color: Color(0xFF10B981),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
-              ],
-            ),
-            if (tag != null)
-              Positioned(
-                top: -6,
-                right: 22,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 5,
-                    vertical: 1.5,
-                  ),
-                  decoration: BoxDecoration(
-                    color:
-                        tag == 'POPULAR'
-                            ? const Color(0xFFF59E0B)
-                            : const Color(0xFF10B981),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    tag,
-                    style: const TextStyle(
-                      fontSize: 8,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      letterSpacing: 0.5,
+                  const SizedBox(width: 5),
+                  Expanded(
+                    child: Text(
+                      subtitle.trData(context),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF64748B),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                ),
+                ],
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );

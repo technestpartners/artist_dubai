@@ -195,6 +195,42 @@ void main() {
       expect(chatService.getMaxMonthlyAllowance(), 50);
       expect(chatService.getRemainingAllowance(), 50);
     });
+
+    test('Free plan strictly enforces 10 message monthly limit', () async {
+      final chatService = sl<ChatService>();
+      // Reset to free plan
+      await chatService.setMaxMonthlyAllowance(10, planName: 'Basic (Free)');
+      expect(chatService.getMaxMonthlyAllowance(), 10);
+
+      // Consume all remaining messages to simulate 10 sent messages
+      final remaining = chatService.getRemainingAllowance();
+      for (int i = 0; i < remaining; i++) {
+        expect(chatService.canSendMessage(), isTrue);
+        await chatService.sendMessage(
+          recipientId: 'artist_free_$i',
+          recipientName: 'Free Artist $i',
+          recipientCategory: 'Painting',
+          subject: 'Message $i',
+          message: 'Hello $i',
+        );
+      }
+
+      // Allowance should now be 0
+      expect(chatService.getRemainingAllowance(), 0);
+      expect(chatService.canSendMessage(), isFalse);
+
+      // 11th message should be blocked
+      expect(
+        () => chatService.sendMessage(
+          recipientId: 'artist_free_blocked',
+          recipientName: 'Blocked Artist',
+          recipientCategory: 'Painting',
+          subject: 'Should fail',
+          message: 'Exceeding limit',
+        ),
+        throwsA(isA<Exception>()),
+      );
+    });
   });
 
   group('ListingPlansView Widget Tests', () {
@@ -210,11 +246,11 @@ void main() {
 
       expect(find.text('LISTING PLANS'), findsOneWidget);
       expect(find.text('Event Listing'), findsOneWidget);
-      expect(find.text('199 AED'), findsOneWidget);
+      expect(find.text('AED 199'), findsOneWidget);
       expect(find.text('Gallery Listing'), findsOneWidget);
-      expect(find.text('149 AED'), findsOneWidget);
+      expect(find.text('AED 149'), findsOneWidget);
       expect(find.text('Art Centre Listing'), findsOneWidget);
-      expect(find.text('299 AED'), findsOneWidget);
+      expect(find.text('AED 299'), findsOneWidget);
       expect(find.text('Hosted by Nizar Fahem'), findsOneWidget);
     });
   });
@@ -290,7 +326,7 @@ void main() {
         expect(find.text('Starter Plan'), findsOneWidget);
         expect(find.text('Pro Artist'), findsOneWidget);
         expect(find.text('Unlimited VIP'), findsOneWidget);
-        expect(find.text('49 AED'), findsOneWidget);
+        expect(find.text('AED 49'), findsOneWidget);
         expect(find.text('Upgrade to Pro'), findsOneWidget);
 
         // Tap Upgrade to Pro
@@ -298,12 +334,10 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Modal closed and allowance card updated
+        // Modal closed and active plan badge updated (allowance card hidden when plan active)
         expect(sl<ChatService>().getMaxMonthlyAllowance(), 50);
-        expect(
-          find.textContaining('50 of 50 messages left this month'),
-          findsOneWidget,
-        );
+        expect(find.text('PRO ARTIST'), findsOneWidget);
+        expect(find.textContaining('messages left this month'), findsNothing);
       },
     );
 

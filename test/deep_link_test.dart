@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:artist_dubai/app/app.dart';
 import 'package:artist_dubai/app/routes/app_router.dart';
 import 'package:artist_dubai/core/di/injection_container.dart';
-import 'package:artist_dubai/features/splash/presentation/views/splash_screen_view.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -21,11 +20,6 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const ArtistDubaiApp());
-    await tester.pump();
-
-    expect(find.byType(SplashScreenView), findsOneWidget);
-
-    await tester.pump(const Duration(milliseconds: 3000));
     await tester.pumpAndSettle();
 
     expect(AppRouter.router.state.uri.toString(), '/home');

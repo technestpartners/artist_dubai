@@ -32,7 +32,6 @@ import '../../features/onboarding/presentation/views/onboarding_view.dart';
 import '../../features/payment/presentation/views/plan_payment_view.dart';
 import '../../features/profile/presentation/views/profile_view.dart';
 import '../../features/settings/presentation/views/settings_view.dart';
-import '../../features/splash/presentation/views/splash_screen_view.dart';
 import '../../features/chat/presentation/views/artist_chat_view.dart';
 import '../../features/chat/presentation/views/listing_plans_view.dart';
 import '../../features/placeholder/presentation/views/coming_soon_view.dart';
@@ -189,7 +188,19 @@ class AppRouter {
     return null;
   }
 
-  static String get initialLocation => initialDeepLink ?? RouteNames.splash;
+  static String get defaultLocation {
+    try {
+      final storage = sl<StorageService>();
+      final hasCompleted =
+          storage.getBool(StorageServiceImpl.keyHasCompletedOnboarding) ??
+          false;
+      return hasCompleted ? RouteNames.home : RouteNames.onboarding;
+    } catch (_) {
+      return RouteNames.home;
+    }
+  }
+
+  static String get initialLocation => initialDeepLink ?? defaultLocation;
 
   static Page<dynamic> _buildFadePage({
     required BuildContext context,
@@ -246,8 +257,10 @@ class AppRouter {
     redirect: (context, state) {
       if (state.matchedLocation == RouteNames.root ||
           state.uri.path == '/' ||
-          state.uri.path.isEmpty) {
-        return RouteNames.splash;
+          state.uri.path.isEmpty ||
+          state.matchedLocation == RouteNames.splash ||
+          state.uri.path == '/splash') {
+        return defaultLocation;
       }
       final parsed = parseDeepLink(state.uri);
       if (parsed != null &&
@@ -261,22 +274,14 @@ class AppRouter {
       GoRoute(
         path: RouteNames.root,
         name: 'root',
-        pageBuilder:
-            (context, state) => _buildFadePage(
-              context: context,
-              state: state,
-              child: const SplashScreenView(),
-            ),
+        redirect: (context, state) => defaultLocation,
+        builder: (context, state) => const SizedBox.shrink(),
       ),
       GoRoute(
         path: RouteNames.splash,
         name: 'splash',
-        pageBuilder:
-            (context, state) => _buildFadePage(
-              context: context,
-              state: state,
-              child: const SplashScreenView(),
-            ),
+        redirect: (context, state) => defaultLocation,
+        builder: (context, state) => const SizedBox.shrink(),
       ),
       GoRoute(
         path: RouteNames.onboarding,
@@ -521,6 +526,7 @@ class AppRouter {
           ArtEventModel? event;
           bool isCalendar = false;
           bool fromAdmin = false;
+          Map<String, dynamic>? initialDraft;
 
           if (state.extra is ArtEventModel) {
             event = state.extra as ArtEventModel;
@@ -528,6 +534,10 @@ class AppRouter {
             final map = state.extra as Map;
             if (map['event'] is ArtEventModel) {
               event = map['event'] as ArtEventModel;
+            }
+            if (map['draftEvent'] is Map) {
+              initialDraft =
+                  Map<String, dynamic>.from(map['draftEvent'] as Map);
             }
             if (map['isCalendar'] == true) {
               isCalendar = true;
@@ -552,6 +562,7 @@ class AppRouter {
               isCalendar: isCalendar,
               fromAdmin: fromAdmin,
               showBottomBar: !fromAdmin && !isCalendar,
+              initialDraft: initialDraft,
             ),
           );
         },
@@ -774,12 +785,15 @@ class AppRouter {
         path: RouteNames.planPayment,
         name: 'planPayment',
         pageBuilder: (context, state) {
-          final extra =
-              state.extra is Map<String, dynamic>
-                  ? state.extra as Map<String, dynamic>
-                  : (state.extra is Map
-                      ? Map<String, dynamic>.from(state.extra as Map)
-                      : <String, dynamic>{});
+          final extra = <String, dynamic>{};
+          if (state.extra is Map) {
+            extra.addAll(Map<String, dynamic>.from(state.extra as Map));
+          }
+          if (state.uri.queryParameters.isNotEmpty) {
+            state.uri.queryParameters.forEach((k, v) {
+              extra.putIfAbsent(k, () => v);
+            });
+          }
           return _buildSlidePage(
             context: context,
             state: state,

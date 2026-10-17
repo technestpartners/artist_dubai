@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:artist_dubai/app/app.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -35,7 +36,6 @@ import 'package:artist_dubai/features/onboarding/presentation/views/onboarding_v
 import 'package:artist_dubai/features/placeholder/presentation/views/coming_soon_view.dart';
 import 'package:artist_dubai/features/profile/presentation/views/profile_view.dart';
 import 'package:artist_dubai/features/settings/presentation/views/settings_view.dart';
-import 'package:artist_dubai/features/splash/presentation/views/splash_screen_view.dart';
 
 import 'package:artist_dubai/core/services/locale_provider.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
@@ -82,7 +82,7 @@ void main() {
       await tester.pumpWidget(testApp(const OnboardingView()));
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.textContaining('Dubai Artists'), findsWidgets);
+      expect(find.textContaining('Artist Dubai'), findsWidgets);
       expect(find.text('Skip'), findsOneWidget);
     });
 
@@ -453,17 +453,16 @@ void main() {
     });
 
     testWidgets(
-      '31. SplashScreenView renders animated intro and brand assets',
+      '31. App Launch directs immediately without extra splash screen delay',
       (tester) async {
         tester.view.physicalSize = const Size(800, 1400);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.resetPhysicalSize);
 
-        await tester.pumpWidget(testApp(const SplashScreenView()));
-        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pumpWidget(const ArtistDubaiApp());
+        await tester.pumpAndSettle();
 
-        expect(find.byType(SplashScreenView), findsOneWidget);
-        expect(find.byType(Image), findsOneWidget);
+        expect(find.byType(ArtistDubaiApp), findsOneWidget);
       },
     );
 

@@ -6681,6 +6681,39 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                         ),
                                       ),
                                     ),
+                                  if (plan.duration.isNotEmpty)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 7,
+                                        vertical: 1.5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFEFF6FF),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: const Color(0xFFBFDBFE),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.timer_outlined,
+                                            size: 11,
+                                            color: Color(0xFF1D4ED8),
+                                          ),
+                                          const SizedBox(width: 3),
+                                          Text(
+                                            plan.duration,
+                                            style: const TextStyle(
+                                              fontSize: 10.5,
+                                              fontWeight: FontWeight.w600,
+                                              color: Color(0xFF1D4ED8),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                 ],
                               ),
                             if (plan.description.isNotEmpty) ...[
@@ -6971,6 +7004,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                 buttonText: updated.buttonText,
                                 isActive: updated.isActive,
                                 sortOrder: updated.sortOrder,
+                                duration: updated.duration,
+                                durationDays: updated.durationDays,
                               );
                               final fresh = await sl<ApiService>()
                                   .getListingPlans(forceRefresh: true);
@@ -7662,25 +7697,363 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     );
   }
 
+  List<String> _getConnectedCategories(String itemType) {
+    switch (itemType) {
+      case 'event':
+        return const [
+          'Exhibitions & Openings',
+          'Art Exhibition',
+          'Gallery Opening',
+          'Art Fair',
+          'Art Workshop',
+          'Artist Talk',
+          'Cultural Festival',
+          'Sculpture Installation',
+          'Photography Exhibition',
+          'Art Competition',
+          'Community Art Project',
+          'Workshops & Classes',
+          'Featured Event',
+          'Standard Event Listing',
+        ];
+      case 'artist':
+        return const [
+          'Featured Profile',
+          'Verified Artist Portfolio',
+          'Contemporary Artist',
+          'Fine Art & Painting',
+          'Digital & 3D Artist',
+          'Sculptor & Ceramics',
+          'Photographer Portfolio',
+          'Calligraphy & Traditional',
+          'Emerging Artist',
+          'Master Artist',
+        ];
+      case 'gallery':
+        return const [
+          'Galleries & Spaces',
+          'Commercial Art Gallery',
+          'Contemporary Art Space',
+          'Photography Gallery',
+          'Sculpture Park & Studio',
+          'Virtual Gallery Showroom',
+          'Pop-up Art Space',
+          'Exhibition Hall',
+        ];
+      case 'chat':
+        return const [
+          'Messaging & Inquiries',
+          'Direct Collector Messaging',
+          'Buyer Inquiries & Orders',
+          'Commission Requests',
+          'VIP Art Advisory Chat',
+        ];
+      case 'art_centre':
+        return const [
+          'Institutions & Venues',
+          'Cultural Centre',
+          'Museum & Foundation',
+          'Community Art Hub',
+          'Art Academy & School',
+        ];
+      case 'custom':
+      default:
+        return const [
+          'General Listing',
+          'Special Edition',
+          'Art Supplies & Services',
+          'Corporate Art Partnership',
+          'Annual All-Access Pass',
+        ];
+    }
+  }
+
+  void _showCategoryPickerSheet({
+    required BuildContext context,
+    required String itemType,
+    required List<String> categories,
+    required String currentCategory,
+    required ValueChanged<String> onSelected,
+  }) {
+    final searchCtrl = TextEditingController();
+    String query = '';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final filtered =
+                categories.where((c) {
+                  if (query.isEmpty) return true;
+                  return c.toLowerCase().contains(query.toLowerCase());
+                }).toList();
+
+            final bool hasExactMatch = categories.any(
+              (c) => c.trim().toLowerCase() == query.trim().toLowerCase(),
+            );
+
+            return Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.75,
+              ),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 10),
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFCBD5E1),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Select Category ($itemType)',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 20),
+                          onPressed: () => Navigator.pop(sheetCtx),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: TextField(
+                      controller: searchCtrl,
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        color: Color(0xFF0F172A),
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Search or type category...',
+                        hintStyle: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF94A3B8),
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.search_rounded,
+                          size: 20,
+                          color: Color(0xFF6A2777),
+                        ),
+                        suffixIcon:
+                            query.isNotEmpty
+                                ? IconButton(
+                                  icon: const Icon(
+                                    Icons.clear_rounded,
+                                    size: 18,
+                                  ),
+                                  onPressed: () {
+                                    searchCtrl.clear();
+                                    setSheetState(() => query = '');
+                                  },
+                                )
+                                : null,
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF6A2777),
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                      onChanged: (val) {
+                        setSheetState(() => query = val);
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                  Flexible(
+                    child: ListView(
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      children: [
+                        if (query.isNotEmpty && !hasExactMatch)
+                          ListTile(
+                            leading: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFAF5FF),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Icon(
+                                Icons.add_rounded,
+                                size: 18,
+                                color: Color(0xFF6A2777),
+                              ),
+                            ),
+                            title: Text(
+                              'Use "$query" as custom category',
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF6A2777),
+                              ),
+                            ),
+                            onTap: () {
+                              onSelected(query.trim());
+                              Navigator.pop(sheetCtx);
+                            },
+                          ),
+                        ...filtered.map((cat) {
+                          final isSelected =
+                              currentCategory.trim().toLowerCase() ==
+                              cat.trim().toLowerCase();
+                          return ListTile(
+                            dense: true,
+                            leading: Icon(
+                              isSelected
+                                  ? Icons.check_circle_rounded
+                                  : Icons.category_outlined,
+                              size: 18,
+                              color:
+                                  isSelected
+                                      ? const Color(0xFF6A2777)
+                                      : const Color(0xFF94A3B8),
+                            ),
+                            title: Text(
+                              cat,
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight:
+                                    isSelected
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                color:
+                                    isSelected
+                                        ? const Color(0xFF6A2777)
+                                        : const Color(0xFF1E293B),
+                              ),
+                            ),
+                            tileColor:
+                                isSelected ? const Color(0xFFFAF5FF) : null,
+                            onTap: () {
+                              onSelected(cat);
+                              Navigator.pop(sheetCtx);
+                            },
+                          );
+                        }),
+                        if (filtered.isEmpty &&
+                            (query.isEmpty || hasExactMatch))
+                          const Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Center(
+                              child: Text(
+                                'No categories found',
+                                style: TextStyle(
+                                  color: Color(0xFF94A3B8),
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _showEditListingPlanDialog([ListingPlanItem? plan]) {
     final isEditing = plan != null;
-    final titleCtrl = TextEditingController(text: plan?.title ?? '');
-    final categoryCtrl = TextEditingController(text: plan?.category ?? '');
-    final badgeCtrl = TextEditingController(text: plan?.badge ?? 'One-time');
-    final priceCtrl = TextEditingController(text: plan?.price ?? '199 AED');
     String selectedItemType = plan?.itemType ?? 'event';
+    final titleCtrl = TextEditingController(text: plan?.title ?? '');
+    final initialCat =
+        plan?.category ??
+        (selectedItemType == 'artist'
+            ? 'Featured Profile'
+            : (selectedItemType == 'gallery'
+                ? 'Galleries & Spaces'
+                : (selectedItemType == 'chat'
+                    ? 'Messaging & Inquiries'
+                    : (selectedItemType == 'art_centre'
+                        ? 'Institutions & Venues'
+                        : 'Exhibitions & Openings'))));
+    final categoryCtrl = TextEditingController(text: initialCat);
+    final badgeCtrl = TextEditingController(
+      text: plan?.badge ?? (selectedItemType == 'artist' ? 'Free' : 'One-time'),
+    );
+    final initialPrice = ListingPlanItem.normalizePrice(
+      plan?.price ?? (selectedItemType == 'artist' ? 'Free' : 'AED 199'),
+    );
+    final priceCtrl = TextEditingController(text: initialPrice);
+    if (selectedItemType == 'artist' && priceCtrl.text.toLowerCase() != 'free') {
+      priceCtrl.text = 'Free';
+      if (badgeCtrl.text == 'One-time') badgeCtrl.text = 'Free';
+    }
     final descCtrl = TextEditingController(text: plan?.description ?? '');
+    final durationCtrl = TextEditingController(
+      text: plan?.duration ??
+          (selectedItemType == 'gallery' || selectedItemType == 'art_centre'
+              ? '1 Year (365 Days)'
+              : (selectedItemType == 'artist'
+                  ? 'Permanent Free Profile'
+                  : '30 Days')),
+    );
     final initialFeatures =
         plan != null
             ? (plan.features.isNotEmpty
                 ? plan.features.join('\n')
                 : plan.effectiveFeatures.join('\n'))
-            : ListingPlanItem.defaultFeaturesForItemType('event').join('\n');
+            : ListingPlanItem.defaultFeaturesForItemType(selectedItemType).join('\n');
     final featuresCtrl = TextEditingController(text: initialFeatures);
     final buttonTextCtrl = TextEditingController(
-      text: plan?.buttonText ?? 'Pay from My Listings',
+      text: plan?.buttonText ??
+          (selectedItemType == 'artist'
+              ? 'Create Free Profile'
+              : 'Pay from My Listings'),
     );
     bool isActive = plan?.isActive ?? true;
+    final customFeatureInputCtrl = TextEditingController();
+    bool showRawFeaturesEditor = false;
 
     // Quick Templates for 1-Click Professional Pre-Filling
     final quickTemplates = [
@@ -7689,6 +8062,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         'category': 'Exhibitions & Openings',
         'badge': 'Popular',
         'price': 'AED 500',
+        'duration': '30 Days',
         'itemType': 'event',
         'desc': '30-day verified event showcase across mobile app and website',
         'features': [
@@ -7701,27 +8075,29 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         'buttonText': 'Pay from My Listings',
       },
       {
-        'title': 'Pro Artist Portfolio',
+        'title': 'Artist Portfolio',
         'category': 'Featured Profile',
-        'badge': 'Recommended',
-        'price': 'AED 350',
+        'badge': 'Free',
+        'price': 'Free',
+        'duration': 'Permanent Free Profile',
         'itemType': 'artist',
         'desc':
-            'Annual premium verified artist badge, unlimited artworks & direct buyer inquiries',
+            'Free verified artist profile, unlimited artwork uploads & direct collector messaging',
         'features': [
-          'Verified Gold Artist Badge on profile',
+          'Verified Artist Badge on profile',
           'Unlimited portfolio artwork uploads',
           'Featured spot on Artist Discovery grid',
           'Direct WhatsApp & inquiry link to artist',
-          'Priority curation in collector newsletters',
+          'Direct collector messaging & inquiry channel',
         ].join('\n'),
-        'buttonText': 'Subscribe to Pro',
+        'buttonText': 'Create Free Profile',
       },
       {
         'title': 'Elite Gallery Showcase',
         'category': 'Galleries & Spaces',
         'badge': 'Premium',
         'price': 'AED 750',
+        'duration': '1 Year (365 Days)',
         'itemType': 'gallery',
         'desc':
             'Comprehensive gallery venue listing with exhibitions calendar & collector reach',
@@ -7735,27 +8111,61 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         'buttonText': 'List Your Gallery',
       },
       {
-        'title': 'Chat & Messaging Pro',
+        'title': 'Starter Plan',
         'category': 'Messaging & Inquiries',
-        'badge': 'Recommended',
+        'badge': 'Default',
+        'price': 'Free',
+        'duration': 'Monthly Reset',
+        'itemType': 'chat',
+        'desc': 'Free monthly allowance to connect with artists across Dubai',
+        'features': [
+          '10 direct messages per month',
+          'Direct artist collaboration inquiries',
+          'Flyer & artwork attachment support',
+          'Allowance auto-resets on the 1st',
+        ].join('\n'),
+        'buttonText': 'Select Plan',
+      },
+      {
+        'title': 'Pro Artist',
+        'category': 'Messaging & Inquiries',
+        'badge': 'Most Popular',
         'price': 'AED 49',
+        'duration': '30 Days',
+        'itemType': 'chat',
+        'desc': '50 direct messages per month for active networking',
+        'features': [
+          '50 direct messages per month',
+          'Direct artist outreach & networking',
+          'Priority delivery in artist inboxes',
+          'High-resolution flyer attachments',
+          'Monthly reset on the 1st',
+        ].join('\n'),
+        'buttonText': 'Select Plan',
+      },
+      {
+        'title': 'Unlimited VIP',
+        'category': 'Messaging & Inquiries',
+        'badge': 'For Agencies & Curators',
+        'price': 'AED 99',
+        'duration': 'Monthly Subscription',
         'itemType': 'chat',
         'desc':
-            'Direct unlimited artist & gallery messaging, artwork inquiries, and priority alerts',
+            'Unlimited direct artist messages with verified VIP sender badge',
         'features': [
-          'Unlimited direct messages with artists & collectors',
-          'Direct artwork purchase inquiries & commissions',
-          'High-res flyer & artwork attachments support',
-          'Instant push notification alerts on response',
-          'Priority delivery in recipient inbox',
+          'Unlimited direct artist messages',
+          'Verified VIP sender badge',
+          'Ideal for galleries, curators & agencies',
+          'Priority instant customer support',
         ].join('\n'),
-        'buttonText': 'Subscribe to Chat',
+        'buttonText': 'Select Plan',
       },
       {
         'title': 'Art Center Partner',
         'category': 'Institutions & Venues',
         'badge': 'VIP Partner',
         'price': 'AED 990',
+        'duration': '1 Year (365 Days)',
         'itemType': 'art_centre',
         'desc':
             'Official institution hub page, workshop hosting & priority event syndication',
@@ -7775,12 +8185,119 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       builder:
           (ctx) => StatefulBuilder(
             builder: (context, setModalState) {
-              final linesCount =
-                  featuresCtrl.text
-                      .split('\n')
-                      .map((l) => l.trim())
-                      .where((l) => l.isNotEmpty)
-                      .length;
+              final connectedCategories = _getConnectedCategories(selectedItemType);
+              final categoryOptions = <String>{
+                ...connectedCategories,
+                ..._categories.map((c) => c.name.trim()).where((n) => n.isNotEmpty),
+              }.toList();
+
+              final pricePresets = const [
+                'Free',
+                'AED 49',
+                'AED 99',
+                'AED 149',
+                'AED 199',
+                'AED 299',
+                'AED 350',
+                'AED 500',
+                'AED 750',
+                'AED 990',
+                'AED 1,500',
+                'AED 3,000',
+              ];
+
+              final badgePresets = const [
+                'Free',
+                'Popular',
+                'Recommended',
+                'Best Choice',
+                'Featured',
+                'VIP Partner',
+                'One-time',
+                'Limited Offer',
+                'Hot',
+                'New',
+                'None (No Badge)',
+              ];
+
+              final buttonPresets = const [
+                'Create Free Profile',
+                'Pay from My Listings',
+                'Subscribe to Pro',
+                'List Your Gallery',
+                'Subscribe to Chat',
+                'Join Partner Network',
+                'Choose Plan',
+              ];
+
+              const standardFeaturesCatalog = [
+                'Verified Artist Badge on profile',
+                'Unlimited portfolio artwork uploads',
+                'Featured spot on Artist Discovery grid',
+                'Direct WhatsApp & inquiry link to artist',
+                'Direct collector messaging & inquiry channel',
+                '30-day verified event showcase across mobile app and website',
+                'Event calendar & push notification highlight',
+                'Direct ticket booking & RSVP link integration',
+                'Interactive venue map pin & directions',
+                'Full digital gallery showroom & map listing',
+                'Unlimited exhibition postings for 12 months',
+                'High-res flyer & artwork attachments support',
+                'Social media & newsletter spotlight',
+                'Analytics & attendee / visitor click metrics',
+                'Dedicated account manager & support',
+              ];
+
+              final activeLines = <String>[];
+              final seenFeatures = <String>{};
+              for (final raw in featuresCtrl.text.split('\n')) {
+                final trimmed = raw.trim();
+                if (trimmed.isNotEmpty && seenFeatures.add(trimmed.toLowerCase())) {
+                  activeLines.add(trimmed);
+                }
+              }
+              if (featuresCtrl.text.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).length != activeLines.length) {
+                featuresCtrl.text = activeLines.join('\n');
+              }
+              final customFeatures = activeLines
+                  .where((l) => !standardFeaturesCatalog.contains(l))
+                  .toList();
+
+              final currentCat = categoryCtrl.text.trim();
+              if (currentCat.isEmpty) {
+                categoryCtrl.text = connectedCategories.first;
+              }
+
+              final currentPrice = ListingPlanItem.normalizePrice(priceCtrl.text);
+              final bool isPriceInPresets = pricePresets.contains(currentPrice);
+              final String selectedPriceValue = selectedItemType == 'artist'
+                  ? 'Free'
+                  : (isPriceInPresets
+                      ? currentPrice
+                      : (currentPrice.isEmpty ? 'AED 199' : '__custom__'));
+              if (isPriceInPresets && priceCtrl.text.trim() != currentPrice) {
+                priceCtrl.text = currentPrice;
+              }
+              if (selectedItemType == 'artist' && priceCtrl.text != 'Free') {
+                priceCtrl.text = 'Free';
+              }
+
+              final currentBadge = badgeCtrl.text.trim();
+              final bool isBadgeInPresets = badgePresets.contains(currentBadge) || currentBadge.isEmpty;
+              final String selectedBadgeValue = currentBadge.isEmpty
+                  ? 'None (No Badge)'
+                  : (isBadgeInPresets ? currentBadge : '__custom__');
+
+              final currentBtn = buttonTextCtrl.text.trim();
+              final bool isBtnInPresets = buttonPresets.contains(currentBtn);
+              final String selectedBtnValue = isBtnInPresets
+                  ? currentBtn
+                  : (currentBtn.isEmpty
+                      ? (selectedItemType == 'artist' ? 'Create Free Profile' : 'Pay from My Listings')
+                      : '__custom__');
+              if (buttonTextCtrl.text.isEmpty && selectedBtnValue != '__custom__') {
+                buttonTextCtrl.text = selectedBtnValue;
+              }
 
               return Dialog(
                 backgroundColor: Colors.white,
@@ -7794,8 +8311,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 ),
                 child: Container(
                   constraints: const BoxConstraints(
-                    maxWidth: 540,
-                    maxHeight: 700,
+                    maxWidth: 580,
+                    maxHeight: 750,
                   ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
@@ -7923,6 +8440,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                           priceCtrl.text = t['price']!;
                                           selectedItemType = t['itemType']!;
                                           descCtrl.text = t['desc']!;
+                                          if (t['duration'] != null) {
+                                            durationCtrl.text = t['duration']!;
+                                          }
                                           featuresCtrl.text = t['features']!;
                                           buttonTextCtrl.text =
                                               t['buttonText']!;
@@ -7984,136 +8504,11 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Responsive Form Fields Layout
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final isNarrow = constraints.maxWidth < 440;
-                            if (isNarrow) {
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _buildFormLabel('Plan Title *'),
-                                  const SizedBox(height: 6),
-                                  _buildDialogTextField(
-                                    controller: titleCtrl,
-                                    hint: 'e.g. Standard Event Listing',
-                                    icon: Icons.title_rounded,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  _buildFormLabel('Category *'),
-                                  const SizedBox(height: 6),
-                                  _buildDialogTextField(
-                                    controller: categoryCtrl,
-                                    hint: 'e.g. Exhibitions & Openings',
-                                    icon: Icons.category_outlined,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  _buildFormLabel('Price (Live Display) *'),
-                                  const SizedBox(height: 6),
-                                  _buildDialogTextField(
-                                    controller: priceCtrl,
-                                    hint: 'e.g. AED 500, Free',
-                                    icon: Icons.payments_rounded,
-                                    isBold: true,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  _buildFormLabel('Badge Tag'),
-                                  const SizedBox(height: 6),
-                                  _buildDialogTextField(
-                                    controller: badgeCtrl,
-                                    hint: 'e.g. Popular, Recommended',
-                                    icon: Icons.bookmark_border_rounded,
-                                  ),
-                                ],
-                              );
-                            }
-
-                            return Column(
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          _buildFormLabel('Plan Title *'),
-                                          const SizedBox(height: 6),
-                                          _buildDialogTextField(
-                                            controller: titleCtrl,
-                                            hint: 'e.g. Standard Event Listing',
-                                            icon: Icons.title_rounded,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          _buildFormLabel('Category *'),
-                                          const SizedBox(height: 6),
-                                          _buildDialogTextField(
-                                            controller: categoryCtrl,
-                                            hint: 'e.g. Exhibitions & Openings',
-                                            icon: Icons.category_outlined,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 14),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          _buildFormLabel(
-                                            'Price (Live Display) *',
-                                          ),
-                                          const SizedBox(height: 6),
-                                          _buildDialogTextField(
-                                            controller: priceCtrl,
-                                            hint: 'e.g. AED 500, Free',
-                                            icon: Icons.payments_rounded,
-                                            isBold: true,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          _buildFormLabel('Badge Tag'),
-                                          const SizedBox(height: 6),
-                                          _buildDialogTextField(
-                                            controller: badgeCtrl,
-                                            hint: 'e.g. Popular, Recommended',
-                                            icon: Icons.bookmark_border_rounded,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 14),
-
-                        // Item Type Dropdown (Professional selector instead of bare text input)
+                        // Item Type Selector Dropdown (Prominently placed at top)
                         _buildFormLabel('Listing Item Type *'),
                         const SizedBox(height: 6),
                         DropdownButtonFormField<String>(
+                          key: ValueKey(selectedItemType),
                           isExpanded: true,
                           initialValue:
                               [
@@ -8166,12 +8561,25 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                   ),
                                   SizedBox(width: 9),
                                   Expanded(
-                                    child: Text(
-                                      'Artist Portfolio (artist)',
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          'Artist Portfolio (artist)',
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          '100% Free',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w800,
+                                            color: Color(0xFF16A34A),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
@@ -8270,6 +8678,13 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             if (val == null) return;
                             setModalState(() {
                               selectedItemType = val;
+                              final newConnected = _getConnectedCategories(val);
+                              categoryCtrl.text = newConnected.first;
+                              if (val == 'artist') {
+                                priceCtrl.text = 'Free';
+                                badgeCtrl.text = 'Free';
+                                buttonTextCtrl.text = 'Create Free Profile';
+                              }
                               if (featuresCtrl.text.trim().isEmpty) {
                                 featuresCtrl.text =
                                     ListingPlanItem.defaultFeaturesForItemType(
@@ -8278,33 +8693,580 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                               }
                             });
                           },
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: const Color(0xFFF8FAFC),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 11,
+                          decoration: _dialogInputDecoration(),
+                        ),
+                        if (selectedItemType == 'artist') ...[
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 7,
                             ),
-                            border: OutlineInputBorder(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF0FDF4),
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFCBD5E1),
+                              border: Border.all(
+                                color: const Color(0xFFBBF7D0),
                               ),
                             ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFCBD5E1),
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF6A2777),
-                                width: 1.5,
-                              ),
+                            child: const Row(
+                              children: [
+                                Icon(
+                                  Icons.check_circle_rounded,
+                                  size: 15,
+                                  color: Color(0xFF16A34A),
+                                ),
+                                SizedBox(width: 7),
+                                Expanded(
+                                  child: Text(
+                                    'Artist Portfolio is 100% Free on Artist Dubai (0 AED).',
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF15803D),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+                        ],
+                        const SizedBox(height: 14),
+
+                        // Plan Title
+                        _buildFormLabel('Plan Title *'),
+                        const SizedBox(height: 6),
+                        _buildDialogTextField(
+                          controller: titleCtrl,
+                          hint: 'e.g. Standard Event Listing, Artist Portfolio',
+                          icon: Icons.title_rounded,
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Responsive Category & Price Rows
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isNarrow = constraints.maxWidth < 440;
+
+                            final categoryWidget = Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    _buildFormLabel('Category (Searchable) *'),
+                                    InkWell(
+                                      onTap: () {
+                                        _showCategoryPickerSheet(
+                                          context: context,
+                                          itemType: selectedItemType,
+                                          categories: categoryOptions,
+                                          currentCategory: categoryCtrl.text,
+                                          onSelected: (chosen) {
+                                            setModalState(() {
+                                              categoryCtrl.text = chosen;
+                                            });
+                                          },
+                                        );
+                                      },
+                                      borderRadius: BorderRadius.circular(6),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                          vertical: 2,
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(
+                                              Icons.manage_search_rounded,
+                                              size: 15,
+                                              color: Color(0xFF6A2777),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'Browse (${categoryOptions.length})',
+                                              style: const TextStyle(
+                                                fontSize: 11.5,
+                                                fontWeight: FontWeight.w700,
+                                                color: Color(0xFF6A2777),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                TextFormField(
+                                  controller: categoryCtrl,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF0F172A),
+                                  ),
+                                  onChanged: (val) {
+                                    setModalState(() {});
+                                  },
+                                  decoration: InputDecoration(
+                                    hintText: 'Search or enter category...',
+                                    hintStyle: const TextStyle(
+                                      fontSize: 12.5,
+                                      color: Color(0xFF94A3B8),
+                                      fontWeight: FontWeight.normal,
+                                    ),
+                                    prefixIcon: const Icon(
+                                      Icons.category_outlined,
+                                      size: 18,
+                                      color: Color(0xFF6A2777),
+                                    ),
+                                    suffixIcon: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (categoryCtrl.text.isNotEmpty)
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.clear_rounded,
+                                              size: 16,
+                                            ),
+                                            color: const Color(0xFF94A3B8),
+                                            tooltip: 'Clear category',
+                                            onPressed: () {
+                                              setModalState(() {
+                                                categoryCtrl.clear();
+                                              });
+                                            },
+                                          ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.arrow_drop_down_circle_outlined,
+                                            size: 18,
+                                          ),
+                                          color: const Color(0xFF6A2777),
+                                          tooltip:
+                                              'Browse categories for $selectedItemType',
+                                          onPressed: () {
+                                            _showCategoryPickerSheet(
+                                              context: context,
+                                              itemType: selectedItemType,
+                                              categories: categoryOptions,
+                                              currentCategory:
+                                                  categoryCtrl.text,
+                                              onSelected: (chosen) {
+                                                setModalState(() {
+                                                  categoryCtrl.text = chosen;
+                                                });
+                                              },
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                    filled: true,
+                                    fillColor: const Color(0xFFF8FAFC),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 11,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: const BorderSide(
+                                        color: Color(0xFFE2E8F0),
+                                      ),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: const BorderSide(
+                                        color: Color(0xFFE2E8F0),
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: const BorderSide(
+                                        color: Color(0xFF6A2777),
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  physics: const BouncingScrollPhysics(),
+                                  child: Row(
+                                    children:
+                                        connectedCategories.take(6).map((cat) {
+                                          final isSelected =
+                                              categoryCtrl.text
+                                                  .trim()
+                                                  .toLowerCase() ==
+                                              cat.trim().toLowerCase();
+                                          return Padding(
+                                            padding: const EdgeInsets.only(
+                                              right: 6,
+                                            ),
+                                            child: InkWell(
+                                              onTap: () {
+                                                setModalState(() {
+                                                  categoryCtrl.text = cat;
+                                                });
+                                              },
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 3.5,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color:
+                                                      isSelected
+                                                          ? const Color(
+                                                            0xFF6A2777,
+                                                          )
+                                                          : const Color(
+                                                            0xFFF1F5F9,
+                                                          ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                  border: Border.all(
+                                                    color:
+                                                        isSelected
+                                                            ? const Color(
+                                                              0xFF6A2777,
+                                                            )
+                                                            : const Color(
+                                                              0xFFE2E8F0,
+                                                            ),
+                                                    width: 1,
+                                                  ),
+                                                ),
+                                                child: Text(
+                                                  cat,
+                                                  style: TextStyle(
+                                                    fontSize: 10.5,
+                                                    fontWeight:
+                                                        isSelected
+                                                            ? FontWeight.w700
+                                                            : FontWeight.w500,
+                                                    color:
+                                                        isSelected
+                                                            ? Colors.white
+                                                            : const Color(
+                                                              0xFF475569,
+                                                            ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                  ),
+                                ),
+                              ],
+                            );
+
+                            final badgeWidget = Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildFormLabel('Badge Tag (Dropdown)'),
+                                const SizedBox(height: 6),
+                                DropdownButtonFormField<String>(
+                                  key: ValueKey(selectedBadgeValue),
+                                  initialValue: selectedBadgeValue,
+                                  isExpanded: true,
+                                  dropdownColor: Colors.white,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF0F172A),
+                                  ),
+                                  items: [
+                                    ...badgePresets.map(
+                                      (b) => DropdownMenuItem(
+                                        value: b,
+                                        child: Text(b),
+                                      ),
+                                    ),
+                                    const DropdownMenuItem(
+                                      value: '__custom__',
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.edit_note_rounded,
+                                            size: 15,
+                                            color: Color(0xFF6A2777),
+                                          ),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            'Custom Badge...',
+                                            style: TextStyle(
+                                              fontStyle: FontStyle.italic,
+                                              color: Color(0xFF6A2777),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                  onChanged: (val) {
+                                    if (val == null) return;
+                                    setModalState(() {
+                                      if (val == 'None (No Badge)') {
+                                        badgeCtrl.text = '';
+                                      } else if (val == '__custom__') {
+                                        if (isBadgeInPresets) badgeCtrl.clear();
+                                      } else {
+                                        badgeCtrl.text = val;
+                                      }
+                                    });
+                                  },
+                                  decoration: _dialogInputDecoration(
+                                    icon: Icons.bookmark_border_rounded,
+                                  ),
+                                ),
+                                if (selectedBadgeValue == '__custom__') ...[
+                                  const SizedBox(height: 6),
+                                  _buildDialogTextField(
+                                    controller: badgeCtrl,
+                                    hint: 'Type custom badge name...',
+                                    icon: Icons.bookmark_border_rounded,
+                                  ),
+                                ],
+                              ],
+                            );
+
+                            final priceWidget = Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildFormLabel('Price (Live Display) *'),
+                                const SizedBox(height: 6),
+                                if (selectedItemType == 'artist')
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 11,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF0FDF4),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: const Color(0xFF86EFAC),
+                                      ),
+                                    ),
+                                    child: const Row(
+                                      children: [
+                                        Icon(
+                                          Icons.check_circle_rounded,
+                                          color: Color(0xFF16A34A),
+                                          size: 18,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            'Free (0 AED)',
+                                            style: TextStyle(
+                                              fontSize: 13.5,
+                                              fontWeight: FontWeight.w800,
+                                              color: Color(0xFF15803D),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                else ...[
+                                  DropdownButtonFormField<String>(
+                                    key: ValueKey(selectedPriceValue),
+                                    initialValue: selectedPriceValue,
+                                    isExpanded: true,
+                                    dropdownColor: Colors.white,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                    items: [
+                                      ...pricePresets.map(
+                                        (p) => DropdownMenuItem(
+                                          value: p,
+                                          child: Text(
+                                            p,
+                                            style: TextStyle(
+                                              fontWeight:
+                                                  p == 'Free'
+                                                      ? FontWeight.w800
+                                                      : FontWeight.w600,
+                                              color:
+                                                  p == 'Free'
+                                                      ? const Color(0xFF15803D)
+                                                      : const Color(0xFF0F172A),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const DropdownMenuItem(
+                                        value: '__custom__',
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.edit_note_rounded,
+                                              size: 15,
+                                              color: Color(0xFF6A2777),
+                                            ),
+                                            SizedBox(width: 6),
+                                            Text(
+                                              'Custom Price...',
+                                              style: TextStyle(
+                                                fontStyle: FontStyle.italic,
+                                                color: Color(0xFF6A2777),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                    onChanged: (val) {
+                                      if (val == null) return;
+                                      setModalState(() {
+                                        if (val == '__custom__') {
+                                          if (isPriceInPresets) priceCtrl.clear();
+                                        } else {
+                                          priceCtrl.text = val;
+                                        }
+                                      });
+                                    },
+                                    decoration: _dialogInputDecoration(
+                                      icon: Icons.payments_rounded,
+                                    ),
+                                  ),
+                                  if (selectedPriceValue == '__custom__') ...[
+                                    const SizedBox(height: 6),
+                                    _buildDialogTextField(
+                                      controller: priceCtrl,
+                                      hint: 'e.g. AED 1,200',
+                                      icon: Icons.payments_rounded,
+                                      isBold: true,
+                                    ),
+                                  ],
+                                ],
+                              ],
+                            );
+
+                            if (isNarrow) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  categoryWidget,
+                                  const SizedBox(height: 12),
+                                  priceWidget,
+                                  const SizedBox(height: 12),
+                                  badgeWidget,
+                                ],
+                              );
+                            }
+
+                            return Column(
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(child: categoryWidget),
+                                    const SizedBox(width: 12),
+                                    Expanded(child: badgeWidget),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                priceWidget,
+                              ],
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Duration / Validity Configuration
+                        _buildFormLabel('Duration / Validity Period *'),
+                        const SizedBox(height: 6),
+                        DropdownButtonFormField<String>(
+                          key: ValueKey(durationCtrl.text),
+                          isExpanded: true,
+                          initialValue: [
+                            '30 Days',
+                            '60 Days',
+                            '90 Days (3 Months)',
+                            '180 Days (6 Months)',
+                            '1 Year (365 Days)',
+                            'Permanent Free Profile',
+                            'Permanent / Lifetime',
+                          ].contains(durationCtrl.text.trim())
+                              ? durationCtrl.text.trim()
+                              : '__custom__',
+                          dropdownColor: Colors.white,
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF0F172A),
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: '30 Days',
+                              child: Text('30 Days (Standard Event / Listing)'),
+                            ),
+                            DropdownMenuItem(
+                              value: '60 Days',
+                              child: Text('60 Days (2 Months)'),
+                            ),
+                            DropdownMenuItem(
+                              value: '90 Days (3 Months)',
+                              child: Text('90 Days (Quarterly Pass)'),
+                            ),
+                            DropdownMenuItem(
+                              value: '180 Days (6 Months)',
+                              child: Text('180 Days (Bi-Annual)'),
+                            ),
+                            DropdownMenuItem(
+                              value: '1 Year (365 Days)',
+                              child: Text('1 Year / 365 Days (Gallery / Institution)'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'Permanent Free Profile',
+                              child: Text('Permanent Free Profile (Artists)'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'Permanent / Lifetime',
+                              child: Text('Permanent / Lifetime Access'),
+                            ),
+                            DropdownMenuItem(
+                              value: '__custom__',
+                              child: Text(
+                                'Custom Duration...',
+                                style: TextStyle(
+                                  fontStyle: FontStyle.italic,
+                                  color: Color(0xFF6A2777),
+                                ),
+                              ),
+                            ),
+                          ],
+                          onChanged: (val) {
+                            if (val == null) return;
+                            setModalState(() {
+                              if (val != '__custom__') {
+                                durationCtrl.text = val;
+                              }
+                            });
+                          },
+                          decoration: _dialogInputDecoration(
+                            icon: Icons.timer_outlined,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        _buildDialogTextField(
+                          controller: durationCtrl,
+                          hint: 'e.g. 1 Year (365 Days), 30 Days, Permanent',
+                          icon: Icons.schedule_rounded,
                         ),
                         const SizedBox(height: 14),
 
@@ -8319,56 +9281,19 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             color: Color(0xFF0F172A),
                             fontWeight: FontWeight.w500,
                           ),
-                          decoration: InputDecoration(
-                            hintText:
-                                'e.g. 30-day verified event showcase across mobile app and website',
-                            hintStyle: const TextStyle(
-                              color: Color(0xFF94A3B8),
-                              fontSize: 13,
-                            ),
-                            prefixIcon: const Icon(
-                              Icons.description_outlined,
-                              size: 18,
-                              color: Color(0xFF6A2777),
-                            ),
-                            filled: true,
-                            fillColor: const Color(0xFFF8FAFC),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFCBD5E1),
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFCBD5E1),
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF6A2777),
-                                width: 1.5,
-                              ),
-                            ),
+                          decoration: _dialogInputDecoration(
+                            icon: Icons.description_outlined,
+                            hint:
+                                'e.g. Free verified artist profile, artwork showcase & direct collector inquiries',
                           ),
                         ),
                         const SizedBox(height: 14),
 
-                        // Features Checklist with Header Count & Quick Add Feature Chips
+                        // Features Checklist with Interactive Checkboxes & Raw Text toggle
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Expanded(
-                              child: _buildFormLabel(
-                                'Features Checklist (One per line) *',
-                              ),
-                            ),
+                            _buildFormLabel('Features Checklist *'),
                             const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -8380,7 +9305,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
-                                '$linesCount Features',
+                                '${activeLines.length} Selected',
                                 style: const TextStyle(
                                   fontSize: 10.5,
                                   fontWeight: FontWeight.w700,
@@ -8388,61 +9313,355 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                 ),
                               ),
                             ),
+                            const Spacer(),
+                            InkWell(
+                              onTap: () {
+                                setModalState(() {
+                                  showRawFeaturesEditor = !showRawFeaturesEditor;
+                                });
+                              },
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    showRawFeaturesEditor
+                                        ? Icons.checklist_rounded
+                                        : Icons.edit_note_rounded,
+                                    size: 15,
+                                    color: const Color(0xFF6A2777),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    showRawFeaturesEditor
+                                        ? 'Checkboxes View'
+                                        : 'Raw Text View',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF6A2777),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 4),
                         const Text(
-                          'Each line renders with a branded checkmark on user-facing pricing screens.',
+                          'Toggle checkboxes to include features, or add custom bullets below.',
                           style: TextStyle(
                             fontSize: 11,
                             color: Color(0xFF64748B),
                           ),
                         ),
                         const SizedBox(height: 6),
-                        TextField(
-                          controller: featuresCtrl,
-                          maxLines: 4,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF0F172A),
-                            height: 1.4,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          onChanged: (_) => setModalState(() {}),
-                          decoration: InputDecoration(
-                            hintText:
-                                '30-day verified showcase\nEvent calendar highlight\nDirect ticket booking link',
-                            hintStyle: const TextStyle(
-                              color: Color(0xFF94A3B8),
-                              fontSize: 12.5,
+                        if (showRawFeaturesEditor) ...[
+                          TextField(
+                            controller: featuresCtrl,
+                            maxLines: 5,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF0F172A),
+                              height: 1.4,
+                              fontWeight: FontWeight.w500,
                             ),
-                            filled: true,
-                            fillColor: const Color(0xFFF8FAFC),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFCBD5E1),
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFCBD5E1),
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF6A2777),
-                                width: 1.5,
-                              ),
+                            onChanged: (_) => setModalState(() {}),
+                            decoration: _dialogInputDecoration(
+                              hint:
+                                  'Verified Artist Badge\nUnlimited portfolio uploads\nDirect WhatsApp link',
                             ),
                           ),
-                        ),
+                        ] else ...[
+                          Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: const Color(0xFFCBD5E1),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // Standard features scrollable checklist with Checkboxes
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxHeight: 180,
+                                  ),
+                                  child: ListView.builder(
+                                    shrinkWrap: true,
+                                    physics: const BouncingScrollPhysics(),
+                                    itemCount: standardFeaturesCatalog.length,
+                                      itemBuilder: (context, idx) {
+                                        final feat = standardFeaturesCatalog[idx];
+                                        final isChecked = activeLines.contains(feat);
+                                        return InkWell(
+                                          onTap: () {
+                                            final lines = List<String>.from(activeLines);
+                                            if (isChecked) {
+                                              lines.remove(feat);
+                                            } else {
+                                              lines.add(feat);
+                                            }
+                                            featuresCtrl.text = lines.join('\n');
+                                            setModalState(() {});
+                                          },
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 3.5,
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                SizedBox(
+                                                  width: 20,
+                                                  height: 20,
+                                                  child: Checkbox(
+                                                    value: isChecked,
+                                                    activeColor: const Color(
+                                                      0xFF6A2777,
+                                                    ),
+                                                    materialTapTargetSize:
+                                                        MaterialTapTargetSize
+                                                            .shrinkWrap,
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(4),
+                                                        ),
+                                                    onChanged: (val) {
+                                                      final lines =
+                                                          List<String>.from(
+                                                            activeLines,
+                                                          );
+                                                      if (val == true) {
+                                                        if (!lines.contains(
+                                                          feat,
+                                                        )) {
+                                                          lines.add(feat);
+                                                        }
+                                                      } else {
+                                                        lines.remove(feat);
+                                                      }
+                                                      featuresCtrl.text = lines
+                                                          .join('\n');
+                                                      setModalState(() {});
+                                                    },
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    feat,
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight:
+                                                          isChecked
+                                                              ? FontWeight.w700
+                                                              : FontWeight.w500,
+                                                      color:
+                                                          isChecked
+                                                              ? const Color(
+                                                                0xFF0F172A,
+                                                              )
+                                                              : const Color(
+                                                                0xFF475569,
+                                                              ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  if (customFeatures.isNotEmpty) ...[
+                                  const Divider(
+                                    height: 1,
+                                    color: Color(0xFFE2E8F0),
+                                  ),
+                                  const Padding(
+                                    padding: EdgeInsets.fromLTRB(10, 6, 10, 2),
+                                    child: Text(
+                                      'Custom Features Added:',
+                                      style: TextStyle(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ),
+                                  ...customFeatures.map(
+                                    (cFeat) => Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 2,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.check_circle_outline_rounded,
+                                            size: 14,
+                                            color: Color(0xFF16A34A),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Expanded(
+                                            child: Text(
+                                              cFeat,
+                                              style: const TextStyle(
+                                                fontSize: 11.5,
+                                                fontWeight: FontWeight.w600,
+                                                color: Color(0xFF0F172A),
+                                              ),
+                                            ),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.close_rounded,
+                                              size: 14,
+                                              color: Color(0xFFEF4444),
+                                            ),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                            tooltip: 'Remove',
+                                            onPressed: () {
+                                              final lines = List<String>.from(
+                                                activeLines,
+                                              )..removeWhere(
+                                                   (l) =>
+                                                       l.toLowerCase() ==
+                                                       cFeat.toLowerCase(),
+                                                 );
+                                              featuresCtrl.text = lines.join(
+                                                '\n',
+                                              );
+                                              setModalState(() {});
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                                const Divider(
+                                  height: 1,
+                                  color: Color(0xFFE2E8F0),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(7),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: TextField(
+                                          controller: customFeatureInputCtrl,
+                                          style: const TextStyle(fontSize: 12),
+                                          decoration: InputDecoration(
+                                            hintText:
+                                                '+ Add custom feature bullet point...',
+                                            hintStyle: const TextStyle(
+                                              fontSize: 11.5,
+                                              color: Color(0xFF94A3B8),
+                                            ),
+                                            isDense: true,
+                                            contentPadding:
+                                                const EdgeInsets.symmetric(
+                                                  horizontal: 10,
+                                                  vertical: 7,
+                                                ),
+                                            filled: true,
+                                            fillColor: Colors.white,
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                              borderSide: const BorderSide(
+                                                color: Color(0xFFCBD5E1),
+                                              ),
+                                            ),
+                                            enabledBorder: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                              borderSide: const BorderSide(
+                                                color: Color(0xFFCBD5E1),
+                                              ),
+                                            ),
+                                          ),
+                                          onSubmitted: (val) {
+                                            final trimmed = val.trim();
+                                            if (trimmed.isNotEmpty) {
+                                              final lines = List<String>.from(
+                                                activeLines,
+                                              );
+                                              if (!lines.any((l) => l.toLowerCase() == trimmed.toLowerCase())) {
+                                                lines.add(trimmed);
+                                              }
+                                              featuresCtrl.text = lines.join(
+                                                '\n',
+                                              );
+                                              customFeatureInputCtrl.clear();
+                                              setModalState(() {});
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      ElevatedButton.icon(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(
+                                            0xFF6A2777,
+                                          ),
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 6,
+                                          ),
+                                          minimumSize: Size.zero,
+                                          tapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(6),
+                                          ),
+                                          elevation: 0,
+                                        ),
+                                        icon: const Icon(
+                                          Icons.add_rounded,
+                                          size: 14,
+                                        ),
+                                        label: const Text(
+                                          'Add',
+                                          style: TextStyle(
+                                            fontSize: 11.5,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        onPressed: () {
+                                          final trimmed =
+                                              customFeatureInputCtrl.text.trim();
+                                          if (trimmed.isNotEmpty) {
+                                            final lines = List<String>.from(
+                                              activeLines,
+                                            );
+                                            if (!lines.any((l) => l.toLowerCase() == trimmed.toLowerCase())) {
+                                              lines.add(trimmed);
+                                            }
+                                            featuresCtrl.text = lines.join(
+                                              '\n',
+                                            );
+                                            customFeatureInputCtrl.clear();
+                                            setModalState(() {});
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 6),
                         // Quick-append feature chips
                         SingleChildScrollView(
@@ -8490,59 +9709,79 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         ),
                         const SizedBox(height: 14),
 
-                        // Action Button Text with Quick Preset Chips
-                        _buildFormLabel('Action Button Text'),
+                        // Action Button Text (Dropdown + Custom)
+                        _buildFormLabel('Action Button Text (Dropdown)'),
                         const SizedBox(height: 6),
-                        TextField(
-                          controller: buttonTextCtrl,
+                        DropdownButtonFormField<String>(
+                          key: ValueKey(selectedBtnValue),
+                          initialValue: selectedBtnValue,
+                          isExpanded: true,
+                          dropdownColor: Colors.white,
                           style: const TextStyle(
-                            fontSize: 13.5,
-                            color: Color(0xFF0F172A),
+                            fontSize: 13,
                             fontWeight: FontWeight.w600,
+                            color: Color(0xFF0F172A),
                           ),
-                          decoration: InputDecoration(
-                            hintText: 'e.g. Pay from My Listings',
-                            hintStyle: const TextStyle(
-                              color: Color(0xFF94A3B8),
-                              fontSize: 13,
-                            ),
-                            prefixIcon: const Icon(
-                              Icons.touch_app_outlined,
-                              size: 18,
-                              color: Color(0xFF6A2777),
-                            ),
-                            filled: true,
-                            fillColor: const Color(0xFFF8FAFC),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFCBD5E1),
+                          items: [
+                            ...buttonPresets.map(
+                              (b) => DropdownMenuItem(
+                                value: b,
+                                child: Text(b),
                               ),
                             ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFCBD5E1),
+                            const DropdownMenuItem(
+                              value: '__custom__',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.edit_note_rounded,
+                                    size: 15,
+                                    color: Color(0xFF6A2777),
+                                  ),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Custom Button Text...',
+                                    style: TextStyle(
+                                      fontStyle: FontStyle.italic,
+                                      color: Color(0xFF6A2777),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF6A2777),
-                                width: 1.5,
-                              ),
-                            ),
+                          ],
+                          onChanged: (val) {
+                            if (val == null) return;
+                            setModalState(() {
+                              if (val == '__custom__') {
+                                if (isBtnInPresets) buttonTextCtrl.clear();
+                              } else {
+                                buttonTextCtrl.text = val;
+                              }
+                            });
+                          },
+                          decoration: _dialogInputDecoration(
+                            icon: Icons.touch_app_outlined,
                           ),
                         ),
+                        if (selectedBtnValue == '__custom__') ...[
+                          const SizedBox(height: 6),
+                          _buildDialogTextField(
+                            controller: buttonTextCtrl,
+                            hint: 'e.g. Join Artist Network',
+                            icon: Icons.touch_app_outlined,
+                          ),
+                        ],
                         const SizedBox(height: 6),
                         Wrap(
                           spacing: 6,
                           runSpacing: 4,
                           children: [
+                            _buildButtonPresetChip(
+                              'Create Free Profile',
+                              buttonTextCtrl,
+                              () => setModalState(() {}),
+                            ),
                             _buildButtonPresetChip(
                               'Pay from My Listings',
                               buttonTextCtrl,
@@ -8751,7 +9990,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                               onPressed: () async {
                                 final title = titleCtrl.text.trim();
                                 final category = categoryCtrl.text.trim();
-                                final price = priceCtrl.text.trim();
+                                final price = ListingPlanItem.normalizePrice(
+                                  priceCtrl.text,
+                                );
                                 final itemType = selectedItemType.trim();
 
                                 if (title.isEmpty ||
@@ -8769,15 +10010,42 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                   return;
                                 }
 
-                                final lines =
-                                    featuresCtrl.text
-                                        .split('\n')
-                                        .map((l) => l.trim())
-                                        .where((l) => l.isNotEmpty)
-                                        .toList();
+                                final lines = <String>[];
+                                final seenLines = <String>{};
+                                for (final raw in featuresCtrl.text.split('\n')) {
+                                  final trimmed = raw.trim();
+                                  if (trimmed.isNotEmpty &&
+                                      seenLines.add(trimmed.toLowerCase())) {
+                                    lines.add(trimmed);
+                                  }
+                                }
 
                                 final messenger = ScaffoldMessenger.of(context);
                                 Navigator.pop(ctx);
+
+                                final durStr = durationCtrl.text.trim().isNotEmpty
+                                    ? durationCtrl.text.trim()
+                                    : (itemType == 'gallery' || itemType == 'art_centre'
+                                        ? '1 Year (365 Days)'
+                                        : (itemType == 'artist' ? 'Permanent Free Profile' : '30 Days'));
+                                int durDays = 30;
+                                final dLower = durStr.toLowerCase();
+                                if (dLower.contains('year') || dLower.contains('365')) {
+                                  durDays = 365;
+                                } else if (dLower.contains('180') || dLower.contains('6 month')) {
+                                  durDays = 180;
+                                } else if (dLower.contains('90') || dLower.contains('3 month') || dLower.contains('quarter')) {
+                                  durDays = 90;
+                                } else if (dLower.contains('60')) {
+                                  durDays = 60;
+                                } else if (dLower.contains('permanent') || dLower.contains('lifetime')) {
+                                  durDays = 3650;
+                                } else {
+                                  final m = RegExp(r'(\d+)').firstMatch(durStr);
+                                  if (m != null) {
+                                    durDays = int.tryParse(m.group(1)!) ?? 30;
+                                  }
+                                }
 
                                 bool success;
                                 if (isEditing) {
@@ -8794,6 +10062,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                         buttonText: buttonTextCtrl.text.trim(),
                                         isActive: isActive,
                                         sortOrder: plan.sortOrder,
+                                        duration: durStr,
+                                        durationDays: durDays,
                                       );
                                 } else {
                                   success = await sl<ApiService>()
@@ -8808,6 +10078,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                         buttonText: buttonTextCtrl.text.trim(),
                                         isActive: isActive,
                                         sortOrder: _listingPlans.length + 1,
+                                        duration: durStr,
+                                        durationDays: durDays,
                                       );
                                 }
 
@@ -8851,6 +10123,35 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               );
             },
           ),
+    );
+  }
+
+  InputDecoration _dialogInputDecoration({IconData? icon, String? hint}) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+      prefixIcon:
+          icon != null
+              ? Icon(icon, size: 18, color: const Color(0xFF6A2777))
+              : null,
+      filled: true,
+      fillColor: const Color(0xFFF8FAFC),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 10,
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5),
+      ),
     );
   }
 
@@ -8909,32 +10210,68 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     TextEditingController controller,
     VoidCallback onUpdate,
   ) {
+    final cleanText = text.replaceFirst('+ ', '').trim();
+    final currentLines = controller.text
+        .split('\n')
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .toList();
+    final isSelected = currentLines.any(
+      (l) => l.toLowerCase() == cleanText.toLowerCase(),
+    );
+
     return InkWell(
       onTap: () {
-        final cleanText = text.replaceFirst('+ ', '').trim();
-        final current = controller.text.trim();
-        if (current.isEmpty) {
-          controller.text = cleanText;
+        final lines = controller.text
+            .split('\n')
+            .map((l) => l.trim())
+            .where((l) => l.isNotEmpty)
+            .toList();
+        if (isSelected) {
+          lines.removeWhere((l) => l.toLowerCase() == cleanText.toLowerCase());
         } else {
-          controller.text = '$current\n$cleanText';
+          lines.add(cleanText);
         }
+        controller.text = lines.join('\n');
         onUpdate();
       },
       borderRadius: BorderRadius.circular(6),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: const Color(0xFFF1F5F9),
+          color:
+              isSelected ? const Color(0xFFFAF5FF) : const Color(0xFFF1F5F9),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: const Color(0xFFCBD5E1)),
-        ),
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF475569),
+          border: Border.all(
+            color:
+                isSelected ? const Color(0xFF6A2777) : const Color(0xFFCBD5E1),
+            width: isSelected ? 1.2 : 1.0,
           ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isSelected ? Icons.check_circle_rounded : Icons.add_rounded,
+              size: 13,
+              color:
+                  isSelected
+                      ? const Color(0xFF6A2777)
+                      : const Color(0xFF64748B),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              cleanText,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                color:
+                    isSelected
+                        ? const Color(0xFF6A2777)
+                        : const Color(0xFF475569),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -10374,47 +11711,58 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     final String userName = (user['full_name'] ?? 'User').toString();
     final String currentPlan = (user['chat_plan'] ?? 'Basic (Free)').toString();
 
-    // 1. Build catalog of all pre-configured plans (system memberships + admin created plans from Masters)
-    final availablePlans = <Map<String, String>>[
-      {
-        'title': 'Basic (Free)',
-        'price': 'Free',
-        'type': 'Membership Plan',
-        'badge': 'Standard',
-      },
-      {
-        'title': 'Pro Artist',
-        'price': 'AED 99',
-        'type': 'Membership Plan',
-        'badge': 'Popular',
-      },
-      {
-        'title': 'VIP Unlimited',
-        'price': 'AED 299',
-        'type': 'Membership Plan',
-        'badge': 'VIP',
-      },
-    ];
+    // 1. Build catalog of all pre-configured plans from Admin Masters (_listingPlans) merged with baseline plans
+    final allListingPlans = List<ListingPlanItem>.from(_listingPlans);
+    for (final bp in ListingPlanItem.defaultBaselinePlans) {
+      if (!allListingPlans.any((p) => p.title.toLowerCase().trim() == bp.title.toLowerCase().trim())) {
+        allListingPlans.add(bp);
+      }
+    }
 
-    // Merge in listing plans created by Admin in Masters
-    final listingPlansList = _listingPlans;
-    for (final lp in listingPlansList) {
-      String pType = 'Membership Plan';
-      if (lp.itemType.toLowerCase().contains('event')) {
-        pType = 'Event Publishing';
-      } else if (lp.itemType.toLowerCase().contains('gallery')) {
-        pType = 'Gallery Publishing';
-      } else {
-        pType = 'Custom Subscription';
+    String resolvePlanTypeFromItem(ListingPlanItem item) {
+      final t = item.itemType.toLowerCase().trim();
+      if (t == 'event') return 'Event Publishing';
+      if (t == 'gallery') return 'Gallery Publishing';
+      if (t == 'art_centre' || t == 'center') return 'Art Center Showcase';
+      if (t == 'chat') return 'Chat & Messaging';
+      if (t == 'artist') return 'Membership Plan';
+      return 'Custom Subscription';
+    }
+
+    String resolveFilterKeyFromPlanType(String planType) {
+      final pt = planType.toLowerCase().trim();
+      if (pt.contains('event')) return 'event';
+      if (pt.contains('gallery')) return 'gallery';
+      if (pt.contains('art center') || pt.contains('art centre') || pt.contains('center')) return 'art_centre';
+      if (pt.contains('chat') || pt.contains('messaging')) return 'chat';
+      if (pt.contains('membership') || pt.contains('artist')) return 'artist';
+      return 'all';
+    }
+
+    IconData resolveIconForType(String typeKey) {
+      final tk = typeKey.toLowerCase().trim();
+      if (tk.contains('event')) return Icons.event_available_rounded;
+      if (tk.contains('artist') || tk.contains('membership')) return Icons.palette_outlined;
+      if (tk.contains('gallery')) return Icons.museum_outlined;
+      if (tk.contains('art center') || tk.contains('art centre') || tk.contains('center') || tk.contains('art_centre')) return Icons.account_balance_outlined;
+      if (tk.contains('chat') || tk.contains('messaging')) return Icons.chat_bubble_outline_rounded;
+      return Icons.stars_rounded;
+    }
+
+    int countForFilter(String key) {
+      if (key == 'all') return allListingPlans.length;
+      if (key == 'art_centre') {
+        return allListingPlans.where((p) => p.itemType.toLowerCase() == 'art_centre' || p.itemType.toLowerCase() == 'center').length;
       }
-      if (!availablePlans.any((p) => p['title'] == lp.title)) {
-        availablePlans.add({
-          'title': lp.title,
-          'price': lp.price,
-          'type': pType,
-          'badge': lp.badge.isNotEmpty ? lp.badge : 'Admin Master',
-        });
+      return allListingPlans.where((p) => p.itemType.toLowerCase() == key).length;
+    }
+
+    List<ListingPlanItem> getFilteredPlans(String filterKey) {
+      if (filterKey == 'all') return allListingPlans;
+      if (filterKey == 'art_centre') {
+        return allListingPlans.where((p) => p.itemType.toLowerCase() == 'art_centre' || p.itemType.toLowerCase() == 'center').toList();
       }
+      return allListingPlans.where((p) => p.itemType.toLowerCase() == filterKey).toList();
     }
 
     // 2. Check if user already purchased a plan
@@ -10429,45 +11777,46 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       }
     }
 
-    // Default template selection
+    // Initial Category filter & template
+    String selectedCategoryFilter = 'all';
     String selectedTemplate = 'custom';
-    if (latestPurchased != null &&
-        (latestPurchased['plan_name']?.toString().isNotEmpty ?? false)) {
+    String selectedPlanType = 'Event Publishing';
+
+    if (latestPurchased != null && (latestPurchased['plan_name']?.toString().isNotEmpty ?? false)) {
       selectedTemplate = 'user_purchased';
+      final pType = (latestPurchased['plan_type'] ?? 'Event Publishing').toString();
+      selectedPlanType = pType;
+      final fKey = resolveFilterKeyFromPlanType(pType);
+      if (fKey != 'all') selectedCategoryFilter = fKey;
     } else {
-      final matchingIndex = availablePlans.indexWhere(
-        (p) => p['title'] == currentPlan,
-      );
-      if (matchingIndex != -1) {
-        selectedTemplate = availablePlans[matchingIndex]['title']!;
+      final matching = allListingPlans.where((p) => p.title.toLowerCase().trim() == currentPlan.toLowerCase().trim()).toList();
+      if (matching.isNotEmpty) {
+        selectedTemplate = matching.first.title;
+        selectedPlanType = resolvePlanTypeFromItem(matching.first);
+        final itemKey = matching.first.itemType.toLowerCase() == 'center' ? 'art_centre' : matching.first.itemType.toLowerCase();
+        selectedCategoryFilter = itemKey;
       }
     }
 
-    final initialPrice =
-        latestPurchased != null
-            ? (latestPurchased['price']?.toString() ?? 'Free')
-            : (currentPlan.contains('Basic')
-                ? 'Free'
-                : (currentPlan.contains('Pro') ? 'AED 99' : 'AED 299'));
+    final initialPrice = latestPurchased != null
+        ? (latestPurchased['price']?.toString() ?? 'Free')
+        : (allListingPlans.any((p) => p.title == selectedTemplate)
+            ? allListingPlans.firstWhere((p) => p.title == selectedTemplate).price
+            : (currentPlan.contains('Basic') ? 'Free' : (currentPlan.contains('Pro') ? 'AED 99' : 'AED 199')));
 
     final planController = TextEditingController(
-      text:
-          latestPurchased != null
-              ? (latestPurchased['plan_name']?.toString() ?? currentPlan)
-              : currentPlan,
+      text: latestPurchased != null
+          ? (latestPurchased['plan_name']?.toString() ?? currentPlan)
+          : (selectedTemplate != 'custom' ? selectedTemplate : currentPlan),
     );
     final priceController = TextEditingController(text: initialPrice);
 
     // Expiration date (defaults to +30 days or existing due date)
-    final existingDue =
-        latestPurchased != null
-            ? (latestPurchased['due_date'] ?? latestPurchased['expires_at'])
-                ?.toString()
-            : null;
+    final existingDue = latestPurchased != null
+        ? (latestPurchased['due_date'] ?? latestPurchased['expires_at'])?.toString()
+        : null;
     String initialDueStr = '';
-    if (existingDue != null &&
-        existingDue.isNotEmpty &&
-        existingDue.length >= 10) {
+    if (existingDue != null && existingDue.isNotEmpty && existingDue.length >= 10) {
       initialDueStr = existingDue.substring(0, 10);
     } else {
       final defaultDue = DateTime.now().add(const Duration(days: 30));
@@ -10475,827 +11824,851 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           '${defaultDue.year}-${defaultDue.month.toString().padLeft(2, '0')}-${defaultDue.day.toString().padLeft(2, '0')}';
     }
     final dueDateController = TextEditingController(text: initialDueStr);
+    String selectedStatus = latestPurchased != null ? (latestPurchased['status']?.toString() ?? 'Active') : 'Active';
 
-    String selectedPlanType =
-        latestPurchased != null
-            ? (latestPurchased['plan_type']?.toString() ?? 'Membership Plan')
-            : 'Membership Plan';
-    String selectedStatus =
-        latestPurchased != null
-            ? (latestPurchased['status']?.toString() ?? 'Active')
-            : 'Active';
+    final categoryFilterTabs = [
+      {'key': 'all', 'label': 'All Plans', 'icon': Icons.apps_rounded},
+      {'key': 'event', 'label': 'Events', 'icon': Icons.event_available_rounded},
+      {'key': 'artist', 'label': 'Artists', 'icon': Icons.palette_outlined},
+      {'key': 'gallery', 'label': 'Galleries', 'icon': Icons.museum_outlined},
+      {'key': 'chat', 'label': 'Chat & Messaging', 'icon': Icons.chat_bubble_outline_rounded},
+      {'key': 'art_centre', 'label': 'Art Centres', 'icon': Icons.account_balance_outlined},
+    ];
 
     await showDialog(
       context: context,
-      builder:
-          (ctx) => StatefulBuilder(
-            builder:
-                (context, setDialogState) => AlertDialog(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  title: Row(
-                    children: [
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final currentFilteredPlans = getFilteredPlans(selectedCategoryFilter);
+          final hasSelectedInCurrent = currentFilteredPlans.any((p) => p.title == selectedTemplate);
+
+          return Dialog(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 540, maxHeight: 820),
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Header: Icon, User Details, Close Button
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF6A2777), Color(0xFF8B2C9E)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF6A2777).withValues(alpha: 0.25),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.card_membership_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Assign Plan to User'.trData(context),
+                                style: const TextStyle(
+                                  fontSize: 17.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF0F172A),
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      userName,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF6A2777),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (email.isNotEmpty) ...[
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        '($email)',
+                                        style: const TextStyle(
+                                          fontSize: 11.5,
+                                          color: Color(0xFF64748B),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              const SizedBox(height: 5),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                                ),
+                                child: Text(
+                                  'Current: $currentPlan',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF475569),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 22, color: Color(0xFF64748B)),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                    const SizedBox(height: 14),
+
+                    // User Purchased Plan Banner with Auto-Fill Action
+                    if (latestPurchased != null) ...[
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                        margin: const EdgeInsets.only(bottom: 14),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF6A2777).withValues(alpha: 0.1),
+                          color: const Color(0xFFF0FDF4),
                           borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFF86EFAC)),
                         ),
-                        child: const Icon(
-                          Icons.card_membership_rounded,
-                          color: Color(0xFF6A2777),
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
                           children: [
-                            Text(
-                              'Assign Plan to User'.trData(context),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
+                            const Icon(Icons.shopping_bag_outlined, size: 17, color: Color(0xFF16A34A)),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'User Purchased Plan'.trData(context),
+                                    style: const TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF15803D),
+                                    ),
+                                  ),
+                                  Text(
+                                    '${latestPurchased['plan_name']} · ${latestPurchased['price'] ?? 'Active'}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                               ),
                             ),
-                            Text(
-                              userName,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF64748B),
-                                fontWeight: FontWeight.w500,
+                            TextButton(
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                backgroundColor: const Color(0xFF16A34A),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                              ),
+                              onPressed: () {
+                                setDialogState(() {
+                                  final pName = (latestPurchased?['plan_name'] ?? currentPlan).toString();
+                                  final pPrice = (latestPurchased?['price'] ?? 'Free').toString();
+                                  final pDue = (latestPurchased?['due_date'] ?? latestPurchased?['expires_at'] ?? '').toString();
+                                  final pType = (latestPurchased?['plan_type'] ?? 'Event Publishing').toString();
+
+                                  planController.text = pName;
+                                  priceController.text = pPrice;
+                                  if (pDue.isNotEmpty && pDue.length >= 10) {
+                                    dueDateController.text = pDue.substring(0, 10);
+                                  }
+                                  selectedPlanType = pType;
+                                  selectedCategoryFilter = resolveFilterKeyFromPlanType(pType);
+                                  selectedStatus = 'Active';
+                                  selectedTemplate = 'user_purchased';
+                                });
+                              },
+                              child: Text(
+                                'Auto-Fill'.trData(context),
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
                               ),
                             ),
                           ],
                         ),
                       ),
                     ],
-                  ),
-                  content: SingleChildScrollView(
-                    child: SizedBox(
-                      width: 390,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // User Purchased Plan Banner with Auto-Fill Action
-                          if (latestPurchased != null) ...[
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              margin: const EdgeInsets.only(bottom: 12),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF0FDF4),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: const Color(0xFF86EFAC),
+
+                    // Category Filter Selector Chips (Connected with Admin Listing Plans)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildFormLabel('Filter Category'.trData(context)),
+                        Text(
+                          '${currentFilteredPlans.length} plans available'.trData(context),
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: categoryFilterTabs.map((cat) {
+                          final key = cat['key'] as String;
+                          final label = cat['label'] as String;
+                          final icon = cat['icon'] as IconData;
+                          final count = countForFilter(key);
+                          final isSelected = selectedCategoryFilter == key;
+
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: InkWell(
+                              onTap: () {
+                                setDialogState(() {
+                                  selectedCategoryFilter = key;
+                                  final filtered = getFilteredPlans(key);
+                                  if (filtered.isNotEmpty && selectedTemplate != 'user_purchased') {
+                                    final first = filtered.first;
+                                    selectedTemplate = first.title;
+                                    planController.text = first.title;
+                                    priceController.text = first.price;
+                                    selectedPlanType = resolvePlanTypeFromItem(first);
+                                  }
+                                });
+                              },
+                              borderRadius: BorderRadius.circular(8),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? const Color(0xFF6A2777) : const Color(0xFFF8FAFC),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: isSelected ? const Color(0xFF6A2777) : const Color(0xFFCBD5E1),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      icon,
+                                      size: 13,
+                                      color: isSelected ? Colors.white : const Color(0xFF6A2777),
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      '$label ($count)',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                                        color: isSelected ? Colors.white : const Color(0xFF334155),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.shopping_bag_outlined,
-                                    size: 16,
-                                    color: Color(0xFF16A34A),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'User Purchased Plan'.trData(context),
-                                          style: const TextStyle(
-                                            fontSize: 10.5,
-                                            fontWeight: FontWeight.w700,
-                                            color: Color(0xFF15803D),
-                                          ),
-                                        ),
-                                        Text(
-                                          '${latestPurchased['plan_name']} · ${latestPurchased['price'] ?? 'Active'}',
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
-                                            color: Color(0xFF0F172A),
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  TextButton(
-                                    style: TextButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      minimumSize: Size.zero,
-                                      tapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap,
-                                      backgroundColor: const Color(0xFF16A34A),
-                                      foregroundColor: Colors.white,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                    ),
-                                    onPressed: () {
-                                      setDialogState(() {
-                                        final pName =
-                                            (latestPurchased?['plan_name'] ??
-                                                    currentPlan)
-                                                .toString();
-                                        final pPrice =
-                                            (latestPurchased?['price'] ??
-                                                    'Free')
-                                                .toString();
-                                        final pDue =
-                                            (latestPurchased?['due_date'] ??
-                                                    latestPurchased?['expires_at'] ??
-                                                    '')
-                                                .toString();
-                                        final pType =
-                                            (latestPurchased?['plan_type'] ??
-                                                    'Membership Plan')
-                                                .toString();
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
 
-                                        planController.text = pName;
-                                        priceController.text = pPrice;
-                                        if (pDue.isNotEmpty &&
-                                            pDue.length >= 10) {
-                                          dueDateController.text = pDue
-                                              .substring(0, 10);
-                                        }
-                                        selectedPlanType = pType;
-                                        selectedStatus = 'Active';
-                                        selectedTemplate = 'user_purchased';
-                                      });
-                                    },
-                                    child: Text(
-                                      'Auto-Fill'.trData(context),
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-
-                          // Auto Plan Selector Dropdown
-                          Text(
-                            'Auto-Select From Created Plans'.trData(context),
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1E293B),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          DropdownButtonFormField<String>(
-                            initialValue: selectedTemplate,
-                            dropdownColor: Colors.white,
-                            style: const TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF0F172A),
-                            ),
-                            items: [
-                              if (latestPurchased != null)
-                                DropdownMenuItem(
-                                  value: 'user_purchased',
+                    // 1. Auto Plan Selector Dropdown (Populated directly from Admin Created Plans)
+                    _buildFormLabel('Auto-Select From Created Plans'.trData(context)),
+                    const SizedBox(height: 6),
+                    DropdownButtonFormField<String>(
+                      key: ValueKey('$selectedCategoryFilter-$selectedTemplate'),
+                      initialValue: (selectedTemplate == 'user_purchased' ||
+                              selectedTemplate == 'custom' ||
+                              hasSelectedInCurrent)
+                          ? selectedTemplate
+                          : (currentFilteredPlans.isNotEmpty ? currentFilteredPlans.first.title : 'custom'),
+                      isExpanded: true,
+                      dropdownColor: Colors.white,
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF0F172A),
+                      ),
+                      items: [
+                        if (latestPurchased != null)
+                          DropdownMenuItem(
+                            value: 'user_purchased',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.star_rounded, size: 16, color: Color(0xFF16A34A)),
+                                const SizedBox(width: 8),
+                                Expanded(
                                   child: Text(
-                                    '★ User Purchased: ${latestPurchased['plan_name']}',
+                                    'User Purchased: ${latestPurchased['plan_name']} · ${latestPurchased['price'] ?? 'Active'}',
+                                    overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
                                       color: Color(0xFF16A34A),
                                       fontWeight: FontWeight.w700,
-                                      fontSize: 13,
                                     ),
                                   ),
-                                ),
-                              ...availablePlans.map(
-                                (p) => DropdownMenuItem(
-                                  value: p['title']!,
-                                  child: Text(
-                                    '${p['title']} — ${p['price']} (${p['badge']})',
-                                    style: const TextStyle(
-                                      color: Color(0xFF0F172A),
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const DropdownMenuItem(
-                                value: 'custom',
-                                child: Text(
-                                  '✏ Custom / Manual Entry',
-                                  style: TextStyle(
-                                    color: Color(0xFF64748B),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                            onChanged: (val) {
-                              if (val == null) return;
-                              setDialogState(() {
-                                selectedTemplate = val;
-                                if (val == 'user_purchased' &&
-                                    latestPurchased != null) {
-                                  planController.text =
-                                      latestPurchased['plan_name']
-                                          ?.toString() ??
-                                      currentPlan;
-                                  priceController.text =
-                                      latestPurchased['price']?.toString() ??
-                                      'Free';
-                                  final pDue =
-                                      (latestPurchased['due_date'] ??
-                                              latestPurchased['expires_at'] ??
-                                              '')
-                                          .toString();
-                                  if (pDue.isNotEmpty && pDue.length >= 10) {
-                                    dueDateController.text = pDue.substring(
-                                      0,
-                                      10,
-                                    );
-                                  }
-                                  selectedPlanType =
-                                      latestPurchased['plan_type']
-                                          ?.toString() ??
-                                      'Membership Plan';
-                                } else if (val != 'custom') {
-                                  final found = availablePlans.firstWhere(
-                                    (p) => p['title'] == val,
-                                  );
-                                  planController.text = found['title']!;
-                                  priceController.text = found['price']!;
-                                  selectedPlanType = found['type']!;
-                                  // Default 30 days expiration
-                                  final nextDue = DateTime.now().add(
-                                    const Duration(days: 30),
-                                  );
-                                  dueDateController.text =
-                                      '${nextDue.year}-${nextDue.month.toString().padLeft(2, '0')}-${nextDue.day.toString().padLeft(2, '0')}';
-                                }
-                              });
-                            },
-                            decoration: InputDecoration(
-                              prefixIcon: const Icon(
-                                Icons.auto_awesome_rounded,
-                                size: 18,
-                                color: Color(0xFF6A2777),
-                              ),
-                              filled: true,
-                              fillColor: const Color(0xFFFAF5FF),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 12,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFD8B4FE),
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFD8B4FE),
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFF6A2777),
-                                  width: 1.5,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Plan Name / Tier Textfield
-                          Text(
-                            'Plan Name / Tier'.trData(context),
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1E293B),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          TextField(
-                            controller: planController,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF0F172A),
-                            ),
-                            decoration: InputDecoration(
-                              hintText:
-                                  'e.g. Pro Artist, Premium Gallery, Basic (Free)',
-                              hintStyle: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF94A3B8),
-                              ),
-                              prefixIcon: const Icon(
-                                Icons.card_membership_rounded,
-                                size: 18,
-                                color: Color(0xFF6A2777),
-                              ),
-                              filled: true,
-                              fillColor: const Color(0xFFF8FAFC),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 12,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFCBD5E1),
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFCBD5E1),
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFF6A2777),
-                                  width: 1.5,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Price Textfield
-                          Text(
-                            'Price'.trData(context),
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1E293B),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          TextField(
-                            controller: priceController,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF0F172A),
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'e.g. Free, AED 99, 199 AED',
-                              hintStyle: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF94A3B8),
-                              ),
-                              prefixIcon: const Icon(
-                                Icons.payments_outlined,
-                                size: 18,
-                                color: Color(0xFF6A2777),
-                              ),
-                              filled: true,
-                              fillColor: const Color(0xFFF8FAFC),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 12,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFCBD5E1),
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFCBD5E1),
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFF6A2777),
-                                  width: 1.5,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Due / Expiration Date with Picker & Quick Preset Buttons
-                          Text(
-                            'Due / Expiration Date (YYYY-MM-DD)'.trData(
-                              context,
-                            ),
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1E293B),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          TextField(
-                            controller: dueDateController,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF0F172A),
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'YYYY-MM-DD',
-                              hintStyle: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF94A3B8),
-                              ),
-                              prefixIcon: const Icon(
-                                Icons.calendar_month_outlined,
-                                size: 18,
-                                color: Color(0xFF6A2777),
-                              ),
-                              filled: true,
-                              fillColor: const Color(0xFFF8FAFC),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 12,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFCBD5E1),
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFCBD5E1),
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFF6A2777),
-                                  width: 1.5,
-                                ),
-                              ),
-                              suffixIcon: IconButton(
-                                icon: const Icon(
-                                  Icons.calendar_today_rounded,
-                                  size: 18,
-                                  color: Color(0xFF6A2777),
-                                ),
-                                onPressed: () async {
-                                  final picked = await showDatePicker(
-                                    context: context,
-                                    initialDate: DateTime.now().add(
-                                      const Duration(days: 30),
-                                    ),
-                                    firstDate: DateTime.now().subtract(
-                                      const Duration(days: 365),
-                                    ),
-                                    lastDate: DateTime.now().add(
-                                      const Duration(days: 3650),
-                                    ),
-                                  );
-                                  if (picked != null) {
-                                    setDialogState(() {
-                                      dueDateController.text =
-                                          '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
-                                    });
-                                  }
-                                },
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: [
-                                _buildDurationQuickChip(
-                                  '+30 Days',
-                                  30,
-                                  dueDateController,
-                                  () => setDialogState(() {}),
-                                ),
-                                const SizedBox(width: 6),
-                                _buildDurationQuickChip(
-                                  '+60 Days',
-                                  60,
-                                  dueDateController,
-                                  () => setDialogState(() {}),
-                                ),
-                                const SizedBox(width: 6),
-                                _buildDurationQuickChip(
-                                  '+90 Days',
-                                  90,
-                                  dueDateController,
-                                  () => setDialogState(() {}),
-                                ),
-                                const SizedBox(width: 6),
-                                _buildDurationQuickChip(
-                                  '+1 Year',
-                                  365,
-                                  dueDateController,
-                                  () => setDialogState(() {}),
                                 ),
                               ],
                             ),
                           ),
-                          const SizedBox(height: 14),
-
-                          // Plan Type Dropdown
-                          Text(
-                            'Plan Type'.trData(context),
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1E293B),
+                        ...currentFilteredPlans.map(
+                          (p) => DropdownMenuItem(
+                            value: p.title,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  resolveIconForType(p.itemType),
+                                  size: 16,
+                                  color: const Color(0xFF6A2777),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '${p.title} — ${p.price} (${p.badge.isNotEmpty ? p.badge : p.category})',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Color(0xFF0F172A),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 6),
-                          DropdownButtonFormField<String>(
-                            initialValue: selectedPlanType,
-                            dropdownColor: Colors.white,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF0F172A),
-                            ),
-                            items: const [
-                              DropdownMenuItem(
-                                value: 'Membership Plan',
-                                child: Text(
-                                  'Membership Plan',
-                                  style: TextStyle(
-                                    color: Color(0xFF0F172A),
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Event Publishing',
-                                child: Text(
-                                  'Event Publishing',
-                                  style: TextStyle(
-                                    color: Color(0xFF0F172A),
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Gallery Publishing',
-                                child: Text(
-                                  'Gallery Publishing',
-                                  style: TextStyle(
-                                    color: Color(0xFF0F172A),
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Custom Subscription',
-                                child: Text(
-                                  'Custom Subscription',
-                                  style: TextStyle(
-                                    color: Color(0xFF0F172A),
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                        ),
+                        const DropdownMenuItem(
+                          value: 'custom',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit_note_rounded, size: 16, color: Color(0xFF64748B)),
+                              SizedBox(width: 8),
+                              Text(
+                                'Custom / Manual Entry',
+                                style: TextStyle(
+                                  color: Color(0xFF64748B),
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
-                            onChanged: (val) {
-                              if (val != null) {
-                                setDialogState(() => selectedPlanType = val);
-                              }
-                            },
-                            decoration: InputDecoration(
-                              prefixIcon: const Icon(
-                                Icons.category_outlined,
-                                size: 18,
-                                color: Color(0xFF6A2777),
-                              ),
-                              filled: true,
-                              fillColor: const Color(0xFFF8FAFC),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 12,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFCBD5E1),
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFCBD5E1),
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFF6A2777),
-                                  width: 1.5,
-                                ),
-                              ),
-                            ),
                           ),
-                          const SizedBox(height: 14),
+                        ),
+                      ],
+                      onChanged: (val) {
+                        if (val == null) return;
+                        setDialogState(() {
+                          selectedTemplate = val;
+                          if (val == 'user_purchased' && latestPurchased != null) {
+                            planController.text = (latestPurchased['plan_name'] ?? currentPlan).toString();
+                            priceController.text = (latestPurchased['price'] ?? 'Free').toString();
+                            final pDue = (latestPurchased['due_date'] ?? latestPurchased['expires_at'] ?? '').toString();
+                            if (pDue.isNotEmpty && pDue.length >= 10) {
+                              dueDateController.text = pDue.substring(0, 10);
+                            }
+                            final pType = (latestPurchased['plan_type'] ?? 'Event Publishing').toString();
+                            selectedPlanType = pType;
+                            selectedCategoryFilter = resolveFilterKeyFromPlanType(pType);
+                            selectedStatus = 'Active';
+                          } else if (val != 'custom') {
+                            final found = allListingPlans.firstWhere(
+                              (p) => p.title == val,
+                              orElse: () => allListingPlans.first,
+                            );
+                            planController.text = found.title;
+                            priceController.text = found.price;
+                            selectedPlanType = resolvePlanTypeFromItem(found);
+                            final itemKey = found.itemType.toLowerCase() == 'center' ? 'art_centre' : found.itemType.toLowerCase();
+                            selectedCategoryFilter = itemKey;
+                            final nextDue = DateTime.now().add(const Duration(days: 30));
+                            dueDateController.text =
+                                '${nextDue.year}-${nextDue.month.toString().padLeft(2, '0')}-${nextDue.day.toString().padLeft(2, '0')}';
+                            selectedStatus = 'Active';
+                          }
+                        });
+                      },
+                      decoration: _dialogInputDecoration(icon: Icons.auto_awesome_rounded),
+                    ),
+                    const SizedBox(height: 14),
 
-                          // Status Dropdown
-                          Text(
-                            'Status'.trData(context),
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1E293B),
+                    // 2. Plan Name / Tier Textfield
+                    _buildFormLabel('Plan Name / Tier *'.trData(context)),
+                    const SizedBox(height: 6),
+                    _buildDialogTextField(
+                      controller: planController,
+                      hint: 'e.g. Event Listing, Pro Artist, Gallery Listing, Chat Pro',
+                      icon: Icons.card_membership_rounded,
+                    ),
+                    const SizedBox(height: 14),
+
+                    // 3. Price Textfield & Quick Preset Chips
+                    _buildFormLabel('Price *'.trData(context)),
+                    const SizedBox(height: 6),
+                    _buildDialogTextField(
+                      controller: priceController,
+                      hint: 'e.g. Free, AED 49, AED 99, AED 149, AED 199, AED 299',
+                      icon: Icons.payments_outlined,
+                    ),
+                    const SizedBox(height: 6),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: [
+                          'Free',
+                          'AED 49',
+                          'AED 99',
+                          'AED 149',
+                          'AED 199',
+                          'AED 299',
+                          'AED 500',
+                        ].map((p) {
+                          final isSelected = priceController.text.trim().toLowerCase() == p.toLowerCase();
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: InkWell(
+                              onTap: () {
+                                setDialogState(() {
+                                  priceController.text = p;
+                                });
+                              },
+                              borderRadius: BorderRadius.circular(6),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? const Color(0xFF6A2777) : const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: isSelected ? const Color(0xFF6A2777) : const Color(0xFFCBD5E1),
+                                  ),
+                                ),
+                                child: Text(
+                                  p,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                                    color: isSelected ? Colors.white : const Color(0xFF475569),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // 4. Due / Expiration Date with Picker & Quick Preset Buttons
+                    _buildFormLabel('Due / Expiration Date (YYYY-MM-DD) *'.trData(context)),
+                    const SizedBox(height: 6),
+                    InkWell(
+                      onTap: () async {
+                        final currentText = dueDateController.text.trim();
+                        DateTime initDate = DateTime.now().add(const Duration(days: 30));
+                        if (currentText.length >= 10) {
+                          final parsed = DateTime.tryParse(currentText);
+                          if (parsed != null) initDate = parsed;
+                        }
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: initDate,
+                          firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                          lastDate: DateTime.now().add(const Duration(days: 3650)),
+                        );
+                        if (picked != null) {
+                          setDialogState(() {
+                            dueDateController.text =
+                                '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+                          });
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: IgnorePointer(
+                        child: TextField(
+                          controller: dueDateController,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF0F172A),
+                          ),
+                          decoration: _dialogInputDecoration(
+                            icon: Icons.calendar_month_rounded,
+                            hint: 'YYYY-MM-DD',
+                          ).copyWith(
+                            suffixIcon: const Icon(
+                              Icons.event_available_rounded,
+                              size: 19,
+                              color: Color(0xFF6A2777),
                             ),
                           ),
-                          const SizedBox(height: 6),
-                          DropdownButtonFormField<String>(
-                            initialValue: selectedStatus,
-                            dropdownColor: Colors.white,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF0F172A),
-                            ),
-                            items: const [
-                              DropdownMenuItem(
-                                value: 'Active',
-                                child: Text(
-                                  'Active',
-                                  style: TextStyle(
-                                    color: Color(0xFF15803D),
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Pending',
-                                child: Text(
-                                  'Pending',
-                                  style: TextStyle(
-                                    color: Color(0xFFB45309),
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Expired',
-                                child: Text(
-                                  'Expired',
-                                  style: TextStyle(
-                                    color: Color(0xFFDC2626),
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ],
-                            onChanged: (val) {
-                              if (val != null) {
-                                setDialogState(() => selectedStatus = val);
-                              }
-                            },
-                            decoration: InputDecoration(
-                              prefixIcon: const Icon(
-                                Icons.check_circle_outline_rounded,
-                                size: 18,
-                                color: Color(0xFF6A2777),
-                              ),
-                              filled: true,
-                              fillColor: const Color(0xFFF8FAFC),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 12,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFCBD5E1),
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFCBD5E1),
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFF6A2777),
-                                  width: 1.5,
-                                ),
-                              ),
-                            ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: [
+                          _buildDurationQuickChip(
+                            '+30 Days',
+                            30,
+                            dueDateController,
+                            () => setDialogState(() {}),
+                          ),
+                          const SizedBox(width: 6),
+                          _buildDurationQuickChip(
+                            '+60 Days',
+                            60,
+                            dueDateController,
+                            () => setDialogState(() {}),
+                          ),
+                          const SizedBox(width: 6),
+                          _buildDurationQuickChip(
+                            '+90 Days',
+                            90,
+                            dueDateController,
+                            () => setDialogState(() {}),
+                          ),
+                          const SizedBox(width: 6),
+                          _buildDurationQuickChip(
+                            '+6 Months',
+                            180,
+                            dueDateController,
+                            () => setDialogState(() {}),
+                          ),
+                          const SizedBox(width: 6),
+                          _buildDurationQuickChip(
+                            '+1 Year',
+                            365,
+                            dueDateController,
+                            () => setDialogState(() {}),
+                          ),
+                          const SizedBox(width: 6),
+                          _buildDurationQuickChip(
+                            'Lifetime (5 Yrs)',
+                            1825,
+                            dueDateController,
+                            () => setDialogState(() {}),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: Text(
-                        'Cancel'.trData(context),
-                        style: const TextStyle(color: Color(0xFF64748B)),
+                    const SizedBox(height: 14),
+
+                    // 5. Plan Type Dropdown (Fully connected with Admin Plan Types)
+                    _buildFormLabel('Plan Type *'.trData(context)),
+                    const SizedBox(height: 6),
+                    DropdownButtonFormField<String>(
+                      key: ValueKey(selectedPlanType),
+                      initialValue: selectedPlanType,
+                      isExpanded: true,
+                      dropdownColor: Colors.white,
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF0F172A),
                       ),
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6A2777),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'Event Publishing',
+                          child: Row(
+                            children: [
+                              Icon(Icons.event_available_rounded, size: 16, color: Color(0xFF6A2777)),
+                              SizedBox(width: 8),
+                              Text('Event Listing / Publishing', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
+                            ],
+                          ),
                         ),
-                      ),
-                      onPressed: () async {
-                        final pName = planController.text.trim();
-                        final pPrice = priceController.text.trim();
-                        final pDue = dueDateController.text.trim();
-                        final messenger = ScaffoldMessenger.of(context);
-                        final successMsg =
-                            'Plan updated successfully for $userName'.trData(
-                              context,
-                            );
-                        final failMsg =
-                            'Failed to update user plan. Please check connection.'
-                                .trData(context);
-                        Navigator.pop(ctx);
-
-                        final success = await sl<ApiService>().assignUserPlan(
-                          userId: userId,
-                          email: email,
-                          planName: pName.isNotEmpty ? pName : 'Basic (Free)',
-                          planType: selectedPlanType,
-                          price: pPrice.isNotEmpty ? pPrice : 'Free',
-                          dueDate: pDue,
-                          status: selectedStatus,
-                        );
-
-                        if (success) {
-                          await _refreshUsers();
-                          if (mounted) {
-                            messenger.showSnackBar(
-                              SnackBar(
-                                content: Text(successMsg),
-                                backgroundColor: const Color(0xFF16A34A),
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                            );
-                          }
-                        } else if (mounted) {
-                          messenger.showSnackBar(
-                            SnackBar(
-                              content: Text(failMsg),
-                              backgroundColor: Colors.redAccent,
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
+                        DropdownMenuItem(
+                          value: 'Membership Plan',
+                          child: Row(
+                            children: [
+                              Icon(Icons.palette_outlined, size: 16, color: Color(0xFF6A2777)),
+                              SizedBox(width: 8),
+                              Text('Artist Portfolio / Membership', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Gallery Publishing',
+                          child: Row(
+                            children: [
+                              Icon(Icons.museum_outlined, size: 16, color: Color(0xFF6A2777)),
+                              SizedBox(width: 8),
+                              Text('Gallery Showcase / Listing', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Art Center Showcase',
+                          child: Row(
+                            children: [
+                              Icon(Icons.account_balance_outlined, size: 16, color: Color(0xFF6A2777)),
+                              SizedBox(width: 8),
+                              Text('Art Center Showcase', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Chat & Messaging',
+                          child: Row(
+                            children: [
+                              Icon(Icons.chat_bubble_outline_rounded, size: 16, color: Color(0xFF6A2777)),
+                              SizedBox(width: 8),
+                              Text('Chat & Messaging Pro', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Custom Subscription',
+                          child: Row(
+                            children: [
+                              Icon(Icons.stars_rounded, size: 16, color: Color(0xFF6A2777)),
+                              SizedBox(width: 8),
+                              Text('Custom Subscription', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
+                            ],
+                          ),
+                        ),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          setDialogState(() {
+                            selectedPlanType = val;
+                            final newFilter = resolveFilterKeyFromPlanType(val);
+                            if (newFilter != 'all') {
+                              selectedCategoryFilter = newFilter;
+                              final filtered = getFilteredPlans(newFilter);
+                              if (filtered.isNotEmpty && selectedTemplate != 'user_purchased') {
+                                final first = filtered.first;
+                                selectedTemplate = first.title;
+                                planController.text = first.title;
+                                priceController.text = first.price;
+                              }
+                            }
+                          });
                         }
                       },
-                      child: Text(
-                        'Save Plan'.trData(context),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
+                      decoration: _dialogInputDecoration(icon: Icons.category_outlined),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // 6. Status Dropdown
+                    _buildFormLabel('Subscription Status *'.trData(context)),
+                    const SizedBox(height: 6),
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedStatus,
+                      isExpanded: true,
+                      dropdownColor: Colors.white,
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF0F172A),
                       ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'Active',
+                          child: Row(
+                            children: [
+                              Icon(Icons.check_circle_rounded, size: 16, color: Color(0xFF16A34A)),
+                              SizedBox(width: 8),
+                              Text(
+                                'Active (Full Access)',
+                                style: TextStyle(color: Color(0xFF15803D), fontWeight: FontWeight.w700),
+                              ),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Pending',
+                          child: Row(
+                            children: [
+                              Icon(Icons.pending_actions_rounded, size: 16, color: Color(0xFFD97706)),
+                              SizedBox(width: 8),
+                              Text(
+                                'Pending (Awaiting Confirmation)',
+                                style: TextStyle(color: Color(0xFFB45309), fontWeight: FontWeight.w700),
+                              ),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Expired',
+                          child: Row(
+                            children: [
+                              Icon(Icons.cancel_rounded, size: 16, color: Color(0xFFDC2626)),
+                              SizedBox(width: 8),
+                              Text(
+                                'Expired (Access Suspended)',
+                                style: TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.w700),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          setDialogState(() => selectedStatus = val);
+                        }
+                      },
+                      decoration: _dialogInputDecoration(
+                        icon: selectedStatus == 'Active'
+                            ? Icons.check_circle_rounded
+                            : (selectedStatus == 'Pending'
+                                ? Icons.pending_actions_rounded
+                                : Icons.cancel_rounded),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                    const SizedBox(height: 16),
+
+                    // Actions: Cancel & Save Plan
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF64748B),
+                              side: const BorderSide(color: Color(0xFFCBD5E1)),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            onPressed: () => Navigator.pop(ctx),
+                            child: Text(
+                              'Cancel'.trData(context),
+                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF6A2777),
+                              foregroundColor: Colors.white,
+                              elevation: 1,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            icon: const Icon(Icons.check_circle_rounded, size: 18, color: Colors.white),
+                            label: Text(
+                              'Save Plan'.trData(context),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                            onPressed: () async {
+                              final pName = planController.text.trim();
+                              final pPrice = priceController.text.trim();
+                              final pDue = dueDateController.text.trim();
+                              final messenger = ScaffoldMessenger.of(context);
+                              final successMsg = 'Plan updated successfully for $userName'.trData(context);
+                              final failMsg = 'Failed to update user plan. Please check connection.'.trData(context);
+                              Navigator.pop(ctx);
+
+                              final success = await sl<ApiService>().assignUserPlan(
+                                userId: userId,
+                                email: email,
+                                planName: pName.isNotEmpty ? pName : 'Basic (Free)',
+                                planType: selectedPlanType,
+                                price: pPrice.isNotEmpty ? pPrice : 'Free',
+                                dueDate: pDue,
+                                status: selectedStatus,
+                              );
+
+                              if (success) {
+                                await _refreshUsers();
+                                if (mounted) {
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text(successMsg),
+                                      backgroundColor: const Color(0xFF16A34A),
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              } else if (mounted) {
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(failMsg),
+                                    backgroundColor: Colors.redAccent,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-          ),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
+
 
   Widget _buildDurationQuickChip(
     String label,
@@ -11303,34 +12676,42 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     TextEditingController controller,
     VoidCallback onSet,
   ) {
+    final target = DateTime.now().add(Duration(days: days));
+    final targetStr =
+        '${target.year}-${target.month.toString().padLeft(2, '0')}-${target.day.toString().padLeft(2, '0')}';
+    final isSelected = controller.text.trim() == targetStr;
+
     return InkWell(
       onTap: () {
-        final target = DateTime.now().add(Duration(days: days));
-        controller.text =
-            '${target.year}-${target.month.toString().padLeft(2, '0')}-${target.day.toString().padLeft(2, '0')}';
+        controller.text = targetStr;
         onSet();
       },
       borderRadius: BorderRadius.circular(6),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: const Color(0xFFF1F5F9),
+          color:
+              isSelected ? const Color(0xFF6A2777) : const Color(0xFFF1F5F9),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: const Color(0xFFCBD5E1)),
+          border: Border.all(
+            color:
+                isSelected ? const Color(0xFF6A2777) : const Color(0xFFCBD5E1),
+            width: isSelected ? 1.2 : 1.0,
+          ),
         ),
         child: Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF475569),
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+            color: isSelected ? Colors.white : const Color(0xFF475569),
           ),
         ),
       ),
     );
   }
 
-  Future<void> _confirmDeleteUser(Map<String, dynamic> user) async {
+    Future<void> _confirmDeleteUser(Map<String, dynamic> user) async {
     final int userId = int.tryParse(user['id'].toString()) ?? 0;
     final String email = (user['email'] ?? '').toString();
     final String userName = (user['full_name'] ?? 'User').toString();

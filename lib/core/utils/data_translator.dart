@@ -2229,9 +2229,10 @@ class DataTranslator {
 }
 
 /// Helpful extension on String for translating dynamic backend data in widgets
-extension BackendDataTranslationExtension on String {
+extension BackendDataTranslationExtension on String? {
   /// Translates this string based on current app locale from Flutter context
   String trData([BuildContext? context]) {
+    if (this == null || this!.isEmpty) return '';
     bool isArabic = false;
     if (context != null) {
       try {
@@ -2242,6 +2243,6 @@ extension BackendDataTranslationExtension on String {
     } else {
       isArabic = DataTranslator.isAppArabic;
     }
-    return DataTranslator.translate(this, isArabic: isArabic);
+    return DataTranslator.translate(this!, isArabic: isArabic);
   }
 }

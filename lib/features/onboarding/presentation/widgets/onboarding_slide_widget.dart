@@ -76,18 +76,22 @@ class OnboardingSlideWidget extends StatelessWidget {
                     // Title
                     Center(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                        child: Text(
-                          item.title.trData(context),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: rh.sp(
-                              isShort ? 20 : (rh.isCompact ? 22 : 26),
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            item.title.trData(context),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: rh.sp(
+                                isShort ? 18 : (rh.isCompact ? 19 : 22),
+                              ),
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.2,
+                              height: 1.2,
                             ),
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.4,
-                            height: 1.25,
                           ),
                         ),
                       ),

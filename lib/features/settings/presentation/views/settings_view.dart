@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
@@ -32,11 +33,27 @@ class _SettingsViewState extends State<SettingsView> {
   int _chatAllowance = 10;
   List<Map<String, dynamic>> _purchasedPlans = [];
   List<ListingPlanItem> _availableListingPlans = [];
+  StreamSubscription<List<ListingPlanItem>>? _listingPlansSub;
 
   @override
   void initState() {
     super.initState();
     _loadUserProfile();
+
+    try {
+      _listingPlansSub = sl<LiveSyncService>().listingPlansStream.listen((plans) {
+        if (!mounted || plans.isEmpty) return;
+        setState(() {
+          _availableListingPlans = plans;
+        });
+      });
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    _listingPlansSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadUserProfile() async {
@@ -1985,11 +2002,18 @@ class _SettingsViewState extends State<SettingsView> {
                     !isCancelled &&
                     (status.toLowerCase() == 'active' ||
                         status.toLowerCase() == 'paid');
-                final daysLeft = p['days_left']?.toString();
+                final rawDays = p['days_left'];
+                final int? daysLeftNum = rawDays != null ? int.tryParse(rawDays.toString()) : null;
                 final expiryDate =
-                    p['expiry_date']?.toString().split(' ').first ?? '';
+                    p['expires_at'] != null && p['expires_at'].toString().isNotEmpty
+                        ? p['expires_at'].toString().split(' ').first
+                        : (p['expiry_date']?.toString().split(' ').first ?? '');
                 final startDate =
                     p['start_date']?.toString().split(' ').first ?? '';
+                final durationLabel = p['duration_label']?.toString() ??
+                    p['duration']?.toString() ??
+                    p['billing_cycle']?.toString() ??
+                    '';
                 final paymentMethod = p['payment_method']?.toString() ?? '';
                 final features =
                     p['features'] is List
@@ -2128,20 +2152,22 @@ class _SettingsViewState extends State<SettingsView> {
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                isActive && daysLeft != null
-                                    ? '$daysLeft days remaining'.trData(
-                                          context,
-                                        ) +
+                                isActive && daysLeftNum != null && daysLeftNum > 0
+                                    ? (daysLeftNum >= 330
+                                        ? '$daysLeftNum days (~1 year) remaining'.trData(context)
+                                        : '$daysLeftNum days remaining'.trData(context)) +
                                         (expiryDate.isNotEmpty
                                             ? ' (until $expiryDate)'
                                             : '')
-                                    : (isExpired
-                                        ? 'Expired on $expiryDate'.trData(
-                                          context,
-                                        )
-                                        : 'Registered: $startDate'.trData(
-                                          context,
-                                        )),
+                                    : (isActive && durationLabel.isNotEmpty
+                                        ? durationLabel.trData(context)
+                                        : (isExpired
+                                            ? 'Expired on $expiryDate'.trData(
+                                                context,
+                                              )
+                                            : 'Registered: $startDate'.trData(
+                                                context,
+                                              ))),
                                 style: TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w500,
@@ -2595,10 +2621,10 @@ class _SettingsViewState extends State<SettingsView> {
                             child: Column(
                               children:
                                   planTiles.map((pt) {
-                                    final title = pt['title'] as String;
-                                    final price = pt['price'] as String;
-                                    final messages = pt['messages'] as String;
-                                    final badge = pt['badge'] as String;
+                                    final title = pt['title']?.toString() ?? 'Plan';
+                                    final price = pt['price']?.toString() ?? '';
+                                    final messages = pt['messages']?.toString() ?? '';
+                                    final badge = pt['badge']?.toString() ?? '';
                                     final isCurrent =
                                         _chatPlan.toLowerCase() ==
                                         title.toLowerCase();
@@ -2669,7 +2695,7 @@ class _SettingsViewState extends State<SettingsView> {
     BuildContext sheetCtx,
   ) async {
     Navigator.pop(sheetCtx);
-    final String planName = planData['title'] as String;
+    final String planName = planData['title']?.toString() ?? 'Plan';
     final int maxAllowance = (planData['allowance'] as num?)?.toInt() ?? 50;
 
     if (planName.toLowerCase() == _chatPlan.toLowerCase()) return;

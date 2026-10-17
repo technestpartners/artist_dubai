@@ -781,6 +781,13 @@ class InputSanitizer {
         return $default;
     }
 
+    public static function cleanUrl(mixed $val): string {
+        if (!is_string($val)) return '';
+        $val = str_replace(chr(0), '', (string)$val);
+        $clean = trim(filter_var($val, FILTER_SANITIZE_URL));
+        return filter_var($clean, FILTER_VALIDATE_URL) ? $clean : '';
+    }
+
     public static function generateToken(): string {
         return bin2hex(random_bytes(32));
     }
@@ -925,12 +932,8 @@ class AuthMiddleware {
 
                 $cleanEmail = strtolower(trim($row['email'] ?? ''));
                 $dbRole = strtolower(trim($row['user_role'] ?? $row['role'] ?? 'user'));
-
-                $isAdminRole = in_array($dbRole, ['admin', 'superadmin', 'super_admin']) || ($dbRole === 'admin');
-                $isAdminEmail = in_array($cleanEmail, ['admin@artistdubai.com', 'admin@dubaiart.ae', 'admin@admin.com', 'admin@technestpartners.com'], true);
-
-                $isAdmin = $isAdminRole || $isAdminEmail;
-                $role = $isAdmin ? ($isAdminRole ? $dbRole : 'admin') : ($dbRole ?: 'user');
+                $isAdmin = in_array($dbRole, ['admin', 'superadmin', 'super_admin'], true);
+                $role = $isAdmin ? $dbRole : ($dbRole ?: 'user');
 
                 $user = [
                     'id' => (int)$row['user_id'],
@@ -1032,9 +1035,6 @@ class AuthController {
             return;
         }
 
-        $cleanLower = strtolower(trim($email));
-        $isAdminEmail = in_array($cleanLower, ['admin@artistdubai.com', 'admin@dubaiart.ae', 'admin@admin.com', 'admin@technestpartners.com'], true);
-
         $stmt = $this->db->prepare('SELECT id, full_name, email, password_hash, role, created_at FROM users WHERE email = ?');
         $stmt->execute([$email]);
         $user = $stmt->fetch();
@@ -1058,15 +1058,8 @@ class AuthController {
             } catch (\Throwable $t) {}
         }
 
-        $cleanLower = strtolower(trim($user['email'] ?? ''));
-        $isAdminEmail = in_array($cleanLower, ['admin@artistdubai.com', 'admin@dubaiart.ae', 'admin@admin.com', 'admin@technestpartners.com'], true);
-        if ($isAdminEmail) {
-            $userRole = 'admin';
-            $isAdmin = true;
-        } else {
-            $userRole = !empty($user['role']) ? strtolower($user['role']) : 'user';
-            $isAdmin = in_array($userRole, ['admin', 'superadmin', 'super_admin']) || ($userRole === 'admin');
-        }
+        $userRole = !empty($user['role']) ? strtolower(trim($user['role'])) : 'user';
+        $isAdmin = in_array($userRole, ['admin', 'superadmin', 'super_admin'], true);
 
             // Issue cryptographically secure persistent API token
             $token = AuthMiddleware::createToken((int)$user['id'], $userRole, 30);
@@ -1114,11 +1107,20 @@ class AuthController {
             return;
         }
 
-        // Prevent unauthorized privilege escalation: only allow admin role if authenticated as admin
+        $cleanEmailLower = strtolower(trim($email));
+        $reservedAdminEmails = ['admin@artistdubai.com', 'admin@dubaiart.ae', 'admin@admin.com', 'admin@technestpartners.com'];
         $currentUser = AuthMiddleware::getCurrentUser();
+        if (in_array($cleanEmailLower, $reservedAdminEmails, true)) {
+            if (!$currentUser || empty($currentUser['is_admin'])) {
+                ApiResponse::error('Registration with this reserved administrative email is prohibited.', 403);
+                return;
+            }
+        }
+
+        // Prevent unauthorized privilege escalation: only allow admin role if authenticated as admin
         $requestedRole = strtolower(trim($input['role'] ?? 'user'));
         $role = 'user';
-        if ($currentUser && !empty($currentUser['is_admin']) && in_array($requestedRole, ['admin', 'artist', 'user'])) {
+        if ($currentUser && !empty($currentUser['is_admin']) && in_array($requestedRole, ['admin', 'artist', 'user'], true)) {
             $role = $requestedRole;
         } elseif ($requestedRole === 'artist') {
             $role = 'artist';
@@ -1205,7 +1207,8 @@ class AuthController {
             $artist = $artistStmt->fetch();
 
             $chatPlan = !empty($user['chat_plan']) ? $user['chat_plan'] : 'Basic (Free)';
-            $maxAllowance = !empty($user['chat_max_allowance']) ? (int)$user['chat_max_allowance'] : 10;
+            $isFreePlan = empty($chatPlan) || stripos($chatPlan, 'free') !== false || stripos($chatPlan, 'basic') !== false || stripos($chatPlan, 'starter') !== false;
+            $maxAllowance = $isFreePlan ? 10 : (!empty($user['chat_max_allowance']) ? (int)$user['chat_max_allowance'] : 10);
 
             // Fetch user purchased plans from user_plans
             $plans = [];
@@ -1459,7 +1462,7 @@ class AuthController {
         $users = $stmt->fetchAll();
 
         foreach ($users as &$usr) {
-            $usr['is_admin'] = in_array(strtolower($usr['role']), ['admin', 'superadmin']) || str_starts_with(strtolower($usr['email']), 'admin@');
+            $usr['is_admin'] = in_array(strtolower($usr['role'] ?? ''), ['admin', 'superadmin', 'super_admin'], true);
             $usr['total_bookings'] = (int)($usr['total_bookings'] ?? 0);
             $usr['total_favorites'] = (int)($usr['total_favorites'] ?? 0);
             $usr['total_artworks'] = (int)($usr['total_artworks'] ?? 0);
@@ -1644,8 +1647,8 @@ class AuthController {
         ");
         $ins->execute([$userId > 0 ? $userId : null, $email, $planName, $planType, $price, $status, $dueDate]);
 
-        // 2. Also update chat_plan on users table for unified display
-        if (!empty($email)) {
+        // 2. Also update chat_plan on users table for unified display ONLY if it is a chat plan
+        if (!empty($email) && ($planType === 'chat' || $planType === 'messaging' || stripos($planName, 'Chat') !== false || stripos($planName, 'Messaging') !== false)) {
             $this->db->prepare("UPDATE users SET chat_plan = ? WHERE email = ? OR id = ?")
                      ->execute([$planName, $email, $userId]);
         }
@@ -1714,19 +1717,24 @@ class CategoryController {
     }
 
     public function getCategories(array $query = []): void {
-        $type = InputSanitizer::cleanString($query['type'] ?? '');
-        $sql = "SELECT c.*, 
-                (SELECT COUNT(*) FROM artists a WHERE a.category = c.name) AS artist_count,
-                (SELECT COUNT(*) FROM events e WHERE e.category = c.name) AS event_count
-                FROM categories c ";
-        if (!empty($type) && $type !== 'all') {
-            $stmt = $this->db->prepare($sql . 'WHERE c.type = ? OR c.type = "general" AND c.deleted_at IS NULL ORDER BY c.id ASC');
-            $stmt->execute([$type]);
-        } else {
-            $stmt = $this->db->query($sql . 'ORDER BY c.id ASC');
+        try {
+            $type = InputSanitizer::cleanString($query['type'] ?? '');
+            $sql = "SELECT c.*, 
+                    (SELECT COUNT(*) FROM artists a WHERE a.category = c.name AND a.deleted_at IS NULL) AS artist_count,
+                    (SELECT COUNT(*) FROM events e WHERE e.category = c.name AND e.deleted_at IS NULL) AS event_count
+                    FROM categories c ";
+            if (!empty($type) && $type !== 'all') {
+                $stmt = $this->db->prepare($sql . 'WHERE (c.type = ? OR c.type = "general") AND c.deleted_at IS NULL ORDER BY c.id ASC');
+                $stmt->execute([$type]);
+            } else {
+                $stmt = $this->db->query($sql . 'WHERE c.deleted_at IS NULL ORDER BY c.id ASC');
+            }
+            $categories = $stmt->fetchAll();
+            ApiResponse::success($categories, 'Categories retrieved successfully');
+        } catch (\Throwable $t) {
+            error_log('CategoryController::getCategories error: ' . $t->getMessage());
+            ApiResponse::error('Failed to retrieve categories', 500);
         }
-        $categories = $stmt->fetchAll();
-        ApiResponse::success($categories, 'Categories retrieved successfully');
     }
 
     public function createCategory(array $input): void {
@@ -2315,6 +2323,26 @@ class EventController {
         $sql = 'SELECT * FROM events WHERE deleted_at IS NULL';
         $params = [];
 
+        $userEmail = InputSanitizer::cleanString($query['user_email'] ?? $query['email'] ?? $query['contact_email'] ?? '');
+        $organizer = InputSanitizer::cleanString($query['organizer'] ?? $query['organizer_name'] ?? '');
+
+        if (!empty($userEmail)) {
+            $cleanEmail = strtolower(trim($userEmail));
+            if (!empty($organizer)) {
+                $cleanOrg = strtolower(trim($organizer));
+                $sql .= ' AND (LOWER(TRIM(contact_email)) = ? OR LOWER(TRIM(organizer_name)) = ?)';
+                $params[] = $cleanEmail;
+                $params[] = $cleanOrg;
+            } else {
+                $sql .= ' AND LOWER(TRIM(contact_email)) = ?';
+                $params[] = $cleanEmail;
+            }
+        } elseif (!empty($organizer)) {
+            $cleanOrg = strtolower(trim($organizer));
+            $sql .= ' AND LOWER(TRIM(organizer_name)) = ?';
+            $params[] = $cleanOrg;
+        }
+
         if (!empty($category) && $category !== 'All Categories' && $category !== 'All') {
             $sql .= ' AND category LIKE ?';
             $params[] = "%$category%";
@@ -2335,6 +2363,24 @@ class EventController {
         // Count total matching records
         $countSql = 'SELECT COUNT(*) FROM events WHERE 1=1';
         $countParams = [];
+
+        if (!empty($userEmail)) {
+            $cleanEmail = strtolower(trim($userEmail));
+            if (!empty($organizer)) {
+                $cleanOrg = strtolower(trim($organizer));
+                $countSql .= ' AND (LOWER(TRIM(contact_email)) = ? OR LOWER(TRIM(organizer_name)) = ?)';
+                $countParams[] = $cleanEmail;
+                $countParams[] = $cleanOrg;
+            } else {
+                $countSql .= ' AND LOWER(TRIM(contact_email)) = ?';
+                $countParams[] = $cleanEmail;
+            }
+        } elseif (!empty($organizer)) {
+            $cleanOrg = strtolower(trim($organizer));
+            $countSql .= ' AND LOWER(TRIM(organizer_name)) = ?';
+            $countParams[] = $cleanOrg;
+        }
+
         if (!empty($category) && $category !== 'All Categories' && $category !== 'All') {
             $countSql .= ' AND category LIKE ?';
             $countParams[] = "%$category%";
@@ -2404,7 +2450,20 @@ class EventController {
         $isFree = isset($input['is_free']) ? (int)$input['is_free'] : 1;
         $price = $isFree ? 'Free' : InputSanitizer::cleanString($input['price'] ?? 'AED 50');
         $organizer = InputSanitizer::cleanString($input['organizer_name'] ?? 'Artist Dubai');
-        $contactEmail = InputSanitizer::cleanEmail($input['contact_email'] ?? '');
+        $contactEmail = InputSanitizer::cleanEmail($input['contact_email'] ?? $input['user_email'] ?? $input['email'] ?? '');
+        if (empty($contactEmail) || $organizer === 'Artist Dubai') {
+            try {
+                $curUser = AuthMiddleware::getCurrentUser();
+                if ($curUser) {
+                    if (empty($contactEmail) && !empty($curUser['email'])) {
+                        $contactEmail = $curUser['email'];
+                    }
+                    if ($organizer === 'Artist Dubai' && !empty($curUser['full_name'])) {
+                        $organizer = $curUser['full_name'];
+                    }
+                }
+            } catch (\Throwable $t) {}
+        }
         $contactPhone = InputSanitizer::cleanString($input['contact_phone'] ?? '');
         $tags = InputSanitizer::cleanString($input['tags'] ?? '');
         $imageUrl = InputSanitizer::cleanString($input['image_url'] ?? $input['image'] ?? '');
@@ -2475,6 +2534,8 @@ class EventController {
         if ($maxAttendees !== null) { $fields[] = 'max_attendees = ?'; $params[] = $maxAttendees; }
         if (isset($input['status'])) { $fields[] = 'status = ?'; $params[] = InputSanitizer::cleanString((string)$input['status']); }
         if (isset($input['is_active'])) { $fields[] = 'is_active = ?'; $params[] = (int)$input['is_active']; }
+        if (isset($input['contact_email'])) { $fields[] = 'contact_email = ?'; $params[] = InputSanitizer::cleanEmail($input['contact_email']); }
+        if (isset($input['organizer_name'])) { $fields[] = 'organizer_name = ?'; $params[] = InputSanitizer::cleanString($input['organizer_name']); }
 
         if (empty($fields)) {
             ApiResponse::error('No fields provided to update.', 400);
@@ -2499,7 +2560,7 @@ class EventController {
     }
 
     public function deleteEvent(array $input): void {
-        $currentUser = AuthMiddleware::requireAuth();
+        $currentUser = AuthMiddleware::getCurrentUser();
         $id = (int)($input['id'] ?? $input['event_id'] ?? $_GET['id'] ?? 0);
         if ($id <= 0) { ApiResponse::error('Event ID is required.'); return; }
 
@@ -2511,9 +2572,19 @@ class EventController {
             return;
         }
 
-        if (!$currentUser['is_admin'] && strtolower($ev['contact_email'] ?? '') !== strtolower($currentUser['email'])) {
-            ApiResponse::error('Forbidden. You do not have permission to delete this event.', 403);
-            return;
+        $userEmail = strtolower(trim($input['email'] ?? $input['user_email'] ?? $_GET['email'] ?? ($currentUser['email'] ?? '')));
+        $evEmail = strtolower(trim($ev['contact_email'] ?? ''));
+
+        if ($currentUser) {
+            if (!$currentUser['is_admin'] && $evEmail !== strtolower($currentUser['email'])) {
+                ApiResponse::error('Forbidden. You do not have permission to delete this event.', 403);
+                return;
+            }
+        } else {
+            if (empty($userEmail) || $userEmail !== $evEmail) {
+                ApiResponse::error('Forbidden. You do not have permission to delete this event.', 403);
+                return;
+            }
         }
 
         // Delete physical files from disk storage
@@ -2524,9 +2595,9 @@ class EventController {
             UploadController::deleteMultiplePhysicalFiles($ev['galleries_json']);
         }
 
-        // Soft-delete: move to recycle bin
-        $this->db->prepare('UPDATE events SET deleted_at = NOW() WHERE id = ?')->execute([$id]);
-        ApiResponse::success(['id' => $id], 'Event moved to recycle bin and image(s) deleted from storage');
+        // Soft-delete: move to recycle bin & set inactive
+        $this->db->prepare('UPDATE events SET deleted_at = NOW(), is_active = 0, status = "deleted" WHERE id = ?')->execute([$id]);
+        ApiResponse::success(['id' => $id], 'Event deleted successfully');
     }
 }
 
@@ -2595,7 +2666,7 @@ class BookingController {
                 $stmt = $this->db->prepare('INSERT INTO bookings (full_name, email, phone, artist_name, booking_type, event_date, location, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
                 $stmt->execute([$name, $email, $phone, $artistName, $bookingType, $eventDate, $location, $description]);
             } catch (\Throwable $t) {
-                ApiResponse::error('Booking save error: ' . $t->getMessage(), 500);
+                error_log('Booking save error: ' . $t->getMessage()); ApiResponse::error('Booking save error', 500);
                 return;
             }
         }
@@ -3130,7 +3201,7 @@ class GovernmentController {
             $id = $this->db->lastInsertId();
             ApiResponse::success(['id' => $id, 'name' => $name], 'Government entity created successfully');
         } catch (\Throwable $e) {
-            ApiResponse::error('Failed to create government entity: ' . $e->getMessage(), 500);
+            error_log('Failed to create government entity: ' . $e->getMessage()); ApiResponse::error('Failed to create government entity', 500);
         }
     }
 
@@ -3200,7 +3271,7 @@ class GovernmentController {
             $this->db->prepare($sql)->execute($params);
             ApiResponse::success(['id' => $id, 'name' => $name], 'Government entity updated successfully');
         } catch (\Throwable $e) {
-            ApiResponse::error('Failed to update government entity: ' . $e->getMessage(), 500);
+            error_log('Failed to update government entity: ' . $e->getMessage()); ApiResponse::error('Failed to update government entity', 500);
         }
     }
 
@@ -3240,7 +3311,7 @@ class GovernmentController {
             }
             ApiResponse::success(['id' => $id, 'name' => $name], 'Government entity moved to recycle bin and image(s) deleted from storage');
         } catch (\Throwable $e) {
-            ApiResponse::error('Failed to move government entity to recycle bin: ' . $e->getMessage(), 500);
+            error_log('Failed to move government entity to recycle bin: ' . $e->getMessage()); ApiResponse::error('Failed to move government entity to recycle bin', 500);
         }
     }
 }
@@ -3552,30 +3623,49 @@ class NotificationController {
 
     public function getNotifications(array $query = []): void {
         $email = InputSanitizer::cleanEmail($query['email'] ?? $query['user_email'] ?? '');
+        if (empty($email)) {
+            $authUser = AuthMiddleware::getCurrentUser();
+            if ($authUser && !empty($authUser['email'])) {
+                $email = InputSanitizer::cleanEmail($authUser['email']);
+            }
+        }
+
         $page = max(1, (int)($query['page'] ?? 1));
         $limit = isset($query['limit']) ? min(100, max(1, (int)$query['limit'])) : 50;
         $offset = ($page - 1) * $limit;
 
         if (!empty($email)) {
-            $sql = 'SELECT * FROM notifications WHERE user_email = ? OR user_email IS NULL OR user_email = "" ORDER BY id DESC LIMIT ' . $limit . ' OFFSET ' . $offset;
+            $sql = 'SELECT * FROM notifications 
+                    WHERE LOWER(TRIM(user_email)) = LOWER(?) 
+                       OR ((user_email IS NULL OR user_email = "" OR user_email = "all") AND type IN ("broadcast", "system", "announcement")) 
+                    ORDER BY id DESC LIMIT ' . $limit . ' OFFSET ' . $offset;
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$email]);
             $notifs = $stmt->fetchAll();
 
-            $countStmt = $this->db->prepare('SELECT COUNT(*) FROM notifications WHERE user_email = ? OR user_email IS NULL OR user_email = ""');
+            $countStmt = $this->db->prepare('SELECT COUNT(*) FROM notifications 
+                    WHERE LOWER(TRIM(user_email)) = LOWER(?) 
+                       OR ((user_email IS NULL OR user_email = "" OR user_email = "all") AND type IN ("broadcast", "system", "announcement"))');
             $countStmt->execute([$email]);
             $total = (int)$countStmt->fetchColumn();
 
-            $unreadStmt = $this->db->prepare('SELECT COUNT(*) FROM notifications WHERE (user_email = ? OR user_email IS NULL OR user_email = "") AND is_read = 0');
+            $unreadStmt = $this->db->prepare('SELECT COUNT(*) FROM notifications 
+                    WHERE (LOWER(TRIM(user_email)) = LOWER(?) 
+                       OR ((user_email IS NULL OR user_email = "" OR user_email = "all") AND type IN ("broadcast", "system", "announcement"))) 
+                      AND is_read = 0');
             $unreadStmt->execute([$email]);
             $unreadCount = (int)$unreadStmt->fetchColumn();
         } else {
-            $sql = 'SELECT * FROM notifications ORDER BY id DESC LIMIT ' . $limit . ' OFFSET ' . $offset;
+            // Unauthenticated / guest: NEVER return private messages/bookings or other users' notifications!
+            $sql = 'SELECT * FROM notifications 
+                    WHERE user_email = "all" 
+                       OR ((user_email IS NULL OR user_email = "") AND type IN ("broadcast", "system", "announcement")) 
+                    ORDER BY id DESC LIMIT ' . $limit . ' OFFSET ' . $offset;
             $stmt = $this->db->query($sql);
-            $notifs = $stmt->fetchAll();
+            $notifs = $stmt ? $stmt->fetchAll() : [];
 
-            $total = (int)$this->db->query('SELECT COUNT(*) FROM notifications')->fetchColumn();
-            $unreadCount = (int)$this->db->query('SELECT COUNT(*) FROM notifications WHERE is_read = 0')->fetchColumn();
+            $total = (int)($this->db->query('SELECT COUNT(*) FROM notifications WHERE user_email = "all" OR ((user_email IS NULL OR user_email = "") AND type IN ("broadcast", "system", "announcement"))')?->fetchColumn() ?: 0);
+            $unreadCount = (int)($this->db->query('SELECT COUNT(*) FROM notifications WHERE (user_email = "all" OR ((user_email IS NULL OR user_email = "") AND type IN ("broadcast", "system", "announcement"))) AND is_read = 0')?->fetchColumn() ?: 0);
         }
 
         foreach ($notifs as &$n) {
@@ -3614,11 +3704,15 @@ class NotificationController {
 
     public function markAllAsRead(array $input): void {
         $email = InputSanitizer::cleanEmail($input['email'] ?? $input['user_email'] ?? '');
+        if (empty($email)) {
+            $authUser = AuthMiddleware::getCurrentUser();
+            if ($authUser && !empty($authUser['email'])) {
+                $email = InputSanitizer::cleanEmail($authUser['email']);
+            }
+        }
         if (!empty($email)) {
-            $stmt = $this->db->prepare('UPDATE notifications SET is_read = 1 WHERE user_email = ? OR user_email IS NULL OR user_email = ""');
+            $stmt = $this->db->prepare('UPDATE notifications SET is_read = 1 WHERE LOWER(TRIM(user_email)) = LOWER(?)');
             $stmt->execute([$email]);
-        } else {
-            $this->db->exec('UPDATE notifications SET is_read = 1');
         }
         ApiResponse::success(null, 'All notifications marked as read');
     }
@@ -3629,6 +3723,12 @@ class NotificationController {
         $type = InputSanitizer::cleanString($input['type'] ?? 'general');
         $route = InputSanitizer::cleanString($input['route'] ?? '');
         $userEmail = InputSanitizer::cleanEmail($input['user_email'] ?? $input['email'] ?? '');
+        if (empty($userEmail)) {
+            $authUser = AuthMiddleware::getCurrentUser();
+            if ($authUser && !empty($authUser['email'])) {
+                $userEmail = InputSanitizer::cleanEmail($authUser['email']);
+            }
+        }
 
         if (empty($title) || empty($body)) {
             ApiResponse::error('Title and body are required.');
@@ -3658,18 +3758,34 @@ class NotificationController {
             ApiResponse::error('Valid notification ID is required.');
             return;
         }
-        $stmt = $this->db->prepare('DELETE FROM notifications WHERE id = ?');
-        $stmt->execute([$id]);
+        $email = InputSanitizer::cleanEmail($input['email'] ?? $input['user_email'] ?? '');
+        if (empty($email)) {
+            $authUser = AuthMiddleware::getCurrentUser();
+            if ($authUser && !empty($authUser['email'])) {
+                $email = InputSanitizer::cleanEmail($authUser['email']);
+            }
+        }
+        if (!empty($email)) {
+            $stmt = $this->db->prepare('DELETE FROM notifications WHERE id = ? AND (LOWER(TRIM(user_email)) = LOWER(?) OR user_email IS NULL)');
+            $stmt->execute([$id, $email]);
+        } else {
+            $stmt = $this->db->prepare('DELETE FROM notifications WHERE id = ?');
+            $stmt->execute([$id]);
+        }
         ApiResponse::success(['id' => $id], 'Notification deleted successfully');
     }
 
     public function clearAllNotifications(array $input): void {
         $email = InputSanitizer::cleanEmail($input['email'] ?? $input['user_email'] ?? '');
+        if (empty($email)) {
+            $authUser = AuthMiddleware::getCurrentUser();
+            if ($authUser && !empty($authUser['email'])) {
+                $email = InputSanitizer::cleanEmail($authUser['email']);
+            }
+        }
         if (!empty($email)) {
-            $stmt = $this->db->prepare('DELETE FROM notifications WHERE user_email = ? OR user_email IS NULL OR user_email = ""');
+            $stmt = $this->db->prepare('DELETE FROM notifications WHERE LOWER(TRIM(user_email)) = LOWER(?)');
             $stmt->execute([$email]);
-        } else {
-            $this->db->exec('DELETE FROM notifications');
         }
         ApiResponse::success(null, 'All notifications deleted successfully');
     }
@@ -4025,7 +4141,7 @@ class AboutController {
                 'mission' => 'Empowering Emirati and UAE-based creative visionaries with digital exposure, seamless event booking, and government cultural integration.',
             ], 'Platform information retrieved successfully');
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to retrieve platform info: ' . $t->getMessage(), 500);
+            error_log('Failed to retrieve platform info: ' . $t->getMessage()); ApiResponse::error('Failed to retrieve platform info', 500);
         }
     }
 }
@@ -4044,14 +4160,10 @@ class PublishingPricingController {
         try {
             $stmt = $this->db->query("SELECT * FROM publishing_pricing ORDER BY id ASC");
             $rows = $stmt->fetchAll();
-            if (empty($rows)) {
-                $this->seedInitialPricing();
-                $stmt = $this->db->query("SELECT * FROM publishing_pricing ORDER BY id ASC");
-                $rows = $stmt->fetchAll();
-            }
-            ApiResponse::success($rows, 'Publishing pricing retrieved successfully');
+            ApiResponse::success($rows ?: [], 'Publishing pricing retrieved successfully');
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to retrieve publishing pricing: ' . $t->getMessage(), 500);
+            error_log('PublishingPricingController::getPricing error: ' . $t->getMessage());
+            ApiResponse::error('Failed to retrieve publishing pricing', 500);
         }
     }
 
@@ -4116,7 +4228,7 @@ class PublishingPricingController {
 
             ApiResponse::success(['id' => $id, 'updated' => true], 'Publishing pricing updated successfully');
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to update publishing pricing: ' . $t->getMessage(), 500);
+            error_log('Failed to update publishing pricing: ' . $t->getMessage()); ApiResponse::error('Failed to update publishing pricing', 500);
         }
     }
 }
@@ -4129,14 +4241,30 @@ class ListingPlansController {
 
     public function __construct() {
         $this->db = DatabaseManager::getInstance()->getConnection();
+        try { $this->db->exec("ALTER TABLE listing_plans ADD COLUMN duration VARCHAR(100) DEFAULT NULL"); } catch (\Throwable $t) {}
+        try { $this->db->exec("ALTER TABLE listing_plans ADD COLUMN duration_days INT DEFAULT NULL"); } catch (\Throwable $t) {}
+    }
+
+    public static function normalizePrice(string $price): string {
+        $trimmed = trim($price);
+        if ($trimmed === '') return 'AED 199';
+        if (strcasecmp($trimmed, 'free') === 0 || $trimmed === '0' || strcasecmp($trimmed, '0 aed') === 0 || strcasecmp($trimmed, 'aed 0') === 0) {
+            return 'Free';
+        }
+        if (preg_match('/^(?:aed\s*)?([0-9]+(?:,[0-9]+)*(?:\.[0-9]+)?)(?:\s*aed)?$/i', $trimmed, $m)) {
+            return 'AED ' . $m[1];
+        }
+        return $trimmed;
     }
 
     public function getPlans(): void {
         try {
-            $this->seedInitialPlans();
             $stmt = $this->db->query("SELECT * FROM listing_plans ORDER BY sort_order ASC, id ASC");
             $rows = $stmt->fetchAll();
             foreach ($rows as &$row) {
+                if (isset($row['price'])) {
+                    $row['price'] = self::normalizePrice($row['price']);
+                }
                 $features = [];
                 if (!empty($row['features_json'])) {
                     $decoded = json_decode($row['features_json'], true);
@@ -4145,17 +4273,41 @@ class ListingPlansController {
                     }
                 }
                 $row['features'] = $features;
+
+                // Duration resolution for each plan
+                $itemType = strtolower($row['item_type'] ?? '');
+                $title = strtolower($row['title'] ?? '');
+                if (empty($row['duration'])) {
+                    if (str_contains($itemType, 'gallery') || str_contains($title, 'gallery') || str_contains($itemType, 'art_centre') || str_contains($title, 'center') || str_contains($itemType, 'artist')) {
+                        $row['duration'] = '1 Year (365 Days)';
+                        $row['duration_days'] = 365;
+                    } elseif (str_contains($itemType, 'event') || str_contains($title, 'event')) {
+                        $row['duration'] = '30 Days';
+                        $row['duration_days'] = 30;
+                    } elseif (str_contains($itemType, 'chat') || str_contains($title, 'chat')) {
+                        $row['duration'] = '30 Days';
+                        $row['duration_days'] = 30;
+                    } else {
+                        $row['duration'] = '30 Days';
+                        $row['duration_days'] = 30;
+                    }
+                } else {
+                    $row['duration_days'] = isset($row['duration_days']) ? (int)$row['duration_days'] : 30;
+                }
             }
-            ApiResponse::success($rows, 'Listing plans retrieved successfully');
+            ApiResponse::success($rows ?: [], 'Listing plans retrieved successfully');
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to retrieve listing plans: ' . $t->getMessage(), 500);
+            error_log('ListingPlansController::getPlans error: ' . $t->getMessage());
+            ApiResponse::error('Failed to retrieve listing plans', 500);
         }
     }
 
     public function seedInitialPlans(): void {
         try {
-            $existingTypes = $this->db->query("SELECT DISTINCT item_type FROM listing_plans")->fetchAll(\PDO::FETCH_COLUMN);
-            $existingTypes = array_map('strtolower', $existingTypes ?: []);
+            $count = (int)$this->db->query("SELECT COUNT(*) FROM listing_plans")->fetchColumn();
+            if ($count > 0) {
+                return;
+            }
 
             $defaultPlans = [
                 'event' => [
@@ -4209,22 +4361,54 @@ class ListingPlansController {
                     'button_text' => 'Choose Plan',
                     'sort_order' => 3
                 ],
-                'chat' => [
+                'chat_starter' => [
                     'item_type' => 'chat',
-                    'title' => 'Chat & Messaging Pro',
+                    'title' => 'Starter Plan',
                     'category' => 'Messaging & Inquiries',
-                    'badge' => 'Recommended',
-                    'price' => 'AED 49',
-                    'description' => 'Direct unlimited artist & gallery messaging, artwork inquiries, and priority alerts',
+                    'badge' => 'Default',
+                    'price' => 'Free',
+                    'description' => 'Free monthly allowance to connect with artists across Dubai',
                     'features_json' => json_encode([
-                        'Unlimited direct messages with artists & collectors',
-                        'Direct artwork purchase inquiries & commissions',
-                        'High-res flyer & artwork attachments support',
-                        'Instant push notification alerts on response',
-                        'Priority delivery in recipient inbox'
+                        '10 direct messages per month',
+                        'Direct artist collaboration inquiries',
+                        'Flyer & artwork attachment support',
+                        'Allowance auto-resets on the 1st'
                     ]),
-                    'button_text' => 'Subscribe to Chat',
+                    'button_text' => 'Select Plan',
                     'sort_order' => 4
+                ],
+                'chat_pro' => [
+                    'item_type' => 'chat',
+                    'title' => 'Pro Artist',
+                    'category' => 'Messaging & Inquiries',
+                    'badge' => 'Most Popular',
+                    'price' => 'AED 49',
+                    'description' => '50 direct messages per month for active networking',
+                    'features_json' => json_encode([
+                        '50 direct messages per month',
+                        'Direct artist outreach & networking',
+                        'Priority delivery in artist inboxes',
+                        'High-resolution flyer attachments',
+                        'Monthly reset on the 1st'
+                    ]),
+                    'button_text' => 'Upgrade to Pro',
+                    'sort_order' => 5
+                ],
+                'chat_vip' => [
+                    'item_type' => 'chat',
+                    'title' => 'Unlimited VIP',
+                    'category' => 'Messaging & Inquiries',
+                    'badge' => 'For Agencies & Curators',
+                    'price' => 'AED 99',
+                    'description' => 'Unlimited direct artist messages with verified VIP sender badge',
+                    'features_json' => json_encode([
+                        'Unlimited direct artist messages',
+                        'Verified VIP sender badge',
+                        'Ideal for galleries, curators & agencies',
+                        'Priority instant customer support'
+                    ]),
+                    'button_text' => 'Upgrade to VIP',
+                    'sort_order' => 6
                 ],
                 'art_centre' => [
                     'item_type' => 'art_centre',
@@ -4250,14 +4434,12 @@ class ListingPlansController {
                 (item_type, title, category, badge, price, description, features_json, button_text, is_active, sort_order)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
             ");
-            foreach ($defaultPlans as $type => $p) {
-                if (!in_array($type, $existingTypes, true)) {
-                    $stmt->execute([
-                        $p['item_type'], $p['title'], $p['category'], $p['badge'],
-                        $p['price'], $p['description'], $p['features_json'],
-                        $p['button_text'], $p['sort_order']
-                    ]);
-                }
+            foreach ($defaultPlans as $p) {
+                $stmt->execute([
+                    $p['item_type'], $p['title'], $p['category'], $p['badge'],
+                    $p['price'], $p['description'], $p['features_json'],
+                    $p['button_text'], $p['sort_order']
+                ]);
             }
         } catch (\Throwable $t) {}
     }
@@ -4270,7 +4452,7 @@ class ListingPlansController {
         $title = InputSanitizer::cleanString($input['title'] ?? '');
         $category = InputSanitizer::cleanString($input['category'] ?? '');
         $badge = InputSanitizer::cleanString($input['badge'] ?? 'One-time');
-        $price = InputSanitizer::cleanString($input['price'] ?? '');
+        $price = !empty($input['price']) ? self::normalizePrice(InputSanitizer::cleanString($input['price'])) : '';
         $description = InputSanitizer::cleanString($input['description'] ?? '');
         $buttonText = InputSanitizer::cleanString($input['button_text'] ?? 'Pay from My Listings');
         $isActive = isset($input['is_active']) ? (int)$input['is_active'] : 1;
@@ -4300,6 +4482,8 @@ class ListingPlansController {
                 if (isset($input['description'])) { $fields[] = 'description = ?'; $params[] = $description; }
                 if ($featuresJson !== null) { $fields[] = 'features_json = ?'; $params[] = $featuresJson; }
                 if (isset($input['button_text'])) { $fields[] = 'button_text = ?'; $params[] = $buttonText; }
+                if (isset($input['duration']) && trim($input['duration']) !== '') { $fields[] = 'duration = ?'; $params[] = trim($input['duration']); }
+                if (isset($input['duration_days'])) { $fields[] = 'duration_days = ?'; $params[] = (int)$input['duration_days']; }
                 if (isset($input['is_active'])) { $fields[] = 'is_active = ?'; $params[] = $isActive; }
                 if (isset($input['sort_order'])) { $fields[] = 'sort_order = ?'; $params[] = $sortOrder; }
 
@@ -4328,7 +4512,7 @@ class ListingPlansController {
                 ApiResponse::error('Valid plan ID or item_type is required', 400);
             }
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to update listing plan: ' . $t->getMessage(), 500);
+            error_log('Failed to update listing plan: ' . $t->getMessage()); ApiResponse::error('Failed to update listing plan', 500);
         }
     }
 
@@ -4339,9 +4523,11 @@ class ListingPlansController {
         $title = InputSanitizer::cleanString($input['title'] ?? 'Listing Plan');
         $category = InputSanitizer::cleanString($input['category'] ?? 'Listings');
         $badge = InputSanitizer::cleanString($input['badge'] ?? 'One-time');
-        $price = InputSanitizer::cleanString($input['price'] ?? '199 AED');
+        $price = self::normalizePrice(InputSanitizer::cleanString($input['price'] ?? 'AED 199'));
         $description = InputSanitizer::cleanString($input['description'] ?? '');
         $buttonText = InputSanitizer::cleanString($input['button_text'] ?? 'Pay from My Listings');
+        $duration = InputSanitizer::cleanString($input['duration'] ?? '30 Days');
+        $durationDays = isset($input['duration_days']) ? (int)$input['duration_days'] : 30;
         $isActive = isset($input['is_active']) ? (int)$input['is_active'] : 1;
         $sortOrder = isset($input['sort_order']) ? (int)$input['sort_order'] : 0;
 
@@ -4358,15 +4544,15 @@ class ListingPlansController {
         try {
             $stmt = $this->db->prepare("
                 INSERT INTO listing_plans 
-                (item_type, title, category, badge, price, description, features_json, button_text, is_active, sort_order) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (item_type, title, category, badge, price, description, features_json, button_text, duration, duration_days, is_active, sort_order) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
-            $stmt->execute([$itemType, $title, $category, $badge, $price, $description, $featuresJson, $buttonText, $isActive, $sortOrder]);
+            $stmt->execute([$itemType, $title, $category, $badge, $price, $description, $featuresJson, $buttonText, $duration, $durationDays, $isActive, $sortOrder]);
             $newId = (int)$this->db->lastInsertId();
 
             ApiResponse::success(['id' => $newId, 'created' => true], 'Listing plan created successfully');
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to create listing plan: ' . $t->getMessage(), 500);
+            error_log('Failed to create listing plan: ' . $t->getMessage()); ApiResponse::error('Failed to create listing plan', 500);
         }
     }
 
@@ -4382,7 +4568,7 @@ class ListingPlansController {
             $stmt->execute([$id]);
             ApiResponse::success(['id' => $id, 'deleted' => true], 'Listing plan deleted successfully');
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to delete listing plan: ' . $t->getMessage(), 500);
+            error_log('Failed to delete listing plan: ' . $t->getMessage()); ApiResponse::error('Failed to delete listing plan', 500);
         }
     }
 }
@@ -4396,21 +4582,92 @@ class UserPlansController {
     public function __construct() {
         $this->db = DatabaseManager::getInstance()->getConnection();
         try {
-            $this->db->exec("ALTER TABLE user_plans ADD COLUMN payment_proof_url VARCHAR(500) NULL");
+            $this->db->exec("
+                CREATE TABLE IF NOT EXISTS user_plans (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NULL,
+                    user_email VARCHAR(255) NOT NULL,
+                    plan_name VARCHAR(255) NOT NULL,
+                    plan_type VARCHAR(100) DEFAULT 'Subscription',
+                    item_title VARCHAR(255) NULL,
+                    price VARCHAR(100) NOT NULL DEFAULT 'Free',
+                    billing_cycle VARCHAR(100) DEFAULT 'Monthly',
+                    status VARCHAR(50) DEFAULT 'Active',
+                    payment_reference VARCHAR(255) NULL,
+                    payment_method VARCHAR(100) DEFAULT 'Card',
+                    payment_proof_url VARCHAR(500) NULL,
+                    features_json TEXT NULL,
+                    start_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    expires_at DATETIME NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_user_plan_email (user_email),
+                    INDEX idx_user_plan_status (status)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ");
         } catch (\Throwable $t) {}
+        try { $this->db->exec("ALTER TABLE user_plans ADD COLUMN payment_proof_url VARCHAR(500) NULL"); } catch (\Throwable $t) {}
+        try { $this->db->exec("ALTER TABLE user_plans ADD COLUMN item_title VARCHAR(255) NULL"); } catch (\Throwable $t) {}
+        try { $this->db->exec("ALTER TABLE user_plans ADD COLUMN billing_cycle VARCHAR(100) DEFAULT 'Monthly'"); } catch (\Throwable $t) {}
+        try { $this->db->exec("ALTER TABLE user_plans ADD COLUMN payment_reference VARCHAR(255) NULL"); } catch (\Throwable $t) {}
+        try { $this->db->exec("ALTER TABLE user_plans ADD COLUMN payment_method VARCHAR(100) DEFAULT 'Card'"); } catch (\Throwable $t) {}
+        try { $this->db->exec("ALTER TABLE user_plans ADD COLUMN features_json TEXT NULL"); } catch (\Throwable $t) {}
+        try { $this->db->exec("ALTER TABLE user_plans ADD COLUMN start_date DATETIME DEFAULT CURRENT_TIMESTAMP"); } catch (\Throwable $t) {}
+        try { $this->db->exec("ALTER TABLE user_plans ADD COLUMN expires_at DATETIME NULL"); } catch (\Throwable $t) {}
+        try { $this->db->exec("ALTER TABLE user_plans ADD COLUMN duration VARCHAR(100) DEFAULT NULL"); } catch (\Throwable $t) {}
+        try { $this->db->exec("ALTER TABLE user_plans ADD COLUMN duration_days INT DEFAULT NULL"); } catch (\Throwable $t) {}
+
+        // Self-healing migration: Ensure gallery/annual plans have 365 days / 1 year duration
+        try {
+            $this->db->exec("
+                UPDATE user_plans 
+                SET expires_at = DATE_ADD(created_at, INTERVAL 365 DAY),
+                    billing_cycle = '1 Year (365 Days)',
+                    duration = '1 Year (365 Days)',
+                    duration_days = 365
+                WHERE (plan_name LIKE '%Gallery%' OR plan_type = 'gallery' OR plan_name LIKE '%Year%' OR billing_cycle LIKE '%Year%')
+                  AND (DATEDIFF(expires_at, created_at) <= 35 OR expires_at IS NULL)
+            ");
+        } catch (\Throwable $t) {}
+    }
+
+    public static function formatDurationLabel(?int $daysLeft, ?string $exp, ?string $duration, string $planName = '', string $planType = ''): string {
+        $pLower = strtolower($planName . ' ' . $planType);
+        if ($daysLeft !== null && $daysLeft > 0) {
+            if ($daysLeft >= 330) {
+                return "$daysLeft Days Remaining (~1 Year)";
+            } elseif ($daysLeft >= 60) {
+                $months = round($daysLeft / 30);
+                return "$daysLeft Days Remaining (~$months Mos)";
+            }
+            return "$daysLeft Days Remaining";
+        }
+        if ($daysLeft !== null && $daysLeft <= 0) {
+            return "Expired";
+        }
+        if (!empty($duration)) {
+            return $duration;
+        }
+        if (strpos($pLower, 'artist') !== false || strpos($pLower, 'free') !== false) {
+            return "Permanent Free Profile";
+        }
+        if (strpos($pLower, 'gallery') !== false || strpos($pLower, 'art_centre') !== false || strpos($pLower, 'center') !== false) {
+            return "1 Year (365 Days)";
+        }
+        if (strpos($pLower, 'event') !== false) {
+            return "30 Days Single Event Pass";
+        }
+        return "Active Plan";
     }
 
     public function getPlans(array $input = []): void {
         try {
             $currentUser = AuthMiddleware::getCurrentUser();
+            $isAdmin = $currentUser && !empty($currentUser['is_admin']);
             $action = strtolower(trim($input['action'] ?? $_GET['action'] ?? ''));
-            $email = InputSanitizer::cleanEmail($input['email'] ?? $input['user_email'] ?? $_GET['email'] ?? $_GET['user_email'] ?? '');
-            if (empty($email) && $currentUser && empty($action)) {
-                $email = $currentUser['email'];
-            }
+            $inputEmail = InputSanitizer::cleanEmail($input['email'] ?? $input['user_email'] ?? $_GET['email'] ?? $_GET['user_email'] ?? '');
 
             // Admin query: If action is 'all' or no email provided and user is admin
-            if (($action === 'all' || empty($email)) && $currentUser && !empty($currentUser['is_admin'])) {
+            if ($isAdmin && ($action === 'all' || empty($inputEmail))) {
                 $pStmt = $this->db->query('SELECT * FROM user_plans ORDER BY id DESC');
                 $dbPlans = $pStmt->fetchAll();
                 $allPlans = [];
@@ -4428,6 +4685,7 @@ class UserPlansController {
                         $daysLeft = max(0, (int)ceil($diffSec / 86400));
                         $isExpired = ($diffSec < 0);
                     }
+                    $durLabel = self::formatDurationLabel($daysLeft, $exp, $dp['duration'] ?? null, $dp['plan_name'] ?? '', $dp['plan_type'] ?? '');
                     $allPlans[] = [
                         'id' => (int)$dp['id'],
                         'user_id' => $dp['user_id'] ? (int)$dp['user_id'] : null,
@@ -4445,6 +4703,9 @@ class UserPlansController {
                         'start_date' => $dp['start_date'] ?? $dp['created_at'],
                         'expires_at' => $exp,
                         'days_left' => $daysLeft,
+                        'duration' => $dp['duration'] ?? (!empty($dp['billing_cycle']) ? $dp['billing_cycle'] : '30 Days'),
+                        'duration_days' => isset($dp['duration_days']) ? (int)$dp['duration_days'] : ($daysLeft ?? 30),
+                        'duration_label' => $durLabel,
                         'is_expired' => $isExpired,
                         'created_at' => $dp['created_at'],
                     ];
@@ -4458,6 +4719,16 @@ class UserPlansController {
                 return;
             }
 
+            // Non-admin users can strictly view their own plans
+            if (!$isAdmin) {
+                if (!$currentUser) {
+                    $currentUser = AuthMiddleware::requireAuth();
+                }
+                $email = $currentUser['email'];
+            } else {
+                $email = !empty($inputEmail) ? $inputEmail : ($currentUser['email'] ?? '');
+            }
+
             if (empty($email)) {
                 ApiResponse::error('User email is required', 400);
                 return;
@@ -4469,7 +4740,8 @@ class UserPlansController {
             $userRow = $uStmt->fetch();
 
             $chatPlan = !empty($userRow['chat_plan']) ? $userRow['chat_plan'] : 'Basic (Free)';
-            $maxAllowance = !empty($userRow['chat_max_allowance']) ? (int)$userRow['chat_max_allowance'] : 10;
+            $isFreePlan = empty($chatPlan) || stripos($chatPlan, 'free') !== false || stripos($chatPlan, 'basic') !== false || stripos($chatPlan, 'starter') !== false;
+            $maxAllowance = $isFreePlan ? 10 : (!empty($userRow['chat_max_allowance']) ? (int)$userRow['chat_max_allowance'] : 10);
             $memberSince = !empty($userRow['created_at']) ? $userRow['created_at'] : date('Y-m-d H:i:s');
 
             $plans = [];
@@ -4490,6 +4762,7 @@ class UserPlansController {
                     $daysLeft = max(0, (int)ceil($diffSec / 86400));
                     $isExpired = ($diffSec < 0);
                 }
+                $durLabel = self::formatDurationLabel($daysLeft, $exp, $dp['duration'] ?? null, $dp['plan_name'] ?? '', $dp['plan_type'] ?? '');
                 $plans[] = [
                     'id' => (int)$dp['id'],
                     'plan_name' => $dp['plan_name'],
@@ -4505,6 +4778,9 @@ class UserPlansController {
                     'start_date' => $dp['start_date'] ?? $dp['created_at'],
                     'expires_at' => $exp,
                     'days_left' => $daysLeft,
+                    'duration' => $dp['duration'] ?? (!empty($dp['billing_cycle']) ? $dp['billing_cycle'] : '30 Days'),
+                    'duration_days' => isset($dp['duration_days']) ? (int)$dp['duration_days'] : ($daysLeft ?? 30),
+                    'duration_label' => $durLabel,
                     'is_expired' => $isExpired,
                     'created_at' => $dp['created_at'],
                 ];
@@ -4522,7 +4798,7 @@ class UserPlansController {
                         'plan_type' => 'Event Publishing',
                         'item_title' => $ep['title'] ?? 'Art Event Listing',
                         'price' => !empty($ep['publishing_amount']) ? $ep['publishing_amount'] : 'Free',
-                        'billing_cycle' => !empty($ep['publishing_plan']) ? ucfirst($ep['publishing_plan']) : 'Listing',
+                        'billing_cycle' => !empty($ep['publishing_plan']) ? ucfirst($ep['publishing_plan']) : 'Single Event Pass',
                         'status' => strtolower($ep['payment_status'] ?? '') === 'paid' ? 'Active' : (ucfirst($ep['payment_status'] ?? 'Active')),
                         'payment_reference' => $ep['payment_reference'] ?? null,
                         'payment_method' => 'Online',
@@ -4530,6 +4806,9 @@ class UserPlansController {
                         'start_date' => $ep['created_at'],
                         'expires_at' => null,
                         'days_left' => null,
+                        'duration' => '30 Days',
+                        'duration_days' => 30,
+                        'duration_label' => 'Single Event Pass (30 Days)',
                         'is_expired' => false,
                         'created_at' => $ep['created_at'],
                     ];
@@ -4548,14 +4827,17 @@ class UserPlansController {
                         'plan_type' => 'Gallery Publishing',
                         'item_title' => $gp['name'] ?? 'Art Gallery Listing',
                         'price' => !empty($gp['publishing_amount']) ? $gp['publishing_amount'] : 'Free',
-                        'billing_cycle' => !empty($gp['publishing_plan']) ? ucfirst($gp['publishing_plan']) : 'Listing',
+                        'billing_cycle' => !empty($gp['publishing_plan']) ? ucfirst($gp['publishing_plan']) : '1 Year (365 Days)',
                         'status' => strtolower($gp['payment_status'] ?? '') === 'paid' ? 'Active' : (ucfirst($gp['payment_status'] ?? 'Active')),
                         'payment_reference' => $gp['payment_reference'] ?? null,
                         'payment_method' => 'Online',
                         'features' => ['Verified Gallery Badge', 'Exhibition Space Listing', 'Direct Collector Inquiries'],
                         'start_date' => $gp['created_at'],
-                        'expires_at' => null,
-                        'days_left' => null,
+                        'expires_at' => date('Y-m-d H:i:s', strtotime($gp['created_at'] . ' + 365 days')),
+                        'days_left' => max(0, (int)ceil((strtotime($gp['created_at'] . ' + 365 days') - time()) / 86400)),
+                        'duration' => '1 Year (365 Days)',
+                        'duration_days' => 365,
+                        'duration_label' => '1 Year (365 Days)',
                         'is_expired' => false,
                         'created_at' => $gp['created_at'],
                     ];
@@ -4569,7 +4851,7 @@ class UserPlansController {
                 'plans' => $plans,
             ], 'User plans retrieved successfully');
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to get user plans: ' . $t->getMessage(), 500);
+            error_log('Failed to get user plans: ' . $t->getMessage()); ApiResponse::error('Failed to get user plans', 500);
         }
     }
 
@@ -4581,82 +4863,150 @@ class UserPlansController {
             $planType = strtolower(trim(InputSanitizer::cleanString($input['plan_type'] ?? 'subscription')));
             $itemTitle = trim(InputSanitizer::cleanString($input['item_title'] ?? $planName));
             $price = trim(InputSanitizer::cleanString($input['price'] ?? $input['plan_amount'] ?? 'AED 0'));
-            $billingCycle = trim(InputSanitizer::cleanString($input['billing_cycle'] ?? $input['plan_period'] ?? 'Monthly'));
+            $billingCycle = trim(InputSanitizer::cleanString($input['billing_cycle'] ?? $input['plan_period'] ?? ''));
             $paymentRef = trim(InputSanitizer::cleanString($input['payment_reference'] ?? $input['transaction_id'] ?? ''));
             $paymentMethod = trim(InputSanitizer::cleanString($input['payment_method'] ?? 'Online'));
-            $paymentProofUrl = trim(InputSanitizer::cleanUrl($input['payment_proof_url'] ?? $input['receipt_url'] ?? ''));
+            $paymentProofUrl = trim(InputSanitizer::cleanString($input['payment_proof_url'] ?? $input['receipt_url'] ?? ''));
             $features = isset($input['features']) && is_array($input['features']) ? json_encode($input['features']) : null;
+            $durationStr = trim(InputSanitizer::cleanString($input['duration'] ?? $input['plan_period'] ?? ''));
 
             if (empty($email)) {
                 ApiResponse::error('user_email is required', 400);
                 return;
             }
 
-            // Calculate duration and expiration
+            // Precise duration & expiration resolution
             $durationDays = 30;
-            $cycleCheck = strtolower($billingCycle . ' ' . $planName . ' ' . ($input['badge'] ?? ''));
-            if (strpos($cycleCheck, 'year') !== false || strpos($cycleCheck, 'annual') !== false || strpos($cycleCheck, '365') !== false) {
+            $cycleCheck = strtolower($billingCycle . ' ' . $planName . ' ' . $planType . ' ' . $durationStr . ' ' . ($input['badge'] ?? ''));
+
+            if (isset($input['duration_days']) && (int)$input['duration_days'] > 0) {
+                $durationDays = (int)$input['duration_days'];
+            } elseif (strpos($cycleCheck, 'year') !== false || strpos($cycleCheck, 'annual') !== false || strpos($cycleCheck, '365') !== false || strpos($cycleCheck, 'gallery') !== false || strpos($cycleCheck, 'centre') !== false || strpos($cycleCheck, 'center') !== false) {
                 $durationDays = 365;
             } elseif (strpos($cycleCheck, 'six') !== false || strpos($cycleCheck, '6 month') !== false || strpos($cycleCheck, '180') !== false) {
                 $durationDays = 180;
             } elseif (strpos($cycleCheck, 'three') !== false || strpos($cycleCheck, 'quarter') !== false || strpos($cycleCheck, '90') !== false) {
                 $durationDays = 90;
-            } elseif (isset($input['duration_days']) && (int)$input['duration_days'] > 0) {
-                $durationDays = (int)$input['duration_days'];
+            } elseif (strpos($cycleCheck, 'permanent') !== false || strpos($cycleCheck, 'lifetime') !== false) {
+                $durationDays = 3650; // 10 years / permanent
+            } else {
+                $durationDays = 30;
             }
+
+            if (empty($durationStr)) {
+                if ($durationDays == 365) {
+                    $durationStr = '1 Year (365 Days)';
+                } elseif ($durationDays == 180) {
+                    $durationStr = '6 Months (180 Days)';
+                } elseif ($durationDays == 90) {
+                    $durationStr = '3 Months (90 Days)';
+                } elseif ($durationDays >= 3000) {
+                    $durationStr = 'Permanent / Lifetime';
+                } else {
+                    $durationStr = "$durationDays Days";
+                }
+            }
+            if (empty($billingCycle)) {
+                $billingCycle = $durationStr;
+            }
+
             $expiresAt = date('Y-m-d H:i:s', strtotime("+$durationDays days"));
 
-            // Look up user
-            $uStmt = $this->db->prepare("SELECT id, role, chat_plan FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1");
-            $uStmt->execute([$email]);
-            $userRow = $uStmt->fetch();
-            $userId = $userRow ? (int)$userRow['id'] : null;
+            // Look up user safely
+            $userId = null;
+            $userRow = null;
+            try {
+                $uStmt = $this->db->prepare("SELECT id, role, chat_plan FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1");
+                $uStmt->execute([$email]);
+                $userRow = $uStmt->fetch();
+                $userId = $userRow ? (int)$userRow['id'] : null;
+            } catch (\Throwable $t) {
+                try {
+                    $uStmt = $this->db->prepare("SELECT id FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1");
+                    $uStmt->execute([$email]);
+                    $userRow = $uStmt->fetch();
+                    $userId = $userRow ? (int)$userRow['id'] : null;
+                } catch (\Throwable $t2) {}
+            }
 
-            // Correct 15 columns with exactly 12 bound parameters and 3 SQL literals (status='Active', start_date=NOW(), created_at=NOW())
-            $stmt = $this->db->prepare("
-                INSERT INTO user_plans 
-                (user_id, user_email, plan_name, plan_type, item_title, price, billing_cycle, status, payment_reference, payment_method, payment_proof_url, features_json, start_date, expires_at, created_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, 'Active', ?, ?, ?, ?, NOW(), ?, NOW())
-            ");
-            $stmt->execute([
-                $userId,
-                $email,
-                $planName,
-                $planType,
-                $itemTitle,
-                $price,
-                $billingCycle,
-                $paymentRef ?: null,
-                $paymentMethod,
-                $paymentProofUrl ?: null,
-                $features,
-                $expiresAt
-            ]);
-            $newId = (int)$this->db->lastInsertId();
+            // Insert into user_plans including duration and duration_days
+            try {
+                $stmt = $this->db->prepare("
+                    INSERT INTO user_plans 
+                    (user_id, user_email, plan_name, plan_type, item_title, price, billing_cycle, status, payment_reference, payment_method, payment_proof_url, features_json, start_date, expires_at, duration, duration_days, created_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 'Active', ?, ?, ?, ?, NOW(), ?, ?, ?, NOW())
+                ");
+                $stmt->execute([
+                    $userId,
+                    $email,
+                    $planName,
+                    $planType,
+                    $itemTitle,
+                    $price,
+                    $billingCycle,
+                    $paymentRef ?: null,
+                    $paymentMethod,
+                    $paymentProofUrl ?: null,
+                    $features,
+                    $expiresAt,
+                    $durationStr,
+                    $durationDays
+                ]);
+                $newId = (int)$this->db->lastInsertId();
+            } catch (\Throwable $eInsert) {
+                $stmt = $this->db->prepare("
+                    INSERT INTO user_plans 
+                    (user_email, plan_name, plan_type, item_title, price, billing_cycle, status, payment_reference, payment_method, expires_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, 'Active', ?, ?, ?)
+                ");
+                $stmt->execute([
+                    $email,
+                    $planName,
+                    $planType,
+                    $itemTitle,
+                    $price,
+                    $billingCycle,
+                    $paymentRef ?: null,
+                    $paymentMethod,
+                    $expiresAt
+                ]);
+                $newId = (int)$this->db->lastInsertId();
+            }
 
             // Automatically upgrade user privileges based on plan type
             if ($userRow) {
-                $newChatPlan = $planName;
-                $maxAllowance = 25;
-                if ($planType === 'chat' || stripos($planName, 'Chat') !== false || stripos($planName, 'VIP') !== false || stripos($planName, 'Unlimited') !== false) {
-                    $maxAllowance = 9999;
-                } elseif (stripos($planName, 'Pro') !== false || stripos($planName, 'Elite') !== false) {
-                    $maxAllowance = 100;
-                }
-
-                $newRole = $userRow['role'] ?? 'user';
-                if ($newRole === 'user') {
-                    if ($planType === 'artist' || stripos($planName, 'Artist') !== false) {
-                        $newRole = 'artist';
-                    } elseif ($planType === 'gallery' || stripos($planName, 'Gallery') !== false) {
-                        $newRole = 'gallery';
-                    } elseif ($planType === 'art_centre' || stripos($planName, 'Centre') !== false || stripos($planName, 'Center') !== false) {
-                        $newRole = 'art_center';
+                try {
+                    $newChatPlan = null;
+                    $maxAllowance = null;
+                    if ($planType === 'chat' || $planType === 'messaging' || (stripos($planName, 'Chat') !== false && stripos($planName, 'Gallery') === false && stripos($planName, 'Event') === false)) {
+                        $newChatPlan = $planName;
+                        $maxAllowance = 9999;
+                        if (stripos($planName, 'Starter') !== false || stripos($planName, 'Free') !== false || stripos($planName, 'Basic') !== false) {
+                            $maxAllowance = 10;
+                        } elseif (stripos($planName, 'Pro') !== false && stripos($planName, 'VIP') === false && stripos($planName, 'Unlimited') === false) {
+                            $maxAllowance = 50;
+                        }
                     }
-                }
 
-                $this->db->prepare("UPDATE users SET chat_plan = ?, chat_max_allowance = ?, role = ? WHERE id = ?")
-                         ->execute([$newChatPlan, $maxAllowance, $newRole, $userRow['id']]);
+                    $newRole = $userRow['role'] ?? 'user';
+                    if ($newRole === 'user') {
+                        if ($planType === 'artist' || stripos($planName, 'Artist') !== false) {
+                            $newRole = 'artist';
+                        } elseif ($planType === 'gallery' || stripos($planName, 'Gallery') !== false) {
+                            $newRole = 'gallery';
+                        } elseif ($planType === 'art_centre' || stripos($planName, 'Centre') !== false || stripos($planName, 'Center') !== false) {
+                            $newRole = 'art_center';
+                        }
+                    }
+
+                    if ($newChatPlan !== null) {
+                        $this->db->prepare("UPDATE users SET chat_plan = ?, chat_max_allowance = ?, role = ? WHERE id = ?")
+                                 ->execute([$newChatPlan, $maxAllowance, $newRole, $userRow['id']]);
+                    } else {
+                        $this->db->prepare("UPDATE users SET role = ? WHERE id = ?")
+                                 ->execute([$newRole, $userRow['id']]);
+                    }
+                } catch (\Throwable $tUser) {}
             }
 
             ApiResponse::success([
@@ -4672,24 +5022,34 @@ class UserPlansController {
                 'features' => isset($input['features']) && is_array($input['features']) ? $input['features'] : [],
             ], 'Plan purchase recorded successfully');
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to record plan purchase: ' . $t->getMessage(), 500);
+            error_log('Failed to record plan purchase: ' . $t->getMessage()); ApiResponse::error('Failed to record plan purchase', 500);
         }
     }
 
     public function cancelPlan(array $input): void {
         try {
-            $currentUser = AuthMiddleware::getCurrentUser();
+            $currentUser = AuthMiddleware::requireAuth();
+            $isAdmin = !empty($currentUser['is_admin']);
             $planId = (int)($input['plan_id'] ?? $input['id'] ?? 0);
-            $email = InputSanitizer::cleanEmail($input['email'] ?? $input['user_email'] ?? ($currentUser['email'] ?? ''));
+            $email = $isAdmin && !empty($input['email']) 
+                ? InputSanitizer::cleanEmail($input['email']) 
+                : $currentUser['email'];
+
             if ($planId <= 0 || empty($email)) {
                 ApiResponse::error('Valid plan ID and email required', 400);
                 return;
             }
-            $stmt = $this->db->prepare("UPDATE user_plans SET status = 'Cancelled' WHERE id = ? AND (user_email = ? OR ? = 1)");
-            $stmt->execute([$planId, $email, !empty($currentUser['is_admin']) ? 1 : 0]);
+            if ($isAdmin) {
+                $stmt = $this->db->prepare("UPDATE user_plans SET status = 'Cancelled' WHERE id = ?");
+                $stmt->execute([$planId]);
+            } else {
+                $stmt = $this->db->prepare("UPDATE user_plans SET status = 'Cancelled' WHERE id = ? AND LOWER(user_email) = LOWER(?)");
+                $stmt->execute([$planId, $email]);
+            }
             ApiResponse::success(['id' => $planId, 'status' => 'Cancelled'], 'Plan cancelled successfully');
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to cancel plan: ' . $t->getMessage(), 500);
+            error_log('UserPlansController::cancelPlan error: ' . $t->getMessage());
+            ApiResponse::error('Failed to cancel plan', 500);
         }
     }
 }
@@ -4711,16 +5071,17 @@ class PaymentSettingsController {
             if (!$row) {
                 $row = [
                     'id' => 1,
-                    'qr_code_url' => 'https://images.unsplash.com/photo-1595079672139-545c0ecac12a?auto=format&fit=crop&w=400&q=80',
-                    'account_name' => 'Artist Dubai Cultural Services LLC',
-                    'account_number' => 'AE28 0330 0000 0001 2345 678',
-                    'bank_name' => 'Emirates NBD, Dubai',
-                    'instructions' => 'Please scan the QR code with your banking app or transfer via IBAN. Once completed, enter the transaction reference and upload your receipt screenshot.',
-                    'is_active' => 1,
+                    'qr_code_url' => '',
+                    'account_name' => '',
+                    'account_number' => '',
+                    'bank_name' => '',
+                    'instructions' => '',
+                    'is_active' => 0,
                 ];
             }
             ApiResponse::success($row, 'Payment settings retrieved successfully');
         } catch (\Throwable $t) {
+            error_log('PaymentSettingsController::getSettings error: ' . $t->getMessage());
             ApiResponse::error('Failed to retrieve payment settings', 500);
         }
     }
@@ -4762,7 +5123,7 @@ class PaymentSettingsController {
 
             ApiResponse::success(['updated' => true], 'Payment settings updated successfully');
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to update payment settings: ' . $t->getMessage(), 500);
+            error_log('Failed to update payment settings: ' . $t->getMessage()); ApiResponse::error('Failed to update payment settings', 500);
         }
     }
 }
@@ -4797,7 +5158,7 @@ class MenuPermissionsController {
             }
             ApiResponse::success($rows, 'Menu permissions retrieved successfully');
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to retrieve menu permissions: ' . $t->getMessage(), 500);
+            error_log('Failed to retrieve menu permissions: ' . $t->getMessage()); ApiResponse::error('Failed to retrieve menu permissions', 500);
         }
     }
 
@@ -4821,7 +5182,7 @@ class MenuPermissionsController {
             }
             ApiResponse::success(['updated' => true], 'Menu permissions updated successfully');
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to update menu permissions: ' . $t->getMessage(), 500);
+            error_log('Failed to update menu permissions: ' . $t->getMessage()); ApiResponse::error('Failed to update menu permissions', 500);
         }
     }
 }
@@ -4839,8 +5200,18 @@ class ArtistMessagesController {
 
     public function getMessages(): void {
         try {
-            $userEmail = trim($_GET['user_email'] ?? $_GET['sender_email'] ?? $_GET['email'] ?? '');
-            $recipientId = trim($_GET['recipient_id'] ?? $_GET['artist_id'] ?? '');
+            $currentUser = AuthMiddleware::getCurrentUser();
+            $isAdmin = $currentUser && !empty($currentUser['is_admin']);
+
+            if ($currentUser && !$isAdmin) {
+                $userEmail = $currentUser['email'];
+                $userId = (string)$currentUser['id'];
+                $recipientId = trim($_GET['recipient_id'] ?? $_GET['artist_id'] ?? '');
+            } else {
+                $userEmail = trim($_GET['user_email'] ?? $_GET['sender_email'] ?? $_GET['email'] ?? ($currentUser['email'] ?? ''));
+                $recipientId = trim($_GET['recipient_id'] ?? $_GET['artist_id'] ?? '');
+                $userId = trim($_GET['user_id'] ?? ($currentUser ? (string)$currentUser['id'] : ''));
+            }
 
             // Ensure sender_avatar_url column exists in MySQL table
             try {
@@ -4849,10 +5220,6 @@ class ArtistMessagesController {
 
             $query = "SELECT * FROM artist_messages WHERE 1=1";
             $params = [];
-
-            $userId = trim($_GET['user_id'] ?? '');
-            $cleanEmail = strtolower($userEmail);
-            $isAdmin = in_array($cleanEmail, ['admin@artistdubai.com', 'admin@dubaiart.ae', 'admin@admin.com', 'admin@technestpartners.com'], true) || !empty($_GET['is_admin']) || $recipientId === '28';
 
             if (!empty($userEmail) || !empty($recipientId) || !empty($userId) || $isAdmin) {
                 $targetIds = [];
@@ -4942,7 +5309,8 @@ class ArtistMessagesController {
 
             ApiResponse::success($rows, 'Messages retrieved successfully');
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to retrieve messages: ' . $t->getMessage(), 500);
+            error_log('ArtistMessagesController::getMessages error: ' . $t->getMessage());
+            ApiResponse::error('Failed to retrieve messages', 500);
         }
     }
 
@@ -4965,29 +5333,43 @@ class ArtistMessagesController {
                 $uStmt->execute([$userEmail]);
                 $userRow = $uStmt->fetch();
                 if ($userRow) {
-                    if (!empty($userRow['chat_max_allowance'])) {
-                        $maxAllowance = (int)$userRow['chat_max_allowance'];
-                    }
-                    if (!empty($userRow['chat_plan'])) {
-                        $planName = $userRow['chat_plan'];
+                    $rawChatPlan = $userRow['chat_plan'] ?? '';
+                    $rawLower = strtolower($rawChatPlan);
+                    if (strpos($rawLower, 'gallery') !== false || strpos($rawLower, 'event') !== false || strpos($rawLower, 'centre') !== false || strpos($rawLower, 'center') !== false || strpos($rawLower, 'portfolio') !== false) {
+                        $planName = 'Basic (Free)';
+                        $maxAllowance = 10;
+                        try {
+                            $this->db->prepare("UPDATE users SET chat_plan = 'Basic (Free)', chat_max_allowance = 10 WHERE email = ?")->execute([$userEmail]);
+                        } catch (\Throwable $tReset) {}
+                    } else {
+                        if (!empty($rawChatPlan)) {
+                            $planName = $rawChatPlan;
+                        }
+                        $isFree = empty($planName) || stripos($planName, 'free') !== false || stripos($planName, 'basic') !== false || stripos($planName, 'starter') !== false;
+                        if ($isFree) {
+                            $maxAllowance = 10;
+                        } elseif (!empty($userRow['chat_max_allowance'])) {
+                            $maxAllowance = (int)$userRow['chat_max_allowance'];
+                        }
                     }
                 }
 
                 // Also check if user has active chat plan in user_plans
                 try {
                     $upStmt = $this->db->prepare("
-                        SELECT plan_name FROM user_plans 
+                        SELECT plan_name, item_type FROM user_plans 
                         WHERE user_email = ? 
-                          AND (plan_type = 'chat' OR plan_type = 'messaging' OR plan_name LIKE '%chat%' OR plan_name LIKE '%messaging%')
+                          AND (plan_type = 'chat' OR plan_type = 'messaging' OR item_type = 'chat' OR item_type = 'messaging')
+                          AND (plan_name NOT LIKE '%Gallery%' AND plan_name NOT LIKE '%Event%' AND plan_name NOT LIKE '%Centre%' AND plan_name NOT LIKE '%Center%')
                           AND status = 'Active' 
                           AND (expires_at IS NULL OR expires_at > NOW()) 
                         ORDER BY id DESC LIMIT 1
                     ");
                     $upStmt->execute([$userEmail]);
-                    $activeChatPlan = $upStmt->fetchColumn();
-                    if ($activeChatPlan) {
-                        $planName = $activeChatPlan;
-                        $maxAllowance = 9999;
+                    $activeChatRow = $upStmt->fetch();
+                    if ($activeChatRow && !empty($activeChatRow['plan_name'])) {
+                        $planName = $activeChatRow['plan_name'];
+                        $maxAllowance = (stripos($planName, 'Pro') !== false && stripos($planName, 'VIP') === false && stripos($planName, 'Unlimited') === false) ? 50 : 9999;
                     }
                 } catch (\Throwable $e) {}
             }
@@ -5004,7 +5386,7 @@ class ArtistMessagesController {
                 'resets_on' => date('Y-m-01', strtotime('first day of next month')),
             ], 'Chat allowance retrieved successfully');
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to get allowance: ' . $t->getMessage(), 500);
+            error_log('Failed to get allowance: ' . $t->getMessage()); ApiResponse::error('Failed to get allowance', 500);
         }
     }
 
@@ -5013,6 +5395,11 @@ class ArtistMessagesController {
             $userEmail = trim($input['user_email'] ?? $input['email'] ?? $_GET['user_email'] ?? '');
             $planName = trim($input['plan_name'] ?? 'Pro Artist');
             $maxAllowance = (int)($input['max_allowance'] ?? 50);
+
+            if (empty($planName) || stripos($planName, 'free') !== false || stripos($planName, 'starter') !== false || stripos($planName, 'basic') !== false) {
+                $maxAllowance = 10;
+                $planName = 'Basic (Free)';
+            }
 
             if (empty($userEmail)) {
                 ApiResponse::error('user_email is required', 400);
@@ -5052,7 +5439,7 @@ class ArtistMessagesController {
                 'is_unlimited' => $maxAllowance >= 9000,
             ], 'Chat plan upgraded successfully');
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to update chat plan: ' . $t->getMessage(), 500);
+            error_log('Failed to update chat plan: ' . $t->getMessage()); ApiResponse::error('Failed to update chat plan', 500);
         }
     }
 
@@ -5083,11 +5470,17 @@ class ArtistMessagesController {
 
             $maxAllowance = 10;
             if (!empty($senderEmail)) {
-                $uStmt = $this->db->prepare("SELECT chat_max_allowance FROM users WHERE email = ? LIMIT 1");
+                $uStmt = $this->db->prepare("SELECT chat_plan, chat_max_allowance FROM users WHERE email = ? LIMIT 1");
                 $uStmt->execute([$senderEmail]);
                 $userRow = $uStmt->fetch();
-                if ($userRow && !empty($userRow['chat_max_allowance'])) {
-                    $maxAllowance = (int)$userRow['chat_max_allowance'];
+                if ($userRow) {
+                    $uPlan = strtolower($userRow['chat_plan'] ?? '');
+                    $isFree = empty($uPlan) || strpos($uPlan, 'free') !== false || strpos($uPlan, 'basic') !== false || strpos($uPlan, 'starter') !== false;
+                    if ($isFree) {
+                        $maxAllowance = 10;
+                    } elseif (!empty($userRow['chat_max_allowance'])) {
+                        $maxAllowance = (int)$userRow['chat_max_allowance'];
+                    }
                 }
             }
 
@@ -5141,18 +5534,31 @@ class ArtistMessagesController {
             // Auto-dispatch in-app notification to the recipient
             try {
                 $recipientEmail = null;
-                if (!empty($recipientId)) {
+                if (!empty($input['recipient_email'])) {
+                    $recipientEmail = InputSanitizer::cleanEmail($input['recipient_email']);
+                }
+                if (empty($recipientEmail) && !empty($recipientId)) {
                     $rStmt = $this->db->prepare("SELECT email FROM artists WHERE id = ? LIMIT 1");
                     $rStmt->execute([(int)$recipientId]);
                     $rRow = $rStmt->fetch();
                     if ($rRow && !empty($rRow['email'])) {
-                        $recipientEmail = $rRow['email'];
+                        $recipientEmail = InputSanitizer::cleanEmail($rRow['email']);
                     }
                 }
-                $notifTitle = "New Message from $senderName";
-                $notifBody = mb_substr($message, 0, 80) . (mb_strlen($message) > 80 ? '...' : '');
-                $this->db->prepare("INSERT INTO notifications (title, body, type, route, user_email, is_read) VALUES (?, ?, 'message', '/artist-chat', ?, 0)")
-                         ->execute([$notifTitle, $notifBody, $recipientEmail]);
+                if (empty($recipientEmail) && !empty($recipientId)) {
+                    $uStmt = $this->db->prepare("SELECT email FROM users WHERE id = ? LIMIT 1");
+                    $uStmt->execute([(int)$recipientId]);
+                    $uRow = $uStmt->fetch();
+                    if ($uRow && !empty($uRow['email'])) {
+                        $recipientEmail = InputSanitizer::cleanEmail($uRow['email']);
+                    }
+                }
+                if (!empty($recipientEmail)) {
+                    $notifTitle = "New Message from $senderName";
+                    $notifBody = mb_substr($message, 0, 80) . (mb_strlen($message) > 80 ? '...' : '');
+                    $this->db->prepare("INSERT INTO notifications (title, body, type, route, user_email, is_read) VALUES (?, ?, 'message', '/artist-chat', ?, 0)")
+                             ->execute([$notifTitle, $notifBody, $recipientEmail]);
+                }
             } catch (\Throwable $notifErr) {}
 
             ApiResponse::success([
@@ -5163,7 +5569,7 @@ class ArtistMessagesController {
                 'remaining_messages' => $remaining,
             ], 'Message sent successfully');
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to send message: ' . $t->getMessage(), 500);
+            error_log('Failed to send message: ' . $t->getMessage()); ApiResponse::error('Failed to send message', 500);
         }
     }
 }
@@ -5214,7 +5620,7 @@ class AiChatController {
 
             ApiResponse::success($sessions, 'AI chat sessions retrieved successfully');
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to retrieve chat sessions: ' . $t->getMessage(), 500);
+            error_log('Failed to retrieve chat sessions: ' . $t->getMessage()); ApiResponse::error('Failed to retrieve chat sessions', 500);
         }
     }
 
@@ -5261,7 +5667,7 @@ class AiChatController {
 
             ApiResponse::success($messages, 'Messages retrieved successfully');
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to retrieve messages: ' . $t->getMessage(), 500);
+            error_log('Failed to retrieve messages: ' . $t->getMessage()); ApiResponse::error('Failed to retrieve messages', 500);
         }
     }
 
@@ -5341,7 +5747,7 @@ class AiChatController {
                 'is_dynamic' => true,
             ], 'Message processed successfully');
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to send AI chat message: ' . $t->getMessage(), 500);
+            error_log('Failed to send AI chat message: ' . $t->getMessage()); ApiResponse::error('Failed to send AI chat message', 500);
         }
     }
 
@@ -5381,7 +5787,7 @@ class AiChatController {
 
             ApiResponse::success(['session_id' => $sessionId, 'deleted' => true], 'Session deleted successfully');
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to delete session: ' . $t->getMessage(), 500);
+            error_log('Failed to delete session: ' . $t->getMessage()); ApiResponse::error('Failed to delete session', 500);
         }
     }
 
@@ -6160,7 +6566,7 @@ class RecycleBinController {
             $this->db->prepare("UPDATE {$type} SET deleted_at = NULL WHERE id = ?")->execute([$id]);
             ApiResponse::success(['id' => $id, 'type' => $type], 'Item restored successfully');
         } catch (\Throwable $e) {
-            ApiResponse::error('Restore failed: ' . $e->getMessage(), 500);
+            error_log('Restore failed: ' . $e->getMessage()); ApiResponse::error('Restore failed', 500);
         }
     }
 
@@ -6223,7 +6629,7 @@ class RecycleBinController {
             $this->db->prepare("DELETE FROM {$type} WHERE id = ?")->execute([$id]);
             ApiResponse::success(['id' => $id, 'type' => $type], 'Item and associated files permanently deleted');
         } catch (\Throwable $e) {
-            ApiResponse::error('Permanent delete failed: ' . $e->getMessage(), 500);
+            error_log('Permanent delete failed: ' . $e->getMessage()); ApiResponse::error('Permanent delete failed', 500);
         }
     }
 
@@ -6372,7 +6778,7 @@ class AboutUsController {
             }
             ApiResponse::success($row, 'About Us data retrieved successfully');
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to retrieve About Us data: ' . $t->getMessage(), 500);
+            error_log('Failed to retrieve About Us data: ' . $t->getMessage()); ApiResponse::error('Failed to retrieve About Us data', 500);
         }
     }
 
@@ -6410,7 +6816,7 @@ class AboutUsController {
             $row = $stmtGet->fetch(PDO::FETCH_ASSOC);
             ApiResponse::success($row ?: $this->getDefaults(), 'About Us content updated successfully');
         } catch (\Throwable $t) {
-            ApiResponse::error('Failed to update About Us content: ' . $t->getMessage(), 500);
+            error_log('Failed to update About Us content: ' . $t->getMessage()); ApiResponse::error('Failed to update About Us content', 500);
         }
     }
 }
@@ -6423,9 +6829,9 @@ class StripeController {
     private string $publishableKey;
 
     public function __construct() {
-        // Use environment variable if set, otherwise use test mode key
-        $this->secretKey    = getenv('STRIPE_SECRET_KEY')    ?: 'sk_test_51UM5UtReplaceWithYourLiveSecretKey';
-        $this->publishableKey = getenv('STRIPE_PUBLISHABLE_KEY') ?: 'pk_live_51UM5UtDBfdT00Nk0l3Jzf';
+        // Use environment variable or server config
+        $this->secretKey    = getenv('STRIPE_SECRET_KEY') ?: ($_ENV['STRIPE_SECRET_KEY'] ?? '');
+        $this->publishableKey = getenv('STRIPE_PUBLISHABLE_KEY') ?: ($_ENV['STRIPE_PUBLISHABLE_KEY'] ?? 'pk_test_51UM5UtGzTs49HgxK3LffMmD1PThSWUTnF6ewF8G0iLdnHCqIpElBmdbRI5bF65lXaIszIndsUYbWpLwYwhB5bfIT00SCbR8BEy');
     }
 
     public function getPublishableKey(): void {
@@ -6483,6 +6889,32 @@ class StripeController {
         $responseData = json_decode($responseBody, true);
 
         if ($httpCode === 200 && isset($responseData['client_secret'])) {
+            $piId = $responseData['id'];
+            $shouldConfirm = !empty($data['confirm']) && ($data['confirm'] === true || $data['confirm'] === 'true' || $data['confirm'] === 1 || $data['confirm'] === '1');
+
+            if ($shouldConfirm) {
+                $cardBrand     = strtolower(trim($data['card_brand'] ?? 'visa'));
+                $cardHolder    = InputSanitizer::cleanString($data['card_holder'] ?? 'Artist Dubai Customer');
+                $cardToken     = InputSanitizer::cleanString($data['card_token'] ?? $data['token'] ?? '');
+                $customerEmail = filter_var($data['customer_email'] ?? '', FILTER_VALIDATE_EMAIL) ?: null;
+
+                $confirmResult = $this->confirmPaymentIntentInternal($piId, $cardToken, $cardBrand, $cardHolder, $customerEmail);
+                if ($confirmResult['success']) {
+                    ApiResponse::success([
+                        'client_secret'     => $responseData['client_secret'],
+                        'payment_intent_id' => $piId,
+                        'latest_charge'     => $confirmResult['data']['latest_charge'] ?? null,
+                        'amount'            => $amountFils,
+                        'currency'          => $currency,
+                        'status'            => 'succeeded',
+                    ], 'Payment processed and confirmed successfully.');
+                    return;
+                } else {
+                    ApiResponse::error($confirmResult['error'] ?? 'Card payment was declined.', $confirmResult['code'] ?? 400);
+                    return;
+                }
+            }
+
             ApiResponse::success([
                 'client_secret'     => $responseData['client_secret'],
                 'payment_intent_id' => $responseData['id'],
@@ -6494,6 +6926,524 @@ class StripeController {
             $errorMessage = $responseData['error']['message'] ?? 'Stripe payment initialization failed.';
             ApiResponse::error($errorMessage, $httpCode ?: 400);
         }
+    }
+
+    public function confirmPaymentIntent(array $data): void {
+        $paymentIntentId = InputSanitizer::cleanString($data['payment_intent_id'] ?? '');
+        $cardToken       = InputSanitizer::cleanString($data['card_token'] ?? $data['token'] ?? '');
+        $cardBrand       = strtolower(trim($data['card_brand'] ?? 'visa'));
+        $cardHolder      = InputSanitizer::cleanString($data['card_holder'] ?? 'Artist Dubai Customer');
+        $customerEmail   = filter_var($data['customer_email'] ?? '', FILTER_VALIDATE_EMAIL) ?: null;
+
+        if (empty($paymentIntentId)) {
+            ApiResponse::error('payment_intent_id is required.', 400);
+            return;
+        }
+
+        $result = $this->confirmPaymentIntentInternal($paymentIntentId, $cardToken, $cardBrand, $cardHolder, $customerEmail);
+        if ($result['success']) {
+            ApiResponse::success($result['data'], 'Payment confirmed and succeeded.');
+        } else {
+            ApiResponse::error($result['error'] ?? 'Payment confirmation failed.', $result['code'] ?? 400);
+        }
+    }
+
+    private function confirmPaymentIntentInternal(string $paymentIntentId, string $cardToken, string $cardBrand, string $cardHolder, ?string $customerEmail): array {
+        if (empty($cardToken)) {
+            $tokenMap = [
+                'visa'       => 'tok_visa',
+                'mastercard' => 'tok_mastercard',
+                'amex'       => 'tok_amex',
+                'discover'   => 'tok_discover',
+                'diners'     => 'tok_diners',
+                'jcb'        => 'tok_jcb',
+                'unionpay'   => 'tok_unionpay',
+            ];
+            $cardToken = $tokenMap[$cardBrand] ?? 'tok_visa';
+        }
+
+        // 1. Create PaymentMethod using token
+        $pmPost = [
+            'type'                  => 'card',
+            'card[token]'           => $cardToken,
+            'billing_details[name]' => $cardHolder ?: 'Artist Dubai Customer',
+        ];
+        if (!empty($customerEmail)) {
+            $pmPost['billing_details[email]'] = $customerEmail;
+        }
+
+        $ch = curl_init('https://api.stripe.com/v1/payment_methods');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => http_build_query($pmPost),
+            CURLOPT_USERPWD        => $this->secretKey . ':',
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+        $pmRes = curl_exec($ch);
+        $pmCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        $pmData = json_decode($pmRes, true);
+        if ($pmCode !== 200 || empty($pmData['id'])) {
+            $err = $pmData['error']['message'] ?? 'Failed to attach payment method.';
+            return ['success' => false, 'error' => $err, 'code' => $pmCode ?: 400];
+        }
+
+        $paymentMethodId = $pmData['id'];
+
+        // 2. Confirm PaymentIntent
+        $confirmPost = [
+            'payment_method' => $paymentMethodId,
+            'return_url'     => 'https://artistdubai.com',
+        ];
+
+        $ch2 = curl_init('https://api.stripe.com/v1/payment_intents/' . urlencode($paymentIntentId) . '/confirm');
+        curl_setopt_array($ch2, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => http_build_query($confirmPost),
+            CURLOPT_USERPWD        => $this->secretKey . ':',
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+        $confirmRes = curl_exec($ch2);
+        $confirmCode = curl_getinfo($ch2, CURLINFO_HTTP_CODE);
+        curl_close($ch2);
+
+        $confirmData = json_decode($confirmRes, true);
+        $status = $confirmData['status'] ?? '';
+        if ($confirmCode === 200 && ($status === 'succeeded' || $status === 'processing')) {
+            return [
+                'success' => true,
+                'data' => [
+                    'status'            => $status,
+                    'payment_intent_id' => $confirmData['id'],
+                    'latest_charge'     => $confirmData['latest_charge'] ?? null,
+                    'amount'            => $confirmData['amount'] ?? 0,
+                    'currency'          => $confirmData['currency'] ?? 'aed',
+                ],
+            ];
+        }
+
+        $err = $confirmData['error']['message'] ?? ('Payment confirmation failed with status: ' . ($status ?: 'unknown'));
+        return ['success' => false, 'error' => $err, 'code' => $confirmCode ?: 400];
+    }
+
+    public function createCheckoutSession(array $data): void {
+        $amountRaw     = $data['amount'] ?? 0;
+        $currency      = strtolower(trim($data['currency'] ?? 'aed'));
+        $itemTitle     = InputSanitizer::cleanString($data['item_title'] ?? $data['description'] ?? 'Artist Dubai Plan Payment');
+        $planName      = InputSanitizer::cleanString($data['plan_name'] ?? '');
+        $itemType      = InputSanitizer::cleanString($data['item_type'] ?? 'event');
+        $durationStr   = InputSanitizer::cleanString($data['duration'] ?? $data['billing_cycle'] ?? $data['plan_period'] ?? '');
+        $durationDays  = isset($data['duration_days']) ? (int)$data['duration_days'] : 0;
+        $customerEmail = filter_var($data['customer_email'] ?? '', FILTER_VALIDATE_EMAIL) ?: null;
+
+        $amountFils = (int)round((float)$amountRaw * 100);
+        if ($amountFils <= 0) {
+            ApiResponse::error('Invalid payment amount.', 400);
+            return;
+        }
+
+        $successUrl = $data['success_url'] ?? 'https://technestpartners.com/api/api.php?resource=stripe&action=session_success&session_id={CHECKOUT_SESSION_ID}';
+        $cancelUrl  = $data['cancel_url']  ?? 'https://technestpartners.com/api/api.php?resource=stripe&action=session_cancel';
+
+        $postParams = [
+            'payment_method_types[0]' => 'card',
+            'mode'                    => 'payment',
+            'line_items[0][price_data][currency]' => $currency,
+            'line_items[0][price_data][unit_amount]' => $amountFils,
+            'line_items[0][price_data][product_data][name]' => $itemTitle,
+            'line_items[0][quantity]' => 1,
+            'success_url'             => $successUrl,
+            'cancel_url'              => $cancelUrl,
+            'metadata[item_type]'     => $itemType,
+            'metadata[plan_id]'       => $planId,
+            'metadata[plan_name]'     => $planName,
+            'metadata[platform]'      => 'artist_dubai',
+        ];
+        if (!empty($durationStr)) {
+            $postParams['metadata[duration]'] = $durationStr;
+        }
+        if ($durationDays > 0) {
+            $postParams['metadata[duration_days]'] = (string)$durationDays;
+        }
+        if ($planName !== '') {
+            $postParams['line_items[0][price_data][product_data][description]'] = 'Listing Plan: ' . $planName . (!empty($durationStr) ? " ($durationStr)" : '');
+        }
+        if ($customerEmail) {
+            $postParams['customer_email'] = $customerEmail;
+        }
+
+        $ch = curl_init('https://api.stripe.com/v1/checkout/sessions');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => http_build_query($postParams),
+            CURLOPT_USERPWD        => $this->secretKey . ':',
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+
+        $responseBody = curl_exec($ch);
+        $httpCode     = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError    = curl_error($ch);
+        curl_close($ch);
+
+        if ($curlError) {
+            ApiResponse::error('Network error contacting Stripe: ' . $curlError, 503);
+            return;
+        }
+
+        $responseData = json_decode($responseBody, true);
+
+        if ($httpCode === 200 && isset($responseData['url'])) {
+            ApiResponse::success([
+                'session_id'   => $responseData['id'],
+                'checkout_url' => $responseData['url'],
+                'amount'       => $amountFils,
+                'currency'     => $currency,
+                'status'       => $responseData['status'] ?? 'open',
+            ], 'Stripe Checkout Session created successfully.');
+        } else {
+            $errorMessage = $responseData['error']['message'] ?? 'Stripe checkout initialization failed.';
+            ApiResponse::error($errorMessage, $httpCode ?: 400);
+        }
+    }
+
+    public function getCheckoutSessionStatus(string $sessionId): void {
+        $sessionId = trim($sessionId);
+        if (empty($sessionId)) {
+            ApiResponse::error('Session ID is required.', 400);
+            return;
+        }
+
+        $ch = curl_init('https://api.stripe.com/v1/checkout/sessions/' . urlencode($sessionId));
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_USERPWD        => $this->secretKey . ':',
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+
+        $responseBody = curl_exec($ch);
+        $httpCode     = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError    = curl_error($ch);
+        curl_close($ch);
+
+        if ($curlError) {
+            ApiResponse::error('Network error contacting Stripe: ' . $curlError, 503);
+            return;
+        }
+
+        $responseData = json_decode($responseBody, true);
+
+        if ($httpCode === 200 && isset($responseData['id'])) {
+            ApiResponse::success([
+                'session_id'     => $responseData['id'],
+                'status'         => $responseData['status'] ?? 'unknown',
+                'payment_status' => $responseData['payment_status'] ?? 'unpaid',
+                'payment_intent' => $responseData['payment_intent'] ?? null,
+                'amount_total'   => $responseData['amount_total'] ?? 0,
+                'currency'       => $responseData['currency'] ?? 'aed',
+                'customer_email' => $responseData['customer_details']['email'] ?? null,
+            ], 'Stripe session retrieved.');
+        } else {
+            $errorMessage = $responseData['error']['message'] ?? 'Unable to retrieve Stripe session.';
+            ApiResponse::error($errorMessage, $httpCode ?: 400);
+        }
+    }
+
+    public function handleSessionSuccess(string $sessionId): void {
+        $sessionId = trim($sessionId);
+        if (empty($sessionId)) {
+            echo "<h2>Invalid Session ID</h2>";
+            exit;
+        }
+
+        $ch = curl_init('https://api.stripe.com/v1/checkout/sessions/' . urlencode($sessionId));
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_USERPWD        => $this->secretKey . ':',
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+        $responseBody = curl_exec($ch);
+        curl_close($ch);
+        $session = json_decode($responseBody, true);
+
+        $isPaid = ($session['payment_status'] ?? '') === 'paid';
+        $amountTotal = isset($session['amount_total']) ? number_format($session['amount_total'] / 100, 2) : '0.00';
+        $currency = strtoupper($session['currency'] ?? 'AED');
+        $customerEmail = $session['customer_details']['email'] ?? ($session['metadata']['customer_email'] ?? '');
+        $planName = $session['metadata']['plan_name'] ?? 'Artist Dubai Plan';
+        $itemType = $session['metadata']['item_type'] ?? 'plan';
+        $durationStr = $session['metadata']['duration'] ?? '';
+        $durationDays = isset($session['metadata']['duration_days']) ? (int)$session['metadata']['duration_days'] : 0;
+
+        if ($durationDays <= 0) {
+            $cycleCheck = strtolower($planName . ' ' . $itemType . ' ' . $durationStr);
+            if (strpos($cycleCheck, 'year') !== false || strpos($cycleCheck, 'annual') !== false || strpos($cycleCheck, '365') !== false || strpos($cycleCheck, 'gallery') !== false || strpos($cycleCheck, 'centre') !== false || strpos($cycleCheck, 'center') !== false) {
+                $durationDays = 365;
+            } elseif (strpos($cycleCheck, 'six') !== false || strpos($cycleCheck, '6 month') !== false || strpos($cycleCheck, '180') !== false) {
+                $durationDays = 180;
+            } elseif (strpos($cycleCheck, 'three') !== false || strpos($cycleCheck, 'quarter') !== false || strpos($cycleCheck, '90') !== false) {
+                $durationDays = 90;
+            } elseif (strpos($cycleCheck, 'permanent') !== false || strpos($cycleCheck, 'lifetime') !== false) {
+                $durationDays = 3650;
+            } else {
+                $durationDays = 30;
+            }
+        }
+        if (empty($durationStr)) {
+            if ($durationDays == 365) {
+                $durationStr = '1 Year (365 Days)';
+            } elseif ($durationDays >= 3000) {
+                $durationStr = 'Permanent / Lifetime';
+            } else {
+                $durationStr = "$durationDays Days";
+            }
+        }
+
+        if ($isPaid && !empty($customerEmail)) {
+            try {
+                $db = DatabaseManager::getInstance()->getConnection();
+                $check = $db->prepare("SELECT id FROM user_plans WHERE payment_reference = ? LIMIT 1");
+                $check->execute([$sessionId]);
+                if (!$check->fetch()) {
+                    $insert = $db->prepare("
+                        INSERT INTO user_plans (user_email, plan_name, plan_type, item_title, price, billing_cycle, status, payment_reference, payment_method, duration, duration_days, expires_at)
+                        VALUES (?, ?, ?, ?, ?, ?, 'Active', ?, 'Stripe Checkout', ?, ?, DATE_ADD(NOW(), INTERVAL ? DAY))
+                    ");
+                    $insert->execute([
+                        $customerEmail,
+                        $planName,
+                        $itemType,
+                        $planName,
+                        "$currency $amountTotal",
+                        $durationStr,
+                        $sessionId,
+                        $durationStr,
+                        $durationDays,
+                        $durationDays
+                    ]);
+                }
+            } catch (\Throwable $t) {
+                error_log('Stripe auto-record error: ' . $t->getMessage());
+            }
+        }
+
+        header("Content-Type: text/html; charset=UTF-8");
+        ?>
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Payment Successful - Artist Dubai</title>
+            <style>
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    background: #0f172a;
+                    color: #fff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: 100vh;
+                    margin: 0;
+                    padding: 20px;
+                    box-sizing: border-box;
+                }
+                .card {
+                    background: #1e293b;
+                    border: 1px solid #334155;
+                    border-radius: 20px;
+                    padding: 36px 28px;
+                    max-width: 440px;
+                    width: 100%;
+                    text-align: center;
+                    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+                }
+                .icon {
+                    width: 72px;
+                    height: 72px;
+                    background: #10b981;
+                    color: white;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 38px;
+                    margin: 0 auto 20px;
+                    box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+                }
+                h1 { font-size: 24px; font-weight: 800; margin: 0 0 10px; color: #f8fafc; }
+                p { font-size: 14px; color: #94a3b8; line-height: 1.5; margin: 0 0 24px; }
+                .amount { font-size: 28px; font-weight: 900; color: #38bdf8; margin-bottom: 20px; }
+                .badge {
+                    display: inline-block;
+                    background: #334155;
+                    color: #e2e8f0;
+                    padding: 6px 14px;
+                    border-radius: 999px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    margin-bottom: 24px;
+                }
+                .btn {
+                    display: block;
+                    width: 100%;
+                    padding: 14px;
+                    background: linear-gradient(135deg, #6A2777, #9333ea);
+                    color: #fff;
+                    text-decoration: none;
+                    font-weight: 700;
+                    border-radius: 12px;
+                    font-size: 15px;
+                    box-sizing: border-box;
+                }
+                .footer { font-size: 11px; color: #64748b; margin-top: 20px; }
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <div class="icon">✓</div>
+                <h1>Payment Successful!</h1>
+                <div class="amount"><?= htmlspecialchars("$currency $amountTotal") ?></div>
+                <div class="badge">Verified via Stripe</div>
+                <p>Your payment for <strong><?= htmlspecialchars($planName) ?></strong> has been confirmed. You can now return to the Artist Dubai mobile app.</p>
+                <a href="artistdubai://plan-payment?status=success&session_id=<?= urlencode($sessionId) ?>" class="btn">Return to App</a>
+                <div class="footer">Secure 256-bit Stripe Encryption • Artist Dubai Platform</div>
+            </div>
+            <script>
+                setTimeout(function() {
+                    window.location.href = "artistdubai://plan-payment?status=success&session_id=<?= urlencode($sessionId) ?>";
+                }, 1500);
+            </script>
+        </body>
+        </html>
+        <?php
+        exit;
+    }
+
+    public function handleSessionCancel(): void {
+        header("Content-Type: text/html; charset=UTF-8");
+        ?>
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Payment Cancelled - Artist Dubai</title>
+            <style>
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    background: #0f172a;
+                    color: #fff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: 100vh;
+                    margin: 0;
+                    padding: 20px;
+                }
+                .card {
+                    background: #1e293b;
+                    border: 1px solid #334155;
+                    border-radius: 20px;
+                    padding: 36px 28px;
+                    max-width: 440px;
+                    width: 100%;
+                    text-align: center;
+                }
+                .icon {
+                    width: 64px;
+                    height: 64px;
+                    background: #f59e0b;
+                    color: white;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 32px;
+                    margin: 0 auto 18px;
+                }
+                h1 { font-size: 22px; font-weight: 800; margin: 0 0 10px; }
+                p { font-size: 13.5px; color: #94a3b8; margin: 0 0 24px; line-height: 1.5; }
+                .btn {
+                    display: block;
+                    padding: 13px;
+                    background: #334155;
+                    color: #fff;
+                    text-decoration: none;
+                    font-weight: 700;
+                    border-radius: 12px;
+                    font-size: 14px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <div class="icon">✕</div>
+                <h1>Payment Cancelled</h1>
+                <p>The Stripe payment session was cancelled. No charges were made to your card or account.</p>
+                <a href="artistdubai://plan-payment?status=cancel" class="btn">Return to App</a>
+            </div>
+        </body>
+        </html>
+        <?php
+        exit;
+    }
+
+    public function handleWebhook(): void {
+        $payload = @file_get_contents('php://input');
+        $event = json_decode($payload, true);
+        if (!$event || !isset($event['type'])) {
+            ApiResponse::error('Invalid webhook payload', 400);
+            return;
+        }
+
+        $eventType = $event['type'];
+        if ($eventType === 'checkout.session.completed') {
+            $session = $event['data']['object'] ?? [];
+            $sessionId = $session['id'] ?? '';
+            $customerEmail = $session['customer_details']['email'] ?? ($session['metadata']['customer_email'] ?? '');
+            $planName = $session['metadata']['plan_name'] ?? 'Artist Dubai Plan';
+            $itemType = $session['metadata']['item_type'] ?? 'plan';
+            $amountTotal = isset($session['amount_total']) ? number_format($session['amount_total'] / 100, 2) : '0.00';
+            $currency = strtoupper($session['currency'] ?? 'AED');
+
+            if (!empty($sessionId) && !empty($customerEmail)) {
+                try {
+                    $db = DatabaseManager::getInstance()->getConnection();
+                    $check = $db->prepare("SELECT id FROM user_plans WHERE payment_reference = ? LIMIT 1");
+                    $check->execute([$sessionId]);
+                    if (!$check->fetch()) {
+                        $insert = $db->prepare("
+                            INSERT INTO user_plans (user_email, plan_name, plan_type, item_title, price, billing_cycle, status, payment_reference, payment_method, expires_at)
+                            VALUES (?, ?, ?, ?, ?, 'Monthly', 'Active', ?, 'Stripe Checkout', DATE_ADD(NOW(), INTERVAL 30 DAY))
+                        ");
+                        $insert->execute([
+                            $customerEmail,
+                            $planName,
+                            $itemType,
+                            $planName,
+                            "$currency $amountTotal",
+                            $sessionId
+                        ]);
+                    }
+                } catch (\Throwable $t) {
+                    error_log('Stripe webhook record error: ' . $t->getMessage());
+                }
+            }
+        }
+
+        ApiResponse::success(['received' => true], 'Webhook processed.');
     }
 }
 
@@ -6861,12 +7811,13 @@ class UnifiedMySqlApiRouter {
             case 'clean_database':
             case 'wipe_db':
             case 'clean':
-                if (!defined('CLI_TEST_MODE')) {
+                $isCli = (php_sapi_name() === 'cli') || defined('CLI_TEST_MODE');
+                $maintenanceSecret = (string)(getenv('MAINTENANCE_SECRET') ?: '');
+                $providedSecret = (string)($_SERVER['HTTP_X_MAINTENANCE_KEY'] ?? $_GET['maintenance_key'] ?? '');
+                if (!$isCli) {
                     AuthMiddleware::requireAdmin();
-                    $maintenanceSecret = getenv('MAINTENANCE_SECRET') ?: '';
-                    $providedSecret = $_SERVER['HTTP_X_MAINTENANCE_KEY'] ?? $_GET['maintenance_key'] ?? '';
-                    if (!empty($maintenanceSecret) && $providedSecret !== $maintenanceSecret) {
-                        ApiResponse::error('Forbidden. Database reset is protected by server maintenance key.', 403);
+                    if (empty($maintenanceSecret) || !hash_equals($maintenanceSecret, $providedSecret)) {
+                        ApiResponse::error('Forbidden. Database reset is strictly protected by server maintenance key.', 403);
                         return;
                     }
                 }
@@ -6898,7 +7849,8 @@ class UnifiedMySqlApiRouter {
                         'government_entities_count' => (int)$db->query("SELECT COUNT(*) FROM government_entities")->fetchColumn(),
                     ], 'Database wiped cleanly. All user logins and data removed. Zero auto-seeding enabled.');
                 } catch (\Throwable $e) {
-                    ApiResponse::error('Clean DB error: ' . $e->getMessage(), 500);
+                    error_log('Clean DB error: ' . $e->getMessage());
+                    ApiResponse::error('Clean DB failed', 500);
                 }
                 break;
 
@@ -6923,6 +7875,18 @@ class UnifiedMySqlApiRouter {
                 $stripeAction = strtolower(trim($_GET['action'] ?? $input['action'] ?? ''));
                 if ($stripeAction === 'create_payment_intent' || $stripeAction === 'payment_intent') {
                     $stripeCtrl->createPaymentIntent(array_merge($input, $_POST));
+                } elseif ($stripeAction === 'confirm_payment_intent' || $stripeAction === 'confirm_payment') {
+                    $stripeCtrl->confirmPaymentIntent(array_merge($input, $_POST));
+                } elseif ($stripeAction === 'create_checkout_session' || $stripeAction === 'checkout_session') {
+                    $stripeCtrl->createCheckoutSession(array_merge($input, $_POST));
+                } elseif ($stripeAction === 'session_status' || $stripeAction === 'check_session') {
+                    $stripeCtrl->getCheckoutSessionStatus(trim($_GET['session_id'] ?? $input['session_id'] ?? ''));
+                } elseif ($stripeAction === 'session_success' || $stripeAction === 'success') {
+                    $stripeCtrl->handleSessionSuccess(trim($_GET['session_id'] ?? $input['session_id'] ?? ''));
+                } elseif ($stripeAction === 'session_cancel' || $stripeAction === 'cancel') {
+                    $stripeCtrl->handleSessionCancel();
+                } elseif ($stripeAction === 'webhook') {
+                    $stripeCtrl->handleWebhook();
                 } elseif ($stripeAction === 'publishable_key' || $stripeAction === 'config') {
                     $stripeCtrl->getPublishableKey();
                 } else {
