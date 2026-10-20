@@ -69,8 +69,9 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
   }) {
     final rh = ResponsiveHelper.of(context);
     final isSelected = widget.currentIndex == index;
-    final color =
-        isSelected ? Colors.white : Colors.white.withValues(alpha: 0.72);
+    const brandPurple = Color(0xFF6B1C9B);
+    const unselectedColor = Color(0xFF64748B);
+    final color = isSelected ? brandPurple : unselectedColor;
     final isCompact = rh.isCompact;
 
     return Expanded(
@@ -82,7 +83,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
             child: InkWell(
               onTap: onTap,
               borderRadius: BorderRadius.circular(16),
-              splashColor: Colors.white.withValues(alpha: 0.15),
+              splashColor: const Color(0xFFF3E8FF),
               highlightColor: Colors.transparent,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
@@ -98,18 +99,16 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                   vertical: isCompact || rh.isShortScreen ? 2 : 3,
                 ),
                 decoration: BoxDecoration(
-                  color:
-                      isSelected
-                          ? Colors.white.withValues(alpha: 0.20)
-                          : Colors.transparent,
+                  color: isSelected
+                      ? brandPurple.withValues(alpha: 0.12)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(16),
-                  border:
-                      isSelected
-                          ? Border.all(
-                            color: Colors.white.withValues(alpha: 0.28),
-                            width: 1.0,
-                          )
-                          : null,
+                  border: isSelected
+                      ? Border.all(
+                          color: brandPurple.withValues(alpha: 0.22),
+                          width: 1.0,
+                        )
+                      : null,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -170,11 +169,23 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                 vertical: rh.isShortScreen ? 3 : 6,
               ),
               decoration: BoxDecoration(
-                color: Colors.transparent,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(32),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.12),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                  BoxShadow(
+                    color: const Color(0xFF6B1C9B).withValues(alpha: 0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.26),
-                  width: 1.2,
+                  color: const Color(0xFFE2E8F0),
+                  width: 1.0,
                 ),
               ),
               child: Row(

@@ -352,15 +352,56 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
   }
 
   List<String> _categories = [
-    'Visual Arts',
-    'Painting & Drawing',
-    'Sculpture & 3D Art',
-    'Digital Art & Illustration',
+    'Painting',
     'Photography',
+    'Sculpture',
+    'Drawing',
+    'Digital Art',
+    'AI-Generated Art',
+    'Architecture',
+    'Theatre',
+    'Dance',
+    'Music',
+    'Film',
+    'Video Art',
+    'Literature',
+    'Poetry',
+    'Creative Writing',
+    'Drama',
+    'Graphic Design',
+    'Fashion Design',
+    'Interior Design',
+    'Product Design',
+    'Crafts',
+    'Textile Art',
+    'Ceramics',
+    'Printmaking',
+    'Illustration',
+    'Street Art',
+    'Mural Art',
+    'Performance Art',
+    'Installation Art',
+    'Conceptual Art',
     'Mixed Media',
-    'Performing Arts & Music',
-    'Crafts & Calligraphy',
-    'Other Art Form',
+    'Collage',
+    'Video Game Art',
+    'Virtual Reality (VR) Art',
+    'Animation',
+    'Comic Art',
+    'Calligraphy',
+    'Jewellery Design',
+    'Glass Art',
+    'Wood Art',
+    'Metal Art',
+    'Puppetry',
+    'Opera',
+    'Ballet',
+    'Musical Theatre',
+    'Experimental Art',
+    'Land Art',
+    'Environmental Art',
+    'Body Art',
+    'Jewellery and Accessory Design',
   ];
 
   List<String> _experienceLevels = [
@@ -1309,26 +1350,6 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Header Avatar Badge (Matching Screenshot media_1787731751692.png)
-                          Center(
-                            child: Container(
-                              width: 52,
-                              height: 52,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFF3E8FF),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                _isEditMode
-                                    ? Icons.edit_outlined
-                                    : Icons.person_outline,
-                                color: const Color(0xFF6B1C9B),
-                                size: 28,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-
                           // Title & Subtitle
                           Center(
                             child: Column(
@@ -1357,77 +1378,99 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 18),
 
-                          // SECTION 1: Basic Information
-                          _buildSectionTitle(
-                            icon: Icons.person_outline,
-                            title: l10n.basicInformation,
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Dedicated Artist Profile Photo (Avatar) Picker
+                          // Dedicated Artist Profile Photo (Hero Avatar) Picker
                           Center(
                             child: Column(
                               children: [
-                                Stack(
-                                  children: [
-                                    ClipOval(
-                                      child: Container(
-                                        width: 92,
-                                        height: 92,
-                                        color: const Color(0xFFF3E8FF),
-                                        child:
-                                            _profilePhotoBytes != null
-                                                ? Image.memory(
-                                                  _profilePhotoBytes!,
-                                                  width: 92,
-                                                  height: 92,
-                                                  fit: BoxFit.cover,
-                                                )
-                                                : (_existingAvatarUrl != null &&
-                                                        _existingAvatarUrl!
-                                                            .isNotEmpty
-                                                    ? AppCachedImage(
-                                                      imageUrl:
-                                                          _existingAvatarUrl!,
-                                                      width: 92,
-                                                      height: 92,
+                                InkWell(
+                                  onTap: _pickProfilePhoto,
+                                  borderRadius: BorderRadius.circular(50),
+                                  child: Stack(
+                                    children: [
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.18,
+                                              ),
+                                              blurRadius: 10,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ],
+                                        ),
+                                        child: ClipOval(
+                                          child: Container(
+                                            width: 96,
+                                            height: 96,
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFF3E8FF),
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.45,
+                                                ),
+                                                width: 2.5,
+                                              ),
+                                            ),
+                                            child:
+                                                _profilePhotoBytes != null
+                                                    ? Image.memory(
+                                                      _profilePhotoBytes!,
+                                                      width: 96,
+                                                      height: 96,
                                                       fit: BoxFit.cover,
-                                                      placeholder: const Center(
-                                                        child: SizedBox(
-                                                          width: 24,
-                                                          height: 24,
-                                                          child:
-                                                              CircularProgressIndicator(
-                                                                strokeWidth: 2,
+                                                    )
+                                                    : (_existingAvatarUrl !=
+                                                                null &&
+                                                            _existingAvatarUrl!
+                                                                .isNotEmpty
+                                                        ? AppCachedImage(
+                                                          imageUrl:
+                                                              _existingAvatarUrl!,
+                                                          width: 96,
+                                                          height: 96,
+                                                          fit: BoxFit.cover,
+                                                          placeholder:
+                                                              const Center(
+                                                                child:
+                                                                    SizedBox(
+                                                                      width: 24,
+                                                                      height: 24,
+                                                                      child:
+                                                                          CircularProgressIndicator(
+                                                                            strokeWidth: 2,
+                                                                            color: Color(
+                                                                              0xFF6A2777,
+                                                                            ),
+                                                                          ),
+                                                                    ),
+                                                              ),
+                                                          errorWidget:
+                                                              const Icon(
+                                                                Icons.person,
+                                                                size: 48,
                                                                 color: Color(
                                                                   0xFF6A2777,
                                                                 ),
                                                               ),
-                                                        ),
-                                                      ),
-                                                      errorWidget: const Icon(
-                                                        Icons.person,
-                                                        size: 46,
-                                                        color: Color(
-                                                          0xFF6A2777,
-                                                        ),
-                                                      ),
-                                                    )
-                                                    : const Icon(
-                                                      Icons.person,
-                                                      size: 46,
-                                                      color: Color(0xFF6A2777),
-                                                    )),
+                                                        )
+                                                        : const Icon(
+                                                          Icons.person,
+                                                          size: 48,
+                                                          color: Color(
+                                                            0xFF6A2777,
+                                                          ),
+                                                        )),
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                    Positioned(
-                                      bottom: 0,
-                                      right: 0,
-                                      child: InkWell(
-                                        onTap: _pickProfilePhoto,
-                                        borderRadius: BorderRadius.circular(20),
+                                      Positioned(
+                                        bottom: 0,
+                                        right: 0,
                                         child: Container(
                                           padding: const EdgeInsets.all(7),
                                           decoration: BoxDecoration(
@@ -1440,45 +1483,44 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                           ),
                                           child: const Icon(
                                             Icons.camera_alt,
-                                            size: 16,
+                                            size: 15,
                                             color: Colors.white,
                                           ),
                                         ),
                                       ),
-                                    ),
-                                    if (_profilePhotoBytes != null ||
-                                        _profilePhotoFile != null ||
-                                        (_existingAvatarUrl != null &&
-                                            _existingAvatarUrl!.isNotEmpty))
-                                      Positioned(
-                                        top: 0,
-                                        right: 0,
-                                        child: InkWell(
-                                          onTap: _confirmDeleteProfilePhoto,
-                                          borderRadius: BorderRadius.circular(
-                                            20,
-                                          ),
-                                          child: Container(
-                                            padding: const EdgeInsets.all(5),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFDC2626),
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: Colors.white,
-                                                width: 2,
+                                      if (_profilePhotoBytes != null ||
+                                          _profilePhotoFile != null ||
+                                          (_existingAvatarUrl != null &&
+                                              _existingAvatarUrl!.isNotEmpty))
+                                        Positioned(
+                                          top: 0,
+                                          right: 0,
+                                          child: InkWell(
+                                            onTap: _confirmDeleteProfilePhoto,
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                            child: Container(
+                                              padding: const EdgeInsets.all(5),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFDC2626),
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: Colors.white,
+                                                  width: 2,
+                                                ),
                                               ),
-                                            ),
-                                            child: const Icon(
-                                              Icons.close,
-                                              size: 14,
-                                              color: Colors.white,
+                                              child: const Icon(
+                                                Icons.close,
+                                                size: 14,
+                                                color: Colors.white,
+                                              ),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                                const SizedBox(height: 10),
+                                const SizedBox(height: 8),
                                 if (_profilePhotoBytes != null ||
                                     _profilePhotoFile != null ||
                                     (_existingAvatarUrl != null &&
@@ -1509,20 +1551,22 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                             width: 1.0,
                                           ),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              20,
-                                            ),
+                                            borderRadius:
+                                                BorderRadius.circular(20),
                                           ),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 14,
-                                            vertical: 7,
-                                          ),
-                                          visualDensity: VisualDensity.compact,
+                                          padding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 14,
+                                                vertical: 7,
+                                              ),
+                                          visualDensity:
+                                              VisualDensity.compact,
                                         ),
                                       ),
                                       const SizedBox(width: 10),
                                       OutlinedButton.icon(
-                                        onPressed: _confirmDeleteProfilePhoto,
+                                        onPressed:
+                                            _confirmDeleteProfilePhoto,
                                         icon: const Icon(
                                           Icons.delete_outline,
                                           size: 15,
@@ -1542,15 +1586,16 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                             width: 1.0,
                                           ),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              20,
-                                            ),
+                                            borderRadius:
+                                                BorderRadius.circular(20),
                                           ),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 14,
-                                            vertical: 7,
-                                          ),
-                                          visualDensity: VisualDensity.compact,
+                                          padding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 14,
+                                                vertical: 7,
+                                              ),
+                                          visualDensity:
+                                              VisualDensity.compact,
                                         ),
                                       ),
                                     ],
@@ -1560,7 +1605,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                     onPressed: _pickProfilePhoto,
                                     icon: const Icon(
                                       Icons.add_a_photo_outlined,
-                                      size: 16,
+                                      size: 15,
                                       color: Colors.white,
                                     ),
                                     label: Text(
@@ -1575,6 +1620,13 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                 ],
                               ],
                             ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // SECTION 1: Basic Information
+                          _buildSectionTitle(
+                            icon: Icons.person_outline,
+                            title: l10n.basicInformation,
                           ),
                           const SizedBox(height: 14),
                           _buildLabel('${l10n.fullNameLabel} *'),
@@ -1604,20 +1656,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                           ),
                           const SizedBox(height: 14),
                           _buildLabel(l10n.artCategory),
-                          _buildDropdownField(
-                            value:
-                                _categories.contains(_selectedCategory)
-                                    ? _selectedCategory
-                                    : null,
-                            hintText: l10n.selectPrimaryArtForm,
-                            items: _categories,
-                            onChanged: (val) {
-                              setState(() {
-                                _selectedCategory = val;
-                              });
-                              _onFormCriteriaChanged();
-                            },
-                          ),
+                          _buildSearchableCategoryField(),
                           const SizedBox(height: 14),
                           _buildLabel(l10n.experienceLevel),
                           _buildDropdownField(
@@ -1648,13 +1687,9 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                           const SizedBox(height: 28),
 
                           // SECTION 3: Social Media (Optional)
-                          Text(
-                            l10n.socialMediaOptional,
-                            style: const TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E1E1E),
-                            ),
+                          _buildSectionTitle(
+                            icon: Icons.share_outlined,
+                            title: l10n.socialMediaOptional,
                           ),
                           const SizedBox(height: 14),
                           _buildLabel(l10n.website),
@@ -1711,7 +1746,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                             l10n.artworkPortfolioDesc,
                             style: const TextStyle(
                               fontSize: 12.5,
-                              color: Color(0xFF64748B),
+                              color: Color(0xFFE2D6F5),
                             ),
                           ),
                           const SizedBox(height: 14),
@@ -2433,22 +2468,14 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                   child: OutlinedButton(
                                     style: OutlinedButton.styleFrom(
                                       backgroundColor:
-                                          _isSubmitting
-                                              ? Colors.white.withValues(
-                                                alpha: 0.08,
-                                              )
-                                              : Colors.white.withValues(
-                                                alpha: 0.15,
-                                              ),
+                                          Colors.white.withValues(alpha: 0.18),
                                       disabledForegroundColor: Colors.white38,
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 8,
                                       ),
-                                      side: BorderSide(
-                                        color: Colors.white.withValues(
-                                          alpha: _isSubmitting ? 0.15 : 0.3,
-                                        ),
-                                        width: 1.0,
+                                      side: const BorderSide(
+                                        color: Colors.white,
+                                        width: 1.5,
                                       ),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8),
@@ -2481,54 +2508,23 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                   height: 48,
                                   child: ElevatedButton(
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor:
-                                          _isAllCriteriaMet
-                                              ? Colors.white
-                                              : Colors.white.withValues(
-                                                alpha: 0.20,
-                                              ),
-                                      foregroundColor:
-                                          _isAllCriteriaMet
-                                              ? const Color(0xFF6B1C9B)
-                                              : Colors.white.withValues(
-                                                alpha: 0.45,
-                                              ),
+                                      backgroundColor: Colors.white,
+                                      foregroundColor: const Color(0xFF6B1C9B),
                                       disabledBackgroundColor:
-                                          _isSubmitting
-                                              ? Colors.white
-                                              : Colors.white.withValues(
-                                                alpha: 0.20,
-                                              ),
+                                          Colors.white.withValues(alpha: 0.8),
                                       disabledForegroundColor:
-                                          _isSubmitting
-                                              ? const Color(0xFF6B1C9B)
-                                              : Colors.white.withValues(
-                                                alpha: 0.45,
-                                              ),
-                                      elevation:
-                                          (_isAllCriteriaMet || _isSubmitting)
-                                              ? 3
-                                              : 0,
+                                          const Color(0xFF6B1C9B),
+                                      elevation: 3,
                                       shadowColor: Colors.black38,
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 8,
                                       ),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8),
-                                        side:
-                                            (_isAllCriteriaMet || _isSubmitting)
-                                                ? BorderSide.none
-                                                : BorderSide(
-                                                  color: Colors.white
-                                                      .withValues(alpha: 0.25),
-                                                  width: 1.0,
-                                                ),
                                       ),
                                     ),
                                     onPressed:
-                                        (_isSubmitting || !_isAllCriteriaMet)
-                                            ? null
-                                            : _submitProfile,
+                                        _isSubmitting ? null : _submitProfile,
                                     child:
                                         _isSubmitting
                                             ? Row(
@@ -2575,6 +2571,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                                 style: const TextStyle(
                                                   fontSize: 14.5,
                                                   fontWeight: FontWeight.bold,
+                                                  color: Color(0xFF6B1C9B),
                                                 ),
                                               ),
                                             ),
@@ -2656,8 +2653,8 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
         counterText: showCounter ? null : '',
         counterStyle: const TextStyle(
           fontSize: 12,
-          color: Color(0xFF64748B),
-          fontWeight: FontWeight.w500,
+          color: Color(0xFFE2D6F5),
+          fontWeight: FontWeight.w600,
         ),
         hintStyle: const TextStyle(
           fontSize: 13.5,
@@ -3024,6 +3021,439 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
               ),
             ),
           ),
+        );
+      },
+    );
+  }
+
+  static const Map<String, String> _kCategoryEmojiMap = {
+    'Painting': '🎨',
+    'Photography': '📷',
+    'Sculpture': '🗿',
+    'Drawing': '✏️',
+    'Digital Art': '💻',
+    'AI-Generated Art': '🤖',
+    'Architecture': '🏛️',
+    'Theatre': '🎭',
+    'Dance': '💃',
+    'Music': '🎵',
+    'Film': '🎬',
+    'Video Art': '📹',
+    'Literature': '📚',
+    'Poetry': '📜',
+    'Creative Writing': '🖋️',
+    'Drama': '🎭',
+    'Graphic Design': '📐',
+    'Fashion Design': '👗',
+    'Interior Design': '🛋️',
+    'Product Design': '📦',
+    'Crafts': '🧶',
+    'Textile Art': '🧵',
+    'Ceramics': '🏺',
+    'Printmaking': '🖨️',
+    'Illustration': '🖌️',
+    'Street Art': '🏙️',
+    'Mural Art': '🧱',
+    'Performance Art': '🩰',
+    'Installation Art': '💡',
+    'Conceptual Art': '🧠',
+    'Mixed Media': '🔀',
+    'Collage': '📑',
+    'Video Game Art': '🎮',
+    'Virtual Reality (VR) Art': '🥽',
+    'Animation': '🎞️',
+    'Comic Art': '🗯️',
+    'Calligraphy': '✍️',
+    'Jewellery Design': '💍',
+    'Glass Art': '🪟',
+    'Wood Art': '🪵',
+    'Metal Art': '⚙️',
+    'Puppetry': '🎎',
+    'Opera': '🎼',
+    'Ballet': '🩰',
+    'Musical Theatre': '🎤',
+    'Experimental Art': '🧪',
+    'Land Art': '🏞️',
+    'Environmental Art': '🌿',
+    'Body Art': '🎨',
+    'Jewellery and Accessory Design': '👑',
+  };
+
+  String _getCategoryEmoji(String name) {
+    final clean = name.trim();
+    if (_kCategoryEmojiMap.containsKey(clean)) {
+      return _kCategoryEmojiMap[clean]!;
+    }
+    for (final entry in _kCategoryEmojiMap.entries) {
+      if (entry.key.toLowerCase() == clean.toLowerCase()) {
+        return entry.value;
+      }
+    }
+    for (final c in ArtistModel.categoryList) {
+      if (c.name.toLowerCase() == clean.toLowerCase()) return c.emoji;
+    }
+    return '🎨';
+  }
+
+  Widget _buildSearchableCategoryField() {
+    final hasCategory =
+        _selectedCategory != null && _selectedCategory!.trim().isNotEmpty;
+    final emoji = hasCategory ? _getCategoryEmoji(_selectedCategory!) : '🎨';
+    final l10n = AppLocalizations.of(context);
+
+    return InkWell(
+      onTap: () => _showSearchableCategoryModal(),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: hasCategory ? const Color(0xFF5E227A) : const Color(0xFFCBD5E1),
+            width: hasCategory ? 1.5 : 1.0,
+          ),
+        ),
+        child: Row(
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 18)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                hasCategory
+                    ? DataTranslator.tr(context, _selectedCategory!)
+                    : l10n.selectPrimaryArtForm,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: hasCategory
+                      ? const Color(0xFF1E293B)
+                      : const Color(0xFF64748B),
+                  fontWeight: hasCategory ? FontWeight.w600 : FontWeight.normal,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3E8FF),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(
+                    Icons.search_rounded,
+                    color: Color(0xFF6B1C9B),
+                    size: 15,
+                  ),
+                  SizedBox(width: 3),
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: Color(0xFF6B1C9B),
+                    size: 17,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSearchableCategoryModal() {
+    final rh = ResponsiveHelper.of(context);
+    final l10n = AppLocalizations.of(context);
+    String searchQuery = '';
+    final searchController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (bottomSheetContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final query = searchQuery.trim().toLowerCase();
+            final filteredCategories = _categories.where((cat) {
+              if (query.isEmpty) return true;
+              final localized = DataTranslator.tr(context, cat).toLowerCase();
+              return cat.toLowerCase().contains(query) ||
+                  localized.contains(query);
+            }).toList();
+
+            return Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: rh.contentMaxWidth,
+                  maxHeight: MediaQuery.of(context).size.height * 0.85,
+                ),
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  ),
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).viewInsets.bottom,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Drag handle
+                      const SizedBox(height: 10),
+                      Container(
+                        width: 42,
+                        height: 4.5,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFCBD5E1),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Header
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 18),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(7),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFF3E8FF),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.palette_outlined,
+                                color: Color(0xFF6B1C9B),
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    l10n.artCategory,
+                                    style: const TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                  Text(
+                                    '${_categories.length} categories available'
+                                        .trData(context),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF64748B),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close, color: Color(0xFF64748B)),
+                              onPressed: () => Navigator.of(bottomSheetContext).pop(),
+                              splashRadius: 20,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Search Box
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: TextFormField(
+                          controller: searchController,
+                          autofocus: true,
+                          style: const TextStyle(
+                            fontSize: 14.5,
+                            color: Color(0xFF0F172A),
+                            fontWeight: FontWeight.w500,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Search categories...'.trData(context),
+                            hintStyle: const TextStyle(
+                              fontSize: 13.5,
+                              color: Color(0xFF94A3B8),
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.search_rounded,
+                              color: Color(0xFF6B1C9B),
+                              size: 20,
+                            ),
+                            suffixIcon: searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(
+                                      Icons.clear,
+                                      size: 18,
+                                      color: Color(0xFF64748B),
+                                    ),
+                                    onPressed: () {
+                                      searchController.clear();
+                                      setModalState(() {
+                                        searchQuery = '';
+                                      });
+                                    },
+                                  )
+                                : null,
+                            filled: true,
+                            fillColor: const Color(0xFFF8FAFC),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 11,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(
+                                color: Color(0xFFCBD5E1),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(
+                                color: Color(0xFFCBD5E1),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF6B1C9B),
+                                width: 1.5,
+                              ),
+                            ),
+                          ),
+                          onChanged: (val) {
+                            setModalState(() {
+                              searchQuery = val;
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      const Divider(height: 1, color: Color(0xFFF1F5F9)),
+
+                      // Categories List
+                      Flexible(
+                        child: filteredCategories.isEmpty
+                            ? Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 36),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.search_off_rounded,
+                                      size: 40,
+                                      color: Color(0xFF94A3B8),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'No categories found'.trData(context),
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF475569),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : ListView.separated(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                itemCount: filteredCategories.length,
+                                separatorBuilder: (_, __) =>
+                                    const Divider(height: 1, color: Color(0xFFF8FAFC)),
+                                itemBuilder: (context, idx) {
+                                  final cat = filteredCategories[idx];
+                                  final emoji = _getCategoryEmoji(cat);
+                                  final isSelected = cat == _selectedCategory;
+
+                                  return InkWell(
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedCategory = cat;
+                                      });
+                                      _onFormCriteriaChanged();
+                                      Navigator.of(bottomSheetContext).pop();
+                                    },
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 10,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? const Color(0xFFF3E8FF)
+                                            : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 38,
+                                            height: 38,
+                                            alignment: Alignment.center,
+                                            decoration: BoxDecoration(
+                                              color: isSelected
+                                                  ? Colors.white
+                                                  : const Color(0xFFF8FAFC),
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: isSelected
+                                                    ? const Color(0xFF6B1C9B)
+                                                        .withValues(alpha: 0.3)
+                                                    : const Color(0xFFE2E8F0),
+                                              ),
+                                            ),
+                                            child: Text(
+                                              emoji,
+                                              style: const TextStyle(fontSize: 19),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              DataTranslator.tr(context, cat),
+                                              style: TextStyle(
+                                                fontSize: 14.5,
+                                                fontWeight: isSelected
+                                                    ? FontWeight.w700
+                                                    : FontWeight.w500,
+                                                color: isSelected
+                                                    ? const Color(0xFF6B1C9B)
+                                                    : const Color(0xFF1E293B),
+                                              ),
+                                            ),
+                                          ),
+                                          if (isSelected)
+                                            const Icon(
+                                              Icons.check_circle_rounded,
+                                              color: Color(0xFF6B1C9B),
+                                              size: 20,
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         );
       },
     );

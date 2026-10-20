@@ -2095,44 +2095,49 @@ class _ArtistChatViewState extends State<ArtistChatView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Text(
-                    name.trData(context),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E1E1E),
-                    ),
-                  ),
-                  if (badge != null) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color:
-                            isFeatured
-                                ? const Color(0xFF5E227A)
-                                : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
                       child: Text(
-                        badge.trData(context),
-                        style: TextStyle(
-                          fontSize: 10,
+                        name.trData(context),
+                        style: const TextStyle(
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
+                          color: Color(0xFF1E1E1E),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (badge != null) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
                           color:
                               isFeatured
-                                  ? Colors.white
-                                  : const Color(0xFF64748B),
+                                  ? const Color(0xFF5E227A)
+                                  : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          badge.trData(context),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color:
+                                isFeatured
+                                    ? Colors.white
+                                    : const Color(0xFF64748B),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
               if (isCurrent)
                 Container(

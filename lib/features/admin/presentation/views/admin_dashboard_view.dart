@@ -54,12 +54,15 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   List<ListingPlanItem> _listingPlans = List.from(
     ApiService.defaultListingPlans,
   );
-  String _planTypeFilter = 'all';
+  // 0=Events, 1=Galleries, 2=Artists, 3=Chat, 4=Art Centres
+  int _listingPlanTypeTab = 0;
   Map<String, bool> _menuPermissions = {};
   List<Map<String, dynamic>> _users = [];
   bool _isLoadingUsers = false;
   String _userSearchQuery = '';
   String _userRoleFilter = 'all';
+  String _categorySearchQuery = '';
+  String _categoryTypeFilter = 'all';
 
   // About Us Page Management Controllers
   final TextEditingController _aboutTitleEnCtrl =
@@ -4703,54 +4706,55 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               ),
             ),
             if (_masterSubTab != 3)
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6A2777),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                icon: const Icon(Icons.add, size: 14, color: Colors.white),
-                label: Text(
-                  (_masterSubTab == 0
-                          ? 'New Category'
-                          : _masterSubTab == 1
-                          ? 'New Level'
-                          : 'New Location')
-                      .trData(context),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                    color: Colors.white,
-                  ),
-                ),
-                onPressed: () {
-                  if (_masterSubTab == 0) {
-                    _showCategoryDialog();
-                  } else if (_masterSubTab == 1) {
-                    _showExperienceLevelDialog();
-                  } else {
-                    _showLocationDialog();
-                  }
-                },
-              )
-            else
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (_masterSubTab == 0) ...[
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF6A2777),
+                        side: const BorderSide(
+                          color: Color(0xFF6A2777),
+                          width: 1.2,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      icon: const Icon(Icons.auto_awesome, size: 14),
+                      label: Text(
+                        'Seed All 50 Categories'.trData(context),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                      onPressed: () async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        final success = await sl<ApiService>().seedDefaultCategories();
+                        if (success) {
+                          _loadAllData();
+                          messenger.showSnackBar(
+                            const SnackBar(
+                              content: Text('All 50 art categories restored successfully!'),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF6A2777),
                       foregroundColor: Colors.white,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
+                        horizontal: 14,
                         vertical: 8,
                       ),
                       shape: RoundedRectangleBorder(
@@ -4759,61 +4763,53 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     ),
                     icon: const Icon(Icons.add, size: 14, color: Colors.white),
                     label: Text(
-                      'New Plan'.trData(context),
+                      (_masterSubTab == 0
+                              ? 'New Category'
+                              : _masterSubTab == 1
+                              ? 'New Level'
+                              : 'New Location')
+                          .trData(context),
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
                         color: Colors.white,
                       ),
                     ),
-                    onPressed: () => _showEditListingPlanDialog(),
-                  ),
-                  const SizedBox(width: 8),
-                  OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF6A2777),
-                      side: const BorderSide(
-                        color: Color(0xFF6A2777),
-                        width: 1.2,
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    icon: const Icon(Icons.refresh, size: 14),
-                    label: Text(
-                      'Refresh'.trData(context),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                    ),
-                    onPressed: () async {
-                      final plans = await sl<ApiService>().getListingPlans(
-                        forceRefresh: true,
-                      );
-                      if (mounted) {
-                        setState(() => _listingPlans = plans);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Listing plans refreshed from database'.trData(
-                                context,
-                              ),
-                            ),
-                            backgroundColor: const Color(0xFF6A2777),
-                            behavior: SnackBarBehavior.floating,
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
+                    onPressed: () {
+                      if (_masterSubTab == 0) {
+                        _showCategoryDialog();
+                      } else if (_masterSubTab == 1) {
+                        _showExperienceLevelDialog();
+                      } else {
+                        _showLocationDialog();
                       }
                     },
                   ),
                 ],
+              )
+            else
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF6A2777),
+                  side: const BorderSide(color: Color(0xFF6A2777), width: 1.2),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                icon: const Icon(Icons.refresh, size: 14),
+                label: Text('Refresh'.trData(context),
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+                onPressed: () async {
+                  final plans = await sl<ApiService>().getListingPlans(forceRefresh: true);
+                  if (mounted) {
+                    setState(() => _listingPlans = plans);
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text('Listing plans refreshed'.trData(context)),
+                      backgroundColor: const Color(0xFF6A2777),
+                      behavior: SnackBarBehavior.floating,
+                      duration: const Duration(seconds: 2),
+                    ));
+                  }
+                },
               ),
           ],
         ),
@@ -4893,26 +4889,112 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     );
   }
 
-  Widget _buildCategoriesMasterList() {
-    if (_categories.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 32),
-        child: Center(
-          child: Text(
-            'No categories configured.'.trData(context),
-            style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+  Widget _buildCategoryTypeFilterChip(String value, String label) {
+    final isSelected = _categoryTypeFilter == value;
+    return InkWell(
+      onTap: () => setState(() => _categoryTypeFilter = value),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF6A2777) : const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF6A2777) : const Color(0xFFE2E8F0),
           ),
         ),
-      );
-    }
+        child: Text(
+          label.trData(context),
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected ? Colors.white : const Color(0xFF475569),
+          ),
+        ),
+      ),
+    );
+  }
 
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _categories.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        final cat = _categories[index];
+  Widget _buildCategoriesMasterList() {
+    final filteredCategories = _categories.where((cat) {
+      if (_categoryTypeFilter != 'all') {
+        if (cat.type.toLowerCase() != _categoryTypeFilter.toLowerCase()) {
+          return false;
+        }
+      }
+      if (_categorySearchQuery.trim().isNotEmpty) {
+        final q = _categorySearchQuery.trim().toLowerCase();
+        final matchesName = cat.name.toLowerCase().contains(q) || cat.name.trData(context).toLowerCase().contains(q);
+        final matchesDesc = cat.description.toLowerCase().contains(q);
+        return matchesName || matchesDesc;
+      }
+      return true;
+    }).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Search & Filter Header
+        Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: TextField(
+            onChanged: (val) => setState(() => _categorySearchQuery = val),
+            decoration: InputDecoration(
+              hintText: 'Search categories by name...'.trData(context),
+              hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+              prefixIcon: const Icon(Icons.search, size: 18, color: Color(0xFF64748B)),
+              suffixIcon: _categorySearchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 16),
+                      onPressed: () => setState(() => _categorySearchQuery = ''),
+                    )
+                  : null,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            ),
+          ),
+        ),
+
+        // Scope Filter Chips
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildCategoryTypeFilterChip('all', 'All (${_categories.length})'),
+              const SizedBox(width: 6),
+              _buildCategoryTypeFilterChip('artist', 'Artists (${_categories.where((c) => c.type == 'artist').length})'),
+              const SizedBox(width: 6),
+              _buildCategoryTypeFilterChip('event', 'Events (${_categories.where((c) => c.type == 'event').length})'),
+              const SizedBox(width: 6),
+              _buildCategoryTypeFilterChip('general', 'General (${_categories.where((c) => c.type == 'general' || c.type.isEmpty).length})'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        if (filteredCategories.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
+            child: Center(
+              child: Text(
+                'No categories match your search.'.trData(context),
+                style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+              ),
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: filteredCategories.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              final cat = filteredCategories[index];
         return Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
@@ -5115,6 +5197,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           ),
         );
       },
+    ),
+      ],
     );
   }
 
@@ -5284,16 +5368,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     String selectedType = existing?.type ?? 'general';
 
     final presetEmojis = [
-      '🎨',
-      '✍️',
-      '🗿',
-      '💻',
-      '📷',
-      '🏺',
-      '🎭',
-      '🖌️',
-      '📐',
-      '🏛️',
+      '🎨', '📷', '🗿', '✏️', '💻', '🤖', '🏛️', '🎭',
+      '💃', '🎵', '🎬', '📹', '📚', '📜', '🖋️', '📐',
+      '👗', '🛋️', '📦', '🧶', '🧵', '🏺', '🖨️', '🖌️',
+      '🏙️', '🧱', '🩰', '💡', '🧠', '🔀', '📑', '🎮',
+      '🥽', '🎞️', '🗯️', '✍️', '💍', '🪟', '🪵', '⚙️',
+      '🎎', '🎼', '🎤', '🧪', '🏞️', '🌿', '👑',
     ];
 
     showDialog(
@@ -5502,6 +5582,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                       emojiCtrl.text.trim().isNotEmpty
                                           ? emojiCtrl.text.trim()
                                           : '🎨',
+                                  type: selectedType,
                                 );
                               }
                               _loadAllData();
@@ -6248,832 +6329,684 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     );
   }
 
+  static const List<Map<String, dynamic>> _planTypeTabs = [
+    {'type': 'all',        'label': 'All Plans',   'colorHex': 0xFF5E227A, 'icon': Icons.layers_outlined},
+    {'type': 'event',      'label': 'Events',      'colorHex': 0xFF6A2777, 'icon': Icons.event_available_rounded},
+    {'type': 'gallery',    'label': 'Galleries',   'colorHex': 0xFF0284C7, 'icon': Icons.museum_outlined},
+    {'type': 'artist',     'label': 'Artists',     'colorHex': 0xFF7C3AED, 'icon': Icons.palette_outlined},
+    {'type': 'chat',       'label': 'Chat',        'colorHex': 0xFF059669, 'icon': Icons.forum_rounded},
+    {'type': 'art_centre', 'label': 'Art Centres', 'colorHex': 0xFFD97706, 'icon': Icons.account_balance_outlined},
+  ];
+
+  bool _planMatchesTypeTab(ListingPlanItem p, String tabType) {
+    if (tabType == 'all') return true;
+    final t = p.itemType.toLowerCase();
+    if (tabType == 'art_centre') return t == 'art_centre' || t == 'center';
+    return t == tabType;
+  }
+
   Widget _buildListingPlansMasterList() {
-    final plansList = _listingPlans;
+    final currentTabType = _planTypeTabs[_listingPlanTypeTab]['type'] as String;
+    final currentColor = Color(_planTypeTabs[_listingPlanTypeTab]['colorHex'] as int);
+    final currentLabel = _planTypeTabs[_listingPlanTypeTab]['label'] as String;
 
-    if (plansList.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              Icons.workspace_premium_outlined,
-              size: 44,
-              color: Colors.grey.shade400,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'No listing plans created yet',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey.shade700,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Use the form above to add an event, gallery, chat, or artist plan.',
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      );
-    }
+    final filteredPlans = _listingPlans
+        .where((p) => _planMatchesTypeTab(p, currentTabType))
+        .toList()
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
-    final eventCount =
-        plansList.where((p) => p.itemType.toLowerCase() == 'event').length;
-    final galleryCount =
-        plansList.where((p) => p.itemType.toLowerCase() == 'gallery').length;
-    final chatCount =
-        plansList.where((p) => p.itemType.toLowerCase() == 'chat').length;
-    final artistCount =
-        plansList.where((p) => p.itemType.toLowerCase() == 'artist').length;
-    final artCentreCount =
-        plansList
-            .where(
-              (p) =>
-                  p.itemType.toLowerCase() == 'art_centre' ||
-                  p.itemType.toLowerCase() == 'center',
-            )
-            .length;
-
-    final filteredPlans =
-        _planTypeFilter == 'all'
-            ? plansList
-            : plansList.where((p) {
-              final t = p.itemType.toLowerCase();
-              if (_planTypeFilter == 'art_centre') {
-                return t == 'art_centre' || t == 'center';
-              }
-              return t == _planTypeFilter;
-            }).toList();
-
-    final filterTabs = [
-      {'key': 'all', 'label': 'All Plans', 'count': plansList.length},
-      {'key': 'event', 'label': 'Events', 'count': eventCount},
-      {'key': 'gallery', 'label': 'Galleries', 'count': galleryCount},
-      {'key': 'chat', 'label': 'Chat & Messaging', 'count': chatCount},
-      {'key': 'artist', 'label': 'Artists', 'count': artistCount},
-      {'key': 'art_centre', 'label': 'Art Centres', 'count': artCentreCount},
-    ];
+    // Duration buckets
+    final shortPlans     = filteredPlans.where((p) => p.durationDays <= 45).toList();
+    final threeMonthPlans = filteredPlans.where((p) => p.durationDays > 45 && p.durationDays < 150).toList();
+    final sixMonthPlans   = filteredPlans.where((p) => p.durationDays >= 150 && p.durationDays < 300).toList();
+    final twelveMonthPlans = filteredPlans.where((p) => p.durationDays >= 300 && p.durationDays < 1000).toList();
+    final permanentPlans  = filteredPlans.where((p) => p.durationDays >= 1000).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Category Filter Tabs (Wrap naturally without horizontal scrolling)
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children:
-                filterTabs.map((t) {
-                  final key = t['key'] as String;
-                  final label = t['label'] as String;
-                  final count = t['count'] as int;
-                  final isSelected = _planTypeFilter == key;
-                  return InkWell(
-                      onTap: () => setState(() => _planTypeFilter = key),
+        // ── Plan Type Tab Bar ──────────────────────────────────
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Row(
+            children: List.generate(_planTypeTabs.length, (i) {
+              final tab = _planTypeTabs[i];
+              final tabType = tab['type'] as String;
+              final tabLabel = tab['label'] as String;
+              final tabColor = Color(tab['colorHex'] as int);
+              final tabIcon = tab['icon'] as IconData;
+              final isSelected = _listingPlanTypeTab == i;
+              final count = _listingPlans.where((p) => _planMatchesTypeTab(p, tabType)).length;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: InkWell(
+                  onTap: () => setState(() => _listingPlanTypeTab = i),
+                  borderRadius: BorderRadius.circular(10),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected ? tabColor : Colors.white,
                       borderRadius: BorderRadius.circular(10),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color:
-                              isSelected
-                                  ? const Color(0xFF6A2777)
-                                  : Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color:
-                                isSelected
-                                    ? const Color(0xFF6A2777)
-                                    : const Color(0xFFCBD5E1),
-                            width: 1.2,
-                          ),
-                          boxShadow:
-                              isSelected
-                                  ? [
-                                    BoxShadow(
-                                      color: const Color(
-                                        0xFF6A2777,
-                                      ).withValues(alpha: 0.2),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ]
-                                  : null,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              label,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight:
-                                    isSelected
-                                        ? FontWeight.w700
-                                        : FontWeight.w600,
-                                color:
-                                    isSelected
-                                        ? Colors.white
-                                        : const Color(0xFF475569),
-                              ),
-                            ),
-                            const SizedBox(width: 5),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 1.5,
-                              ),
-                              decoration: BoxDecoration(
-                                color:
-                                    isSelected
-                                        ? Colors.white.withValues(alpha: 0.25)
-                                        : const Color(0xFFF1F5F9),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '$count',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color:
-                                      isSelected
-                                          ? Colors.white
-                                          : const Color(0xFF64748B),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                      border: Border.all(
+                        color: isSelected ? tabColor : const Color(0xFFCBD5E1),
+                        width: 1.5,
                       ),
-                    );
-                }).toList(),
+                      boxShadow: isSelected
+                          ? [BoxShadow(color: tabColor.withValues(alpha: 0.25), blurRadius: 8, offset: const Offset(0, 3))]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(tabIcon, size: 14,
+                            color: isSelected ? Colors.white : tabColor),
+                        const SizedBox(width: 6),
+                        Text(tabLabel,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: isSelected ? Colors.white : const Color(0xFF475569),
+                            )),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? Colors.white.withValues(alpha: 0.25)
+                                : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text('$count',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: isSelected ? Colors.white : const Color(0xFF64748B),
+                              )),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
           ),
         ),
+        const SizedBox(height: 14),
 
+        // ── Type Summary + New Plan Button ────────────────────
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: currentColor.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: currentColor.withValues(alpha: 0.18)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('$currentLabel Plans',
+                        style: const TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF0F172A))),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${filteredPlans.length} plan${filteredPlans.length == 1 ? '' : 's'} configured · Create 3-month, 6-month or 12-month plans',
+                      style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: currentColor,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                icon: const Icon(Icons.add, size: 14, color: Colors.white),
+                label: Text('New Plan',
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Colors.white)),
+                onPressed: () => _showEditListingPlanDialog(null, currentTabType),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // ── Duration-Grouped Plan Cards ───────────────────────
         if (filteredPlans.isEmpty)
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
+            padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 24),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
             child: Column(
               children: [
-                const Icon(
-                  Icons.filter_list_off_rounded,
-                  size: 36,
-                  color: Color(0xFF94A3B8),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'No plans in this category',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF475569),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Tap "New Listing Plan" above to create one.',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
-                ),
+                Icon(Icons.workspace_premium_outlined, size: 44, color: Colors.grey.shade400),
+                const SizedBox(height: 12),
+                Text('No $currentLabel plans yet',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
+                const SizedBox(height: 6),
+                Text('Tap "New Plan" above to create a 3-month, 6-month or 12-month plan for $currentLabel.',
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade500), textAlign: TextAlign.center),
               ],
             ),
           )
-        else
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: filteredPlans.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 16),
-            itemBuilder: (context, index) {
-              final plan = filteredPlans[index];
-              final isEvent = plan.itemType.toLowerCase() == 'event';
-              final isGallery = plan.itemType.toLowerCase() == 'gallery';
-              final isChat = plan.itemType.toLowerCase() == 'chat';
-              final isArtist = plan.itemType.toLowerCase() == 'artist';
-              final isArtCentre =
-                  plan.itemType.toLowerCase() == 'art_centre' ||
-                  plan.itemType.toLowerCase() == 'center';
-
-              final Color cardBorderColor =
-                  isEvent
-                      ? const Color(0xFFE9D5FF)
-                      : (isGallery
-                          ? const Color(0xFFBAE6FD)
-                          : (isChat
-                              ? const Color(0xFFA7F3D0)
-                              : (isArtist
-                                  ? const Color(0xFFDDD6FE)
-                                  : const Color(0xFFFDE68A))));
-
-              final Color iconBgColor =
-                  isEvent
-                      ? const Color(0xFFF3E8FF)
-                      : (isGallery
-                          ? const Color(0xFFE0F2FE)
-                          : (isChat
-                              ? const Color(0xFFECFDF5)
-                              : (isArtist
-                                  ? const Color(0xFFEDE9FE)
-                                  : const Color(0xFFFEF3C7))));
-
-              final Color iconColor =
-                  isEvent
-                      ? const Color(0xFF6A2777)
-                      : (isGallery
-                          ? const Color(0xFF0284C7)
-                          : (isChat
-                              ? const Color(0xFF059669)
-                              : (isArtist
-                                  ? const Color(0xFF7C3AED)
-                                  : const Color(0xFFD97706))));
-
-              final IconData planIcon =
-                  isEvent
-                      ? Icons.event_available_rounded
-                      : (isGallery
-                          ? Icons.museum_outlined
-                          : (isChat
-                              ? Icons.chat_bubble_outline_rounded
-                              : (isArtist
-                                  ? Icons.palette_outlined
-                                  : Icons.account_balance_outlined)));
-
-              final String typeLabel =
-                  isEvent
-                      ? 'Event Plan'
-                      : (isGallery
-                          ? 'Gallery Plan'
-                          : (isChat
-                              ? 'Chat Plan'
-                              : (isArtist
-                                  ? 'Artist Plan'
-                                  : (isArtCentre
-                                      ? 'Art Centre'
-                                      : plan.itemType.toUpperCase()))));
-
-              return Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: cardBorderColor, width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header row
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: iconBgColor,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(planIcon, color: iconColor, size: 24),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      plan.title,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                        color: Color(0xFF0F172A),
-                                        height: 1.25,
-                                      ),
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 7,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: iconBgColor,
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(
-                                        color: cardBorderColor,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      typeLabel,
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w800,
-                                        color: iconColor,
-                                        letterSpacing: 0.2,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 5),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 4,
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                children: [
-                                  Text(
-                                    plan.category,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF6A2777),
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 7,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color:
-                                          plan.isActive
-                                              ? const Color(0xFFECFDF5)
-                                              : const Color(0xFFF1F5F9),
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(
-                                        color:
-                                            plan.isActive
-                                                ? const Color(0xFFA7F3D0)
-                                                : const Color(0xFFCBD5E1),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          plan.isActive
-                                              ? Icons.check_circle_rounded
-                                              : Icons.visibility_off_outlined,
-                                          size: 11,
-                                          color:
-                                              plan.isActive
-                                                  ? const Color(0xFF059669)
-                                                  : const Color(0xFF64748B),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          plan.isActive
-                                              ? 'Active in App'
-                                              : 'Hidden',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w600,
-                                            color:
-                                                plan.isActive
-                                                    ? const Color(0xFF059669)
-                                                    : const Color(0xFF64748B),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  if (plan.badge.isNotEmpty)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 1.5,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFF1EBF7),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        plan.badge,
-                                        style: const TextStyle(
-                                          fontSize: 10.5,
-                                          fontWeight: FontWeight.w600,
-                                          color: Color(0xFF5E227A),
-                                        ),
-                                      ),
-                                    ),
-                                  if (plan.duration.isNotEmpty)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 7,
-                                        vertical: 1.5,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFEFF6FF),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: const Color(0xFFBFDBFE),
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(
-                                            Icons.timer_outlined,
-                                            size: 11,
-                                            color: Color(0xFF1D4ED8),
-                                          ),
-                                          const SizedBox(width: 3),
-                                          Text(
-                                            plan.duration,
-                                            style: const TextStyle(
-                                              fontSize: 10.5,
-                                              fontWeight: FontWeight.w600,
-                                              color: Color(0xFF1D4ED8),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            if (plan.description.isNotEmpty) ...[
-                              const SizedBox(height: 6),
-                              Text(
-                                plan.description,
-                                style: const TextStyle(
-                                  fontSize: 12.5,
-                                  color: Color(0xFF64748B),
-                                  height: 1.35,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                  const SizedBox(height: 14),
-
-                  // Price & Features Display (Responsive)
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isNarrow = constraints.maxWidth < 360;
-                      if (isNarrow) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 9,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF8FAFC),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: const Color(0xFFE2E8F0),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    'Listing Price',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF64748B),
-                                    ),
-                                  ),
-                                  Text(
-                                    plan.price,
-                                    style: const TextStyle(
-                                      fontSize: 19,
-                                      fontWeight: FontWeight.w900,
-                                      color: Color(0xFF1E293B),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'Included Features:',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF475569),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            for (final feat
-                                in (plan.features.isNotEmpty
-                                    ? plan.features
-                                    : plan.effectiveFeatures))
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 5),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Padding(
-                                      padding: EdgeInsets.only(top: 2),
-                                      child: Icon(
-                                        Icons.check_circle_rounded,
-                                        size: 14,
-                                        color: Color(0xFF6A2777),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        feat,
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                          color: Color(0xFF334155),
-                                          height: 1.3,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                          ],
-                        );
-                      }
-
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF8FAFC),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: const Color(0xFFE2E8F0),
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Listing Price',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xFF64748B),
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  plan.price,
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w900,
-                                    color: Color(0xFF1E293B),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Included Features:',
-                                  style: TextStyle(
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF475569),
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                for (final feat
-                                    in (plan.features.isNotEmpty
-                                        ? plan.features
-                                        : plan.effectiveFeatures))
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 5),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Padding(
-                                          padding: EdgeInsets.only(top: 2),
-                                          child: Icon(
-                                            Icons.check_circle_rounded,
-                                            size: 14,
-                                            color: Color(0xFF6A2777),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Expanded(
-                                          child: Text(
-                                            feat,
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w500,
-                                              color: Color(0xFF334155),
-                                              height: 1.3,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Bottom Action Bar
-                  Wrap(
-                    alignment: WrapAlignment.spaceBetween,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 8,
-                    runSpacing: 10,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          'Type: ${plan.itemType}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF64748B),
-                          ),
-                        ),
-                      ),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor:
-                                  plan.isActive
-                                      ? Colors.redAccent
-                                      : const Color(0xFF059669),
-                              side: BorderSide(
-                                color:
-                                    plan.isActive
-                                        ? Colors.redAccent.withValues(
-                                          alpha: 0.5,
-                                        )
-                                        : const Color(0xFFA7F3D0),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 7,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            icon: Icon(
-                              plan.isActive
-                                  ? Icons.visibility_off_outlined
-                                  : Icons.visibility_outlined,
-                              size: 14,
-                            ),
-                            label: Text(
-                              plan.isActive ? 'Hide' : 'Activate',
-                              style: const TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            onPressed: () async {
-                              final updated = plan.copyWith(
-                                isActive: !plan.isActive,
-                              );
-                              await sl<ApiService>().updateListingPlan(
-                                id: updated.id,
-                                itemType: updated.itemType,
-                                title: updated.title,
-                                category: updated.category,
-                                badge: updated.badge,
-                                price: updated.price,
-                                description: updated.description,
-                                features:
-                                    updated.features.isNotEmpty
-                                        ? updated.features
-                                        : updated.effectiveFeatures,
-                                buttonText: updated.buttonText,
-                                isActive: updated.isActive,
-                                sortOrder: updated.sortOrder,
-                                duration: updated.duration,
-                                durationDays: updated.durationDays,
-                              );
-                              final fresh = await sl<ApiService>()
-                                  .getListingPlans(forceRefresh: true);
-                              if (mounted) {
-                                setState(() => _listingPlans = fresh);
-                              }
-                            },
-                          ),
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF6A2777),
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 7,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            icon: const Icon(
-                              Icons.edit_note_rounded,
-                              size: 16,
-                              color: Colors.white,
-                            ),
-                            label: const Text(
-                              'Edit Plan',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                                color: Colors.white,
-                              ),
-                            ),
-                            onPressed: () => _showEditListingPlanDialog(plan),
-                          ),
-                          if (plan.id != null)
-                            IconButton(
-                              tooltip: 'Delete Plan',
-                              icon: const Icon(
-                                Icons.delete_outline_rounded,
-                                size: 17,
-                                color: Colors.redAccent,
-                              ),
-                              style: IconButton.styleFrom(
-                                backgroundColor: const Color(0xFFFEF2F2),
-                                padding: const EdgeInsets.all(7),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  side: const BorderSide(
-                                    color: Color(0xFFFECACA),
-                                  ),
-                                ),
-                              ),
-                              onPressed: () => _confirmDeleteListingPlan(plan),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
+        else ...[
+          if (shortPlans.isNotEmpty) ...[
+            _buildPlanDurationSection('Monthly / Short-Term Plans', Icons.calendar_today_rounded, currentColor, shortPlans),
+            const SizedBox(height: 10),
+          ],
+          if (threeMonthPlans.isNotEmpty) ...[
+            _buildPlanDurationSection('3-Month Plans (90 Days)', Icons.date_range_rounded, currentColor, threeMonthPlans),
+            const SizedBox(height: 10),
+          ],
+          if (sixMonthPlans.isNotEmpty) ...[
+            _buildPlanDurationSection('6-Month Plans (180 Days)', Icons.event_note_rounded, currentColor, sixMonthPlans),
+            const SizedBox(height: 10),
+          ],
+          if (twelveMonthPlans.isNotEmpty) ...[
+            _buildPlanDurationSection('12-Month Plans (1 Year)', Icons.calendar_month_rounded, currentColor, twelveMonthPlans),
+            const SizedBox(height: 10),
+          ],
+          if (permanentPlans.isNotEmpty) ...[
+            _buildPlanDurationSection('Permanent / Lifetime Plans', Icons.all_inclusive_rounded, currentColor, permanentPlans),
+          ],
+        ],
       ],
     );
   }
+
+  Widget _buildPlanDurationSection(
+      String title, IconData icon, Color color, List<ListingPlanItem> plans) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Section header
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: color.withValues(alpha: 0.18)),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 8),
+              Text(title,
+                  style: const TextStyle(
+                      fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF334155))),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6)),
+                child: Text('${plans.length} plan${plans.length == 1 ? '' : 's'}',
+                    style: TextStyle(
+                        fontSize: 10, fontWeight: FontWeight.w700, color: color)),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        for (final plan in plans) ...[
+          _buildAdminListingPlanCard(plan, color),
+          const SizedBox(height: 12),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildAdminListingPlanCard(ListingPlanItem plan, Color accentColor) {
+    final isEvent = plan.itemType.toLowerCase() == 'event';
+    final isGallery = plan.itemType.toLowerCase() == 'gallery';
+    final isChat = plan.itemType.toLowerCase() == 'chat';
+    final isArtist = plan.itemType.toLowerCase() == 'artist';
+    final isArtCentre =
+        plan.itemType.toLowerCase() == 'art_centre' ||
+        plan.itemType.toLowerCase() == 'center';
+
+    final Color cardBorderColor =
+        isEvent ? const Color(0xFFE9D5FF)
+        : (isGallery ? const Color(0xFFBAE6FD)
+        : (isChat ? const Color(0xFFA7F3D0)
+        : (isArtist ? const Color(0xFFDDD6FE)
+        : const Color(0xFFFDE68A))));
+    final Color iconBgColor =
+        isEvent ? const Color(0xFFF3E8FF)
+        : (isGallery ? const Color(0xFFE0F2FE)
+        : (isChat ? const Color(0xFFECFDF5)
+        : (isArtist ? const Color(0xFFEDE9FE)
+        : const Color(0xFFFEF3C7))));
+    final Color iconColor =
+        isEvent ? const Color(0xFF6A2777)
+        : (isGallery ? const Color(0xFF0284C7)
+        : (isChat ? const Color(0xFF059669)
+        : (isArtist ? const Color(0xFF7C3AED)
+        : const Color(0xFFD97706))));
+    final IconData planIcon =
+        isEvent ? Icons.event_available_rounded
+        : (isGallery ? Icons.museum_outlined
+        : (isChat ? Icons.chat_bubble_outline_rounded
+        : (isArtist ? Icons.palette_outlined
+        : Icons.account_balance_outlined)));
+    final String typeLabel =
+        isEvent ? 'Event Plan'
+        : (isGallery ? 'Gallery Plan'
+        : (isChat ? 'Chat Plan'
+        : (isArtist ? 'Artist Plan'
+        : (isArtCentre ? 'Art Centre' : plan.itemType.toUpperCase()))));
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cardBorderColor, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                    color: iconBgColor, borderRadius: BorderRadius.circular(10)),
+                child: Icon(planIcon, color: iconColor, size: 24),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(plan.title,
+                              style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF0F172A),
+                                  height: 1.25)),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: iconBgColor,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: cardBorderColor),
+                          ),
+                          child: Text(typeLabel,
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: iconColor,
+                                  letterSpacing: 0.2)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(plan.category,
+                            style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF6A2777))),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: plan.isActive
+                                ? const Color(0xFFECFDF5)
+                                : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: plan.isActive
+                                  ? const Color(0xFFA7F3D0)
+                                  : const Color(0xFFCBD5E1),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                plan.isActive
+                                    ? Icons.check_circle_rounded
+                                    : Icons.visibility_off_outlined,
+                                size: 11,
+                                color: plan.isActive
+                                    ? const Color(0xFF059669)
+                                    : const Color(0xFF64748B),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                plan.isActive ? 'Active in App' : 'Hidden',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: plan.isActive
+                                      ? const Color(0xFF059669)
+                                      : const Color(0xFF64748B),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (plan.badge.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                            decoration: BoxDecoration(
+                                color: const Color(0xFFF1EBF7),
+                                borderRadius: BorderRadius.circular(8)),
+                            child: Text(plan.badge,
+                                style: const TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF5E227A))),
+                          ),
+                        if (plan.duration.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: const Color(0xFFBFDBFE)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.timer_outlined,
+                                    size: 11, color: Color(0xFF1D4ED8)),
+                                const SizedBox(width: 3),
+                                Text(plan.duration,
+                                    style: const TextStyle(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF1D4ED8))),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (plan.description.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(plan.description,
+                          style: const TextStyle(
+                              fontSize: 12.5,
+                              color: Color(0xFF64748B),
+                              height: 1.35)),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          const SizedBox(height: 14),
+
+          // Price + Features
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 360;
+              if (isNarrow) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Listing Price',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF64748B))),
+                          Text(plan.price,
+                              style: const TextStyle(
+                                  fontSize: 19,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFF1E293B))),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text('Included Features:',
+                        style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF475569))),
+                    const SizedBox(height: 6),
+                    for (final feat in (plan.features.isNotEmpty ? plan.features : plan.effectiveFeatures))
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 5),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.only(top: 2),
+                              child: Icon(Icons.check_circle_rounded,
+                                  size: 14, color: Color(0xFF6A2777)),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(feat,
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xFF334155),
+                                      height: 1.3)),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                );
+              }
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Listing Price',
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF64748B))),
+                        const SizedBox(height: 2),
+                        Text(plan.price,
+                            style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF1E293B))),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Included Features:',
+                            style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF475569))),
+                        const SizedBox(height: 6),
+                        for (final feat in (plan.features.isNotEmpty ? plan.features : plan.effectiveFeatures))
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 5),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Padding(
+                                  padding: EdgeInsets.only(top: 2),
+                                  child: Icon(Icons.check_circle_rounded,
+                                      size: 14, color: Color(0xFF6A2777)),
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(feat,
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: Color(0xFF334155),
+                                          height: 1.3)),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+
+          // Action Bar
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 10,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(6)),
+                child: Text('Type: ${plan.itemType}',
+                    style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF64748B))),
+              ),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: plan.isActive
+                          ? Colors.redAccent
+                          : const Color(0xFF059669),
+                      side: BorderSide(
+                        color: plan.isActive
+                            ? Colors.redAccent.withValues(alpha: 0.5)
+                            : const Color(0xFFA7F3D0),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: Icon(
+                        plan.isActive
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                        size: 14),
+                    label: Text(
+                        plan.isActive ? 'Hide' : 'Activate',
+                        style: const TextStyle(
+                            fontSize: 11.5, fontWeight: FontWeight.w600)),
+                    onPressed: () async {
+                      final updated = plan.copyWith(isActive: !plan.isActive);
+                      await sl<ApiService>().updateListingPlan(
+                        id: updated.id,
+                        itemType: updated.itemType,
+                        title: updated.title,
+                        category: updated.category,
+                        badge: updated.badge,
+                        price: updated.price,
+                        description: updated.description,
+                        features: updated.features.isNotEmpty ? updated.features : updated.effectiveFeatures,
+                        buttonText: updated.buttonText,
+                        isActive: updated.isActive,
+                        sortOrder: updated.sortOrder,
+                        duration: updated.duration,
+                        durationDays: updated.durationDays,
+                      );
+                      final fresh = await sl<ApiService>().getListingPlans(forceRefresh: true);
+                      if (mounted) setState(() => _listingPlans = fresh);
+                    },
+                  ),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6A2777),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.edit_note_rounded, size: 16, color: Colors.white),
+                    label: const Text('Edit Plan',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
+                    onPressed: () => _showEditListingPlanDialog(plan),
+                  ),
+                  if (plan.id != null)
+                    IconButton(
+                      tooltip: 'Delete Plan',
+                      icon: const Icon(Icons.delete_outline_rounded,
+                          size: 17, color: Colors.redAccent),
+                      style: IconButton.styleFrom(
+                        backgroundColor: const Color(0xFFFEF2F2),
+                        padding: const EdgeInsets.all(7),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: const BorderSide(color: Color(0xFFFECACA)),
+                        ),
+                      ),
+                      onPressed: () => _confirmDeleteListingPlan(plan),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
 
   void _confirmDeleteListingPlan(ListingPlanItem plan) {
     if (plan.id == null) return;
@@ -8002,9 +7935,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     );
   }
 
-  void _showEditListingPlanDialog([ListingPlanItem? plan]) {
+  void _showEditListingPlanDialog([ListingPlanItem? plan, String? defaultItemType]) {
     final isEditing = plan != null;
-    String selectedItemType = plan?.itemType ?? 'event';
+    String selectedItemType = plan?.itemType ??
+        (defaultItemType == null || defaultItemType == 'all' ? 'event' : defaultItemType);
     final titleCtrl = TextEditingController(text: plan?.title ?? '');
     final initialCat =
         plan?.category ??
@@ -9185,7 +9119,134 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             );
                           },
                         ),
-                        const SizedBox(height: 14),
+                        // Duration Presets (1-Click Selector for 3, 6, 12 Months)
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.history_toggle_off_rounded,
+                              size: 15,
+                              color: Color(0xFF6A2777),
+                            ),
+                            const SizedBox(width: 6),
+                            const Text(
+                              'Quick Duration Presets:',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF334155),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          child: Row(
+                            children: [
+                              {
+                                'label': '1 Month (30d)',
+                                'val': '30 Days',
+                                'badge': 'Standard',
+                                'titleSuffix': '(1 Month)',
+                              },
+                              {
+                                'label': '3 Months (90d)',
+                                'val': '90 Days (3 Months)',
+                                'badge': 'Special Offer',
+                                'titleSuffix': '(3 Months)',
+                              },
+                              {
+                                'label': '6 Months (180d)',
+                                'val': '180 Days (6 Months)',
+                                'badge': 'Save 25%',
+                                'titleSuffix': '(6 Months)',
+                              },
+                              {
+                                'label': '12 Months (1 Year)',
+                                'val': '1 Year (365 Days)',
+                                'badge': 'Best Value',
+                                'titleSuffix': '(12 Months)',
+                              },
+                              if (selectedItemType == 'artist')
+                                {
+                                  'label': 'Permanent Free',
+                                  'val': 'Permanent Free Profile',
+                                  'badge': 'Free',
+                                  'titleSuffix': '',
+                                },
+                            ].map((preset) {
+                              final isSel = durationCtrl.text.trim().toLowerCase() ==
+                                      preset['val']!.toLowerCase() ||
+                                  (preset['val'] == '90 Days (3 Months)' &&
+                                      durationCtrl.text.contains('90')) ||
+                                  (preset['val'] == '180 Days (6 Months)' &&
+                                      durationCtrl.text.contains('180')) ||
+                                  (preset['val'] == '1 Year (365 Days)' &&
+                                      (durationCtrl.text.contains('365') ||
+                                          durationCtrl.text.contains('1 Year')));
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 6),
+                                child: InkWell(
+                                  onTap: () {
+                                    setModalState(() {
+                                      durationCtrl.text = preset['val']!;
+                                      badgeCtrl.text = preset['badge']!;
+                                      if (titleCtrl.text.isEmpty ||
+                                          titleCtrl.text.contains('(')) {
+                                        final base = selectedItemType == 'event'
+                                            ? 'Event Showcase'
+                                            : (selectedItemType == 'gallery'
+                                                ? 'Gallery Showcase'
+                                                : (selectedItemType == 'chat'
+                                                    ? 'Pro Artist Chat'
+                                                    : (selectedItemType == 'art_centre'
+                                                        ? 'Art Centre Partner'
+                                                        : 'Artist Portfolio')));
+                                        final suffix = preset['titleSuffix']!;
+                                        titleCtrl.text = suffix.isNotEmpty
+                                            ? '$base $suffix'
+                                            : base;
+                                      }
+                                    });
+                                  },
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isSel
+                                          ? const Color(0xFF6A2777)
+                                          : const Color(0xFFF8FAFC),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: isSel
+                                            ? const Color(0xFF6A2777)
+                                            : const Color(0xFFCBD5E1),
+                                        width: isSel ? 1.4 : 1.0,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      preset['label']!,
+                                      style: TextStyle(
+                                        fontSize: 11.5,
+                                        fontWeight: isSel
+                                            ? FontWeight.w700
+                                            : FontWeight.w600,
+                                        color: isSel
+                                            ? Colors.white
+                                            : const Color(0xFF334155),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
 
                         // Duration / Validity Configuration
                         _buildFormLabel('Duration / Validity Period *'),

@@ -359,7 +359,44 @@ class _AboutUsViewState extends State<AboutUsView> {
                       height: 1.65,
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 32),
+
+                  // Platform Introduction button (Re-review the 4 key points anytime)
+                  Center(
+                    child: OutlinedButton.icon(
+                      onPressed: () => context.push(RouteNames.onboarding),
+                      icon: const Icon(
+                        Icons.auto_awesome,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                      label: Text(
+                        isAr
+                            ? 'عرض جولة المنصة (النقاط الأربع)'
+                            : 'View Platform Introduction (4 Key Points)',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.45),
+                          width: 1.2,
+                        ),
+                        backgroundColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 22,
+                          vertical: 14,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 36),
                 ],
               ),
             ),

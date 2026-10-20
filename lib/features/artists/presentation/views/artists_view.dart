@@ -31,7 +31,13 @@ class _ArtistsViewState extends State<ArtistsView> {
   final GlobalKey _selectorKey = GlobalKey();
   List<ArtistModel> _allArtists = [];
   bool _isLoading = true;
-  List<CategoryInfo> _categories = sl<ApiService>().cachedCategories ?? [];
+  List<CategoryInfo> _categories =
+      (sl<ApiService>().cachedCategories != null &&
+              sl<ApiService>().cachedCategories!.isNotEmpty)
+          ? sl<ApiService>().cachedCategories!
+          : ArtistModel.categoryList;
+  final TextEditingController _categorySearchController = TextEditingController();
+  String _categoryFilterQuery = '';
   final Set<String> _favoritedArtistIds = {};
   final Set<String> _followedArtistIds = {};
   StreamSubscription<List<ArtistModel>>? _artistsSub;
@@ -175,6 +181,7 @@ class _ArtistsViewState extends State<ArtistsView> {
     _catSub?.cancel();
     _authSub?.cancel();
     _hideCategoryOverlay();
+    _categorySearchController.dispose();
     super.dispose();
   }
 
@@ -510,6 +517,7 @@ class _ArtistsViewState extends State<ArtistsView> {
   }
 
   // Select a Category Field
+  // Select a Category Field
   Widget _buildCategorySelectorField() {
     return Container(
       key: _selectorKey,
@@ -555,6 +563,24 @@ class _ArtistsViewState extends State<ArtistsView> {
                   ),
                 ),
               ),
+              if (_selectedCategory != null)
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    setState(() {
+                      _selectedCategory = null;
+                    });
+                    _hideCategoryOverlay();
+                  },
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 6.0),
+                    child: Icon(
+                      Icons.close,
+                      color: Color(0xFF5F6368),
+                      size: 18,
+                    ),
+                  ),
+                ),
               Icon(
                 _isCategoryListExpanded
                     ? Icons.keyboard_arrow_up
@@ -569,7 +595,7 @@ class _ArtistsViewState extends State<ArtistsView> {
     );
   }
 
-  // Floating Auto-Adjusting Category Popup
+  // Floating Auto-Adjusting Category Popup with Instant Search
   void _showCategoryOverlay() {
     _hideCategoryOverlay();
 
@@ -583,11 +609,8 @@ class _ArtistsViewState extends State<ArtistsView> {
     final screenHeight = mediaQuery.size.height;
     final screenWidth = mediaQuery.size.width;
 
-    // Compact dynamic popup height (approx 38px per item)
-    final double popupHeight = (_categories.length * 38.0 + 8.0).clamp(
-      100.0,
-      245.0,
-    );
+    // Height tailored for comfortable scrolling through all 50 categories
+    final double popupHeight = (screenHeight * 0.44).clamp(280.0, 360.0);
 
     final double spaceBelow =
         screenHeight - (offset.dy + size.height) - mediaQuery.padding.bottom;
@@ -598,11 +621,11 @@ class _ArtistsViewState extends State<ArtistsView> {
 
     final double topPosition =
         showAbove
-            ? (offset.dy - popupHeight - 2).clamp(
+            ? (offset.dy - popupHeight - 4).clamp(
               mediaQuery.padding.top + 8.0,
               screenHeight - popupHeight,
             )
-            : (offset.dy + size.height + 2).clamp(
+            : (offset.dy + size.height + 4).clamp(
               0.0,
               screenHeight - popupHeight - mediaQuery.padding.bottom,
             );
@@ -619,7 +642,7 @@ class _ArtistsViewState extends State<ArtistsView> {
                 child: Container(color: Colors.transparent),
               ),
             ),
-            // Floating Auto-Adjusting Overlay Card (Matching media_1787997749795.png)
+            // Floating Auto-Adjusting Overlay Card
             Positioned(
               left: offset.dx.clamp(
                 16.0,
@@ -630,106 +653,343 @@ class _ArtistsViewState extends State<ArtistsView> {
               height: popupHeight,
               child: Material(
                 color: Colors.transparent,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.black.withValues(alpha: 0.18),
-                      width: 1.0,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.12),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: ListView.separated(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      shrinkWrap: true,
-                      itemCount: _categories.length,
-                      separatorBuilder:
-                          (context, index) => const Divider(
-                            height: 1,
-                            thickness: 1,
-                            color: Color(0xFFF1F5F9),
-                          ),
-                      itemBuilder: (context, index) {
-                        final cat = _categories[index];
-                        final count =
-                            _allArtists.where((a) {
-                              final catLow = cat.name.toLowerCase();
-                              final aLow = a.category.toLowerCase();
-                              return aLow.contains(catLow) ||
-                                  catLow.contains(aLow);
-                            }).length;
-                        final isSelected = _selectedCategory == cat.name;
+                child: StatefulBuilder(
+                  builder: (context, setOverlayState) {
+                    final isAr =
+                        Localizations.localeOf(context).languageCode == 'ar';
+                    final query = _categoryFilterQuery.trim().toLowerCase();
+                    final filteredCategories =
+                        query.isEmpty
+                            ? _categories
+                            : _categories.where((c) {
+                              final nameEn = c.name.toLowerCase();
+                              final nameAr =
+                                  DataTranslator.tr(
+                                    context,
+                                    c.name,
+                                  ).toLowerCase();
+                              return nameEn.contains(query) ||
+                                  nameAr.contains(query);
+                            }).toList();
 
-                        return InkWell(
-                          onTap: () {
-                            setState(() {
-                              _selectedCategory = isSelected ? null : cat.name;
-                            });
-                            _hideCategoryOverlay();
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14.0,
-                              vertical: 8.5,
-                            ),
-                            child: Row(
-                              children: [
-                                Text(
-                                  cat.emoji,
-                                  style: const TextStyle(fontSize: 15),
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: Colors.black.withValues(alpha: 0.16),
+                          width: 1.0,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 18,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Column(
+                          children: [
+                            // 1. Search Bar inside Category Overlay
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 7,
+                              ),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFAFBFD),
+                                border: Border(
+                                  bottom: BorderSide(
+                                    color: Color(0xFFEDF2F7),
+                                    width: 1.0,
+                                  ),
                                 ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    DataTranslator.tr(context, cat.name),
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight:
-                                          isSelected
-                                              ? FontWeight.w700
-                                              : FontWeight.w500,
-                                      color:
-                                          isSelected
-                                              ? const Color(0xFF5E227A)
-                                              : const Color(0xFF1E1E1E),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.search,
+                                    size: 18,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _categorySearchController,
+                                      style: const TextStyle(
+                                        fontSize: 13.5,
+                                        color: Color(0xFF1E293B),
+                                      ),
+                                      decoration: InputDecoration(
+                                        hintText:
+                                            isAr
+                                                ? 'ابحث في 50 فئة فنية...'
+                                                : 'Search 50 art categories...',
+                                        hintStyle: const TextStyle(
+                                          fontSize: 13,
+                                          color: Color(0xFF94A3B8),
+                                        ),
+                                        isDense: true,
+                                        border: InputBorder.none,
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              vertical: 4,
+                                            ),
+                                      ),
+                                      onChanged: (val) {
+                                        setOverlayState(() {
+                                          _categoryFilterQuery = val;
+                                        });
+                                      },
                                     ),
                                   ),
-                                ),
-                                Text(
-                                  Localizations.localeOf(
-                                            context,
-                                          ).languageCode ==
-                                          'ar'
-                                      ? '$count فنان'
-                                      : '$count artists',
-                                  style: TextStyle(
-                                    fontSize: 12.5,
-                                    color:
-                                        isSelected
-                                            ? const Color(0xFF5E227A)
-                                            : const Color(0xFF64748B),
-                                    fontWeight:
-                                        isSelected
-                                            ? FontWeight.w600
-                                            : FontWeight.w400,
-                                  ),
-                                ),
-                              ],
+                                  if (_categoryFilterQuery.isNotEmpty)
+                                    GestureDetector(
+                                      onTap: () {
+                                        setOverlayState(() {
+                                          _categorySearchController.clear();
+                                          _categoryFilterQuery = '';
+                                        });
+                                      },
+                                      child: const Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 4.0,
+                                        ),
+                                        child: Icon(
+                                          Icons.close,
+                                          size: 16,
+                                          color: Color(0xFF94A3B8),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+
+                            // 2. Categories Scrollable List
+                            Expanded(
+                              child:
+                                  filteredCategories.isEmpty
+                                      ? Center(
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 20,
+                                          ),
+                                          child: Text(
+                                            isAr
+                                                ? 'لا توجد فئات مطابقة'
+                                                : 'No matching categories',
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              color: Color(0xFF94A3B8),
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                      : ListView.separated(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 2,
+                                        ),
+                                        itemCount:
+                                            query.isEmpty
+                                                ? filteredCategories.length + 1
+                                                : filteredCategories.length,
+                                        separatorBuilder:
+                                            (context, index) => const Divider(
+                                              height: 1,
+                                              thickness: 1,
+                                              color: Color(0xFFF1F5F9),
+                                            ),
+                                        itemBuilder: (context, index) {
+                                          // "All Categories" option when not searching
+                                          if (query.isEmpty && index == 0) {
+                                            final isAllSelected =
+                                                _selectedCategory == null;
+                                            return InkWell(
+                                              onTap: () {
+                                                setState(() {
+                                                  _selectedCategory = null;
+                                                });
+                                                _hideCategoryOverlay();
+                                              },
+                                              child: Container(
+                                                color:
+                                                    isAllSelected
+                                                        ? const Color(
+                                                          0xFFF7EEFA,
+                                                        )
+                                                        : Colors.transparent,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 14.0,
+                                                      vertical: 9.0,
+                                                    ),
+                                                child: Row(
+                                                  children: [
+                                                    const Text(
+                                                      '🎨',
+                                                      style: TextStyle(
+                                                        fontSize: 15,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 10),
+                                                    Expanded(
+                                                      child: Text(
+                                                        isAr
+                                                            ? 'جميع الفئات (الكل)'
+                                                            : 'All Categories',
+                                                        style: TextStyle(
+                                                          fontSize: 13.5,
+                                                          fontWeight:
+                                                              isAllSelected
+                                                                  ? FontWeight
+                                                                      .w700
+                                                                  : FontWeight
+                                                                      .w500,
+                                                          color:
+                                                              isAllSelected
+                                                                  ? const Color(
+                                                                    0xFF5E227A,
+                                                                  )
+                                                                  : const Color(
+                                                                    0xFF1E1E1E,
+                                                                  ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      isAr
+                                                          ? '${_allArtists.length} فنان'
+                                                          : '${_allArtists.length} artists',
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        color:
+                                                            isAllSelected
+                                                                ? const Color(
+                                                                  0xFF5E227A,
+                                                                )
+                                                                : const Color(
+                                                                  0xFF64748B,
+                                                                ),
+                                                        fontWeight:
+                                                            isAllSelected
+                                                                ? FontWeight
+                                                                    .w600
+                                                                : FontWeight
+                                                                    .w400,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          }
+
+                                          final cat =
+                                              query.isEmpty
+                                                  ? filteredCategories[index -
+                                                      1]
+                                                  : filteredCategories[index];
+                                          final count =
+                                              _allArtists.where((a) {
+                                                final catLow =
+                                                    cat.name.toLowerCase();
+                                                final aLow =
+                                                    a.category.toLowerCase();
+                                                return aLow.contains(catLow) ||
+                                                    catLow.contains(aLow);
+                                              }).length;
+                                          final isSelected =
+                                              _selectedCategory == cat.name;
+
+                                          return InkWell(
+                                            onTap: () {
+                                              setState(() {
+                                                _selectedCategory =
+                                                    isSelected
+                                                        ? null
+                                                        : cat.name;
+                                              });
+                                              _hideCategoryOverlay();
+                                            },
+                                            child: Container(
+                                              color:
+                                                  isSelected
+                                                      ? const Color(0xFFF7EEFA)
+                                                      : Colors.transparent,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 14.0,
+                                                    vertical: 8.5,
+                                                  ),
+                                              child: Row(
+                                                children: [
+                                                  Text(
+                                                    cat.emoji,
+                                                    style: const TextStyle(
+                                                      fontSize: 15,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 10),
+                                                  Expanded(
+                                                    child: Text(
+                                                      DataTranslator.tr(
+                                                        context,
+                                                        cat.name,
+                                                      ),
+                                                      style: TextStyle(
+                                                        fontSize: 13.5,
+                                                        fontWeight:
+                                                            isSelected
+                                                                ? FontWeight
+                                                                    .w700
+                                                                : FontWeight
+                                                                    .w500,
+                                                        color:
+                                                            isSelected
+                                                                ? const Color(
+                                                                  0xFF5E227A,
+                                                                )
+                                                                : const Color(
+                                                                  0xFF1E1E1E,
+                                                                ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    isAr
+                                                        ? '$count فنان'
+                                                        : '$count artists',
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color:
+                                                          isSelected
+                                                              ? const Color(
+                                                                0xFF5E227A,
+                                                              )
+                                                              : const Color(
+                                                                0xFF64748B,
+                                                              ),
+                                                      fontWeight:
+                                                          isSelected
+                                                              ? FontWeight.w600
+                                                              : FontWeight.w400,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -745,6 +1005,8 @@ class _ArtistsViewState extends State<ArtistsView> {
   }
 
   void _hideCategoryOverlay() {
+    _categorySearchController.clear();
+    _categoryFilterQuery = '';
     if (_categoryOverlayEntry != null) {
       _categoryOverlayEntry?.remove();
       _categoryOverlayEntry = null;

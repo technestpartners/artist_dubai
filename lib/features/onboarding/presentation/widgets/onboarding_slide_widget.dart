@@ -43,15 +43,15 @@ class OnboardingSlideWidget extends StatelessWidget {
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.black.withValues(
-                                        alpha: 0.35,
+                                        alpha: 0.25,
                                       ),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 8),
+                                      blurRadius: 18,
+                                      offset: const Offset(0, 6),
                                     ),
                                     BoxShadow(
                                       color: const Color(
-                                        0xFF6B1C9B,
-                                      ).withValues(alpha: 0.35),
+                                        0xFFE879F9,
+                                      ).withValues(alpha: 0.45),
                                       blurRadius: 24,
                                       spreadRadius: 2,
                                     ),
@@ -86,7 +86,7 @@ class OnboardingSlideWidget extends StatelessWidget {
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: rh.sp(
-                                isShort ? 18 : (rh.isCompact ? 19 : 22),
+                                isShort ? 19 : (rh.isCompact ? 20 : 23),
                               ),
                               fontWeight: FontWeight.w700,
                               letterSpacing: -0.2,
@@ -96,7 +96,7 @@ class OnboardingSlideWidget extends StatelessWidget {
                         ),
                       ),
                     ),
-                    SizedBox(height: isShort ? 10 : 16),
+                    SizedBox(height: isShort ? 12 : 18),
 
                     // Description
                     Center(
@@ -106,11 +106,11 @@ class OnboardingSlideWidget extends StatelessWidget {
                           item.description.trData(context),
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: const Color(0xFFE0DBE5),
+                            color: const Color(0xFFF1E8FB),
                             fontSize: rh.sp(
-                              isShort ? 13 : (rh.isCompact ? 14 : 16),
+                              isShort ? 13.5 : (rh.isCompact ? 14.5 : 16.5),
                             ),
-                            height: 1.45,
+                            height: 1.5,
                             fontWeight: FontWeight.w400,
                           ),
                         ),

@@ -67,7 +67,11 @@ class _OnboardingViewState extends State<OnboardingView> {
       await storage.setBool(StorageServiceImpl.keyHasCompletedOnboarding, true);
     } catch (_) {}
     if (mounted) {
-      context.go(RouteNames.home);
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go(RouteNames.home);
+      }
     }
   }
 
@@ -80,16 +84,14 @@ class _OnboardingViewState extends State<OnboardingView> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF5A2575), // Top-left purple glow
-              Color(0xFF2E0D3E),
-              Color(0xFF030104), // Pure deep pitch black center
-              Color(0xFF1E082B),
-              Color(0xFF5E227A), // Bottom-right purple glow
+              Color(0xFF6B1C9B), // Top vibrant purple from original design
+              Color(0xFF58209B), // Mid royal purple
+              Color(0xFF4D249E), // Bottom rich purple
             ],
-            stops: [0.0, 0.28, 0.55, 0.80, 1.0],
+            stops: [0.0, 0.48, 1.0],
           ),
         ),
         child: SafeArea(
@@ -193,16 +195,29 @@ class _OnboardingViewState extends State<OnboardingView> {
                 children: List.generate(_slides.length, (index) {
                   final isActive = _currentIndex == index;
                   return AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutCubic,
                     margin: const EdgeInsets.symmetric(horizontal: 4.5),
-                    width: 7.5,
-                    height: 7.5,
+                    width: isActive ? 24.0 : 8.0,
+                    height: 8.0,
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
+                      borderRadius: BorderRadius.circular(4.0),
                       color:
                           isActive
                               ? Colors.white
-                              : const Color(0xFF6B5377).withValues(alpha: 0.6),
+                              : Colors.white.withValues(alpha: 0.35),
+                      boxShadow:
+                          isActive
+                              ? [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFFE879F9,
+                                  ).withValues(alpha: 0.6),
+                                  blurRadius: 8,
+                                  spreadRadius: 1,
+                                ),
+                              ]
+                              : null,
                     ),
                   );
                 }),
@@ -231,9 +246,15 @@ class _OnboardingViewState extends State<OnboardingView> {
                             child: ElevatedButton(
                               onPressed: _onPrevious,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF5A396A),
+                                backgroundColor: Colors.white.withValues(
+                                  alpha: 0.16,
+                                ),
                                 foregroundColor: Colors.white,
                                 elevation: 0,
+                                side: BorderSide(
+                                  color: Colors.white.withValues(alpha: 0.45),
+                                  width: 1.2,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(28),
                                 ),
@@ -245,7 +266,7 @@ class _OnboardingViewState extends State<OnboardingView> {
                                   maxLines: 1,
                                   style: const TextStyle(
                                     fontSize: 17,
-                                    fontWeight: FontWeight.w400,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
@@ -261,9 +282,12 @@ class _OnboardingViewState extends State<OnboardingView> {
                             child: ElevatedButton(
                               onPressed: _onNext,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF5A396A),
-                                foregroundColor: Colors.white,
-                                elevation: 0,
+                                backgroundColor: Colors.white,
+                                foregroundColor: const Color(0xFF6B1C9B),
+                                elevation: 2,
+                                shadowColor: Colors.black.withValues(
+                                  alpha: 0.25,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(28),
                                 ),
@@ -272,7 +296,7 @@ class _OnboardingViewState extends State<OnboardingView> {
                                 'Next'.trData(context),
                                 style: const TextStyle(
                                   fontSize: 17,
-                                  fontWeight: FontWeight.w400,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),
@@ -284,15 +308,17 @@ class _OnboardingViewState extends State<OnboardingView> {
                               child: ElevatedButton(
                                 onPressed: _onNext,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor:
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: const Color(0xFF6B1C9B),
+                                  elevation: 2,
+                                  shadowColor:
                                       isLastPage
-                                          ? Colors.white
-                                          : const Color(0xFF5A396A),
-                                  foregroundColor:
-                                      isLastPage
-                                          ? const Color(0xFF1E0A36)
-                                          : Colors.white,
-                                  elevation: 0,
+                                          ? const Color(
+                                            0xFFE879F9,
+                                          ).withValues(alpha: 0.5)
+                                          : Colors.black.withValues(
+                                            alpha: 0.25,
+                                          ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(28),
                                   ),
@@ -303,12 +329,9 @@ class _OnboardingViewState extends State<OnboardingView> {
                                     (isLastPage ? 'Get Started' : 'Next')
                                         .trData(context),
                                     maxLines: 1,
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontSize: 17,
-                                      fontWeight:
-                                          isLastPage
-                                              ? FontWeight.w600
-                                              : FontWeight.w400,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                 ),

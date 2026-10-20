@@ -1472,6 +1472,7 @@ class ApiService {
     required String name,
     required String description,
     String emoji = '🎨',
+    String type = 'general',
     String color = 'Primary',
     String tags = '',
     bool isFeatured = false,
@@ -1483,10 +1484,28 @@ class ApiService {
           'name': name,
           'description': description,
           'emoji': emoji,
+          'type': type,
           'color': color,
           'tags': tags,
           'is_featured': isFeatured ? 1 : 0,
         },
+      );
+      if (_isSuccess(res)) {
+        _cachedCategories = null;
+        try {
+          sl<LiveSyncService>().notifyCategoriesChanged();
+        } catch (_) {}
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  // 15c-2. Seed / Restore Standard Categories (MySQL Backend)
+  Future<bool> seedDefaultCategories() async {
+    try {
+      final res = await _client.post(
+        '${ApiEndpoints.categories}&action=seed_defaults',
       );
       if (_isSuccess(res)) {
         _cachedCategories = null;
@@ -1946,16 +1965,18 @@ class ApiService {
           PublishingPricingModel(
             id: 2,
             itemType: 'gallery',
-            itemName: 'Gallery Listing & Showcase',
-            weeklyPrice: 'AED 200',
-            monthlyPrice: 'AED 750',
-            sixMonthPrice: 'AED 3,800',
-            yearlyPrice: 'AED 6,500',
-            sixMonthBadge: 'Save 15%',
+            itemName: 'Gallery Space Spotlight',
+            weeklyPrice: 'AED 250',
+            monthlyPrice: 'AED 800',
+            threeMonthPrice: 'AED 2,000',
+            sixMonthPrice: 'AED 3,000',
+            yearlyPrice: 'AED 5,000',
+            threeMonthBadge: 'Special Offer',
+            sixMonthBadge: 'Save 25%',
             yearlyBadge: 'Best Value',
             currency: 'AED',
             description:
-                'Premier directory listing, verified status badge, and spotlight showcase for Dubai art galleries.',
+                'Feature your gallery on curated maps and event calendars, with professional event photography.',
           ),
         ];
   }
@@ -1964,8 +1985,10 @@ class ApiService {
     required String itemType,
     required String weeklyPrice,
     required String monthlyPrice,
+    String? threeMonthPrice,
     String? sixMonthPrice,
     required String yearlyPrice,
+    String? threeMonthBadge,
     String? sixMonthBadge,
     String? yearlyBadge,
     String? description,
@@ -1978,8 +2001,10 @@ class ApiService {
           'item_type': itemType,
           'weekly_price': weeklyPrice,
           'monthly_price': monthlyPrice,
+          if (threeMonthPrice != null) 'three_month_price': threeMonthPrice,
           if (sixMonthPrice != null) 'six_month_price': sixMonthPrice,
           'yearly_price': yearlyPrice,
+          if (threeMonthBadge != null) 'three_month_badge': threeMonthBadge,
           if (sixMonthBadge != null) 'six_month_badge': sixMonthBadge,
           if (yearlyBadge != null) 'yearly_badge': yearlyBadge,
           if (description != null) 'description': description,

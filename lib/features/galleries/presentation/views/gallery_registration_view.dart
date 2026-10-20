@@ -73,14 +73,18 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                   const PublishingPricingModel(
                     id: 2,
                     itemType: 'gallery',
-                    itemName: 'Gallery Showcase',
-                    weeklyPrice: 'AED 200',
-                    monthlyPrice: 'AED 750',
-                    sixMonthPrice: 'AED 3,800',
-                    yearlyPrice: 'AED 6,500',
-                    sixMonthBadge: '180 days showcase',
-                    yearlyBadge: '365 days showcase',
+                    itemName: 'Gallery Space Spotlight',
+                    weeklyPrice: 'AED 250',
+                    monthlyPrice: 'AED 800',
+                    threeMonthPrice: 'AED 2,000',
+                    sixMonthPrice: 'AED 3,000',
+                    yearlyPrice: 'AED 5,000',
+                    threeMonthBadge: 'Special Offer',
+                    sixMonthBadge: 'Save 25%',
+                    yearlyBadge: 'Best Value',
                     currency: 'AED',
+                    description:
+                        'Feature your gallery on curated maps and event calendars, with professional event photography.',
                   ),
         );
         setState(() {
@@ -96,10 +100,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
             .where((p) =>
                 p.isActive &&
                 (p.itemType.toLowerCase() == 'gallery' ||
-                    p.itemType.toLowerCase() == 'art_centre' ||
-                    p.category.toLowerCase().contains('gallery') ||
-                    p.category.toLowerCase().contains('centre') ||
-                    p.title.toLowerCase().contains('gallery')))
+                    (p.itemType.toLowerCase() != 'art_centre' &&
+                        p.itemType.toLowerCase() != 'event' &&
+                        p.category.toLowerCase().contains('gallery'))))
             .toList();
         setState(() {
           _galleryListingPlans = galPlans;
@@ -144,15 +147,17 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
             () => const PublishingPricingModel(
               id: 2,
               itemType: 'gallery',
-              itemName: 'Gallery Showcase',
-              weeklyPrice: 'AED 200',
-              monthlyPrice: 'AED 750',
-              sixMonthPrice: 'AED 3,800',
-              yearlyPrice: 'AED 6,500',
-              sixMonthBadge: '180 days showcase',
-              yearlyBadge: '365 days showcase',
+              itemName: 'Gallery Space Spotlight',
+              weeklyPrice: 'AED 250',
+              monthlyPrice: 'AED 800',
+              threeMonthPrice: 'AED 2,000',
+              sixMonthPrice: 'AED 3,000',
+              yearlyPrice: 'AED 5,000',
+              threeMonthBadge: 'Special Offer',
+              sixMonthBadge: 'Save 25%',
+              yearlyBadge: 'Best Value',
               description:
-                  'Premier directory listing, verified status badge, and spotlight showcase for Dubai art galleries.',
+                  'Feature your gallery on curated maps and event calendars, with professional event photography.',
               currency: 'AED',
             ),
       );
@@ -172,10 +177,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
           .where((p) =>
               p.isActive &&
               (p.itemType.toLowerCase() == 'gallery' ||
-                  p.itemType.toLowerCase() == 'art_centre' ||
-                  p.category.toLowerCase().contains('gallery') ||
-                  p.category.toLowerCase().contains('centre') ||
-                  p.title.toLowerCase().contains('gallery')))
+                  (p.itemType.toLowerCase() != 'art_centre' &&
+                      p.itemType.toLowerCase() != 'event' &&
+                      p.category.toLowerCase().contains('gallery'))))
           .toList();
       setState(() {
         _galleryListingPlans = galPlans;
@@ -464,19 +468,21 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
       publishingAmount = matchingPlan.price;
       resolvedPlanName = matchingPlan.title;
     } else {
-      publishingAmount =
-          _galleryPricing?.getPriceForPlan(_selectedPublishingPlan) ??
-          (_selectedPublishingPlan == 'monthly'
-              ? 'AED 750'
-              : (_selectedPublishingPlan == 'six_month'
-                  ? 'AED 3,800'
-                  : (_selectedPublishingPlan == 'yearly'
-                      ? 'AED 6,500'
-                      : 'AED 200')));
-      if (_selectedPublishingPlan == 'six_month') {
+      if (_selectedPublishingPlan == 'three_month') {
+        publishingAmount = _galleryPricing?.threeMonthPrice ?? 'AED 2,000';
+        resolvedPlanName = '3 Months Gallery Showcase';
+      } else if (_selectedPublishingPlan == 'six_month') {
+        publishingAmount = _galleryPricing?.sixMonthPrice ?? 'AED 3,000';
         resolvedPlanName = '6 Months Gallery Showcase';
-      } else if (_selectedPublishingPlan == 'yearly') {
-        resolvedPlanName = 'Yearly Gallery Spotlight';
+      } else if (_selectedPublishingPlan == 'yearly' ||
+          _selectedPublishingPlan == 'twelve_month') {
+        publishingAmount = _galleryPricing?.yearlyPrice ?? 'AED 5,000';
+        resolvedPlanName = '12 Months Gallery Showcase';
+      } else {
+        publishingAmount =
+            _galleryPricing?.getPriceForPlan(_selectedPublishingPlan) ??
+            'AED 2,000';
+        resolvedPlanName = 'Gallery Showcase';
       }
     }
 
@@ -584,7 +590,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
         borderSide: const BorderSide(color: Color(0xFF5E227A), width: 1.8),
       ),
       errorStyle: const TextStyle(
-        color: Colors.amberAccent,
+        color: Colors.white,
         fontWeight: FontWeight.bold,
       ),
     );
@@ -593,27 +599,117 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
   @override
   Widget build(BuildContext context) {
     final rh = ResponsiveHelper.of(context);
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: _screenBg,
       appBar: const AppTopBar(backgroundColor: Colors.white),
       body: SafeArea(
         top: false,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              rh.horizontalPadding,
-              24,
-              rh.horizontalPadding,
-              24,
-            ),
-            child: Center(
+        child: Column(
+          children: [
+            // "Art Venue" Sub-Header with Back Arrow & Home Action
+            Center(
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
-                child: _isSubmitted ? _buildSubmittedView() : _buildFormView(),
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: rh.horizontalPadding,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () {
+                          if (Navigator.of(context).canPop()) {
+                            context.pop();
+                          } else {
+                            context.go(RouteNames.home);
+                          }
+                        },
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          l10n.artVenue,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: rh.isCompact ? 17 : 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () => context.go(RouteNames.home),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.home_outlined,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                l10n.home,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
+
+            // Scrollable Content
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    rh.horizontalPadding,
+                    20,
+                    rh.horizontalPadding,
+                    24,
+                  ),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
+                      child: _isSubmitted ? _buildSubmittedView() : _buildFormView(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: const AppBottomNavBar(currentIndex: -1),
@@ -735,21 +831,6 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
-                  validator: (val) {
-                    if (val == null || val.trim().isEmpty) return null;
-                    final trimmed = val.trim();
-                    if (RegExp(r'[a-zA-Z]').hasMatch(trimmed)) {
-                      return 'Phone number cannot contain letters';
-                    }
-                    final digitsOnly = trimmed.replaceAll(RegExp(r'\D'), '');
-                    if (digitsOnly.length < 7) {
-                      return 'Phone number must be at least 7 digits';
-                    }
-                    if (digitsOnly.length > 15) {
-                      return 'Phone number cannot exceed 15 digits';
-                    }
-                    return null;
-                  },
                   decoration: _whiteInputDecoration(),
                   textInputAction: TextInputAction.next,
                 ),
@@ -1154,12 +1235,12 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
-                                colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                                colors: [Color(0xFF6B1C9B), Color(0xFF551478)],
                               ),
                               borderRadius: BorderRadius.circular(8),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+                                  color: const Color(0xFF6B1C9B).withValues(alpha: 0.35),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
@@ -1174,11 +1255,11 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'Paid Gallery Publishing • Choose Plan'.trData(
+                              'Paid Gallery Publishing • Choose Your Plan'.trData(
                                 context,
                               ),
                               style: const TextStyle(
-                                color: Color(0xFFFDE68A),
+                                color: Colors.white,
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 0.2,
@@ -1215,18 +1296,67 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                               context,
                               _galleryPricing!.description!.trim(),
                             )
-                            : 'Publishing your gallery on Artist Dubai is a premium feature. Select your preferred showcase plan. Once verified by the admin, your gallery will be featured prominently to art lovers across the UAE.'
+                            : 'Feature your gallery on curated maps and event calendars, with professional event photography.'
                                 .trData(context),
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.82),
+                          color: Colors.white.withValues(alpha: 0.88),
                           fontSize: 12,
                           height: 1.4,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 9,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.35),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.card_giftcard_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text.rich(
+                                TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: 'Exclusive Benefits: '.trData(context),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: 'Enjoy your first 3 months free.'.trData(context),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
                       LayoutBuilder(
                         builder: (context, constraints) {
-                          final isSmall = constraints.maxWidth < 460;
                           List<Widget> cards = [];
 
                           if (_galleryListingPlans.isNotEmpty) {
@@ -1238,39 +1368,54 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                                   ? plan.features.first.trim()
                                   : (plan.description.trim().isNotEmpty
                                       ? plan.description.trim()
-                                      : (plan.category.trim().isNotEmpty
-                                          ? plan.category.trim()
-                                          : 'Verified Venue Showcase'));
+                                      : (plan.duration.isNotEmpty
+                                          ? plan.duration
+                                          : 'Gallery Showcase'));
+                              final rawTitle = plan.title.trData(context);
+                              final cardTitle = (plan.duration.contains('3 Month') || plan.duration.contains('90') || rawTitle.contains('3 Month'))
+                                  ? '3 Months'.trData(context)
+                                  : ((plan.duration.contains('6 Month') || plan.duration.contains('180') || rawTitle.contains('6 Month'))
+                                      ? '6 Months'.trData(context)
+                                      : ((plan.duration.contains('12 Month') || plan.duration.contains('365') || plan.duration.contains('1 Year') || rawTitle.contains('12 Month'))
+                                          ? '12 Months'.trData(context)
+                                          : rawTitle));
+                              final periodStr = (cardTitle == '3 Months' || cardTitle == '6 Months' || cardTitle == '12 Months')
+                                  ? ''
+                                  : (plan.duration.isNotEmpty ? ' · ${plan.duration}' : '');
                               return _buildGalleryPricingCard(
                                 id: planId,
-                                title: plan.title,
+                                title: cardTitle,
                                 price: plan.price,
-                                period: '',
+                                period: periodStr,
                                 subtitle: subtitle,
                                 tag:
-                                    plan.badge.isNotEmpty
-                                        ? plan.badge
-                                        : null,
+                                    plan.badge.isNotEmpty ? plan.badge : null,
                               );
                             }).toList();
                           } else {
+                            final threeMonthPrice =
+                                _galleryPricing?.threeMonthPrice ?? 'AED 2,000';
                             final sixMonthPrice =
-                                _galleryPricing?.sixMonthPrice ?? 'AED 3,800';
+                                _galleryPricing?.sixMonthPrice ?? 'AED 3,000';
                             final yearlyPrice =
-                                _galleryPricing?.yearlyPrice ?? 'AED 6,500';
+                                _galleryPricing?.yearlyPrice ?? 'AED 5,000';
+
+                            final threeMonthSubtitle =
+                                _galleryPricing?.threeMonthBadge.trim().isNotEmpty == true
+                                    ? DataTranslator.tr(
+                                      context,
+                                      _galleryPricing!.threeMonthBadge.trim(),
+                                    )
+                                    : '90 days showcase'.trData(context);
                             final sixMonthSubtitle =
-                                _galleryPricing?.sixMonthBadge
-                                            .trim()
-                                            .isNotEmpty ==
-                                        true
+                                _galleryPricing?.sixMonthBadge.trim().isNotEmpty == true
                                     ? DataTranslator.tr(
                                       context,
                                       _galleryPricing!.sixMonthBadge.trim(),
                                     )
                                     : '180 days showcase'.trData(context);
                             final yearlySubtitle =
-                                _galleryPricing?.yearlyBadge.trim().isNotEmpty ==
-                                        true
+                                _galleryPricing?.yearlyBadge.trim().isNotEmpty == true
                                     ? DataTranslator.tr(
                                       context,
                                       _galleryPricing!.yearlyBadge.trim(),
@@ -1279,38 +1424,38 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
 
                             cards = [
                               _buildGalleryPricingCard(
+                                id: 'three_month',
+                                title: '3 Months'.trData(context),
+                                price: threeMonthPrice,
+                                period: '',
+                                subtitle: threeMonthSubtitle,
+                                tag: 'Special Offer',
+                              ),
+                              _buildGalleryPricingCard(
                                 id: 'six_month',
                                 title: '6 Months'.trData(context),
                                 price: sixMonthPrice,
-                                period: '/ 6 mo'.trData(context),
+                                period: '',
                                 subtitle: sixMonthSubtitle,
+                                tag: 'Save 25%',
                               ),
                               _buildGalleryPricingCard(
                                 id: 'yearly',
-                                title: 'Yearly'.trData(context),
+                                title: '12 Months'.trData(context),
                                 price: yearlyPrice,
-                                period: '/ year'.trData(context),
+                                period: '',
                                 subtitle: yearlySubtitle,
+                                tag: 'Best Value',
                               ),
                             ];
                           }
 
-                          if (isSmall || cards.length != 2) {
-                            return Column(
-                              children: [
-                                for (int i = 0; i < cards.length; i++) ...[
-                                  if (i > 0) const SizedBox(height: 10),
-                                  cards[i],
-                                ],
-                              ],
-                            );
-                          }
-
-                          return Row(
+                          return Column(
                             children: [
-                              Expanded(child: cards[0]),
-                              const SizedBox(width: 12),
-                              Expanded(child: cards[1]),
+                              for (int i = 0; i < cards.length; i++) ...[
+                                if (i > 0) const SizedBox(height: 10),
+                                cards[i],
+                              ],
                             ],
                           );
                         },
@@ -1659,7 +1804,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                       fontWeight: FontWeight.w900,
                       color: isSelected
                           ? const Color(0xFF0F172A)
-                          : const Color(0xFFFDE68A),
+                          : Colors.white,
                       letterSpacing: -0.3,
                     ),
                   ),
@@ -1769,135 +1914,206 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
     }
 
     String planAmount = '';
+    String resolvedPlanName = _selectedPublishingPlan;
     if (_galleryListingPlans.isNotEmpty) {
       final matching = _galleryListingPlans.firstWhere(
         (p) =>
             p.id?.toString() == _selectedPublishingPlan ||
-            p.title == _selectedPublishingPlan,
+            p.title.toLowerCase() == _selectedPublishingPlan.toLowerCase(),
         orElse: () => _galleryListingPlans.first,
       );
       planAmount = matching.price;
+      resolvedPlanName = matching.title;
+    } else if (_selectedPublishingPlan == 'three_month') {
+      planAmount = _galleryPricing?.threeMonthPrice ?? 'AED 2,000';
+      resolvedPlanName = '3 Months Gallery Showcase';
+    } else if (_selectedPublishingPlan == 'six_month') {
+      planAmount = _galleryPricing?.sixMonthPrice ?? 'AED 3,000';
+      resolvedPlanName = '6 Months Gallery Showcase';
+    } else if (_selectedPublishingPlan == 'yearly' ||
+        _selectedPublishingPlan == 'twelve_month') {
+      planAmount = _galleryPricing?.yearlyPrice ?? 'AED 5,000';
+      resolvedPlanName = '12 Months Gallery Showcase';
     } else {
       planAmount =
           _galleryPricing?.getPriceForPlan(_selectedPublishingPlan) ??
-          (_selectedPublishingPlan == 'monthly'
-              ? 'AED 750'
-              : (_selectedPublishingPlan == 'six_month'
-                  ? 'AED 3,800'
-                  : (_selectedPublishingPlan == 'yearly'
-                      ? 'AED 6,500'
-                      : 'AED 200')));
+          'AED 2,000';
+      resolvedPlanName = 'Gallery Showcase';
     }
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.white.withValues(alpha: 0.16),
-            Colors.white.withValues(alpha: 0.08),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.22),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
-              ),
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: () => _proceedToStripeCheckout(planAmount, resolvedPlanName),
+        borderRadius: BorderRadius.circular(14),
+        splashColor: const Color(0xFF635BFF).withValues(alpha: 0.35),
+        highlightColor: Colors.white.withValues(alpha: 0.12),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                const Color(0xFF635BFF).withValues(alpha: 0.32),
+                const Color(0xFF4F46E5).withValues(alpha: 0.18),
+                Colors.white.withValues(alpha: 0.10),
               ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            child: const Icon(
-              Icons.qr_code_2_rounded,
-              color: Colors.white,
-              size: 20,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: const Color(0xFF9384FF).withValues(alpha: 0.55),
+              width: 1.3,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF635BFF).withValues(alpha: 0.22),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      'Payment on Next Step: '.trData(context),
-                      style: const TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.amberAccent.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: Colors.amberAccent.withValues(alpha: 0.5),
-                        ),
-                      ),
-                      child: Text(
-                        planAmount.trData(context),
-                        style: const TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.amberAccent,
-                        ),
-                      ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Stripe / Card Icon badge
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF635BFF), Color(0xFF4F46E5)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF635BFF).withValues(alpha: 0.45),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Admin Payment QR code & bank transfer details on checkout page.'
-                      .trData(context),
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.white.withValues(alpha: 0.75),
-                    height: 1.25,
-                  ),
+                child: const Icon(
+                  Icons.credit_card_rounded,
+                  color: Colors.white,
+                  size: 22,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'Pay with Stripe: '.trData(context),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.22),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.5),
+                            ),
+                          ),
+                          child: Text(
+                            planAmount.trData(context),
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Direct secure checkout with Credit Card, Apple Pay & Google Pay'
+                          .trData(context),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white.withValues(alpha: 0.88),
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.lock_outline_rounded,
+                          size: 12.5,
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Powered by Stripe • Tap to proceed'.trData(context),
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.95),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.25),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 13,
+                  color: Colors.white,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Icon(
-            Icons.arrow_forward_ios_rounded,
-            size: 13,
-            color: Colors.white.withValues(alpha: 0.6),
-          ),
-        ],
+        ),
       ),
     );
+  }
+
+  void _proceedToStripeCheckout(String planAmount, String planName) {
+    if (_activeGalleryPlan != null) {
+      _submitForm();
+      return;
+    }
+
+    setState(() => _hasValidated = true);
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Please complete the required venue details above to proceed to Stripe checkout.'
+                .trData(context),
+          ),
+          backgroundColor: const Color(0xFF635BFF),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+    _submitForm();
   }
 }

@@ -401,8 +401,10 @@ class DatabaseManager {
                 description TEXT NULL,
                 weekly_price VARCHAR(100) DEFAULT 'AED 150',
                 monthly_price VARCHAR(100) DEFAULT 'AED 500',
+                three_month_price VARCHAR(100) DEFAULT 'AED 1,200',
                 six_month_price VARCHAR(100) DEFAULT 'AED 2,500',
                 yearly_price VARCHAR(100) DEFAULT 'AED 4,500',
+                three_month_badge VARCHAR(50) DEFAULT 'Popular',
                 six_month_badge VARCHAR(50) DEFAULT 'Save 17%',
                 yearly_badge VARCHAR(50) DEFAULT 'Best Value',
                 currency VARCHAR(20) DEFAULT 'AED',
@@ -417,6 +419,8 @@ class DatabaseManager {
                 category VARCHAR(100) NOT NULL,
                 badge VARCHAR(50) DEFAULT 'One-time',
                 price VARCHAR(100) NOT NULL,
+                duration VARCHAR(100) DEFAULT '30 Days',
+                duration_days INT DEFAULT 30,
                 description TEXT NULL,
                 features_json TEXT NULL,
                 button_text VARCHAR(100) DEFAULT 'Pay from My Listings',
@@ -599,8 +603,9 @@ class DatabaseManager {
         try {
             // 1. Categories (Auto-seed standard categories if table is empty)
             $catCount = (int)$this->pdo->query("SELECT COUNT(*) FROM categories WHERE deleted_at IS NULL")->fetchColumn();
-            if ($catCount === 0) {
+            if ($catCount < 60) {
                 $categories = [
+                    // Event Categories
                     ['Art Exhibition', 'event', 'Fine art exhibitions, group showcases, and gallery displays', '🖼️'],
                     ['Gallery Opening', 'event', 'New gallery space debuts, exclusive launch receptions and vernissage', '🏛️'],
                     ['Art Workshop', 'event', 'Interactive hands-on art classes, live demonstrations and creative sessions', '🎨'],
@@ -611,12 +616,58 @@ class DatabaseManager {
                     ['Cultural Festival', 'event', 'Heritage celebrations, arts festivals, and multicultural festivities', '🎉'],
                     ['Art Competition', 'event', 'Juried art contests, awards, and youth talent competitions', '🏆'],
                     ['Community Art Project', 'event', 'Public murals, collaborative community art, and social initiatives', '🤝'],
-                    ['Calligraphy & Typography', 'artist', 'Arabic calligraphy, modern lettering and typography', '✍️'],
-                    ['Contemporary Painting', 'artist', 'Modern and contemporary canvas and acrylic painting', '🎨'],
-                    ['Digital Art & Sculpture', 'artist', 'Digital 3D installations, sculptures and generative art', '🗿'],
-                    ['Photography', 'artist', 'Landscape, architectural and fine art photography across UAE', '📷'],
-                    ['Abstract Painting', 'artist', 'Abstract expressions, mixed media and vibrant color palettes', '🎨'],
-                    ['Ceramics & Pottery', 'artist', 'Handcrafted ceramics, clay sculptures and pottery', '🏺'],
+
+                    // 50 Core Art Categories
+                    ['Painting', 'artist', 'Canvas, oil, acrylic, and watercolor paintings', '🎨'],
+                    ['Photography', 'artist', 'Fine art, landscape, and portrait photography', '📷'],
+                    ['Sculpture', 'artist', '3D sculptural works, stone, bronze, and clay', '🗿'],
+                    ['Drawing', 'artist', 'Pencil, charcoal, ink, and pastel sketches', '✏️'],
+                    ['Digital Art', 'artist', 'Digital painting, 3D graphics, and generative art', '💻'],
+                    ['AI-Generated Art', 'artist', 'Artificial intelligence and algorithmic artworks', '🤖'],
+                    ['Architecture', 'artist', 'Architectural design, models, and spatial art', '🏛️'],
+                    ['Theatre', 'artist', 'Stage plays, dramatic productions, and theatrical arts', '🎭'],
+                    ['Dance', 'artist', 'Choreography, contemporary, and traditional dance', '💃'],
+                    ['Music', 'artist', 'Composition, instrumental, and acoustic music', '🎵'],
+                    ['Film', 'artist', 'Cinematography, short films, and indie filmmaking', '🎬'],
+                    ['Video Art', 'artist', 'Moving image installations and video experimental art', '📹'],
+                    ['Literature', 'artist', 'Literary works, novels, essays, and prose', '📚'],
+                    ['Poetry', 'artist', 'Classical, spoken word, and contemporary poetry', '📜'],
+                    ['Creative Writing', 'artist', 'Narrative storytelling, scripts, and creative writing', '🖋️'],
+                    ['Drama', 'artist', 'Dramatic performance, acting, and stage dialogue', '🎭'],
+                    ['Graphic Design', 'artist', 'Visual branding, typography, and graphic layout', '📐'],
+                    ['Fashion Design', 'artist', 'Haute couture, wearable art, and garment design', '👗'],
+                    ['Interior Design', 'artist', 'Spatial styling, artistic interiors, and decor', '🛋️'],
+                    ['Product Design', 'artist', 'Industrial design, aesthetic object creation', '📦'],
+                    ['Crafts', 'artist', 'Artisan handicrafts, papercraft, and artisanal work', '🧶'],
+                    ['Textile Art', 'artist', 'Weaving, tapestry, embroidery, and fiber art', '🧵'],
+                    ['Ceramics', 'artist', 'Pottery, stoneware, porcelain, and terracotta', '🏺'],
+                    ['Printmaking', 'artist', 'Screen printing, etching, woodcut, and lithography', '🖨️'],
+                    ['Illustration', 'artist', 'Editorial illustration, book art, and character art', '🖌️'],
+                    ['Street Art', 'artist', 'Urban graffiti, stencil, and public space art', '🏙️'],
+                    ['Mural Art', 'artist', 'Large-scale wall murals and outdoor public art', '🧱'],
+                    ['Performance Art', 'artist', 'Live artistic expression, interactive acts', '🩰'],
+                    ['Installation Art', 'artist', 'Immersive, site-specific art installations', '💡'],
+                    ['Conceptual Art', 'artist', 'Idea-driven contemporary art and experimental works', '🧠'],
+                    ['Mixed Media', 'artist', 'Multi-medium combinations and experimental artwork', '🔀'],
+                    ['Collage', 'artist', 'Assembled paper, textures, and cut-and-paste art', '📑'],
+                    ['Video Game Art', 'artist', 'Concept art, character models, and game world design', '🎮'],
+                    ['Virtual Reality (VR) Art', 'artist', 'Immersive VR painting and 3D spatial worlds', '🥽'],
+                    ['Animation', 'artist', '2D, 3D, and stop-motion animation', '🎞️'],
+                    ['Comic Art', 'artist', 'Comic strips, graphic novels, and sequential art', '🗯️'],
+                    ['Calligraphy', 'artist', 'Arabic, modern, and classical lettering art', '✍️'],
+                    ['Jewellery Design', 'artist', 'Handmade precious jewellery and gem craftsmanship', '💍'],
+                    ['Glass Art', 'artist', 'Stained glass, blown glass, and glass sculptures', '🪟'],
+                    ['Wood Art', 'artist', 'Wood carving, marquetry, and timber sculpture', '🪵'],
+                    ['Metal Art', 'artist', 'Forged metal, welding, wire art, and metalcraft', '⚙️'],
+                    ['Puppetry', 'artist', 'Marionettes, shadow puppets, and puppet theater', '🎎'],
+                    ['Opera', 'artist', 'Classical operatic performance and vocal arts', '🎼'],
+                    ['Ballet', 'artist', 'Classical and modern ballet dance performance', '🩰'],
+                    ['Musical Theatre', 'artist', 'Stage musicals blending singing, acting, and dance', '🎤'],
+                    ['Experimental Art', 'artist', 'Avant-garde boundary-pushing artistic explorations', '🧪'],
+                    ['Land Art', 'artist', 'Earth art, nature-integrated sculptures and topography', '🏞️'],
+                    ['Environmental Art', 'artist', 'Eco-conscious art addressing nature and sustainability', '🌿'],
+                    ['Body Art', 'artist', 'Body painting, henna, and creative epidermal art', '🎨'],
+                    ['Jewellery and Accessory Design', 'artist', 'Fine jewellery, headpieces, and fashion accessories', '👑'],
                 ];
                 $stmt = $this->pdo->prepare("INSERT IGNORE INTO categories (name, type, description, emoji) VALUES (?, ?, ?, ?)");
                 foreach ($categories as $cat) {
@@ -1794,6 +1845,80 @@ class CategoryController {
         }
 
         ApiResponse::success(['deleted' => true], 'Category moved to recycle bin');
+    }
+
+    public function seedDefaultCategories(): void {
+        AuthMiddleware::requireAdmin();
+        $categories = [
+            // Event Categories
+            ['Art Exhibition', 'event', 'Fine art exhibitions, group showcases, and gallery displays', '🖼️'],
+            ['Gallery Opening', 'event', 'New gallery space debuts, exclusive launch receptions and vernissage', '🏛️'],
+            ['Art Workshop', 'event', 'Interactive hands-on art classes, live demonstrations and creative sessions', '🎨'],
+            ['Artist Talk', 'event', 'Q&A panels, keynote lectures, and creative dialogues with masters', '🎤'],
+            ['Art Fair', 'event', 'Large-scale art fairs, cultural expos, and trade exhibitions', '🎪'],
+            ['Sculpture Installation', 'event', 'Outdoor, 3D and immersive sculptural installations', '🗿'],
+            ['Photography Exhibition', 'event', 'Fine art, documentary and architectural photography showcases', '📷'],
+            ['Cultural Festival', 'event', 'Heritage celebrations, arts festivals, and multicultural festivities', '🎉'],
+            ['Art Competition', 'event', 'Juried art contests, awards, and youth talent competitions', '🏆'],
+            ['Community Art Project', 'event', 'Public murals, collaborative community art, and social initiatives', '🤝'],
+
+            // 50 Core Art Categories
+            ['Painting', 'artist', 'Canvas, oil, acrylic, and watercolor paintings', '🎨'],
+            ['Photography', 'artist', 'Fine art, landscape, and portrait photography', '📷'],
+            ['Sculpture', 'artist', '3D sculptural works, stone, bronze, and clay', '🗿'],
+            ['Drawing', 'artist', 'Pencil, charcoal, ink, and pastel sketches', '✏️'],
+            ['Digital Art', 'artist', 'Digital painting, 3D graphics, and generative art', '💻'],
+            ['AI-Generated Art', 'artist', 'Artificial intelligence and algorithmic artworks', '🤖'],
+            ['Architecture', 'artist', 'Architectural design, models, and spatial art', '🏛️'],
+            ['Theatre', 'artist', 'Stage plays, dramatic productions, and theatrical arts', '🎭'],
+            ['Dance', 'artist', 'Choreography, contemporary, and traditional dance', '💃'],
+            ['Music', 'artist', 'Composition, instrumental, and acoustic music', '🎵'],
+            ['Film', 'artist', 'Cinematography, short films, and indie filmmaking', '🎬'],
+            ['Video Art', 'artist', 'Moving image installations and video experimental art', '📹'],
+            ['Literature', 'artist', 'Literary works, novels, essays, and prose', '📚'],
+            ['Poetry', 'artist', 'Classical, spoken word, and contemporary poetry', '📜'],
+            ['Creative Writing', 'artist', 'Narrative storytelling, scripts, and creative writing', '🖋️'],
+            ['Drama', 'artist', 'Dramatic performance, acting, and stage dialogue', '🎭'],
+            ['Graphic Design', 'artist', 'Visual branding, typography, and graphic layout', '📐'],
+            ['Fashion Design', 'artist', 'Haute couture, wearable art, and garment design', '👗'],
+            ['Interior Design', 'artist', 'Spatial styling, artistic interiors, and decor', '🛋️'],
+            ['Product Design', 'artist', 'Industrial design, aesthetic object creation', '📦'],
+            ['Crafts', 'artist', 'Artisan handicrafts, papercraft, and artisanal work', '🧶'],
+            ['Textile Art', 'artist', 'Weaving, tapestry, embroidery, and fiber art', '🧵'],
+            ['Ceramics', 'artist', 'Pottery, stoneware, porcelain, and terracotta', '🏺'],
+            ['Printmaking', 'artist', 'Screen printing, etching, woodcut, and lithography', '🖨️'],
+            ['Illustration', 'artist', 'Editorial illustration, book art, and character art', '🖌️'],
+            ['Street Art', 'artist', 'Urban graffiti, stencil, and public space art', '🏙️'],
+            ['Mural Art', 'artist', 'Large-scale wall murals and outdoor public art', '🧱'],
+            ['Performance Art', 'artist', 'Live artistic expression, interactive acts', '🩰'],
+            ['Installation Art', 'artist', 'Immersive, site-specific art installations', '💡'],
+            ['Conceptual Art', 'artist', 'Idea-driven contemporary art and experimental works', '🧠'],
+            ['Mixed Media', 'artist', 'Multi-medium combinations and experimental artwork', '🔀'],
+            ['Collage', 'artist', 'Assembled paper, textures, and cut-and-paste art', '📑'],
+            ['Video Game Art', 'artist', 'Concept art, character models, and game world design', '🎮'],
+            ['Virtual Reality (VR) Art', 'artist', 'Immersive VR painting and 3D spatial worlds', '🥽'],
+            ['Animation', 'artist', '2D, 3D, and stop-motion animation', '🎞️'],
+            ['Comic Art', 'artist', 'Comic strips, graphic novels, and sequential art', '🗯️'],
+            ['Calligraphy', 'artist', 'Arabic, modern, and classical lettering art', '✍️'],
+            ['Jewellery Design', 'artist', 'Handmade precious jewellery and gem craftsmanship', '💍'],
+            ['Glass Art', 'artist', 'Stained glass, blown glass, and glass sculptures', '🪟'],
+            ['Wood Art', 'artist', 'Wood carving, marquetry, and timber sculpture', '🪵'],
+            ['Metal Art', 'artist', 'Forged metal, welding, wire art, and metalcraft', '⚙️'],
+            ['Puppetry', 'artist', 'Marionettes, shadow puppets, and puppet theater', '🎎'],
+            ['Opera', 'artist', 'Classical operatic performance and vocal arts', '🎼'],
+            ['Ballet', 'artist', 'Classical and modern ballet dance performance', '🩰'],
+            ['Musical Theatre', 'artist', 'Stage musicals blending singing, acting, and dance', '🎤'],
+            ['Experimental Art', 'artist', 'Avant-garde boundary-pushing artistic explorations', '🧪'],
+            ['Land Art', 'artist', 'Earth art, nature-integrated sculptures and topography', '🏞️'],
+            ['Environmental Art', 'artist', 'Eco-conscious art addressing nature and sustainability', '🌿'],
+            ['Body Art', 'artist', 'Body painting, henna, and creative epidermal art', '🎨'],
+            ['Jewellery and Accessory Design', 'artist', 'Fine jewellery, headpieces, and fashion accessories', '👑']
+        ];
+        $stmt = $this->db->prepare("INSERT INTO categories (name, type, description, emoji) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE type=VALUES(type), description=VALUES(description), emoji=VALUES(emoji), deleted_at=NULL");
+        foreach ($categories as $cat) {
+            $stmt->execute($cat);
+        }
+        ApiResponse::success(['seeded' => count($categories)], 'All categories seeded and restored successfully');
     }
 }
 
@@ -4193,11 +4318,21 @@ class PublishingPricingController {
         $description = InputSanitizer::cleanString($input['description'] ?? '');
         $weeklyPrice = InputSanitizer::cleanString($input['weekly_price'] ?? $input['weekly'] ?? '');
         $monthlyPrice = InputSanitizer::cleanString($input['monthly_price'] ?? $input['monthly'] ?? '');
+        $threeMonthPrice = InputSanitizer::cleanString($input['three_month_price'] ?? $input['three_month'] ?? '');
         $sixMonthPrice = InputSanitizer::cleanString($input['six_month_price'] ?? $input['six_month'] ?? '');
         $yearlyPrice = InputSanitizer::cleanString($input['yearly_price'] ?? $input['yearly'] ?? '');
+        $threeMonthBadge = InputSanitizer::cleanString($input['three_month_badge'] ?? $input['threeMonthBadge'] ?? '');
         $sixMonthBadge = InputSanitizer::cleanString($input['six_month_badge'] ?? $input['sixMonthBadge'] ?? '');
         $yearlyBadge = InputSanitizer::cleanString($input['yearly_badge'] ?? $input['yearlyBadge'] ?? '');
         $isActive = isset($input['is_active']) ? (int)$input['is_active'] : 1;
+
+        if ($id <= 0 && !empty($input['item_type'])) {
+            try {
+                $stmtFind = $this->db->prepare('SELECT id FROM publishing_pricing WHERE item_type = ? LIMIT 1');
+                $stmtFind->execute([InputSanitizer::cleanString($input['item_type'])]);
+                $id = (int)$stmtFind->fetchColumn();
+            } catch (\Throwable $t) {}
+        }
 
         if ($id <= 0) {
             ApiResponse::error('Valid pricing plan ID is required.', 400);
@@ -4211,8 +4346,10 @@ class PublishingPricingController {
             if (isset($input['description'])) { $fields[] = 'description = ?'; $params[] = $description; }
             if (!empty($weeklyPrice)) { $fields[] = 'weekly_price = ?'; $params[] = $weeklyPrice; }
             if (!empty($monthlyPrice)) { $fields[] = 'monthly_price = ?'; $params[] = $monthlyPrice; }
+            if (!empty($threeMonthPrice)) { $fields[] = 'three_month_price = ?'; $params[] = $threeMonthPrice; }
             if (!empty($sixMonthPrice)) { $fields[] = 'six_month_price = ?'; $params[] = $sixMonthPrice; }
             if (!empty($yearlyPrice)) { $fields[] = 'yearly_price = ?'; $params[] = $yearlyPrice; }
+            if (!empty($threeMonthBadge)) { $fields[] = 'three_month_badge = ?'; $params[] = $threeMonthBadge; }
             if (!empty($sixMonthBadge)) { $fields[] = 'six_month_badge = ?'; $params[] = $sixMonthBadge; }
             if (!empty($yearlyBadge)) { $fields[] = 'yearly_badge = ?'; $params[] = $yearlyBadge; }
             if (isset($input['is_active'])) { $fields[] = 'is_active = ?'; $params[] = $isActive; }
@@ -6163,16 +6300,16 @@ class AiChatController {
             }
             // 8. General / Fallback
             else {
-                $reply = "أهلاً بك! أنا **مرشد الفن الذكي لتطبيق فنان دبي**. يسعدني مساعدتك في كل ما يتعلق بالمشهد الفني والثقافي في دبي:\n\n" .
-                    "• **التسجيل كفنان:** كيفية إنشاء وتوثيق ملفك الفني ورفع لوحاتك.\n" .
-                    "• **الوجهات الثقافية:** السركال أفنيو، حي دبي للتصميم d3، قرية البوابة بمركز دبي المالي، ومركز جميل للفنون.\n" .
-                    "• **خدمات الفنانين:** حجز الفنانين لمناسبات خاصة، شراء اللوحات، والمشاركة في المعارض.\n" .
-                    "• **الفعاليات:** متابعة معارض فن دبي (Art Dubai)، مهرجان سكة، والمسابقات الفنية.\n\n" .
+                $reply = "أهلاً بك! أنا **دليل الفن العالمي – الفنانون، التاريخ والأصول** لتطبيق فنان دبي. يسعدني مساعدتك في استكشاف الفنانين وتاريخ الفن والأصول الثقافية في دبي وفي جميع أنحاء الإمارات وحول العالم:\n\n" .
+                    "• **الفنانون والتسجيل:** كيفية إنشاء وتوثيق ملفك الفني ورفع لوحاتك والتواصل مع المقتنين.\n" .
+                    "• **تاريخ الفن والأصول:** رحلة الفن الإماراتي والعربي والعالمي، والمدارس الفنية الأصيلة والمعاصرة.\n" .
+                    "• **الوجهات الثقافية:** السركال أفنيو، حي دبي للتصميم d3، قرية البوابة بمركز دبي المالي، ومتحف اللوفر أبوظبي ومركز جميل للفنون.\n" .
+                    "• **المعارض والفعاليات:** معارض فن دبي (Art Dubai)، مهرجان سكة، والبيناليات الفنية الدولية.\n\n" .
                     "تفضل بطرح أي استفسار ترغب به وسأجيبك بكل سرور!";
                 $relatedQuestions = [
+                    'ما هي أصول وتاريخ الفن في الإمارات ودبي؟',
                     'كيف أسجل كفنان في هذا التطبيق؟',
                     'ما هي المناطق الفنية التي يمكنني زيارتها في دبي؟',
-                    'أفكار لجولة فنية في عطلة نهاية الأسبوع في دبي',
                 ];
             }
         } else {
@@ -6346,16 +6483,16 @@ class AiChatController {
             }
             // 8. General / Fallback
             else {
-                $reply = "Welcome! I am your **Artist Dubai AI Art Guide**. I am here to help you navigate and explore Dubai's vibrant cultural landscape:\n\n" .
-                    "• **Artist Registration:** Step-by-step guidance to create and publish your artist portfolio.\n" .
-                    "• **Cultural Districts:** Alserkal Avenue, Dubai Design District (d3), DIFC Gate Village, and Jameel Arts Centre.\n" .
-                    "• **Artist Services:** Booking verified artists for live performances, custom murals, and commissions.\n" .
-                    "• **Events & Fairs:** Art Dubai, World Art Dubai, Sikka Art & Design Festival, and gallery openings.\n\n" .
+                $reply = "Welcome! I am your **Global Art Guide – Artists, History & Origins** on Artist Dubai. I am here to help you discover artists, art history, and cultural origins in Dubai, across the UAE, and worldwide:\n\n" .
+                    "• **Artists & Registration:** Guidance to showcase your portfolio, connect with collectors, and explore featured talents.\n" .
+                    "• **Art History & Origins:** Discover the roots of Emirati, Middle Eastern, and international art movements.\n" .
+                    "• **Cultural Destinations:** Alserkal Avenue, Dubai Design District (d3), DIFC Gate Village, Louvre Abu Dhabi, and Jameel Arts Centre.\n" .
+                    "• **Fairs & Exhibitions:** Art Dubai, World Art Dubai, Sikka Art & Design Festival, and global gallery showcases.\n\n" .
                     "What would you like to explore today?";
                 $relatedQuestions = [
+                    'What are the origins and history of art in the UAE and Dubai?',
                     'How do I register as an artist in this app?',
                     'Which art districts can I visit in Dubai?',
-                    'Ideas for a weekend art tour in Dubai',
                 ];
             }
         }
@@ -6396,10 +6533,10 @@ class AiChatController {
             $dbSummary .= "\nFeatured artworks: " . json_encode(array_column($dbContext['matched_artworks'], 'title'), JSON_UNESCAPED_UNICODE);
         }
 
-        $systemInstruction = "You are the official, highly sophisticated, and welcoming AI Art Guide for 'Artist Dubai' (فنان دبي), the premier cultural and visual arts platform celebrating artists, prestigious galleries, cultural districts (Alserkal Avenue, Dubai Design District d3, Al Fahidi Historical Neighbourhood, Jameel Arts Centre), art fairs (Art Dubai, World Art Dubai), and exhibitions across Dubai and the UAE.\n" .
+        $systemInstruction = "You are the official, highly sophisticated, and welcoming Global Art Guide for 'Artist Dubai' (فنان دبي), helping users discover artists, art history, and cultural origins in Dubai, across the UAE, and worldwide, while celebrating prestigious galleries, cultural districts (Alserkal Avenue, Dubai Design District d3, Al Fahidi Historical Neighbourhood, Jameel Arts Centre), art fairs (Art Dubai, World Art Dubai), and exhibitions.\n" .
             "Core Persona & Guidelines:\n" .
             "1. Deliver accurate, inspiring, and concise insights in clean Markdown with clear headings and bullet points tailored for mobile screens.\n" .
-            "2. When discussing artists, exhibitions, or booking, encourage users to explore profiles or events directly on the Artist Dubai app.\n" .
+            "2. When discussing artists, exhibitions, art history, cultural origins, or booking, encourage users to explore profiles or events directly on the Artist Dubai app.\n" .
             "3. Seamlessly ground your answers using the live database context below:\n" .
             $dbSummary . "\n" .
             "4. Language: Answer strictly and eloquently in " . ($isArabic ? "Arabic" : "English") . ".\n\n" .
@@ -7538,7 +7675,9 @@ class UnifiedMySqlApiRouter {
             case 'categories':
                 $cat = new CategoryController();
                 $catAction = strtolower(trim($_GET['action'] ?? $input['action'] ?? ''));
-                if ($catAction === 'delete' || $method === 'DELETE') {
+                if ($catAction === 'seed_defaults' || $catAction === 'seed') {
+                    $cat->seedDefaultCategories();
+                } elseif ($catAction === 'delete' || $method === 'DELETE') {
                     $cat->deleteCategory(array_merge($input, $_GET));
                 } elseif ($catAction === 'update' || $method === 'PUT') {
                     $cat->updateCategory(array_merge($input, $_GET));

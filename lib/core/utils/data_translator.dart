@@ -11,7 +11,62 @@ import '../services/storage_service.dart';
 /// for any arbitrary user-generated content (bios, custom locations, descriptions).
 class DataTranslator {
   static const Map<String, String> _enToAr = {
-    // Categories (Artists, Events, Galleries)
+    // 50 Core Art Categories
+    'painting': 'الرسم',
+    'photography': 'التصوير الفوتوغرافي',
+    'sculpture': 'النحت',
+    'drawing': 'الرسم التخطيطي',
+    'digital art': 'الفن الرقمي',
+    'ai-generated art': 'الفن المولد بالذكاء الاصطناعي',
+    'architecture': 'الهندسة المعمارية',
+    'theatre': 'المسرح',
+    'dance': 'الرقص التعبيري',
+    'music': 'الموسيقى',
+    'film': 'السينما والأفلام',
+    'video art': 'فن الفيديو',
+    'literature': 'الأدب',
+    'poetry': 'الشعر',
+    'creative writing': 'الكتابة الإبداعية',
+    'drama': 'الدراما',
+    'graphic design': 'التصميم الجرافيكي',
+    'fashion design': 'تصميم الأزياء',
+    'interior design': 'التصميم الداخلي',
+    'product design': 'تصميم المنتجات',
+    'crafts': 'الحرف اليدوية',
+    'textile art': 'فن النسيج',
+    'ceramics': 'الخزف والسيراميك',
+    'printmaking': 'فن الطباعة',
+    'illustration': 'الرسم التوضيحي',
+    'street art': 'فن الشارع',
+    'mural art': 'فن الجداريات',
+    'performance art': 'فن الأداء',
+    'installation art': 'فن التركيب والتجهيز',
+    'conceptual art': 'الفن المفاهيمي',
+    'mixed media': 'وسائط متعددة',
+    'collage': 'الكولاج',
+    'video game art': 'فن ألعاب الفيديو',
+    'virtual reality (vr) art': 'فن الواقع الافتراضي',
+    'virtual reality art': 'فن الواقع الافتراضي',
+    'animation': 'الرسوم المتحركة',
+    'comic art': 'فن القصص المصورة',
+    'calligraphy': 'الخط العربي',
+    'jewellery design': 'تصميم المجوهرات',
+    'jewelry design': 'تصميم المجوهرات',
+    'glass art': 'فن الزجاج',
+    'wood art': 'فن الخشب',
+    'metal art': 'فن المعادن',
+    'puppetry': 'مسرح الدمى والعرائس',
+    'opera': 'الأوبرا',
+    'ballet': 'الباليه',
+    'musical theatre': 'المسرح الموسيقي',
+    'experimental art': 'الفن التجريبي',
+    'land art': 'فن الأرض',
+    'environmental art': 'الفن البيئي',
+    'body art': 'فن الرسم على الجسد',
+    'jewellery and accessory design': 'تصميم المجوهرات والإكسسوارات',
+    'jewelry and accessory design': 'تصميم المجوهرات والإكسسوارات',
+
+    // Traditional & Combined Categories
     'contemporary painting': 'الرسم المعاصر',
     'arabic calligraphy': 'الخط العربي',
     'sculpture & bronze': 'النحت والبرونز',
@@ -39,26 +94,27 @@ class DataTranslator {
     'art competition': 'مسابقة فنية',
     'community art project': 'مشروع فني مجتمعي',
     'calligraphy festival': 'مهرجان الخط العربي',
-    'painting': 'رسم',
-    'calligraphy': 'خط عربي',
-    'sculpture': 'نحت',
-    'digital art': 'فن رقمي',
-    'photography': 'تصوير فوتوغرافي',
-    'mixed media': 'وسائط متعددة',
     'traditional': 'فن تقليدي',
     'contemporary': 'فن معاصر',
     'fine art': 'فنون جميلة',
     'abstract': 'تجريدي',
     'realism': 'واقعي',
     'modern art': 'فن حديث',
-    'street art': 'فن الشوارع',
-    'illustration': 'رسم توضيحي',
     'all': 'الكل',
     'all categories': 'جميع الفئات',
 
-    // AI Art Guide
+    // AI / Global Art Guide
     'ai art guide': 'مرشد الفن الذكي',
     'artist dubai guide': 'دليل فنان دبي الذكي',
+    'global art guide': 'دليل الفن العالمي',
+    'global art guide – artists, history & origins':
+        'دليل الفن العالمي – الفنانون، التاريخ والأصول',
+    'global art guide - artists, history & origins':
+        'دليل الفن العالمي – الفنانون، التاريخ والأصول',
+    'discover artists, art history, and cultural origins in dubai, across the uae, and worldwide.':
+        'اكتشف الفنانين وتاريخ الفن والأصول الثقافية في دبي وفي جميع أنحاء الإمارات وحول العالم.',
+    'discover artists, art history, and cultural origins in dubai, across the uae, and worldwide':
+        'اكتشف الفنانين وتاريخ الفن والأصول الثقافية في دبي وفي جميع أنحاء الإمارات وحول العالم',
     'ask about artists, events, galleries and art centers in dubai.':
         'اسأل عن الفنانين والفعاليات والمعارض والمراكز الفنية في دبي.',
     'ask about artists, events, galleries and art centers in dubai':
@@ -581,16 +637,42 @@ class DataTranslator {
     'weekly': 'أسبوعي',
     'monthly': 'شهري',
     'yearly': 'سنوي',
+    '3 months': '٣ أشهر',
     '6 months': '٦ أشهر',
+    '12 months': '١٢ شهراً',
+    '/ 3 mo': '/ ٣ أشهر',
     '/ 6 mo': '/ ٦ أشهر',
+    '/ 12 mo': '/ ١٢ شهراً',
+    '90 days showcase': 'عرض لمدة ٩٠ يوماً',
     '180 days showcase': 'عرض لمدة ١٨٠ يوماً',
     '/ year': '/ سنة',
     '365 days showcase': 'عرض لمدة ٣٦٥ يوماً',
     'gallery showcase': 'عرض المعرض الفني',
     'artist event publishing': 'نشر فعاليات الفنانين',
-    'paid gallery publishing • choose plan': 'نشر المعارض المدفوع • اختر خطة',
+    'paid gallery publishing • choose your plan': 'نشر المعارض المدفوع • اختر خطتك',
+    'paid gallery publishing • choose plan': 'نشر المعارض المدفوع • اختر خطتك',
     'paid gallery publishing': 'نشر المعارض المدفوع',
+    'choose your plan': 'اختر خطتك',
     'choose plan': 'اختر خطة',
+    'exclusive benefits': 'مزايا حصرية',
+    'exclusive benefits:': 'مزايا حصرية:',
+    'exclusive benefits: ': 'مزايا حصرية: ',
+    'enjoy your first 3 months free.': 'استمتع بأول ٣ أشهر مجاناً.',
+    'enjoy your first 3 months free': 'استمتع بأول ٣ أشهر مجاناً',
+    'feature your gallery on curated maps and event calendars, with professional event photography.':
+        'ميّز معرضك على الخرائط المختارة وتقويمات الفعاليات مع تصوير احترافي للفعاليات.',
+    'feature your gallery on curated maps and event calendars, with professional event photography':
+        'ميّز معرضك على الخرائط المختارة وتقويمات الفعاليات مع تصوير احترافي للفعاليات',
+    '3 months gallery showcase': 'عرض المعرض لـ ٣ أشهر',
+    '6 months gallery showcase': 'عرض المعرض لـ ٦ أشهر',
+    '12 months gallery showcase': 'عرض المعرض لـ ١٢ شهراً',
+    'save 25%': 'وفر ٢٥٪',
+    'save 38%': 'وفر ٣٨٪',
+    'special offer': 'عرض خاص',
+    '3 months free': '٣ أشهر مجاناً',
+    'aed 2,000': '٢,٠٠٠ د.إ',
+    'aed 3,000': '٣,٠٠٠ د.إ',
+    'aed 5,000': '٥,٠٠٠ د.إ',
     'publishing your gallery on artist dubai is a premium feature. select your preferred showcase plan. once verified by the admin, your gallery will be featured prominently to art lovers across the uae.':
         'نشر معرضك على منصة فنان دبي ميزة متميزة. اختر خطة العرض المناسبة. بمجرد التحقق من قِبل الإدارة، سيتم إبراز معرضك لعشاق الفن في جميع أنحاء الإمارات.',
     'payment on next step:': 'الدفع في الخطوة التالية:',
@@ -766,7 +848,8 @@ class DataTranslator {
     'welcome to ⚜️ artist dubai ⚜️': 'مرحباً بكم في ⚜️ فنان دبي ⚜️',
     'welcome to ⚜️artist dubai⚜️': 'مرحباً بكم في ⚜️فنان دبي⚜️',
     'welcome to artist dubai': 'مرحباً بكم في فنان دبي',
-    'welcome to dubai artists': 'مرحباً بكم في فنان دبي',
+    'a modern digital platform connecting artists, art lovers, galleries, museums, and cultural events across dubai. discover exhibitions, photography, competitions, and cultural venues—all in one place.':
+        'منصة رقمية حديثة تربط الفنانين وعشاق الفن والمعارض والمتاحف والفعاليات الثقافية في جميع أنحاء دبي. اكتشف المعارض والتصوير الفوتوغرافي والمسابقات والأماكن الثقافية—كلها في مكان واحد.',
     'a modern digital platform connecting artists, art lovers, galleries, museums, and cultural events across dubai. discover exhibitions, photography, competitions, and cultural venues—all in one place.\n\ncoming soon, don\'t miss out!':
         'منصة رقمية حديثة تربط الفنانين وعشاق الفن والمعارض والمتاحف والفعاليات الثقافية في جميع أنحاء دبي. اكتشف المعارض والتصوير الفوتوغرافي والمسابقات والأماكن الثقافية—كلها في مكان واحد.\n\nقريباً، لا تفوت الفرصة!',
     'a modern digital platform connecting artists, art lovers, galleries, museums, and cultural events across dubai. discover exhibitions, photography, competitions, and cultural venues—all in one place.\ncoming soon, don\'t miss out!':
@@ -777,12 +860,29 @@ class DataTranslator {
     'discover the vibrant art scene of dubai and connect with talented local artists':
         'اكتشف مشهد الفن النابض في دبي وتواصل مع فنانين محليين موهوبين',
     'meet local artists': 'تعرف على الفنانين المحليين',
+    'discover artists of all kinds, from emerging talents and hobby artists to established professionals. explore their stories, connect with them directly, showcase their work, and commission unique, custom-made artworks.\n\nevery artist deserves to be seen. every story deserves to be shared.':
+        'اكتشف فنانين من جميع المجالات، من المواهب الصاعدة والهواة إلى المحترفين المرموقين. استكشف قصصهم، وتواصل معهم مباشرة، واعرض أعمالهم، واطلب أعمالاً فنية فريدة ومصممة خصيصاً لك.\n\nكل فنان يستحق أن يُرى. وكل قصة تستحق أن تُروى.',
+    'discover artists of all kinds, from emerging talents and hobby artists to established professionals. explore their stories, connect with them directly, showcase their work, and commission unique, custom-made artworks.\nevery artist deserves to be seen. every story deserves to be shared.':
+        'اكتشف فنانين من جميع المجالات، من المواهب الصاعدة والهواة إلى المحترفين المرموقين. استكشف قصصهم، وتواصل معهم مباشرة، واعرض أعمالهم، واطلب أعمالاً فنية فريدة ومصممة خصيصاً لك.\n\nكل فنان يستحق أن يُرى. وكل قصة تستحق أن تُروى.',
+    'discover artists of all kinds, from emerging talents and hobby artists to established professionals. explore their stories, connect with them directly, showcase their work, and commission unique, custom-made artworks. every artist deserves to be seen. every story deserves to be shared.':
+        'اكتشف فنانين من جميع المجالات، من المواهب الصاعدة والهواة إلى المحترفين المرموقين. استكشف قصصهم، وتواصل معهم مباشرة، واعرض أعمالهم، واطلب أعمالاً فنية فريدة ومصممة خصيصاً لك.\n\nكل فنان يستحق أن يُرى. وكل قصة تستحق أن تُروى.',
     'connect directly with artists, learn about their stories and commission custom works':
         'تواصل مباشرة مع الفنانين وتعرف على قصصهم واطلب أعمالاً خاصة',
     'explore art galleries': 'استكشف المعارض الفنية',
+    'explore art galleries in dubai': 'استكشف المعارض الفنية في دبي',
+    'discover dubai’s finest art galleries with just one click. explore gallery locations, discover current exhibitions, connect with talented artists, and experience the city’s vibrant art scene. from contemporary art spaces to internationally renowned galleries, find the best of dubai’s art world in one place.':
+        'اكتشف أرقى المعارض الفنية في دبي بنقرة واحدة فقط. استكشف مواقع المعارض، وتعرف على المعارض الحالية، وتواصل مع الفنانين الموهوبين، وعش تجربة المشهد الفني النابض في المدينة. من مساحات الفن المعاصر إلى المعارض ذات الشهرة العالمية، ابحث عن أفضل ما في عالم الفن في دبي في مكان واحد.',
+    'discover dubai\'s finest art galleries with just one click. explore gallery locations, discover current exhibitions, connect with talented artists, and experience the city\'s vibrant art scene. from contemporary art spaces to internationally renowned galleries, find the best of dubai\'s art world in one place.':
+        'اكتشف أرقى المعارض الفنية في دبي بنقرة واحدة فقط. استكشف مواقع المعارض، وتعرف على المعارض الحالية، وتواصل مع الفنانين الموهوبين، وعش تجربة المشهد الفني النابض في المدينة. من مساحات الفن المعاصر إلى المعارض ذات الشهرة العالمية، ابحث عن أفضل ما في عالم الفن في دبي في مكان واحد.',
     'browse through curated collections and find your next favorite piece':
         'تصفح المجموعات الفنية المختارة واعثر على عملك المفضل التالي',
     'art events & exhibitions': 'الفعاليات والمعارض الفنية',
+    'stay up to date with inspiring art events, exhibitions, and cultural happenings in dubai and around the world. discover exciting opportunities across europe, america, and beyond. explore the beauty, creativity, innovation, and diversity of the international art scene—all in one place.\n\ndiscover. connect. experience art worldwide.':
+        'ابقَ على اطلاع دائم بالفعاليات والمعارض والأنشطة الثقافية الملهمة في دبي وحول العالم. اكتشف فرصاً مثيرة في أوروبا وأمريكا وما وراء ذلك. استكشف الجمال والإبداع والابتكار والتنوع في المشهد الفني الدولي—كلها في مكان واحد.\n\nاكتشف. تواصل. عش تجربة الفن في جميع أنحاء العالم.',
+    'stay up to date with inspiring art events, exhibitions, and cultural happenings in dubai and around the world. discover exciting opportunities across europe, america, and beyond. explore the beauty, creativity, innovation, and diversity of the international art scene—all in one place.\ndiscover. connect. experience art worldwide.':
+        'ابقَ على اطلاع دائم بالفعاليات والمعارض والأنشطة الثقافية الملهمة في دبي وحول العالم. اكتشف فرصاً مثيرة في أوروبا وأمريكا وما وراء ذلك. استكشف الجمال والإبداع والابتكار والتنوع في المشهد الفني الدولي—كلها في مكان واحد.\n\nاكتشف. تواصل. عش تجربة الفن في جميع أنحاء العالم.',
+    'stay up to date with inspiring art events, exhibitions, and cultural happenings in dubai and around the world. discover exciting opportunities across europe, america, and beyond. explore the beauty, creativity, innovation, and diversity of the international art scene—all in one place. discover. connect. experience art worldwide.':
+        'ابقَ على اطلاع دائم بالفعاليات والمعارض والأنشطة الثقافية الملهمة في دبي وحول العالم. اكتشف فرصاً مثيرة في أوروبا وأمريكا وما وراء ذلك. استكشف الجمال والإبداع والابتكار والتنوع في المشهد الفني الدولي—كلها في مكان واحد.\n\nاكتشف. تواصل. عش تجربة الفن في جميع أنحاء العالم.',
     'stay updated with the latest art events, exhibitions and cultural happenings in dubai':
         'ابقَ على اطلاع بأحدث الفعاليات والمعارض والأنشطة الثقافية في دبي',
     'skip': 'تخطي',
@@ -905,7 +1005,9 @@ class DataTranslator {
     'total payable:': 'إجمالي المبلغ المستحق:',
     'total payable': 'إجمالي المبلغ المستحق',
     'yearly plan (365 days)': 'الخطة السنوية (365 يوماً)',
+    '12 months plan (365 days)': 'خطة 12 شهراً (365 يوماً)',
     '6 months plan (180 days)': 'خطة 6 أشهر (180 يوماً)',
+    '3 months plan (90 days)': 'خطة 3 أشهر (90 يوماً)',
     'monthly plan (30 days)': 'الخطة الشهرية (30 يوماً)',
     'single event plan': 'خطة فعالية واحدة',
     'single event listing': 'إعلان فعالية واحدة',
@@ -1275,19 +1377,33 @@ class DataTranslator {
         'مرحباً بكم في ⚜️ فنان دبي ⚜️': 'Welcome to ⚜️ Artist Dubai ⚜️',
         'مرحباً بكم في ⚜️فنان دبي⚜️': 'Welcome to ⚜️Artist Dubai⚜️',
         'مرحباً بكم في فنان دبي': 'Welcome to Artist Dubai',
+        'منصة رقمية حديثة تربط الفنانين وعشاق الفن والمعارض والمتاحف والفعاليات الثقافية في جميع أنحاء دبي. اكتشف المعارض والتصوير الفوتوغرافي والمسابقات والأماكن الثقافية—كلها في مكان واحد.':
+            'A modern digital platform connecting artists, art lovers, galleries, museums, and cultural events across Dubai. Discover exhibitions, photography, competitions, and cultural venues—all in one place.',
         'قريباً، لا تفوت الفرصة!': 'Coming soon, don\'t miss out!',
         'قريباً': 'Coming Soon',
         'اكتشف مشهد الفن النابض في دبي وتواصل مع فنانين محليين موهوبين':
             'Discover the vibrant art scene of Dubai and connect with talented local artists',
         'تعرف على الفنانين المحليين': 'Meet Local Artists',
+        'اكتشف فنانين من جميع المجالات، من المواهب الصاعدة والهواة إلى المحترفين المرموقين. استكشف قصصهم، وتواصل معهم مباشرة، واعرض أعمالهم، واطلب أعمالاً فنية فريدة ومصممة خصيصاً لك.\n\nكل فنان يستحق أن يُرى. وكل قصة تستحق أن تُروى.':
+            'Discover artists of all kinds, from emerging talents and hobby artists to established professionals. Explore their stories, connect with them directly, showcase their work, and commission unique, custom-made artworks.\n\nEvery artist deserves to be seen. Every story deserves to be shared.',
         'تواصل مباشرة مع الفنانين وتعرف على قصصهم واطلب أعمالاً خاصة':
             'Connect directly with artists, learn about their stories and commission custom works',
         'استكشف المعارض الفنية': 'Explore Art Galleries',
+        'استكشف المعارض الفنية في دبي': 'Explore Art Galleries in Dubai',
+        'اكتشف أرقى المعارض الفنية في دبي بنقرة واحدة فقط. استكشف مواقع المعارض، وتعرف على المعارض الحالية، وتواصل مع الفنانين الموهوبين، وعش تجربة المشهد الفني النابض في المدينة. من مساحات الفن المعاصر إلى المعارض ذات الشهرة العالمية، ابحث عن أفضل ما في عالم الفن في دبي في مكان واحد.':
+            'Discover Dubai’s finest art galleries with just one click. Explore gallery locations, discover current exhibitions, connect with talented artists, and experience the city’s vibrant art scene. From contemporary art spaces to internationally renowned galleries, find the best of Dubai’s art world in one place.',
         'تصفح المجموعات الفنية المختارة واعثر على عملك المفضل التالي':
             'Browse through curated collections and find your next favorite piece',
         'الفعاليات والمعارض الفنية': 'Art Events & Exhibitions',
+        'ابقَ على اطلاع دائم بالفعاليات والمعارض والأنشطة الثقافية الملهمة في دبي وحول العالم. اكتشف فرصاً مثيرة في أوروبا وأمريكا وما وراء ذلك. استكشف الجمال والإبداع والابتكار والتنوع في المشهد الفني الدولي—كلها في مكان واحد.\n\nاكتشف. تواصل. عش تجربة الفن في جميع أنحاء العالم.':
+            'Stay up to date with inspiring art events, exhibitions, and cultural happenings in Dubai and around the world. Discover exciting opportunities across Europe, America, and beyond. Explore the beauty, creativity, innovation, and diversity of the international art scene—all in one place.\n\nDiscover. Connect. Experience Art Worldwide.',
         'ابقَ على اطلاع بأحدث الفعاليات والمعارض والأنشطة الثقافية في دبي':
             'Stay updated with the latest art events, exhibitions and cultural happenings in Dubai',
+        'الدليل الفني العالمي – الفنانون والتاريخ والأصول':
+            'Global Art Guide – Artists, History & Origins',
+        'الدليل الفني العالمي': 'Global Art Guide',
+        'اكتشف الفنانين وتاريخ الفن والأصول الثقافية في دبي وعبر الإمارات وحول العالم.':
+            'Discover artists, art history, and cultural origins in Dubai, across the UAE, and worldwide.',
         'تخطي': 'Skip',
         'السابق': 'Previous',
         'التالي': 'Next',

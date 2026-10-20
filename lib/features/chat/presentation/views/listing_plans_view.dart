@@ -881,9 +881,9 @@ class _ListingPlansViewState extends State<ListingPlansView> {
         iconData = Icons.forum_outlined;
         break;
       case 'artist':
-        iconColor = const Color(0xFFD97706);
+        iconColor = const Color(0xFF6B1C9B);
         iconGradient = const LinearGradient(
-          colors: [Color(0xFFFEF3C7), Color(0xFFFDE68A)],
+          colors: [Color(0xFFF3E8FF), Color(0xFFE9D5FF)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         );

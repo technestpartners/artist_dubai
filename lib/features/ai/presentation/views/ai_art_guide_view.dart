@@ -1051,7 +1051,7 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
                 const SizedBox(width: 6),
                 Flexible(
                   child: Text(
-                    isArabic ? 'مرشد الفن الذكي' : 'AI ART GUIDE',
+                    isArabic ? 'دليل الفن العالمي' : 'GLOBAL ART GUIDE',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -1146,13 +1146,14 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
 
               // Main Title
               Text(
-                isArabic ? 'مرشد فنان دبي الذكي' : 'ARTIST DUBAI Guide',
+                'Global Art Guide – Artists, History & Origins'.trData(context),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 21,
+                  fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 0.4,
+                  letterSpacing: 0.3,
+                  height: 1.25,
                 ),
               ),
 
@@ -1162,16 +1163,15 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Text(
-                  isArabic
-                      ? 'اسأل عن الفنانين والفعاليات والمعارض والمراكز الفنية في دبي.'
-                      : 'Ask about artists, events, galleries and art centers in Dubai.',
+                  'Discover artists, art history, and cultural origins in Dubai, across the UAE, and worldwide.'
+                      .trData(context),
                   textAlign: TextAlign.center,
                   textDirection:
                       isArabic ? TextDirection.rtl : TextDirection.ltr,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.72),
+                    color: Colors.white.withValues(alpha: 0.76),
                     fontSize: 13.5,
-                    height: 1.35,
+                    height: 1.4,
                   ),
                 ),
               ),

@@ -1059,18 +1059,24 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       } else {
         publishingAmount =
             _eventPricing?.getPriceForPlan(_selectedPublishingPlan) ??
-            (_selectedPublishingPlan == 'monthly'
-                ? 'AED 500'
-                : (_selectedPublishingPlan == 'yearly'
-                    ? 'AED 4,500'
-                    : 'AED 2,500'));
+            (_selectedPublishingPlan == 'three_month'
+                ? (_eventPricing?.threeMonthPrice ?? 'AED 1,200')
+                : (_selectedPublishingPlan == 'monthly'
+                    ? 'AED 500'
+                    : (_selectedPublishingPlan == 'yearly'
+                        ? 'AED 4,500'
+                        : 'AED 2,500')));
         resolvedPlanName = _selectedPublishingPlan == 'yearly'
             ? (_eventPricing?.yearlyBadge.trim().isNotEmpty == true
                 ? '${l10n.yearly} (${_eventPricing!.yearlyBadge.trim()})'
-                : 'Yearly Plan (365 Days)')
-            : (_eventPricing?.sixMonthBadge.trim().isNotEmpty == true
-                ? '${l10n.sixMonths} (${_eventPricing!.sixMonthBadge.trim()})'
-                : '6 Months Plan (180 Days)');
+                : '12 Months Plan (365 Days)')
+            : (_selectedPublishingPlan == 'three_month'
+                ? (_eventPricing?.threeMonthBadge.trim().isNotEmpty == true
+                    ? '3 Months (${_eventPricing!.threeMonthBadge.trim()})'
+                    : '3 Months Plan (90 Days)')
+                : (_eventPricing?.sixMonthBadge.trim().isNotEmpty == true
+                    ? '${l10n.sixMonths} (${_eventPricing!.sixMonthBadge.trim()})'
+                    : '6 Months Plan (180 Days)'));
       }
       final txnRef = _transactionIdController.text.trim();
       final hasPaymentProof =
@@ -2078,14 +2084,16 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                             ? plan.features.first.trim()
                                             : (plan.description.trim().isNotEmpty
                                                 ? plan.description.trim()
-                                                : (plan.category.trim().isNotEmpty
-                                                    ? plan.category.trim()
+                                                : (plan.duration.isNotEmpty
+                                                    ? plan.duration
                                                     : 'Verified Event Showcase'));
                                         return _buildPricingPlanCard(
                                           id: planId,
                                           title: plan.title,
                                           price: plan.price,
-                                          period: '',
+                                          period: plan.duration.isNotEmpty
+                                              ? ' · ${plan.duration}'
+                                              : '',
                                           subtitle: subtitle,
                                           tag:
                                               plan.badge.isNotEmpty
@@ -2094,12 +2102,26 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                         );
                                       }).toList();
                                     } else {
+                                      final threeMonthPrice =
+                                          _eventPricing?.threeMonthPrice ??
+                                          'AED 1,200';
                                       final sixMonthPrice =
                                           _eventPricing?.sixMonthPrice ??
                                           'AED 2,500';
                                       final yearlyPrice =
                                           _eventPricing?.yearlyPrice ??
                                           'AED 4,500';
+                                      final threeMonthSubtitle =
+                                          _eventPricing?.threeMonthBadge
+                                                      .trim()
+                                                      .isNotEmpty ==
+                                                  true
+                                              ? DataTranslator.tr(
+                                                context,
+                                                _eventPricing!.threeMonthBadge
+                                                    .trim(),
+                                              )
+                                              : '90 days active'.trData(context);
                                       final sixMonthSubtitle =
                                           _eventPricing?.sixMonthBadge
                                                       .trim()
@@ -2124,11 +2146,20 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
 
                                       cards = [
                                         _buildPricingPlanCard(
+                                          id: 'three_month',
+                                          title: '3 Months'.trData(context),
+                                          price: threeMonthPrice,
+                                          period: '/ 3 mo',
+                                          subtitle: threeMonthSubtitle,
+                                          tag: 'Special Offer',
+                                        ),
+                                        _buildPricingPlanCard(
                                           id: 'six_month',
                                           title: l10n.sixMonths,
                                           price: sixMonthPrice,
                                           period: '/ 6 mo',
                                           subtitle: sixMonthSubtitle,
+                                          tag: 'Save 25%',
                                         ),
                                         _buildPricingPlanCard(
                                           id: 'yearly',
@@ -2136,6 +2167,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                           price: yearlyPrice,
                                           period: '/ year',
                                           subtitle: yearlySubtitle,
+                                          tag: 'Best Value',
                                         ),
                                       ];
                                     }
@@ -2338,13 +2370,15 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     } else {
       planAmount =
           _eventPricing?.getPriceForPlan(_selectedPublishingPlan) ??
-          (_selectedPublishingPlan == 'monthly'
-              ? 'AED 500'
-              : (_selectedPublishingPlan == 'six_month'
-                  ? 'AED 2,500'
-                  : (_selectedPublishingPlan == 'yearly'
-                      ? 'AED 4,500'
-                      : 'AED 150')));
+          (_selectedPublishingPlan == 'three_month'
+              ? (_eventPricing?.threeMonthPrice ?? 'AED 1,200')
+              : (_selectedPublishingPlan == 'monthly'
+                  ? 'AED 500'
+                  : (_selectedPublishingPlan == 'six_month'
+                      ? 'AED 2,500'
+                      : (_selectedPublishingPlan == 'yearly'
+                          ? 'AED 4,500'
+                          : 'AED 150'))));
     }
 
     return Container(

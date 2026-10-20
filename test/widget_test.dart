@@ -70,7 +70,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Explore Categories'), findsOneWidget);
-      expect(find.text('Calligraphy & Typography'), findsOneWidget);
+      expect(find.text('Calligraphy'), findsOneWidget);
     });
 
     testWidgets('3. Category Detail View & Segmented Tab Switcher Test', (
