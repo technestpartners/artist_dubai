@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Clean native launch window background without launcher screen image -->
+<!-- Immediately renders the full splash screen artwork directly on frame 0 with zero blank screen -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/splash_background" />
+    <item>
+        <bitmap
+            android:gravity="fill"
+            android:src="@drawable/launch_image" />
+    </item>
 </layer-list>

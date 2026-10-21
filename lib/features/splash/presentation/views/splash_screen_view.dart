@@ -80,10 +80,11 @@ class _SplashScreenViewState extends State<SplashScreenView>
   void initState() {
     super.initState();
 
-    // 1. Setup smooth entrance animation matching brand aesthetics
+    // 1. Setup instant full-opacity rendering matching the native launch background with zero blank screen
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 750),
+      value: 1.0,
     );
 
     _fadeAnimation = CurvedAnimation(
