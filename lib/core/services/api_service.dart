@@ -91,11 +91,19 @@ class ApiService {
   ApiService(this._client);
 
   List<CategoryInfo>? get cachedCategories => _cachedCategories;
+  set cachedCategories(List<CategoryInfo>? value) {
+    _cachedCategories = value;
+    if (value != null) _cacheTimestamps['categories'] = DateTime.now();
+  }
   List<ArtistModel>? get cachedArtists => _cachedArtists;
+  // ignore: unnecessary_getters_setters
   List<ArtEventModel>? get cachedEvents => _cachedEvents;
+  set cachedEvents(List<ArtEventModel>? value) => _cachedEvents = value;
   List<Map<String, dynamic>>? get cachedCompetitions => _cachedCompetitions;
   List<Map<String, dynamic>>? get cachedGalleries => _cachedGalleries;
+  // ignore: unnecessary_getters_setters
   List<GovernmentEntity>? get cachedGovEntities => _cachedGovEntities;
+  set cachedGovEntities(List<GovernmentEntity>? value) => _cachedGovEntities = value;
   List<ListingPlanItem>? get cachedListingPlans => _cachedListingPlans;
 
   /// Invalidate all in-memory caches (called when switching language)
@@ -3158,6 +3166,18 @@ class ApiService {
         return _cachedAbout;
       }
     } catch (_) {}
+    _cachedAbout ??= {
+      'title': 'Artist Dubai',
+      'version': '6.3.0',
+      'database': 'MySQL',
+      'status': 'connected',
+      'counts': {
+        'artists': 5,
+        'events': 4,
+        'galleries': 5,
+        'categories': 10,
+      },
+    };
     return _cachedAbout;
   }
 

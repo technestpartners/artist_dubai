@@ -314,65 +314,77 @@ class _AppTopBarState extends State<AppTopBar> {
                         size: isCompact ? 13 : 15,
                         color: const Color(0xFF5E227A),
                       ),
-                      SizedBox(width: isCompact ? 3 : 5),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 5,
-                          vertical: 1.5,
-                        ),
-                        decoration: BoxDecoration(
-                          color:
-                              !isArabic
-                                  ? const Color(0xFF5E227A)
-                                  : Colors.transparent,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          'EN',
-                          style: TextStyle(
+                      if (rh.width > 340) ...[
+                        SizedBox(width: isCompact ? 3 : 5),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 1.5,
+                          ),
+                          decoration: BoxDecoration(
                             color:
                                 !isArabic
-                                    ? Colors.white
-                                    : const Color(0xFF5E227A),
-                            fontSize: isCompact ? 10.5 : 11.5,
-                            fontWeight:
-                                !isArabic ? FontWeight.bold : FontWeight.w600,
+                                    ? const Color(0xFF5E227A)
+                                    : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            'EN',
+                            style: TextStyle(
+                              color:
+                                  !isArabic
+                                      ? Colors.white
+                                      : const Color(0xFF5E227A),
+                              fontSize: isCompact ? 10.5 : 11.5,
+                              fontWeight:
+                                  !isArabic ? FontWeight.bold : FontWeight.w600,
+                            ),
                           ),
                         ),
-                      ),
-                      const Text(
-                        '|',
-                        style: TextStyle(
-                          color: Color(0xFF5E227A),
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w300,
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 5,
-                          vertical: 1.5,
-                        ),
-                        decoration: BoxDecoration(
-                          color:
-                              isArabic
-                                  ? const Color(0xFF5E227A)
-                                  : Colors.transparent,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          'عربي',
+                        const Text(
+                          '|',
                           style: TextStyle(
+                            color: Color(0xFF5E227A),
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w300,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 1.5,
+                          ),
+                          decoration: BoxDecoration(
                             color:
                                 isArabic
-                                    ? Colors.white
-                                    : const Color(0xFF5E227A),
-                            fontSize: isCompact ? 10.5 : 11.5,
-                            fontWeight:
-                                isArabic ? FontWeight.bold : FontWeight.w600,
+                                    ? const Color(0xFF5E227A)
+                                    : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            'عربي',
+                            style: TextStyle(
+                              color:
+                                  isArabic
+                                      ? Colors.white
+                                      : const Color(0xFF5E227A),
+                              fontSize: isCompact ? 10.5 : 11.5,
+                              fontWeight:
+                                  isArabic ? FontWeight.bold : FontWeight.w600,
+                            ),
                           ),
                         ),
-                      ),
+                      ] else ...[
+                        const SizedBox(width: 3),
+                        Text(
+                          isArabic ? 'عربي' : 'EN',
+                          style: const TextStyle(
+                            color: Color(0xFF5E227A),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

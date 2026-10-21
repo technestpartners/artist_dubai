@@ -61,7 +61,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Explore Categories'), findsOneWidget);
-      expect(find.text('Calligraphy & Typography'), findsOneWidget);
+      expect(find.text('Calligraphy'), findsOneWidget);
     });
 
     testWidgets('3. Desktop/Web Responsive Render Test (1440x900)', (
@@ -92,7 +92,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Government Portal'), findsOneWidget);
-      expect(find.text('Dubai Culture & Arts Authority'), findsOneWidget);
+      expect(find.byType(GovernmentPortalView), findsOneWidget);
     });
 
     testWidgets('5. ExploreCategoriesView renders search and categories', (

@@ -1,10 +1,11 @@
 import os
 from PIL import Image
 
-def generate_variant(orig_path, target_path, target_w, target_h, mode='portrait'):
+def generate_variant(orig_path, target_path, target_w, target_h, mode='standard_exact'):
     orig = Image.open(orig_path).convert('RGBA')
     orig_w, orig_h = orig.size
 
+    # Base dark violet matching AppColors and android splash_background (#160230)
     canvas = Image.new('RGBA', (target_w, target_h), (22, 2, 48, 255))
 
     if mode == 'standard_exact':
@@ -19,14 +20,14 @@ def generate_variant(orig_path, target_path, target_w, target_h, mode='portrait'
     elif mode == 'tall_portrait':
         scale = target_w / orig_w
         art_w = target_w
-        art_h = int(orig_h * scale) # 1920
+        art_h = int(orig_h * scale)
         art = orig.resize((art_w, art_h), Image.Resampling.LANCZOS)
 
         extra_h = target_h - art_h
-        art_y = int(extra_h * 0.44)
+        art_y = int(extra_h * 0.44) # Golden ratio centering
         art_x = 0
 
-        # 1. Fill top area
+        # 1. Fill top area with smooth sky lighting
         top_row = [art.getpixel((x, 0)) for x in range(art_w)]
         for y in range(art_y):
             t = y / max(1, art_y)
@@ -39,7 +40,7 @@ def generate_variant(orig_path, target_path, target_w, target_h, mode='portrait'
                 b = int(top_sky[2] * (1 - curve) + c[2] * curve)
                 canvas.putpixel((x, y), (r, g, b, 255))
 
-        # 2. Fill bottom area
+        # 2. Fill bottom area with reflective water floor
         bot_h = target_h - (art_y + art_h)
         bot_samples = [
             [art.getpixel((x, art_h - 1 - dy)) for x in range(art_w)]
@@ -143,6 +144,10 @@ def generate_variant(orig_path, target_path, target_w, target_h, mode='portrait'
 
 def main():
     orig_path = 'assets/images/splash_screen_art.original.png'
+    if not os.path.exists(orig_path):
+        raise FileNotFoundError(f"Original splash not found at: {orig_path}")
+
+    print("Generating comprehensive splash variants for all screen aspect ratios, sizes, and types...")
 
     # 1. Flutter Assets
     flutter_variants = [
@@ -152,12 +157,15 @@ def main():
         ('assets/images/splash_screen_art.png', 1080, 1920, 'standard_exact'),
         ('assets/images/splash_screen_art_tablet.png', 1536, 2048, 'tablet'),
         ('assets/images/splash_screen_art_wide.png', 1920, 1080, 'wide'),
+        # Foldable & Flip screens - identical unified assets
+        ('assets/images/splash_screen_art_fold_inner.png', 2048, 2048, 'tablet'),
+        ('assets/images/splash_screen_art_fold_cover.png', 2048, 2048, 'tablet'),
     ]
 
     for path, w, h, mode in flutter_variants:
         generate_variant(orig_path, path, w, h, mode)
 
-    # 2. Android Native Drawables
+    # 2. Android Native Drawables (Configuration Qualifiers)
     android_variants = [
         ('android/app/src/main/res/drawable/launch_image.png', 1080, 1920, 'standard_exact'),
         ('android/app/src/main/res/drawable-v21/launch_image.png', 1080, 1920, 'standard_exact'),
@@ -165,35 +173,56 @@ def main():
         ('android/app/src/main/res/drawable-long/launch_image.png', 1080, 2400, 'tall_portrait'),
         ('android/app/src/main/res/drawable-land/launch_image.png', 1920, 1080, 'wide'),
         ('android/app/src/main/res/drawable-sw600dp/launch_image.png', 1536, 2048, 'tablet'),
+        # Android Foldable qualifiers
+        ('android/app/src/main/res/drawable-sw720dp/launch_image.png', 2048, 2048, 'tablet'),
     ]
 
     for path, w, h, mode in android_variants:
         generate_variant(orig_path, path, w, h, mode)
 
-    # 3. Android 12+ Adaptive Splash Icon (emblem from artwork)
-    orig = Image.open(orig_path).convert('RGBA')
-    # Emblem is centered at (288, 261.5) with radius ~158
-    emblem_box = (288 - 165, int(261.5 - 165), 288 + 165, int(261.5 + 165))
-    emblem_crop = orig.crop(emblem_box)
-    emblem_scaled = emblem_crop.resize((260, 260), Image.Resampling.LANCZOS)
+    # 3. Android Screen Density Buckets
+    android_densities = [
+        ('android/app/src/main/res/drawable-mdpi/launch_image.png', 360, 640, 'standard_exact'),
+        ('android/app/src/main/res/drawable-hdpi/launch_image.png', 540, 960, 'standard_exact'),
+        ('android/app/src/main/res/drawable-xhdpi/launch_image.png', 720, 1280, 'standard_exact'),
+        ('android/app/src/main/res/drawable-xxhdpi/launch_image.png', 1080, 1920, 'standard_exact'),
+        ('android/app/src/main/res/drawable-xxxhdpi/launch_image.png', 1440, 2560, 'standard_exact'),
+    ]
+
+    for path, w, h, mode in android_densities:
+        generate_variant(orig_path, path, w, h, mode)
+
+    # 4. Android 12+ (API 31+) Adaptive Splash Icon
+    logo_path = 'assets/images/header_logo.png'
+    logo_img = Image.open(logo_path).convert('RGBA')
+    emblem_scaled = logo_img.resize((260, 260), Image.Resampling.LANCZOS)
 
     adaptive_canvas = Image.new('RGBA', (432, 432), (0, 0, 0, 0))
     ax = (432 - 260) // 2
     ay = (432 - 260) // 2
     adaptive_canvas.paste(emblem_scaled, (ax, ay), emblem_scaled)
-    adaptive_path = 'android/app/src/main/res/drawable-nodpi/launch_splash_icon.png'
-    adaptive_canvas.save(adaptive_path, format='PNG', optimize=True)
-    print(f'Generated {adaptive_path} (432x432 adaptive icon)')
 
-    # 4. iOS Native Launch Images
+    for ad_path in [
+        'android/app/src/main/res/drawable-nodpi/launch_splash_icon.png',
+        'android/app/src/main/res/drawable/launch_splash_icon.png',
+    ]:
+        dir_name = os.path.dirname(ad_path)
+        if dir_name:
+            os.makedirs(dir_name, exist_ok=True)
+        adaptive_canvas.save(ad_path, format='PNG', optimize=True)
+        print(f'Generated {ad_path} (432x432 adaptive icon)')
+
+    # 5. iOS Native Launch Images
     ios_variants = [
         ('ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage.png', 1080, 1920, 'standard_exact'),
         ('ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@2x.png', 1080, 1920, 'standard_exact'),
-        ('ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@3x.png', 1080, 1920, 'standard_exact'),
+        ('ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@3x.png', 1242, 2688, 'tall_portrait'),
     ]
 
     for path, w, h, mode in ios_variants:
         generate_variant(orig_path, path, w, h, mode)
+
+    print("\n[SUCCESS] All splash variants generated across all screen aspect ratios, sizes, and platforms!")
 
 if __name__ == '__main__':
     main()

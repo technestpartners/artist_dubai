@@ -851,7 +851,8 @@ class _EventDetailViewState extends State<EventDetailView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
                           'Event Organizer'.trData(context),

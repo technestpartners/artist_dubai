@@ -1252,7 +1252,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                               size: 16,
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 6),
                           Expanded(
                             child: Text(
                               'Paid Gallery Publishing • Choose Your Plan'.trData(
@@ -1260,28 +1260,29 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                               ),
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 13.5,
+                                fontSize: 13.0,
                                 fontWeight: FontWeight.w800,
-                                letterSpacing: 0.2,
+                                letterSpacing: 0.1,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          const SizedBox(width: 4),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
+                              horizontal: 6,
+                              vertical: 2.5,
                             ),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(8),
                               border: Border.all(color: Colors.white24),
                             ),
                             child: Text(
                               'Curated Showcase'.trData(context),
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 9.5,
+                                fontSize: 9.0,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -1332,13 +1333,14 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                                 TextSpan(
                                   children: [
                                     TextSpan(
-                                      text: 'Exclusive Benefits: '.trData(context),
+                                      text: 'Exclusive Benefits:'.trData(context),
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w800,
                                         fontSize: 12,
                                       ),
                                     ),
+                                    const TextSpan(text: ' '),
                                     TextSpan(
                                       text: 'Enjoy your first 3 months free.'.trData(context),
                                       style: const TextStyle(
@@ -1663,153 +1665,158 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
             _selectedPublishingPlan = id;
           });
         },
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          duration: const Duration(milliseconds: 220),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(14),
+            color: isSelected
+                ? Colors.white
+                : Colors.white.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected
-                  ? const Color(0xFFC084FC)
-                  : Colors.white.withValues(alpha: 0.18),
-              width: isSelected ? 1.8 : 1.0,
+                  ? const Color(0xFF9333EA)
+                  : Colors.white.withValues(alpha: 0.20),
+              width: isSelected ? 2.0 : 1.0,
             ),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
                       color: const Color(0xFF5E227A).withValues(alpha: 0.18),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
+                      blurRadius: 18,
+                      offset: const Offset(0, 5),
                     ),
                     BoxShadow(
-                      color: const Color(0xFFC084FC).withValues(alpha: 0.22),
+                      color: const Color(0xFF9333EA).withValues(alpha: 0.15),
                       blurRadius: 8,
-                      offset: const Offset(0, 1),
+                      offset: const Offset(0, 2),
                     ),
                   ]
                 : null,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Top Row: Title + Tag (Badge) + Radio Check
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Text(
-                      title.trData(context),
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w800,
-                        color: isSelected ? const Color(0xFF1E1B4B) : Colors.white,
-                        letterSpacing: -0.2,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (tag != null && tag.isNotEmpty) ...[
-                    const SizedBox(width: 6),
-                    Container(
+          child: LayoutBuilder(
+            builder: (context, cardConstraints) {
+              final isCompactCard = cardConstraints.maxWidth < 280;
+
+              final radioCheck = AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: isSelected
+                      ? const LinearGradient(
+                          colors: [Color(0xFF6B1C9B), Color(0xFF9333EA)],
+                        )
+                      : null,
+                  border: isSelected
+                      ? null
+                      : Border.all(
+                          color: Colors.white.withValues(alpha: 0.40),
+                          width: 1.8,
+                        ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFF9333EA)
+                                .withValues(alpha: 0.40),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: isSelected
+                    ? const Icon(
+                        Icons.check_rounded,
+                        size: 15,
+                        color: Colors.white,
+                      )
+                    : null,
+              );
+
+              final tagBadge = (tag != null && tag.isNotEmpty)
+                  ? Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 2.5,
+                        horizontal: 8,
+                        vertical: 3,
                       ),
                       decoration: BoxDecoration(
                         gradient: isSelected
                             ? const LinearGradient(
-                                colors: [Color(0xFFEDE9FE), Color(0xFFDDD6FE)],
+                                colors: [
+                                  Color(0xFF6B1C9B),
+                                  Color(0xFF9333EA),
+                                ],
                               )
                             : LinearGradient(
                                 colors: [
-                                  Colors.white.withValues(alpha: 0.18),
-                                  Colors.white.withValues(alpha: 0.1),
+                                  Colors.white.withValues(alpha: 0.22),
+                                  Colors.white.withValues(alpha: 0.12),
                                 ],
                               ),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: isSelected
-                              ? const Color(0xFFC084FC)
-                              : Colors.white24,
-                          width: 0.8,
-                        ),
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: const Color(0xFF9333EA)
+                                      .withValues(alpha: 0.35),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
                       ),
-                      child: Text(
-                        tag.trData(context),
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: isSelected
-                              ? const Color(0xFF6B21A8)
-                              : const Color(0xFFE9D5FF),
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(width: 8),
-                  // Custom Radio Checkmark
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: isSelected
-                          ? const LinearGradient(
-                              colors: [Color(0xFF6A2777), Color(0xFF9333EA)],
-                            )
-                          : null,
-                      border: isSelected
-                          ? null
-                          : Border.all(
-                              color: Colors.white38,
-                              width: 1.6,
-                            ),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: const Color(0xFF7E22CE).withValues(alpha: 0.4),
-                                blurRadius: 4,
-                                offset: const Offset(0, 1),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.star_rounded,
+                            size: 11,
+                            color: isSelected
+                                ? Colors.white
+                                : const Color(0xFFE9D5FF),
+                          ),
+                          const SizedBox(width: 3),
+                          Flexible(
+                            child: Text(
+                              tag.trData(context),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                color: isSelected
+                                    ? Colors.white
+                                    : const Color(0xFFE9D5FF),
+                                letterSpacing: 0.2,
                               ),
-                            ]
-                          : null,
-                    ),
-                    child: isSelected
-                        ? const Icon(
-                            Icons.check_rounded,
-                            size: 14,
-                            color: Colors.white,
-                          )
-                        : null,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : null;
 
-              // Price Row: e.g. AED 750 / 6 mo
-              Row(
+              final priceWidget = Row(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(
                     price.trData(context),
                     style: TextStyle(
-                      fontSize: 17,
+                      fontSize: 18,
                       fontWeight: FontWeight.w900,
                       color: isSelected
-                          ? const Color(0xFF0F172A)
+                          ? const Color(0xFF5E227A)
                           : Colors.white,
-                      letterSpacing: -0.3,
+                      letterSpacing: -0.4,
                     ),
                   ),
                   if (period.isNotEmpty) ...[
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 3),
                     Text(
                       period.trData(context),
                       style: TextStyle(
@@ -1822,38 +1829,128 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                     ),
                   ],
                 ],
-              ),
-              const SizedBox(height: 4),
+              );
 
-              // Subtitle / Key benefit row
-              Row(
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.check_circle_outline_rounded,
-                    size: 12,
-                    color: isSelected
-                        ? const Color(0xFF059669)
-                        : const Color(0xFF6EE7B7),
-                  ),
-                  const SizedBox(width: 5),
-                  Expanded(
-                    child: Text(
-                      subtitle.trData(context),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: isSelected
-                            ? const Color(0xFF475569)
-                            : Colors.white70,
-                        height: 1.2,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  if (!isCompactCard) ...[
+                    // Standard Row: Title + Tag on start, Price + Radio on end
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: [
+                              Text(
+                                title.trData(context),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w900,
+                                  color: isSelected
+                                      ? const Color(0xFF1E1B4B)
+                                      : Colors.white,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              if (tagBadge != null) tagBadge,
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        priceWidget,
+                        const SizedBox(width: 10),
+                        radioCheck,
+                      ],
                     ),
+                  ] else ...[
+                    // Compact Row for ultra-narrow devices (300px)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: [
+                              Text(
+                                title.trData(context),
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w900,
+                                  color: isSelected
+                                      ? const Color(0xFF1E1B4B)
+                                      : Colors.white,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              if (tagBadge != null) tagBadge,
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        radioCheck,
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    priceWidget,
+                  ],
+                  const SizedBox(height: 10),
+
+                  // Subtle Divider
+                  Container(
+                    height: 1,
+                    width: double.infinity,
+                    color: isSelected
+                        ? const Color(0xFFF1E8FB)
+                        : Colors.white.withValues(alpha: 0.12),
+                  ),
+                  const SizedBox(height: 9),
+
+                  // Subtitle / Key Benefit Row
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(2.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withValues(
+                            alpha: isSelected ? 0.15 : 0.25,
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check_rounded,
+                          size: 11,
+                          color: Color(0xFF059669),
+                        ),
+                      ),
+                      const SizedBox(width: 7),
+                      Expanded(
+                        child: Text(
+                          subtitle.trData(context),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isSelected
+                                ? const Color(0xFF475569)
+                                : Colors.white.withValues(alpha: 0.90),
+                            height: 1.3,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),
@@ -2008,7 +2105,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 4,
                       children: [
                         Text(
                           'Pay with Stripe: '.trData(context),
@@ -2060,12 +2159,15 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                           color: Colors.white.withValues(alpha: 0.9),
                         ),
                         const SizedBox(width: 4),
-                        Text(
-                          'Powered by Stripe • Tap to proceed'.trData(context),
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white.withValues(alpha: 0.95),
+                        Expanded(
+                          child: Text(
+                            'Powered by Stripe • Tap to proceed'.trData(context),
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white.withValues(alpha: 0.95),
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],

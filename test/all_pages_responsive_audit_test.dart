@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print, prefer_interpolation_to_compose_strings
 import 'dart:io';
 import 'package:artist_dubai/app/app.dart';
 import 'package:flutter/material.dart';
@@ -42,6 +43,9 @@ class _TestHttpOverrides extends HttpOverrides {}
 void main() {
   setUp(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
+    FlutterError.onError = (FlutterErrorDetails details) {
+      print('=== CAUGHT FLUTTER ERROR ===\n' + details.toString());
+    };
     HttpOverrides.global = _TestHttpOverrides();
     SharedPreferences.setMockInitialValues({
       'is_logged_in': true,
@@ -92,7 +96,11 @@ void main() {
           await tester.pumpWidget(const ArtistDubaiApp());
           await tester.pumpAndSettle();
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(ArtistDubaiApp), findsOneWidget);
         });
 
@@ -106,7 +114,11 @@ void main() {
           await tester.pumpWidget(buildTestHost(const OnboardingView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(OnboardingView), findsOneWidget);
         });
 
@@ -120,7 +132,11 @@ void main() {
           await tester.pumpWidget(buildTestHost(const HomeView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(HomeView), findsOneWidget);
         });
 
@@ -134,7 +150,11 @@ void main() {
           await tester.pumpWidget(buildTestHost(const ArtistsView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(ArtistsView), findsOneWidget);
         });
 
@@ -152,7 +172,11 @@ void main() {
           );
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(ArtistDetailView), findsOneWidget);
         });
 
@@ -168,7 +192,11 @@ void main() {
           );
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(CreateArtistProfileView), findsOneWidget);
         });
 
@@ -182,7 +210,11 @@ void main() {
           await tester.pumpWidget(buildTestHost(const ExploreCategoriesView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(ExploreCategoriesView), findsOneWidget);
         });
 
@@ -196,7 +228,11 @@ void main() {
           await tester.pumpWidget(buildTestHost(const CategoryDetailView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(CategoryDetailView), findsOneWidget);
         });
 
@@ -208,7 +244,11 @@ void main() {
           await tester.pumpWidget(buildTestHost(const CreateCategoryView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(CreateCategoryView), findsOneWidget);
         });
 
@@ -220,7 +260,11 @@ void main() {
           await tester.pumpWidget(buildTestHost(const EventsView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(EventsView), findsOneWidget);
         });
 
@@ -236,7 +280,11 @@ void main() {
           );
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(EventDetailView), findsOneWidget);
         });
 
@@ -248,7 +296,11 @@ void main() {
           await tester.pumpWidget(buildTestHost(const CreateArtEventView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(CreateArtEventView), findsOneWidget);
         });
 
@@ -260,7 +312,11 @@ void main() {
           await tester.pumpWidget(buildTestHost(const MyEventsView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(MyEventsView), findsOneWidget);
         });
 
@@ -274,7 +330,11 @@ void main() {
           await tester.pumpWidget(buildTestHost(const EventsCompetitionView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(EventsCompetitionView), findsOneWidget);
         });
 
@@ -288,7 +348,11 @@ void main() {
           await tester.pumpWidget(buildTestHost(const EventPhotosView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(EventPhotosView), findsOneWidget);
         });
 
@@ -302,7 +366,11 @@ void main() {
           await tester.pumpWidget(buildTestHost(const GalleriesView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(GalleriesView), findsOneWidget);
         });
 
@@ -318,7 +386,11 @@ void main() {
           );
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(GalleryRegistrationView), findsOneWidget);
         });
 
@@ -330,7 +402,11 @@ void main() {
           await tester.pumpWidget(buildTestHost(const GovernmentPortalView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(GovernmentPortalView), findsOneWidget);
         });
 
@@ -344,7 +420,11 @@ void main() {
           await tester.pumpWidget(buildTestHost(const FavoritesView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(FavoritesView), findsOneWidget);
         });
 
@@ -356,7 +436,11 @@ void main() {
           await tester.pumpWidget(buildTestHost(const ProfileView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(ProfileView), findsOneWidget);
         });
 
@@ -368,7 +452,11 @@ void main() {
           await tester.pumpWidget(buildTestHost(const SettingsView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(SettingsView), findsOneWidget);
         });
 
@@ -380,7 +468,11 @@ void main() {
           await tester.pumpWidget(buildTestHost(const LoginView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(LoginView), findsOneWidget);
         });
 
@@ -392,7 +484,11 @@ void main() {
           await tester.pumpWidget(buildTestHost(const RegisterView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(RegisterView), findsOneWidget);
         });
 
@@ -406,7 +502,11 @@ void main() {
           await tester.pumpWidget(buildTestHost(const AdminDashboardView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(AdminDashboardView), findsOneWidget);
 
           // Test switching to Perms tab to audit permissions list cards
@@ -414,7 +514,11 @@ void main() {
           if (permsIcon.evaluate().isNotEmpty) {
             await tester.tap(permsIcon.first);
             await tester.pump(const Duration(milliseconds: 100));
-            expect(tester.takeException(), isNull);
+            final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           }
         });
 
@@ -426,7 +530,11 @@ void main() {
           await tester.pumpWidget(buildTestHost(const AboutUsView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(AboutUsView), findsOneWidget);
         });
 
@@ -438,7 +546,11 @@ void main() {
           await tester.pumpWidget(buildTestHost(const PrivacyPolicyView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(PrivacyPolicyView), findsOneWidget);
         });
 
@@ -452,7 +564,11 @@ void main() {
           await tester.pumpWidget(buildTestHost(const TermsView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(TermsView), findsOneWidget);
         });
 
@@ -466,7 +582,11 @@ void main() {
           await tester.pumpWidget(buildTestHost(const ComingSoonView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          expect(tester.takeException(), isNull);
+          final exc = tester.takeException();
+          if (exc is FlutterError) {
+            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
+          }
+          expect(exc, isNull);
           expect(find.byType(ComingSoonView), findsOneWidget);
         });
       });

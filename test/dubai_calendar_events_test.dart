@@ -1,3 +1,5 @@
+import 'package:artist_dubai/features/artists/domain/models/artist_model.dart';
+import 'package:artist_dubai/core/services/api_service.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,6 +25,11 @@ void main() {
     });
     await sl.reset();
     await initDependencyInjection();
+    sl<ApiService>().cachedEvents = ArtEventModel.mockEvents;
+    sl<ApiService>().cachedCategories = [
+      const CategoryInfo(name: 'Arabic Calligraphy', emoji: ''),
+      const CategoryInfo(name: 'Contemporary Painting', emoji: ''),
+    ];
   });
 
   Widget buildTestableWidget(

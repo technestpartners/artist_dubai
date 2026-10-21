@@ -12,6 +12,7 @@ import '../../../../core/widgets/app_top_bar.dart';
 import '../../domain/models/artist_model.dart';
 import '../../../../core/utils/data_translator.dart';
 import 'category_detail_view.dart';
+import '../../../../core/utils/responsive_helper.dart';
 
 class ExploreCategoriesView extends StatefulWidget {
   const ExploreCategoriesView({super.key});
@@ -291,11 +292,11 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
+                              SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
                                 crossAxisSpacing: 14,
                                 mainAxisSpacing: 14,
-                                childAspectRatio: 1.15,
+                                childAspectRatio: ResponsiveHelper.of(context).isCompact ? 0.98 : 1.15,
                               ),
                           itemCount: _categories.length,
                           itemBuilder: (context, index) {

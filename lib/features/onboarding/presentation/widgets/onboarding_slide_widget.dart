@@ -57,9 +57,14 @@ class OnboardingSlideWidget extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                                child: Image.asset(
-                                  item.imagePath!,
-                                  fit: BoxFit.contain,
+                                child: ClipOval(
+                                  child: Image.asset(
+                                    item.imagePath!,
+                                    fit: item.imagePath!.contains('header_logo')
+                                        ? BoxFit.contain
+                                        : BoxFit.cover,
+                                    filterQuality: FilterQuality.high,
+                                  ),
                                 ),
                               )
                               : Text(

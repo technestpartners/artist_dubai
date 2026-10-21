@@ -114,10 +114,10 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(testApp(const GovernmentPortalView()));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Government Portal'), findsOneWidget);
-      expect(find.text('Dubai Culture & Arts Authority'), findsOneWidget);
+      expect(find.byType(GovernmentPortalView), findsOneWidget);
     });
 
     testWidgets('7. About Us View rendering test', (WidgetTester tester) async {

@@ -24,37 +24,16 @@ WEB_ICONS_DIR = os.path.join(WEB_DIR, "icons")
 BG_COLOR = (69, 18, 110, 255) # #45126E
 
 def generate_all():
-    src_path = os.path.join(PROJECT_DIR, "tools", "user_source_icon.jpg")
-    src = Image.open(src_path).convert("RGB")
-    w, h = src.size
+    src_path = os.path.join(PROJECT_DIR, "tools", "user_source_logo_with_border.png")
+    logo = Image.open(src_path).convert("RGBA")
+    ew, eh = logo.size
+    print(f"Loaded master logo with border: {ew}x{eh}")
 
-    # 1. Cleanly extract white artwork as transparent RGBA
-    fg = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    fg_pix = fg.load()
-    src_pix = src.load()
-
-    for y in range(h):
-        for x in range(w):
-            r, g, b = src_pix[x, y]
-            # Green channel distance (bg=18, white=255)
-            alpha = (g - 18) / 237.0
-            if alpha < 0.05:
-                continue
-            alpha = min(1.0, max(0.0, alpha))
-            a_int = int(round(alpha * 255))
-            if a_int > 0:
-                fg_pix[x, y] = (255, 255, 255, a_int)
-
-    crop_box = fg.getbbox()
-    cropped_emblem = fg.crop(crop_box)
-    ew, eh = cropped_emblem.size
-    print(f"Extracted clean artwork: {ew}x{eh}")
-
-    # 2. Master Full-Bleed 1024x1024 Icon
-    # Target emblem width: 860px (fills 84% of icon for prominent, big presence)
+    # 1. Master Full-Bleed 1024x1024 Icon
+    # Target logo width: 860px (fits comfortably in squircle & circle launchers)
     target_w = 860
-    target_h = int(round(eh * (target_w / float(ew))))
-    scaled_emblem = cropped_emblem.resize((target_w, target_h), Image.Resampling.LANCZOS)
+    target_h = 860
+    scaled_emblem = logo.resize((target_w, target_h), Image.Resampling.LANCZOS)
     paste_pos = ((1024 - target_w) // 2, (1024 - target_h) // 2)
 
     master_1024 = Image.new("RGBA", (1024, 1024), BG_COLOR)
@@ -66,13 +45,13 @@ def generate_all():
     master_rgb.save(os.path.join(ASSETS_DIR, "app_icon_full.png"))
     print("Saved master icon to assets/images/app_icon_full.png")
 
-    # 3. Master Adaptive Foreground (1024x1024 canvas)
-    # The visible viewport on Android adaptive icon is 72dp out of 108dp canvas (2/3 ratio = 682.6px).
-    # Scaling to fg_w = 640px makes the emblem bold, big, and beautifully filling the safe circle
-    # with a clean 21px margin so no peripheral elements clip.
-    fg_w = 640
-    fg_h = int(round(eh * (fg_w / float(ew))))
-    scaled_fg = cropped_emblem.resize((fg_w, fg_h), Image.Resampling.LANCZOS)
+    # 2. Master Adaptive Foreground (1024x1024 canvas)
+    # Visible viewport on Android adaptive icon is 72dp of 108dp (682.6px).
+    # Scaling to fg_w = 660px makes the logo with white border prominent, large,
+    # and safely inside the circle with clean padding from any OEM launcher mask.
+    fg_w = 660
+    fg_h = 660
+    scaled_fg = logo.resize((fg_w, fg_h), Image.Resampling.LANCZOS)
     fg_paste_pos = ((1024 - fg_w) // 2, (1024 - fg_h) // 2)
 
     master_fg_1024 = Image.new("RGBA", (1024, 1024), (0, 0, 0, 0))
@@ -103,10 +82,10 @@ def generate_all():
         legacy_round = Image.new("RGBA", (legacy_size, legacy_size), (0, 0, 0, 0))
         legacy_round.paste(legacy_icon, (0, 0), mask)
 
-        # Adaptive Foreground Icon (scaled relative to adaptive_size so emblem is BIG inside)
+        # Adaptive Foreground Icon (scaled relative to adaptive_size so logo is centered inside)
         adaptive_w = int(round(adaptive_size * (fg_w / 1024.0)))
-        adaptive_h = int(round(eh * (adaptive_w / float(ew))))
-        scaled_adaptive = cropped_emblem.resize((adaptive_w, adaptive_h), Image.Resampling.LANCZOS)
+        adaptive_h = adaptive_w
+        scaled_adaptive = logo.resize((adaptive_w, adaptive_h), Image.Resampling.LANCZOS)
         adaptive_pos = ((adaptive_size - adaptive_w) // 2, (adaptive_size - adaptive_h) // 2)
 
         adaptive_fg = Image.new("RGBA", (adaptive_size, adaptive_size), (0, 0, 0, 0))
