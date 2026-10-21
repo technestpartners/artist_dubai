@@ -107,8 +107,8 @@ class _SplashScreenViewState extends State<SplashScreenView>
       } catch (_) {}
     });
 
-    // 3. Splash dwell timer: auto-proceed after 2 seconds (or tap anywhere to skip immediately)
-    _navigationTimer = Timer(const Duration(milliseconds: 2100), () {
+    // 3. Auto-proceed immediately without dwell delay
+    _navigationTimer = Timer(Duration.zero, () {
       _navigateToNext();
     });
   }

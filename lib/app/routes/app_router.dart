@@ -35,7 +35,6 @@ import '../../features/settings/presentation/views/settings_view.dart';
 import '../../features/chat/presentation/views/artist_chat_view.dart';
 import '../../features/chat/presentation/views/listing_plans_view.dart';
 import '../../features/placeholder/presentation/views/coming_soon_view.dart';
-import '../../features/splash/presentation/views/splash_screen_view.dart';
 import '../../core/di/injection_container.dart';
 import '../../core/services/storage_service.dart';
 import 'route_names.dart';
@@ -279,12 +278,8 @@ class AppRouter {
       GoRoute(
         path: RouteNames.splash,
         name: 'splash',
-        pageBuilder:
-            (context, state) => _buildFadePage(
-              context: context,
-              state: state,
-              child: const SplashScreenView(),
-            ),
+        redirect: (context, state) => defaultLocation,
+        builder: (context, state) => const SizedBox.shrink(),
       ),
       GoRoute(
         path: RouteNames.onboarding,
