@@ -3,13 +3,6 @@ import '../config/app_config.dart';
 class ApiEndpoints {
   ApiEndpoints._();
 
-  // Environment-driven Configuration (loaded via AppConfig)
-  static const String liveProductionUrl = AppConfig.liveProductionUrl;
-  static const String localDevUrl = AppConfig.localDevUrl;
-
-  // Use live Hostinger API setting
-  static const bool useLiveApi = AppConfig.useLiveApi;
-
   // Base API Server URL (Production Only)
   static String get baseUrl => AppConfig.liveProductionUrl;
 
@@ -37,7 +30,6 @@ class ApiEndpoints {
   // Events (MySQL Backend)
   static const String events = 'api.php?resource=events';
   static const String eventDetails = 'api.php?resource=events';
-  static const String eventCreate = 'api.php?resource=events';
 
   // Government & Cultural Hubs (MySQL Backend)
   static const String government = 'api.php?resource=government';
@@ -83,9 +75,4 @@ class ApiEndpoints {
   // Menu Permissions & Access Control (MySQL Backend)
   static const String menuPermissions = 'api.php?resource=menu_permissions';
 
-  // Stripe Payment Gateway (PHP Backend — secret key stays server-side)
-  static const String stripeGateway = 'api.php?resource=stripe';
-  static const String stripePaymentIntent =
-      'api.php?resource=stripe&action=create_payment_intent';
-  static const String stripeConfig = 'api.php?resource=stripe&action=config';
 }

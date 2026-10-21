@@ -24,7 +24,7 @@ WEB_ICONS_DIR = os.path.join(WEB_DIR, "icons")
 BG_COLOR = (69, 18, 110, 255) # #45126E
 
 def generate_all():
-    src_path = os.path.join(ASSETS_DIR, "user_source_icon.jpg")
+    src_path = os.path.join(PROJECT_DIR, "tools", "user_source_icon.jpg")
     src = Image.open(src_path).convert("RGB")
     w, h = src.size
 
