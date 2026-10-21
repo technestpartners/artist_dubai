@@ -1,4 +1,4 @@
-name: Publish to App Store (Production 3.2.5(2))
+name: Publish to App Store (Production 3.2.5(3))
 
 on:
   workflow_dispatch:
@@ -15,9 +15,9 @@ on:
         required: false
         default: '3.2.5'
       build_number:
-        description: 'Build Number (e.g. 2)'
+        description: 'Build Number (e.g. 3)'
         required: false
-        default: '2'
+        default: '3'
       submit_for_review:
         description: 'Automatically submit for Apple App Review?'
         type: boolean
