@@ -45,7 +45,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(const ArtistDubaiApp());
-      await tester.pump(const Duration(milliseconds: 2200));
+      await tester.pump(const Duration(milliseconds: 3100));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Artist Dubai'), findsWidgets);

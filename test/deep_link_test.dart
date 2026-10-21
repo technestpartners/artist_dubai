@@ -20,7 +20,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const ArtistDubaiApp());
-    await tester.pump(const Duration(milliseconds: 2200));
+    await tester.pump(const Duration(milliseconds: 3100));
     await tester.pumpAndSettle();
 
     expect(AppRouter.router.state.uri.toString(), '/home');
