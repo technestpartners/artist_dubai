@@ -3810,6 +3810,12 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                                     controller: replyController,
                                     enabled: !isSendingInline,
                                     textInputAction: TextInputAction.send,
+                                    style: const TextStyle(
+                                      color: Color(0xFF0F172A),
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    cursorColor: const Color(0xFF5E227A),
                                     onSubmitted: (val) async {
                                       if (val.trim().isEmpty || isSendingInline) return;
                                       setModalState(() => isSendingInline = true);
