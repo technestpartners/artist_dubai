@@ -108,5 +108,17 @@
 	<false/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+
+	<!-- Background Modes & Task Scheduler for Notifications When App is Closed -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>processing</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.imbu.DubaiArtists.backgroundNotificationSync</string>
+		<string>backgroundNotificationSyncTask</string>
+	</array>
 </dict>
 </plist>

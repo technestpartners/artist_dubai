@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
@@ -55,15 +55,46 @@ class _FavoritesViewState extends State<FavoritesView>
 
   void _mergeAndSetFavorites(Map<String, dynamic> data) {
     final favService = sl<FavoritesService>();
-    final serverEvents = List<ArtEventModel>.from(
-      data['events'] as List<ArtEventModel>? ?? [],
-    );
-    final serverArtists = List<ArtistModel>.from(
-      data['artists'] as List<ArtistModel>? ?? [],
-    );
-    final serverArtworks = List<Map<String, dynamic>>.from(
-      data['artworks'] as List<Map<String, dynamic>>? ?? [],
-    );
+    // Safely parse events — the stream may deliver typed objects or raw maps
+    final rawEvents = data['events'];
+    final serverEvents = <ArtEventModel>[];
+    if (rawEvents is List) {
+      for (final e in rawEvents) {
+        if (e is ArtEventModel) {
+          serverEvents.add(e);
+        } else if (e is Map<String, dynamic>) {
+          try {
+            serverEvents.add(ArtEventModel.fromJson(e));
+          } catch (_) {}
+        }
+      }
+    }
+
+    // Safely parse artists
+    final rawArtists = data['artists'];
+    final serverArtists = <ArtistModel>[];
+    if (rawArtists is List) {
+      for (final a in rawArtists) {
+        if (a is ArtistModel) {
+          serverArtists.add(a);
+        } else if (a is Map<String, dynamic>) {
+          try {
+            serverArtists.add(ArtistModel.fromJson(a));
+          } catch (_) {}
+        }
+      }
+    }
+
+    // Safely parse artworks
+    final rawArtworks = data['artworks'];
+    final serverArtworks = <Map<String, dynamic>>[];
+    if (rawArtworks is List) {
+      for (final w in rawArtworks) {
+        if (w is Map<String, dynamic>) {
+          serverArtworks.add(w);
+        }
+      }
+    }
 
     // Also include any locally favorited events that might not be in DB response yet
     final existingEventIds = serverEvents.map((e) => e.id).toSet();

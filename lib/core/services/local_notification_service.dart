@@ -132,8 +132,9 @@ class LocalNotificationService {
       showWhen: true,
       enableVibration: true,
       playSound: true,
-      color: Color(0xFF6A2777),
+      color: Color(0xFF5E227A),
       icon: '@mipmap/ic_launcher',
+      largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
     );
 
     const darwinDetails = DarwinNotificationDetails(

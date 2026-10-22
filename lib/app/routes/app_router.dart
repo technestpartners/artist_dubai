@@ -733,6 +733,11 @@ class AppRouter {
       GoRoute(
         path: RouteNames.adminDashboard,
         name: 'adminDashboard',
+        redirect: (context, state) {
+          final isAdmin = sl<StorageService>().getBool('is_admin') ?? false;
+          if (!isAdmin) return RouteNames.home;
+          return null;
+        },
         pageBuilder:
             (context, state) => _buildSlidePage(
               context: context,
@@ -743,6 +748,11 @@ class AppRouter {
       GoRoute(
         path: RouteNames.adminRecycleBin,
         name: 'adminRecycleBin',
+        redirect: (context, state) {
+          final isAdmin = sl<StorageService>().getBool('is_admin') ?? false;
+          if (!isAdmin) return RouteNames.home;
+          return null;
+        },
         pageBuilder:
             (context, state) => _buildSlidePage(
               context: context,

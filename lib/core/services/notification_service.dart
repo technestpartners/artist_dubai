@@ -137,6 +137,10 @@ class NotificationService extends ChangeNotifier {
           }
         }
       }
+      final savedAlerted = sl<StorageService>().getStringList('alerted_notification_ids');
+      if (savedAlerted != null) {
+        _alertedNotificationIds.addAll(savedAlerted);
+      }
       notifyListeners();
     } catch (_) {}
   }
@@ -147,6 +151,12 @@ class NotificationService extends ChangeNotifier {
         _notifications.map((n) => n.toJson()).toList(),
       );
       sl<StorageService>().setString(_cacheKey, encoded);
+
+      final list = _alertedNotificationIds.toList();
+      if (list.length > 200) {
+        list.removeRange(0, list.length - 200);
+      }
+      sl<StorageService>().setStringList('alerted_notification_ids', list);
     } catch (_) {}
   }
 

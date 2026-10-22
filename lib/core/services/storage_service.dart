@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 abstract class StorageService {
   Future<void> setString(String key, String value);
   String? getString(String key);
+  Future<void> setStringList(String key, List<String> value);
+  List<String>? getStringList(String key);
   Future<void> setBool(String key, bool value);
   bool? getBool(String key);
   Future<void> remove(String key);
@@ -41,6 +43,13 @@ class StorageServiceImpl implements StorageService {
 
   @override
   String? getString(String key) => prefs.getString(key);
+
+  @override
+  Future<void> setStringList(String key, List<String> value) =>
+      prefs.setStringList(key, value);
+
+  @override
+  List<String>? getStringList(String key) => prefs.getStringList(key);
 
   @override
   Future<void> setBool(String key, bool value) => prefs.setBool(key, value);

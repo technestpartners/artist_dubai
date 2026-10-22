@@ -72,6 +72,14 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
         return parsed;
       }
     } catch (_) {}
+    // Fallback: log a warning so this is never silent in debug builds
+    assert(() {
+      debugPrint(
+        '[PlanPaymentView] WARNING: Could not parse plan amount "$_planAmount". '
+        'Falling back to 350.0 AED. This must be investigated before release.',
+      );
+      return true;
+    }());
     return 350.0;
   }
 
@@ -102,7 +110,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
         (_formData['email']?.toString() ??
             _formData['contact_email']?.toString() ??
             '');
-    _emailController.text = userEmail.isNotEmpty ? userEmail : 'user@artistdubai.com';
+    _emailController.text = userEmail;
 
     final userName =
         sl<StorageService>().getString('user_name') ??
@@ -142,23 +150,27 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     });
   }
 
+  /// Only available in debug builds — never shown in release mode.
   void _fillTestCard() {
-    setState(() {
-      _cardNumberController.text = '4242 4242 4242 4242';
-      _expiryController.text = '12 / 28';
-      _cvcController.text = '123';
-      if (_cardHolderController.text.trim().isEmpty) {
-        _cardHolderController.text = 'Test User';
-      }
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Test card filled (4242 4242 4242 4242)'.trData(context)),
-        backgroundColor: const Color(0xFF6A2777),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    assert(() {
+      setState(() {
+        _cardNumberController.text = '4242 4242 4242 4242';
+        _expiryController.text = '12 / 28';
+        _cvcController.text = '123';
+        if (_cardHolderController.text.trim().isEmpty) {
+          _cardHolderController.text = 'Test User';
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Test card filled (4242 4242 4242 4242)'.trData(context)),
+          backgroundColor: const Color(0xFF6A2777),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return true;
+    }());
   }
 
   @override

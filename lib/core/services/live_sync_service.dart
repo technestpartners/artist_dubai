@@ -8,6 +8,7 @@ import '../../features/events/domain/models/art_event_model.dart';
 import '../../features/government/domain/models/government_entity.dart';
 import '../di/injection_container.dart';
 import 'api_service.dart';
+import 'background_sync_service.dart';
 import 'notification_service.dart';
 import 'storage_service.dart';
 
@@ -109,6 +110,9 @@ class LiveSyncService with WidgetsBindingObserver {
         state == AppLifecycleState.inactive) {
       // Pause background polling when app is not visible to save battery & bandwidth
       _isPausedByLifecycle = true;
+      if (state == AppLifecycleState.paused) {
+        BackgroundSyncService.scheduleImmediateBackgroundCheck();
+      }
     } else if (state == AppLifecycleState.detached) {
       // Engine view is being torn down (hot-restart, tab close, process kill).
       // Stop the timer immediately so no async callbacks can schedule frames

@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -59,21 +59,20 @@ class _ArtistChatViewState extends State<ArtistChatView> {
   Timer? _pollingTimer;
 
   bool get _hasActivePlan {
+    // A plan is considered "active/paid" when the server grants more than the
+    // default free-tier quota (10 messages). String-matching plan names is
+    // fragile and should not be the primary gate.
+    if (_maxMessages > 10 || _maxMessages >= 9000) return true;
+    // Secondary check: explicitly free / non-chat plan names
     final clean = _planName.toLowerCase().trim();
-    if (clean.isEmpty) return false;
-    if (clean == 'basic (free)' ||
+    if (clean.isEmpty ||
+        clean == 'basic (free)' ||
         clean == 'free' ||
-        clean == 'starter plan' ||
         clean == 'basic' ||
-        clean.contains('free') ||
-        clean.contains('gallery') ||
-        clean.contains('event') ||
-        clean.contains('centre') ||
-        clean.contains('center') ||
-        clean.contains('portfolio')) {
+        clean == 'starter plan') {
       return false;
     }
-    return _maxMessages >= 9000 || _maxMessages > 10;
+    return false;
   }
 
   String get _currentEmail =>
@@ -88,14 +87,7 @@ class _ArtistChatViewState extends State<ArtistChatView> {
               '')
           .trim()
           .toLowerCase();
-  bool get _isAdmin =>
-      (sl<StorageService>().getBool('is_admin') ?? false) ||
-      [
-        'admin@artistdubai.com',
-        'admin@dubaiart.ae',
-        'admin@admin.com',
-        'admin@technestpartners.com',
-      ].contains(_currentEmail);
+  bool get _isAdmin => sl<StorageService>().getBool('is_admin') ?? false;
 
   bool _isIncomingMessage(ArtistMessageModel msg) {
     final myEmail = _currentEmail;

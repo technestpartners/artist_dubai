@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'app/app.dart';
 import 'core/di/injection_container.dart';
+import 'core/services/background_sync_service.dart';
 import 'core/services/live_sync_service.dart';
 import 'core/services/local_notification_service.dart';
 
@@ -36,6 +37,7 @@ void main() async {
       sl<LocalNotificationService>().initialize();
       sl<LiveSyncService>().syncAllSilently(forceRefresh: true);
       sl<LiveSyncService>().startMultiDeviceSync();
+      BackgroundSyncService.initialize();
     } catch (_) {}
   });
 }
