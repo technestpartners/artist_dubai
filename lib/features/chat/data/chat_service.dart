@@ -339,11 +339,13 @@ class ChatService {
           final now = DateTime.now();
           final localOnly =
               messages.where((m) {
-                if (!m.id.startsWith('msg_')) return false;
-                // Purge optimistic messages older than 10 minutes so orphaned ones never linger forever
-                if (now.difference(m.createdAt).inMinutes >= 10) return false;
+                // If this message is already returned by server with same ID, discard local copy
+                if (serverList.any((s) => s.id == m.id)) return false;
 
-                // Check if this optimistic message has already been received from server
+                // Purge optimistic messages older than 10 minutes so orphaned ones never linger forever
+                if (m.id.startsWith('msg_') && now.difference(m.createdAt).inMinutes >= 10) return false;
+
+                // Check if this message has already been received from server by content and timestamp
                 final isAlreadyOnServer = serverList.any((s) {
                   final sameSender =
                       s.senderEmail.trim().toLowerCase() ==
@@ -357,8 +359,9 @@ class ChatService {
                       s.subject.trim().toLowerCase() ==
                       m.subject.trim().toLowerCase();
                   final sameMessage = s.message.trim() == m.message.trim();
-                  final closeInTime =
-                      s.createdAt.difference(m.createdAt).abs().inMinutes < 5;
+                  final diffMinutes =
+                      s.createdAt.toUtc().difference(m.createdAt.toUtc()).abs().inMinutes;
+                  final closeInTime = diffMinutes < 30;
 
                   return sameSender &&
                       sameRecipient &&
@@ -380,23 +383,28 @@ class ChatService {
         if (kDebugMode) print('ChatService.getMessages remote error: $e');
       }
 
-      // Deduplicate messages by id first, then by (senderEmail, recipientId, subject, message, approximate time)
+      // Deduplicate messages by id first, then by (senderEmail, recipientId, subject, message, UTC time)
       final seenIds = <String>{};
       final uniqueMessages = <ArtistMessageModel>[];
       for (final m in messages) {
         if (m.id.isNotEmpty && seenIds.contains(m.id)) continue;
-        if (m.id.isNotEmpty) seenIds.add(m.id);
 
         final isDuplicateContent = uniqueMessages.any((u) {
           final sameSender =
               u.senderEmail.trim().toLowerCase() ==
-              m.senderEmail.trim().toLowerCase();
-          final sameRecipient = u.recipientId.trim() == m.recipientId.trim();
+                  m.senderEmail.trim().toLowerCase() ||
+              (u.senderId.isNotEmpty && m.senderId.isNotEmpty && u.senderId == m.senderId);
+          final sameRecipient =
+              u.recipientId.trim() == m.recipientId.trim() ||
+              u.recipientName.trim().toLowerCase() ==
+                  m.recipientName.trim().toLowerCase();
           final sameSubject =
               u.subject.trim().toLowerCase() == m.subject.trim().toLowerCase();
           final sameMessage = u.message.trim() == m.message.trim();
-          final closeInTime =
-              u.createdAt.difference(m.createdAt).abs().inMinutes < 2;
+          final diffMinutes =
+              u.createdAt.toUtc().difference(m.createdAt.toUtc()).abs().inMinutes;
+          final closeInTime = diffMinutes < 30;
+
           return sameSender &&
               sameRecipient &&
               sameSubject &&
@@ -405,6 +413,7 @@ class ChatService {
         });
 
         if (!isDuplicateContent) {
+          if (m.id.isNotEmpty) seenIds.add(m.id);
           uniqueMessages.add(m);
         }
       }
@@ -492,13 +501,27 @@ class ChatService {
     // Fire stream update
     _messagesController.add(updatedList);
 
-    // Attempt remote save — do NOT re-fetch after posting; the view will
-    // call getMessages() separately, which will deduplicate correctly.
+    // Attempt remote save — swap optimistic ID with actual server ID immediately
     try {
-      await _apiClient.post(
+      final res = await _apiClient.post(
         'api.php?resource=messages',
         data: newMessage.toJson(),
       );
+      final dynamic body = _extractData(res);
+      final dynamic data = (body is Map) ? body['data'] : null;
+      if (data is Map && data['id'] != null) {
+        final serverId = data['id'].toString();
+        final realMessage = newMessage.copyWith(id: serverId);
+        final replacedList = updatedList
+            .map((m) => m.id == newMessage.id ? realMessage : m)
+            .toList();
+        await _storage.setString(
+          cacheKey,
+          jsonEncode(replacedList.map((m) => m.toJson()).toList()),
+        );
+        _messagesController.add(replacedList);
+        return realMessage;
+      }
     } catch (_) {
       // Safely stored locally
     }

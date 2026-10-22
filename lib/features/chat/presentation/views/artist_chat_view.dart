@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -2620,6 +2620,50 @@ class _ArtistChatViewState extends State<ArtistChatView> {
     );
   }
 
+  // Helper to deduplicate messages for UI display in case identical duplicates arrive
+  List<ArtistMessageModel> deduplicateForUi(List<ArtistMessageModel> list) {
+    final result = <ArtistMessageModel>[];
+    final seenIds = <String>{};
+
+    for (final m in list) {
+      if (m.id.isNotEmpty && seenIds.contains(m.id)) continue;
+
+      final isDupe = result.any((r) {
+        if (r.id.isNotEmpty && m.id.isNotEmpty && r.id == m.id) return true;
+
+        final sameSender =
+            r.senderEmail.trim().toLowerCase() ==
+                m.senderEmail.trim().toLowerCase() ||
+            (r.senderId.isNotEmpty &&
+                m.senderId.isNotEmpty &&
+                r.senderId == m.senderId);
+        final sameRecipient =
+            r.recipientId.trim() == m.recipientId.trim() ||
+            r.recipientName.trim().toLowerCase() ==
+                m.recipientName.trim().toLowerCase();
+        final sameSubject =
+            r.subject.trim().toLowerCase() ==
+            m.subject.trim().toLowerCase();
+        final sameMessage = r.message.trim() == m.message.trim();
+        final diffMinutes =
+            r.createdAt.toUtc().difference(m.createdAt.toUtc()).abs().inMinutes;
+
+        return sameSender &&
+            sameRecipient &&
+            sameSubject &&
+            sameMessage &&
+            diffMinutes < 30;
+      });
+
+      if (!isDupe) {
+        if (m.id.isNotEmpty) seenIds.add(m.id);
+        result.add(m);
+      }
+    }
+    return result;
+  }
+
+
   Widget _buildMessagesTab() {
     if (_isLoadingMessages) {
       return Container(
@@ -2687,27 +2731,6 @@ class _ArtistChatViewState extends State<ArtistChatView> {
           ],
         ),
       );
-    }
-
-    // Helper to deduplicate messages for UI display in case identical duplicates arrive
-    List<ArtistMessageModel> deduplicateForUi(List<ArtistMessageModel> list) {
-      final result = <ArtistMessageModel>[];
-      for (final m in list) {
-        // Unique identity key based on IDs or content
-        final contentKey =
-            '${m.senderEmail.trim().toLowerCase()}_${m.recipientId.trim()}_${m.subject.trim().toLowerCase()}_${m.message.trim()}';
-        final isDupe = result.any((r) {
-          if (r.id.isNotEmpty && m.id.isNotEmpty && r.id == m.id) return true;
-          final rKey =
-              '${r.senderEmail.trim().toLowerCase()}_${r.recipientId.trim()}_${r.subject.trim().toLowerCase()}_${r.message.trim()}';
-          return rKey == contentKey &&
-              r.createdAt.difference(m.createdAt).abs().inMinutes < 2;
-        });
-        if (!isDupe) {
-          result.add(m);
-        }
-      }
-      return result;
     }
 
     final uniqueAll = deduplicateForUi(_messages);
@@ -3376,11 +3399,86 @@ class _ArtistChatViewState extends State<ArtistChatView> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (modalCtx, setModalState) {
-            final translatedPartnerName = conv.partnerName.trData(modalCtx);
-            final translatedPartnerCategory = conv.partnerCategory.isNotEmpty
-                ? conv.partnerCategory.trData(modalCtx)
+            // Dynamically resolve latest messages from state to eliminate any stale duplicates
+            final currentConv = _groupMessagesByUser(deduplicateForUi(_messages))
+                .where((c) => c.key == conv.key)
+                .firstOrNull;
+            final effectiveConv = currentConv ?? conv;
+            final threadMessages = deduplicateForUi(effectiveConv.messages);
+
+            final translatedPartnerName = effectiveConv.partnerName.trData(modalCtx);
+            final translatedPartnerCategory = effectiveConv.partnerCategory.isNotEmpty
+                ? effectiveConv.partnerCategory.trData(modalCtx)
                 : 'Artist'.trData(modalCtx);
-            final avatarUrl = conv.partnerAvatarUrl;
+            final avatarUrl = effectiveConv.partnerAvatarUrl;
+
+            Future<void> sendInlineReply() async {
+              final val = replyController.text.trim();
+              if (val.isEmpty || isSendingInline) return;
+              setModalState(() => isSendingInline = true);
+              try {
+                final chatService = sl<ChatService>();
+                final lastSubject = effectiveConv.latestMessage.subject.trim();
+                final sub = lastSubject.isNotEmpty
+                    ? (lastSubject.toLowerCase().startsWith('re:')
+                        ? lastSubject
+                        : 'Re: $lastSubject')
+                    : 'Direct Artist Message';
+
+                final sentMsg = await chatService.sendMessage(
+                  recipientId: effectiveConv.partnerId.isNotEmpty
+                      ? effectiveConv.partnerId
+                      : 'artist_${DateTime.now().millisecondsSinceEpoch}',
+                  recipientName: effectiveConv.partnerName,
+                  recipientCategory: effectiveConv.partnerCategory,
+                  recipientAvatarUrl: effectiveConv.partnerAvatarUrl,
+                  subject: sub,
+                  message: val,
+                );
+
+                replyController.clear();
+                setModalState(() {
+                  final already = conv.messages.any((x) =>
+                      x.id == sentMsg.id ||
+                      (x.message.trim() == sentMsg.message.trim() &&
+                          x.subject.trim().toLowerCase() ==
+                              sentMsg.subject.trim().toLowerCase() &&
+                          x.createdAt
+                                  .toUtc()
+                                  .difference(sentMsg.createdAt.toUtc())
+                                  .abs()
+                                  .inMinutes <
+                              30));
+                  if (!already) {
+                    conv.messages.add(sentMsg);
+                  }
+                  isSendingInline = false;
+                });
+
+                await _loadMessages(silent: true);
+                if (mounted) {
+                  setModalState(() {});
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Message sent successfully!'.trData(context)),
+                      backgroundColor: const Color(0xFF10B981),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              } catch (err) {
+                setModalState(() => isSendingInline = false);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(err.toString()),
+                      backgroundColor: const Color(0xFFEF4444),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              }
+            }
 
             return Dialog(
               shape: RoundedRectangleBorder(
@@ -3470,7 +3568,7 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                                       ),
                                     ],
                                     Text(
-                                      '${conv.totalMessages} ${conv.totalMessages == 1 ? 'message'.trData(modalCtx) : 'messages'.trData(modalCtx)}',
+                                      '${threadMessages.length} ${threadMessages.length == 1 ? 'message'.trData(modalCtx) : 'messages'.trData(modalCtx)}',
                                       style: const TextStyle(
                                         fontSize: 11.5,
                                         color: Color(0xFF5E227A),
@@ -3506,9 +3604,9 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                             horizontal: 14,
                             vertical: 12,
                           ),
-                          itemCount: conv.messages.length,
+                          itemCount: threadMessages.length,
                           itemBuilder: (listCtx, idx) {
-                            final m = conv.messages[idx];
+                            final m = threadMessages[idx];
                             final isIncoming = _isIncomingMessage(m);
                             final timeStr =
                                 '${m.createdAt.hour.toString().padLeft(2, '0')}:${m.createdAt.minute.toString().padLeft(2, '0')}';
@@ -3808,54 +3906,7 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                                       fontWeight: FontWeight.w500,
                                     ),
                                     cursorColor: const Color(0xFF5E227A),
-                                    onSubmitted: (val) async {
-                                      if (val.trim().isEmpty || isSendingInline) return;
-                                      setModalState(() => isSendingInline = true);
-                                      try {
-                                        final chatService = sl<ChatService>();
-                                        final lastSubject = conv.latestMessage.subject.trim();
-                                        final sub = lastSubject.isNotEmpty
-                                            ? (lastSubject.toLowerCase().startsWith('re:')
-                                                ? lastSubject
-                                                : 'Re: $lastSubject')
-                                            : 'Direct Artist Message';
-
-                                        final sentMsg = await chatService.sendMessage(
-                                          recipientId: conv.partnerId.isNotEmpty ? conv.partnerId : 'artist_${DateTime.now().millisecondsSinceEpoch}',
-                                          recipientName: conv.partnerName,
-                                          recipientCategory: conv.partnerCategory,
-                                          recipientAvatarUrl: conv.partnerAvatarUrl,
-                                          subject: sub,
-                                          message: val.trim(),
-                                        );
-                                        replyController.clear();
-                                        setModalState(() {
-                                          conv.messages.add(sentMsg);
-                                          isSendingInline = false;
-                                        });
-                                        _loadMessages();
-                                        if (mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text('Message sent successfully!'.trData(context)),
-                                              backgroundColor: const Color(0xFF10B981),
-                                              behavior: SnackBarBehavior.floating,
-                                            ),
-                                          );
-                                        }
-                                      } catch (err) {
-                                        setModalState(() => isSendingInline = false);
-                                        if (mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text(err.toString()),
-                                              backgroundColor: const Color(0xFFEF4444),
-                                              behavior: SnackBarBehavior.floating,
-                                            ),
-                                          );
-                                        }
-                                      }
-                                    },
+                                    onSubmitted: (_) => sendInlineReply(),
                                     decoration: InputDecoration(
                                       hintText: '${'Write a reply to'.trData(modalCtx)} $translatedPartnerName...',
                                       hintStyle: const TextStyle(
@@ -3873,57 +3924,7 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                               ),
                               const SizedBox(width: 8),
                               InkWell(
-                                onTap: isSendingInline
-                                    ? null
-                                    : () async {
-                                        final val = replyController.text.trim();
-                                        if (val.isEmpty) return;
-                                        setModalState(() => isSendingInline = true);
-                                        try {
-                                          final chatService = sl<ChatService>();
-                                          final lastSubject = conv.latestMessage.subject.trim();
-                                          final sub = lastSubject.isNotEmpty
-                                              ? (lastSubject.toLowerCase().startsWith('re:')
-                                                  ? lastSubject
-                                                  : 'Re: $lastSubject')
-                                              : 'Direct Artist Message';
-
-                                          final sentMsg = await chatService.sendMessage(
-                                            recipientId: conv.partnerId.isNotEmpty ? conv.partnerId : 'artist_${DateTime.now().millisecondsSinceEpoch}',
-                                            recipientName: conv.partnerName,
-                                            recipientCategory: conv.partnerCategory,
-                                            recipientAvatarUrl: conv.partnerAvatarUrl,
-                                            subject: sub,
-                                            message: val,
-                                          );
-                                          replyController.clear();
-                                          setModalState(() {
-                                            conv.messages.add(sentMsg);
-                                            isSendingInline = false;
-                                          });
-                                          _loadMessages();
-                                          if (mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Text('Message sent successfully!'.trData(context)),
-                                                backgroundColor: const Color(0xFF10B981),
-                                                behavior: SnackBarBehavior.floating,
-                                              ),
-                                            );
-                                          }
-                                        } catch (err) {
-                                          setModalState(() => isSendingInline = false);
-                                          if (mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Text(err.toString()),
-                                                backgroundColor: const Color(0xFFEF4444),
-                                                behavior: SnackBarBehavior.floating,
-                                              ),
-                                            );
-                                          }
-                                        }
-                                      },
+                                onTap: isSendingInline ? null : sendInlineReply,
                                 borderRadius: BorderRadius.circular(22),
                                 child: Container(
                                   width: 40,

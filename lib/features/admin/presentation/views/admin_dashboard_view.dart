@@ -65,86 +65,28 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   String _categoryTypeFilter = 'all';
 
   // About Us Page Management Controllers
-  final TextEditingController _aboutTitleEnCtrl =
-      TextEditingController(text: 'ABOUT US');
-  final TextEditingController _aboutTitleArCtrl =
-      TextEditingController(text: 'من نحن');
-  final TextEditingController _aboutWhatMeansTitleEnCtrl =
-      TextEditingController(text: 'What does it mean to be an artist?');
-  final TextEditingController _aboutWhatMeansTitleArCtrl =
-      TextEditingController(text: 'ماذا يعني أن تكون فناناً؟');
-  final TextEditingController _aboutWhatMeansBodyEnCtrl = TextEditingController(
-    text:
-        "The word artist has a long history. It is rooted in the idea of art and originally described people with exceptional knowledge, skills and abilities. Today, an artist is someone who creates, interprets and gives expression to ideas, emotions and visions.\n\nBut we believe art can be more.",
-  );
-  final TextEditingController _aboutWhatMeansBodyArCtrl = TextEditingController(
-    text:
-        "إن كلمة فنان لها تاريخ طويل، وجذورها متأصلة في فكرة الفن، وكانت في الأصل تصف الأشخاص ذوي المعرفة والمهارات والقدرات الاستثنائية. اليوم، الفنان هو شخص يبدع ويفسر ويعبر عن الأفكار والمشاعر والرؤى.\n\nلكننا نؤمن بأن الفن يمكن أن يكون أكثر من ذلك.",
-  );
-  final TextEditingController _aboutQuoteTextEnCtrl = TextEditingController(
-    text: '“Art does not reproduce the visible; rather, it makes visible.”',
-  );
-  final TextEditingController _aboutQuoteTextArCtrl = TextEditingController(
-    text: '«الفن لا يعيد إنتاج المرئي، بل يجعله مرئياً.»',
-  );
-  final TextEditingController _aboutConnectBodyEnCtrl = TextEditingController(
-    text:
-        'Our platform was created to connect artists across disciplines, cultures, languages and levels of experience. From photography, painting and music to sculpture, digital art and many other creative forms, our platform gives artists a place to discover, share, connect and collaborate.',
-  );
-  final TextEditingController _aboutConnectBodyArCtrl = TextEditingController(
-    text:
-        'تم إنشاء منصتنا لربط الفنانين عبر مختلف التخصصات والثقافات واللغات ومستويات الخبرة. من التصوير الفوتوغرافي والرسم والموسيقى إلى النحت والفن الرقمي والعديد من الأشكال الإبداعية الأخرى، تمنح منصتنا الفنانين مساحة للاكتشاف والمشاركة والتواصل والتعاون.',
-  );
-  final TextEditingController _aboutOpportunitiesBodyEnCtrl =
-      TextEditingController(
-    text:
-        'Artists can explore different forms of art, discover galleries and art associations, connect directly with them, showcase their work and take part in events, competitions and creative challenges. Most importantly, the platform creates opportunities for meaningful exchange, inspiration and collaboration.',
-  );
-  final TextEditingController _aboutOpportunitiesBodyArCtrl =
-      TextEditingController(
-    text:
-        'يمكن للفنانين استكشاف أشكال مختلفة من الفن، واكتشاف صالات العرض والجمعيات الفنية، والتواصل معها مباشرة، وعرض أعمالهم والمشاركة في الفعاليات والمسابقات والتحديات الإبداعية. والأهم من ذلك، تخلق المنصة فرصاً للتبادل الهادف والإلهام والتعاون.',
-  );
-  final TextEditingController _aboutFusionBodyEnCtrl = TextEditingController(
-    text:
-        "Because when different artists, cultures and creative perspectives come together, something new can emerge.\n\nPerhaps even a form of art that has never existed before.",
-  );
-  final TextEditingController _aboutFusionBodyArCtrl = TextEditingController(
-    text:
-        "لأنه عندما يلتقي فنانون وثقافات ورؤى إبداعية مختلفة، يمكن أن يولد شيء جديد تماماً.\n\nوربما حتى شكل فني لم يكن موجوداً من قبل.",
-  );
-  final TextEditingController _aboutDubaiVisionBodyEnCtrl =
-      TextEditingController(
-    text:
-        "Dubai is a unique place for this vision. With people from more than 180 nationalities, countless cultures, languages and perspectives meet here. Art has the power to connect these differences and create something that belongs to everyone.\n\nOur digital world allows us to bring these creative forces together beyond borders and distances.",
-  );
-  final TextEditingController _aboutDubaiVisionBodyArCtrl =
-      TextEditingController(
-    text:
-        "دبي هي المكان الأمثل لتحقيق هذه الرؤية. مع وجود أشخاص من أكثر من 180 جنسية، تلتقي هنا ثقافات ولغات ورؤى لا حصر لها. يمتلك الفن القدرة على الجمع بين هذه الاختلافات وخلق شيء ينتمي للجميع.\n\nعالمنا الرقمي يتيح لنا جمع هذه الطاقات الإبداعية متجاوزين كل الحدود والمسافات.",
-  );
-  final TextEditingController _aboutOurVisionBodyEnCtrl = TextEditingController(
-    text:
-        "Our vision is more than simply creating a platform for artists.\n\nWe want to create a space where encounters become inspiration, inspiration becomes collaboration, and collaboration becomes new art.",
-  );
-  final TextEditingController _aboutOurVisionBodyArCtrl = TextEditingController(
-    text:
-        "رؤيتنا تتجاوز مجرد إنشاء منصة للفنانين.\n\nنريد خلق مساحة يتحول فيها اللقاء إلى إلهام، والإلهام إلى تعاون، والتعاون إلى فن جديد.",
-  );
-  final TextEditingController _aboutClosingBordersEnCtrl =
-      TextEditingController(text: 'Because art has no borders.');
-  final TextEditingController _aboutClosingBordersArCtrl =
-      TextEditingController(text: 'لأن الفن لا يعرف حدوداً.');
-  final TextEditingController _aboutClosingImpossibleEnCtrl =
-      TextEditingController(
-    text:
-        'And when people, ideas and talents come together, artists have the power to make the impossible possible.',
-  );
-  final TextEditingController _aboutClosingImpossibleArCtrl =
-      TextEditingController(
-    text:
-        'وعندما تجتمع العقول والأفكار والمواهب، يمتلك الفنانون القدرة على جعل المستحيل ممكناً.',
-  );
+  final TextEditingController _aboutTitleEnCtrl = TextEditingController();
+  final TextEditingController _aboutTitleArCtrl = TextEditingController();
+  final TextEditingController _aboutWhatMeansTitleEnCtrl = TextEditingController();
+  final TextEditingController _aboutWhatMeansTitleArCtrl = TextEditingController();
+  final TextEditingController _aboutWhatMeansBodyEnCtrl = TextEditingController();
+  final TextEditingController _aboutWhatMeansBodyArCtrl = TextEditingController();
+  final TextEditingController _aboutQuoteTextEnCtrl = TextEditingController();
+  final TextEditingController _aboutQuoteTextArCtrl = TextEditingController();
+  final TextEditingController _aboutConnectBodyEnCtrl = TextEditingController();
+  final TextEditingController _aboutConnectBodyArCtrl = TextEditingController();
+  final TextEditingController _aboutOpportunitiesBodyEnCtrl = TextEditingController();
+  final TextEditingController _aboutOpportunitiesBodyArCtrl = TextEditingController();
+  final TextEditingController _aboutFusionBodyEnCtrl = TextEditingController();
+  final TextEditingController _aboutFusionBodyArCtrl = TextEditingController();
+  final TextEditingController _aboutDubaiVisionBodyEnCtrl = TextEditingController();
+  final TextEditingController _aboutDubaiVisionBodyArCtrl = TextEditingController();
+  final TextEditingController _aboutOurVisionBodyEnCtrl = TextEditingController();
+  final TextEditingController _aboutOurVisionBodyArCtrl = TextEditingController();
+  final TextEditingController _aboutClosingBordersEnCtrl = TextEditingController();
+  final TextEditingController _aboutClosingBordersArCtrl = TextEditingController();
+  final TextEditingController _aboutClosingImpossibleEnCtrl = TextEditingController();
+  final TextEditingController _aboutClosingImpossibleArCtrl = TextEditingController();
   bool _isLoadingAboutUs = false;
   bool _isSavingAboutUs = false;
   int _aboutLanguageSubTab = 0; // 0 = English, 1 = Arabic

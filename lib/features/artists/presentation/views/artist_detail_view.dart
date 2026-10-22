@@ -80,19 +80,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         return true;
       }
     }
-    final artistProfileName = storage.getString('artist_profile_name');
-    if (artistProfileName != null && artistProfileName.isNotEmpty) {
-      if (artistProfileName.trim().toLowerCase() ==
-          artist.name.trim().toLowerCase()) {
-        return true;
-      }
-    }
-    final userName = storage.getString('user_name');
-    if (userName != null && userName.isNotEmpty) {
-      if (userName.trim().toLowerCase() == artist.name.trim().toLowerCase()) {
-        return true;
-      }
-    }
+    // Display name matching removed for security
     return false;
   }
 

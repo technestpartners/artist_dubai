@@ -103,14 +103,19 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
 
     _catSub = sl<LiveSyncService>().categoriesStream.listen((cats) {
       if (mounted && cats.isNotEmpty) {
-        final merged = <String>{..._defaultCategories};
+        final seen = <String>{};
+        final merged = <String>[];
+        for (final d in _defaultCategories) {
+          if (seen.add(d.toLowerCase())) merged.add(d);
+        }
         for (final c in cats) {
-          if (c.name.trim().isNotEmpty) {
-            merged.add(c.name.trim());
+          final name = c.name.trim();
+          if (name.isNotEmpty && seen.add(name.toLowerCase())) {
+            merged.add(name);
           }
         }
         setState(() {
-          _categories = merged.toList();
+          _categories = merged;
         });
       }
     });
@@ -159,8 +164,10 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  bool get _isTesting =>
-      WidgetsBinding.instance.runtimeType.toString().contains('Test');
+  bool get _isTesting {
+    final typeStr = WidgetsBinding.instance.runtimeType.toString();
+    return typeStr.contains('Test') || typeStr.contains('Fake');
+  }
 
   bool get _isLoggedIn {
     try {
@@ -204,14 +211,19 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
     try {
       final cats = await sl<ApiService>().getCategories(type: 'event');
       if (mounted && cats.isNotEmpty) {
-        final merged = <String>{..._defaultCategories};
+        final seen = <String>{};
+        final merged = <String>[];
+        for (final d in _defaultCategories) {
+          if (seen.add(d.toLowerCase())) merged.add(d);
+        }
         for (final c in cats) {
-          if (c.name.trim().isNotEmpty) {
-            merged.add(c.name.trim());
+          final name = c.name.trim();
+          if (name.isNotEmpty && seen.add(name.toLowerCase())) {
+            merged.add(name);
           }
         }
         setState(() {
-          _categories = merged.toList();
+          _categories = merged;
         });
       }
     } catch (_) {}

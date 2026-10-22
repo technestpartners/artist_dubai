@@ -25,6 +25,7 @@ class GalleriesView extends StatefulWidget {
 class _GalleriesViewState extends State<GalleriesView> {
   List<Map<String, dynamic>> _registeredGalleries = [];
   bool _isLoading = true;
+  bool _hasError = false;
   StreamSubscription<List<Map<String, dynamic>>>? _galleriesSub;
 
   static const Color _screenBg = Color(0xFF6B1C9B);
@@ -74,10 +75,16 @@ class _GalleriesViewState extends State<GalleriesView> {
         setState(() {
           _registeredGalleries = list;
           _isLoading = false;
+          _hasError = false;
         });
       }
     } catch (_) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+        });
+      }
     }
   }
 
@@ -324,7 +331,61 @@ class _GalleriesViewState extends State<GalleriesView> {
                             ),
                           ),
                         )
-                      else if (_registeredGalleries.isEmpty) ...[
+                      else if (_hasError && _registeredGalleries.isEmpty) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 36,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _cardBg,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.cloud_off_rounded,
+                                size: 46,
+                                color: Colors.white70,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Unable to load galleries'.trData(context),
+                                style: const TextStyle(
+                                  fontSize: 17.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Please check your connection and try again.'.trData(context),
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 13.5,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              ElevatedButton.icon(
+                                onPressed: _loadGalleries,
+                                icon: const Icon(Icons.refresh, size: 18),
+                                label: Text('Retry'.trData(context)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: _screenBg,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else if (_registeredGalleries.isEmpty) ...[
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(

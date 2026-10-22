@@ -36,6 +36,14 @@ class _FakeStorageService implements StorageService {
   }
 
   @override
+  List<String>? getStringList(String key) => _data[key] as List<String>?;
+
+  @override
+  Future<void> setStringList(String key, List<String> value) async {
+    _data[key] = value;
+  }
+
+  @override
   Future<void> clearAuthSession() async => _data.clear();
 
   @override

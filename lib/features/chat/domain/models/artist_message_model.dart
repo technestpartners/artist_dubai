@@ -65,19 +65,38 @@ class ArtistMessageModel {
       subject: json['subject']?.toString() ?? '',
       message: json['message']?.toString() ?? '',
       flyerUrl: json['flyer_url']?.toString() ?? json['flyerUrl']?.toString(),
-      createdAt:
-          json['created_at'] != null
-              ? DateTime.tryParse(json['created_at'].toString()) ??
-                  DateTime.now()
-              : (json['createdAt'] != null
-                  ? DateTime.tryParse(json['createdAt'].toString()) ??
-                      DateTime.now()
-                  : DateTime.now()),
+      createdAt: parseDateTime(json['created_at'] ?? json['createdAt']),
       isRead:
           json['is_read'] == true ||
           json['is_read'] == 1 ||
           json['isRead'] == true,
     );
+  }
+
+  /// Parses MySQL datetime string (UTC) or ISO-8601 string and converts it to local device timezone.
+  static DateTime parseDateTime(dynamic raw) {
+    if (raw == null) return DateTime.now();
+    if (raw is DateTime) return raw.toLocal();
+    final str = raw.toString().trim();
+    if (str.isEmpty) return DateTime.now();
+
+    // If it already contains timezone indicators (Z, +, or negative timezone offset)
+    if (str.endsWith('Z') ||
+        str.contains('+') ||
+        RegExp(r'-\d{2}:\d{2}$').hasMatch(str)) {
+      final parsed = DateTime.tryParse(str);
+      if (parsed != null) return parsed.toLocal();
+    }
+
+    // Standard MySQL DATETIME 'YYYY-MM-DD HH:MM:SS' without offset is stored in UTC
+    final iso = str.contains('T') ? str : str.replaceFirst(' ', 'T');
+    final utc = DateTime.tryParse('${iso}Z');
+    if (utc != null) {
+      return utc.toLocal();
+    }
+
+    final fallback = DateTime.tryParse(iso);
+    return fallback != null ? fallback.toLocal() : DateTime.now();
   }
 
   Map<String, dynamic> toJson() {
@@ -94,7 +113,7 @@ class ArtistMessageModel {
       'subject': subject,
       'message': message,
       'flyer_url': flyerUrl,
-      'created_at': createdAt.toIso8601String(),
+      'created_at': createdAt.toUtc().toIso8601String(),
       'is_read': isRead ? 1 : 0,
     };
   }

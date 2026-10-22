@@ -5,7 +5,6 @@ import 'package:artist_dubai/l10n/app_localizations.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/utils/responsive_helper.dart';
-import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../controllers/login_controller.dart';
 import '../widgets/auth_error_banner_widget.dart';
@@ -76,6 +75,67 @@ class _LoginViewState extends State<LoginView> {
         }
       }
     }
+  }
+
+  void _showForgotPasswordDialog() {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final emailController = TextEditingController(text: _emailController.text.trim());
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          isAr ? 'إعادة تعيين كلمة المرور' : 'Reset Password',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isAr
+                  ? 'أدخل بريدك الإلكتروني المسجل وسنرسل لك تعليمات إعادة تعيين كلمة المرور.'
+                  : 'Enter your registered email address and we will send you password reset instructions.',
+              style: const TextStyle(fontSize: 13.5, color: Color(0xFF4A4A4A)),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                labelText: isAr ? 'البريد الإلكتروني' : 'Email Address',
+                prefixIcon: const Icon(Icons.email_outlined),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(isAr ? 'إلغاء' : 'Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6A2777),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              final email = emailController.text.trim();
+              Navigator.of(ctx).pop();
+              if (email.isNotEmpty) {
+                _showSnackBar(
+                  isAr
+                      ? 'تم إرسال رابط إعادة تعيين كلمة المرور إذا كان الحساب مسجلاً لدينا.'
+                      : 'Password reset link sent if account is registered.',
+                );
+              }
+            },
+            child: Text(isAr ? 'إرسال الرابط' : 'Send Reset Link'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showSnackBar(String message) {
@@ -210,7 +270,29 @@ class _LoginViewState extends State<LoginView> {
                                         _controller.togglePasswordVisibility,
                                   ),
                                 ),
-                                const SizedBox(height: 24),
+                                const SizedBox(height: 8),
+
+                                // Forgot Password Link
+                                Align(
+                                  alignment: AlignmentDirectional.centerEnd,
+                                  child: TextButton(
+                                    onPressed: _showForgotPasswordDialog,
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: const Color(0xFF6A2777),
+                                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                    ),
+                                    child: Text(
+                                      Localizations.localeOf(context).languageCode == 'ar'
+                                          ? 'نسيت كلمة المرور؟'
+                                          : 'Forgot password?',
+                                      style: const TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
 
                                 // Sign In Button
                                 LoginSubmitButton(
@@ -270,7 +352,7 @@ class _LoginViewState extends State<LoginView> {
                 ),
               ),
             ),
-            bottomNavigationBar: const AppBottomNavBar(currentIndex: 3),
+            bottomNavigationBar: null,
           );
         },
       ),

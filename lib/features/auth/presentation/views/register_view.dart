@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/utils/responsive_helper.dart';
-import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../controllers/register_controller.dart';
 import '../widgets/auth_error_banner_widget.dart';
@@ -74,6 +73,56 @@ class _RegisterViewState extends State<RegisterView> {
         context.go(RouteNames.artistRegistration);
       }
     }
+  }
+
+  Widget _buildPasswordStrengthIndicator(String password) {
+    if (password.isEmpty) return const SizedBox.shrink();
+    int score = 0;
+    if (password.length >= 8) score++;
+    if (password.length >= 12) score++;
+    if (RegExp(r'[A-Z]').hasMatch(password)) score++;
+    if (RegExp(r'[0-9]').hasMatch(password)) score++;
+    if (RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password)) score++;
+
+    double percent = (score / 5.0).clamp(0.2, 1.0);
+    Color color;
+    String label;
+    if (score <= 1) {
+      color = const Color(0xFFDC2626);
+      label = 'Weak';
+    } else if (score <= 2) {
+      color = const Color(0xFFF97316);
+      label = 'Fair';
+    } else if (score <= 3) {
+      color = const Color(0xFFEAB308);
+      label = 'Good';
+    } else {
+      color = const Color(0xFF16A34A);
+      label = 'Strong';
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 6.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(3),
+            child: LinearProgressIndicator(
+              value: percent,
+              backgroundColor: const Color(0xFFE5E7EB),
+              color: color,
+              minHeight: 4,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Password strength: $label',
+            style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showSnackBar(String message) {
@@ -323,6 +372,7 @@ class _RegisterViewState extends State<RegisterView> {
                                   ),
                                 ),
                                 AuthErrorBanner(errorText: state.passwordError),
+                                _buildPasswordStrengthIndicator(_passwordController.text),
                                 const SizedBox(height: 18),
 
                                 // 4. Confirm Password Field
@@ -513,7 +563,7 @@ class _RegisterViewState extends State<RegisterView> {
                                         horizontal: 12,
                                       ),
                                       child: Text(
-                                        '${l10n.alreadyHaveAccount}${l10n.signInNow}',
+                                        '${l10n.alreadyHaveAccount}  ${l10n.signInNow}',
                                         style: const TextStyle(
                                           color: Color(0xFF6A2777),
                                           fontSize: 13,
@@ -534,7 +584,7 @@ class _RegisterViewState extends State<RegisterView> {
                 ),
               ),
             ),
-            bottomNavigationBar: const AppBottomNavBar(currentIndex: 3),
+            bottomNavigationBar: null,
           );
         },
       ),

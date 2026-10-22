@@ -347,7 +347,14 @@ class _ArtistsViewState extends State<ArtistsView> {
     final rh = ResponsiveHelper.of(context);
     final hPad = rh.horizontalPadding;
 
-    return Scaffold(
+    return PopScope(
+      canPop: _categoryOverlayEntry == null,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _categoryOverlayEntry != null) {
+          _hideCategoryOverlay();
+        }
+      },
+      child: Scaffold(
       backgroundColor: const Color(0xFF6B1C9B),
       appBar: const AppTopBar(),
       body: SafeArea(
@@ -513,7 +520,8 @@ class _ArtistsViewState extends State<ArtistsView> {
         ),
       ),
       bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
-    );
+    ),
+  );
   }
 
   // Select a Category Field
