@@ -180,7 +180,8 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
   }
 
   void _toggleLike(ArtistModel artist) async {
-    final wasLiked = _likedArtistIds.contains(artist.id);
+    final wasLiked = _favService.isArtistFavorite(artist.id) ||
+        _likedArtistIds.contains(artist.id);
     final artistName = artist.name.isEmpty ? 'Artist' : artist.name;
 
     final idx = _categoryArtists.indexWhere((a) => a.id == artist.id);
@@ -191,6 +192,11 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
               ? (old.followersCount - 1).clamp(0, 999999)
               : (old.followersCount + 1);
       setState(() {
+        if (wasLiked) {
+          _likedArtistIds.remove(artist.id);
+        } else {
+          _likedArtistIds.add(artist.id);
+        }
         _categoryArtists[idx] = ArtistModel(
           id: old.id,
           name: old.name,
@@ -207,18 +213,28 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
       });
     }
 
-    await _favService.toggleArtistFavorite(artist.id);
+    final nowLiked = await _favService.toggleArtistFavorite(artist.id);
 
     if (mounted) {
+      if (_likedArtistIds.contains(artist.id) != nowLiked) {
+        setState(() {
+          if (nowLiked) {
+            _likedArtistIds.add(artist.id);
+          } else {
+            _likedArtistIds.remove(artist.id);
+          }
+        });
+      }
+
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            wasLiked
+            !nowLiked
                 ? 'Unliked $artistName'.trData(context)
                 : 'Liked $artistName\'s profile ❤️'.trData(context),
           ),
-          backgroundColor: wasLiked ? null : const Color(0xFF6A2777),
+          backgroundColor: !nowLiked ? null : const Color(0xFF6A2777),
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
         ),
@@ -882,8 +898,6 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
 
   // Artist Card (Matching Screenshot media_1787732673273.png)
   Widget _buildArtistCard(BuildContext context, ArtistModel artist) {
-    final isLiked = _likedArtistIds.contains(artist.id);
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -982,37 +996,43 @@ class _CategoryDetailViewState extends State<CategoryDetailView> {
               ),
               const SizedBox(width: 8),
               // Like ❤️ button
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => _toggleLike(artist),
-                  borderRadius: BorderRadius.circular(6),
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color:
-                          isLiked
-                              ? const Color(0xFFE11D48).withValues(alpha: 0.1)
-                              : Colors.transparent,
-                      border: Border.all(
-                        color:
-                            isLiked
-                                ? const Color(0xFFE11D48)
-                                : const Color(0xFFE2E8F0),
-                      ),
+              ListenableBuilder(
+                listenable: _favService,
+                builder: (context, _) {
+                  final isLiked = _favService.isArtistFavorite(artist.id);
+                  return Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _toggleLike(artist),
                       borderRadius: BorderRadius.circular(6),
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color:
+                              isLiked
+                                  ? const Color(0xFFE11D48).withValues(alpha: 0.1)
+                                  : Colors.transparent,
+                          border: Border.all(
+                            color:
+                                isLiked
+                                    ? const Color(0xFFE11D48)
+                                    : const Color(0xFFE2E8F0),
+                          ),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(
+                          isLiked ? Icons.favorite : Icons.favorite_border,
+                          size: 16,
+                          color:
+                              isLiked
+                                  ? const Color(0xFFE11D48)
+                                  : const Color(0xFF64748B),
+                        ),
+                      ),
                     ),
-                    child: Icon(
-                      isLiked ? Icons.favorite : Icons.favorite_border,
-                      size: 16,
-                      color:
-                          isLiked
-                              ? const Color(0xFFE11D48)
-                              : const Color(0xFF64748B),
-                    ),
-                  ),
-                ),
+                  );
+                },
               ),
             ],
           ),

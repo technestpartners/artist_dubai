@@ -74,33 +74,48 @@ class _ArtistsViewState extends State<ArtistsView> {
   late final FavoritesService _favService;
 
   void _toggleFavorite(ArtistModel artist) async {
-    final wasFav = _favoritedArtistIds.contains(artist.id);
+    final wasFav = _favService.isArtistFavorite(artist.id);
 
-    // Optimistically update card likes count
-    final updatedIndex = _allArtists.indexWhere((a) => a.id == artist.id);
-    if (updatedIndex != -1) {
-      final old = _allArtists[updatedIndex];
-      final newLikes =
-          wasFav ? (old.likesCount - 1).clamp(0, 999999) : (old.likesCount + 1);
-      setState(() {
+    // Optimistically update likes count in list immediately
+    setState(() {
+      if (wasFav) {
+        _favoritedArtistIds.remove(artist.id);
+      } else {
+        _favoritedArtistIds.add(artist.id);
+      }
+      final updatedIndex = _allArtists.indexWhere((a) => a.id == artist.id);
+      if (updatedIndex != -1) {
+        final old = _allArtists[updatedIndex];
+        final newLikes =
+            wasFav ? (old.likesCount - 1).clamp(0, 999999) : (old.likesCount + 1);
         _allArtists[updatedIndex] = old.copyWith(likesCount: newLikes);
-      });
-    }
+      }
+    });
 
-    // Persist via FavoritesService
-    await _favService.toggleArtistFavorite(artist.id);
+    // Toggle favorite state in FavoritesService (instantly updates local storage & notifies listeners)
+    final nowFav = await _favService.toggleArtistFavorite(artist.id);
 
     if (mounted) {
+      if (_favoritedArtistIds.contains(artist.id) != nowFav) {
+        setState(() {
+          if (nowFav) {
+            _favoritedArtistIds.add(artist.id);
+          } else {
+            _favoritedArtistIds.remove(artist.id);
+          }
+        });
+      }
+
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            wasFav
+            !nowFav
                 ? 'Removed ${artist.name} from favorites'
                 : 'Added ${artist.name} to favorites! ❤️',
           ),
           backgroundColor:
-              wasFav ? const Color(0xFF475569) : const Color(0xFF6A2777),
+              !nowFav ? const Color(0xFF475569) : const Color(0xFF6A2777),
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
         ),
@@ -1095,9 +1110,10 @@ class _ArtistsViewState extends State<ArtistsView> {
                         const SizedBox(width: 8),
 
                         // Interactive Favorite Heart Button
-                        Builder(
-                          builder: (context) {
-                            final isFav = _favoritedArtistIds.contains(
+                        ListenableBuilder(
+                          listenable: _favService,
+                          builder: (context, _) {
+                            final isFav = _favService.isArtistFavorite(
                               artist.id,
                             );
                             return Material(

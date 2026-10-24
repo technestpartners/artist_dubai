@@ -1146,7 +1146,7 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
 
               // Main Title
               Text(
-                'Global Art Guide – Artists, History & Origins'.trData(context),
+                'Global Art Guide'.trData(context),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Colors.white,

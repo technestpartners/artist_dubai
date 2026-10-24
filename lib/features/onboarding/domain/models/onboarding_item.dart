@@ -41,7 +41,7 @@ class OnboardingItem {
       imagePath: 'assets/images/galleries-DjK8LuXg.jpg',
     ),
     OnboardingItem(
-      title: 'Global Art Guide – Artists, History & Origins',
+      title: 'Global Art Guide',
       description:
           'Discover artists, art history, and cultural origins in Dubai, across the UAE, and worldwide.',
       emoji: '✨',

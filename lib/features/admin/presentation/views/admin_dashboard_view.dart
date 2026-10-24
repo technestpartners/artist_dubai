@@ -7931,6 +7931,73 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     final customFeatureInputCtrl = TextEditingController();
     bool showRawFeaturesEditor = false;
 
+    const pricePresets = [
+      'Free',
+      'AED 49',
+      'AED 99',
+      'AED 149',
+      'AED 199',
+      'AED 299',
+      'AED 350',
+      'AED 500',
+      'AED 750',
+      'AED 990',
+      'AED 1,500',
+      'AED 3,000',
+    ];
+
+    const badgePresets = [
+      'Free',
+      'Popular',
+      'Recommended',
+      'Best Choice',
+      'Featured',
+      'VIP Partner',
+      'One-time',
+      'Limited Offer',
+      'Special Offer',
+      'Save 25%',
+      'Best Value',
+      'Standard',
+      'Hot',
+      'New',
+      'None (No Badge)',
+    ];
+
+    const buttonPresets = [
+      'Create Free Profile',
+      'Pay from My Listings',
+      'Subscribe to Pro',
+      'List Your Gallery',
+      'Subscribe to Chat',
+      'Join Partner Network',
+      'Choose Plan',
+    ];
+
+    const durationPresets = [
+      '30 Days',
+      '60 Days',
+      '90 Days (3 Months)',
+      '180 Days (6 Months)',
+      '1 Year (365 Days)',
+      'Permanent Free Profile',
+      'Permanent / Lifetime',
+    ];
+
+    bool isCustomPrice = plan != null &&
+        initialPrice.isNotEmpty &&
+        !pricePresets.contains(initialPrice) &&
+        initialPrice.toLowerCase() != 'free';
+    bool isCustomBadge = plan != null &&
+        badgeCtrl.text.trim().isNotEmpty &&
+        !badgePresets.contains(badgeCtrl.text.trim());
+    bool isCustomBtn = plan != null &&
+        buttonTextCtrl.text.trim().isNotEmpty &&
+        !buttonPresets.contains(buttonTextCtrl.text.trim());
+    bool isCustomDuration = plan != null &&
+        durationCtrl.text.trim().isNotEmpty &&
+        !durationPresets.contains(durationCtrl.text.trim());
+
     // Quick Templates for 1-Click Professional Pre-Filling
     final quickTemplates = [
       {
@@ -8067,45 +8134,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 ..._categories.map((c) => c.name.trim()).where((n) => n.isNotEmpty),
               }.toList();
 
-              final pricePresets = const [
-                'Free',
-                'AED 49',
-                'AED 99',
-                'AED 149',
-                'AED 199',
-                'AED 299',
-                'AED 350',
-                'AED 500',
-                'AED 750',
-                'AED 990',
-                'AED 1,500',
-                'AED 3,000',
-              ];
-
-              final badgePresets = const [
-                'Free',
-                'Popular',
-                'Recommended',
-                'Best Choice',
-                'Featured',
-                'VIP Partner',
-                'One-time',
-                'Limited Offer',
-                'Hot',
-                'New',
-                'None (No Badge)',
-              ];
-
-              final buttonPresets = const [
-                'Create Free Profile',
-                'Pay from My Listings',
-                'Subscribe to Pro',
-                'List Your Gallery',
-                'Subscribe to Chat',
-                'Join Partner Network',
-                'Choose Plan',
-              ];
-
               const standardFeaturesCatalog = [
                 'Verified Artist Badge on profile',
                 'Unlimited portfolio artwork uploads',
@@ -8132,9 +8160,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   activeLines.add(trimmed);
                 }
               }
-              if (featuresCtrl.text.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).length != activeLines.length) {
-                featuresCtrl.text = activeLines.join('\n');
-              }
               final customFeatures = activeLines
                   .where((l) => !standardFeaturesCatalog.contains(l))
                   .toList();
@@ -8144,36 +8169,39 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 categoryCtrl.text = connectedCategories.first;
               }
 
-              final currentPrice = ListingPlanItem.normalizePrice(priceCtrl.text);
-              final bool isPriceInPresets = pricePresets.contains(currentPrice);
+              final currentPrice = priceCtrl.text.trim();
               final String selectedPriceValue = selectedItemType == 'artist'
                   ? 'Free'
-                  : (isPriceInPresets
-                      ? currentPrice
-                      : (currentPrice.isEmpty ? 'AED 199' : '__custom__'));
-              if (isPriceInPresets && priceCtrl.text.trim() != currentPrice) {
-                priceCtrl.text = currentPrice;
-              }
-              if (selectedItemType == 'artist' && priceCtrl.text != 'Free') {
-                priceCtrl.text = 'Free';
-              }
+                  : (isCustomPrice
+                      ? '__custom__'
+                      : (pricePresets.contains(currentPrice)
+                          ? currentPrice
+                          : '__custom__'));
 
               final currentBadge = badgeCtrl.text.trim();
-              final bool isBadgeInPresets = badgePresets.contains(currentBadge) || currentBadge.isEmpty;
-              final String selectedBadgeValue = currentBadge.isEmpty
-                  ? 'None (No Badge)'
-                  : (isBadgeInPresets ? currentBadge : '__custom__');
+              final String selectedBadgeValue = isCustomBadge
+                  ? '__custom__'
+                  : (currentBadge.isEmpty
+                      ? 'None (No Badge)'
+                      : (badgePresets.contains(currentBadge)
+                          ? currentBadge
+                          : '__custom__'));
 
               final currentBtn = buttonTextCtrl.text.trim();
-              final bool isBtnInPresets = buttonPresets.contains(currentBtn);
-              final String selectedBtnValue = isBtnInPresets
-                  ? currentBtn
-                  : (currentBtn.isEmpty
-                      ? (selectedItemType == 'artist' ? 'Create Free Profile' : 'Pay from My Listings')
+              final String selectedBtnValue = isCustomBtn
+                  ? '__custom__'
+                  : (buttonPresets.contains(currentBtn)
+                      ? currentBtn
+                      : (currentBtn.isEmpty
+                          ? (selectedItemType == 'artist' ? 'Create Free Profile' : 'Pay from My Listings')
+                          : '__custom__'));
+
+              final currentDur = durationCtrl.text.trim();
+              final String selectedDurationValue = isCustomDuration
+                  ? '__custom__'
+                  : (durationPresets.contains(currentDur)
+                      ? currentDur
                       : '__custom__');
-              if (buttonTextCtrl.text.isEmpty && selectedBtnValue != '__custom__') {
-                buttonTextCtrl.text = selectedBtnValue;
-              }
 
               return Dialog(
                 backgroundColor: Colors.white,
@@ -8322,6 +8350,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                           featuresCtrl.text = t['features']!;
                                           buttonTextCtrl.text =
                                               t['buttonText']!;
+                                          isCustomPrice = !pricePresets.contains(t['price']!);
+                                          isCustomBadge = t['badge']!.isNotEmpty && !badgePresets.contains(t['badge']!);
+                                          isCustomBtn = !buttonPresets.contains(t['buttonText']!);
+                                          isCustomDuration = t['duration'] != null && !durationPresets.contains(t['duration']!);
                                         });
                                       },
                                       borderRadius: BorderRadius.circular(8),
@@ -8560,6 +8592,11 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                 priceCtrl.text = 'Free';
                                 badgeCtrl.text = 'Free';
                                 buttonTextCtrl.text = 'Create Free Profile';
+                                durationCtrl.text = 'Permanent Free Profile';
+                                isCustomPrice = false;
+                                isCustomBadge = false;
+                                isCustomBtn = false;
+                                isCustomDuration = false;
                               }
                               if (featuresCtrl.text.trim().isEmpty) {
                                 featuresCtrl.text =
@@ -8892,10 +8929,15 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                     if (val == null) return;
                                     setModalState(() {
                                       if (val == 'None (No Badge)') {
+                                        isCustomBadge = false;
                                         badgeCtrl.text = '';
                                       } else if (val == '__custom__') {
-                                        if (isBadgeInPresets) badgeCtrl.clear();
+                                        isCustomBadge = true;
+                                        if (badgePresets.contains(badgeCtrl.text.trim())) {
+                                          badgeCtrl.clear();
+                                        }
                                       } else {
+                                        isCustomBadge = false;
                                         badgeCtrl.text = val;
                                       }
                                     });
@@ -8908,8 +8950,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                   const SizedBox(height: 6),
                                   _buildDialogTextField(
                                     controller: badgeCtrl,
-                                    hint: 'Type custom badge name...',
+                                    hint: 'Type custom badge name (e.g. VIP Member)...',
                                     icon: Icons.bookmark_border_rounded,
+                                    autofocus: true,
                                   ),
                                 ],
                               ],
@@ -9009,8 +9052,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                       if (val == null) return;
                                       setModalState(() {
                                         if (val == '__custom__') {
-                                          if (isPriceInPresets) priceCtrl.clear();
+                                          isCustomPrice = true;
+                                          if (pricePresets.contains(priceCtrl.text.trim())) {
+                                            priceCtrl.clear();
+                                          }
                                         } else {
+                                          isCustomPrice = false;
                                           priceCtrl.text = val;
                                         }
                                       });
@@ -9026,6 +9073,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                       hint: 'e.g. AED 1,200',
                                       icon: Icons.payments_rounded,
                                       isBold: true,
+                                      autofocus: true,
                                     ),
                                   ],
                                 ],
@@ -9133,7 +9181,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                   onTap: () {
                                     setModalState(() {
                                       durationCtrl.text = preset['val']!;
+                                      isCustomDuration = false;
                                       badgeCtrl.text = preset['badge']!;
+                                      isCustomBadge = !badgePresets.contains(preset['badge']!);
                                       if (titleCtrl.text.isEmpty ||
                                           titleCtrl.text.contains('(')) {
                                         final base = selectedItemType == 'event'
@@ -9194,69 +9244,67 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         _buildFormLabel('Duration / Validity Period *'),
                         const SizedBox(height: 6),
                         DropdownButtonFormField<String>(
-                          key: ValueKey(durationCtrl.text),
+                          key: ValueKey(selectedDurationValue),
                           isExpanded: true,
-                          initialValue: [
-                            '30 Days',
-                            '60 Days',
-                            '90 Days (3 Months)',
-                            '180 Days (6 Months)',
-                            '1 Year (365 Days)',
-                            'Permanent Free Profile',
-                            'Permanent / Lifetime',
-                          ].contains(durationCtrl.text.trim())
-                              ? durationCtrl.text.trim()
-                              : '__custom__',
+                          initialValue: selectedDurationValue,
                           dropdownColor: Colors.white,
                           style: const TextStyle(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w600,
                             color: Color(0xFF0F172A),
                           ),
-                          items: const [
-                            DropdownMenuItem(
-                              value: '30 Days',
-                              child: Text('30 Days (Standard Event / Listing)'),
-                            ),
-                            DropdownMenuItem(
-                              value: '60 Days',
-                              child: Text('60 Days (2 Months)'),
-                            ),
-                            DropdownMenuItem(
-                              value: '90 Days (3 Months)',
-                              child: Text('90 Days (Quarterly Pass)'),
-                            ),
-                            DropdownMenuItem(
-                              value: '180 Days (6 Months)',
-                              child: Text('180 Days (Bi-Annual)'),
-                            ),
-                            DropdownMenuItem(
-                              value: '1 Year (365 Days)',
-                              child: Text('1 Year / 365 Days (Gallery / Institution)'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'Permanent Free Profile',
-                              child: Text('Permanent Free Profile (Artists)'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'Permanent / Lifetime',
-                              child: Text('Permanent / Lifetime Access'),
-                            ),
-                            DropdownMenuItem(
-                              value: '__custom__',
-                              child: Text(
-                                'Custom Duration...',
-                                style: TextStyle(
-                                  fontStyle: FontStyle.italic,
-                                  color: Color(0xFF6A2777),
+                          items: [
+                            ...durationPresets.map(
+                              (d) => DropdownMenuItem(
+                                value: d,
+                                child: Text(
+                                  d == '30 Days'
+                                      ? '30 Days (Standard Event / Listing)'
+                                      : (d == '60 Days'
+                                          ? '60 Days (2 Months)'
+                                          : (d == '90 Days (3 Months)'
+                                              ? '90 Days (Quarterly Pass)'
+                                              : (d == '180 Days (6 Months)'
+                                                  ? '180 Days (Bi-Annual)'
+                                                  : (d == '1 Year (365 Days)'
+                                                      ? '1 Year / 365 Days (Gallery / Institution)'
+                                                      : (d == 'Permanent Free Profile'
+                                                          ? 'Permanent Free Profile (Artists)'
+                                                          : 'Permanent / Lifetime Access'))))),
                                 ),
+                              ),
+                            ),
+                            const DropdownMenuItem(
+                              value: '__custom__',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.edit_note_rounded,
+                                    size: 15,
+                                    color: Color(0xFF6A2777),
+                                  ),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Custom Duration...',
+                                    style: TextStyle(
+                                      fontStyle: FontStyle.italic,
+                                      color: Color(0xFF6A2777),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                           onChanged: (val) {
                             if (val == null) return;
                             setModalState(() {
-                              if (val != '__custom__') {
+                              if (val == '__custom__') {
+                                isCustomDuration = true;
+                                if (durationPresets.contains(durationCtrl.text.trim())) {
+                                  durationCtrl.clear();
+                                }
+                              } else {
+                                isCustomDuration = false;
                                 durationCtrl.text = val;
                               }
                             });
@@ -9265,12 +9313,15 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             icon: Icons.timer_outlined,
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        _buildDialogTextField(
-                          controller: durationCtrl,
-                          hint: 'e.g. 1 Year (365 Days), 30 Days, Permanent',
-                          icon: Icons.schedule_rounded,
-                        ),
+                        if (selectedDurationValue == '__custom__') ...[
+                          const SizedBox(height: 6),
+                          _buildDialogTextField(
+                            controller: durationCtrl,
+                            hint: 'e.g. 1 Year (365 Days), 30 Days, Permanent',
+                            icon: Icons.schedule_rounded,
+                            autofocus: true,
+                          ),
+                        ],
                         const SizedBox(height: 14),
 
                         // Description Field
@@ -9757,8 +9808,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             if (val == null) return;
                             setModalState(() {
                               if (val == '__custom__') {
-                                if (isBtnInPresets) buttonTextCtrl.clear();
+                                isCustomBtn = true;
+                                if (buttonPresets.contains(buttonTextCtrl.text.trim())) {
+                                  buttonTextCtrl.clear();
+                                }
                               } else {
+                                isCustomBtn = false;
                                 buttonTextCtrl.text = val;
                               }
                             });
@@ -9773,6 +9828,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             controller: buttonTextCtrl,
                             hint: 'e.g. Join Artist Network',
                             icon: Icons.touch_app_outlined,
+                            autofocus: true,
                           ),
                         ],
                         const SizedBox(height: 6),
@@ -9783,32 +9839,44 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             _buildButtonPresetChip(
                               'Create Free Profile',
                               buttonTextCtrl,
-                              () => setModalState(() {}),
+                              () => setModalState(() {
+                                isCustomBtn = false;
+                              }),
                             ),
                             _buildButtonPresetChip(
                               'Pay from My Listings',
                               buttonTextCtrl,
-                              () => setModalState(() {}),
+                              () => setModalState(() {
+                                isCustomBtn = false;
+                              }),
                             ),
                             _buildButtonPresetChip(
                               'Subscribe to Pro',
                               buttonTextCtrl,
-                              () => setModalState(() {}),
+                              () => setModalState(() {
+                                isCustomBtn = false;
+                              }),
                             ),
                             _buildButtonPresetChip(
                               'List Your Gallery',
                               buttonTextCtrl,
-                              () => setModalState(() {}),
+                              () => setModalState(() {
+                                isCustomBtn = false;
+                              }),
                             ),
                             _buildButtonPresetChip(
                               'Subscribe to Chat',
                               buttonTextCtrl,
-                              () => setModalState(() {}),
+                              () => setModalState(() {
+                                isCustomBtn = false;
+                              }),
                             ),
                             _buildButtonPresetChip(
                               'Choose Plan',
                               buttonTextCtrl,
-                              () => setModalState(() {}),
+                              () => setModalState(() {
+                                isCustomBtn = false;
+                              }),
                             ),
                           ],
                         ),
@@ -9993,9 +10061,14 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                               onPressed: () async {
                                 final title = titleCtrl.text.trim();
                                 final category = categoryCtrl.text.trim();
-                                final price = ListingPlanItem.normalizePrice(
-                                  priceCtrl.text,
-                                );
+                                final rawPrice = priceCtrl.text.trim();
+                                final price = selectedItemType == 'artist'
+                                    ? 'Free'
+                                    : (rawPrice.isEmpty
+                                        ? ''
+                                        : (rawPrice.toLowerCase() == 'free'
+                                            ? 'Free'
+                                            : ListingPlanItem.normalizePrice(rawPrice)));
                                 final itemType = selectedItemType.trim();
 
                                 if (title.isEmpty ||
@@ -10174,9 +10247,11 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     required String hint,
     required IconData icon,
     bool isBold = false,
+    bool autofocus = false,
   }) {
     return TextField(
       controller: controller,
+      autofocus: autofocus,
       style: TextStyle(
         fontSize: 13.5,
         fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,

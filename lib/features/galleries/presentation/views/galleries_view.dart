@@ -23,6 +23,7 @@ class GalleriesView extends StatefulWidget {
 }
 
 class _GalleriesViewState extends State<GalleriesView> {
+  final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _registeredGalleries = [];
   bool _isLoading = true;
   bool _hasError = false;
@@ -52,6 +53,7 @@ class _GalleriesViewState extends State<GalleriesView> {
   @override
   void dispose() {
     DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
+    _searchController.dispose();
     _galleriesSub?.cancel();
     super.dispose();
   }
@@ -178,6 +180,81 @@ class _GalleriesViewState extends State<GalleriesView> {
 
   Future<void> _launchUrl(String url) async {
     await ShareHelper.openUrl(url);
+  }
+
+  List<Map<String, dynamic>> _getFilteredGalleries() {
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) return _registeredGalleries;
+    return _registeredGalleries.where((g) {
+      final name = (g['name'] ?? g['title'] ?? '').toString().toLowerCase();
+      final about = (g['about'] ?? g['description'] ?? g['subtitle'] ?? '').toString().toLowerCase();
+      final location = (g['location'] ?? g['address'] ?? g['city'] ?? '').toString().toLowerCase();
+      final category = (g['category'] ?? g['type'] ?? '').toString().toLowerCase();
+      final artistName = (g['artist_name'] ?? '').toString().toLowerCase();
+      return name.contains(query) ||
+          about.contains(query) ||
+          location.contains(query) ||
+          category.contains(query) ||
+          artistName.contains(query);
+    }).toList();
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (_) => setState(() {}),
+        style: const TextStyle(
+          color: Colors.black,
+          fontSize: 14.5,
+          fontWeight: FontWeight.w500,
+        ),
+        cursorColor: _screenBg,
+        decoration: InputDecoration(
+          hintText: 'Search Galleries & Art Centers'.trData(context),
+          hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 14.5),
+          prefixIcon: const Icon(
+            Icons.search,
+            color: Color(0xFF64748B),
+            size: 22,
+          ),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? GestureDetector(
+                  onTap: () {
+                    _searchController.clear();
+                    setState(() {});
+                  },
+                  child: const Icon(
+                    Icons.close,
+                    color: Color(0xFF64748B),
+                    size: 20,
+                  ),
+                )
+              : null,
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -320,7 +397,11 @@ class _GalleriesViewState extends State<GalleriesView> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 14),
+
+                      // Search Field (Matching Events page style)
+                      _buildSearchBar(),
+                      const SizedBox(height: 18),
 
                       if (_isLoading)
                         const Padding(
@@ -439,12 +520,61 @@ class _GalleriesViewState extends State<GalleriesView> {
                             ),
                           ),
                         ),
+                      ] else if (_getFilteredGalleries().isEmpty) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 36,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _cardBg,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.search_off_rounded,
+                                size: 46,
+                                color: Colors.white70,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No galleries or art centers found matching your search.'.trData(context),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 16),
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() {});
+                                },
+                                icon: const Icon(Icons.clear, size: 16),
+                                label: Text('Clear Search'.trData(context)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: _screenBg,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ] else ...[
                         LayoutBuilder(
                           builder: (context, constraints) {
                             final isWide = constraints.maxWidth >= 600;
                             final crossAxisCount =
                                 constraints.maxWidth >= 900 ? 3 : 2;
+                            final displayGalleries = _getFilteredGalleries();
 
                             Widget buildGalleryCard(
                               Map<String, dynamic> gallery,
@@ -680,7 +810,7 @@ class _GalleriesViewState extends State<GalleriesView> {
                               return GridView.builder(
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
-                                itemCount: _registeredGalleries.length,
+                                itemCount: displayGalleries.length,
                                 gridDelegate:
                                     SliverGridDelegateWithFixedCrossAxisCount(
                                       crossAxisCount: crossAxisCount,
@@ -690,20 +820,20 @@ class _GalleriesViewState extends State<GalleriesView> {
                                     ),
                                 itemBuilder:
                                     (context, index) => buildGalleryCard(
-                                      _registeredGalleries[index],
+                                      displayGalleries[index],
                                     ),
                               );
                             }
                             return ListView.separated(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              itemCount: _registeredGalleries.length,
+                              itemCount: displayGalleries.length,
                               separatorBuilder:
                                   (context, index) =>
                                       const SizedBox(height: 16),
                               itemBuilder:
                                   (context, index) => buildGalleryCard(
-                                    _registeredGalleries[index],
+                                    displayGalleries[index],
                                   ),
                             );
                           },

@@ -139,7 +139,6 @@ class FavoritesService extends ChangeNotifier {
         userEmail: email,
         action: willBeFavorite ? 'like' : 'unlike',
       );
-      await _api.toggleFavorite(email: email, itemType: 'artist', itemId: id);
     } catch (_) {}
 
     return willBeFavorite;
@@ -166,8 +165,7 @@ class FavoritesService extends ChangeNotifier {
     return willBeFavorite;
   }
 
-  /// Merge favorites received from backend into local set
-  /// Note: We union/merge so background polling does not erase newly added favorites
+  /// Synchronize favorites received from backend with local set
   void updateFromServer(Map<String, dynamic> favData) {
     if (favData.isEmpty) return;
 
@@ -221,20 +219,32 @@ class FavoritesService extends ChangeNotifier {
     }
 
     bool changed = false;
-    if (serverEvIds.isNotEmpty) {
-      final before = _eventIds.length;
-      _eventIds.addAll(serverEvIds);
-      if (_eventIds.length != before) changed = true;
+    if (favData.containsKey('events') || favData.containsKey('event_ids')) {
+      if (_eventIds.length != serverEvIds.length ||
+          !_eventIds.containsAll(serverEvIds)) {
+        _eventIds
+          ..clear()
+          ..addAll(serverEvIds);
+        changed = true;
+      }
     }
-    if (serverArIds.isNotEmpty) {
-      final before = _artistIds.length;
-      _artistIds.addAll(serverArIds);
-      if (_artistIds.length != before) changed = true;
+    if (favData.containsKey('artists') || favData.containsKey('artist_ids')) {
+      if (_artistIds.length != serverArIds.length ||
+          !_artistIds.containsAll(serverArIds)) {
+        _artistIds
+          ..clear()
+          ..addAll(serverArIds);
+        changed = true;
+      }
     }
-    if (serverAwIds.isNotEmpty) {
-      final before = _artworkIds.length;
-      _artworkIds.addAll(serverAwIds);
-      if (_artworkIds.length != before) changed = true;
+    if (favData.containsKey('artworks') || favData.containsKey('artwork_ids')) {
+      if (_artworkIds.length != serverAwIds.length ||
+          !_artworkIds.containsAll(serverAwIds)) {
+        _artworkIds
+          ..clear()
+          ..addAll(serverAwIds);
+        changed = true;
+      }
     }
 
     if (changed) {

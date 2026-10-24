@@ -45,6 +45,37 @@ if ($contentLength > $maxAllowedSize) {
     exit();
 }
 
+// ─── 0d. Web Application Firewall (WAF) & Exploit Signature Filter ───────────
+$rawUri = $_SERVER['REQUEST_URI'] ?? '';
+$rawQuery = $_SERVER['QUERY_STRING'] ?? '';
+$decodedUri = rawurldecode($rawUri);
+$decodedQuery = rawurldecode($rawQuery);
+
+$exploitPatterns = [
+    '/\x00/',                                       // Null-byte injection
+    '/(?:\.\.\/|\.\.\\\\)/',                         // Path traversal (../ or ..\)
+    '/(?:%2e%2e%2f|%2e%2e\/|\.\.%2f)/i',             // Encoded path traversal
+    '/(?:union\s+(?:all\s+)?select)/i',              // Obvious SQL injection UNION SELECT
+    '/(?:information_schema|load_file\s*\(|into\s+(?:outfile|dumpfile))/i', // Advanced SQLi
+    '/(?:<script[\s>])/i',                           // XSS script tags in URL query
+    '/(?:base64_decode\s*\(|eval\s*\(|system\s*\(|shell_exec\s*\()/i', // PHP RCE wrappers
+    '/(?:\/etc\/(?:passwd|shadow|hosts)|\/proc\/self\/environ|boot\.ini)/i', // System file probe
+];
+
+foreach ($exploitPatterns as $pattern) {
+    if (preg_match($pattern, $rawUri) || preg_match($pattern, $decodedUri) ||
+        preg_match($pattern, $rawQuery) || preg_match($pattern, $decodedQuery)) {
+        http_response_code(400);
+        header("Content-Type: application/json; charset=UTF-8");
+        echo json_encode([
+            'status' => 'error',
+            'success' => false,
+            'message' => 'Bad Request: Malformed or prohibited request signature detected.'
+        ], JSON_UNESCAPED_SLASHES);
+        exit();
+    }
+}
+
 if (!headers_sent()) {
     // ─── CORS Allowlist & Origin Hardening ───────────────────────────────────
     $allowedOrigins = [
@@ -1204,8 +1235,8 @@ class AuthController {
     }
 
     public function updateProfile(array $input): void {
-        $currentUser = AuthMiddleware::getCurrentUser();
-        $email = InputSanitizer::cleanEmail($input['email'] ?? $input['current_email'] ?? $_GET['email'] ?? '');
+        $currentUser = AuthMiddleware::requireAuth();
+        $email = InputSanitizer::cleanEmail($input['email'] ?? $input['current_email'] ?? $_GET['email'] ?? ($currentUser['email'] ?? ''));
         $newName = InputSanitizer::cleanString($input['full_name'] ?? $input['name'] ?? '');
 
         if (empty($email) || empty($newName)) {
@@ -1214,11 +1245,9 @@ class AuthController {
         }
 
         // Authorization check: User must own profile or be admin
-        if ($currentUser) {
-            if (!$currentUser['is_admin'] && strtolower($currentUser['email']) !== strtolower($email)) {
-                ApiResponse::error('Forbidden. You can only update your own profile.', 403);
-                return;
-            }
+        if (!$currentUser['is_admin'] && strtolower($currentUser['email']) !== strtolower($email)) {
+            ApiResponse::error('Forbidden. You can only update your own profile.', 403);
+            return;
         }
 
         $stmt = $this->db->prepare('UPDATE users SET full_name = ? WHERE email = ?');
@@ -1384,21 +1413,17 @@ class AuthController {
         // Security verification:
         // Must either:
         // 1. Be authenticated as admin
-        // 2. Be authenticated as account owner (and provide correct current password if provided)
+        // 2. Be authenticated as account owner (must provide and verify current password via bcrypt)
         // 3. Unauthenticated requests must provide correct current password verified via bcrypt
         $isAuthorized = false;
         if ($currentUser && !empty($currentUser['is_admin'])) {
             $isAuthorized = true;
         } elseif ($currentUser && strtolower($currentUser['email']) === strtolower($email)) {
-            if (!empty($currentPassword)) {
-                $isAuthorized = password_verify($currentPassword, $user['password_hash']);
-                if (!$isAuthorized) {
-                    ApiResponse::error('Current password is incorrect.', 401);
-                    return;
-                }
-            } else {
-                $isAuthorized = true;
+            if (empty($currentPassword) || !password_verify($currentPassword, $user['password_hash'])) {
+                ApiResponse::error('Current password is required and must be correct to change password.', 401);
+                return;
             }
+            $isAuthorized = true;
         } elseif (!empty($currentPassword)) {
             $isAuthorized = password_verify($currentPassword, $user['password_hash']);
             if (!$isAuthorized) {
@@ -1406,7 +1431,7 @@ class AuthController {
                 return;
             }
         } else {
-            ApiResponse::error('Authentication or current password required to change password.', 401);
+            ApiResponse::error('Authentication and current password required to change password.', 401);
             return;
         }
 
@@ -2620,9 +2645,24 @@ class EventController {
     }
 
     public function updateEvent(array $input): void {
+        $currentUser = AuthMiddleware::requireAuth();
         $id = (int)($input['id'] ?? $input['event_id'] ?? 0);
         if ($id <= 0) {
             ApiResponse::error('Valid event ID is required.', 400);
+            return;
+        }
+
+        $stmt = $this->db->prepare('SELECT id, contact_email, image_url FROM events WHERE id = ?');
+        $stmt->execute([$id]);
+        $ev = $stmt->fetch();
+        if (!$ev) {
+            ApiResponse::error('Event not found', 404);
+            return;
+        }
+
+        $evEmail = strtolower(trim($ev['contact_email'] ?? ''));
+        if (!$currentUser['is_admin'] && (empty($evEmail) || $evEmail !== strtolower($currentUser['email']))) {
+            ApiResponse::error('Forbidden. You do not have permission to update this event.', 403);
             return;
         }
 
@@ -2657,8 +2697,10 @@ class EventController {
         }
         if (!empty($eventDate)) { $fields[] = 'event_date = ?'; $params[] = $eventDate; }
         if ($maxAttendees !== null) { $fields[] = 'max_attendees = ?'; $params[] = $maxAttendees; }
-        if (isset($input['status'])) { $fields[] = 'status = ?'; $params[] = InputSanitizer::cleanString((string)$input['status']); }
-        if (isset($input['is_active'])) { $fields[] = 'is_active = ?'; $params[] = (int)$input['is_active']; }
+        if ($currentUser['is_admin']) {
+            if (isset($input['status'])) { $fields[] = 'status = ?'; $params[] = InputSanitizer::cleanString((string)$input['status']); }
+            if (isset($input['is_active'])) { $fields[] = 'is_active = ?'; $params[] = (int)$input['is_active']; }
+        }
         if (isset($input['contact_email'])) { $fields[] = 'contact_email = ?'; $params[] = InputSanitizer::cleanEmail($input['contact_email']); }
         if (isset($input['organizer_name'])) { $fields[] = 'organizer_name = ?'; $params[] = InputSanitizer::cleanString($input['organizer_name']); }
 
@@ -2668,9 +2710,7 @@ class EventController {
         }
 
         if (isset($input['image_url'])) {
-            $evStmt = $this->db->prepare('SELECT image_url FROM events WHERE id = ?');
-            $evStmt->execute([$id]);
-            $currentImg = $evStmt->fetchColumn();
+            $currentImg = $ev['image_url'] ?? '';
             if ($currentImg && $currentImg !== $input['image_url']) {
                 UploadController::deletePhysicalFile($currentImg);
             }
@@ -2685,7 +2725,7 @@ class EventController {
     }
 
     public function deleteEvent(array $input): void {
-        $currentUser = AuthMiddleware::getCurrentUser();
+        $currentUser = AuthMiddleware::requireAuth();
         $id = (int)($input['id'] ?? $input['event_id'] ?? $_GET['id'] ?? 0);
         if ($id <= 0) { ApiResponse::error('Event ID is required.'); return; }
 
@@ -2697,19 +2737,10 @@ class EventController {
             return;
         }
 
-        $userEmail = strtolower(trim($input['email'] ?? $input['user_email'] ?? $_GET['email'] ?? ($currentUser['email'] ?? '')));
         $evEmail = strtolower(trim($ev['contact_email'] ?? ''));
-
-        if ($currentUser) {
-            if (!$currentUser['is_admin'] && $evEmail !== strtolower($currentUser['email'])) {
-                ApiResponse::error('Forbidden. You do not have permission to delete this event.', 403);
-                return;
-            }
-        } else {
-            if (empty($userEmail) || $userEmail !== $evEmail) {
-                ApiResponse::error('Forbidden. You do not have permission to delete this event.', 403);
-                return;
-            }
+        if (!$currentUser['is_admin'] && (empty($evEmail) || $evEmail !== strtolower($currentUser['email']))) {
+            ApiResponse::error('Forbidden. You do not have permission to delete this event.', 403);
+            return;
         }
 
         // Delete physical files from disk storage
@@ -2840,8 +2871,8 @@ class BookingController {
             return;
         }
 
-        $currentUser = AuthMiddleware::getCurrentUser();
-        if ($currentUser && !$currentUser['is_admin'] && strtolower($currentUser['email']) !== strtolower($b['email'])) {
+        $currentUser = AuthMiddleware::requireAuth();
+        if (!$currentUser['is_admin'] && strtolower($currentUser['email']) !== strtolower($b['email'])) {
             ApiResponse::error('Forbidden. You can only cancel your own booking.', 403);
             return;
         }
@@ -3275,11 +3306,21 @@ class GovernmentController {
 
     public function getEntities(): void {
         try {
+            // If the table is empty or action=seed is requested, automatically re-seed the 6 official entities
+            $countStmt = $this->db->query("SELECT COUNT(*) FROM government_entities WHERE deleted_at IS NULL");
+            $count = (int)$countStmt->fetchColumn();
+            if ($count === 0 || ($_GET['action'] ?? '') === 'seed') {
+                $this->seedOfficialEntities();
+            }
+
             // Fetch all active records from database
             $stmtGov = $this->db->query("SELECT * FROM government_entities WHERE deleted_at IS NULL ORDER BY id ASC");
             $dbEntities = $stmtGov->fetchAll();
+            if (empty($dbEntities)) {
+                $dbEntities = $this->getDefaultEntitiesData();
+            }
         } catch (\Throwable $e) {
-            $dbEntities = [];
+            $dbEntities = $this->getDefaultEntitiesData();
         }
 
         $entities = [];
@@ -3304,6 +3345,152 @@ class GovernmentController {
         }
 
         ApiResponse::success($entities, 'Government entities fetched successfully');
+    }
+
+    public function seedOfficialEntities(): void {
+        $baseEntities = $this->getDefaultEntitiesData();
+        $insStmt = $this->db->prepare("INSERT INTO government_entities 
+            (name, category, location, base_rating, base_review_count, rating, review_count, default_timing, default_is_open, website_url, directions_url, google_maps_reviews_url, open_hour, open_minute, close_hour, close_minute, closed_days, seasonal_notice) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE 
+            category = VALUES(category), location = VALUES(location), base_rating = VALUES(base_rating), base_review_count = VALUES(base_review_count), rating = VALUES(rating), review_count = VALUES(review_count), default_timing = VALUES(default_timing), default_is_open = VALUES(default_is_open), website_url = VALUES(website_url), directions_url = VALUES(directions_url), google_maps_reviews_url = VALUES(google_maps_reviews_url), open_hour = VALUES(open_hour), open_minute = VALUES(open_minute), close_hour = VALUES(close_hour), close_minute = VALUES(close_minute), closed_days = VALUES(closed_days), seasonal_notice = VALUES(seasonal_notice), deleted_at = NULL");
+
+        foreach ($baseEntities as $be) {
+            $closedDaysStr = is_array($be['closed_days'] ?? null) ? implode(',', $be['closed_days']) : ($be['closed_days'] ?? '');
+            $insStmt->execute([
+                $be['name'],
+                $be['category'],
+                $be['location'],
+                $be['base_rating'],
+                $be['base_review_count'],
+                $be['base_rating'],
+                $be['base_review_count'],
+                $be['default_timing'],
+                $be['default_is_open'],
+                $be['website_url'],
+                $be['directions_url'],
+                $be['google_maps_reviews_url'],
+                $be['open_hour'] ?? 8,
+                $be['open_minute'] ?? 0,
+                $be['close_hour'] ?? 18,
+                $be['close_minute'] ?? 0,
+                $closedDaysStr,
+                $be['seasonal_notice'] ?? null
+            ]);
+        }
+    }
+
+    public function getDefaultEntitiesData(): array {
+        return [
+            [
+                'name' => 'Dubai Culture & Arts Authority',
+                'default_is_open' => 1,
+                'base_rating' => 4.5,
+                'base_review_count' => 120,
+                'category' => 'Government · Cultural Authority',
+                'location' => 'Al Shindagha, Dubai',
+                'default_timing' => 'Open · Closes at 15:00',
+                'website_url' => 'https://dubaiculture.gov.ae/en',
+                'directions_url' => 'https://maps.google.com/?q=Dubai+Culture+and+Arts+Authority+Al+Shindagha+Dubai',
+                'google_maps_reviews_url' => 'https://www.google.com/maps/search/?api=1&query=Dubai+Culture+and+Arts+Authority+Al+Shindagha+Dubai',
+                'open_hour' => 7,
+                'open_minute' => 30,
+                'close_hour' => 15,
+                'close_minute' => 0,
+                'closed_days' => '6,7',
+                'seasonal_notice' => null
+            ],
+            [
+                'name' => 'Ministry of Culture & Youth',
+                'default_is_open' => 1,
+                'base_rating' => 4.2,
+                'base_review_count' => 98,
+                'category' => 'Government · Federal Ministry',
+                'location' => 'Abu Dhabi, UAE',
+                'default_timing' => 'Open · Closes at 14:30',
+                'website_url' => 'https://www.mcy.gov.ae/',
+                'directions_url' => 'https://maps.google.com/?q=Ministry+of+Culture+and+Youth+Abu+Dhabi',
+                'google_maps_reviews_url' => 'https://www.google.com/maps/search/?api=1&query=Ministry+of+Culture+and+Youth+Abu+Dhabi',
+                'open_hour' => 7,
+                'open_minute' => 30,
+                'close_hour' => 14,
+                'close_minute' => 30,
+                'closed_days' => '6,7',
+                'seasonal_notice' => null
+            ],
+            [
+                'name' => 'Dubai Design District (d3)',
+                'default_is_open' => 1,
+                'base_rating' => 4.7,
+                'base_review_count' => 215,
+                'category' => 'Creative Hub · Design District',
+                'location' => 'Dubai Design District, Dubai',
+                'default_timing' => 'Open · Closes at 22:00',
+                'website_url' => 'https://dubaidesigndistrict.com/',
+                'directions_url' => 'https://maps.google.com/?q=Dubai+Design+District+Dubai',
+                'google_maps_reviews_url' => 'https://www.google.com/maps/search/?api=1&query=Dubai+Design+District+Dubai',
+                'open_hour' => 8,
+                'open_minute' => 0,
+                'close_hour' => 22,
+                'close_minute' => 0,
+                'closed_days' => '',
+                'seasonal_notice' => null
+            ],
+            [
+                'name' => 'Art Dubai',
+                'default_is_open' => 0,
+                'base_rating' => 4.6,
+                'base_review_count' => 180,
+                'category' => 'Art Fair · Cultural Event',
+                'location' => 'Madinat Jumeirah, Dubai',
+                'default_timing' => 'Closed · Opens Mar 2026',
+                'website_url' => 'https://www.artdubai.ae/',
+                'directions_url' => 'https://maps.google.com/?q=Madinat+Jumeirah+Dubai',
+                'google_maps_reviews_url' => 'https://www.google.com/maps/search/?api=1&query=Madinat+Jumeirah+Dubai',
+                'open_hour' => 10,
+                'open_minute' => 0,
+                'close_hour' => 20,
+                'close_minute' => 0,
+                'closed_days' => '',
+                'seasonal_notice' => 'Closed · Opens Mar 2026'
+            ],
+            [
+                'name' => 'Alserkal Avenue',
+                'default_is_open' => 1,
+                'base_rating' => 4.8,
+                'base_review_count' => 310,
+                'category' => 'Arts District · Gallery Hub',
+                'location' => 'Al Quoz, Dubai',
+                'default_timing' => 'Open · Closes at 20:00',
+                'website_url' => 'https://alserkal.online/',
+                'directions_url' => 'https://maps.google.com/?q=Alserkal+Avenue+Al+Quoz+Dubai',
+                'google_maps_reviews_url' => 'https://www.google.com/maps/search/?api=1&query=Alserkal+Avenue+Al+Quoz+Dubai',
+                'open_hour' => 10,
+                'open_minute' => 0,
+                'close_hour' => 20,
+                'close_minute' => 0,
+                'closed_days' => '',
+                'seasonal_notice' => null
+            ],
+            [
+                'name' => 'Dubai Opera',
+                'default_is_open' => 1,
+                'base_rating' => 4.9,
+                'base_review_count' => 450,
+                'category' => 'Performing Arts · Venue',
+                'location' => 'Downtown Dubai',
+                'default_timing' => 'Open · Next show at 19:30',
+                'website_url' => 'https://www.dubaiopera.com/en',
+                'directions_url' => 'https://maps.google.com/?q=Dubai+Opera+Downtown+Dubai',
+                'google_maps_reviews_url' => 'https://www.google.com/maps/search/?api=1&query=Dubai+Opera+Downtown+Dubai',
+                'open_hour' => 10,
+                'open_minute' => 0,
+                'close_hour' => 23,
+                'close_minute' => 0,
+                'closed_days' => '',
+                'seasonal_notice' => null
+            ]
+        ];
     }
 
     public function createEntity(array $input): void {
@@ -3504,7 +3691,19 @@ class ArtworkController {
 
 
     public function createArtwork(array $input): void {
+        $currentUser = AuthMiddleware::requireAuth();
         $artistId = !empty($input['artist_id']) ? (int)$input['artist_id'] : null;
+
+        if ($artistId && !$currentUser['is_admin']) {
+            $aCheck = $this->db->prepare('SELECT id, user_id, email FROM artists WHERE id = ?');
+            $aCheck->execute([$artistId]);
+            $artist = $aCheck->fetch();
+            if (!$artist || ($artist['user_id'] != $currentUser['id'] && strtolower($artist['email'] ?? '') !== strtolower($currentUser['email']))) {
+                ApiResponse::error('Forbidden. You do not have permission to publish artworks for this artist profile.', 403);
+                return;
+            }
+        }
+
         $artistName = InputSanitizer::cleanString($input['artist_name'] ?? '');
         $title = InputSanitizer::cleanString($input['title'] ?? '');
         $year = InputSanitizer::cleanString($input['year'] ?? date('Y'));
@@ -3718,6 +3917,61 @@ class FavoriteController {
             ], 'Item added to favorites');
         }
     }
+
+    public function getLikers(array $query = []): void {
+        $itemId = InputSanitizer::cleanString($query['item_id'] ?? $query['artist_id'] ?? $query['id'] ?? '');
+        $itemType = InputSanitizer::cleanString($query['item_type'] ?? 'artist');
+
+        if (empty($itemId)) {
+            ApiResponse::error('Item ID is required', 400);
+            return;
+        }
+
+        try {
+            $stmt = $this->db->prepare("
+                SELECT f.id AS favorite_id,
+                       f.user_email,
+                       f.created_at,
+                       COALESCE(NULLIF(TRIM(u.full_name), ''), NULLIF(TRIM(a.name), ''), SUBSTRING_INDEX(f.user_email, '@', 1)) AS name,
+                       COALESCE(a.avatar_url, '') AS avatar_url,
+                       COALESCE(a.category, 'Art Admirer') AS subtitle
+                FROM favorites f
+                LEFT JOIN users u ON LOWER(TRIM(f.user_email)) = LOWER(TRIM(u.email))
+                LEFT JOIN artists a ON LOWER(TRIM(f.user_email)) = LOWER(TRIM(a.email))
+                WHERE f.item_type = ? AND (f.item_id = ? OR CAST(f.item_id AS CHAR) = ?)
+                ORDER BY f.id DESC
+            ");
+            $stmt->execute([$itemType, $itemId, $itemId]);
+            $likers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($likers as &$liker) {
+                if (!empty($liker['created_at'])) {
+                    $ts = strtotime($liker['created_at']);
+                    $diff = time() - $ts;
+                    if ($diff < 60) {
+                        $liker['time_ago'] = 'Just now';
+                    } elseif ($diff < 3600) {
+                        $liker['time_ago'] = floor($diff / 60) . 'm ago';
+                    } elseif ($diff < 86400) {
+                        $liker['time_ago'] = floor($diff / 3600) . 'h ago';
+                    } else {
+                        $liker['time_ago'] = floor($diff / 86400) . 'd ago';
+                    }
+                } else {
+                    $liker['time_ago'] = 'Recently';
+                }
+            }
+            unset($liker);
+
+            ApiResponse::success([
+                'total' => count($likers),
+                'likers' => $likers
+            ], 'Likers retrieved successfully');
+        } catch (\Throwable $t) {
+            error_log('FavoriteController::getLikers error: ' . $t->getMessage());
+            ApiResponse::error('Failed to retrieve likers', 500);
+        }
+    }
 }
 
 class FollowController {
@@ -3747,12 +4001,23 @@ class NotificationController {
     }
 
     public function getNotifications(array $query = []): void {
-        $email = InputSanitizer::cleanEmail($query['email'] ?? $query['user_email'] ?? '');
-        if (empty($email)) {
-            $authUser = AuthMiddleware::getCurrentUser();
-            if ($authUser && !empty($authUser['email'])) {
-                $email = InputSanitizer::cleanEmail($authUser['email']);
+        $requestedEmail = InputSanitizer::cleanEmail($query['email'] ?? $query['user_email'] ?? '');
+        $authUser = AuthMiddleware::getCurrentUser();
+
+        if (!empty($requestedEmail)) {
+            if (!$authUser) {
+                ApiResponse::error('Authentication required to view personalized notifications.', 401);
+                return;
             }
+            if (!$authUser['is_admin'] && strtolower($authUser['email']) !== strtolower($requestedEmail)) {
+                ApiResponse::error('Forbidden. You cannot view notifications of another user.', 403);
+                return;
+            }
+            $email = $requestedEmail;
+        } elseif ($authUser && !empty($authUser['email'])) {
+            $email = InputSanitizer::cleanEmail($authUser['email']);
+        } else {
+            $email = '';
         }
 
         $page = max(1, (int)($query['page'] ?? 1));
@@ -4119,16 +4384,28 @@ class UploadController {
 
         // Hardened .htaccess inside uploads/ to strictly block script execution
         $htaccess = $uploadDir . '/.htaccess';
-        $secureHtaccess = "# Hardened security configuration - Strictly disable script execution\n" .
+        $secureHtaccess = "# Artist Dubai - Ultra-Hardened Uploads Directory Security\n" .
             "<IfModule mod_php.c>\n    php_flag engine off\n</IfModule>\n" .
             "<IfModule mod_php7.c>\n    php_flag engine off\n</IfModule>\n" .
-            "<IfModule mod_php8.c>\n    php_flag engine off\n</IfModule>\n" .
-            "<FilesMatch \"(?i)\\.(php|php3|php4|php5|php7|php8|phtml|phar|phps|cgi|pl|py|sh|bash|exe|bat|cmd|hta)$\">\n" .
+            "<IfModule mod_php8.c>\n    php_flag engine off\n</IfModule>\n\n" .
+            "# Strip all script handlers\n" .
+            "RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .phps .phar .cgi .pl .py .sh .bash .exe .bat .cmd\n" .
+            "RemoveType .php .phtml .php3 .php4 .php5 .php7 .php8 .phps .phar .cgi .pl .py .sh .bash .exe .bat .cmd\n\n" .
+            "# Strictly forbid any executable or sensitive file extensions\n" .
+            "<FilesMatch \"(?i)\\.(php|php3|php4|php5|php7|php8|phtml|phps|phar|cgi|pl|py|sh|bash|exe|bat|cmd|hta|htaccess|htpasswd|ini|env|sql|svg|html|htm|js|jsp|asp|aspx)$\">\n" .
             "    <IfModule mod_authz_core.c>\n        Require all denied\n    </IfModule>\n" .
             "    <IfModule !mod_authz_core.c>\n        Order deny,allow\n        Deny from all\n    </IfModule>\n" .
-            "</FilesMatch>\n" .
-            "Options -ExecCGI -Indexes\n" .
-            "Header set X-Content-Type-Options \"nosniff\"\n";
+            "</FilesMatch>\n\n" .
+            "# Only allow safe raster image formats\n" .
+            "<FilesMatch \"(?i)\\.(jpg|jpeg|png|gif|webp|ico)$\">\n" .
+            "    <IfModule mod_authz_core.c>\n        Require all granted\n    </IfModule>\n" .
+            "    <IfModule !mod_authz_core.c>\n        Order allow,deny\n        Allow from all\n    </IfModule>\n" .
+            "</FilesMatch>\n\n" .
+            "Options -Indexes -ExecCGI\n" .
+            "<IfModule mod_headers.c>\n" .
+            "    Header set X-Content-Type-Options \"nosniff\"\n" .
+            "    Header set Content-Security-Policy \"default-src 'none'; sandbox\"\n" .
+            "</IfModule>\n";
         @file_put_contents($htaccess, $secureHtaccess);
 
         $isLive = (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'technestpartners.com') !== false)
@@ -4994,8 +5271,14 @@ class UserPlansController {
 
     public function recordPurchase(array $input): void {
         try {
-            $currentUser = AuthMiddleware::getCurrentUser();
-            $email = InputSanitizer::cleanEmail($input['email'] ?? $input['user_email'] ?? ($currentUser['email'] ?? ''));
+            $currentUser = AuthMiddleware::requireAuth();
+            $email = InputSanitizer::cleanEmail($input['email'] ?? $input['user_email'] ?? $currentUser['email']);
+
+            if (!$currentUser['is_admin'] && strtolower($currentUser['email']) !== strtolower($email)) {
+                ApiResponse::error('Forbidden. You cannot record plan purchases for another account.', 403);
+                return;
+            }
+
             $planName = trim(InputSanitizer::cleanString($input['plan_name'] ?? 'Custom Plan'));
             $planType = strtolower(trim(InputSanitizer::cleanString($input['plan_type'] ?? 'subscription')));
             $itemTitle = trim(InputSanitizer::cleanString($input['item_title'] ?? $planName));
@@ -5337,17 +5620,17 @@ class ArtistMessagesController {
 
     public function getMessages(): void {
         try {
-            $currentUser = AuthMiddleware::getCurrentUser();
-            $isAdmin = $currentUser && !empty($currentUser['is_admin']);
+            $currentUser = AuthMiddleware::requireAuth();
+            $isAdmin = !empty($currentUser['is_admin']);
 
-            if ($currentUser && !$isAdmin) {
+            if (!$isAdmin) {
                 $userEmail = $currentUser['email'];
                 $userId = (string)$currentUser['id'];
                 $recipientId = trim($_GET['recipient_id'] ?? $_GET['artist_id'] ?? '');
             } else {
-                $userEmail = trim($_GET['user_email'] ?? $_GET['sender_email'] ?? $_GET['email'] ?? ($currentUser['email'] ?? ''));
+                $userEmail = trim($_GET['user_email'] ?? $_GET['sender_email'] ?? $_GET['email'] ?? $currentUser['email']);
                 $recipientId = trim($_GET['recipient_id'] ?? $_GET['artist_id'] ?? '');
-                $userId = trim($_GET['user_id'] ?? ($currentUser ? (string)$currentUser['id'] : ''));
+                $userId = trim($_GET['user_id'] ?? (string)$currentUser['id']);
             }
 
             // Ensure sender_avatar_url column exists in MySQL table
@@ -5453,7 +5736,13 @@ class ArtistMessagesController {
 
     public function getAllowance(): void {
         try {
+            $currentUser = AuthMiddleware::requireAuth();
+            $isAdmin = !empty($currentUser['is_admin']);
+
             $userEmail = trim($_GET['user_email'] ?? $_GET['email'] ?? '');
+            if (!$isAdmin || empty($userEmail)) {
+                $userEmail = $currentUser['email'];
+            }
             $currentMonthStart = date('Y-m-01 00:00:00');
 
             $used = 0;
@@ -5529,7 +5818,13 @@ class ArtistMessagesController {
 
     public function updateAllowance(array $input): void {
         try {
+            $currentUser = AuthMiddleware::requireAuth();
+            $isAdmin = !empty($currentUser['is_admin']);
+
             $userEmail = trim($input['user_email'] ?? $input['email'] ?? $_GET['user_email'] ?? '');
+            if (!$isAdmin || empty($userEmail)) {
+                $userEmail = $currentUser['email'];
+            }
             $planName = trim($input['plan_name'] ?? 'Pro Artist');
             $maxAllowance = (int)($input['max_allowance'] ?? 50);
 
@@ -5582,8 +5877,17 @@ class ArtistMessagesController {
 
     public function sendMessage(array $input): void {
         try {
+            $currentUser = AuthMiddleware::getCurrentUser();
+            $isAdmin = $currentUser && !empty($currentUser['is_admin']);
+
             $senderName = InputSanitizer::cleanString($input['sender_name'] ?? 'User');
             $senderEmail = InputSanitizer::cleanString($input['sender_email'] ?? 'user@artistdubai.com');
+            if ($currentUser && !$isAdmin) {
+                $senderEmail = $currentUser['email'];
+                if (empty($senderName) || $senderName === 'User') {
+                    $senderName = $currentUser['full_name'] ?? $senderName;
+                }
+            }
             $senderAvatar = InputSanitizer::cleanString($input['sender_avatar_url'] ?? $input['senderAvatarUrl'] ?? '');
             $senderId = InputSanitizer::cleanString($input['sender_id'] ?? '');
             $recipientId = InputSanitizer::cleanString($input['recipient_id'] ?? '');
@@ -6976,6 +7280,12 @@ class StripeController {
     }
 
     public function createPaymentIntent(array $data): void {
+        AuthMiddleware::requireAuth();
+        if (!RateLimiter::check('stripe_intent', 20, 60)) {
+            ApiResponse::error('Too many payment attempts. Please try again shortly.', 429);
+            return;
+        }
+
         $amountRaw   = $data['amount'] ?? 0;
         $currency    = strtolower(trim($data['currency'] ?? 'aed'));
         $description = InputSanitizer::cleanString($data['description'] ?? 'Artist Dubai Plan Payment');
@@ -7585,12 +7895,51 @@ class StripeController {
 }
 
 class UnifiedMySqlApiRouter {
+    /**
+     * Purges obsolete or insecure legacy files from the API directory on Hostinger.
+     */
+    public static function purgeObsoleteFiles(): array {
+        $obsoleteFiles = [
+            'artist_dubai.sql',
+            'artist_dubai.sqlite',
+            'db.php',
+            'index.php',
+            'share.php',
+        ];
+        $baseDir = __DIR__;
+        $deleted = [];
+        $failed = [];
+        $remaining = [];
+
+        foreach ($obsoleteFiles as $file) {
+            $path = $baseDir . DIRECTORY_SEPARATOR . $file;
+            if (file_exists($path)) {
+                if (@unlink($path)) {
+                    $deleted[] = $file;
+                } else {
+                    $failed[] = $file;
+                    $remaining[] = $file;
+                }
+            }
+        }
+
+        return [
+            'deleted' => $deleted,
+            'failed' => $failed,
+            'remaining' => $remaining,
+            'is_clean' => empty($failed) && empty($remaining),
+        ];
+    }
+
     public static function execute(): void {
         // Global IP-level rate limiting (max 180 requests/min per IP)
         if (!RateLimiter::check('global_api', 180, 60)) {
             ApiResponse::error('Too Many Requests. Global rate limit reached. Please wait a moment.', 429);
             return;
         }
+
+        // Automatic self-cleaning: silently remove obsolete / insecure legacy files if present
+        self::purgeObsoleteFiles();
 
         $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
         if ($method === 'OPTIONS') {
@@ -7605,6 +7954,19 @@ class UnifiedMySqlApiRouter {
         $uri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
         $resource = trim($_GET['resource'] ?? $input['resource'] ?? '', '/');
         $action = strtolower(trim($_GET['action'] ?? $input['action'] ?? $input['action_type'] ?? ''));
+
+        // System maintenance and explicit cleanup endpoint
+        if ($action === 'cleanup' || $action === 'purge_legacy' || $resource === 'system' || $resource === 'maintenance') {
+            $report = self::purgeObsoleteFiles();
+            ApiResponse::success([
+                'cleanup' => $report,
+                'php_version' => PHP_VERSION,
+                'server_time' => date('Y-m-d H:i:s'),
+                'api_version' => '3.3.0-prod',
+                'status' => 'operational'
+            ], 'API system maintenance and cleanup completed successfully.');
+            return;
+        }
 
         if (empty($resource)) {
             if (strpos($uri, 'login') !== false || in_array($action, ['login', 'register', 'signup', 'profile', 'change_password', 'delete_account'])) $resource = 'login';
@@ -7816,9 +8178,16 @@ class UnifiedMySqlApiRouter {
                 break;
 
             case 'favorites':
+            case 'likers':
                 $fav = new FavoriteController();
-                if ($method === 'POST') $fav->toggleFavorite($input);
-                else $fav->getFavorites($_GET);
+                $favAction = strtolower(trim($_GET['action'] ?? $input['action'] ?? ''));
+                if ($favAction === 'likers' || $resource === 'likers') {
+                    $fav->getLikers(array_merge($input, $_GET));
+                } elseif ($method === 'POST') {
+                    $fav->toggleFavorite($input);
+                } else {
+                    $fav->getFavorites($_GET);
+                }
                 break;
 
             case 'notifications':
@@ -7964,7 +8333,7 @@ class UnifiedMySqlApiRouter {
                     $db = DatabaseManager::getInstance()->getConnection();
                     $tables = [
                         'artists', 'events', 'galleries', 'artworks', 'bookings',
-                        'categories', 'experience_levels', 'locations', 'government_entities',
+                        'categories', 'experience_levels', 'locations',
                         'notifications', 'favorites', 'follows', 'artist_messages',
                         'ai_chat_sessions', 'ai_chat_messages', 'listing_plans',
                         'publishing_pricing', 'payment_settings', 'menu_permissions',

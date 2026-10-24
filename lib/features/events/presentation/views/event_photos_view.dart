@@ -22,6 +22,7 @@ class EventPhotosView extends StatefulWidget {
 }
 
 class _EventPhotosViewState extends State<EventPhotosView> {
+  final TextEditingController _searchController = TextEditingController();
   List<ArtEventModel> _eventsWithGalleries = [];
   bool _isLoading = true;
   StreamSubscription<bool>? _authSub;
@@ -61,6 +62,7 @@ class _EventPhotosViewState extends State<EventPhotosView> {
   @override
   void dispose() {
     DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
+    _searchController.dispose();
     _authSub?.cancel();
     _eventsSub?.cancel();
     _galleriesSub?.cancel();
@@ -265,6 +267,84 @@ class _EventPhotosViewState extends State<EventPhotosView> {
     );
   }
 
+  List<ArtEventModel> _getFilteredEvents() {
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) return _eventsWithGalleries;
+    return _eventsWithGalleries.where((event) {
+      final title = event.title.toLowerCase();
+      final category = event.category.toLowerCase();
+      final location = event.location.toLowerCase();
+      final desc = event.description.toLowerCase();
+      final galleryTitles = event.galleries
+          .map((g) => '${g.title} ${g.subtitle ?? ''}')
+          .join(' ')
+          .toLowerCase();
+      return title.contains(query) ||
+          category.contains(query) ||
+          location.contains(query) ||
+          desc.contains(query) ||
+          galleryTitles.contains(query);
+    }).toList();
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (_) => setState(() {}),
+        style: const TextStyle(
+          color: Colors.black,
+          fontSize: 14.5,
+          fontWeight: FontWeight.w500,
+        ),
+        cursorColor: const Color(0xFF6B1C9B),
+        decoration: InputDecoration(
+          hintText: 'Search Event Photos'.trData(context),
+          hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 14.5),
+          prefixIcon: const Icon(
+            Icons.search,
+            color: Color(0xFF64748B),
+            size: 22,
+          ),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? GestureDetector(
+                  onTap: () {
+                    _searchController.clear();
+                    setState(() {});
+                  },
+                  child: const Icon(
+                    Icons.close,
+                    color: Color(0xFF64748B),
+                    size: 20,
+                  ),
+                )
+              : null,
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -329,7 +409,7 @@ class _EventPhotosViewState extends State<EventPhotosView> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(left: 4, bottom: 20),
+                  padding: const EdgeInsets.only(left: 4, bottom: 14),
                   child: Text(
                     AppLocalizations.of(context).eventsPhotosSubtitle,
                     style: const TextStyle(
@@ -338,6 +418,10 @@ class _EventPhotosViewState extends State<EventPhotosView> {
                     ),
                   ),
                 ),
+
+                // Search Field (Matching Events page style)
+                _buildSearchBar(),
+                const SizedBox(height: 18),
 
                 // 2. Galleries Card List
                 if (_isLoading)
@@ -360,15 +444,55 @@ class _EventPhotosViewState extends State<EventPhotosView> {
                       ),
                     ),
                   )
+                else if (_getFilteredEvents().isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.search_off_rounded, color: Colors.white70, size: 40),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No event photos found matching your search.'.trData(context),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {});
+                          },
+                          icon: const Icon(Icons.clear, size: 16),
+                          label: Text('Clear Search'.trData(context)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFF6B1C9B),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
                 else
                   ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _eventsWithGalleries.length,
+                    itemCount: _getFilteredEvents().length,
                     separatorBuilder:
                         (context, index) => const SizedBox(height: 16),
                     itemBuilder: (context, eventIndex) {
-                      final event = _eventsWithGalleries[eventIndex];
+                      final event = _getFilteredEvents()[eventIndex];
                       final gallery = event.galleries.first;
                       final displayImages =
                           gallery.images

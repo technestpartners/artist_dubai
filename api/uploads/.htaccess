@@ -1,5 +1,20 @@
-# Deny execution of PHP or script files in uploads directory
-<FilesMatch "(?i)\.(php|phtml|php3|php4|php5|php7|phps|cgi|pl|py|sh|bash)$">
+# Artist Dubai - Ultra-Hardened Uploads Directory Security
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag engine off
+</IfModule>
+
+# Strip all script handlers
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .phps .phar .cgi .pl .py .sh .bash .exe .bat .cmd
+RemoveType .php .phtml .php3 .php4 .php5 .php7 .php8 .phps .phar .cgi .pl .py .sh .bash .exe .bat .cmd
+
+# Strictly forbid any executable or sensitive file extensions
+<FilesMatch "(?i)\.(php|php3|php4|php5|php7|php8|phtml|phps|phar|cgi|pl|py|sh|bash|exe|bat|cmd|hta|htaccess|htpasswd|ini|env|sql|svg|html|htm|js|jsp|asp|aspx)$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>
@@ -9,4 +24,19 @@
     </IfModule>
 </FilesMatch>
 
+# Only allow safe raster image formats
+<FilesMatch "(?i)\.(jpg|jpeg|png|gif|webp|ico)$">
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Allow from all
+    </IfModule>
+</FilesMatch>
+
 Options -Indexes -ExecCGI
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set Content-Security-Policy "default-src 'none'; sandbox"
+</IfModule>

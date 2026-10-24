@@ -716,7 +716,10 @@ class DataTranslator {
         'شكراً لك. سيقوم فريقنا بمراجعة معرضك أو مركزك الفني والتواصل معك عبر البريد الإلكتروني.',
     'back to home': 'العودة إلى الرئيسية',
     'registration': 'التسجيل',
-    'hosted by nizar fahem': 'استضافة نزار فاهم',
+    'hosted by nizar fahem': 'استضافة نزار الفاهم',
+    'hosted by nizar al fahem': 'استضافة نزار الفاهم',
+    'nizar fahem': 'نزار الفاهم',
+    'nizar al fahem': 'نزار الفاهم',
 
     // Home Tiles & Common Words
     'about us': 'من نحن',
@@ -801,6 +804,13 @@ class DataTranslator {
 
     // Events UI, Filters, Sorting & Dates
     'search events': 'البحث في الفعاليات',
+    'search event photos': 'البحث في صور الفعاليات',
+    'search galleries & art centers': 'البحث في المعارض والمراكز الفنية',
+    'search government entities': 'البحث في الجهات الحكومية',
+    'clear search': 'مسح البحث',
+    'no event photos found matching your search.': 'لم يتم العثور على صور فعاليات تطابق بحثك.',
+    'no galleries or art centers found matching your search.': 'لم يتم العثور على معارض أو مراكز فنية تطابق بحثك.',
+    'no government entities found matching your search.': 'لم يتم العثور على جهات حكومية تطابق بحثك.',
     'today': 'اليوم',
     'this week': 'هذا الأسبوع',
     'custom dates': 'تواريخ مخصصة',
@@ -1332,6 +1342,126 @@ class DataTranslator {
     'brief summary of what this plan covers': 'ملخص موجز لما تغطيه هذه الخطة',
     'account deletion requests are processed manually for security reasons. after clicking "delete account", you\'ll be signed out and our team will process your request within 7 business days. you\'ll receive a confirmation email once the deletion is complete.':
         'تتم معالجة طلبات حذف الحساب يدويًا لأسباب أمنية. بعد النقر على "حذف الحساب"، سيتم تسجيل خروجك وسيقوم فريقنا بمعالجة طلبك في غضون 7 أيام عمل. ستتلقى رسالة تأكيد بالبريد الإلكتروني بمجرد اكتمال الحذف.',
+
+// Listing Plans, Subscriptions & Membership Passes
+    'official publishing & showcase passes': 'تصاريح النشر والعرض الرسمية',
+    'no plans found for this category': 'لا توجد باقات متاحة لهذا القسم',
+    'select another tab or view all plans to see available options.':
+        'اختر تبويباً آخر أو اعرض جميع الباقات لمشاهدة الخيارات المتاحة.',
+    'active subscriber': 'مشترك نشط',
+    'current active plan': 'الباقة النشطة الحالية',
+    'listing price': 'سعر الإدراج',
+    'instant activation': 'تفعيل فوري',
+    'included features:': 'الميزات المتضمنة:',
+    'included features': 'الميزات المتضمنة',
+    'active • tap to extend / renew': 'نشطة • انقر للتمديد / التجديد',
+    'permanent free profile': 'ملف شخصي مجاني دائم',
+    '1 year (365 days)': 'سنة واحدة (365 يوماً)',
+    '30-day listing': 'إدراج لمدة 30 يوماً',
+    '90 days active': 'نشط لمدة 90 يوماً',
+    'active event pass': 'تصريح فعالية نشط',
+    'active subscriptions & plans': 'الاشتراكات والباقات النشطة',
+    'browse all plans': 'تصفح جميع الباقات',
+    'browse event & gallery listing plans':
+        'تصفح باقات إدراج الفعاليات والمعارض',
+    'unlock unlimited chat messaging, event publishing, and gallery directory listings.':
+        'احصل على مراسلة غير محدودة، ونشر الفعاليات، وإدراج المعارض في الدليل.',
+    'your active platform plans and publishing coverage':
+        'باقاتك النشطة وتغطية النشر على المنصة',
+    'your active subscription covers this event listing. no additional payment required.':
+        'اشتراكك النشط يغطي إدراج هذه الفعالية. لا يلزم دفع مبالغ إضافية.',
+    'you do not have any purchased membership or publishing plans. explore our listing packages to promote your art, exhibitions, or galleries.':
+        'ليس لديك أي باقات عضوية أو نشر مشتراة. استكشف باقات الإدراج للترويج لأعمالك الفنية أو معارضك.',
+    '0 aed extra': '0 د.إ إضافي',
+    'aed 299 / month': '299 د.إ / شهرياً',
+    'aed 99 / month': '99 د.إ / شهرياً',
+    '10 inquiries / month': '10 استفسارات / شهرياً',
+    '50 inquiries / month': '50 استفساراً / شهرياً',
+    'unlimited inquiries': 'استفسارات غير محدودة',
+    '/ month': '/ شهرياً',
+    'best value': 'أفضل قيمة',
+    'manage': 'إدارة',
+    'expired': 'منتهية الصلاحية',
+
+    // Galleries & Cultural Centers Status & Loading
+    'unable to load galleries': 'تعذر تحميل المعارض',
+    'please check your connection and try again.':
+        'يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.',
+
+    // Government Entities Portal
+    'no government entities listed yet': 'لا توجد جهات حكومية مدرجة حتى الآن',
+    'official cultural entities and government authorities will appear here.':
+        'ستظهر هنا الهيئات الثقافية والجهات الحكومية الرسمية.',
+    'could not open': 'تعذر فتح',
+
+    // Bookings, Tickets & Events
+    'tickets': 'التذاكر',
+    'amount': 'المبلغ',
+    'attendee': 'الحاضر',
+    'venue': 'المكان',
+    'valid at gate': 'صالح عند البوابة',
+    'are you sure you want to cancel this booking reservation?':
+        'هل أنت متأكد من رغبتك في إلغاء حجز هذه التذكرة؟',
+    'booking cancelled successfully': 'تم إلغاء الحجز بنجاح',
+    'yes, cancel': 'نعم، إلغاء الحجز',
+    'to favorites': 'إلى المفضلة',
+    'from favorites': 'من المفضلة',
+    'to saved': 'إلى المحفوظات',
+    'from saved': 'من المحفوظات',
+    'has been successfully submitted for administrative review.':
+        'تم إرساله بنجاح للمراجعة الإدارية.',
+
+    // Chat, Messaging & Social
+    'tap to view': 'انقر للعرض',
+    'write a reply to': 'اكتب رداً إلى',
+    'this is a private message to the selected artist and uses 1 of your 10 monthly messages.':
+        'هذه رسالة خاصة إلى الفنان المختار وتستهلك رسالة واحدة من رصيدك الشهري البالغ 10 رسائل.',
+    'artist': 'فنان',
+
+    // Payment & Card Inputs
+    '⚡ fill test card': '⚡ ملء بطاقة تجريبية',
+    '✓ i have completed payment': '✓ لقد أتممت عملية الدفع',
+    'test card filled (4242 4242 4242 4242)':
+        'تم ملء البطاقة التجريبية (4242 4242 4242 4242)',
+
+    // Admin Dashboard & Content Management
+    'users': 'المستخدمون',
+    'admins': 'المسؤولون',
+    'artist accounts': 'حسابات الفنانين',
+    'standard users': 'المستخدمون العاديون',
+    'all users': 'جميع المستخدمين',
+    'all users & data': 'جميع المستخدمين والبيانات',
+    'artists management': 'إدارة الفنانين',
+    'assign plan to user': 'تعيين باقة للمستخدم',
+    'assign / edit plan': 'تعيين / تعديل الباقة',
+    'auto-fill': 'ملء تلقائي',
+    'auto-select from created plans': 'تحديد تلقائي من الباقات المنشأة',
+    'subscription status *': 'حالة الاشتراك *',
+    'user purchased plan': 'باقة المستخدم المشتراة',
+    'user has no active purchased plans or subscriptions.':
+        'لا توجد لدى المستخدم أي باقات أو اشتراكات نشطة مشتراة.',
+    'users & purchased plans': 'المستخدمون والباقات المشتراة',
+    'about us content': 'محتوى صفحة من نحن',
+    'about us content editor': 'محرر محتوى صفحة من نحن',
+    'about us page content': 'محتوى صفحة من نحن',
+    'about us page updated successfully!': 'تم تحديث صفحة من نحن بنجاح!',
+    'view about page': 'عرض صفحة من نحن',
+    'back to home app': 'العودة إلى التطبيق الرئيسي',
+    'bidirectional auto-sync': 'مزامنة تلقائية ثنائية الاتجاه',
+    'sync to ar': 'مزامنة إلى العربية',
+    'sync to en': 'مزامنة إلى الإنجليزية',
+    'translating...': 'جارٍ الترجمة...',
+    'all menu permissions enabled (normal access)':
+        'تم تمكين جميع أذونات القائمة (وصول عادي)',
+    'all menu permissions turned off (coming soon)':
+        'تم إيقاف جميع أذونات القائمة (قريباً)',
+    'this will reset all english and arabic texts back to the official default content. you can still make edits before saving.':
+        'سيؤدي هذا إلى إعادة تعيين جميع النصوص باللغتين الإنجليزية والعربية إلى المحتوى الافتراضي الرسمي. لا يزال بإمكانك إجراء تعديلات قبل الحفظ.',
+    'years': 'سنوات',
+    'reviews': 'تقييمات',
+    'deleted successfully': 'تم الحذف بنجاح',
+    'created successfully!': 'تم الإنشاء بنجاح!',
+    'updated successfully!': 'تم التحديث بنجاح!',
   };
 
   // Lazy reversed map for Arabic to English lookups
@@ -1357,6 +1487,10 @@ class DataTranslator {
         'عرض الكل': 'SEE ALL',
         'موصى به لك': 'Recommended for You',
         'البحث في الفعاليات': 'Search Events',
+        'البحث في صور الفعاليات': 'Search Event Photos',
+        'البحث في المعارض والمراكز الفنية': 'Search Galleries & Art Centers',
+        'البحث في الجهات الحكومية': 'Search Government Entities',
+        'مسح البحث': 'Clear Search',
         'اليوم': 'Today',
         'هذا الأسبوع': 'This Week',
         'تواريخ مخصصة': 'Custom Dates',
@@ -1621,6 +1755,37 @@ class DataTranslator {
       if (lower.endsWith(' photos')) {
         final count = trimmed.replaceAll(RegExp(r'[^0-9]'), '');
         return '$count صورة';
+      }
+// Dynamic count, days remaining & entries patterns
+      final daysRemainingMatch = RegExp(r'^(\d+)\s+days remaining\s*(?:\(~1 year\))?$', caseSensitive: false).firstMatch(lower);
+      if (daysRemainingMatch != null) {
+        final days = daysRemainingMatch.group(1);
+        if (lower.contains('~1 year')) {
+          return 'متبقي $days يوماً (~سنة واحدة)';
+        }
+        return 'متبقي $days يوماً';
+      }
+      final daysMonthsMatch = RegExp(r'^(\d+)\s+days remaining\s*\(~(\d+)\s*mos\)$', caseSensitive: false).firstMatch(lower);
+      if (daysMonthsMatch != null) {
+        final days = daysMonthsMatch.group(1);
+        final mos = daysMonthsMatch.group(2);
+        return 'متبقي $days يوماً (~$mos أشهر)';
+      }
+      final planDaysMatch = RegExp(r'^(\d+)\s+days remaining on this plan$', caseSensitive: false).firstMatch(lower);
+      if (planDaysMatch != null) {
+        final days = planDaysMatch.group(1);
+        return 'متبقي $days يوماً في هذه الباقة';
+      }
+      final entriesMatch = RegExp(r'^(\d+)\s*/\s*(\d+)\s+entries$', caseSensitive: false).firstMatch(lower);
+      if (entriesMatch != null) {
+        final cur = entriesMatch.group(1);
+        final max = entriesMatch.group(2);
+        return '$cur / $max مشاركة';
+      }
+      final fullMatch = RegExp(r'^(\d+)%\s+full$', caseSensitive: false).firstMatch(lower);
+      if (fullMatch != null) {
+        final pct = fullMatch.group(1);
+        return '$pct% مكتمل';
       }
       if (lower == 'recent' || lower == 'just now') {
         return 'الآن';

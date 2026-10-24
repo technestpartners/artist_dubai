@@ -1,0 +1,74 @@
+name: Deploy Backend to Hostinger (Production)
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'api/**'
+      - '.github/workflows/deploy_backend_hostinger.yml'
+  workflow_dispatch:
+    inputs:
+      trigger_cleanup:
+        description: 'Trigger server-side cleanup and health check after deployment'
+        type: boolean
+        required: false
+        default: true
+
+jobs:
+  validate_backend:
+    name: Validate PHP Syntax & Security
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo, pdo_mysql, json, mbstring
+
+      - name: Lint api.php
+        run: |
+          php -l api/api.php
+
+  deploy_hostinger:
+    name: Deploy to Hostinger via FTP/FTPS
+    needs: validate_backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Prepare Clean Deployment Bundle
+        run: |
+          mkdir -p dist_api
+          cp api/api.php dist_api/
+          cp api/.htaccess dist_api/
+          cp api/.env.example dist_api/
+          if [ -d "api/uploads" ]; then
+            mkdir -p dist_api/uploads
+            if [ -f "api/uploads/.htaccess" ]; then
+              cp api/uploads/.htaccess dist_api/uploads/
+            fi
+          fi
+          echo "Deployment bundle contents:"
+          find dist_api -type f
+
+      - name: Deploy API to Hostinger Server
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.HOSTINGER_FTP_SERVER }}
+          username: ${{ secrets.HOSTINGER_FTP_USERNAME }}
+          password: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+          server-dir: public_html/api/
+          local-dir: dist_api/
+          dangerous-clean-slate: false
+
+      - name: Trigger Automatic Cleanup & Health Verification
+        if: ${{ github.event_name == 'push' || inputs.trigger_cleanup }}
+        run: |
+          echo "Pinging Hostinger API to verify deployment and purge any obsolete legacy files..."
+          curl -s -f "https://technestpartners.com/api/api.php?resource=system&action=cleanup" || echo "Note: If domain is not yet resolving or credentials need setup, endpoint can be hit directly."

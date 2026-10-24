@@ -16,7 +16,7 @@ ServerSignature Off
 </IfModule>
 
 # Block access to database dumps, configuration files, environment variables and sensitive files
-<FilesMatch "(?i)\.(sql|sqlite|sqlite3|db|env|git|gitignore|yml|yaml|bak|backup|log|conf|ini|lock|zip|tar|gz|sh|bash|ps1|bat|cmd|phar|phtml|json|md)$">
+<FilesMatch "(?i)\.(sql|sqlite|sqlite3|db|env|git|gitignore|yml|yaml|bak|backup|log|conf|ini|lock|zip|tar|gz|sh|bash|ps1|bat|cmd|phar|phtml|phps|php3|php4|php5|php7|php8|json|md|pem|key|crt|cert|svg)$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>

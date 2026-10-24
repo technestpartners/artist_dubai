@@ -19,6 +19,7 @@ class GovernmentPortalView extends StatefulWidget {
 }
 
 class _GovernmentPortalViewState extends State<GovernmentPortalView> {
+  final TextEditingController _searchController = TextEditingController();
   List<GovernmentEntity> _entities = sl<ApiService>().cachedGovEntities ?? [];
   bool _isLoading = true;
   StreamSubscription<List<GovernmentEntity>>? _govSub;
@@ -51,6 +52,7 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
   @override
   void dispose() {
     DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
+    _searchController.dispose();
     _govSub?.cancel();
     super.dispose();
   }
@@ -112,10 +114,85 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
     );
   }
 
+  List<GovernmentEntity> _getFilteredEntities() {
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) return _entities;
+    return _entities.where((e) {
+      final name = e.name.toLowerCase();
+      final category = e.category.toLowerCase();
+      final loc = e.location.toLowerCase();
+      final timing = e.defaultTiming.toLowerCase();
+      final notice = (e.seasonalNotice ?? '').toLowerCase();
+      return name.contains(query) ||
+          category.contains(query) ||
+          loc.contains(query) ||
+          timing.contains(query) ||
+          notice.contains(query);
+    }).toList();
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (_) => setState(() {}),
+        style: const TextStyle(
+          color: Colors.black,
+          fontSize: 14.5,
+          fontWeight: FontWeight.w500,
+        ),
+        cursorColor: const Color(0xFF6B1C9B),
+        decoration: InputDecoration(
+          hintText: 'Search Government Entities'.trData(context),
+          hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 14.5),
+          prefixIcon: const Icon(
+            Icons.search,
+            color: Color(0xFF64748B),
+            size: 22,
+          ),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? GestureDetector(
+                  onTap: () {
+                    _searchController.clear();
+                    setState(() {});
+                  },
+                  child: const Icon(
+                    Icons.close,
+                    color: Color(0xFF64748B),
+                    size: 20,
+                  ),
+                )
+              : null,
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final rh = ResponsiveHelper.of(context);
-    final List<GovernmentEntity> entities = _entities;
+    final List<GovernmentEntity> entities = _getFilteredEntities();
 
     return Scaffold(
       backgroundColor: const Color(0xFF6B1C9B),
@@ -155,6 +232,10 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
                       height: 1.35,
                     ),
                   ),
+                  const SizedBox(height: 14),
+
+                  // Search Field (Matching Events page style)
+                  _buildSearchBar(),
                   const SizedBox(height: 18),
 
                   if (_isLoading && entities.isEmpty)
@@ -164,7 +245,7 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
                         child: CircularProgressIndicator(color: Colors.white),
                       ),
                     )
-                  else if (entities.isEmpty)
+                  else if (_entities.isEmpty)
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
@@ -202,6 +283,54 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
                               fontSize: 13.5,
                               color: Colors.white70,
                               height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (entities.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 36,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF551478),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.search_off_rounded,
+                            size: 46,
+                            color: Colors.white70,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No government entities found matching your search.'.trData(context),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {});
+                            },
+                            icon: const Icon(Icons.clear, size: 16),
+                            label: Text('Clear Search'.trData(context)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: const Color(0xFF6B1C9B),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
                           ),
                         ],

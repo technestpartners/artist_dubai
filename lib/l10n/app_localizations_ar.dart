@@ -201,7 +201,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get communityPlatform => 'منصة المجتمع';
 
   @override
-  String get hostedBy => 'استضافة نزار فاهم';
+  String get hostedBy => 'استضافة نزار الفاهم';
 
   @override
   String get aboutUs => 'من نحن';

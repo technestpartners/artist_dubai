@@ -2674,6 +2674,28 @@ class ApiService {
     return false;
   }
 
+  /// 18b. Fetch Likers (Who liked an artist or item)
+  Future<List<Map<String, dynamic>>> getLikers({
+    required String itemId,
+    String itemType = 'artist',
+  }) async {
+    try {
+      final res = await _client.get(
+        ApiEndpoints.favorites,
+        queryParameters: {
+          'action': 'likers',
+          'item_id': itemId,
+          'item_type': itemType,
+        },
+      );
+      if (_isSuccess(res) && res['data'] is Map<String, dynamic>) {
+        final raw = res['data']['likers'] as List<dynamic>? ?? [];
+        return raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
   // 19. Like Artist Profile (MySQL Backend)
   Future<Map<String, dynamic>?> likeArtist({
     required String artistId,
