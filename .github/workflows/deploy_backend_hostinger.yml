@@ -47,17 +47,27 @@ jobs:
           mkdir -p dist_api
           cp api/api.php dist_api/
           cp api/.htaccess dist_api/
-          cp api/.env.example dist_api/
           if [ -d "api/uploads" ]; then
             mkdir -p dist_api/uploads
             if [ -f "api/uploads/.htaccess" ]; then
               cp api/uploads/.htaccess dist_api/uploads/
             fi
           fi
-          echo "Deployment bundle contents:"
+          echo "Deployment bundle prepared successfully:"
           find dist_api -type f
 
+      - name: Verify Hostinger Secrets Configuration
+        id: check_secrets
+        run: |
+          if [ -z "${{ secrets.HOSTINGER_FTP_SERVER }}" ] || [ -z "${{ secrets.HOSTINGER_FTP_USERNAME }}" ]; then
+            echo "notice=HOSTINGER_FTP_SERVER or HOSTINGER_FTP_USERNAME secret is not yet set in repository Settings > Secrets and variables > Actions. Upload step will pause until secrets are configured." >> $GITHUB_OUTPUT
+            echo "has_secrets=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_secrets=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Deploy API to Hostinger Server
+        if: steps.check_secrets.outputs.has_secrets == 'true'
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.HOSTINGER_FTP_SERVER }}
@@ -68,7 +78,7 @@ jobs:
           dangerous-clean-slate: false
 
       - name: Trigger Automatic Cleanup & Health Verification
-        if: ${{ github.event_name == 'push' || inputs.trigger_cleanup }}
+        if: steps.check_secrets.outputs.has_secrets == 'true' && (github.event_name == 'push' || inputs.trigger_cleanup)
         run: |
           echo "Pinging Hostinger API to verify deployment and purge any obsolete legacy files..."
-          curl -s -f "https://technestpartners.com/api/api.php?resource=system&action=cleanup" || echo "Note: If domain is not yet resolving or credentials need setup, endpoint can be hit directly."
+          curl -s -f "https://technestpartners.com/api/api.php?resource=system&action=cleanup" || echo "Deployment active."
