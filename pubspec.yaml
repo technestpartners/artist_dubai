@@ -51,6 +51,10 @@ dependencies:
   flutter_local_notifications: ^22.3.2
   workmanager: ^0.10.10
 
+dependency_overrides:
+  workmanager_apple:
+    path: packages/workmanager_apple
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
