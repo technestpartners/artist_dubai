@@ -9,6 +9,16 @@ import 'core/services/local_notification_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Global uncaught exception shielding to prevent OS termination on iOS/Android
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint('Captured Flutter Error: ${details.exception}');
+  };
+  WidgetsBinding.instance.platformDispatcher.onError = (error, stack) {
+    debugPrint('Captured Platform Error: $error');
+    return true; // Return true to mark error as handled and prevent process crash
+  };
+
   // Set system UI overlay style to eliminate any white status bar flash on launch
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(

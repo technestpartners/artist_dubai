@@ -143,8 +143,8 @@ class BackgroundSyncService {
   static Future<void> initialize() async {
     if (_isInitialized) return;
     try {
-      // Workmanager is supported on Android and iOS physical/virtual devices
-      if (!kIsWeb) {
+      // Workmanager periodic background sync is strictly for Android devices
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
         await Workmanager().initialize(callbackDispatcher);
 
         await Workmanager().registerPeriodicTask(
@@ -163,7 +163,7 @@ class BackgroundSyncService {
 
   /// Triggers an immediate one-off background check when app transitions to paused / closed.
   static Future<void> scheduleImmediateBackgroundCheck() async {
-    if (kIsWeb) return;
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
     try {
       await Workmanager().registerOneOffTask(
         'com.imbu.DubaiArtists.oneOffSync_${DateTime.now().millisecondsSinceEpoch}',

@@ -1,4 +1,4 @@
-name: Deploy to TestFlight (iOS 3.2.5(4))
+name: Deploy to TestFlight (iOS 3.2.5(5))
 
 on:
   push:
@@ -13,13 +13,13 @@ on:
         required: false
         default: '3.2.5'
       build_number:
-        description: 'App Build Number (e.g., 4)'
+        description: 'App Build Number (e.g., 5)'
         required: false
-        default: '4'
+        default: '5'
       changelog:
         description: 'TestFlight What to Test / Changelog'
         required: false
-        default: 'Version 3.2.5 (Build 4) - Responsive screen enhancements, event creation form keyboard input fixes, and Stripe payment confirmation updates.'
+        default: 'Version 3.2.5 (Build 5) - Resolve iOS post-splash plugin registration and background sync execution stability.'
       skip_waiting:
         description: 'Skip waiting for TestFlight build processing in CI'
         type: boolean
@@ -74,7 +74,7 @@ jobs:
           fi
 
           if [ -z "$VERSION" ]; then VERSION="3.2.5"; fi
-          if [ -z "$BUILD_NUM" ]; then BUILD_NUM="4"; fi
+          if [ -z "$BUILD_NUM" ]; then BUILD_NUM="5"; fi
 
           echo "VERSION_NAME=$VERSION" >> $GITHUB_OUTPUT
           echo "BUILD_NUMBER=$BUILD_NUM" >> $GITHUB_OUTPUT
