@@ -43,3 +43,18 @@ kotlin {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
+
+tasks.matching { it.name == "assembleRelease" }.configureEach {
+    doLast {
+        val buildDir = layout.buildDirectory.asFile.get()
+        val sourceApk = File(buildDir, "outputs/apk/release/app-release.apk")
+        val flutterApkDir = file("${project.rootDir}/../build/app/outputs/flutter-apk")
+        if (sourceApk.exists()) {
+            val appName = "Artist Dubai"
+            val version = flutter.versionName ?: "3.2.5"
+            sourceApk.copyTo(File(flutterApkDir, "$appName.apk"), overwrite = true)
+            sourceApk.copyTo(File(flutterApkDir, "Artist_Dubai.apk"), overwrite = true)
+            sourceApk.copyTo(File(flutterApkDir, "ArtistDubai-v$version.apk"), overwrite = true)
+        }
+    }
+}
