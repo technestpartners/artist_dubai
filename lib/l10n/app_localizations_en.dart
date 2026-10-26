@@ -205,7 +205,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get communityPlatform => 'Community Platform';
 
   @override
-  String get hostedBy => 'Hosted by Nizar Fahem';
+  String get hostedBy => 'Hosted by Nizar Al Fahem';
 
   @override
   String get aboutUs => 'About Us';
@@ -1166,4 +1166,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get stripeSecurityNote =>
       'End-to-end 256-bit encrypted. Card details are processed securely by Stripe and are never stored on our servers.';
+
+  @override
+  String byArtist(String artist) {
+    return 'By $artist';
+  }
 }

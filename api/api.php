@@ -764,10 +764,10 @@ class DatabaseManager {
             $priceCount = (int)$this->pdo->query("SELECT COUNT(*) FROM publishing_pricing")->fetchColumn();
             if ($priceCount === 0) {
                 $this->pdo->exec("
-                    INSERT INTO publishing_pricing (item_type, item_name, description, weekly_price, monthly_price, six_month_price, yearly_price, six_month_badge, yearly_badge, currency, is_active) VALUES
-                    ('event', 'Event Publishing', 'Publish art events and exhibitions across Dubai', 'AED 150', 'AED 500', 'AED 2,500', 'AED 4,500', 'Save 17%', 'Best Value', 'AED', 1),
-                    ('artist', 'Artist Verification', 'Verified artist badge and premium listing showcase', 'AED 100', 'AED 350', 'AED 1,800', 'AED 3,200', 'Save 14%', 'Featured', 'AED', 1),
-                    ('gallery', 'Gallery Space Spotlight', 'Feature your gallery on curated maps and event calendars', 'AED 250', 'AED 800', 'AED 4,000', 'AED 7,200', 'Save 16%', 'Premium', 'AED', 1);
+                    INSERT INTO publishing_pricing (item_type, item_name, description, weekly_price, monthly_price, three_month_price, six_month_price, yearly_price, three_month_badge, six_month_badge, yearly_badge, currency, is_active) VALUES
+                    ('event', 'Paid Event Publishing', 'Feature your event on curated maps and event calendars, with professional event photography.', 'AED 150', 'AED 500', 'AED 2,000', 'AED 3,000', 'AED 5,000', 'Special Offer', 'Save 25%', 'Best Value', 'AED', 1),
+                    ('gallery', 'Paid Gallery Publishing', 'Feature your gallery on curated maps and event calendars, with professional event photography.', 'AED 250', 'AED 800', 'AED 2,000', 'AED 3,000', 'AED 5,000', 'Special Offer', 'Save 25%', 'Best Value', 'AED', 1),
+                    ('artist', 'Artist Verification & Listing', 'Get verified badge, priority placement in artist directory, and direct commissioning channel.', 'AED 100', 'AED 350', 'AED 1,000', 'AED 1,800', 'AED 3,000', 'Special Offer', 'Save 14%', 'Featured', 'AED', 1);
                 ");
             }
 
@@ -775,9 +775,17 @@ class DatabaseManager {
             $planCount = (int)$this->pdo->query("SELECT COUNT(*) FROM listing_plans")->fetchColumn();
             if ($planCount === 0) {
                 $this->pdo->exec("
-                    INSERT INTO listing_plans (item_type, title, category, badge, price, description, button_text, is_active, sort_order) VALUES
-                    ('event', 'Standard Event Listing', 'Exhibitions & Openings', 'Popular', 'AED 500', '30-day verified event showcase across mobile app and website', 'Pay from My Listings', 1, 1),
-                    ('artist', 'Pro Artist Portfolio', 'Visual Arts', 'Best Choice', 'AED 350', 'Unlimited artwork uploads, custom bio, direct buyer messaging', 'Upgrade Artist Profile', 1, 2);
+                    INSERT INTO listing_plans (item_type, title, category, badge, price, duration, duration_days, description, features_json, button_text, is_active, sort_order) VALUES
+                    ('gallery', '3 Months', 'Art Galleries', 'Special Offer', 'AED 2,000', '3 Months', 90, 'Feature your gallery on curated maps and event calendars, with professional event photography.', '[\"Curated maps showcase\",\"Event calendars feature\",\"Professional event photography\",\"Enjoy your first 3 months free\"]', 'Register Gallery', 1, 1),
+                    ('gallery', '6 Months', 'Art Galleries', 'Save 25%', 'AED 3,000', '6 Months', 180, 'Feature your gallery on curated maps and event calendars, with professional event photography.', '[\"Curated maps showcase\",\"Event calendars feature\",\"Professional event photography\",\"Enjoy your first 3 months free\"]', 'Register Gallery', 1, 2),
+                    ('gallery', '12 Months', 'Art Galleries', 'Best Value', 'AED 5,000', '12 Months', 365, 'Feature your gallery on curated maps and event calendars, with professional event photography.', '[\"Curated maps showcase\",\"Event calendars feature\",\"Professional event photography\",\"Enjoy your first 3 months free\"]', 'Register Gallery', 1, 3),
+                    ('event', '3 Months', 'Art Events', 'Special Offer', 'AED 2,000', '3 Months', 90, 'Feature your event on curated maps and event calendars, with professional event photography.', '[\"Curated maps showcase\",\"Event calendars feature\",\"Professional event photography\",\"Enjoy your first 3 months free\"]', 'Publish Event', 1, 4),
+                    ('event', '6 Months', 'Art Events', 'Save 25%', 'AED 3,000', '6 Months', 180, 'Feature your event on curated maps and event calendars, with professional event photography.', '[\"Curated maps showcase\",\"Event calendars feature\",\"Professional event photography\",\"Enjoy your first 3 months free\"]', 'Publish Event', 1, 5),
+                    ('event', '12 Months', 'Art Events', 'Best Value', 'AED 5,000', '12 Months', 365, 'Feature your event on curated maps and event calendars, with professional event photography.', '[\"Curated maps showcase\",\"Event calendars feature\",\"Professional event photography\",\"Enjoy your first 3 months free\"]', 'Publish Event', 1, 6),
+                    ('chat', 'Starter Plan', 'Messaging & Inquiries', 'Default', 'Free', 'Monthly', 30, 'Free monthly allowance to connect with artists across Dubai', '[\"10 direct messages per month\",\"Direct artist collaboration inquiries\",\"Flyer & artwork attachment support\",\"Allowance auto-resets on the 1st\"]', 'Select Plan', 1, 7),
+                    ('chat', 'Unlimited VIP Chat', 'Messaging & Inquiries', 'VIP All-Access', 'AED 500', 'Monthly', 30, 'Unlimited direct artist messages with verified VIP sender badge for AED 500 per month', '[\"Unlimited direct artist messages\",\"Verified VIP sender badge\",\"Direct artist outreach & networking\",\"Priority delivery in artist inboxes\",\"High-resolution flyer & artwork attachments\"]', 'Upgrade to VIP', 1, 8),
+                    ('artist', 'Pro Artist Portfolio', 'Visual Arts', 'Best Choice', 'AED 350', 'Annual', 365, 'Unlimited artwork uploads, custom bio, direct buyer messaging', '[\"Unlimited artwork & portfolio showcase uploads\",\"Direct collector messaging & inquiry channel\",\"Verified Artist badge on public profile\",\"Priority ranking in search & category exploration\",\"Custom biography, exhibition history & press links\"]', 'Upgrade Artist Profile', 1, 9),
+                    ('art_centre', 'Art Center Partner', 'Institutions & Venues', 'VIP Partner', 'AED 990', 'Annual', 365, 'Official verified institution hub page, workshop hosting & priority event syndication', '[\"Official verified institution partner badge\",\"Unlimited event & workshop listings\",\"Direct ticket booking with instant notifications\",\"Top banner rotation on mobile home screen\",\"Dedicated account manager & support\"]', 'Join Partner Network', 1, 10);
                 ");
             }
 
@@ -4562,6 +4570,11 @@ class PublishingPricingController {
         try {
             $stmt = $this->db->query("SELECT * FROM publishing_pricing ORDER BY id ASC");
             $rows = $stmt->fetchAll();
+            if (empty($rows)) {
+                $this->seedInitialPricing();
+                $stmt = $this->db->query("SELECT * FROM publishing_pricing ORDER BY id ASC");
+                $rows = $stmt->fetchAll();
+            }
             ApiResponse::success($rows ?: [], 'Publishing pricing retrieved successfully');
         } catch (\Throwable $t) {
             error_log('PublishingPricingController::getPricing error: ' . $t->getMessage());
@@ -4571,20 +4584,29 @@ class PublishingPricingController {
 
     public function seedInitialPricing(): void {
         try {
-            $count = (int)$this->db->query("SELECT COUNT(*) FROM publishing_pricing")->fetchColumn();
-            if ($count === 0) {
-                $stmt = $this->db->prepare("
-                    INSERT INTO publishing_pricing 
-                    (id, item_type, item_name, description, weekly_price, monthly_price, six_month_price, yearly_price, six_month_badge, yearly_badge, currency, is_active)
-                    VALUES 
-                    (1, 'event', 'Event Publishing', 'Publishing events is a paid service on Artist Dubai. Select your preferred promotion duration. Once reviewed and approved by the admin, your event will be broadcasted to art enthusiasts across Dubai.', 'AED 150', 'AED 500', 'AED 2,500', 'AED 4,500', '180 days active', '365 days active', 'AED', 1),
-                    (2, 'gallery', 'Gallery Listing & Showcase', 'Premier directory listing, verified status badge, and spotlight showcase for Dubai art galleries.', 'AED 200', 'AED 750', 'AED 3,800', 'AED 6,500', '180 days active', '365 days active', 'AED', 1),
-                    (3, 'artist', 'Artist Verification & Listing', 'Get verified badge, priority placement in artist directory, and direct commissioning channel.', 'AED 100', 'AED 350', 'AED 1,800', 'AED 3,000', '180 days active', '365 days active', 'AED', 1)
-                    ON DUPLICATE KEY UPDATE item_name = VALUES(item_name)
-                ");
-                $stmt->execute();
-            }
-        } catch (\Throwable $t) {}
+            $stmt = $this->db->prepare("
+                INSERT INTO publishing_pricing 
+                (id, item_type, item_name, description, weekly_price, monthly_price, three_month_price, six_month_price, yearly_price, three_month_badge, six_month_badge, yearly_badge, currency, is_active)
+                VALUES 
+                (1, 'event', 'Paid Event Publishing', 'Feature your event on curated maps and event calendars, with professional event photography.', 'AED 150', 'AED 500', 'AED 2,000', 'AED 3,000', 'AED 5,000', 'Special Offer', 'Save 25%', 'Best Value', 'AED', 1),
+                (2, 'gallery', 'Paid Gallery Publishing', 'Feature your gallery on curated maps and event calendars, with professional event photography.', 'AED 250', 'AED 800', 'AED 2,000', 'AED 3,000', 'AED 5,000', 'Special Offer', 'Save 25%', 'Best Value', 'AED', 1),
+                (3, 'artist', 'Artist Verification & Listing', 'Get verified badge, priority placement in artist directory, and direct commissioning channel.', 'AED 100', 'AED 350', 'AED 1,000', 'AED 1,800', 'AED 3,000', 'Special Offer', 'Save 14%', 'Featured', 'AED', 1)
+                ON DUPLICATE KEY UPDATE 
+                    item_name = VALUES(item_name),
+                    description = VALUES(description),
+                    three_month_price = VALUES(three_month_price),
+                    six_month_price = VALUES(six_month_price),
+                    yearly_price = VALUES(yearly_price),
+                    three_month_badge = VALUES(three_month_badge),
+                    six_month_badge = VALUES(six_month_badge),
+                    yearly_badge = VALUES(yearly_badge),
+                    currency = VALUES(currency),
+                    is_active = VALUES(is_active)
+            ");
+            $stmt->execute();
+        } catch (\Throwable $t) {
+            error_log('PublishingPricingController::seedInitialPricing error: ' . $t->getMessage());
+        }
     }
 
     public function updatePricing(array $input): void {
@@ -4675,6 +4697,11 @@ class ListingPlansController {
         try {
             $stmt = $this->db->query("SELECT * FROM listing_plans ORDER BY sort_order ASC, id ASC");
             $rows = $stmt->fetchAll();
+            if (empty($rows)) {
+                $this->seedInitialPlans();
+                $stmt = $this->db->query("SELECT * FROM listing_plans ORDER BY sort_order ASC, id ASC");
+                $rows = $stmt->fetchAll();
+            }
             foreach ($rows as &$row) {
                 if (isset($row['price'])) {
                     $row['price'] = self::normalizePrice($row['price']);
@@ -4718,28 +4745,151 @@ class ListingPlansController {
 
     public function seedInitialPlans(): void {
         try {
-            $count = (int)$this->db->query("SELECT COUNT(*) FROM listing_plans")->fetchColumn();
-            if ($count > 0) {
-                return;
-            }
-
             $defaultPlans = [
-                'event' => [
-                    'item_type' => 'event',
-                    'title' => 'Standard Event Listing',
-                    'category' => 'Exhibitions & Openings',
-                    'badge' => 'Popular',
-                    'price' => 'AED 500',
-                    'description' => '30-day verified event showcase across mobile app and website',
+                'gallery_3m' => [
+                    'item_type' => 'gallery',
+                    'title' => '3 Months',
+                    'category' => 'Art Galleries',
+                    'badge' => 'Special Offer',
+                    'price' => 'AED 2,000',
+                    'duration' => '3 Months',
+                    'duration_days' => 90,
+                    'description' => 'Feature your gallery on curated maps and event calendars, with professional event photography.',
                     'features_json' => json_encode([
-                        '30-day verified event showcase across mobile app and website',
-                        'Event calendar & push notification highlight',
-                        'Direct ticket booking & RSVP link integration',
-                        'Interactive venue map pin & directions',
-                        'Featured badge & social media spotlight'
+                        'Curated maps showcase',
+                        'Event calendars feature',
+                        'Professional event photography',
+                        'Enjoy your first 3 months free'
                     ]),
-                    'button_text' => 'Pay from My Listings',
+                    'button_text' => 'Register Gallery',
                     'sort_order' => 1
+                ],
+                'gallery_6m' => [
+                    'item_type' => 'gallery',
+                    'title' => '6 Months',
+                    'category' => 'Art Galleries',
+                    'badge' => 'Save 25%',
+                    'price' => 'AED 3,000',
+                    'duration' => '6 Months',
+                    'duration_days' => 180,
+                    'description' => 'Feature your gallery on curated maps and event calendars, with professional event photography.',
+                    'features_json' => json_encode([
+                        'Curated maps showcase',
+                        'Event calendars feature',
+                        'Professional event photography',
+                        'Enjoy your first 3 months free'
+                    ]),
+                    'button_text' => 'Register Gallery',
+                    'sort_order' => 2
+                ],
+                'gallery_12m' => [
+                    'item_type' => 'gallery',
+                    'title' => '12 Months',
+                    'category' => 'Art Galleries',
+                    'badge' => 'Best Value',
+                    'price' => 'AED 5,000',
+                    'duration' => '12 Months',
+                    'duration_days' => 365,
+                    'description' => 'Feature your gallery on curated maps and event calendars, with professional event photography.',
+                    'features_json' => json_encode([
+                        'Curated maps showcase',
+                        'Event calendars feature',
+                        'Professional event photography',
+                        'Enjoy your first 3 months free'
+                    ]),
+                    'button_text' => 'Register Gallery',
+                    'sort_order' => 3
+                ],
+                'event_3m' => [
+                    'item_type' => 'event',
+                    'title' => '3 Months',
+                    'category' => 'Art Events',
+                    'badge' => 'Special Offer',
+                    'price' => 'AED 2,000',
+                    'duration' => '3 Months',
+                    'duration_days' => 90,
+                    'description' => 'Feature your event on curated maps and event calendars, with professional event photography.',
+                    'features_json' => json_encode([
+                        'Curated maps showcase',
+                        'Event calendars feature',
+                        'Professional event photography',
+                        'Enjoy your first 3 months free'
+                    ]),
+                    'button_text' => 'Publish Event',
+                    'sort_order' => 4
+                ],
+                'event_6m' => [
+                    'item_type' => 'event',
+                    'title' => '6 Months',
+                    'category' => 'Art Events',
+                    'badge' => 'Save 25%',
+                    'price' => 'AED 3,000',
+                    'duration' => '6 Months',
+                    'duration_days' => 180,
+                    'description' => 'Feature your event on curated maps and event calendars, with professional event photography.',
+                    'features_json' => json_encode([
+                        'Curated maps showcase',
+                        'Event calendars feature',
+                        'Professional event photography',
+                        'Enjoy your first 3 months free'
+                    ]),
+                    'button_text' => 'Publish Event',
+                    'sort_order' => 5
+                ],
+                'event_12m' => [
+                    'item_type' => 'event',
+                    'title' => '12 Months',
+                    'category' => 'Art Events',
+                    'badge' => 'Best Value',
+                    'price' => 'AED 5,000',
+                    'duration' => '12 Months',
+                    'duration_days' => 365,
+                    'description' => 'Feature your event on curated maps and event calendars, with professional event photography.',
+                    'features_json' => json_encode([
+                        'Curated maps showcase',
+                        'Event calendars feature',
+                        'Professional event photography',
+                        'Enjoy your first 3 months free'
+                    ]),
+                    'button_text' => 'Publish Event',
+                    'sort_order' => 6
+                ],
+                'chat_starter' => [
+                    'item_type' => 'chat',
+                    'title' => 'Starter Plan',
+                    'category' => 'Messaging & Inquiries',
+                    'badge' => 'Default',
+                    'price' => 'Free',
+                    'duration' => 'Monthly',
+                    'duration_days' => 30,
+                    'description' => 'Free monthly allowance to connect with artists across Dubai',
+                    'features_json' => json_encode([
+                        '10 direct messages per month',
+                        'Direct artist collaboration inquiries',
+                        'Flyer & artwork attachment support',
+                        'Allowance auto-resets on the 1st'
+                    ]),
+                    'button_text' => 'Select Plan',
+                    'sort_order' => 7
+                ],
+                'chat_vip' => [
+                    'item_type' => 'chat',
+                    'title' => 'Unlimited VIP Chat',
+                    'category' => 'Messaging & Inquiries',
+                    'badge' => 'VIP All-Access',
+                    'price' => 'AED 500',
+                    'duration' => 'Monthly',
+                    'duration_days' => 30,
+                    'description' => 'Unlimited direct artist messages with verified VIP sender badge for AED 500 per month',
+                    'features_json' => json_encode([
+                        'Unlimited direct artist messages',
+                        'Verified VIP sender badge',
+                        'Direct artist outreach & networking',
+                        'Priority delivery in artist inboxes',
+                        'High-resolution flyer & artwork attachments'
+                    ]),
+                    'button_text' => 'Upgrade to VIP',
+                    'sort_order' => 8
                 ],
                 'artist' => [
                     'item_type' => 'artist',
@@ -4747,6 +4897,8 @@ class ListingPlansController {
                     'category' => 'Visual Arts',
                     'badge' => 'Best Choice',
                     'price' => 'AED 350',
+                    'duration' => 'Annual',
+                    'duration_days' => 365,
                     'description' => 'Unlimited artwork uploads, custom bio, direct buyer messaging',
                     'features_json' => json_encode([
                         'Unlimited artwork & portfolio showcase uploads',
@@ -4756,73 +4908,7 @@ class ListingPlansController {
                         'Custom biography, exhibition history & press links'
                     ]),
                     'button_text' => 'Upgrade Artist Profile',
-                    'sort_order' => 2
-                ],
-                'gallery' => [
-                    'item_type' => 'gallery',
-                    'title' => 'Elite Gallery Showcase',
-                    'category' => 'Galleries & Spaces',
-                    'badge' => 'Premium',
-                    'price' => 'AED 750',
-                    'description' => 'Comprehensive gallery venue listing with exhibitions calendar & collector reach',
-                    'features_json' => json_encode([
-                        'Full digital gallery showroom & map listing',
-                        'Unlimited exhibition postings for 12 months',
-                        'Featured spot on Galleries directory',
-                        'Direct visitor booking & VIP inquiries',
-                        'Social media & push broadcast spotlight'
-                    ]),
-                    'button_text' => 'Choose Plan',
-                    'sort_order' => 3
-                ],
-                'chat_starter' => [
-                    'item_type' => 'chat',
-                    'title' => 'Starter Plan',
-                    'category' => 'Messaging & Inquiries',
-                    'badge' => 'Default',
-                    'price' => 'Free',
-                    'description' => 'Free monthly allowance to connect with artists across Dubai',
-                    'features_json' => json_encode([
-                        '10 direct messages per month',
-                        'Direct artist collaboration inquiries',
-                        'Flyer & artwork attachment support',
-                        'Allowance auto-resets on the 1st'
-                    ]),
-                    'button_text' => 'Select Plan',
-                    'sort_order' => 4
-                ],
-                'chat_pro' => [
-                    'item_type' => 'chat',
-                    'title' => 'Pro Artist',
-                    'category' => 'Messaging & Inquiries',
-                    'badge' => 'Most Popular',
-                    'price' => 'AED 49',
-                    'description' => '50 direct messages per month for active networking',
-                    'features_json' => json_encode([
-                        '50 direct messages per month',
-                        'Direct artist outreach & networking',
-                        'Priority delivery in artist inboxes',
-                        'High-resolution flyer attachments',
-                        'Monthly reset on the 1st'
-                    ]),
-                    'button_text' => 'Upgrade to Pro',
-                    'sort_order' => 5
-                ],
-                'chat_vip' => [
-                    'item_type' => 'chat',
-                    'title' => 'Unlimited VIP',
-                    'category' => 'Messaging & Inquiries',
-                    'badge' => 'For Agencies & Curators',
-                    'price' => 'AED 99',
-                    'description' => 'Unlimited direct artist messages with verified VIP sender badge',
-                    'features_json' => json_encode([
-                        'Unlimited direct artist messages',
-                        'Verified VIP sender badge',
-                        'Ideal for galleries, curators & agencies',
-                        'Priority instant customer support'
-                    ]),
-                    'button_text' => 'Upgrade to VIP',
-                    'sort_order' => 6
+                    'sort_order' => 9
                 ],
                 'art_centre' => [
                     'item_type' => 'art_centre',
@@ -4830,6 +4916,8 @@ class ListingPlansController {
                     'category' => 'Institutions & Venues',
                     'badge' => 'VIP Partner',
                     'price' => 'AED 990',
+                    'duration' => 'Annual',
+                    'duration_days' => 365,
                     'description' => 'Official verified institution hub page, workshop hosting & priority event syndication',
                     'features_json' => json_encode([
                         'Official verified institution partner badge',
@@ -4839,23 +4927,31 @@ class ListingPlansController {
                         'Dedicated account manager & support'
                     ]),
                     'button_text' => 'Join Partner Network',
-                    'sort_order' => 5
+                    'sort_order' => 10
                 ],
             ];
 
-            $stmt = $this->db->prepare("
-                INSERT INTO listing_plans 
-                (item_type, title, category, badge, price, description, features_json, button_text, is_active, sort_order)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
-            ");
-            foreach ($defaultPlans as $p) {
-                $stmt->execute([
-                    $p['item_type'], $p['title'], $p['category'], $p['badge'],
-                    $p['price'], $p['description'], $p['features_json'],
-                    $p['button_text'], $p['sort_order']
-                ]);
+            $count = (int)$this->db->query("SELECT COUNT(*) FROM listing_plans")->fetchColumn();
+            if ($count === 0) {
+                $stmt = $this->db->prepare("
+                    INSERT INTO listing_plans 
+                    (item_type, title, category, badge, price, duration, duration_days, description, features_json, button_text, is_active, sort_order)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+                ");
+                foreach ($defaultPlans as $p) {
+                    $stmt->execute([
+                        $p['item_type'], $p['title'], $p['category'], $p['badge'],
+                        $p['price'], $p['duration'], $p['duration_days'], $p['description'],
+                        $p['features_json'], $p['button_text'], $p['sort_order']
+                    ]);
+                }
+            } else {
+                // Ensure chat VIP is AED 500
+                $this->db->exec("UPDATE listing_plans SET price = 'AED 500', description = 'Unlimited direct artist messages with verified VIP sender badge for AED 500 per month' WHERE item_type = 'chat' AND (title LIKE '%VIP%' OR title LIKE '%Unlimited%')");
             }
-        } catch (\Throwable $t) {}
+        } catch (\Throwable $t) {
+            error_log('ListingPlansController::seedInitialPlans error: ' . $t->getMessage());
+        }
     }
 
     public function updatePlan(array $input): void {
@@ -7280,8 +7376,8 @@ class StripeController {
     }
 
     public function createPaymentIntent(array $data): void {
-        AuthMiddleware::requireAuth();
-        if (!RateLimiter::check('stripe_intent', 20, 60)) {
+        $currentUser = AuthMiddleware::getCurrentUser();
+        if (!RateLimiter::check('stripe_intent', 30, 60)) {
             ApiResponse::error('Too many payment attempts. Please try again shortly.', 429);
             return;
         }
@@ -7292,6 +7388,7 @@ class StripeController {
         $itemType    = InputSanitizer::cleanString($data['item_type'] ?? 'event');
         $planId      = InputSanitizer::cleanString($data['plan_id'] ?? '');
         $planName    = InputSanitizer::cleanString($data['plan_name'] ?? '');
+        $customerEmail = filter_var($data['customer_email'] ?? '', FILTER_VALIDATE_EMAIL) ?: ($currentUser['email'] ?? null);
 
         // Amount comes as decimal AED (e.g. 2500.0), convert to fils (smallest currency unit)
         $amountFils = (int)round((float)$amountRaw * 100);
@@ -7301,7 +7398,7 @@ class StripeController {
             return;
         }
 
-        $postData = http_build_query([
+        $postParams = [
             'amount'                              => $amountFils,
             'currency'                            => $currency,
             'description'                         => $description,
@@ -7310,7 +7407,16 @@ class StripeController {
             'metadata[plan_name]'                 => $planName,
             'metadata[platform]'                  => 'artist_dubai',
             'automatic_payment_methods[enabled]'  => 'true',
-        ]);
+        ];
+        if (!empty($customerEmail)) {
+            $postParams['receipt_email'] = $customerEmail;
+            $postParams['metadata[customer_email]'] = $customerEmail;
+        }
+        if ($currentUser) {
+            $postParams['metadata[user_id]'] = (string)$currentUser['id'];
+        }
+
+        $postData = http_build_query($postParams);
 
         $ch = curl_init('https://api.stripe.com/v1/payment_intents');
         curl_setopt_array($ch, [
@@ -8083,7 +8189,7 @@ class UnifiedMySqlApiRouter {
             case 'artists':
                 $artist = new ArtistController();
                 $artistAction = strtolower(trim($_GET['action'] ?? $input['action'] ?? ''));
-                if ($artistAction === 'delete') {
+                if ($artistAction === 'delete' || $method === 'DELETE') {
                     $artist->deleteArtist(array_merge($input, $_GET));
                 } elseif ($artistAction === 'update' || $method === 'PUT') {
                     $artist->updateArtist(array_merge($input, $_GET));
@@ -8105,7 +8211,7 @@ class UnifiedMySqlApiRouter {
             case 'events':
                 $event = new EventController();
                 $evAction = strtolower(trim($_GET['action'] ?? $input['action'] ?? ''));
-                if ($evAction === 'delete') {
+                if ($evAction === 'delete' || $method === 'DELETE') {
                     $event->deleteEvent(array_merge($input, $_GET));
                 } elseif ($evAction === 'update' || $method === 'PUT') {
                     $event->updateEvent(array_merge($input, $_GET));
@@ -8138,7 +8244,7 @@ class UnifiedMySqlApiRouter {
             case 'galleries':
                 $gal = new GalleryController();
                 $galAction = strtolower(trim($_GET['action'] ?? $input['action'] ?? ''));
-                if ($galAction === 'delete') {
+                if ($galAction === 'delete' || $method === 'DELETE') {
                     $gal->deleteGallery(array_merge($input, $_GET));
                 } elseif ($galAction === 'update' || $method === 'PUT') {
                     $gal->updateGallery(array_merge($input, $_GET));
@@ -8152,7 +8258,7 @@ class UnifiedMySqlApiRouter {
             case 'government':
                 $govCtrl = new GovernmentController();
                 $govAction = strtolower(trim($_GET['action'] ?? $input['action'] ?? ''));
-                if ($govAction === 'delete') {
+                if ($govAction === 'delete' || $method === 'DELETE') {
                     $govCtrl->deleteEntity(array_merge($input, $_GET));
                 } elseif ($govAction === 'update' || $method === 'PUT') {
                     $govCtrl->updateEntity(array_merge($input, $_GET));
@@ -8166,7 +8272,7 @@ class UnifiedMySqlApiRouter {
             case 'artworks':
                 $artCtrl = new ArtworkController();
                 $artAction = strtolower(trim($_GET['action'] ?? $input['action'] ?? ''));
-                if ($artAction === 'delete') {
+                if ($artAction === 'delete' || $method === 'DELETE') {
                     $artCtrl->deleteArtwork(array_merge($input, $_GET));
                 } elseif ($artAction === 'update' || $method === 'PUT') {
                     $artCtrl->updateArtwork(array_merge($input, $_GET));
@@ -8197,7 +8303,7 @@ class UnifiedMySqlApiRouter {
                     $notifCtrl->markAsRead(array_merge($input, $_GET));
                 } elseif ($notifAction === 'mark_all_read' || $notifAction === 'all_read') {
                     $notifCtrl->markAllAsRead(array_merge($input, $_GET));
-                } elseif ($notifAction === 'delete') {
+                } elseif ($notifAction === 'delete' || $method === 'DELETE') {
                     $notifCtrl->deleteNotification(array_merge($input, $_GET));
                 } elseif ($notifAction === 'clear_all' || $notifAction === 'clear' || $notifAction === 'delete_all') {
                     $notifCtrl->clearAllNotifications(array_merge($input, $_GET));

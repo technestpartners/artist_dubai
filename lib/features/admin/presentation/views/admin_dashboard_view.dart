@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../app/routes/route_names.dart';
@@ -10,12 +11,14 @@ import '../../../../core/services/storage_service.dart';
 import '../../../../core/services/locale_provider.dart';
 import 'package:provider/provider.dart';
 import '../../../artists/domain/models/artist_model.dart';
+import '../../domain/models/payment_settings_model.dart';
 import '../../domain/models/publishing_pricing_model.dart';
 import '../../domain/models/menu_permission_model.dart';
 import '../../../chat/domain/models/listing_plan_model.dart';
 import '../../../events/domain/models/art_event_model.dart';
 import '../../../government/domain/models/government_entity.dart';
 import '../../../../core/utils/data_translator.dart';
+import '../../../../core/utils/share_helper.dart';
 import '../../../../core/widgets/app_cached_image.dart';
 
 enum AdminTab {
@@ -26,10 +29,10 @@ enum AdminTab {
   galleries,
   artCenters,
   government,
-  masters,
   permissions,
   aboutUs,
   users,
+  masters,
 }
 
 class AdminDashboardView extends StatefulWidget {
@@ -51,9 +54,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   List<ExperienceLevelModel> _experienceLevels = [];
   List<LocationModel> _locations = [];
   List<PublishingPricingModel> _publishingPricing = [];
-  List<ListingPlanItem> _listingPlans = List.from(
-    ApiService.defaultListingPlans,
-  );
+  PaymentSettingsModel _paymentSettings = PaymentSettingsModel.defaultSettings();
+  List<ListingPlanItem> _listingPlans = [];
   // 0=Events, 1=Galleries, 2=Artists, 3=Chat, 4=Art Centres
   int _listingPlanTypeTab = 0;
   Map<String, bool> _menuPermissions = {};
@@ -108,10 +110,11 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   StreamSubscription<List<ListingPlanItem>>? _listingPlansSub;
   StreamSubscription<List<Map<String, dynamic>>>? _galleriesSub;
   StreamSubscription<Map<String, bool>>? _menuPermissionsSub;
+  StreamSubscription<PaymentSettingsModel>? _paymentSettingsSub;
   final Set<String> _togglingEventIds = {};
   Timer? _periodicSyncTimer;
   int _masterSubTab =
-      0; // 0 = Categories, 1 = Experience Levels, 2 = Locations, 3 = Listing Plans
+      0; // 0 = Categories, 1 = Experience Levels, 2 = Locations, 3 = Listing Plans, 4 = Bank & IBAN
   int _eventFilterIndex = 0; // 0 = All, 1 = Pending Review, 2 = Active
 
   int get _activeMenuCount {
@@ -319,6 +322,11 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         setState(() => _menuPermissions = perms);
       }
     });
+    _paymentSettingsSub = liveSync.paymentSettingsStream.listen((settings) {
+      if (mounted) {
+        setState(() => _paymentSettings = settings);
+      }
+    });
   }
 
   @override
@@ -336,6 +344,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     _publishingPricingSub?.cancel();
     _listingPlansSub?.cancel();
     _menuPermissionsSub?.cancel();
+    _paymentSettingsSub?.cancel();
     _aboutTitleEnCtrl.dispose();
     _aboutTitleArCtrl.dispose();
     _aboutWhatMeansTitleEnCtrl.dispose();
@@ -396,6 +405,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             .getMenuPermissions(forceRefresh: true)
             .catchError((_) => <String, bool>{}),
         sl<ApiService>().getUsers().catchError((_) => <Map<String, dynamic>>[]),
+        sl<ApiService>()
+            .getPaymentSettings(forceRefresh: true)
+            .catchError((_) => PaymentSettingsModel.defaultSettings()),
       ]);
 
       if (mounted) {
@@ -460,6 +472,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           _locations = results[6] as List<LocationModel>;
           _publishingPricing = results[7] as List<PublishingPricingModel>;
           _listingPlans = results[8] as List<ListingPlanItem>;
+          _paymentSettings = results[11] as PaymentSettingsModel;
         });
       }
     } catch (_) {}
@@ -543,19 +556,41 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     );
     final addressCtrl = TextEditingController(text: existing?.location ?? '');
     final websiteCtrl = TextEditingController(text: existing?.websiteUrl ?? '');
+    final directionsCtrl = TextEditingController(
+      text: existing?.directionsUrl ?? '',
+    );
+    final reviewsUrlCtrl = TextEditingController(
+      text: existing?.googleMapsReviewsUrl ?? '',
+    );
     final ratingCtrl = TextEditingController(
-      text: existing != null ? '${existing.rating}' : '0',
+      text: existing != null ? '${existing.rating}' : '4.5',
     );
     final reviewsCtrl = TextEditingController(
-      text: existing != null ? '${existing.reviewCount}' : '0',
+      text: existing != null ? '${existing.reviewCount}' : '100',
     );
     final orderCtrl = TextEditingController(
       text: index != null ? '${index + 1}' : '0',
     );
+    final openTimeCtrl = TextEditingController(
+      text: existing?.openHour != null
+          ? '${existing!.openHour.toString().padLeft(2, '0')}:${(existing.openMinute ?? 0).toString().padLeft(2, '0')}'
+          : '08:00',
+    );
+    final closeTimeCtrl = TextEditingController(
+      text: existing?.closeHour != null
+          ? '${existing!.closeHour.toString().padLeft(2, '0')}:${(existing.closeMinute ?? 0).toString().padLeft(2, '0')}'
+          : '18:00',
+    );
+    final seasonalNoticeCtrl = TextEditingController(
+      text: existing?.seasonalNotice ?? '',
+    );
     final statusTextCtrl = TextEditingController(
-      text: existing?.defaultTiming ?? 'Open · Closes at 15:00',
+      text: existing?.defaultTiming ?? 'Open · Closes at 18:00',
     );
     bool isCurrentlyOpen = existing?.defaultIsOpen ?? true;
+    final Set<int> selectedClosedDays = Set<int>.from(
+      existing?.closedDays ?? [6, 7],
+    );
 
     showDialog(
       context: context,
@@ -563,14 +598,24 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       builder:
           (ctx) => StatefulBuilder(
             builder: (context, setModalState) {
+              const dayLabels = {
+                1: 'Mon',
+                2: 'Tue',
+                3: 'Wed',
+                4: 'Thu',
+                5: 'Fri',
+                6: 'Sat',
+                7: 'Sun',
+              };
+
               return Dialog(
                 backgroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
                 insetPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 24,
+                  horizontal: 16,
+                  vertical: 20,
                 ),
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(20),
@@ -582,7 +627,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            isEdit ? 'Edit entry' : 'New government entry',
+                            isEdit
+                                ? 'Edit Government Entity'
+                                : 'New Government Entity',
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
@@ -607,30 +654,48 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         label: 'Name',
                         controller: nameCtrl,
                         isFocused: true,
+                        hint: 'Dubai Culture & Arts Authority',
                       ),
                       const SizedBox(height: 12),
 
                       _buildFormField(
-                        label: 'Type',
+                        label: 'Category / Type',
                         controller: typeCtrl,
                         hint: 'Government · Cultural Authority',
                       ),
                       const SizedBox(height: 12),
 
                       _buildFormField(
-                        label: 'Address',
+                        label: 'Location / Address',
                         controller: addressCtrl,
                         hint: 'Al Shindagha, Dubai',
                       ),
                       const SizedBox(height: 12),
 
                       _buildFormField(
-                        label: 'Website',
+                        label: 'Official Website',
                         controller: websiteCtrl,
-                        hint: 'https://...',
+                        hint: 'https://dubaiculture.gov.ae/en',
                       ),
                       const SizedBox(height: 12),
 
+                      _buildFormField(
+                        label: 'Google Maps Directions URL',
+                        controller: directionsCtrl,
+                        hint: 'https://maps.google.com/?q=...',
+                        suffixIcon: Icons.directions_outlined,
+                      ),
+                      const SizedBox(height: 12),
+
+                      _buildFormField(
+                        label: 'Google Maps Reviews URL',
+                        controller: reviewsUrlCtrl,
+                        hint: 'https://www.google.com/maps/search/?api=1&query=...',
+                        suffixIcon: Icons.rate_review_outlined,
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Rating, Reviews & Order
                       Row(
                         children: [
                           Expanded(
@@ -661,10 +726,212 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 14),
+
+                      // Schedule Section Header
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(
+                              Icons.access_time_filled,
+                              size: 16,
+                              color: Color(0xFF6A2777),
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              'Operating Hours & Map Timing (Dubai UTC+4)',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF1E293B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Opening & Closing Time
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildFormField(
+                              label: 'Open Time (HH:mm)',
+                              controller: openTimeCtrl,
+                              hint: '07:30',
+                              suffixIcon: Icons.alarm,
+                              onTap: () async {
+                                final parts = openTimeCtrl.text.split(':');
+                                final h = int.tryParse(parts.first.trim()) ?? 8;
+                                final m = parts.length > 1 ? (int.tryParse(parts[1].trim()) ?? 0) : 0;
+                                final picked = await showTimePicker(
+                                  context: ctx,
+                                  initialTime: TimeOfDay(hour: h, minute: m),
+                                );
+                                if (picked != null) {
+                                  setModalState(() {
+                                    openTimeCtrl.text =
+                                        '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildFormField(
+                              label: 'Close Time (HH:mm)',
+                              controller: closeTimeCtrl,
+                              hint: '15:00',
+                              suffixIcon: Icons.alarm_off,
+                              onTap: () async {
+                                final parts = closeTimeCtrl.text.split(':');
+                                final h = int.tryParse(parts.first.trim()) ?? 18;
+                                final m = parts.length > 1 ? (int.tryParse(parts[1].trim()) ?? 0) : 0;
+                                final picked = await showTimePicker(
+                                  context: ctx,
+                                  initialTime: TimeOfDay(hour: h, minute: m),
+                                );
+                                if (picked != null) {
+                                  setModalState(() {
+                                    closeTimeCtrl.text =
+                                        '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Closed Days / Weekend Selector
+                      const Text(
+                        'Closed Days (Tap to toggle weekend / closure):',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF475569),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: dayLabels.entries.map((entry) {
+                          final dayNum = entry.key;
+                          final dayName = entry.value;
+                          final isClosed = selectedClosedDays.contains(dayNum);
+                          return InkWell(
+                            onTap: () {
+                              setModalState(() {
+                                if (isClosed) {
+                                  selectedClosedDays.remove(dayNum);
+                                } else {
+                                  selectedClosedDays.add(dayNum);
+                                }
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isClosed
+                                    ? const Color(0xFFFEE2E2)
+                                    : const Color(0xFFE8F8F0),
+                                border: Border.all(
+                                  color: isClosed
+                                      ? const Color(0xFFEF4444)
+                                      : const Color(0xFF10B981),
+                                  width: 1.2,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    isClosed ? Icons.close : Icons.check,
+                                    size: 13,
+                                    color: isClosed
+                                        ? const Color(0xFFDC2626)
+                                        : const Color(0xFF059669),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    dayName,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: isClosed
+                                        ? const Color(0xFFDC2626)
+                                        : const Color(0xFF059669),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          TextButton.icon(
+                            icon: const Icon(Icons.weekend_outlined, size: 14),
+                            label: const Text('Gov Weekend (Sat/Sun)', style: TextStyle(fontSize: 11)),
+                            style: TextButton.styleFrom(
+                              foregroundColor: const Color(0xFF6A2777),
+                              padding: EdgeInsets.zero,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                            onPressed: () {
+                              setModalState(() {
+                                selectedClosedDays.clear();
+                                selectedClosedDays.addAll([6, 7]);
+                              });
+                            },
+                          ),
+                          const Spacer(),
+                          TextButton.icon(
+                            icon: const Icon(Icons.all_inclusive, size: 14),
+                            label: const Text('Open 7 Days', style: TextStyle(fontSize: 11)),
+                            style: TextButton.styleFrom(
+                              foregroundColor: const Color(0xFF059669),
+                              padding: EdgeInsets.zero,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                            onPressed: () {
+                              setModalState(() {
+                                selectedClosedDays.clear();
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+
+                      _buildFormField(
+                        label: 'Seasonal Notice (Optional closure notice)',
+                        controller: seasonalNoticeCtrl,
+                        hint: 'Closed · Opens Mar 2026 (Leave blank for normal schedule)',
+                      ),
                       const SizedBox(height: 12),
 
                       _buildFormField(
-                        label: 'Status text',
+                        label: 'Status / Fallback Timing text',
                         controller: statusTextCtrl,
                         hint: 'Open · Closes at 15:00',
                       ),
@@ -683,13 +950,26 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'Currently open',
-                              style: TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF1E293B),
-                              ),
+                            const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Currently Open Override',
+                                  style: TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF1E293B),
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'Manual override for emergency or unscheduled state',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
                             ),
                             Switch(
                               value: isCurrentlyOpen,
@@ -718,6 +998,28 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                           final name = nameCtrl.text.trim();
                           if (name.isEmpty) return;
 
+                          int parsedOpenH = 8;
+                          int parsedOpenM = 0;
+                          if (openTimeCtrl.text.contains(':')) {
+                            final parts = openTimeCtrl.text.split(':');
+                            parsedOpenH = int.tryParse(parts[0].trim()) ?? 8;
+                            parsedOpenM = parts.length > 1 ? (int.tryParse(parts[1].trim()) ?? 0) : 0;
+                          }
+
+                          int parsedCloseH = 18;
+                          int parsedCloseM = 0;
+                          if (closeTimeCtrl.text.contains(':')) {
+                            final parts = closeTimeCtrl.text.split(':');
+                            parsedCloseH = int.tryParse(parts[0].trim()) ?? 18;
+                            parsedCloseM = parts.length > 1 ? (int.tryParse(parts[1].trim()) ?? 0) : 0;
+                          }
+
+                          final seasonalVal = seasonalNoticeCtrl.text.trim().isEmpty ? null : seasonalNoticeCtrl.text.trim();
+                          final directionsVal = directionsCtrl.text.trim().isNotEmpty
+                              ? directionsCtrl.text.trim()
+                              : 'https://www.google.com/maps/search/?api=1&query=${name.replaceAll(' ', '+')}+Dubai';
+                          final reviewsUrlVal = reviewsUrlCtrl.text.trim().isNotEmpty ? reviewsUrlCtrl.text.trim() : directionsVal;
+
                           final payload = {
                             if (existing?.id != null) 'id': existing!.id,
                             'name': existing?.name ?? name,
@@ -725,12 +1027,20 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             'type': typeCtrl.text.trim(),
                             'address': addressCtrl.text.trim(),
                             'website': websiteCtrl.text.trim(),
+                            'directions_url': directionsVal,
+                            'google_maps_reviews_url': reviewsUrlVal,
                             'rating':
                                 double.tryParse(ratingCtrl.text.trim()) ?? 4.5,
                             'reviews':
                                 int.tryParse(reviewsCtrl.text.trim()) ?? 100,
                             'status_text': statusTextCtrl.text.trim(),
                             'currently_open': isCurrentlyOpen ? 1 : 0,
+                            'open_hour': parsedOpenH,
+                            'open_minute': parsedOpenM,
+                            'close_hour': parsedCloseH,
+                            'close_minute': parsedCloseM,
+                            'closed_days': selectedClosedDays.toList(),
+                            'seasonal_notice': seasonalVal,
                           };
 
                           Navigator.pop(ctx);
@@ -749,16 +1059,15 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                               location: addressCtrl.text.trim(),
                               defaultTiming: statusTextCtrl.text.trim(),
                               websiteUrl: websiteCtrl.text.trim(),
-                              directionsUrl: existing.directionsUrl,
-                              googleMapsReviewsUrl:
-                                  existing.googleMapsReviewsUrl,
+                              directionsUrl: directionsVal,
+                              googleMapsReviewsUrl: reviewsUrlVal,
                               reviews: existing.reviews,
-                              openHour: existing.openHour,
-                              openMinute: existing.openMinute,
-                              closeHour: existing.closeHour,
-                              closeMinute: existing.closeMinute,
-                              closedDays: existing.closedDays,
-                              seasonalNotice: existing.seasonalNotice,
+                              openHour: parsedOpenH,
+                              openMinute: parsedOpenM,
+                              closeHour: parsedCloseH,
+                              closeMinute: parsedCloseM,
+                              closedDays: selectedClosedDays.toList(),
+                              seasonalNotice: seasonalVal,
                             );
                             if (index != null && index < _govEntities.length) {
                               setState(() => _govEntities[index] = updated);
@@ -779,8 +1088,14 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                               location: addressCtrl.text.trim(),
                               defaultTiming: statusTextCtrl.text.trim(),
                               websiteUrl: websiteCtrl.text.trim(),
-                              directionsUrl:
-                                  'https://www.google.com/maps/search/?api=1&query=$name+Dubai',
+                              directionsUrl: directionsVal,
+                              googleMapsReviewsUrl: reviewsUrlVal,
+                              openHour: parsedOpenH,
+                              openMinute: parsedOpenM,
+                              closeHour: parsedCloseH,
+                              closeMinute: parsedCloseM,
+                              closedDays: selectedClosedDays.toList(),
+                              seasonalNotice: seasonalVal,
                             );
                             setState(() => _govEntities.insert(0, newEntity));
                             await sl<ApiService>().createGovernmentEntity(
@@ -792,7 +1107,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                           } catch (_) {}
                         },
                         child: const Text(
-                          'Save',
+                          'Save Entity & Schedule',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -2202,7 +2517,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         'Government'.trData(context),
         Icons.assured_workload_outlined,
       ),
-      (AdminTab.masters, 'Masters'.trData(context), Icons.stars_outlined),
       (
         AdminTab.permissions,
         'Permissions'.trData(context),
@@ -2214,6 +2528,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         Icons.info_outline_rounded,
       ),
       (AdminTab.users, 'Users'.trData(context), Icons.people_alt_outlined),
+      (AdminTab.masters, 'Masters'.trData(context), Icons.stars_outlined),
     ];
 
     return LayoutBuilder(
@@ -2306,11 +2621,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       Icons.assured_workload_outlined,
                     ),
                     _buildCompactTabButton(
-                      AdminTab.masters,
-                      'Masters'.trData(context),
-                      Icons.stars_outlined,
-                    ),
-                    _buildCompactTabButton(
                       AdminTab.permissions,
                       'Perms'.trData(context),
                       Icons.security_outlined,
@@ -2324,6 +2634,11 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       AdminTab.users,
                       'Users'.trData(context),
                       Icons.people_alt_outlined,
+                    ),
+                    _buildCompactTabButton(
+                      AdminTab.masters,
+                      'Masters'.trData(context),
+                      Icons.stars_outlined,
                     ),
                   ],
                 ),
@@ -3876,17 +4191,98 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               fontWeight: FontWeight.w500,
             ),
           ),
+          const SizedBox(height: 6),
+
+          // Live Schedule & Timing Badge
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: entity.isCurrentlyOpen
+                      ? const Color(0xFFE8F8F0)
+                      : const Color(0xFFFEE2E2),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: entity.isCurrentlyOpen
+                        ? const Color(0xFF10B981)
+                        : const Color(0xFFEF4444),
+                    width: 0.8,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      entity.isCurrentlyOpen
+                          ? Icons.access_time_filled
+                          : Icons.access_time,
+                      size: 11,
+                      color: entity.isCurrentlyOpen
+                          ? const Color(0xFF059669)
+                          : const Color(0xFFDC2626),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      entity.liveTimingText,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: entity.isCurrentlyOpen
+                            ? const Color(0xFF059669)
+                            : const Color(0xFFDC2626),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (entity.openHour != null && entity.closeHour != null)
+                Text(
+                  '${entity.openHour.toString().padLeft(2, '0')}:${(entity.openMinute ?? 0).toString().padLeft(2, '0')} - ${entity.closeHour.toString().padLeft(2, '0')}:${(entity.closeMinute ?? 0).toString().padLeft(2, '0')}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+            ],
+          ),
           const SizedBox(height: 10),
 
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '${entity.rating} ★ · ${entity.reviewCount} ${'reviews'.trData(context)}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF64748B),
-                  fontWeight: FontWeight.w500,
+              InkWell(
+                onTap: () {
+                  final url =
+                      entity.googleMapsReviewsUrl ?? entity.directionsUrl;
+                  if (url.isNotEmpty) {
+                    ShareHelper.openUrl(url);
+                  }
+                },
+                borderRadius: BorderRadius.circular(4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.star_rounded,
+                      size: 14,
+                      color: Color(0xFFF59E0B),
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      '${entity.rating} ★ · ${entity.reviewCount} ${'reviews'.trData(context)} (Map rating)',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF64748B),
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               Row(
@@ -4516,7 +4912,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Sub-tab switcher: Categories vs Experience Levels vs Locations vs Listing Plans (No horizontal scrolling!)
+        // Sub-tab switcher: Categories vs Experience Levels vs Locations vs Listing Plans vs Bank & IBAN
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           decoration: BoxDecoration(
@@ -4526,7 +4922,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           ),
           child: LayoutBuilder(
             builder: (context, constraints) {
-              if (constraints.maxWidth >= 600) {
+              if (constraints.maxWidth >= 720) {
                 return Row(
                   children: [
                     Expanded(
@@ -4562,6 +4958,14 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         icon: Icons.list_alt_rounded,
                         label:
                             '${'Listing Plans'.trData(context)} (${_listingPlans.length})',
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: _buildMasterSubTabItem(
+                        index: 4,
+                        icon: Icons.account_balance_rounded,
+                        label: 'Bank & IBAN'.trData(context),
                       ),
                     ),
                   ],
@@ -4613,6 +5017,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 4),
+                    _buildMasterSubTabItem(
+                      index: 4,
+                      icon: Icons.account_balance_rounded,
+                      label: 'Bank & IBAN'.trData(context),
+                    ),
                   ],
                 );
               }
@@ -4638,16 +5048,43 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       .trData(context)
                   : _masterSubTab == 2
                   ? '${_locations.length} locations configured'.trData(context)
-                  : '${_listingPlans.length} listing plans configured'.trData(
+                  : _masterSubTab == 3
+                  ? '${_listingPlans.length} listing plans configured'.trData(
                     context,
-                  ),
+                  )
+                  : 'Bank Transfer & IBAN Settings'.trData(context),
               style: const TextStyle(
                 fontSize: 13,
                 color: Color(0xFF64748B),
                 fontWeight: FontWeight.w600,
               ),
             ),
-            if (_masterSubTab != 3)
+            if (_masterSubTab == 4)
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6A2777),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                icon: const Icon(Icons.edit_rounded, size: 14, color: Colors.white),
+                label: Text(
+                  'Edit Bank & IBAN'.trData(context),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    color: Colors.white,
+                  ),
+                ),
+                onPressed: () => _showEditPaymentSettingsDialog(),
+              )
+            else if (_masterSubTab != 3)
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -4764,8 +5201,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           _buildExperienceLevelsMasterList()
         else if (_masterSubTab == 2)
           _buildLocationsMasterList()
+        else if (_masterSubTab == 3)
+          _buildListingPlansMasterList()
         else
-          _buildListingPlansMasterList(),
+          _buildPaymentSettingsMasterCard(),
       ],
     );
   }
@@ -6015,6 +6454,605 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     );
   }
 
+  Widget _buildPaymentSettingsMasterCard() {
+    final iban = _paymentSettings.accountNumber;
+    final bankName = _paymentSettings.bankName;
+    final accountName = _paymentSettings.accountName;
+    final instructions = _paymentSettings.instructions;
+    final qrUrl = _paymentSettings.qrCodeUrl;
+    final isActive = _paymentSettings.isActive;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF6A2777), Color(0xFF9333EA)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF6A2777).withValues(alpha: 0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.account_balance_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            bankName,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isActive
+                                ? const Color(0xFFECFDF5)
+                                : const Color(0xFFFEF2F2),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: isActive
+                                  ? const Color(0xFF10B981)
+                                  : const Color(0xFFEF4444),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isActive
+                                      ? const Color(0xFF10B981)
+                                      : const Color(0xFFEF4444),
+                                ),
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                (isActive ? 'Active' : 'Disabled').trData(context),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: isActive
+                                      ? const Color(0xFF059669)
+                                      : const Color(0xFFDC2626),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Official bank account for wire transfers, plan payments, and billing'
+                          .trData(context),
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6A2777),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  elevation: 0,
+                ),
+                icon: const Icon(Icons.edit_rounded, size: 15),
+                label: Text(
+                  'Edit Details'.trData(context),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12.5,
+                  ),
+                ),
+                onPressed: () => _showEditPaymentSettingsDialog(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          const SizedBox(height: 20),
+
+          // Cards Grid
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth >= 600;
+              final col1 = [
+                _buildPaymentInfoTile(
+                  icon: Icons.person_outline_rounded,
+                  title: 'Account Title / Beneficiary'.trData(context),
+                  value: accountName,
+                  canCopy: true,
+                ),
+                const SizedBox(height: 12),
+                _buildPaymentInfoTile(
+                  icon: Icons.account_balance_wallet_outlined,
+                  title: 'Account IBAN'.trData(context),
+                  value: iban,
+                  canCopy: true,
+                  isMonospace: true,
+                  highlight: true,
+                ),
+                const SizedBox(height: 12),
+                _buildPaymentInfoTile(
+                  icon: Icons.info_outline_rounded,
+                  title: 'Transfer Remarks & Instructions'.trData(context),
+                  value: instructions,
+                ),
+              ];
+
+              final col2 = Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.qr_code_2_rounded,
+                          size: 18,
+                          color: Color(0xFF6A2777),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Payment QR Code'.trData(context),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1E293B),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (qrUrl.isNotEmpty)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          color: Colors.white,
+                          padding: const EdgeInsets.all(8),
+                          child: Image.network(
+                            qrUrl,
+                            width: 160,
+                            height: 160,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => Container(
+                              width: 160,
+                              height: 160,
+                              color: const Color(0xFFF1F5F9),
+                              alignment: Alignment.center,
+                              child: const Icon(
+                                Icons.broken_image_outlined,
+                                color: Color(0xFF94A3B8),
+                                size: 36,
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      Container(
+                        width: 160,
+                        height: 160,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          'No QR Code URL'.trData(context),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Scan to pay directly via UAE mobile banking'
+                          .trData(context),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+
+              if (isWide) {
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: col1,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(flex: 2, child: col2),
+                  ],
+                );
+              } else {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ...col1,
+                    const SizedBox(height: 16),
+                    col2,
+                  ],
+                );
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentInfoTile({
+    required IconData icon,
+    required String title,
+    required String value,
+    bool canCopy = false,
+    bool isMonospace = false,
+    bool highlight = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: highlight
+            ? const Color(0xFFF3E8FF).withValues(alpha: 0.35)
+            : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: highlight ? const Color(0xFFD8B4FE) : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: highlight ? const Color(0xFF6A2777) : const Color(0xFF64748B),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+                const SizedBox(height: 3),
+                SelectableText(
+                  value.isNotEmpty ? value : '—',
+                  style: TextStyle(
+                    fontSize: isMonospace ? 13.5 : 13,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: isMonospace ? 'monospace' : null,
+                    color: const Color(0xFF0F172A),
+                    letterSpacing: isMonospace ? 0.8 : 0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (canCopy && value.isNotEmpty) ...[
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.copy_rounded, size: 16),
+              tooltip: 'Copy'.trData(context),
+              color: const Color(0xFF6A2777),
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: value.replaceAll(' ', '')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('$title ${'copied to clipboard!'.trData(context)}'),
+                    backgroundColor: const Color(0xFF6A2777),
+                    behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showEditPaymentSettingsDialog() {
+    final bankCtrl = TextEditingController(text: _paymentSettings.bankName);
+    final accountCtrl = TextEditingController(text: _paymentSettings.accountName);
+    final ibanCtrl = TextEditingController(text: _paymentSettings.accountNumber);
+    final instructionsCtrl = TextEditingController(text: _paymentSettings.instructions);
+    final qrCtrl = TextEditingController(text: _paymentSettings.qrCodeUrl);
+    bool active = _paymentSettings.isActive;
+    bool isSaving = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Dialog(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 520),
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF3E8FF),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.account_balance_rounded,
+                                color: Color(0xFF6A2777),
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Edit Payment Settings'.trData(context),
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF0F172A),
+                              ),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          icon: const Icon(Icons.close, size: 20),
+                          color: const Color(0xFF64748B),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    _buildDialogTextField(
+                      controller: bankCtrl,
+                      hint: 'Bank Name (e.g. Wio Bank)',
+                      icon: Icons.business_rounded,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDialogTextField(
+                      controller: accountCtrl,
+                      hint: 'Account Title / Beneficiary (e.g. Nizar Fahem)',
+                      icon: Icons.person_rounded,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDialogTextField(
+                      controller: ibanCtrl,
+                      hint: 'Account IBAN (e.g. AE180860000006695992002)',
+                      icon: Icons.credit_card_rounded,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDialogTextField(
+                      controller: instructionsCtrl,
+                      hint: 'Instructions for user when transferring',
+                      icon: Icons.notes_rounded,
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDialogTextField(
+                      controller: qrCtrl,
+                      hint: 'QR Code Image URL (optional)',
+                      icon: Icons.qr_code_rounded,
+                    ),
+                    const SizedBox(height: 12),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        'Enable Bank Transfer'.trData(context),
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1E293B),
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Show this bank and IBAN to clients for direct transfers'.trData(context),
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                      value: active,
+                      activeThumbColor: const Color(0xFF6A2777),
+                      onChanged: (val) => setModalState(() => active = val),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: Text('Cancel'.trData(context)),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF6A2777),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 10,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: isSaving
+                              ? null
+                              : () async {
+                                  final bank = bankCtrl.text.trim();
+                                  final account = accountCtrl.text.trim();
+                                  final iban = ibanCtrl.text.trim();
+                                  final instructions = instructionsCtrl.text.trim();
+                                  String qr = qrCtrl.text.trim();
+                                  if (qr.isEmpty && iban.isNotEmpty) {
+                                    final cleanIban = iban.replaceAll(' ', '');
+                                    final encodedName = Uri.encodeComponent(account);
+                                    qr = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=iban%3A$cleanIban%26name%3D$encodedName';
+                                  }
+
+                                  setModalState(() => isSaving = true);
+                                  final messenger = ScaffoldMessenger.of(context);
+                                  final successMsg = 'Bank details & IBAN updated successfully!'.trData(context);
+                                  final failMsg = 'Failed to update payment settings.'.trData(context);
+                                  Navigator.pop(ctx);
+
+                                  final success = await sl<ApiService>().updatePaymentSettings(
+                                    bankName: bank,
+                                    accountName: account,
+                                    accountNumber: iban,
+                                    instructions: instructions,
+                                    qrCodeUrl: qr,
+                                    isActive: active,
+                                  );
+
+                                  if (!mounted) return;
+                                  if (success) {
+                                    final updated = await sl<ApiService>().getPaymentSettings(forceRefresh: true);
+                                    if (mounted) {
+                                      setState(() => _paymentSettings = updated);
+                                      messenger.showSnackBar(
+                                        SnackBar(
+                                          content: Text(successMsg),
+                                          backgroundColor: const Color(0xFF059669),
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    }
+                                  } else {
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(failMsg),
+                                        backgroundColor: Colors.redAccent,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                },
+                          child: isSaving
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text('Save Changes'.trData(context)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   // ignore: unused_element
   Widget _buildPublishingPricingMasterList() {
     final pricingList =
@@ -6729,7 +7767,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Listing Price',
+                          Text('Listing Price'.trData(context),
                               style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -6743,7 +7781,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    const Text('Included Features:',
+                    Text('Included Features:'.trData(context),
                         style: TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w700,
@@ -6788,7 +7826,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Listing Price',
+                        Text('Listing Price'.trData(context),
                             style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
@@ -6807,7 +7845,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Included Features:',
+                        Text('Included Features:'.trData(context),
                             style: TextStyle(
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w700,
@@ -6920,7 +7958,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
                     icon: const Icon(Icons.edit_note_rounded, size: 16, color: Colors.white),
-                    label: const Text('Edit Plan',
+                    label: Text('Edit Plan'.trData(context),
                         style: TextStyle(
                             fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
                     onPressed: () => _showEditListingPlanDialog(plan),
@@ -7006,7 +8044,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text('Cancel'),
+                child: Text('Cancel'.trData(context)),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -10248,10 +11286,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     required IconData icon,
     bool isBold = false,
     bool autofocus = false,
+    int maxLines = 1,
   }) {
     return TextField(
       controller: controller,
       autofocus: autofocus,
+      maxLines: maxLines,
       style: TextStyle(
         fontSize: 13.5,
         fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
@@ -11789,13 +12829,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     final String userName = (user['full_name'] ?? 'User').toString();
     final String currentPlan = (user['chat_plan'] ?? 'Basic (Free)').toString();
 
-    // 1. Build catalog of all pre-configured plans from Admin Masters (_listingPlans) merged with baseline plans
+    // 1. Build catalog of all pre-configured plans from Admin Masters (_listingPlans)
     final allListingPlans = List<ListingPlanItem>.from(_listingPlans);
-    for (final bp in ListingPlanItem.defaultBaselinePlans) {
-      if (!allListingPlans.any((p) => p.title.toLowerCase().trim() == bp.title.toLowerCase().trim())) {
-        allListingPlans.add(bp);
-      }
-    }
 
     String resolvePlanTypeFromItem(ListingPlanItem item) {
       final t = item.itemType.toLowerCase().trim();
@@ -14439,17 +15474,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   _buildDrawerSectionLabel(context, 'PLATFORM & USERS'),
                   _buildDrawerItem(
                     context,
-                    icon: Icons.tune_rounded,
-                    title: 'Masters & Categories'.trData(context),
-                    count: '${_categories.length + _experienceLevels.length}',
-                    isSelected: _selectedTab == AdminTab.masters,
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      setState(() => _selectedTab = AdminTab.masters);
-                    },
-                  ),
-                  _buildDrawerItem(
-                    context,
                     icon: Icons.shield_outlined,
                     title: 'Menu Permissions'.trData(context),
                     count: '$_activeMenuCount Active',
@@ -14479,6 +15503,17 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     onTap: () {
                       Navigator.of(context).pop();
                       setState(() => _selectedTab = AdminTab.aboutUs);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.tune_rounded,
+                    title: 'Masters & Categories'.trData(context),
+                    count: '${_categories.length + _experienceLevels.length}',
+                    isSelected: _selectedTab == AdminTab.masters,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      setState(() => _selectedTab = AdminTab.masters);
                     },
                   ),
                   _buildDrawerItem(

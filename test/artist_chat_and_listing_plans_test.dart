@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:artist_dubai/core/di/injection_container.dart';
 import 'package:artist_dubai/core/network/api_client.dart';
 import 'package:artist_dubai/core/services/locale_provider.dart';
+import 'package:artist_dubai/core/services/api_service.dart';
 import 'package:artist_dubai/features/chat/data/chat_service.dart';
 import 'package:artist_dubai/features/chat/domain/models/artist_message_model.dart';
 import 'package:artist_dubai/features/chat/presentation/views/artist_chat_view.dart';
@@ -26,6 +27,107 @@ class MockChatApiClient implements ApiClient {
     Options? options,
     CancelToken? cancelToken,
   }) async {
+    if (path.contains('listing_plans')) {
+      return Response(
+        requestOptions: RequestOptions(path: path),
+        data: {
+          'status': 'success',
+          'data': [
+            {
+              'id': 1,
+              'item_type': 'event',
+              'title': 'Event Listing',
+              'category': 'Exhibitions & Events',
+              'badge': 'Popular',
+              'price': 'AED 199',
+              'description': 'Publish your event',
+              'features_json': '["Event calendar","Ticket links"]',
+              'button_text': 'Publish Event',
+              'is_active': 1,
+              'sort_order': 1,
+              'duration': '30 Days',
+              'duration_days': 30,
+            },
+            {
+              'id': 2,
+              'item_type': 'gallery',
+              'title': 'Gallery Listing',
+              'category': 'Art Galleries',
+              'badge': 'Recommended',
+              'price': 'AED 149',
+              'description': 'Gallery showcase',
+              'features_json': '["Curated maps"]',
+              'button_text': 'Register Gallery',
+              'is_active': 1,
+              'sort_order': 2,
+              'duration': '1 Year',
+              'duration_days': 365,
+            },
+            {
+              'id': 3,
+              'item_type': 'art_centre',
+              'title': 'Art Centre Listing',
+              'category': 'Cultural Institutions',
+              'badge': 'Premium',
+              'price': 'AED 299',
+              'description': 'Art Centre pass',
+              'features_json': '["Institutional spotlight"]',
+              'button_text': 'Showcase Centre',
+              'is_active': 1,
+              'sort_order': 3,
+              'duration': '1 Year',
+              'duration_days': 365,
+            },
+            {
+              'id': 4,
+              'item_type': 'chat',
+              'title': 'Starter Plan',
+              'category': 'Messaging',
+              'badge': 'Basic',
+              'price': 'Free',
+              'description': '10 messages per month',
+              'features_json': '["10 direct artist messages per month"]',
+              'button_text': 'Current Plan',
+              'is_active': 1,
+              'sort_order': 1,
+              'duration': 'Monthly Reset',
+              'duration_days': 30,
+            },
+            {
+              'id': 5,
+              'item_type': 'chat',
+              'title': 'Pro Artist',
+              'category': 'Messaging',
+              'badge': 'Popular',
+              'price': 'AED 35',
+              'description': '100 direct artist messages per month',
+              'features_json': '["100 messages/month"]',
+              'button_text': 'Upgrade to Pro',
+              'is_active': 1,
+              'sort_order': 2,
+              'duration': 'Monthly',
+              'duration_days': 30,
+            },
+            {
+              'id': 6,
+              'item_type': 'chat',
+              'title': 'Unlimited VIP',
+              'category': 'Messaging',
+              'badge': 'VIP',
+              'price': 'AED 49',
+              'description': 'Unlimited direct messages',
+              'features_json': '["Unlimited messages"]',
+              'button_text': 'Upgrade to VIP',
+              'is_active': 1,
+              'sort_order': 3,
+              'duration': 'Monthly',
+              'duration_days': 30,
+            },
+          ],
+        },
+        statusCode: 200,
+      );
+    }
     return Response(
       requestOptions: RequestOptions(path: path),
       data: {'status': 'success', 'data': []},
@@ -110,6 +212,10 @@ void main() {
       sl.unregister<ApiClient>();
     }
     sl.registerSingleton<ApiClient>(MockChatApiClient());
+    if (sl.isRegistered<ApiService>()) {
+      sl.unregister<ApiService>();
+    }
+    sl.registerSingleton<ApiService>(ApiService(sl<ApiClient>()));
   });
 
   Widget buildTestHost(Widget child, {Locale locale = const Locale('en')}) {
@@ -242,7 +348,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(buildTestHost(const ListingPlansView()));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(find.text('LISTING PLANS'), findsOneWidget);
       expect(find.text('Event Listing'), findsOneWidget);
@@ -251,7 +357,7 @@ void main() {
       expect(find.text('AED 149'), findsOneWidget);
       expect(find.text('Art Centre Listing'), findsOneWidget);
       expect(find.text('AED 299'), findsOneWidget);
-      expect(find.text('Hosted by Nizar Fahem'), findsOneWidget);
+      expect(find.text('Hosted by Nizar Al Fahem'), findsOneWidget);
     });
   });
 
@@ -318,8 +424,7 @@ void main() {
 
         // Tap Plans button
         await tester.tap(find.text('Plans'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
 
         // Modal is open
         expect(find.text('Chat Allowance Plans'), findsOneWidget);

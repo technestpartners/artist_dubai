@@ -17,9 +17,8 @@ export '../../domain/models/listing_plan_model.dart';
 class ListingPlansView extends StatefulWidget {
   const ListingPlansView({super.key});
 
-  /// Default baseline plans for fallback and offline tests
-  static const List<ListingPlanItem> plans =
-      ListingPlanItem.defaultBaselinePlans;
+  /// Plans list
+  static const List<ListingPlanItem> plans = <ListingPlanItem>[];
 
   @override
   State<ListingPlansView> createState() => _ListingPlansViewState();
@@ -374,10 +373,10 @@ class _ListingPlansViewState extends State<ListingPlansView> {
 
                         const SizedBox(height: 20),
 
-                        // Footer "Hosted by Nizar Fahem"
+                        // Footer "Hosted by Nizar Al Fahem"
                         Center(
                           child: Text(
-                            'Hosted by Nizar Fahem'.trData(context),
+                            'Hosted by Nizar Al Fahem'.trData(context),
                             style: const TextStyle(
                               color: Color(0xFFD4BEE4),
                               fontSize: 12.5,

@@ -10,6 +10,7 @@ import '../../domain/models/government_entity.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
 import '../../../../core/utils/data_translator.dart';
 import '../../../../core/utils/share_helper.dart';
+import 'package:artist_dubai/features/home/presentation/widgets/home_footer_widget.dart';
 
 class GovernmentPortalView extends StatefulWidget {
   const GovernmentPortalView({super.key});
@@ -23,6 +24,7 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
   List<GovernmentEntity> _entities = sl<ApiService>().cachedGovEntities ?? [];
   bool _isLoading = true;
   StreamSubscription<List<GovernmentEntity>>? _govSub;
+  Timer? _timingClockTimer;
 
   @override
   void initState() {
@@ -42,6 +44,11 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
       }
     });
 
+    // Auto-update real-time schedule open/close status every 30 seconds
+    _timingClockTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() {});
+    });
+
     DataTranslator.translationNotifier.addListener(_onTranslationChanged);
   }
 
@@ -52,6 +59,7 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
   @override
   void dispose() {
     DataTranslator.translationNotifier.removeListener(_onTranslationChanged);
+    _timingClockTimer?.cancel();
     _searchController.dispose();
     _govSub?.cancel();
     super.dispose();
@@ -121,13 +129,17 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
       final name = e.name.toLowerCase();
       final category = e.category.toLowerCase();
       final loc = e.location.toLowerCase();
-      final timing = e.defaultTiming.toLowerCase();
+      final liveTiming = e.liveTimingText.toLowerCase();
+      final defaultTiming = e.defaultTiming.toLowerCase();
       final notice = (e.seasonalNotice ?? '').toLowerCase();
+      final statusWord = e.isCurrentlyOpen ? 'open' : 'closed';
       return name.contains(query) ||
           category.contains(query) ||
           loc.contains(query) ||
-          timing.contains(query) ||
-          notice.contains(query);
+          liveTiming.contains(query) ||
+          defaultTiming.contains(query) ||
+          notice.contains(query) ||
+          statusWord.contains(query);
     }).toList();
   }
 
@@ -341,6 +353,8 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
                       (entity) => _buildEntityCard(context, entity),
                     ),
                   const SizedBox(height: 16),
+                  const HomeFooterWidget(),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
@@ -419,25 +433,51 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
           ),
           const SizedBox(height: 8),
 
-          // Rating, Stars, Reviews & Category Row
+          // Rating, Stars, Reviews & Category Row (Tappable to view Google Maps reviews)
           Row(
             children: [
-              Text(
-                entity.rating.toString(),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1E1E1E),
+              InkWell(
+                onTap: () {
+                  final reviewsUrl =
+                      entity.googleMapsReviewsUrl ?? entity.directionsUrl;
+                  _launchExternalUrl(context, reviewsUrl);
+                },
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        entity.rating.toStringAsFixed(1),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1E1E1E),
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      _buildRatingStars(entity.rating),
+                      const SizedBox(width: 5),
+                      Text(
+                        '(${entity.reviewCount})',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF64748B),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 3),
+                      const Icon(
+                        Icons.open_in_new,
+                        size: 11,
+                        color: Color(0xFF94A3B8),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(width: 5),
-              _buildRatingStars(entity.rating),
-              const SizedBox(width: 5),
-              Text(
-                '(${entity.reviewCount})',
-                style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-              ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 6),
               const Text(
                 '·',
                 style: TextStyle(
@@ -446,7 +486,7 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
                   color: Color(0xFF64748B),
                 ),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   entity.localizedCategory(context),

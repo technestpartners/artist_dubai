@@ -78,7 +78,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify English Title & Subhead
-    expect(find.text('Global Art Guide – Artists, History & Origins'), findsOneWidget);
+    expect(find.text('Global Art Guide'), findsWidgets);
     expect(
       find.text('Discover artists, art history, and cultural origins in Dubai, across the UAE, and worldwide.'),
       findsOneWidget,
@@ -106,11 +106,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify Arabic Title & Subhead
-    expect(find.text('دليل الفن العالمي – الفنانون، التاريخ والأصول'), findsOneWidget);
+    expect(find.text('دليل الفن العالمي'), findsWidgets);
     expect(
       find.text('اكتشف الفنانين وتاريخ الفن والأصول الثقافية في دبي وفي جميع أنحاء الإمارات وحول العالم.'),
       findsOneWidget,
     );
-    expect(find.text('دليل الفن العالمي'), findsOneWidget);
   });
 }

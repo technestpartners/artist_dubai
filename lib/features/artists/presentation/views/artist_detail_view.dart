@@ -21,6 +21,7 @@ import '../../../../core/utils/share_helper.dart';
 import '../../../../core/utils/ui_helpers.dart';
 import '../../domain/models/artist_model.dart';
 import 'create_artist_profile_view.dart';
+import 'package:artist_dubai/features/home/presentation/widgets/home_footer_widget.dart';
 
 class ArtistDetailView extends StatefulWidget {
   final ArtistModel? artist;
@@ -2862,7 +2863,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
+                        const HomeFooterWidget(),
+                        const SizedBox(height: 16),
                       ],
                     ),
                   ),

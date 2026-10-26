@@ -12,6 +12,7 @@ import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/utils/share_helper.dart';
 import '../../../../core/utils/data_translator.dart';
 import '../../domain/models/art_event_model.dart';
+import 'package:artist_dubai/features/home/presentation/widgets/home_footer_widget.dart';
 
 class EventDetailView extends StatefulWidget {
   final ArtEventModel? event;
@@ -445,6 +446,9 @@ class _EventDetailViewState extends State<EventDetailView> {
                       },
                     ),
                   ),
+                  const SizedBox(height: 24),
+                  const HomeFooterWidget(),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),

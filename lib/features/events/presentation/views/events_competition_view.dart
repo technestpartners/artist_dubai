@@ -287,7 +287,7 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                     const SizedBox(height: 36),
                     Center(
                       child: Text(
-                        'Hosted by Nizar Fahem'.trData(context),
+                        'Hosted by Nizar Al Fahem'.trData(context),
                         style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 13.5,
@@ -300,7 +300,7 @@ class _EventsCompetitionViewState extends State<EventsCompetitionView> {
                     const SizedBox(height: 24),
                     Center(
                       child: Text(
-                        'Hosted by Nizar Fahem'.trData(context),
+                        'Hosted by Nizar Al Fahem'.trData(context),
                         style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 13.5,

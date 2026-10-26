@@ -473,7 +473,7 @@ abstract class AppLocalizations {
   /// No description provided for @hostedBy.
   ///
   /// In en, this message translates to:
-  /// **'Hosted by Nizar Fahem'**
+  /// **'Hosted by Nizar Al Fahem'**
   String get hostedBy;
 
   /// No description provided for @aboutUs.
@@ -2257,6 +2257,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'End-to-end 256-bit encrypted. Card details are processed securely by Stripe and are never stored on our servers.'**
   String get stripeSecurityNote;
+
+  /// Label showing the artist name on an artwork card
+  ///
+  /// In en, this message translates to:
+  /// **'By {artist}'**
+  String byArtist(String artist);
 }
 
 class _AppLocalizationsDelegate

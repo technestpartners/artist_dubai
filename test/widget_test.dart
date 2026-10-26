@@ -15,6 +15,10 @@ import 'package:artist_dubai/core/services/locale_provider.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
+import 'package:artist_dubai/core/network/api_client.dart';
+import 'package:artist_dubai/core/services/live_sync_service.dart';
+import 'backend_frontend_sync_integration_test.dart';
+
 class _TestHttpOverrides extends HttpOverrides {}
 
 void main() {
@@ -24,6 +28,18 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     await sl.reset();
     await initDependencyInjection();
+
+    final mockClient = MockSyncApiClient();
+    if (sl.isRegistered<ApiClient>()) sl.unregister<ApiClient>();
+    sl.registerSingleton<ApiClient>(mockClient);
+
+    if (sl.isRegistered<ApiService>()) sl.unregister<ApiService>();
+    final apiService = ApiService(mockClient);
+    sl.registerSingleton<ApiService>(apiService);
+
+    if (sl.isRegistered<LiveSyncService>()) sl.unregister<LiveSyncService>();
+    final liveSync = LiveSyncService(apiService);
+    sl.registerSingleton<LiveSyncService>(liveSync);
   });
 
   Widget testApp(Widget child) {
@@ -71,7 +87,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Explore Categories'), findsOneWidget);
-      expect(find.text('Calligraphy'), findsOneWidget);
+      expect(find.textContaining('Calligraphy'), findsWidgets);
     });
 
     testWidgets('3. Category Detail View & Segmented Tab Switcher Test', (

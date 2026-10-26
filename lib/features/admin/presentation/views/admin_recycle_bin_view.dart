@@ -689,7 +689,7 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
                     ElevatedButton.icon(
                       onPressed: _loadTrash,
                       icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Retry'),
+                      label: Text('Retry'.trData(context)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _purple,
                         foregroundColor: Colors.white,
@@ -893,7 +893,7 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
                     ),
                     onPressed: () => _confirmRestore(item),
                     icon: const Icon(Icons.restore_rounded, size: 14),
-                    label: const Text('Restore'),
+                    label: Text('Restore'.trData(context)),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -915,7 +915,7 @@ class _AdminRecycleBinViewState extends State<AdminRecycleBinView>
                     ),
                     onPressed: () => _confirmPermanentDelete(item),
                     icon: const Icon(Icons.delete_forever_rounded, size: 14),
-                    label: const Text('Delete'),
+                    label: Text('Delete'.trData(context)),
                   ),
                 ),
               ],

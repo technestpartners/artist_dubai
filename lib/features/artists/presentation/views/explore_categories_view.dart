@@ -13,6 +13,7 @@ import '../../domain/models/artist_model.dart';
 import '../../../../core/utils/data_translator.dart';
 import 'category_detail_view.dart';
 import '../../../../core/utils/responsive_helper.dart';
+import 'package:artist_dubai/features/home/presentation/widgets/home_footer_widget.dart';
 
 class ExploreCategoriesView extends StatefulWidget {
   const ExploreCategoriesView({super.key});
@@ -26,7 +27,7 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
       (sl<ApiService>().cachedCategories != null &&
               sl<ApiService>().cachedCategories!.isNotEmpty)
           ? sl<ApiService>().cachedCategories!
-          : ArtistModel.categoryList;
+          : const <CategoryInfo>[];
   List<ArtistModel> _allArtists = sl<ApiService>().cachedArtists ?? [];
   bool _isLoading = false;
   StreamSubscription<List<CategoryInfo>>? _catSub;
@@ -396,7 +397,9 @@ class _ExploreCategoriesViewState extends State<ExploreCategoriesView> {
                             );
                           },
                         ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
+                      const HomeFooterWidget(),
+                      const SizedBox(height: 16),
                     ],
                   ),
                 ),

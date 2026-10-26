@@ -291,14 +291,14 @@ class _ArtistChatViewState extends State<ArtistChatView> {
 
   void _initChatPlans() {
     final cached = sl<ApiService>().cachedListingPlans;
-    if (cached != null && cached.isNotEmpty) {
+    if (cached != null) {
       _chatPlans = _filterChatPlans(cached);
     } else {
-      _chatPlans = _filterChatPlans(ListingPlanItem.defaultBaselinePlans);
+      _chatPlans = [];
     }
 
     sl<ApiService>().getListingPlans().then((plans) {
-      if (mounted && plans.isNotEmpty) {
+      if (mounted) {
         setState(() {
           _chatPlans = _filterChatPlans(plans);
         });
@@ -307,7 +307,7 @@ class _ArtistChatViewState extends State<ArtistChatView> {
 
     try {
       _plansSub = sl<LiveSyncService>().listingPlansStream.listen((updated) {
-        if (mounted && updated.isNotEmpty) {
+        if (mounted) {
           setState(() {
             _chatPlans = _filterChatPlans(updated);
           });
@@ -344,81 +344,6 @@ class _ArtistChatViewState extends State<ArtistChatView> {
           title.contains('unlimited vip') ||
           title.contains('allowance');
     }).toList();
-
-    if (list.isEmpty) {
-      return ListingPlanItem.defaultBaselinePlans
-          .where((p) => p.itemType == 'chat')
-          .toList();
-    }
-
-    // Ensure standard baseline tiers (Starter Free, Unlimited VIP) are present alongside admin-created plans
-    final hasFree = list.any((p) =>
-        p.price.toLowerCase() == 'free' ||
-        p.title.toLowerCase().contains('starter') ||
-        p.title.toLowerCase().contains('basic'));
-    if (!hasFree) {
-      final starter = ListingPlanItem.defaultBaselinePlans.firstWhere(
-        (p) =>
-            p.itemType == 'chat' &&
-            (p.price.toLowerCase() == 'free' ||
-                p.title.toLowerCase().contains('starter')),
-        orElse: () => const ListingPlanItem(
-          id: 4,
-          title: 'Starter Plan (Free)',
-          category: 'Messaging',
-          price: 'Free',
-          description:
-              '10 direct messages per month included for all registered artists',
-          features: [
-            '10 direct artist messages per month',
-            'Direct inbox messaging with other artists',
-            'Allowance auto-resets on the 1st',
-          ],
-          buttonText: 'Current Plan',
-          itemType: 'chat',
-          isActive: true,
-          sortOrder: 1,
-          duration: 'Monthly Reset',
-          durationDays: 30,
-        ),
-      );
-      list.insert(0, starter);
-    }
-
-    final hasUnlimited = list.any((p) =>
-        p.title.toLowerCase().contains('unlimited') ||
-        p.title.toLowerCase().contains('vip') ||
-        p.features.any((f) => f.toLowerCase().contains('unlimited')));
-    if (!hasUnlimited) {
-      final vip = ListingPlanItem.defaultBaselinePlans.firstWhere(
-        (p) =>
-            p.itemType == 'chat' &&
-            (p.title.toLowerCase().contains('vip') ||
-                p.title.toLowerCase().contains('unlimited')),
-        orElse: () => const ListingPlanItem(
-          id: 6,
-          title: 'Unlimited VIP',
-          category: 'Messaging',
-          badge: 'For Agencies & Curators',
-          price: 'AED 99',
-          description:
-              'Unlimited direct artist messages with verified VIP sender badge',
-          features: [
-            'Unlimited direct artist messages',
-            'Verified VIP sender badge',
-            'Ideal for galleries, curators & agencies',
-            'Priority instant customer support',
-          ],
-          buttonText: 'Upgrade to VIP',
-          itemType: 'chat',
-          isActive: true,
-          sortOrder: 99,
-          duration: 'Monthly Subscription',
-          durationDays: 30,
-        ),
-      );
-      list.add(vip);
-    }
 
     list.sort((a, b) {
       if (a.sortOrder != b.sortOrder) return a.sortOrder.compareTo(b.sortOrder);
@@ -1723,8 +1648,7 @@ class _ArtistChatViewState extends State<ArtistChatView> {
             final plans = _chatPlans.isNotEmpty
                 ? _chatPlans
                 : _filterChatPlans(
-                    sl<ApiService>().cachedListingPlans ??
-                        ListingPlanItem.defaultBaselinePlans,
+                    sl<ApiService>().cachedListingPlans ?? const [],
                   );
 
             return Container(
@@ -1807,14 +1731,29 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                       padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
                       child: Column(
                         children: [
-                          for (int i = 0; i < plans.length; i++) ...[
-                            if (i > 0) const SizedBox(height: 14),
-                            _buildDynamicPlanTierCard(
-                              context: modalCtx,
-                              plan: plans[i],
-                              sheetCtx: sheetCtx,
-                            ),
-                          ],
+                          if (plans.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 30),
+                              child: Center(
+                                child: Text(
+                                  'No chat plans currently configured by administrator.'
+                                      .trData(modalCtx),
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                              ),
+                            )
+                          else
+                            for (int i = 0; i < plans.length; i++) ...[
+                              if (i > 0) const SizedBox(height: 14),
+                              _buildDynamicPlanTierCard(
+                                context: modalCtx,
+                                plan: plans[i],
+                                sheetCtx: sheetCtx,
+                              ),
+                            ],
                           const SizedBox(height: 20),
                           InkWell(
                             onTap: () {
@@ -1910,7 +1849,7 @@ class _ArtistChatViewState extends State<ArtistChatView> {
     final combined =
         '${plan.title} ${plan.description} ${plan.features.join(' ')}'
             .toLowerCase();
-    if (combined.contains('unlimited') || plan.price.contains('99')) {
+    if (combined.contains('unlimited') || plan.price.contains('99') || plan.price.contains('500') || combined.contains('500')) {
       return 9999;
     }
     final match = RegExp(
@@ -2599,7 +2538,7 @@ class _ArtistChatViewState extends State<ArtistChatView> {
 
                       Center(
                         child: Text(
-                          'Hosted by Nizar Fahem'.trData(context),
+                          'Hosted by Nizar Al Fahem'.trData(context),
                           style: const TextStyle(
                             color: Color(0xFFD4BEE4),
                             fontSize: 12.5,

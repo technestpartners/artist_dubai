@@ -14,6 +14,7 @@ import '../../../../core/services/stripe_payment_service.dart';
 import '../../../../core/services/event_draft_service.dart';
 import '../../../../core/utils/data_translator.dart';
 import '../../../../core/utils/responsive_helper.dart';
+import 'package:artist_dubai/features/home/presentation/widgets/home_footer_widget.dart';
 
 /// Standalone Direct Stripe Checkout Screen for Event and Gallery Publishing Plans.
 /// Renders direct, in-app Stripe payment UI consistent with the app's luxury design:
@@ -72,15 +73,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
         return parsed;
       }
     } catch (_) {}
-    // Fallback: log a warning so this is never silent in debug builds
-    assert(() {
-      debugPrint(
-        '[PlanPaymentView] WARNING: Could not parse plan amount "$_planAmount". '
-        'Falling back to 350.0 AED. This must be investigated before release.',
-      );
-      return true;
-    }());
-    return 350.0;
+    return 0.0;
   }
 
   set _baseAedAmount(double val) {
@@ -262,16 +255,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
             ? (widget.args['planAmount'] ?? widget.args['amount'])
                 .toString()
                 .trim()
-            : (_itemType == 'gallery'
-                ? (_planId == 'yearly'
-                    ? 'AED 6,500'
-                    : (_planId == 'monthly' ? 'AED 750' : 'AED 3,800'))
-                : (_planId == 'yearly'
-                    ? 'AED 4,500'
-                    : (_planId == 'monthly' ? 'AED 500' : 'AED 2,500')));
+            : 'AED 0';
 
     final cleaned = _planAmount.replaceAll(RegExp(r'[^0-9.]'), '');
-    _baseAedAmount = double.tryParse(cleaned) ?? 350.0;
+    _baseAedAmount = double.tryParse(cleaned) ?? 0.0;
 
     if (_isPlanPurchase) {
       _title = _planName;
@@ -295,7 +282,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
 
   String get _displayAedString {
     final amt = _baseAedAmount;
-    return 'AED ${(amt.isFinite ? amt : 350.0).toStringAsFixed(2)}';
+    return 'AED ${(amt.isFinite ? amt : 0.0).toStringAsFixed(2)}';
   }
 
   String get _currentPayAmountLabel => _displayAedString;
@@ -938,7 +925,9 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
 
                     // Security & Guarantee Badges
                     _buildTrustFooter(),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 16),
+                    const HomeFooterWidget(),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -1169,14 +1158,14 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF0F172A),
               ),
-              decoration: const InputDecoration(
-                hintText: 'Enter your email',
+              decoration: InputDecoration(
+                hintText: 'Enter your email'.trData(context),
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
               ),
               validator: (v) {
                 if (v == null || v.trim().isEmpty || !v.contains('@')) {
-                  return 'Please enter a valid email address';
+                  return 'Please enter a valid email address'.trData(context);
                 }
                 return null;
               },
@@ -1315,7 +1304,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                       ),
                       validator: (v) {
                         if (v == null || v.trim().isEmpty) {
-                          return 'Enter card number';
+                          return 'Enter card number'.trData(context);
                         }
                         return null;
                       },
@@ -1347,7 +1336,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                               ),
                             ),
                             validator: (v) {
-                              if (v == null || v.trim().isEmpty) return 'Expiry required';
+                              if (v == null || v.trim().isEmpty) return 'Expiry required'.trData(context);
                               return null;
                             },
                           ),
@@ -1387,7 +1376,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                               ),
                             ),
                             validator: (v) {
-                              if (v == null || v.trim().isEmpty) return 'CVC required';
+                              if (v == null || v.trim().isEmpty) return 'CVC required'.trData(context);
                               return null;
                             },
                           ),
@@ -1419,7 +1408,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                   color: Color(0xFF0F172A),
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Full name on card',
+                  hintText: 'Full name on card'.trData(context),
                   hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
                   filled: true,
                   fillColor: const Color(0xFFF8FAFC),
@@ -1438,7 +1427,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                   ),
                 ),
                 validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'Enter cardholder name';
+                  if (v == null || v.trim().isEmpty) return 'Enter cardholder name'.trData(context);
                   return null;
                 },
               ),
@@ -1684,24 +1673,136 @@ class _CardNumberInputFormatter extends TextInputFormatter {
 }
 
 /// Custom formatter for MM/YY expiry date
-class _CardExpiryInputFormatter extends TextInputFormatter {
+class CardExpiryInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
     TextEditingValue oldValue,
     TextEditingValue newValue,
   ) {
-    var text = newValue.text.replaceAll('/', '').trim();
-    if (text.length > 4) text = text.substring(0, 4);
+    final oldText = oldValue.text;
+    final newText = newValue.text;
 
-    final buffer = StringBuffer();
-    for (int i = 0; i < text.length; i++) {
-      if (i == 2) buffer.write(' / ');
-      buffer.write(text[i]);
+    // 1. Handle backspace / deletion
+    if (newText.length < oldText.length) {
+      if (oldText.endsWith(' / ') && !newText.endsWith(' / ')) {
+        final digits = oldText.replaceAll(RegExp(r'[^0-9]'), '');
+        if (digits.length <= 2) {
+          return const TextEditingValue(
+            text: '',
+            selection: TextSelection.collapsed(offset: 0),
+          );
+        }
+      }
+
+      final digits = newText.replaceAll(RegExp(r'[^0-9]'), '');
+      if (digits.isEmpty) {
+        return const TextEditingValue(
+          text: '',
+          selection: TextSelection.collapsed(offset: 0),
+        );
+      }
+      if (digits.length == 1) {
+        return TextEditingValue(
+          text: digits,
+          selection: const TextSelection.collapsed(offset: 1),
+        );
+      }
+      if (digits.length == 2) {
+        final formatted = newText.endsWith(' / ') ? '$digits / ' : digits;
+        return TextEditingValue(
+          text: formatted,
+          selection: TextSelection.collapsed(offset: formatted.length),
+        );
+      }
+      final formatted = '${digits.substring(0, 2)} / ${digits.substring(2)}';
+      return TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
     }
-    final formatted = buffer.toString();
+
+    // 2. User explicitly typed '/' after a single digit (e.g. "6/" or "1/")
+    if (newText.endsWith('/') && !oldText.endsWith('/')) {
+      final digits = newText.replaceAll(RegExp(r'[^0-9]'), '');
+      if (digits.length == 1) {
+        final formatted = '0$digits / ';
+        return TextEditingValue(
+          text: formatted,
+          selection: TextSelection.collapsed(offset: formatted.length),
+        );
+      }
+    }
+
+    // 3. User typed or pasted characters
+    final rawDigits = newText.replaceAll(RegExp(r'[^0-9]'), '');
+    if (rawDigits.isEmpty) {
+      return const TextEditingValue(
+        text: '',
+        selection: TextSelection.collapsed(offset: 0),
+      );
+    }
+
+    // If only 1 digit was entered:
+    if (rawDigits.length == 1) {
+      final firstDigit = int.tryParse(rawDigits[0]) ?? 0;
+      // Months 2-9 can never be the start of a two-digit month (01-12)
+      // Automatically pad with '0' (e.g., '6' -> '06 / ')
+      if (firstDigit >= 2) {
+        final formatted = '0$firstDigit / ';
+        return TextEditingValue(
+          text: formatted,
+          selection: TextSelection.collapsed(offset: formatted.length),
+        );
+      }
+      return TextEditingValue(
+        text: rawDigits,
+        selection: const TextSelection.collapsed(offset: 1),
+      );
+    }
+
+    // If 2 or more digits entered:
+    String monthStr;
+    String yearStr = '';
+
+    final firstDigit = int.tryParse(rawDigits[0]) ?? 0;
+    if (firstDigit >= 2) {
+      monthStr = '0$firstDigit';
+      yearStr = rawDigits.substring(1);
+    } else {
+      final monthVal = int.tryParse(rawDigits.substring(0, 2)) ?? 1;
+      if (monthVal == 0) {
+        monthStr = '01';
+        yearStr = rawDigits.length > 2 ? rawDigits.substring(2) : '';
+      } else if (monthVal > 12) {
+        if (rawDigits[0] == '1' && int.parse(rawDigits[1]) >= 3) {
+          monthStr = '01';
+          yearStr = rawDigits.substring(1);
+        } else {
+          monthStr = '12';
+          yearStr = rawDigits.length > 2 ? rawDigits.substring(2) : '';
+        }
+      } else {
+        monthStr = rawDigits.substring(0, 2);
+        yearStr = rawDigits.length > 2 ? rawDigits.substring(2) : '';
+      }
+    }
+
+    // Limit year to 2 digits (YY)
+    if (yearStr.length > 2) {
+      if (yearStr.length == 4 && yearStr.startsWith('20')) {
+        yearStr = yearStr.substring(2, 4);
+      } else {
+        yearStr = yearStr.substring(0, 2);
+      }
+    }
+
+    final formatted = yearStr.isEmpty ? '$monthStr / ' : '$monthStr / $yearStr';
     return TextEditingValue(
       text: formatted,
       selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }
+
+typedef _CardExpiryInputFormatter = CardExpiryInputFormatter;
+

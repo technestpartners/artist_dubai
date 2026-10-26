@@ -21,6 +21,7 @@ import '../../../../core/utils/ui_helpers.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
 import '../../../auth/presentation/views/login_view.dart';
 import '../../domain/models/artist_model.dart';
+import 'package:artist_dubai/features/home/presentation/widgets/home_footer_widget.dart';
 
 class CreateArtistProfileView extends StatefulWidget {
   final bool fromAdmin;
@@ -351,86 +352,21 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     });
   }
 
-  List<String> _categories = [
-    'Painting',
-    'Photography',
-    'Sculpture',
-    'Drawing',
-    'Digital Art',
-    'AI-Generated Art',
-    'Architecture',
-    'Theatre',
-    'Dance',
-    'Music',
-    'Film',
-    'Video Art',
-    'Literature',
-    'Poetry',
-    'Creative Writing',
-    'Drama',
-    'Graphic Design',
-    'Fashion Design',
-    'Interior Design',
-    'Product Design',
-    'Crafts',
-    'Textile Art',
-    'Ceramics',
-    'Printmaking',
-    'Illustration',
-    'Street Art',
-    'Mural Art',
-    'Performance Art',
-    'Installation Art',
-    'Conceptual Art',
-    'Mixed Media',
-    'Collage',
-    'Video Game Art',
-    'Virtual Reality (VR) Art',
-    'Animation',
-    'Comic Art',
-    'Calligraphy',
-    'Jewellery Design',
-    'Glass Art',
-    'Wood Art',
-    'Metal Art',
-    'Puppetry',
-    'Opera',
-    'Ballet',
-    'Musical Theatre',
-    'Experimental Art',
-    'Land Art',
-    'Environmental Art',
-    'Body Art',
-    'Jewellery and Accessory Design',
-  ];
+  List<String> _categories = (sl<ApiService>().cachedCategories ?? [])
+      .map((c) => c.name)
+      .where((n) => n.trim().isNotEmpty)
+      .toList();
 
-  List<String> _experienceLevels = [
-    'Beginner (1-2 years)',
-    'Intermediate (3-5 years)',
-    'Advanced (5-10 years)',
-    'Professional (10+ years)',
-  ];
+  List<String> _experienceLevels = (sl<ApiService>().cachedExperienceLevels ?? [])
+      .map((e) => e.name)
+      .where((n) => n.trim().isNotEmpty)
+      .toSet()
+      .toList();
 
-  List<String> _locations = [
-    'Dubai, UAE',
-    'Dubai Design District (d3), Dubai',
-    'Alserkal Avenue, Al Quoz, Dubai',
-    'Downtown Dubai, UAE',
-    'DIFC, Dubai',
-    'Al Shindagha Historic District, Dubai',
-    'Jaddaf Waterfront, Dubai',
-    'Madinat Jumeirah, Dubai',
-    'Dubai Marina, UAE',
-    'Palm Jumeirah, Dubai',
-    'Jumeirah, Dubai',
-    'Business Bay, Dubai',
-    'Abu Dhabi, UAE',
-    'Sharjah, UAE',
-    'Ajman, UAE',
-    'Ras Al Khaimah, UAE',
-    'Fujairah, UAE',
-    'Umm Al Quwain, UAE',
-  ];
+  List<String> _locations = (sl<ApiService>().cachedLocations ?? [])
+      .map((l) => l.name)
+      .where((n) => n.trim().isNotEmpty)
+      .toList();
 
   StreamSubscription<List<CategoryInfo>>? _catSub;
   StreamSubscription<List<ExperienceLevelModel>>? _expSub;
@@ -2580,6 +2516,8 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                               ),
                             ],
                           ),
+                          const SizedBox(height: 16),
+                          const HomeFooterWidget(),
                           const SizedBox(height: 24),
                         ],
                       ),
@@ -2816,10 +2754,10 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
               }
               final clean = value.trim();
               if (clean.length < 7) {
-                return 'Phone number must be at least 7 digits';
+                return 'Phone number must be at least 7 digits'.trData(context);
               }
               if (clean.length > 15) {
-                return 'Phone number cannot exceed 15 digits';
+                return 'Phone number cannot exceed 15 digits'.trData(context);
               }
               return null;
             },

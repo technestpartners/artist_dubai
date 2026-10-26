@@ -126,7 +126,7 @@
   "@registerSubtitle": {},
   "communityPlatform": "Community Platform",
   "@communityPlatform": {},
-  "hostedBy": "Hosted by Nizar Fahem",
+  "hostedBy": "Hosted by Nizar Al Fahem",
   "@hostedBy": {},
   "aboutUs": "About Us",
   "@aboutUs": {},
@@ -742,5 +742,14 @@
   "stripeCardDeclined": "Your card was declined. Please try another card.",
   "@stripeCardDeclined": {},
   "stripeSecurityNote": "End-to-end 256-bit encrypted. Card details are processed securely by Stripe and are never stored on our servers.",
-  "@stripeSecurityNote": {}
+  "@stripeSecurityNote": {},
+  "byArtist": "By {artist}",
+  "@byArtist": {
+    "description": "Label showing the artist name on an artwork card",
+    "placeholders": {
+      "artist": {
+        "type": "String"
+      }
+    }
+  }
 }

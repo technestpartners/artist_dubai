@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 
 import '../config/app_config.dart';
 import '../constants/api_endpoints.dart';
+import '../di/injection_container.dart';
+import 'storage_service.dart';
 
 /// Stripe configuration settings.
 /// Set STRIPE_PUBLISHABLE_KEY via the backend /api.php?resource=stripe&action=config
@@ -386,7 +388,23 @@ class StripePaymentService {
     return null;
   }
 
+  Future<Map<String, dynamic>> _getAuthHeaders() async {
+    String? token;
+    try {
+      final storage = sl<StorageService>();
+      token = await storage.readSecure(StorageServiceImpl.keyAuthToken);
+      token ??= storage.getString(StorageServiceImpl.keyAuthToken);
+    } catch (_) {}
+
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
+  }
+
   // ─── Stripe Hosted Checkout Session ────────────────────────────────────────
+
 
   /// Creates a Stripe Hosted Checkout Session (usable for Apple Pay, Google Pay, and Cards)
   Future<StripeCheckoutSessionResult> createCheckoutSession({
@@ -400,12 +418,15 @@ class StripePaymentService {
     String? duration,
     int? durationDays,
   }) async {
+    final headers = await _getAuthHeaders();
+
     // 1. Try PHP Backend first
     try {
       final dio = Dio(
         BaseOptions(
           connectTimeout: const Duration(seconds: 15),
           receiveTimeout: const Duration(seconds: 20),
+          headers: headers,
         ),
       );
 
@@ -425,6 +446,7 @@ class StripePaymentService {
         },
         options: Options(
           contentType: Headers.jsonContentType,
+          headers: headers,
           validateStatus: (_) => true,
         ),
       );
@@ -651,11 +673,14 @@ class StripePaymentService {
     bool isConfirmed = false;
     String? stripeErrorMessage;
 
+    final headers = await _getAuthHeaders();
+
     try {
       final dio = Dio(
         BaseOptions(
           connectTimeout: const Duration(seconds: 15),
           receiveTimeout: const Duration(seconds: 25),
+          headers: headers,
         ),
       );
 
@@ -676,6 +701,7 @@ class StripePaymentService {
         },
         options: Options(
           contentType: Headers.jsonContentType,
+          headers: headers,
           validateStatus: (_) => true,
         ),
       );
@@ -750,6 +776,8 @@ class StripePaymentService {
         currency: currency,
       );
     }
+
+
 
     return StripePaymentResult.failure(
       errorMessage: stripeErrorMessage ??

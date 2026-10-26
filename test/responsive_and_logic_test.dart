@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:artist_dubai/app/app.dart';
 import 'package:artist_dubai/core/di/injection_container.dart';
+import 'package:artist_dubai/core/services/api_service.dart';
+import 'package:artist_dubai/features/artists/domain/models/artist_model.dart';
 import 'package:artist_dubai/features/artists/presentation/views/explore_categories_view.dart';
 import 'package:artist_dubai/features/events/domain/models/art_event_model.dart';
 import 'package:artist_dubai/features/events/presentation/views/event_detail_view.dart';
@@ -22,6 +24,10 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     await sl.reset();
     await initDependencyInjection();
+    sl<ApiService>().cachedCategories = const [
+      CategoryInfo(name: 'Calligraphy', emoji: '✍️'),
+      CategoryInfo(name: 'Painting', emoji: '🎨'),
+    ];
   });
 
   Widget testApp(Widget child) {

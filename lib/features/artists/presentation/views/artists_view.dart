@@ -16,6 +16,7 @@ import '../../domain/models/artist_model.dart';
 import 'artist_detail_view.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
 import '../../../../core/utils/data_translator.dart';
+import 'package:artist_dubai/features/home/presentation/widgets/home_footer_widget.dart';
 
 class ArtistsView extends StatefulWidget {
   const ArtistsView({super.key});
@@ -35,7 +36,7 @@ class _ArtistsViewState extends State<ArtistsView> {
       (sl<ApiService>().cachedCategories != null &&
               sl<ApiService>().cachedCategories!.isNotEmpty)
           ? sl<ApiService>().cachedCategories!
-          : ArtistModel.categoryList;
+          : const <CategoryInfo>[];
   final TextEditingController _categorySearchController = TextEditingController();
   String _categoryFilterQuery = '';
   final Set<String> _favoritedArtistIds = {};
@@ -420,7 +421,11 @@ class _ArtistsViewState extends State<ArtistsView> {
                     ),
                     const SizedBox(height: 16),
 
-                    // 2. Artists List OR Loading State OR Empty State
+                    // 2. Select a Category Input Box (Floating Dropdown)
+                    _buildCategorySelectorField(),
+                    const SizedBox(height: 16),
+
+                    // 3. Artists List OR Loading State OR Empty State
                     if (_isLoading && filteredArtists.isEmpty) ...[
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 48.0),
@@ -524,8 +529,7 @@ class _ArtistsViewState extends State<ArtistsView> {
                       const SizedBox(height: 18),
                     ],
 
-                    // 3. Select a Category Input Box (Floating Dropdown)
-                    _buildCategorySelectorField(),
+                    const HomeFooterWidget(),
                     const SizedBox(height: 16),
                   ],
                 ),

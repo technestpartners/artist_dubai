@@ -481,7 +481,6 @@ class DataTranslator {
         'تحويل مباشر عبر الآيبان أو مسح الرمز',
     'instant': 'فوري',
     'cardholder name': 'اسم حامل البطاقة',
-    'full name on card': 'الاسم الكامل على البطاقة',
     'card number': 'رقم البطاقة',
     'expiry date': 'تاريخ الانتهاء',
     'security code': 'رمز الأمان',
@@ -661,20 +660,29 @@ class DataTranslator {
     'paid gallery publishing • choose your plan': 'نشر المعارض المدفوع • اختر خطتك',
     'paid gallery publishing • choose plan': 'نشر المعارض المدفوع • اختر خطتك',
     'paid gallery publishing': 'نشر المعارض المدفوع',
+    'paid event publishing • choose your plan': 'نشر الفعاليات المدفوع • اختر خطتك',
+    'paid event publishing • choose plan': 'نشر الفعاليات المدفوع • اختر خطتك',
+    'paid event publishing': 'نشر الفعاليات المدفوع',
     'choose your plan': 'اختر خطتك',
     'choose plan': 'اختر خطة',
     'exclusive benefits': 'مزايا حصرية',
     'exclusive benefits:': 'مزايا حصرية:',
-    'exclusive benefits: ': 'مزايا حصرية: ',
     'enjoy your first 3 months free.': 'استمتع بأول ٣ أشهر مجاناً.',
     'enjoy your first 3 months free': 'استمتع بأول ٣ أشهر مجاناً',
     'feature your gallery on curated maps and event calendars, with professional event photography.':
         'ميّز معرضك على الخرائط المختارة وتقويمات الفعاليات مع تصوير احترافي للفعاليات.',
     'feature your gallery on curated maps and event calendars, with professional event photography':
         'ميّز معرضك على الخرائط المختارة وتقويمات الفعاليات مع تصوير احترافي للفعاليات',
+    'feature your event on curated maps and event calendars, with professional event photography.':
+        'ميّز فعاليتك على الخرائط المختارة وتقويمات الفعاليات مع تصوير احترافي للفعاليات.',
+    'feature your event on curated maps and event calendars, with professional event photography':
+        'ميّز فعاليتك على الخرائط المختارة وتقويمات الفعاليات مع تصوير احترافي للفعاليات',
     '3 months gallery showcase': 'عرض المعرض لـ ٣ أشهر',
     '6 months gallery showcase': 'عرض المعرض لـ ٦ أشهر',
     '12 months gallery showcase': 'عرض المعرض لـ ١٢ شهراً',
+    '3 months event showcase': 'عرض الفعالية لـ ٣ أشهر',
+    '6 months event showcase': 'عرض الفعالية لـ ٦ أشهر',
+    '12 months event showcase': 'عرض الفعالية لـ ١٢ شهراً',
     'save 25%': 'وفر ٢٥٪',
     'save 38%': 'وفر ٣٨٪',
     'special offer': 'عرض خاص',
@@ -682,6 +690,10 @@ class DataTranslator {
     'aed 2,000': '٢,٠٠٠ د.إ',
     'aed 3,000': '٣,٠٠٠ د.إ',
     'aed 5,000': '٥,٠٠٠ د.إ',
+    'aed 500 per month': '٥٠٠ د.إ شهرياً',
+    'aed 500 / month': '٥٠٠ د.إ / شهر',
+    'unlimited direct artist messages with verified vip sender badge for aed 500 per month':
+        'رسائل غير محدودة مباشرة للفنانين مع شارة مرسل VIP موثق مقابل ٥٠٠ د.إ شهرياً',
     'publishing your gallery on artist dubai is a premium feature. select your preferred showcase plan. once verified by the admin, your gallery will be featured prominently to art lovers across the uae.':
         'نشر معرضك على منصة فنان دبي ميزة متميزة. اختر خطة العرض المناسبة. بمجرد التحقق من قِبل الإدارة، سيتم إبراز معرضك لعشاق الفن في جميع أنحاء الإمارات.',
     'payment on next step:': 'الدفع في الخطوة التالية:',
@@ -716,8 +728,35 @@ class DataTranslator {
         'شكراً لك. سيقوم فريقنا بمراجعة معرضك أو مركزك الفني والتواصل معك عبر البريد الإلكتروني.',
     'back to home': 'العودة إلى الرئيسية',
     'registration': 'التسجيل',
-    'hosted by nizar fahem': 'استضافة نزار الفاهم',
-    'hosted by nizar al fahem': 'استضافة نزار الفاهم',
+// Validation & Form Error Messages
+    'phone number must be at least 7 digits': 'يجب أن يتكون رقم الهاتف من 7 أرقام على الأقل',
+    'phone number cannot exceed 15 digits': 'لا يمكن أن يتجاوز رقم الهاتف 15 رقماً',
+    'please enter a valid email address': 'يرجى إدخال عنوان بريد إلكتروني صحيح',
+    'enter card number': 'أدخل رقم البطاقة',
+    'expiry required': 'تاريخ الانتهاء مطلوب',
+    'cvc required': 'رمز التحقق CVC مطلوب',
+    'enter cardholder name': 'أدخل اسم صاحب البطاقة',
+    'enter your email': 'أدخل بريدك الإلكتروني',
+    'restore': 'استعادة',
+    'no bookings yet': 'لا توجد حجوزات بعد',
+    'explore cultural exhibitions and reserve your entry passes.':
+        'استكشف المعارض الثقافية واحجز تصاريح الدخول الخاصة بك.',
+    'browse events': 'تصفح الفعاليات',
+    'digital pass': 'تصريح رقمي',
+    'cancel booking': 'إلغاء الحجز',
+    'event reservation': 'حجز فعالية',
+    'edit plan': 'تعديل الباقة',
+    'failed to delete listing plan.': 'فشل حذف باقة الإدراج.',
+    'recycle bin emptied successfully': 'تم إفراغ سلة المحذوفات بنجاح',
+    'failed to restore item. please try again.':
+        'فشل استعادة العنصر. يرجى المحاولة مرة أخرى.',
+    'failed to delete item. please try again.':
+        'فشل حذف العنصر. يرجى المحاولة مرة أخرى.',
+    'failed to empty bin. please try again.':
+        'فشل إفراغ السلة. يرجى المحاولة مرة أخرى.',
+    'hosted by nizar fahem': 'برعاية نزار الفاهم',
+    'hosted by nizar al fahem': 'برعاية نزار الفاهم',
+    'hosted by nizar alfahem': 'برعاية نزار الفاهم',
     'nizar fahem': 'نزار الفاهم',
     'nizar al fahem': 'نزار الفاهم',
 
@@ -729,7 +768,9 @@ class DataTranslator {
     'events competition': 'الفعاليات والمسابقات',
     'galleries art center': 'المعارض والمراكز الفنية',
     'events photos': 'صور الفعاليات',
-    'art venue registration': 'تسجيل المعارض الفنية',
+    'art venue registration': 'تسجيل المعارض والمراكز الفنية',
+    'galleries | art centers registration': 'تسجيل المعارض والمراكز الفنية',
+    'galleries & art centers registration': 'تسجيل المعارض والمراكز الفنية',
     'art venue': 'معرض فني',
     'photos': 'صور',
     'permissions': 'الصلاحيات',
@@ -1049,6 +1090,13 @@ class DataTranslator {
     'copy': 'نسخ',
     'copied to clipboard!': 'تم النسخ إلى الحافظة!',
     'emirates nbd, dubai': 'بنك الإمارات دبي الوطني، دبي',
+    'wio bank': 'بنك ويو',
+    'wio bank, dubai': 'بنك ويو، دبي',
+    'bank & iban': 'البنك والآيبان',
+    'bank transfer & iban settings': 'إعدادات التحويل البنكي والآيبان',
+    'edit bank & iban': 'تعديل بيانات البنك والآيبان',
+    'edit payment settings': 'تعديل إعدادات الدفع',
+    'bank details & iban updated successfully!': 'تم تحديث بيانات البنك والآيبان بنجاح!',
     'artist dubai cultural services llc': 'خدمات فنان دبي الثقافية ش.ذ.م.م',
     'please scan the qr code with your mobile banking or payment app, or transfer directly via iban. once paid, enter your transaction reference number and upload the receipt screenshot.':
         'يرجى مسح رمز QR باستخدام تطبيقك المصرفي أو تطبيق الدفع، أو التحويل مباشرة عبر الآيبان. بمجرد الدفع، أدخل الرقم المرجعي للمعاملة وارفع لقطة شاشة للإيصال.',
@@ -1470,6 +1518,8 @@ class DataTranslator {
     if (_arToEn == null) {
       final map = <String, String>{
         // Explicit Arabic to English lookups for event titles and variations
+        'برعاية نزار الفاهم': 'Hosted by Nizar Al Fahem',
+        'تسجيل المعارض والمراكز الفنية': 'Galleries & Art Centers Registration',
         'معرض اختبار واجهة برمجة التطبيق المباشر 8831':
             'Live API Test Exhibition 8831',
         'معرض اختبار واجهة برمجة التطبيق المباشر': 'Live API Test Exhibition',

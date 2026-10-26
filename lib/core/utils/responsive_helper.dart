@@ -47,8 +47,10 @@ class ResponsiveHelper {
   bool get isDesktop => screenClass == ScreenClass.desktop;
   bool get isWide => !isMobile; // tablet OR desktop
 
-  /// Compact / narrow screen (e.g. Galaxy Z Fold outer cover screen ~320-340dp,
-  /// Galaxy Z Flip outer display ~280-340dp).
+  /// Ultra-compact narrow screen (e.g. Galaxy Z Flip outer cover screen ~280-320dp).
+  bool get isUltraCompact => width <= 320.0;
+
+  /// Compact / narrow screen (e.g. Galaxy Z Fold outer cover screen ~320-380dp).
   bool get isCompact => width <= 380.0;
 
   /// Foldable unfolded inner display (width 560-900dp with near-square aspect ratio 0.7-1.45).
@@ -56,6 +58,9 @@ class ResponsiveHelper {
       width >= 560.0 &&
       width < 900.0 &&
       (height / width >= 0.70 && height / width <= 1.45);
+
+  /// Landscape orientation check.
+  bool get isLandscape => width > height;
 
   /// Short height viewport (e.g. tabletop / Flex Mode when half-folded,
   /// landscape orientation, or small flip cover screens).
@@ -67,6 +72,7 @@ class ResponsiveHelper {
   double get horizontalPadding {
     if (isDesktop) return 40.0;
     if (isTablet) return 24.0;
+    if (isUltraCompact) return 6.0;
     if (isCompact) return 8.0;
     return (width * 0.04).clamp(12.0, 20.0);
   }

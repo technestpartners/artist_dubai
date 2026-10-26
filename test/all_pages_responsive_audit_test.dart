@@ -72,12 +72,19 @@ void main() {
   }
 
   final testScreens = <String, Size>{
+    'Ultra-Compact Flip (280x653)': const Size(280, 653),
     'Ultra-Narrow Mobile (300x650)': const Size(300, 650),
     'Compact Mobile (360x640)': const Size(360, 640),
     'Standard Mobile (390x844)': const Size(390, 844),
+    'Large Mobile (430x932)': const Size(430, 932),
+    'Mobile Landscape (844x390)': const Size(844, 390),
     'Fold Display (650x700)': const Size(650, 700),
     'Tablet Portrait (768x1024)': const Size(768, 1024),
+    'Tablet Landscape (1024x768)': const Size(1024, 768),
+    'Desktop Standard (1366x768)': const Size(1366, 768),
     'Desktop Web (1440x900)': const Size(1440, 900),
+    'Desktop Full HD (1920x1080)': const Size(1920, 1080),
+    'Desktop 4K (2560x1440)': const Size(2560, 1440),
   };
 
   group('Universal Multi-Device Responsive Layout Audit', () {
@@ -261,9 +268,6 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
 
           final exc = tester.takeException();
-          if (exc is FlutterError) {
-            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
-          }
           expect(exc, isNull);
           expect(find.byType(EventsView), findsOneWidget);
         });
@@ -296,11 +300,7 @@ void main() {
           await tester.pumpWidget(buildTestHost(const CreateArtEventView()));
           await tester.pump(const Duration(milliseconds: 100));
 
-          final exc = tester.takeException();
-          if (exc is FlutterError) {
-            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
-          }
-          expect(exc, isNull);
+          expect(tester.takeException(), isNull);
           expect(find.byType(CreateArtEventView), findsOneWidget);
         });
 
@@ -387,9 +387,6 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
 
           final exc = tester.takeException();
-          if (exc is FlutterError) {
-            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
-          }
           expect(exc, isNull);
           expect(find.byType(GalleryRegistrationView), findsOneWidget);
         });
@@ -437,9 +434,6 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
 
           final exc = tester.takeException();
-          if (exc is FlutterError) {
-            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
-          }
           expect(exc, isNull);
           expect(find.byType(ProfileView), findsOneWidget);
         });

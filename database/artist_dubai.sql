@@ -343,4 +343,95 @@ INSERT INTO `categories` (`id`, `name`, `type`, `description`, `emoji`, `created
 INSERT INTO `categories` (`id`, `name`, `type`, `description`, `emoji`, `created_at`) VALUES ('65', 'Body Art', 'artist', 'Body painting, henna, and creative epidermal art', '🎨', '2026-08-29 15:42:42');
 INSERT INTO `categories` (`id`, `name`, `type`, `description`, `emoji`, `created_at`) VALUES ('66', 'Jewellery and Accessory Design', 'artist', 'Fine jewellery, headpieces, and fashion accessories', '👑', '2026-08-29 15:42:42');
 
+-- --------------------------------------------------------
+-- Table structure for `publishing_pricing`
+-- --------------------------------------------------------
+DROP TABLE IF EXISTS `publishing_pricing`;
+CREATE TABLE `publishing_pricing` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `item_type` varchar(50) DEFAULT 'event',
+  `item_name` varchar(255) NOT NULL,
+  `description` text,
+  `weekly_price` varchar(100) DEFAULT 'AED 150',
+  `monthly_price` varchar(100) DEFAULT 'AED 500',
+  `three_month_price` varchar(100) DEFAULT 'AED 2,000',
+  `six_month_price` varchar(100) DEFAULT 'AED 3,000',
+  `yearly_price` varchar(100) DEFAULT 'AED 5,000',
+  `three_month_badge` varchar(50) DEFAULT 'Special Offer',
+  `six_month_badge` varchar(50) DEFAULT 'Save 25%',
+  `yearly_badge` varchar(50) DEFAULT 'Best Value',
+  `currency` varchar(20) DEFAULT 'AED',
+  `is_active` tinyint(1) DEFAULT '1',
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_publishing_item_type` (`item_type`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Dumping data for table `publishing_pricing`
+INSERT INTO `publishing_pricing` (`id`, `item_type`, `item_name`, `description`, `weekly_price`, `monthly_price`, `three_month_price`, `six_month_price`, `yearly_price`, `three_month_badge`, `six_month_badge`, `yearly_badge`, `currency`, `is_active`) VALUES
+(1, 'event', 'Paid Event Publishing', 'Feature your event on curated maps and event calendars, with professional event photography.', 'AED 150', 'AED 500', 'AED 2,000', 'AED 3,000', 'AED 5,000', 'Special Offer', 'Save 25%', 'Best Value', 'AED', 1),
+(2, 'gallery', 'Paid Gallery Publishing', 'Feature your gallery on curated maps and event calendars, with professional event photography.', 'AED 250', 'AED 800', 'AED 2,000', 'AED 3,000', 'AED 5,000', 'Special Offer', 'Save 25%', 'Best Value', 'AED', 1),
+(3, 'artist', 'Artist Verification & Listing', 'Get verified badge, priority placement in artist directory, and direct commissioning channel.', 'AED 100', 'AED 350', 'AED 1,200', 'AED 2,000', 'AED 3,500', 'Special Offer', 'Save 20%', 'Best Value', 'AED', 1);
+
+-- --------------------------------------------------------
+-- Table structure for `listing_plans`
+-- --------------------------------------------------------
+DROP TABLE IF EXISTS `listing_plans`;
+CREATE TABLE `listing_plans` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `item_type` varchar(50) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `category` varchar(100) NOT NULL,
+  `badge` varchar(50) DEFAULT 'One-time',
+  `price` varchar(100) NOT NULL,
+  `duration` varchar(100) DEFAULT '30 Days',
+  `duration_days` int DEFAULT '30',
+  `description` text,
+  `features_json` text,
+  `button_text` varchar(100) DEFAULT 'Pay from My Listings',
+  `is_active` tinyint(1) DEFAULT '1',
+  `sort_order` int DEFAULT '0',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_listing_plan_type` (`item_type`)
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Dumping data for table `listing_plans`
+INSERT INTO `listing_plans` (`id`, `item_type`, `title`, `category`, `badge`, `price`, `duration`, `duration_days`, `description`, `features_json`, `button_text`, `is_active`, `sort_order`) VALUES
+(1, 'gallery', '3 Months', 'Art Galleries', 'Special Offer', 'AED 2,000', '3 Months', 90, 'Feature your gallery on curated maps and event calendars, with professional event photography.', '["Feature gallery on curated maps","Event calendar listings","Professional event photography","Enjoy your first 3 months free"]', 'Register Gallery', 1, 1),
+(2, 'gallery', '6 Months', 'Art Galleries', 'Save 25%', 'AED 3,000', '6 Months', 180, 'Feature your gallery on curated maps and event calendars, with professional event photography.', '["Feature gallery on curated maps","Event calendar listings","Professional event photography","Enjoy your first 3 months free"]', 'Register Gallery', 1, 2),
+(3, 'gallery', '12 Months', 'Art Galleries', 'Best Value', 'AED 5,000', '12 Months', 365, 'Feature your gallery on curated maps and event calendars, with professional event photography.', '["Feature gallery on curated maps","Event calendar listings","Professional event photography","Enjoy your first 3 months free"]', 'Register Gallery', 1, 3),
+(4, 'event', '3 Months', 'Exhibitions & Events', 'Special Offer', 'AED 2,000', '3 Months', 90, 'Feature your event on curated maps and event calendars, with professional event photography.', '["Feature event on curated maps","Event calendar & push highlight","Professional event photography","Enjoy your first 3 months free"]', 'Publish Event', 1, 4),
+(5, 'event', '6 Months', 'Exhibitions & Events', 'Save 25%', 'AED 3,000', '6 Months', 180, 'Feature your event on curated maps and event calendars, with professional event photography.', '["Feature event on curated maps","Event calendar & push highlight","Professional event photography","Enjoy your first 3 months free"]', 'Publish Event', 1, 5),
+(6, 'event', '12 Months', 'Exhibitions & Events', 'Best Value', 'AED 5,000', '12 Months', 365, 'Feature your event on curated maps and event calendars, with professional event photography.', '["Feature event on curated maps","Event calendar & push highlight","Professional event photography","Enjoy your first 3 months free"]', 'Publish Event', 1, 6),
+(7, 'chat', 'Starter Plan', 'Messaging', 'Basic', 'Free', 'Monthly Reset', 30, '10 direct artist messages per month', '["10 direct artist messages per month","Direct artist collaboration inquiries","Flyer attachment support"]', 'Current Plan', 1, 7),
+(8, 'chat', 'Unlimited VIP Chat', 'Messaging', 'All Access', 'AED 500', 'Monthly', 30, 'Unlimited direct messages with artists & curators for AED 500 per month', '["Unlimited direct artist messages per month","AED 500 per month all-inclusive","Verified VIP sender badge","Priority delivery in recipient inbox","High-resolution flyer attachments"]', 'Upgrade to VIP', 1, 8),
+(9, 'art_centre', 'Art Center Partner', 'Institutions & Venues', 'VIP Partner', 'AED 990', '1 Year', 365, 'Official verified institution hub page, workshop hosting & priority event syndication', '["Official verified institution partner badge","Unlimited event & workshop listings","Direct ticket booking with instant notifications"]', 'Join Partner Network', 1, 9);
+
+-- --------------------------------------------------------
+-- Table structure for `user_plans`
+-- --------------------------------------------------------
+DROP TABLE IF EXISTS `user_plans`;
+CREATE TABLE `user_plans` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int DEFAULT NULL,
+  `user_email` varchar(255) NOT NULL,
+  `plan_name` varchar(255) NOT NULL,
+  `plan_type` varchar(100) DEFAULT 'Subscription',
+  `item_title` varchar(255) DEFAULT NULL,
+  `price` varchar(100) NOT NULL DEFAULT 'Free',
+  `billing_cycle` varchar(100) DEFAULT 'Monthly',
+  `status` varchar(50) DEFAULT 'Active',
+  `payment_reference` varchar(255) DEFAULT NULL,
+  `payment_method` varchar(100) DEFAULT 'Card',
+  `features_json` text,
+  `start_date` datetime DEFAULT CURRENT_TIMESTAMP,
+  `expires_at` datetime DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_user_plans_email` (`user_email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;
+

@@ -4,6 +4,7 @@ import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/widgets/app_back_button.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import 'package:artist_dubai/features/home/presentation/widgets/home_footer_widget.dart';
 
 class PrivacyPolicyView extends StatelessWidget {
   const PrivacyPolicyView({super.key});
@@ -117,7 +118,9 @@ class PrivacyPolicyView extends StatelessWidget {
                     label: l10n.privacyBulletProfileLabel,
                     text: l10n.privacyBulletProfileText,
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 16),
+                  const HomeFooterWidget(),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),

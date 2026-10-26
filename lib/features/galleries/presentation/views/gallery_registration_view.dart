@@ -44,10 +44,17 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
   Map<String, dynamic>? _activeGalleryPlan;
   Locale? _lastLocale;
 
-  String _selectedPublishingPlan = 'six_month';
+  String _selectedPublishingPlan = '';
   PublishingPricingModel? _galleryPricing;
   StreamSubscription<List<PublishingPricingModel>>? _pricingSub;
-  List<ListingPlanItem> _galleryListingPlans = [];
+  List<ListingPlanItem> _galleryListingPlans = (sl<ApiService>().cachedListingPlans ?? [])
+      .where((p) =>
+          p.isActive &&
+          (p.itemType.toLowerCase() == 'gallery' ||
+              (p.itemType.toLowerCase() != 'art_centre' &&
+                  p.itemType.toLowerCase() != 'event' &&
+                  p.category.toLowerCase().contains('gallery'))))
+      .toList();
   StreamSubscription<List<ListingPlanItem>>? _listingPlansSub;
 
   static const Color _screenBg = Color(0xFF651B8A);
@@ -56,6 +63,11 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
   @override
   void initState() {
     super.initState();
+    if (_galleryListingPlans.isNotEmpty) {
+      _selectedPublishingPlan =
+          _galleryListingPlans.first.id?.toString() ??
+              _galleryListingPlans.first.title;
+    }
     _loadPublishingPricing();
     _loadGalleryListingPlans();
     _loadUserActiveGalleryPlan();
@@ -65,31 +77,12 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
         pricingList,
       ) {
         if (!mounted || pricingList.isEmpty) return;
-        final galPricing = pricingList.firstWhere(
-          (p) => p.itemType == 'gallery',
-          orElse:
-              () =>
-                  _galleryPricing ??
-                  const PublishingPricingModel(
-                    id: 2,
-                    itemType: 'gallery',
-                    itemName: 'Gallery Space Spotlight',
-                    weeklyPrice: 'AED 250',
-                    monthlyPrice: 'AED 800',
-                    threeMonthPrice: 'AED 2,000',
-                    sixMonthPrice: 'AED 3,000',
-                    yearlyPrice: 'AED 5,000',
-                    threeMonthBadge: 'Special Offer',
-                    sixMonthBadge: 'Save 25%',
-                    yearlyBadge: 'Best Value',
-                    currency: 'AED',
-                    description:
-                        'Feature your gallery on curated maps and event calendars, with professional event photography.',
-                  ),
-        );
-        setState(() {
-          _galleryPricing = galPricing;
-        });
+        final galPricing = pricingList.where((p) => p.itemType == 'gallery').firstOrNull;
+        if (galPricing != null) {
+          setState(() {
+            _galleryPricing = galPricing;
+          });
+        }
       });
     } catch (_) {}
 
@@ -141,27 +134,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
       final pricingList = await sl<ApiService>().getPublishingPricing(
         forceRefresh: true,
       );
-      final galPricing = pricingList.firstWhere(
-        (p) => p.itemType == 'gallery',
-        orElse:
-            () => const PublishingPricingModel(
-              id: 2,
-              itemType: 'gallery',
-              itemName: 'Gallery Space Spotlight',
-              weeklyPrice: 'AED 250',
-              monthlyPrice: 'AED 800',
-              threeMonthPrice: 'AED 2,000',
-              sixMonthPrice: 'AED 3,000',
-              yearlyPrice: 'AED 5,000',
-              threeMonthBadge: 'Special Offer',
-              sixMonthBadge: 'Save 25%',
-              yearlyBadge: 'Best Value',
-              description:
-                  'Feature your gallery on curated maps and event calendars, with professional event photography.',
-              currency: 'AED',
-            ),
-      );
-      if (mounted) {
+      final galPricing =
+          pricingList.where((p) => p.itemType == 'gallery').firstOrNull;
+      if (mounted && galPricing != null) {
         setState(() {
           _galleryPricing = galPricing;
         });
@@ -456,8 +431,8 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
     setState(() => _hasValidated = true);
     if (!_formKey.currentState!.validate()) return;
 
-    String publishingAmount = '';
-    String resolvedPlanName = _selectedPublishingPlan;
+    String publishingAmount = 'Free';
+    String resolvedPlanName = 'Standard Gallery Registration';
     if (_galleryListingPlans.isNotEmpty) {
       final matchingPlan = _galleryListingPlans.firstWhere(
         (p) =>
@@ -467,27 +442,14 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
       );
       publishingAmount = matchingPlan.price;
       resolvedPlanName = matchingPlan.title;
-    } else {
-      if (_selectedPublishingPlan == 'three_month') {
-        publishingAmount = _galleryPricing?.threeMonthPrice ?? 'AED 2,000';
-        resolvedPlanName = '3 Months Gallery Showcase';
-      } else if (_selectedPublishingPlan == 'six_month') {
-        publishingAmount = _galleryPricing?.sixMonthPrice ?? 'AED 3,000';
-        resolvedPlanName = '6 Months Gallery Showcase';
-      } else if (_selectedPublishingPlan == 'yearly' ||
-          _selectedPublishingPlan == 'twelve_month') {
-        publishingAmount = _galleryPricing?.yearlyPrice ?? 'AED 5,000';
-        resolvedPlanName = '12 Months Gallery Showcase';
-      } else {
-        publishingAmount =
-            _galleryPricing?.getPriceForPlan(_selectedPublishingPlan) ??
-            'AED 2,000';
-        resolvedPlanName = 'Gallery Showcase';
-      }
     }
 
     final hasActiveGalleryPlan = _activeGalleryPlan != null;
-    if (hasActiveGalleryPlan) {
+    final isPaidPlan = _galleryListingPlans.isNotEmpty &&
+        publishingAmount.toLowerCase() != 'free' &&
+        publishingAmount != '0 AED';
+
+    if (hasActiveGalleryPlan || !isPaidPlan) {
       setState(() => _isSubmitting = true);
       final payload = {
         'name': _nameController.text.trim(),
@@ -508,9 +470,11 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
         'about': _aboutController.text.trim(),
         'image_url': _uploadedImageUrl ?? '',
         'publishing_plan':
-            _activeGalleryPlan!['plan_name'] ?? resolvedPlanName,
+            hasActiveGalleryPlan
+                ? (_activeGalleryPlan!['plan_name'] ?? resolvedPlanName)
+                : resolvedPlanName,
         'payment_status': 'paid',
-        'payment_method': 'active_plan',
+        'payment_method': hasActiveGalleryPlan ? 'active_plan' : 'standard_registration',
       };
 
       final success = await sl<ApiService>().registerGallery(payload);
@@ -1229,10 +1193,13 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 6,
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(6),
+                            padding: const EdgeInsets.all(5),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
                                 colors: [Color(0xFF6B1C9B), Color(0xFF551478)],
@@ -1252,22 +1219,17 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                               size: 16,
                             ),
                           ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              'Paid Gallery Publishing • Choose Your Plan'.trData(
-                                context,
-                              ),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 13.0,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.1,
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                          Text(
+                            'Paid Gallery Publishing • Choose Your Plan'.trData(
+                              context,
+                            ),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13.0,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.1,
                             ),
                           ),
-                          const SizedBox(width: 4),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 6,
@@ -1359,98 +1321,76 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                       const SizedBox(height: 14),
                       LayoutBuilder(
                         builder: (context, constraints) {
-                          List<Widget> cards = [];
-
-                          if (_galleryListingPlans.isNotEmpty) {
-                            cards = _galleryListingPlans.map((plan) {
-                              final planId =
-                                  plan.id?.toString() ?? plan.title;
-                              final subtitle = (plan.features.isNotEmpty &&
-                                      plan.features.first.trim().isNotEmpty)
-                                  ? plan.features.first.trim()
-                                  : (plan.description.trim().isNotEmpty
-                                      ? plan.description.trim()
-                                      : (plan.duration.isNotEmpty
-                                          ? plan.duration
-                                          : 'Gallery Showcase'));
-                              final rawTitle = plan.title.trData(context);
-                              final cardTitle = (plan.duration.contains('3 Month') || plan.duration.contains('90') || rawTitle.contains('3 Month'))
-                                  ? '3 Months'.trData(context)
-                                  : ((plan.duration.contains('6 Month') || plan.duration.contains('180') || rawTitle.contains('6 Month'))
-                                      ? '6 Months'.trData(context)
-                                      : ((plan.duration.contains('12 Month') || plan.duration.contains('365') || plan.duration.contains('1 Year') || rawTitle.contains('12 Month'))
-                                          ? '12 Months'.trData(context)
-                                          : rawTitle));
-                              final periodStr = (cardTitle == '3 Months' || cardTitle == '6 Months' || cardTitle == '12 Months')
-                                  ? ''
-                                  : (plan.duration.isNotEmpty ? ' · ${plan.duration}' : '');
-                              return _buildGalleryPricingCard(
-                                id: planId,
-                                title: cardTitle,
-                                price: plan.price,
-                                period: periodStr,
-                                subtitle: subtitle,
-                                tag:
-                                    plan.badge.isNotEmpty ? plan.badge : null,
-                              );
-                            }).toList();
-                          } else {
-                            final threeMonthPrice =
-                                _galleryPricing?.threeMonthPrice ?? 'AED 2,000';
-                            final sixMonthPrice =
-                                _galleryPricing?.sixMonthPrice ?? 'AED 3,000';
-                            final yearlyPrice =
-                                _galleryPricing?.yearlyPrice ?? 'AED 5,000';
-
-                            final threeMonthSubtitle =
-                                _galleryPricing?.threeMonthBadge.trim().isNotEmpty == true
-                                    ? DataTranslator.tr(
-                                      context,
-                                      _galleryPricing!.threeMonthBadge.trim(),
-                                    )
-                                    : '90 days showcase'.trData(context);
-                            final sixMonthSubtitle =
-                                _galleryPricing?.sixMonthBadge.trim().isNotEmpty == true
-                                    ? DataTranslator.tr(
-                                      context,
-                                      _galleryPricing!.sixMonthBadge.trim(),
-                                    )
-                                    : '180 days showcase'.trData(context);
-                            final yearlySubtitle =
-                                _galleryPricing?.yearlyBadge.trim().isNotEmpty == true
-                                    ? DataTranslator.tr(
-                                      context,
-                                      _galleryPricing!.yearlyBadge.trim(),
-                                    )
-                                    : '365 days showcase'.trData(context);
-
-                            cards = [
-                              _buildGalleryPricingCard(
-                                id: 'three_month',
-                                title: '3 Months'.trData(context),
-                                price: threeMonthPrice,
-                                period: '',
-                                subtitle: threeMonthSubtitle,
-                                tag: 'Special Offer',
+                          if (_galleryListingPlans.isEmpty) {
+                            return Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
                               ),
-                              _buildGalleryPricingCard(
-                                id: 'six_month',
-                                title: '6 Months'.trData(context),
-                                price: sixMonthPrice,
-                                period: '',
-                                subtitle: sixMonthSubtitle,
-                                tag: 'Save 25%',
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: const Color(0xFFE2E8F0),
+                                ),
                               ),
-                              _buildGalleryPricingCard(
-                                id: 'yearly',
-                                title: '12 Months'.trData(context),
-                                price: yearlyPrice,
-                                period: '',
-                                subtitle: yearlySubtitle,
-                                tag: 'Best Value',
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.info_outline_rounded,
+                                    color: Color(0xFF0284C7),
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      'No paid gallery plans currently configured by administrator. Standard registration applies.'
+                                          .trData(context),
+                                      style: const TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xFF475569),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ];
+                            );
                           }
+
+                          final cards = _galleryListingPlans.map((plan) {
+                            final planId =
+                                plan.id?.toString() ?? plan.title;
+                            final subtitle = (plan.features.isNotEmpty &&
+                                    plan.features.first.trim().isNotEmpty)
+                                ? plan.features.first.trim()
+                                : (plan.description.trim().isNotEmpty
+                                    ? plan.description.trim()
+                                    : (plan.duration.isNotEmpty
+                                        ? plan.duration
+                                        : 'Gallery Showcase'));
+                            final rawTitle = plan.title.trData(context);
+                            final cardTitle = (plan.duration.contains('3 Month') || plan.duration.contains('90') || rawTitle.contains('3 Month'))
+                                ? '3 Months'.trData(context)
+                                : ((plan.duration.contains('6 Month') || plan.duration.contains('180') || rawTitle.contains('6 Month'))
+                                    ? '6 Months'.trData(context)
+                                    : ((plan.duration.contains('12 Month') || plan.duration.contains('365') || plan.duration.contains('1 Year') || rawTitle.contains('12 Month'))
+                                        ? '12 Months'.trData(context)
+                                        : rawTitle));
+                            final periodStr = (cardTitle == '3 Months' || cardTitle == '6 Months' || cardTitle == '12 Months')
+                                ? ''
+                                : (plan.duration.isNotEmpty ? ' · ${plan.duration}' : '');
+                            return _buildGalleryPricingCard(
+                              id: planId,
+                              title: cardTitle,
+                              price: plan.price,
+                              period: periodStr,
+                              subtitle: subtitle,
+                              tag:
+                                  plan.badge.isNotEmpty ? plan.badge : null,
+                            );
+                          }).toList();
 
                           return Column(
                             children: [
@@ -1523,7 +1463,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
           // 3. Footer Attribution
           Center(
             child: Text(
-              'Hosted by Nizar Fahem'.trData(context),
+              'Hosted by Nizar Al Fahem'.trData(context),
               style: const TextStyle(
                 color: Colors.white70,
                 fontSize: 13.5,
@@ -1636,7 +1576,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
         // 3. Footer
         Center(
           child: Text(
-            'Hosted by Nizar Fahem'.trData(context),
+            'Hosted by Nizar Al Fahem'.trData(context),
             style: const TextStyle(
               color: Colors.white70,
               fontSize: 13.5,
@@ -1656,7 +1596,11 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
     required String subtitle,
     String? tag,
   }) {
-    final isSelected = _selectedPublishingPlan == id;
+    final isSelected = _selectedPublishingPlan == id ||
+        _selectedPublishingPlan.toLowerCase() == title.toLowerCase() ||
+        (_selectedPublishingPlan.contains('3') && (title.contains('3') || id.contains('3') || id == 'three_month')) ||
+        (_selectedPublishingPlan.contains('6') && (title.contains('6') || id.contains('6') || id == 'six_month')) ||
+        ((_selectedPublishingPlan.contains('12') || _selectedPublishingPlan.contains('year')) && (title.contains('12') || id.contains('12') || id == 'yearly'));
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -2016,25 +1960,17 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
       final matching = _galleryListingPlans.firstWhere(
         (p) =>
             p.id?.toString() == _selectedPublishingPlan ||
-            p.title.toLowerCase() == _selectedPublishingPlan.toLowerCase(),
+            p.title.toLowerCase() == _selectedPublishingPlan.toLowerCase() ||
+            (_selectedPublishingPlan.contains('3') && p.title.contains('3')) ||
+            (_selectedPublishingPlan.contains('6') && p.title.contains('6')) ||
+            ((_selectedPublishingPlan.contains('12') || _selectedPublishingPlan.contains('year')) &&
+                (p.title.contains('12') || p.title.toLowerCase().contains('year'))),
         orElse: () => _galleryListingPlans.first,
       );
       planAmount = matching.price;
       resolvedPlanName = matching.title;
-    } else if (_selectedPublishingPlan == 'three_month') {
-      planAmount = _galleryPricing?.threeMonthPrice ?? 'AED 2,000';
-      resolvedPlanName = '3 Months Gallery Showcase';
-    } else if (_selectedPublishingPlan == 'six_month') {
-      planAmount = _galleryPricing?.sixMonthPrice ?? 'AED 3,000';
-      resolvedPlanName = '6 Months Gallery Showcase';
-    } else if (_selectedPublishingPlan == 'yearly' ||
-        _selectedPublishingPlan == 'twelve_month') {
-      planAmount = _galleryPricing?.yearlyPrice ?? 'AED 5,000';
-      resolvedPlanName = '12 Months Gallery Showcase';
     } else {
-      planAmount =
-          _galleryPricing?.getPriceForPlan(_selectedPublishingPlan) ??
-          'AED 2,000';
+      planAmount = _galleryPricing?.getPriceForPlan(_selectedPublishingPlan) ?? '';
       resolvedPlanName = 'Gallery Showcase';
     }
 

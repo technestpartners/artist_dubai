@@ -13,6 +13,7 @@ import '../../domain/models/art_event_model.dart';
 import '../widgets/event_gallery_modal_widget.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
 import '../../../../core/utils/data_translator.dart';
+import 'package:artist_dubai/features/home/presentation/widgets/home_footer_widget.dart';
 
 class EventPhotosView extends StatefulWidget {
   const EventPhotosView({super.key});
@@ -580,7 +581,9 @@ class _EventPhotosViewState extends State<EventPhotosView> {
                       );
                     },
                   ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 16),
+                const HomeFooterWidget(),
+                const SizedBox(height: 24),
               ],
             ),
           ),

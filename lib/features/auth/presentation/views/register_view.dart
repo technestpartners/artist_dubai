@@ -10,6 +10,7 @@ import '../../../../core/widgets/app_top_bar.dart';
 import '../controllers/register_controller.dart';
 import '../widgets/auth_error_banner_widget.dart';
 import '../widgets/login_header_widget.dart';
+import 'package:artist_dubai/features/home/presentation/widgets/home_footer_widget.dart';
 
 /// Clean presentation view for User and Artist registration.
 /// Business logic and state management are fully delegated to [RegisterController].
@@ -577,7 +578,9 @@ class _RegisterViewState extends State<RegisterView> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 16),
+                        const HomeFooterWidget(),
+                        const SizedBox(height: 20),
                       ],
                     ),
                   ),

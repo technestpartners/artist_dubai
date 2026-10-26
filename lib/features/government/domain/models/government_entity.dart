@@ -188,29 +188,69 @@ class GovernmentEntity {
     );
   }
 
-  /// Returns open state based on seasonal notice or defaultIsOpen
+  /// Returns dynamic open state based on seasonal notice, operating schedule, or defaultIsOpen
   bool get isCurrentlyOpen {
-    if (seasonalNotice != null) return false;
-    return defaultIsOpen;
-  }
+    if (seasonalNotice != null && seasonalNotice!.trim().isNotEmpty) {
+      return false;
+    }
 
-  /// Returns exact formatted timing text as configured in database
-  String get liveTimingText {
-    if (seasonalNotice != null) {
-      return seasonalNotice!;
-    }
-    if (defaultTiming.isNotEmpty) {
-      return defaultTiming;
-    }
     if (openHour == null || closeHour == null) {
-      return defaultTiming;
+      return defaultIsOpen;
     }
 
     final nowUtc = DateTime.now().toUtc();
     final dubaiTime = nowUtc.add(const Duration(hours: 4));
 
     if (closedDays != null && closedDays!.contains(dubaiTime.weekday)) {
-      return 'Closed · Opens Monday at ${_formatTime(openHour!, openMinute ?? 0)}';
+      return false;
+    }
+
+    final currentMinutes = dubaiTime.hour * 60 + dubaiTime.minute;
+    final openMinutes = (openHour ?? 0) * 60 + (openMinute ?? 0);
+    final closeMinutes = (closeHour ?? 0) * 60 + (closeMinute ?? 0);
+
+    return currentMinutes >= openMinutes && currentMinutes < closeMinutes;
+  }
+
+  /// Returns exact formatted live timing text dynamically calculated from map schedule
+  String get liveTimingText {
+    if (seasonalNotice != null && seasonalNotice!.trim().isNotEmpty) {
+      return seasonalNotice!;
+    }
+
+    if (openHour == null || closeHour == null) {
+      return defaultTiming.isNotEmpty
+          ? defaultTiming
+          : (defaultIsOpen ? 'Open' : 'Closed');
+    }
+
+    final nowUtc = DateTime.now().toUtc();
+    final dubaiTime = nowUtc.add(const Duration(hours: 4));
+    final currentDay = dubaiTime.weekday; // 1=Mon, 7=Sun
+
+    final openTimeStr = _formatTime(openHour!, openMinute ?? 0);
+    final closeTimeStr = _formatTime(closeHour!, closeMinute ?? 0);
+
+    const dayNames = {
+      1: 'Monday',
+      2: 'Tuesday',
+      3: 'Wednesday',
+      4: 'Thursday',
+      5: 'Friday',
+      6: 'Saturday',
+      7: 'Sunday',
+    };
+
+    if (closedDays != null && closedDays!.contains(currentDay)) {
+      int nextDay = currentDay;
+      for (int i = 1; i <= 7; i++) {
+        final checkDay = ((currentDay - 1 + i) % 7) + 1;
+        if (!closedDays!.contains(checkDay)) {
+          nextDay = checkDay;
+          break;
+        }
+      }
+      return 'Closed · Opens ${dayNames[nextDay] ?? 'soon'} at $openTimeStr';
     }
 
     final currentMinutes = dubaiTime.hour * 60 + dubaiTime.minute;
@@ -218,11 +258,23 @@ class GovernmentEntity {
     final closeMinutes = (closeHour ?? 0) * 60 + (closeMinute ?? 0);
 
     if (currentMinutes >= openMinutes && currentMinutes < closeMinutes) {
-      return 'Open · Closes at ${_formatTime(closeHour!, closeMinute ?? 0)}';
+      return 'Open · Closes at $closeTimeStr';
     } else if (currentMinutes < openMinutes) {
-      return 'Closed · Opens at ${_formatTime(openHour!, openMinute ?? 0)}';
+      return 'Closed · Opens at $openTimeStr';
     } else {
-      return 'Closed · Opens tomorrow at ${_formatTime(openHour!, openMinute ?? 0)}';
+      final tomorrowDay = (currentDay % 7) + 1;
+      if (closedDays != null && closedDays!.contains(tomorrowDay)) {
+        int nextDay = tomorrowDay;
+        for (int i = 1; i <= 7; i++) {
+          final checkDay = ((currentDay - 1 + i) % 7) + 1;
+          if (!closedDays!.contains(checkDay)) {
+            nextDay = checkDay;
+            break;
+          }
+        }
+        return 'Closed · Opens ${dayNames[nextDay] ?? 'soon'} at $openTimeStr';
+      }
+      return 'Closed · Opens tomorrow at $openTimeStr';
     }
   }
 

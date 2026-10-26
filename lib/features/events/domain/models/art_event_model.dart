@@ -477,19 +477,7 @@ class ArtEventModel {
   int get spotsRemaining =>
       (maxAttendees - attendeesCount).clamp(0, maxAttendees);
 
-  static const List<String> categories = [
-    'All Categories',
-    'Art Exhibition',
-    'Gallery Opening',
-    'Art Workshop',
-    'Artist Talk',
-    'Art Fair',
-    'Sculpture Installation',
-    'Photography Exhibition',
-    'Cultural Festival',
-    'Art Competition',
-    'Community Art Project',
-  ];
+  static const List<String> categories = <String>[];
 
   static final ArtEventModel sampleEvent = ArtEventModel(
     id: '1',

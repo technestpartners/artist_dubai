@@ -123,6 +123,44 @@ void main() {
       expect(entity.defaultIsOpen, isTrue);
     });
 
+    test('GovernmentEntity dynamic schedule and open/close calculation', () {
+      // Seasonal entity should always be closed
+      const seasonal = GovernmentEntity(
+        name: 'Art Dubai',
+        defaultIsOpen: false,
+        rating: 4.6,
+        reviewCount: 180,
+        category: 'Art Fair',
+        location: 'Madinat Jumeirah',
+        defaultTiming: 'Closed',
+        websiteUrl: 'https://artdubai.ae',
+        directionsUrl: 'https://maps.google.com',
+        seasonalNotice: 'Closed · Opens Mar 2027',
+      );
+      expect(seasonal.isCurrentlyOpen, isFalse);
+      expect(seasonal.liveTimingText, equals('Closed · Opens Mar 2027'));
+
+      // Entity with weekend closed days
+      const govEntity = GovernmentEntity(
+        name: 'Dubai Culture',
+        defaultIsOpen: true,
+        rating: 4.5,
+        reviewCount: 120,
+        category: 'Government Authority',
+        location: 'Al Shindagha',
+        defaultTiming: 'Open · Closes at 15:00',
+        websiteUrl: 'https://dubaiculture.gov.ae',
+        directionsUrl: 'https://maps.google.com',
+        openHour: 7,
+        openMinute: 30,
+        closeHour: 15,
+        closeMinute: 0,
+        closedDays: [6, 7], // Closed Sat & Sun
+      );
+      expect(govEntity.liveTimingText, isNotEmpty);
+      expect(govEntity.liveTimingText, anyOf(contains('Open'), contains('Closed')));
+    });
+
     test('DashboardItem model property integrity', () {
       const item = DashboardItem(
         title: 'Featured Artists',

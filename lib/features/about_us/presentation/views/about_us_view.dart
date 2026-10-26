@@ -9,6 +9,7 @@ import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
+import 'package:artist_dubai/features/home/presentation/widgets/home_footer_widget.dart';
 
 class AboutUsView extends StatefulWidget {
   const AboutUsView({super.key});
@@ -396,7 +397,9 @@ class _AboutUsViewState extends State<AboutUsView> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 36),
+                  const SizedBox(height: 20),
+                  const HomeFooterWidget(),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),

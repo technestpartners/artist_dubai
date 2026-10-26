@@ -43,7 +43,34 @@ class MockSyncApiClient implements ApiClient {
       }
     }
 
+    if (resource == 'event_categories') {
+      return {
+        'status': 'success',
+        'success': true,
+        'data': [
+          'All Categories',
+          'Art Exhibition',
+          'Workshop',
+          'Gallery Opening',
+          'Auction',
+        ],
+      };
+    }
+
     if (resource == 'categories') {
+      final type = uri.queryParameters['type'] ?? queryParameters?['type'];
+      if (type == 'event') {
+        return {
+          'status': 'success',
+          'success': true,
+          'data': [
+            {'id': 101, 'name': 'Art Exhibition', 'type': 'event'},
+            {'id': 102, 'name': 'Workshop', 'type': 'event'},
+            {'id': 103, 'name': 'Auction', 'type': 'event'},
+            {'id': 104, 'name': 'Gallery Opening', 'type': 'event'},
+          ],
+        };
+      }
       return {
         'status': 'success',
         'success': true,
@@ -335,6 +362,176 @@ class MockSyncApiClient implements ApiClient {
           },
           'mission': 'Empowering Emirati and UAE-based creative visionaries.',
         },
+      };
+    }
+
+    if (resource == 'publishing_pricing') {
+      return {
+        'status': 'success',
+        'success': true,
+        'data': [
+          {
+            'id': 1,
+            'item_type': 'event',
+            'item_name': 'Paid Event Publishing',
+            'description': 'Feature your event on curated maps and event calendars, with professional event photography.',
+            'weekly_price': 'AED 150',
+            'monthly_price': 'AED 500',
+            'three_month_price': 'AED 2,000',
+            'six_month_price': 'AED 3,000',
+            'yearly_price': 'AED 5,000',
+            'three_month_badge': 'Special Offer',
+            'six_month_badge': 'Save 25%',
+            'yearly_badge': 'Best Value',
+            'currency': 'AED',
+            'is_active': 1,
+          },
+          {
+            'id': 2,
+            'item_type': 'gallery',
+            'item_name': 'Paid Gallery Publishing',
+            'description': 'Feature your gallery on curated maps and event calendars, with professional event photography.',
+            'weekly_price': 'AED 250',
+            'monthly_price': 'AED 800',
+            'three_month_price': 'AED 2,000',
+            'six_month_price': 'AED 3,000',
+            'yearly_price': 'AED 5,000',
+            'three_month_badge': 'Special Offer',
+            'six_month_badge': 'Save 25%',
+            'yearly_badge': 'Best Value',
+            'currency': 'AED',
+            'is_active': 1,
+          },
+        ],
+      };
+    }
+
+    if (resource == 'listing_plans') {
+      return {
+        'status': 'success',
+        'success': true,
+        'data': [
+          {
+            'id': 1,
+            'item_type': 'gallery',
+            'title': '3 Months',
+            'category': 'Art Galleries',
+            'badge': 'Special Offer',
+            'price': 'AED 2,000',
+            'duration': '3 Months',
+            'duration_days': 90,
+            'description': 'Feature your gallery on curated maps and event calendars, with professional event photography.',
+            'features_json': '["Feature gallery on curated maps","Event calendar listings","Professional event photography","Enjoy your first 3 months free"]',
+            'button_text': 'Register Gallery',
+            'is_active': 1,
+            'sort_order': 1,
+          },
+          {
+            'id': 2,
+            'item_type': 'gallery',
+            'title': '6 Months',
+            'category': 'Art Galleries',
+            'badge': 'Save 25%',
+            'price': 'AED 3,000',
+            'duration': '6 Months',
+            'duration_days': 180,
+            'description': 'Feature your gallery on curated maps and event calendars, with professional event photography.',
+            'features_json': '["Feature gallery on curated maps","Event calendar listings","Professional event photography","Enjoy your first 3 months free"]',
+            'button_text': 'Register Gallery',
+            'is_active': 1,
+            'sort_order': 2,
+          },
+          {
+            'id': 3,
+            'item_type': 'gallery',
+            'title': '12 Months',
+            'category': 'Art Galleries',
+            'badge': 'Best Value',
+            'price': 'AED 5,000',
+            'duration': '12 Months',
+            'duration_days': 365,
+            'description': 'Feature your gallery on curated maps and event calendars, with professional event photography.',
+            'features_json': '["Feature gallery on curated maps","Event calendar listings","Professional event photography","Enjoy your first 3 months free"]',
+            'button_text': 'Register Gallery',
+            'is_active': 1,
+            'sort_order': 3,
+          },
+          {
+            'id': 4,
+            'item_type': 'event',
+            'title': '3 Months',
+            'category': 'Exhibitions & Events',
+            'badge': 'Special Offer',
+            'price': 'AED 2,000',
+            'duration': '3 Months',
+            'duration_days': 90,
+            'description': 'Feature your event on curated maps and event calendars, with professional event photography.',
+            'features_json': '["Feature event on curated maps","Event calendar & push highlight","Professional event photography","Enjoy your first 3 months free"]',
+            'button_text': 'Publish Event',
+            'is_active': 1,
+            'sort_order': 4,
+          },
+          {
+            'id': 5,
+            'item_type': 'event',
+            'title': '6 Months',
+            'category': 'Exhibitions & Events',
+            'badge': 'Save 25%',
+            'price': 'AED 3,000',
+            'duration': '6 Months',
+            'duration_days': 180,
+            'description': 'Feature your event on curated maps and event calendars, with professional event photography.',
+            'features_json': '["Feature event on curated maps","Event calendar & push highlight","Professional event photography","Enjoy your first 3 months free"]',
+            'button_text': 'Publish Event',
+            'is_active': 1,
+            'sort_order': 5,
+          },
+          {
+            'id': 6,
+            'item_type': 'event',
+            'title': '12 Months',
+            'category': 'Exhibitions & Events',
+            'badge': 'Best Value',
+            'price': 'AED 5,000',
+            'duration': '12 Months',
+            'duration_days': 365,
+            'description': 'Feature your event on curated maps and event calendars, with professional event photography.',
+            'features_json': '["Feature event on curated maps","Event calendar & push highlight","Professional event photography","Enjoy your first 3 months free"]',
+            'button_text': 'Publish Event',
+            'is_active': 1,
+            'sort_order': 6,
+          },
+          {
+            'id': 7,
+            'item_type': 'chat',
+            'title': 'Starter Plan',
+            'category': 'Messaging',
+            'badge': 'Basic',
+            'price': 'Free',
+            'duration': 'Monthly Reset',
+            'duration_days': 30,
+            'description': '10 direct artist messages per month',
+            'features_json': '["10 direct artist messages per month"]',
+            'button_text': 'Current Plan',
+            'is_active': 1,
+            'sort_order': 7,
+          },
+          {
+            'id': 8,
+            'item_type': 'chat',
+            'title': 'Unlimited VIP Chat',
+            'category': 'Messaging',
+            'badge': 'All Access',
+            'price': 'AED 500',
+            'duration': 'Monthly',
+            'duration_days': 30,
+            'description': 'Unlimited direct messages with artists & curators for AED 500 per month',
+            'features_json': '["Unlimited direct artist messages per month","AED 500 per month all-inclusive","Verified VIP sender badge"]',
+            'button_text': 'Upgrade to VIP',
+            'is_active': 1,
+            'sort_order': 8,
+          },
+        ],
       };
     }
 

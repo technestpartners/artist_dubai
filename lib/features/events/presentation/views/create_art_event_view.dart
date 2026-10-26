@@ -21,6 +21,7 @@ import '../../../admin/domain/models/publishing_pricing_model.dart';
 import '../../../chat/domain/models/listing_plan_model.dart';
 import '../../domain/models/art_event_model.dart';
 import '../../../../core/services/event_draft_service.dart';
+import 'package:artist_dubai/features/home/presentation/widgets/home_footer_widget.dart';
 
 class CreateArtEventView extends StatefulWidget {
   final ArtEventModel? event;
@@ -66,10 +67,16 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
   String? _selectedLocation = 'Dubai, UAE';
   bool _isSubmitting = false;
 
-  String _selectedPublishingPlan = 'six_month';
+  String _selectedPublishingPlan = '';
   PublishingPricingModel? _eventPricing;
   StreamSubscription<List<PublishingPricingModel>>? _pricingSub;
-  List<ListingPlanItem> _eventListingPlans = [];
+  List<ListingPlanItem> _eventListingPlans = (sl<ApiService>().cachedListingPlans ?? [])
+      .where((p) =>
+          p.isActive &&
+          (p.itemType.toLowerCase() == 'event' ||
+              p.category.toLowerCase().contains('event') ||
+              p.title.toLowerCase().contains('event')))
+      .toList();
   StreamSubscription<List<ListingPlanItem>>? _listingPlansSub;
   Map<String, dynamic>? _activeEventPlan;
 
@@ -93,39 +100,14 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
   final _transactionIdController = TextEditingController();
   String? _receiptUrl;
 
-  List<String> _categories = [
-    'Art Exhibition',
-    'Gallery Opening',
-    'Art Workshop',
-    'Artist Talk',
-    'Art Fair',
-    'Sculpture Installation',
-    'Photography Exhibition',
-    'Cultural Festival',
-    'Art Competition',
-    'Community Art Project',
-  ];
+  List<String> _categories = (sl<ApiService>().cachedEventCategories ?? [])
+      .where((c) => c != 'All Categories' && c != 'All')
+      .toList();
 
-  List<String> _locations = [
-    'Dubai, UAE',
-    'Dubai Design District (d3), Dubai',
-    'Alserkal Avenue, Al Quoz, Dubai',
-    'Downtown Dubai, UAE',
-    'DIFC, Dubai',
-    'Al Shindagha Historic District, Dubai',
-    'Jaddaf Waterfront, Dubai',
-    'Madinat Jumeirah, Dubai',
-    'Dubai Marina, UAE',
-    'Palm Jumeirah, Dubai',
-    'Jumeirah, Dubai',
-    'Business Bay, Dubai',
-    'Abu Dhabi, UAE',
-    'Sharjah, UAE',
-    'Ajman, UAE',
-    'Ras Al Khaimah, UAE',
-    'Fujairah, UAE',
-    'Umm Al Quwain, UAE',
-  ];
+  List<String> _locations = (sl<ApiService>().cachedLocations ?? [])
+      .map((l) => l.name)
+      .where((n) => n.trim().isNotEmpty)
+      .toList();
 
   String _normalizeDateTimeString(String text) {
     final trimmed = text.trim();
@@ -260,6 +242,11 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       _tagsController = TextEditingController();
       _maxTicketsController = TextEditingController(text: '100');
     }
+    if (_selectedPublishingPlan.isEmpty && _eventListingPlans.isNotEmpty) {
+      _selectedPublishingPlan =
+          _eventListingPlans.first.id?.toString() ??
+              _eventListingPlans.first.title;
+    }
     _loadDynamicCategories();
     _loadDynamicLocations();
     _loadPublishingPricing();
@@ -271,29 +258,12 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
         pricingList,
       ) {
         if (!mounted || pricingList.isEmpty) return;
-        final evPricing = pricingList.firstWhere(
-          (p) => p.itemType == 'event',
-          orElse:
-              () =>
-                  _eventPricing ??
-                  const PublishingPricingModel(
-                    id: 1,
-                    itemType: 'event',
-                    itemName: 'Event Publishing',
-                    weeklyPrice: 'AED 150',
-                    monthlyPrice: 'AED 500',
-                    sixMonthPrice: 'AED 2,500',
-                    yearlyPrice: 'AED 4,500',
-                    sixMonthBadge: '180 days active',
-                    yearlyBadge: '365 days active',
-                    description:
-                        'Publishing events is a paid service on Artist Dubai. Select your preferred promotion duration. Once reviewed and approved by the admin, your event will be broadcasted to art enthusiasts across Dubai.',
-                    currency: 'AED',
-                  ),
-        );
-        setState(() {
-          _eventPricing = evPricing;
-        });
+        final evPricing = pricingList.where((p) => p.itemType == 'event').firstOrNull;
+        if (evPricing != null) {
+          setState(() {
+            _eventPricing = evPricing;
+          });
+        }
       });
     } catch (_) {}
 
@@ -622,8 +592,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           fetched.where((c) => c != 'All Categories' && c != 'All').toList();
       if (mounted && filtered.isNotEmpty) {
         setState(() {
-          final combined = <String>{..._categories, ...filtered}.toList();
-          _categories = combined;
+          _categories = filtered;
         });
       }
     } catch (_) {}
@@ -636,7 +605,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           fetched.map((l) => l.name).where((n) => n.trim().isNotEmpty).toList();
       if (mounted && names.isNotEmpty) {
         setState(() {
-          _locations = <String>{..._locations, ...names}.toList();
+          _locations = names;
         });
       }
     } catch (_) {}
@@ -647,25 +616,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       final pricingList = await sl<ApiService>().getPublishingPricing(
         forceRefresh: true,
       );
-      final evPricing = pricingList.firstWhere(
-        (p) => p.itemType == 'event',
-        orElse:
-            () => const PublishingPricingModel(
-              id: 1,
-              itemType: 'event',
-              itemName: 'Event Publishing',
-              weeklyPrice: 'AED 150',
-              monthlyPrice: 'AED 500',
-              sixMonthPrice: 'AED 2,500',
-              yearlyPrice: 'AED 4,500',
-              sixMonthBadge: '180 days active',
-              yearlyBadge: '365 days active',
-              description:
-                  'Publishing events is a paid service on Artist Dubai. Select your preferred promotion duration. Once reviewed and approved by the admin, your event will be broadcasted to art enthusiasts across Dubai.',
-              currency: 'AED',
-            ),
-      );
-      if (mounted) {
+      final evPricing =
+          pricingList.where((p) => p.itemType == 'event').firstOrNull;
+      if (mounted && evPricing != null) {
         setState(() {
           _eventPricing = evPricing;
         });
@@ -1044,46 +997,33 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                   ? 'Dubai, UAE'
                   : _locationController.text.trim());
       // Resolve dynamic plan selection from admin listing plans or baseline pricing
-      String publishingAmount = 'AED 2,500';
-      String resolvedPlanName = 'Event Publishing';
+      String publishingAmount = 'Free';
+      String resolvedPlanName = 'Standard Event Listing';
 
       if (_eventListingPlans.isNotEmpty) {
         final matchingPlan = _eventListingPlans.firstWhere(
           (p) =>
               p.id?.toString() == _selectedPublishingPlan ||
-              p.title.toLowerCase() == _selectedPublishingPlan.toLowerCase(),
+              p.title.toLowerCase() == _selectedPublishingPlan.toLowerCase() ||
+              (_selectedPublishingPlan.contains('3') && p.title.contains('3')) ||
+              (_selectedPublishingPlan.contains('6') && p.title.contains('6')) ||
+              ((_selectedPublishingPlan.contains('12') || _selectedPublishingPlan.contains('year')) &&
+                  (p.title.contains('12') || p.title.toLowerCase().contains('year'))),
           orElse: () => _eventListingPlans.first,
         );
         publishingAmount = matchingPlan.price;
         resolvedPlanName = matchingPlan.title;
-      } else {
-        publishingAmount =
-            _eventPricing?.getPriceForPlan(_selectedPublishingPlan) ??
-            (_selectedPublishingPlan == 'three_month'
-                ? (_eventPricing?.threeMonthPrice ?? 'AED 1,200')
-                : (_selectedPublishingPlan == 'monthly'
-                    ? 'AED 500'
-                    : (_selectedPublishingPlan == 'yearly'
-                        ? 'AED 4,500'
-                        : 'AED 2,500')));
-        resolvedPlanName = _selectedPublishingPlan == 'yearly'
-            ? (_eventPricing?.yearlyBadge.trim().isNotEmpty == true
-                ? '${l10n.yearly} (${_eventPricing!.yearlyBadge.trim()})'
-                : '12 Months Plan (365 Days)')
-            : (_selectedPublishingPlan == 'three_month'
-                ? (_eventPricing?.threeMonthBadge.trim().isNotEmpty == true
-                    ? '3 Months (${_eventPricing!.threeMonthBadge.trim()})'
-                    : '3 Months Plan (90 Days)')
-                : (_eventPricing?.sixMonthBadge.trim().isNotEmpty == true
-                    ? '${l10n.sixMonths} (${_eventPricing!.sixMonthBadge.trim()})'
-                    : '6 Months Plan (180 Days)'));
       }
       final txnRef = _transactionIdController.text.trim();
       final hasPaymentProof =
           (_receiptUrl != null && _receiptUrl!.isNotEmpty) || txnRef.isNotEmpty;
 
       final hasActiveEventPlan = _activeEventPlan != null;
-      final effectivePaymentStatus = (isAdmin || hasActiveEventPlan)
+      final isPaidPlan = _eventListingPlans.isNotEmpty &&
+          publishingAmount.toLowerCase() != 'free' &&
+          publishingAmount != '0 AED';
+
+      final effectivePaymentStatus = (isAdmin || hasActiveEventPlan || !isPaidPlan)
           ? 'paid'
           : (hasPaymentProof ? 'submitted' : 'unpaid');
       final effectivePublishingPlan = hasActiveEventPlan
@@ -1093,7 +1033,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
           ? '0 AED (Included with ${_activeEventPlan!['plan_name'] ?? 'Active Plan'})'
           : publishingAmount;
 
-      if (!isEdit && !isAdmin && !hasActiveEventPlan) {
+      if (!isEdit && !isAdmin && !hasActiveEventPlan && isPaidPlan) {
         setState(() => _isSubmitting = false);
 
         final eventFormData = <String, dynamic>{
@@ -1920,7 +1860,11 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
+                                Wrap(
+                                  crossAxisAlignment:
+                                      WrapCrossAlignment.center,
+                                  spacing: 8,
+                                  runSpacing: 6,
                                   children: [
                                     Container(
                                       padding: const EdgeInsets.symmetric(
@@ -1932,7 +1876,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(
-                                        l10n.paidPublishing,
+                                        'Paid Event Publishing'.trData(context),
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 10.5,
@@ -1941,16 +1885,12 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        l10n.choosePublishingPlan,
-                                        style: const TextStyle(
-                                          fontSize: 13.5,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF1E293B),
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
+                                    Text(
+                                      'Choose Your Plan'.trData(context),
+                                      style: const TextStyle(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF1E293B),
                                       ),
                                     ),
                                   ],
@@ -2062,135 +2002,150 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                         context,
                                         _eventPricing!.description!.trim(),
                                       )
-                                      : l10n.paidPublishingDesc,
+                                      : 'Feature your event on curated maps and event calendars, with professional event photography.'
+                                          .trData(context),
                                   style: const TextStyle(
                                     fontSize: 12.5,
                                     color: Color(0xFF475569),
                                     height: 1.4,
                                   ),
                                 ),
+                                const SizedBox(height: 10),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 9,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFAF5FF),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: const Color(0xFFE9D5FF),
+                                      width: 1.2,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.card_giftcard_rounded,
+                                        color: Color(0xFF6B1C9B),
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text.rich(
+                                          TextSpan(
+                                            children: [
+                                              TextSpan(
+                                                text: 'Exclusive Benefits: '.trData(context),
+                                                style: const TextStyle(
+                                                  color: Color(0xFF6B1C9B),
+                                                  fontWeight: FontWeight.w800,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                              TextSpan(
+                                                text: 'Enjoy your first 3 months free.'.trData(context),
+                                                style: const TextStyle(
+                                                  color: Color(0xFF475569),
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                                 const SizedBox(height: 14),
                                 LayoutBuilder(
                                   builder: (context, constraints) {
-                                    final isSmall = constraints.maxWidth < 460;
-
-                                    List<Widget> cards = [];
-                                    if (_eventListingPlans.isNotEmpty) {
-                                      cards = _eventListingPlans.map((plan) {
-                                        final planId =
-                                            plan.id?.toString() ?? plan.title;
-                                        final subtitle = (plan.features.isNotEmpty &&
-                                                plan.features.first.trim().isNotEmpty)
-                                            ? plan.features.first.trim()
-                                            : (plan.description.trim().isNotEmpty
-                                                ? plan.description.trim()
-                                                : (plan.duration.isNotEmpty
-                                                    ? plan.duration
-                                                    : 'Verified Event Showcase'));
-                                        return _buildPricingPlanCard(
-                                          id: planId,
-                                          title: plan.title,
-                                          price: plan.price,
-                                          period: plan.duration.isNotEmpty
-                                              ? ' · ${plan.duration}'
-                                              : '',
-                                          subtitle: subtitle,
-                                          tag:
-                                              plan.badge.isNotEmpty
-                                                  ? plan.badge
-                                                  : null,
-                                        );
-                                      }).toList();
-                                    } else {
-                                      final threeMonthPrice =
-                                          _eventPricing?.threeMonthPrice ??
-                                          'AED 1,200';
-                                      final sixMonthPrice =
-                                          _eventPricing?.sixMonthPrice ??
-                                          'AED 2,500';
-                                      final yearlyPrice =
-                                          _eventPricing?.yearlyPrice ??
-                                          'AED 4,500';
-                                      final threeMonthSubtitle =
-                                          _eventPricing?.threeMonthBadge
-                                                      .trim()
-                                                      .isNotEmpty ==
-                                                  true
-                                              ? DataTranslator.tr(
-                                                context,
-                                                _eventPricing!.threeMonthBadge
-                                                    .trim(),
-                                              )
-                                              : '90 days active'.trData(context);
-                                      final sixMonthSubtitle =
-                                          _eventPricing?.sixMonthBadge
-                                                      .trim()
-                                                      .isNotEmpty ==
-                                                  true
-                                              ? DataTranslator.tr(
-                                                context,
-                                                _eventPricing!.sixMonthBadge
-                                                    .trim(),
-                                              )
-                                              : l10n.daysActive180;
-                                      final yearlySubtitle =
-                                          _eventPricing?.yearlyBadge
-                                                      .trim()
-                                                      .isNotEmpty ==
-                                                  true
-                                              ? DataTranslator.tr(
-                                                context,
-                                                _eventPricing!.yearlyBadge.trim(),
-                                              )
-                                              : l10n.daysActive365;
-
-                                      cards = [
-                                        _buildPricingPlanCard(
-                                          id: 'three_month',
-                                          title: '3 Months'.trData(context),
-                                          price: threeMonthPrice,
-                                          period: '/ 3 mo',
-                                          subtitle: threeMonthSubtitle,
-                                          tag: 'Special Offer',
+                                    if (_eventListingPlans.isEmpty) {
+                                      return Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 14,
                                         ),
-                                        _buildPricingPlanCard(
-                                          id: 'six_month',
-                                          title: l10n.sixMonths,
-                                          price: sixMonthPrice,
-                                          period: '/ 6 mo',
-                                          subtitle: sixMonthSubtitle,
-                                          tag: 'Save 25%',
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF8FAFC),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: const Color(0xFFE2E8F0),
+                                          ),
                                         ),
-                                        _buildPricingPlanCard(
-                                          id: 'yearly',
-                                          title: l10n.yearly,
-                                          price: yearlyPrice,
-                                          period: '/ year',
-                                          subtitle: yearlySubtitle,
-                                          tag: 'Best Value',
+                                        child: Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.info_outline_rounded,
+                                              color: Color(0xFF6A2777),
+                                              size: 20,
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Text(
+                                                'No paid event plans currently configured by administrator. Standard free submission applies.'
+                                                    .trData(context),
+                                                style: const TextStyle(
+                                                  fontSize: 12.5,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Color(0xFF475569),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ];
+                                      );
                                     }
 
-                                    if (isSmall || cards.length != 2) {
-                                      return Column(
+                                    final cards = _eventListingPlans.map((plan) {
+                                      final planId =
+                                          plan.id?.toString() ?? plan.title;
+                                      final subtitle = (plan.features.isNotEmpty &&
+                                              plan.features.first.trim().isNotEmpty)
+                                          ? plan.features.first.trim()
+                                          : (plan.description.trim().isNotEmpty
+                                              ? plan.description.trim()
+                                              : (plan.duration.isNotEmpty
+                                                  ? plan.duration
+                                                  : 'Verified Event Showcase'));
+                                      return _buildPricingPlanCard(
+                                        id: planId,
+                                        title: plan.title,
+                                        price: plan.price,
+                                        period: plan.duration.isNotEmpty
+                                            ? ' · ${plan.duration}'
+                                            : '',
+                                        subtitle: subtitle,
+                                        tag:
+                                            plan.badge.isNotEmpty
+                                                ? plan.badge
+                                                : null,
+                                      );
+                                    }).toList();
+
+                                    if (constraints.maxWidth >= 650 && cards.length == 3) {
+                                      return Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          for (int i = 0;
-                                              i < cards.length;
-                                              i++) ...[
-                                            if (i > 0)
-                                              const SizedBox(height: 10),
-                                            cards[i],
-                                          ],
+                                          Expanded(child: cards[0]),
+                                          const SizedBox(width: 10),
+                                          Expanded(child: cards[1]),
+                                          const SizedBox(width: 10),
+                                          Expanded(child: cards[2]),
                                         ],
                                       );
                                     }
 
-                                    return Row(
+                                    return Column(
                                       children: [
-                                        Expanded(child: cards[0]),
-                                        const SizedBox(width: 12),
-                                        Expanded(child: cards[1]),
+                                        for (int i = 0; i < cards.length; i++) ...[
+                                          if (i > 0) const SizedBox(height: 10),
+                                          cards[i],
+                                        ],
                                       ],
                                     );
                                   },
@@ -2311,7 +2266,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 20),
+                          const HomeFooterWidget(),
+                          const SizedBox(height: 16),
                         ],
                       ),
                     ),
@@ -2357,28 +2314,19 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
   }
 
   Widget _buildPaymentNoticeCard() {
+    if (_eventListingPlans.isEmpty) {
+      return const SizedBox.shrink();
+    }
     final l10n = AppLocalizations.of(context);
-    String planAmount = 'AED 2,500';
-    if (_eventListingPlans.isNotEmpty) {
-      final matching = _eventListingPlans.firstWhere(
-        (p) =>
-            p.id?.toString() == _selectedPublishingPlan ||
-            p.title.toLowerCase() == _selectedPublishingPlan.toLowerCase(),
-        orElse: () => _eventListingPlans.first,
-      );
-      planAmount = matching.price;
-    } else {
-      planAmount =
-          _eventPricing?.getPriceForPlan(_selectedPublishingPlan) ??
-          (_selectedPublishingPlan == 'three_month'
-              ? (_eventPricing?.threeMonthPrice ?? 'AED 1,200')
-              : (_selectedPublishingPlan == 'monthly'
-                  ? 'AED 500'
-                  : (_selectedPublishingPlan == 'six_month'
-                      ? 'AED 2,500'
-                      : (_selectedPublishingPlan == 'yearly'
-                          ? 'AED 4,500'
-                          : 'AED 150'))));
+    final matching = _eventListingPlans.firstWhere(
+      (p) =>
+          p.id?.toString() == _selectedPublishingPlan ||
+          p.title.toLowerCase() == _selectedPublishingPlan.toLowerCase(),
+      orElse: () => _eventListingPlans.first,
+    );
+    final planAmount = matching.price;
+    if (planAmount.toLowerCase() == 'free' || planAmount == '0 AED') {
+      return const SizedBox.shrink();
     }
 
     return Container(
@@ -2956,7 +2904,12 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     required String subtitle,
     String? tag,
   }) {
-    final isSelected = _selectedPublishingPlan == id;
+    final isSelected = _selectedPublishingPlan == id ||
+        _selectedPublishingPlan.toLowerCase() == title.toLowerCase() ||
+        (_selectedPublishingPlan.contains('3') && (title.contains('3') || id.contains('3'))) ||
+        (_selectedPublishingPlan.contains('6') && (title.contains('6') || id.contains('6'))) ||
+        ((_selectedPublishingPlan.contains('12') || _selectedPublishingPlan.contains('year')) &&
+            (title.contains('12') || id.contains('12')));
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -3068,9 +3021,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                 ],
               ),
               const SizedBox(height: 6),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 4,
                 children: [
                   Text(
                     price.trData(context),
@@ -3080,8 +3033,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                       color: Color(0xFF0F172A),
                     ),
                   ),
-                  if (period.isNotEmpty) ...[
-                    const SizedBox(width: 4),
+                  if (period.isNotEmpty)
                     Text(
                       period.trData(context),
                       style: const TextStyle(
@@ -3089,7 +3041,6 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                         color: Color(0xFF64748B),
                       ),
                     ),
-                  ],
                 ],
               ),
               const SizedBox(height: 3),

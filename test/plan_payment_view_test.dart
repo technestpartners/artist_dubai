@@ -152,4 +152,88 @@ void main() {
       },
     );
   });
+
+  group('CardExpiryInputFormatter Tests', () {
+    late CardExpiryInputFormatter formatter;
+
+    setUp(() {
+      formatter = CardExpiryInputFormatter();
+    });
+
+    TextEditingValue format(String oldText, String newText) {
+      return formatter.formatEditUpdate(
+        TextEditingValue(
+          text: oldText,
+          selection: TextSelection.collapsed(offset: oldText.length),
+        ),
+        TextEditingValue(
+          text: newText,
+          selection: TextSelection.collapsed(offset: newText.length),
+        ),
+      );
+    }
+
+    test('Single-digit months 2-9 (such as 6) auto-pad with 0 and separator', () {
+      final res6 = format('', '6');
+      expect(res6.text, '06 / ');
+      expect(res6.selection.baseOffset, 5);
+
+      final res2 = format('', '2');
+      expect(res2.text, '02 / ');
+
+      final res9 = format('', '9');
+      expect(res9.text, '09 / ');
+    });
+
+    test('Typing year after auto-padded month (6 then 2, then 8) works smoothly', () {
+      final step1 = format('', '6');
+      expect(step1.text, '06 / ');
+
+      final step2 = format('06 / ', '06 / 2');
+      expect(step2.text, '06 / 2');
+
+      final step3 = format('06 / 2', '06 / 28');
+      expect(step3.text, '06 / 28');
+    });
+
+    test('Direct sequential typing of 628 produces 06 / 28', () {
+      final res = format('', '628');
+      expect(res.text, '06 / 28');
+    });
+
+    test('Typing 1 allows waiting for 2nd digit or explicit slash', () {
+      final step1 = format('', '1');
+      expect(step1.text, '1');
+
+      final step2a = format('1', '12');
+      expect(step2a.text, '12 / ');
+
+      final step2b = format('1', '1/');
+      expect(step2b.text, '01 / ');
+    });
+
+    test('Pasting formatted expiry dates', () {
+      expect(format('', '06/28').text, '06 / 28');
+      expect(format('', '6/28').text, '06 / 28');
+      expect(format('', '06 / 28').text, '06 / 28');
+      expect(format('', '6/2028').text, '06 / 28');
+    });
+
+    test('Backspacing from 06 / gracefully clears the field without sticking', () {
+      final backspaced = format('06 / ', '06 /');
+      expect(backspaced.text, '');
+    });
+
+    test('Backspacing from 06 / 28 deletes digits step-by-step', () {
+      final step1 = format('06 / 28', '06 / 2');
+      expect(step1.text, '06 / 2');
+
+      final step2 = format('06 / 2', '06 / ');
+      expect(step2.text, '06 / ');
+
+      final step3 = format('06 / ', '06 /');
+      expect(step3.text, '');
+    });
+  });
 }
+

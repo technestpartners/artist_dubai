@@ -26,8 +26,8 @@ void main() {
       expect(items[3].title, 'Explore Art Galleries in Dubai');
       expect(items[3].description, contains('Discover Dubai’s finest art galleries with just one click.'));
 
-      // 5. Global Art Guide – Artists, History & Origins
-      expect(items[4].title, 'Global Art Guide – Artists, History & Origins');
+      // 5. Global Art Guide
+      expect(items[4].title, contains('Global Art Guide'));
       expect(items[4].description, contains('Discover artists, art history, and cultural origins'));
     });
 

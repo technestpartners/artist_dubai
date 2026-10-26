@@ -772,9 +772,7 @@ class _FavoritesViewState extends State<FavoritesView>
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            Localizations.localeOf(context).languageCode == 'ar'
-                                ? 'بواسطة $artist'
-                                : 'By $artist',
+                            AppLocalizations.of(context).byArtist(artist),
                             style: const TextStyle(
                               fontSize: 12.5,
                               color: Color(0xFF6A2777),

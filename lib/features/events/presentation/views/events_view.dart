@@ -18,6 +18,7 @@ import '../../../artists/domain/models/artist_model.dart';
 import '../../../../core/utils/data_translator.dart';
 import '../../../../core/utils/share_helper.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
+import 'package:artist_dubai/features/home/presentation/widgets/home_footer_widget.dart';
 
 class EventsView extends StatefulWidget {
   final int initialTabIndex;
@@ -586,7 +587,9 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                     else
                       _buildWhatsOnSections(filteredEvents),
 
-                    const SizedBox(height: 80),
+                    const SizedBox(height: 16),
+                    const HomeFooterWidget(),
+                    const SizedBox(height: 40),
                   ],
                 ),
               ),
@@ -604,9 +607,9 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
   Widget _buildHeaderSection() {
     final l10n = AppLocalizations.of(context);
     final canGoBack = Navigator.canPop(context);
+    final rh = ResponsiveHelper.of(context);
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+    final titleWidget = Row(
       children: [
         if (canGoBack)
           InkWell(
@@ -645,43 +648,69 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
             ],
           ),
         ),
-        // Create Event Button
-        SizedBox(
-          height: 38,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: _primaryPurple,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-            ),
-            onPressed: () {
-              if (_isLoggedIn) {
-                context.push(RouteNames.createArtEvent);
-              } else {
-                context.push(RouteNames.login);
-              }
-            },
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.add, size: 16, color: _primaryPurple),
-                const SizedBox(width: 4),
-                Text(
-                  l10n.registerArtEvent,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: _primaryPurple,
-                  ),
-                ),
-              ],
-            ),
+      ],
+    );
+
+    final actionButton = SizedBox(
+      height: 38,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: _primaryPurple,
+          elevation: 0,
+          padding: EdgeInsets.symmetric(
+            horizontal: rh.isUltraCompact ? 10 : 14,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
         ),
+        onPressed: () {
+          if (_isLoggedIn) {
+            context.push(RouteNames.createArtEvent);
+          } else {
+            context.push(RouteNames.login);
+          }
+        },
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.add, size: 16, color: _primaryPurple),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                l10n.registerArtEvent,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: rh.isUltraCompact ? 12 : 13,
+                  fontWeight: FontWeight.w700,
+                  color: _primaryPurple,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (rh.width < 340) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          titleWidget,
+          const SizedBox(height: 10),
+          actionButton,
+        ],
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(child: titleWidget),
+        const SizedBox(width: 8),
+        actionButton,
       ],
     );
   }

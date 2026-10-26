@@ -512,7 +512,7 @@ class _GalleriesViewState extends State<GalleriesView> {
                         const SizedBox(height: 36),
                         Center(
                           child: Text(
-                            'Hosted by Nizar Fahem'.trData(context),
+                            'Hosted by Nizar Al Fahem'.trData(context),
                             style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 13.5,

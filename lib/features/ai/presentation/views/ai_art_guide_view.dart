@@ -9,6 +9,7 @@ import '../../../../core/services/storage_service.dart';
 import '../../../../core/utils/data_translator.dart';
 import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/widgets/app_top_bar.dart';
+import 'package:artist_dubai/features/home/presentation/widgets/home_footer_widget.dart';
 
 class AiArtGuideView extends StatefulWidget {
   const AiArtGuideView({super.key});
@@ -1215,6 +1216,9 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
                   ),
                 );
               }),
+              const SizedBox(height: 20),
+              const HomeFooterWidget(),
+              const SizedBox(height: 16),
             ],
           ),
         ),

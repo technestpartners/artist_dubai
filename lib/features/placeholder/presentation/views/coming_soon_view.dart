@@ -12,18 +12,26 @@ class ComingSoonView extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final rh = ResponsiveHelper.of(context);
-    final logoSize =
-        rh.isDesktop
+    final logoSize = rh.height < 500
+        ? 100.0
+        : (rh.isDesktop
             ? 260.0
             : rh.isTablet
-            ? 230.0
-            : 200.0;
+                ? 230.0
+                : 200.0);
 
     return Scaffold(
       backgroundColor: const Color(0xFF5D1F8E),
       body: SafeArea(
-        child: Column(
-          children: [
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Row(
@@ -174,7 +182,12 @@ class ComingSoonView extends StatelessWidget {
                 ),
               ),
             ),
-          ],
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

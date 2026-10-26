@@ -12,6 +12,8 @@ import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/utils/share_helper.dart';
 import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/utils/data_translator.dart';
+import 'package:artist_dubai/l10n/app_localizations.dart';
+import 'package:artist_dubai/features/home/presentation/widgets/home_footer_widget.dart';
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -674,6 +676,7 @@ class _ProfileViewState extends State<ProfileView> {
     showDialog(
       context: context,
       builder: (dialogContext) {
+        final l10n = AppLocalizations.of(dialogContext);
         return Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -715,18 +718,18 @@ class _ProfileViewState extends State<ProfileView> {
                 // Bullets List
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    _BulletPointText('Your artist profile (if any)'),
-                    SizedBox(height: 6),
-                    _BulletPointText('All your artwork images'),
-                    SizedBox(height: 6),
-                    _BulletPointText('Your account information'),
-                    SizedBox(height: 6),
-                    _BulletPointText('All your event history'),
-                    SizedBox(height: 6),
-                    _BulletPointText('Any saved preferences'),
-                    SizedBox(height: 6),
-                    _BulletPointText('Your liked artists and galleries'),
+                  children: [
+                    _BulletPointText(l10n.deleteAccountItem1),
+                    const SizedBox(height: 6),
+                    _BulletPointText(l10n.deleteAccountItem2),
+                    const SizedBox(height: 6),
+                    _BulletPointText(l10n.deleteAccountItem3),
+                    const SizedBox(height: 6),
+                    _BulletPointText(l10n.deleteAccountItem4),
+                    const SizedBox(height: 6),
+                    _BulletPointText(l10n.deleteAccountItem5),
+                    const SizedBox(height: 6),
+                    _BulletPointText(l10n.deleteAccountItem6),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -813,7 +816,10 @@ class _ProfileViewState extends State<ProfileView> {
           children: [
             // Page Header Bar
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: EdgeInsets.symmetric(
+                horizontal: rh.horizontalPadding,
+                vertical: 12,
+              ),
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
@@ -1607,7 +1613,9 @@ class _ProfileViewState extends State<ProfileView> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 16),
+                        const HomeFooterWidget(),
+                        const SizedBox(height: 16),
                       ],
                     ),
                   ),
@@ -1627,8 +1635,9 @@ class _ProfileViewState extends State<ProfileView> {
     required String subtitle,
     required Widget child,
   }) {
+    final rh = ResponsiveHelper.of(context);
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(rh.isUltraCompact ? 12 : 18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -1705,12 +1714,16 @@ class _ProfileViewState extends State<ProfileView> {
         children: [
           Icon(icon, size: 14, color: color),
           const SizedBox(width: 5),
-          Text(
-            label.trData(context),
-            style: TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.bold,
-              color: color,
+          Flexible(
+            child: Text(
+              label.trData(context),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ),
           ),
         ],

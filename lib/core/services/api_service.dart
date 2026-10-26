@@ -105,6 +105,10 @@ class ApiService {
   List<GovernmentEntity>? get cachedGovEntities => _cachedGovEntities;
   set cachedGovEntities(List<GovernmentEntity>? value) => _cachedGovEntities = value;
   List<ListingPlanItem>? get cachedListingPlans => _cachedListingPlans;
+  List<String>? get cachedEventCategories => _cachedEventCategories;
+  List<LocationModel>? get cachedLocations => _cachedLocations;
+  List<ExperienceLevelModel>? get cachedExperienceLevels =>
+      _cachedExperienceLevels;
 
   /// Invalidate all in-memory caches (called when switching language)
   void invalidateAllCaches() {
@@ -122,9 +126,19 @@ class ApiService {
     _cacheTimestamps.clear();
   }
 
-  bool _isSuccess(dynamic res) =>
-      res is Map<String, dynamic> &&
-      (res['status'] == 'success' || res['success'] == true);
+  dynamic _unwrap(dynamic res) {
+    try {
+      final d = (res as dynamic).data;
+      if (d != null) return d;
+    } catch (_) {}
+    return res;
+  }
+
+  bool _isSuccess(dynamic res) {
+    final map = _unwrap(res);
+    return map is Map<String, dynamic> &&
+        (map['status'] == 'success' || map['success'] == true);
+  }
 
   // 1. Categories (Instant Cache-First from MySQL — TTL 10 min)
   Future<List<CategoryInfo>> getCategories({
@@ -1601,33 +1615,7 @@ class ApiService {
       }
     } catch (_) {}
 
-    return _cachedExperienceLevels ??
-        const [
-          ExperienceLevelModel(
-            id: 1,
-            name: 'Beginner (1-2 years)',
-            yearsRange: '1-2 years',
-            displayOrder: 1,
-          ),
-          ExperienceLevelModel(
-            id: 2,
-            name: 'Intermediate (3-5 years)',
-            yearsRange: '3-5 years',
-            displayOrder: 2,
-          ),
-          ExperienceLevelModel(
-            id: 3,
-            name: 'Advanced (5-10 years)',
-            yearsRange: '5-10 years',
-            displayOrder: 3,
-          ),
-          ExperienceLevelModel(
-            id: 4,
-            name: 'Professional (10+ years)',
-            yearsRange: '10+ years',
-            displayOrder: 4,
-          ),
-        ];
+    return _cachedExperienceLevels ?? const <ExperienceLevelModel>[];
   }
 
   Future<bool> createExperienceLevel({
@@ -1723,135 +1711,7 @@ class ApiService {
       }
     } catch (_) {}
 
-    return _cachedLocations ??
-        const [
-          LocationModel(
-            id: 1,
-            name: 'Dubai, UAE',
-            city: 'Dubai',
-            country: 'UAE',
-            displayOrder: 1,
-          ),
-          LocationModel(
-            id: 2,
-            name: 'Dubai Design District (d3), Dubai',
-            city: 'Dubai',
-            country: 'UAE',
-            displayOrder: 2,
-          ),
-          LocationModel(
-            id: 3,
-            name: 'Alserkal Avenue, Al Quoz, Dubai',
-            city: 'Dubai',
-            country: 'UAE',
-            displayOrder: 3,
-          ),
-          LocationModel(
-            id: 4,
-            name: 'Downtown Dubai, UAE',
-            city: 'Dubai',
-            country: 'UAE',
-            displayOrder: 4,
-          ),
-          LocationModel(
-            id: 5,
-            name: 'DIFC, Dubai',
-            city: 'Dubai',
-            country: 'UAE',
-            displayOrder: 5,
-          ),
-          LocationModel(
-            id: 6,
-            name: 'Al Shindagha Historic District, Dubai',
-            city: 'Dubai',
-            country: 'UAE',
-            displayOrder: 6,
-          ),
-          LocationModel(
-            id: 7,
-            name: 'Jaddaf Waterfront, Dubai',
-            city: 'Dubai',
-            country: 'UAE',
-            displayOrder: 7,
-          ),
-          LocationModel(
-            id: 8,
-            name: 'Madinat Jumeirah, Dubai',
-            city: 'Dubai',
-            country: 'UAE',
-            displayOrder: 8,
-          ),
-          LocationModel(
-            id: 9,
-            name: 'Dubai Marina, UAE',
-            city: 'Dubai',
-            country: 'UAE',
-            displayOrder: 9,
-          ),
-          LocationModel(
-            id: 10,
-            name: 'Palm Jumeirah, Dubai',
-            city: 'Dubai',
-            country: 'UAE',
-            displayOrder: 10,
-          ),
-          LocationModel(
-            id: 11,
-            name: 'Jumeirah, Dubai',
-            city: 'Dubai',
-            country: 'UAE',
-            displayOrder: 11,
-          ),
-          LocationModel(
-            id: 12,
-            name: 'Business Bay, Dubai',
-            city: 'Dubai',
-            country: 'UAE',
-            displayOrder: 12,
-          ),
-          LocationModel(
-            id: 13,
-            name: 'Abu Dhabi, UAE',
-            city: 'Abu Dhabi',
-            country: 'UAE',
-            displayOrder: 13,
-          ),
-          LocationModel(
-            id: 14,
-            name: 'Sharjah, UAE',
-            city: 'Sharjah',
-            country: 'UAE',
-            displayOrder: 14,
-          ),
-          LocationModel(
-            id: 15,
-            name: 'Ajman, UAE',
-            city: 'Ajman',
-            country: 'UAE',
-            displayOrder: 15,
-          ),
-          LocationModel(
-            id: 16,
-            name: 'Ras Al Khaimah, UAE',
-            city: 'Ras Al Khaimah',
-            country: 'UAE',
-            displayOrder: 16,
-          ),
-          LocationModel(
-            id: 17,
-            name: 'Fujairah, UAE',
-            city: 'Fujairah',
-            country: 'UAE',
-            displayOrder: 17,
-          ),
-          LocationModel(
-            id: 18,
-            name: 'Umm Al Quwain, UAE',
-            city: 'Umm Al Quwain',
-            country: 'UAE',
-            displayOrder: 18,
-          ),
-        ];
+    return _cachedLocations ?? const <LocationModel>[];
   }
 
   Future<bool> createLocation({
@@ -1954,39 +1814,7 @@ class ApiService {
       }
     } catch (_) {}
 
-    return _cachedPublishingPricing ??
-        const [
-          PublishingPricingModel(
-            id: 1,
-            itemType: 'event',
-            itemName: 'Event Publishing',
-            weeklyPrice: 'AED 150',
-            monthlyPrice: 'AED 500',
-            sixMonthPrice: 'AED 2,500',
-            yearlyPrice: 'AED 4,500',
-            sixMonthBadge: 'Save 17%',
-            yearlyBadge: 'Best Value',
-            currency: 'AED',
-            description:
-                'Standard rate for publishing art events, exhibitions, and symposiums on Artist Dubai.',
-          ),
-          PublishingPricingModel(
-            id: 2,
-            itemType: 'gallery',
-            itemName: 'Gallery Space Spotlight',
-            weeklyPrice: 'AED 250',
-            monthlyPrice: 'AED 800',
-            threeMonthPrice: 'AED 2,000',
-            sixMonthPrice: 'AED 3,000',
-            yearlyPrice: 'AED 5,000',
-            threeMonthBadge: 'Special Offer',
-            sixMonthBadge: 'Save 25%',
-            yearlyBadge: 'Best Value',
-            currency: 'AED',
-            description:
-                'Feature your gallery on curated maps and event calendars, with professional event photography.',
-          ),
-        ];
+    return _cachedPublishingPricing ?? const [];
   }
 
   Future<bool> updatePublishingPricing({
@@ -2034,38 +1862,32 @@ class ApiService {
   // 15h2. Listing Plans (Event, Gallery, Art Centre) (MySQL Backend)
   List<ListingPlanItem>? _cachedListingPlans;
 
-  static const List<ListingPlanItem> defaultListingPlans =
-      ListingPlanItem.defaultBaselinePlans;
+  static const List<ListingPlanItem> defaultListingPlans = <ListingPlanItem>[];
 
   Future<List<ListingPlanItem>> getListingPlans({
     bool forceRefresh = false,
   }) async {
-    if (!forceRefresh &&
-        _cachedListingPlans != null &&
-        _cachedListingPlans!.isNotEmpty) {
+    if (!forceRefresh && _cachedListingPlans != null) {
       return _cachedListingPlans!;
     }
     try {
-      final res = await _client.get(ApiEndpoints.listingPlans);
-      if (_isSuccess(res) && res['data'] is List) {
+      final raw = await _client.get(ApiEndpoints.listingPlans);
+      final res = _unwrap(raw);
+      if (_isSuccess(res) && res is Map<String, dynamic> && res['data'] is List) {
         final list = res['data'] as List<dynamic>;
-        if (list.isNotEmpty) {
-          _cachedListingPlans =
-              list
-                  .map(
-                    (item) => ListingPlanItem.fromJson(
-                      Map<String, dynamic>.from(item as Map),
-                    ),
-                  )
-                  .toList();
-          return _cachedListingPlans!;
-        }
+        _cachedListingPlans =
+            list
+                .map(
+                  (item) => ListingPlanItem.fromJson(
+                    Map<String, dynamic>.from(item as Map),
+                  ),
+                )
+                .toList();
+        return _cachedListingPlans!;
       }
     } catch (_) {}
 
-    return _cachedListingPlans != null && _cachedListingPlans!.isNotEmpty
-        ? _cachedListingPlans!
-        : defaultListingPlans;
+    return _cachedListingPlans ?? const [];
   }
 
   Future<bool> updateListingPlan({

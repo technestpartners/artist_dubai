@@ -25,19 +25,19 @@ class PaymentSettingsModel {
       qrCodeUrl:
           (json['qr_code_url'] ?? json['qr_code'] ?? '').toString().trim(),
       accountName:
-          (json['account_name'] ?? 'Artist Dubai Cultural Services LLC')
+          (json['account_name'] ?? 'Nizar Fahem')
               .toString()
               .trim(),
       accountNumber:
           (json['account_number'] ??
                   json['iban'] ??
-                  'AE28 0330 0000 0001 2345 678')
+                  'AE18 0860 0000 0669 5992 002')
               .toString()
               .trim(),
-      bankName: (json['bank_name'] ?? 'Emirates NBD, Dubai').toString().trim(),
+      bankName: (json['bank_name'] ?? 'Wio Bank').toString().trim(),
       instructions:
           (json['instructions'] ??
-                  'Please scan the QR code with your banking app or transfer via IBAN. Once completed, enter the transaction reference and upload your receipt screenshot.')
+                  'Please scan the QR code with your mobile banking or payment app, or transfer directly via IBAN to Nizar Fahem (Wio Bank). Once paid, enter your transaction reference number and upload the receipt screenshot.')
               .toString()
               .trim(),
       isActive:
@@ -86,12 +86,12 @@ class PaymentSettingsModel {
     return const PaymentSettingsModel(
       id: 1,
       qrCodeUrl:
-          'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=iban%3AAE280330000000012345678%26name%3DArtistDubai',
-      accountName: 'Artist Dubai Cultural Services LLC',
-      accountNumber: 'AE28 0330 0000 0001 2345 678',
-      bankName: 'Emirates NBD, Dubai',
+          'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=iban%3AAE180860000006695992002%26name%3DNizar%20Fahem',
+      accountName: 'Nizar Fahem',
+      accountNumber: 'AE18 0860 0000 0669 5992 002',
+      bankName: 'Wio Bank',
       instructions:
-          'Please scan the QR code with your mobile banking or payment app, or transfer directly via IBAN. Once paid, enter your transaction reference number and upload the receipt screenshot.',
+          'Please scan the QR code with your mobile banking or payment app, or transfer directly via IBAN to Nizar Fahem (Wio Bank). Once paid, enter your transaction reference number and upload the receipt screenshot.',
       isActive: true,
     );
   }

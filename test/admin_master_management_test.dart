@@ -10,6 +10,11 @@ import 'package:artist_dubai/core/services/locale_provider.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
+import 'package:artist_dubai/core/network/api_client.dart';
+import 'package:artist_dubai/core/services/api_service.dart';
+import 'package:artist_dubai/core/services/live_sync_service.dart';
+import 'backend_frontend_sync_integration_test.dart';
+
 class _TestHttpOverrides extends HttpOverrides {}
 
 void main() {
@@ -24,6 +29,18 @@ void main() {
     });
     await sl.reset();
     await initDependencyInjection();
+
+    final mockClient = MockSyncApiClient();
+    if (sl.isRegistered<ApiClient>()) sl.unregister<ApiClient>();
+    sl.registerSingleton<ApiClient>(mockClient);
+
+    if (sl.isRegistered<ApiService>()) sl.unregister<ApiService>();
+    final apiService = ApiService(mockClient);
+    sl.registerSingleton<ApiService>(apiService);
+
+    if (sl.isRegistered<LiveSyncService>()) sl.unregister<LiveSyncService>();
+    final liveSync = LiveSyncService(apiService);
+    sl.registerSingleton<LiveSyncService>(liveSync);
   });
 
   Widget testApp(Widget child) {
@@ -86,12 +103,12 @@ void main() {
 
       expect(find.text('New Plan'), findsOneWidget);
       expect(find.text('Refresh'), findsOneWidget);
-      expect(find.text('Event Listing'), findsWidgets);
-      expect(find.text('AED 199'), findsWidgets);
-      expect(find.text('Gallery Listing'), findsWidgets);
-      expect(find.text('AED 149'), findsWidgets);
-      expect(find.text('Art Centre Listing'), findsWidgets);
-      expect(find.text('AED 299'), findsWidgets);
+      expect(find.text('3 Months'), findsWidgets);
+      expect(find.text('AED 2,000'), findsWidgets);
+      expect(find.text('6 Months'), findsWidgets);
+      expect(find.text('AED 3,000'), findsWidgets);
+      expect(find.text('12 Months'), findsWidgets);
+      expect(find.text('AED 5,000'), findsWidgets);
     },
   );
 

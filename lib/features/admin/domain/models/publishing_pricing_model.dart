@@ -44,13 +44,6 @@ class PublishingPricingModel {
             .toString()
             .toLowerCase()
             .trim();
-    final defaultThreeMonth = type == 'gallery' ? 'AED 2,000' : 'AED 1,200';
-    final defaultSixMonth = type == 'gallery' ? 'AED 3,000' : 'AED 2,500';
-    final defaultYearly = type == 'gallery' ? 'AED 5,000' : 'AED 4,500';
-    final defaultThreeMonthBadge =
-        type == 'gallery' ? 'Special Offer' : 'Popular';
-    final defaultSixMonthBadge = type == 'gallery' ? 'Save 25%' : 'Save 17%';
-    final defaultYearlyBadge = type == 'gallery' ? 'Best Value' : 'Best Value';
     final defaultDesc = type == 'gallery'
         ? 'Feature your gallery on curated maps and event calendars, with professional event photography.'
         : 'Publish art events and exhibitions across Dubai';
@@ -60,45 +53,29 @@ class PublishingPricingModel {
       itemName:
           (json['item_name'] ?? json['name'] ?? 'Publishing Plan').toString(),
       weeklyPrice:
-          (json['weekly_price'] ??
-                  json['weekly'] ??
-                  (type == 'gallery' ? 'AED 250' : 'AED 150'))
-              .toString(),
+          (json['weekly_price'] ?? json['weekly'] ?? '').toString(),
       monthlyPrice:
-          (json['monthly_price'] ??
-                  json['monthly'] ??
-                  (type == 'gallery' ? 'AED 800' : 'AED 500'))
-              .toString(),
+          (json['monthly_price'] ?? json['monthly'] ?? '').toString(),
       threeMonthPrice:
           (json['three_month_price'] ??
                   json['three_month'] ??
                   json['threeMonthPrice'] ??
-                  defaultThreeMonth)
+                  '')
               .toString(),
       sixMonthPrice:
           (json['six_month_price'] ??
                   json['six_month'] ??
                   json['sixMonthPrice'] ??
-                  defaultSixMonth)
+                  '')
               .toString(),
       yearlyPrice:
-          (json['yearly_price'] ??
-                  json['yearly'] ??
-                  defaultYearly)
-              .toString(),
+          (json['yearly_price'] ?? json['yearly'] ?? '').toString(),
       threeMonthBadge:
-          (json['three_month_badge'] ??
-                  json['threeMonthBadge'] ??
-                  defaultThreeMonthBadge)
-              .toString(),
+          (json['three_month_badge'] ?? json['threeMonthBadge'] ?? '').toString(),
       sixMonthBadge:
-          (json['six_month_badge'] ??
-                  json['sixMonthBadge'] ??
-                  defaultSixMonthBadge)
-              .toString(),
+          (json['six_month_badge'] ?? json['sixMonthBadge'] ?? '').toString(),
       yearlyBadge:
-          (json['yearly_badge'] ?? json['yearlyBadge'] ?? defaultYearlyBadge)
-              .toString(),
+          (json['yearly_badge'] ?? json['yearlyBadge'] ?? '').toString(),
       currency: (json['currency'] ?? 'AED').toString(),
       isActive:
           json['is_active'] == null ||
