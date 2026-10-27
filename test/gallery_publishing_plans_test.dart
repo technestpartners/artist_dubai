@@ -51,7 +51,7 @@ void main() {
     await sl.reset();
   });
 
-  testWidgets('GalleryRegistrationView renders Paid Gallery Publishing plans & benefits', (tester) async {
+  testWidgets('GalleryRegistrationView renders Art Venue Listing plans & benefits', (tester) async {
     tester.view.physicalSize = const Size(800, 1400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
