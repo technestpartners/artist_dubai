@@ -87,7 +87,7 @@ class MenuCardItem {
     // Row 3
     MenuCardItem(
       title: 'EVENTS',
-      subtitle: 'COMPETITION',
+      subtitle: 'COMPETITIONS',
       imagePath: 'assets/images/events-competition-DvLzKG_2.jpg',
       routeName: '/events',
     ),

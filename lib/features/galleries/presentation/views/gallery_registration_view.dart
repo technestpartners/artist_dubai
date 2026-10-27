@@ -511,6 +511,8 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
         'planId': _selectedPublishingPlan,
         'planName': resolvedPlanName,
         'planAmount': publishingAmount,
+        'hasVat': true,
+        'vatRate': 0.05,
         'formData': {
           'name': _nameController.text.trim(),
           'category':
@@ -1299,13 +1301,15 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                                   size: 18,
                                 ),
                                 const SizedBox(width: 8),
-                                Text(
-                                  'EXCLUSIVE BENEFITS'.trData(context),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 12.5,
-                                    letterSpacing: 0.4,
+                                Expanded(
+                                  child: Text(
+                                    'EXCLUSIVE BENEFITS'.trData(context),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 12.5,
+                                      letterSpacing: 0.4,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -1406,11 +1410,58 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                           }).toList();
 
                           return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               for (int i = 0; i < cards.length; i++) ...[
                                 if (i > 0) const SizedBox(height: 10),
                                 cards[i],
                               ],
+                              // VAT Explanatory Notice
+                              Container(
+                                margin: const EdgeInsets.only(top: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 13,
+                                  vertical: 11,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.28),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(3.5),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.20),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.receipt_long_rounded,
+                                        size: 14,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 9),
+                                    Expanded(
+                                      child: Text(
+                                        'The displayed prices are exclusive of VAT. The final amount, including VAT, will be shown at checkout when paying by debit or Visa card: 2,100, 3,150, or 5,250, depending on the selected plan.'
+                                            .trData(context),
+                                        style: TextStyle(
+                                          fontSize: 11.5,
+                                          color: Colors.white.withValues(alpha: 0.95),
+                                          height: 1.4,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ],
                           );
                         },
@@ -1648,9 +1699,13 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
   }) {
     final isSelected = _selectedPublishingPlan == id ||
         _selectedPublishingPlan.toLowerCase() == title.toLowerCase() ||
-        (_selectedPublishingPlan.contains('3') && (title.contains('3') || id.contains('3') || id == 'three_month')) ||
-        (_selectedPublishingPlan.contains('6') && (title.contains('6') || id.contains('6') || id == 'six_month')) ||
-        ((_selectedPublishingPlan.contains('12') || _selectedPublishingPlan.contains('year')) && (title.contains('12') || id.contains('12') || id == 'yearly'));
+        ((_selectedPublishingPlan.contains('12') || _selectedPublishingPlan.toLowerCase().contains('year')) &&
+            (title.contains('12') || id.contains('12') || id == 'yearly')) ||
+        (_selectedPublishingPlan.contains('6') &&
+            (title.contains('6') || id.contains('6') || id == 'six_month')) ||
+        (!_selectedPublishingPlan.contains('12') &&
+            _selectedPublishingPlan.contains('3') &&
+            (title.contains('3') || id.contains('3') || id == 'three_month'));
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1691,8 +1746,6 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
           ),
           child: LayoutBuilder(
             builder: (context, cardConstraints) {
-              final isCompactCard = cardConstraints.maxWidth < 280;
-
               final radioCheck = AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 width: 22,
@@ -1793,32 +1846,128 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                     )
                   : null;
 
-              final priceWidget = Row(
+              double baseAmount = 0.0;
+              try {
+                final cleaned = price.replaceAll(RegExp(r'[^0-9.]'), '');
+                baseAmount = double.tryParse(cleaned) ?? 0.0;
+              } catch (_) {}
+              final double vatAmount = baseAmount * 0.05;
+              final double finalAmount = baseAmount + vatAmount;
+              final String finalAmountStr = finalAmount > 0
+                  ? '${finalAmount.toStringAsFixed(finalAmount.truncateToDouble() == finalAmount ? 0 : 2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')} AED'
+                  : '';
+
+              final priceWidget = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
                 children: [
-                  Text(
-                    price.trData(context),
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      color: isSelected
-                          ? const Color(0xFF5E227A)
-                          : Colors.white,
-                      letterSpacing: -0.4,
-                    ),
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      Text(
+                        price.trData(context),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: isSelected
+                              ? const Color(0xFF5E227A)
+                              : Colors.white,
+                          letterSpacing: -0.4,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? const Color(0xFF5E227A).withValues(alpha: 0.10)
+                              : Colors.white.withValues(alpha: 0.20),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: isSelected
+                                ? const Color(0xFF5E227A).withValues(alpha: 0.25)
+                                : Colors.white.withValues(alpha: 0.35),
+                            width: 0.9,
+                          ),
+                        ),
+                        child: Text(
+                          '+ VAT'.trData(context),
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                            color: isSelected
+                                ? const Color(0xFF5E227A)
+                                : Colors.white,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ),
+                      if (period.isNotEmpty) ...[
+                        Text(
+                          period.trData(context),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: isSelected
+                                ? const Color(0xFF64748B)
+                                : Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                  if (period.isNotEmpty) ...[
-                    const SizedBox(width: 3),
-                    Text(
-                      period.trData(context),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                  if (finalAmountStr.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
                         color: isSelected
-                            ? const Color(0xFF64748B)
-                            : Colors.white70,
+                            ? const Color(0xFFECFDF5)
+                            : Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: isSelected
+                              ? const Color(0xFFA7F3D0)
+                              : Colors.white.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? const Color(0xFF10B981)
+                                  : Colors.white.withValues(alpha: 0.35),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check,
+                              size: 10,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Expanded(
+                            child: Text(
+                              '${'Final Price: '.trData(context)}${finalAmountStr.trData(context)} ${'(incl. 5% VAT)'.trData(context)}',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w800,
+                                color: isSelected
+                                    ? const Color(0xFF047857)
+                                    : Colors.white,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -1829,71 +1978,37 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (!isCompactCard) ...[
-                    // Standard Row: Title + Tag on start, Price + Radio on end
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Wrap(
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            spacing: 8,
-                            runSpacing: 4,
-                            children: [
-                              Text(
-                                title.trData(context),
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w900,
-                                  color: isSelected
-                                      ? const Color(0xFF1E1B4B)
-                                      : Colors.white,
-                                  letterSpacing: -0.3,
-                                ),
+                  // Top Row: Title + TagBadge on left, RadioCheck on right
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: [
+                            Text(
+                              title.trData(context),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                                color: isSelected
+                                    ? const Color(0xFF1E1B4B)
+                                    : Colors.white,
+                                letterSpacing: -0.3,
                               ),
-                              if (tagBadge != null) tagBadge,
-                            ],
-                          ),
+                            ),
+                            if (tagBadge != null) tagBadge,
+                          ],
                         ),
-                        const SizedBox(width: 10),
-                        priceWidget,
-                        const SizedBox(width: 10),
-                        radioCheck,
-                      ],
-                    ),
-                  ] else ...[
-                    // Compact Row for ultra-narrow devices (300px)
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Wrap(
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            spacing: 6,
-                            runSpacing: 4,
-                            children: [
-                              Text(
-                                title.trData(context),
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w900,
-                                  color: isSelected
-                                      ? const Color(0xFF1E1B4B)
-                                      : Colors.white,
-                                  letterSpacing: -0.3,
-                                ),
-                              ),
-                              if (tagBadge != null) tagBadge,
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        radioCheck,
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    priceWidget,
-                  ],
+                      ),
+                      const SizedBox(width: 8),
+                      radioCheck,
+                    ],
+                  ),
+                  const SizedBox(height: 7),
+                  priceWidget,
                   const SizedBox(height: 10),
 
                   // Subtle Divider
@@ -2008,14 +2123,18 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
     String resolvedPlanName = _selectedPublishingPlan;
     if (_galleryListingPlans.isNotEmpty) {
       final matching = _galleryListingPlans.firstWhere(
-        (p) =>
-            p.id?.toString() == _selectedPublishingPlan ||
-            p.title.toLowerCase() == _selectedPublishingPlan.toLowerCase() ||
-            (_selectedPublishingPlan.contains('3') && p.title.contains('3')) ||
-            (_selectedPublishingPlan.contains('6') && p.title.contains('6')) ||
-            ((_selectedPublishingPlan.contains('12') || _selectedPublishingPlan.contains('year')) &&
-                (p.title.contains('12') || p.title.toLowerCase().contains('year'))),
-        orElse: () => _galleryListingPlans.first,
+        (p) => p.id?.toString() == _selectedPublishingPlan,
+        orElse: () => _galleryListingPlans.firstWhere(
+          (p) => p.title.toLowerCase() == _selectedPublishingPlan.toLowerCase(),
+          orElse: () => _galleryListingPlans.firstWhere(
+            (p) =>
+                ((_selectedPublishingPlan.contains('12') || _selectedPublishingPlan.toLowerCase().contains('year')) &&
+                    (p.title.contains('12') || p.title.toLowerCase().contains('year'))) ||
+                (_selectedPublishingPlan.contains('6') && p.title.contains('6')) ||
+                (!_selectedPublishingPlan.contains('12') && _selectedPublishingPlan.contains('3') && p.title.contains('3')),
+            orElse: () => _galleryListingPlans.first,
+          ),
+        ),
       );
       planAmount = matching.price;
       resolvedPlanName = matching.title;
@@ -2023,6 +2142,17 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
       planAmount = _galleryPricing?.getPriceForPlan(_selectedPublishingPlan) ?? '';
       resolvedPlanName = 'Gallery Showcase';
     }
+
+    double baseAmount = 0.0;
+    try {
+      final cleaned = planAmount.replaceAll(RegExp(r'[^0-9.]'), '');
+      baseAmount = double.tryParse(cleaned) ?? 0.0;
+    } catch (_) {}
+    final double vatAmount = baseAmount * 0.05;
+    final double finalAmount = baseAmount + vatAmount;
+    final String finalAmountStr = finalAmount > 0
+        ? '${finalAmount.toStringAsFixed(finalAmount.truncateToDouble() == finalAmount ? 0 : 2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')} AED'
+        : planAmount;
 
     return Material(
       color: Colors.transparent,
@@ -2116,12 +2246,21 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                             ),
                           ),
                           child: Text(
-                            planAmount.trData(context),
+                            finalAmountStr.trData(context),
                             style: const TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w900,
                               color: Colors.white,
                             ),
+                          ),
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          '(incl. VAT)'.trData(context),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.88),
                           ),
                         ),
                       ],

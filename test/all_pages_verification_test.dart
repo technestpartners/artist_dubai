@@ -267,7 +267,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(EventsCompetitionView), findsOneWidget);
-      expect(find.text('Events Competition'), findsWidgets);
+      expect(find.text('Events Competitions'), findsWidgets);
     });
 
     testWidgets('15. EventPhotosView renders photos and galleries', (

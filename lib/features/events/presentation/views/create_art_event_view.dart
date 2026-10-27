@@ -1081,6 +1081,8 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
             'planId': _selectedPublishingPlan,
             'planName': resolvedPlanName,
             'planAmount': publishingAmount,
+            'hasVat': true,
+            'vatRate': 0.05,
             'formData': eventFormData,
           },
         );
@@ -2127,8 +2129,9 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                       );
                                     }).toList();
 
+                                    Widget cardsLayout;
                                     if (constraints.maxWidth >= 650 && cards.length == 3) {
-                                      return Row(
+                                      cardsLayout = Row(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Expanded(child: cards[0]),
@@ -2138,14 +2141,67 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                                           Expanded(child: cards[2]),
                                         ],
                                       );
+                                    } else {
+                                      cardsLayout = Column(
+                                        children: [
+                                          for (int i = 0; i < cards.length; i++) ...[
+                                            if (i > 0) const SizedBox(height: 10),
+                                            cards[i],
+                                          ],
+                                        ],
+                                      );
                                     }
 
                                     return Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        for (int i = 0; i < cards.length; i++) ...[
-                                          if (i > 0) const SizedBox(height: 10),
-                                          cards[i],
-                                        ],
+                                        cardsLayout,
+                                        // VAT Explanatory Notice
+                                        Container(
+                                          margin: const EdgeInsets.only(top: 12),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 13,
+                                            vertical: 11,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withValues(alpha: 0.12),
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: Colors.white.withValues(alpha: 0.28),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.all(3.5),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white.withValues(alpha: 0.20),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(
+                                                  Icons.receipt_long_rounded,
+                                                  size: 14,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 9),
+                                              Expanded(
+                                                child: Text(
+                                                  'The displayed prices are exclusive of VAT. The final amount, including VAT, will be shown at checkout when paying by debit or Visa card: 2,100, 3,150, or 5,250, depending on the selected plan.'
+                                                      .trData(context),
+                                                  style: TextStyle(
+                                                    fontSize: 11.5,
+                                                    color: Colors.white.withValues(alpha: 0.95),
+                                                    height: 1.4,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                                       ],
                                     );
                                   },
@@ -2315,7 +2371,6 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
     if (_eventListingPlans.isEmpty) {
       return const SizedBox.shrink();
     }
-    final l10n = AppLocalizations.of(context);
     final matching = _eventListingPlans.firstWhere(
       (p) =>
           p.id?.toString() == _selectedPublishingPlan ||
@@ -2327,70 +2382,178 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       return const SizedBox.shrink();
     }
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(7),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              Icons.payment_rounded,
-              color: Colors.amberAccent,
-              size: 18,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text.rich(
-                  TextSpan(
-                    text: l10n.paymentOnNextStep,
-                    style: const TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                    children: [
-                      TextSpan(
-                        text: planAmount,
-                        style: const TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.amberAccent,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  l10n.paymentDetailsNotice,
-                  style: const TextStyle(fontSize: 11, color: Colors.white70),
-                ),
+    double baseAmount = 0.0;
+    try {
+      final cleaned = planAmount.replaceAll(RegExp(r'[^0-9.]'), '');
+      baseAmount = double.tryParse(cleaned) ?? 0.0;
+    } catch (_) {}
+    final double vatAmount = baseAmount * 0.05;
+    final double finalAmount = baseAmount + vatAmount;
+    final String finalAmountStr = finalAmount > 0
+        ? '${finalAmount.toStringAsFixed(finalAmount.truncateToDouble() == finalAmount ? 0 : 2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')} AED'
+        : planAmount;
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: _isSubmitting ? null : _submitEvent,
+        borderRadius: BorderRadius.circular(14),
+        splashColor: const Color(0xFF635BFF).withValues(alpha: 0.35),
+        highlightColor: Colors.white.withValues(alpha: 0.12),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                const Color(0xFF635BFF).withValues(alpha: 0.32),
+                const Color(0xFF4F46E5).withValues(alpha: 0.18),
+                Colors.white.withValues(alpha: 0.10),
               ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: const Color(0xFF9384FF).withValues(alpha: 0.55),
+              width: 1.3,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF635BFF).withValues(alpha: 0.22),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          const SizedBox(width: 6),
-          const Icon(
-            Icons.arrow_forward_ios_rounded,
-            size: 13,
-            color: Colors.white70,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF635BFF), Color(0xFF4F46E5)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF635BFF).withValues(alpha: 0.45),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.credit_card_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 4,
+                      children: [
+                        Text(
+                          'Pay with Stripe: '.trData(context),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.22),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.5),
+                            ),
+                          ),
+                          child: Text(
+                            finalAmountStr.trData(context),
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          '(incl. VAT)'.trData(context),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.88),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Direct secure checkout with Credit Card, Apple Pay & Google Pay'
+                          .trData(context),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white.withValues(alpha: 0.88),
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.lock_outline_rounded,
+                          size: 12.5,
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            'Powered by Stripe • Tap to proceed'.trData(context),
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white.withValues(alpha: 0.95),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.16),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 13,
+                  color: Colors.white,
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -2908,6 +3071,18 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
         (_selectedPublishingPlan.contains('6') && (title.contains('6') || id.contains('6'))) ||
         ((_selectedPublishingPlan.contains('12') || _selectedPublishingPlan.contains('year')) &&
             (title.contains('12') || id.contains('12')));
+
+    double baseAmount = 0.0;
+    try {
+      final cleaned = price.replaceAll(RegExp(r'[^0-9.]'), '');
+      baseAmount = double.tryParse(cleaned) ?? 0.0;
+    } catch (_) {}
+    final double vatAmount = baseAmount * 0.05;
+    final double finalAmount = baseAmount + vatAmount;
+    final String finalAmountStr = finalAmount > 0
+        ? '${finalAmount.toStringAsFixed(finalAmount.truncateToDouble() == finalAmount ? 0 : 2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')} AED'
+        : '';
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -3031,6 +3206,39 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                       color: Color(0xFF0F172A),
                     ),
                   ),
+                  if (price.isNotEmpty &&
+                      price.toLowerCase() != 'free' &&
+                      price != '0 AED') ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFF6B1C9B).withValues(alpha: 0.10)
+                            : const Color(0xFFE2E8F0),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: isSelected
+                              ? const Color(0xFF6B1C9B).withValues(alpha: 0.25)
+                              : const Color(0xFFCBD5E1),
+                          width: 0.9,
+                        ),
+                      ),
+                      child: Text(
+                        '+ VAT'.trData(context),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: isSelected
+                              ? const Color(0xFF6B1C9B)
+                              : const Color(0xFF475569),
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ),
+                  ],
                   if (period.isNotEmpty)
                     Text(
                       period.trData(context),
@@ -3041,6 +3249,39 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                     ),
                 ],
               ),
+              if (finalAmountStr.isNotEmpty) ...[
+                const SizedBox(height: 3),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF10B981),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.check,
+                        size: 9,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        '${'Final Price: '.trData(context)}${finalAmountStr.trData(context)} ${'(incl. 5% VAT)'.trData(context)}',
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF047857),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 3),
               Row(
                 children: [

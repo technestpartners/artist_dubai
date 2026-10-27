@@ -73,7 +73,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
     const brandPurple = Color(0xFF6B1C9B);
     const unselectedColor = Color(0xFF64748B);
     final color = isSelected ? brandPurple : unselectedColor;
-    final isCompact = rh.isCompact;
+    final isCompactOrShort = rh.isCompact || rh.isShortScreen;
 
     return Expanded(
       child: Center(
@@ -90,14 +90,14 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeInOut,
                 constraints: BoxConstraints(
-                  minWidth: isCompact ? 36 : 50,
-                  maxWidth: isCompact ? 54 : 68,
-                  minHeight: rh.isShortScreen ? 40 : 46,
-                  maxHeight: rh.isShortScreen ? 44 : 48,
+                  minWidth: isCompactOrShort ? 36 : 50,
+                  maxWidth: isCompactOrShort ? 54 : 68,
+                  minHeight: rh.isShortScreen ? 36 : 46,
+                  maxHeight: rh.isShortScreen ? 42 : 48,
                 ),
                 padding: EdgeInsets.symmetric(
-                  horizontal: isCompact ? 3 : 8,
-                  vertical: isCompact || rh.isShortScreen ? 2 : 3,
+                  horizontal: isCompactOrShort ? 3 : 8,
+                  vertical: isCompactOrShort ? 2 : 3,
                 ),
                 decoration: BoxDecoration(
                   color: isSelected
@@ -118,9 +118,9 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                     Icon(
                       isSelected ? selectedIcon : unselectedIcon,
                       color: color,
-                      size: isCompact ? 18 : 20,
+                      size: isCompactOrShort ? 18 : 20,
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: isCompactOrShort ? 1 : 2),
                     Text(
                       label,
                       maxLines: 1,
@@ -128,10 +128,11 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: color,
-                        fontSize: isCompact ? 9.0 : 10.5,
+                        fontSize: isCompactOrShort ? 9.0 : 10.5,
+                        height: 1.2,
                         fontWeight:
                             isSelected ? FontWeight.w700 : FontWeight.w500,
-                        letterSpacing: isCompact ? -0.1 : 0.1,
+                        letterSpacing: isCompactOrShort ? -0.1 : 0.1,
                       ),
                     ),
                   ],

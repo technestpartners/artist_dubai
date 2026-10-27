@@ -1953,6 +1953,8 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                     : 'Monthly Subscription',
             'planAmount': effectivePrice,
             'amount': effectivePrice,
+            'hasVat': true,
+            'vatRate': 0.05,
             'maxAllowance': effectiveAllowance,
             'features': effectiveFeatures,
           },
@@ -2118,6 +2120,29 @@ class _ArtistChatViewState extends State<ArtistChatView> {
               ),
               if (price != 'Free') ...[
                 const SizedBox(width: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 1.5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF5E227A).withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: const Color(0xFF5E227A).withValues(alpha: 0.25),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Text(
+                    '+ VAT'.trData(context),
+                    style: const TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF5E227A),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
                 Text(
                   '/ month'.trData(context),
                   style: const TextStyle(
@@ -2137,6 +2162,51 @@ class _ArtistChatViewState extends State<ArtistChatView> {
               ),
             ],
           ),
+          if (price != 'Free') ...[
+            Builder(
+              builder: (context) {
+                double baseAmount = 0.0;
+                try {
+                  final cleaned = price.replaceAll(RegExp(r'[^0-9.]'), '');
+                  baseAmount = double.tryParse(cleaned) ?? 0.0;
+                } catch (_) {}
+                final double vatAmount = baseAmount * 0.05;
+                final double finalAmount = baseAmount + vatAmount;
+                final String finalAmountStr = finalAmount > 0
+                    ? '${finalAmount.toStringAsFixed(finalAmount.truncateToDouble() == finalAmount ? 0 : 2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')} AED'
+                    : '';
+                if (finalAmountStr.isEmpty) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 3),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF10B981),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check,
+                          size: 9,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${'Final Price: '.trData(context)}${finalAmountStr.trData(context)} ${'(incl. VAT)'.trData(context)}',
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF047857),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
           const SizedBox(height: 10),
           ...features.map(
             (f) => Padding(

@@ -503,7 +503,7 @@ abstract class AppLocalizations {
   /// No description provided for @eventsCompetition.
   ///
   /// In en, this message translates to:
-  /// **'Events Competition'**
+  /// **'Events Competitions'**
   String get eventsCompetition;
 
   /// No description provided for @galleriesArtCenter.
@@ -875,7 +875,7 @@ abstract class AppLocalizations {
   /// No description provided for @eventsCompetitionTitle.
   ///
   /// In en, this message translates to:
-  /// **'Events Competition'**
+  /// **'Events Competitions'**
   String get eventsCompetitionTitle;
 
   /// No description provided for @eventsCompetitionSubtitle.

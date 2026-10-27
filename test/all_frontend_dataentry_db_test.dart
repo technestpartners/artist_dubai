@@ -171,7 +171,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('ART VENUE'), findsWidgets);
+      expect(find.textContaining('ART VENUE'), findsWidgets);
       expect(find.text('Gallery / center name *'), findsOneWidget);
       expect(find.text('Register Venue'), findsOneWidget);
 

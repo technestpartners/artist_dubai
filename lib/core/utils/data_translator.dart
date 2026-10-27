@@ -778,6 +778,8 @@ class DataTranslator {
     'government': 'الجهات الحكومية',
     'artist registration': 'تسجيل فنان',
     'events competition': 'الفعاليات والمسابقات',
+    'events competitions': 'الفعاليات والمسابقات',
+    'competitions': 'المسابقات',
     'galleries art center': 'المعارض والمراكز الفنية',
     'galleries art centers': 'المعارض والمراكز الفنية',
     'galleries & art centers': 'المعارض والمراكز الفنية',
@@ -1531,6 +1533,36 @@ class DataTranslator {
     'deleted successfully': 'تم الحذف بنجاح',
     'created successfully!': 'تم الإنشاء بنجاح!',
     'updated successfully!': 'تم التحديث بنجاح!',
+
+    // VAT & Pricing Notices
+    '+ vat': '+ ضريبة القيمة المضافة',
+    '+ 5% vat': '+ 5% ضريبة القيمة المضافة',
+    '(incl. vat)': '(شامل ضريبة القيمة المضافة)',
+    '(incl. 5% vat)': '(شامل 5% ضريبة القيمة المضافة)',
+    'subtotal (excl. vat)': 'المجموع الفرعي (غير شامل الضريبة)',
+    'vat (5%)': 'ضريبة القيمة المضافة (5%)',
+    'total due (incl. vat)': 'المبلغ الإجمالي المستحق (شامل الضريبة)',
+    'total due': 'المجموع المستحق',
+    'the displayed prices are exclusive of vat. the final amount, including vat, will be shown at checkout when paying by debit or visa card: 2,100, 3,150, or 5,250, depending on the selected plan.':
+        'الأسعار المعروضة غير شاملة ضريبة القيمة المضافة. سيتم عرض المبلغ النهائي شاملاً الضريبة عند الدفع ببطاقة الخصم أو الفيزا: 2,100 أو 3,150 أو 5,250 درهم حسب الباقة المختارة.',
+    'the displayed prices are exclusive of vat. the final amount, including vat, will be shown at checkout when paying by debit or visa card (e.g. 1,039.50, 2,100, 3,150, or 5,250 aed, depending on the selected plan).':
+        'الأسعار المعروضة غير شاملة ضريبة القيمة المضافة. سيتم عرض المبلغ النهائي شاملاً الضريبة عند الدفع ببطاقة الخصم أو الفيزا (مثل 1,039.50 أو 2,100 أو 3,150 أو 5,250 درهم حسب الباقة المختارة).',
+    'final price': 'السعر النهائي',
+    'final price:': 'السعر النهائي:',
+    'final price: ': 'السعر النهائي: ',
+    'final amount': 'المبلغ النهائي',
+    'final amount:': 'المبلغ النهائي:',
+    'final:': 'النهائي:',
+    '1,039.50 aed': '1,039.50 درهم',
+    '2,100 aed': '2,100 درهم',
+    '3,150 aed': '3,150 درهم',
+    '5,250 aed': '5,250 درهم',
+    'total: 2,100 aed': 'الإجمالي: 2,100 درهم',
+    'total: 3,150 aed': 'الإجمالي: 3,150 درهم',
+    'total: 5,250 aed': 'الإجمالي: 5,250 درهم',
+    'aed 2,000 + vat': '2,000 درهم + ضريبة القيمة المضافة',
+    'aed 3,000 + vat': '3,000 درهم + ضريبة القيمة المضافة',
+    'aed 5,000 + vat': '5,000 درهم + ضريبة القيمة المضافة',
   };
 
   // Lazy reversed map for Arabic to English lookups

@@ -59,6 +59,8 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
   late List<String> _features;
 
   double? _baseAedAmountValue;
+  bool _hasVat = false;
+  double _vatRate = 0.05;
 
   double get _baseAedAmount {
     if (_baseAedAmountValue != null && _baseAedAmountValue! > 0) {
@@ -78,6 +80,33 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
 
   set _baseAedAmount(double val) {
     _baseAedAmountValue = val;
+  }
+
+  double get _vatAmount => _hasVat ? (_baseAedAmount * _vatRate) : 0.0;
+  double get _totalAedAmount => _baseAedAmount + _vatAmount;
+
+  String get _displayAedString {
+    final amt = _baseAedAmount;
+    final formatted = (amt.truncateToDouble() == amt)
+        ? amt.toStringAsFixed(0)
+        : amt.toStringAsFixed(2);
+    return 'AED $formatted';
+  }
+
+  String get _vatAedString {
+    final amt = _vatAmount;
+    final formatted = (amt.truncateToDouble() == amt)
+        ? amt.toStringAsFixed(0)
+        : amt.toStringAsFixed(2);
+    return 'AED $formatted';
+  }
+
+  String get _totalAedString {
+    final amt = _totalAedAmount;
+    final formatted = (amt.truncateToDouble() == amt)
+        ? amt.toStringAsFixed(0)
+        : amt.toStringAsFixed(2);
+    return 'AED $formatted';
   }
 
   @override
@@ -260,6 +289,17 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     final cleaned = _planAmount.replaceAll(RegExp(r'[^0-9.]'), '');
     _baseAedAmount = double.tryParse(cleaned) ?? 0.0;
 
+    _hasVat = widget.args['hasVat'] == true ||
+        _itemType == 'gallery' ||
+        _itemType == 'event' ||
+        _baseAedAmount == 2000 ||
+        _baseAedAmount == 3000 ||
+        _baseAedAmount == 5000 ||
+        (_baseAedAmount > 0 && widget.args['hasVat'] != false);
+    _vatRate = (widget.args['vatRate'] is num)
+        ? (widget.args['vatRate'] as num).toDouble()
+        : 0.05;
+
     if (_isPlanPurchase) {
       _title = _planName;
       _subtitle =
@@ -279,13 +319,6 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
               : 'Dubai, UAE';
     }
   }
-
-  String get _displayAedString {
-    final amt = _baseAedAmount;
-    return 'AED ${(amt.isFinite ? amt : 0.0).toStringAsFixed(2)}';
-  }
-
-  String get _currentPayAmountLabel => _displayAedString;
 
   Future<bool> _submitListingWithPaymentRef(
     String ccRef, {
@@ -374,7 +407,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           'is_public': 0,
           'is_approved': 0,
           'publishing_plan': _planId,
-          'publishing_amount': _planAmount,
+          'publishing_amount': _hasVat ? _totalAedString : _planAmount,
           'payment_status': 'paid',
           'payment_method': 'stripe_card',
           'payment_reference': ccRef,
@@ -503,7 +536,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
         cardHolderName: _cardHolderController.text.trim().isNotEmpty
             ? _cardHolderController.text.trim()
             : 'Artist Dubai Customer',
-        amount: _baseAedAmount,
+        amount: _totalAedAmount,
         currency: 'aed',
         itemTitle: '$_title ($_planName)',
         customerEmail: _emailController.text.trim(),
@@ -511,6 +544,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           'itemType': _itemType,
           'planId': _planId,
           'planName': _planName,
+          'baseAmount': _baseAedAmount.toString(),
+          'vatAmount': _vatAmount.toString(),
+          'totalAmount': _totalAedAmount.toString(),
+          'hasVat': _hasVat.toString(),
           'currency': 'AED',
         },
       );
@@ -554,7 +591,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
               widget.args['duration_days']?.toString() ??
               '');
       final sessionResult = await StripePaymentService().createCheckoutSession(
-        amount: _baseAedAmount,
+        amount: _totalAedAmount,
         currency: 'AED',
         itemTitle: _title,
         planName: _planName,
@@ -900,6 +937,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
 
                     // Plan Title & Description
                     _buildPlanSummary(),
+                    if (_hasVat) ...[
+                      const SizedBox(height: 14),
+                      _buildVatBreakdownCard(),
+                    ],
                     const SizedBox(height: 18),
 
 
@@ -993,7 +1034,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
             borderRadius: BorderRadius.circular(6),
           ),
           child: Text(
-            _planAmount.trData(context),
+            (_hasVat ? _totalAedString : _planAmount).trData(context),
             style: const TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w800,
@@ -1002,6 +1043,154 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildVatBreakdownCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  'Subtotal (Excl. VAT)'.trData(context),
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _displayAedString,
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  color: Color(0xFF1E293B),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        'VAT (5%)'.trData(context),
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          color: Color(0xFF64748B),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEDE9FE),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'UAE',
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF6A2777),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _vatAedString,
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  color: Color(0xFF1E293B),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Divider(color: Color(0xFFCBD5E1), height: 1),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  'Total Due (incl. VAT)'.trData(context),
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    color: Color(0xFF0F172A),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _totalAedString,
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: Color(0xFF6A2777),
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          if (_hasVat) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.info_outline_rounded,
+                    size: 13,
+                    color: Color(0xFF64748B),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'The displayed prices are exclusive of VAT. The final amount, including VAT, will be shown at checkout when paying by debit or Visa card: 2,100, 3,150, or 5,250, depending on the selected plan.'
+                          .trData(context),
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        color: Color(0xFF64748B),
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -1226,12 +1415,14 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Card information'.trData(context),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF64748B),
+                  Expanded(
+                    child: Text(
+                      'Card information'.trData(context),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF64748B),
+                      ),
                     ),
                   ),
                   InkWell(
@@ -1542,12 +1733,18 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                     children: [
                       const Icon(Icons.lock_rounded, size: 18),
                       const SizedBox(width: 8),
-                      Text(
-                        '${'Pay'.trData(context)} $_currentPayAmountLabel',
-                        style: const TextStyle(
-                          fontSize: 15.5,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.2,
+                      Flexible(
+                        child: Text(
+                          _hasVat
+                              ? '${'Pay'.trData(context)} $_totalAedString ${'(incl. VAT)'.trData(context)}'
+                              : '${'Pay'.trData(context)} $_displayAedString',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.2,
+                          ),
                         ),
                       ),
                     ],

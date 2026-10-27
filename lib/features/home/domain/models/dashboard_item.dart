@@ -46,7 +46,7 @@ class DashboardItem {
     // Row 3
     DashboardItem(
       title: 'EVENTS',
-      subtitle: 'COMPETITION',
+      subtitle: 'COMPETITIONS',
       iconPath: 'assets/icons/dashboard/events_competition.png',
       imagePath: 'assets/images/events-competition-DvLzKG_2.jpg',
       route: '/events',

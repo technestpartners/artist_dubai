@@ -127,8 +127,8 @@ class MenuPermissionModel {
       ),
       MenuPermissionModel(
         key: 'events_competition',
-        title: 'EVENTS COMPETITION',
-        subtitle: 'COMPETITION',
+        title: 'EVENTS COMPETITIONS',
+        subtitle: 'COMPETITIONS',
         routeName: '/events',
         imagePath: 'assets/images/events-competition-DvLzKG_2.jpg',
         isEnabled: true,

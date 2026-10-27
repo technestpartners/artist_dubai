@@ -195,6 +195,8 @@ class _ListingPlansViewState extends State<ListingPlansView> {
             'duration_days': plan.durationDays,
             'planAmount': plan.price,
             'amount': plan.price,
+            'hasVat': true,
+            'vatRate': 0.05,
             'features': plan.features,
           },
         )
@@ -370,6 +372,53 @@ class _ListingPlansViewState extends State<ListingPlansView> {
                             _buildPlanCard(context, plan),
                             const SizedBox(height: 18),
                           ],
+
+                        // VAT Explanatory Notice
+                        Container(
+                          margin: const EdgeInsets.only(top: 6, bottom: 18),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.28),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.20),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.receipt_long_rounded,
+                                  size: 15,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'The displayed prices are exclusive of VAT. The final amount, including VAT, will be shown at checkout when paying by debit or Visa card (e.g. 1,039.50, 2,100, 3,150, or 5,250 AED, depending on the selected plan).'
+                                      .trData(context),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white.withValues(alpha: 0.95),
+                                    height: 1.4,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
 
                         const SizedBox(height: 24),
                       ],
@@ -832,6 +881,23 @@ class _ListingPlansViewState extends State<ListingPlansView> {
   }
 
   Widget _buildPlanCard(BuildContext context, ListingPlanItem plan) {
+    final bool isPaidPlan = plan.price.isNotEmpty &&
+        plan.price.toLowerCase() != 'free' &&
+        plan.price != '0 AED';
+    double baseAmount = 0.0;
+    try {
+      final cleaned = plan.price.replaceAll(RegExp(r'[^0-9.]'), '');
+      baseAmount = double.tryParse(cleaned) ?? 0.0;
+    } catch (_) {}
+    final double vatAmount = baseAmount * 0.05;
+    final double finalAmount = baseAmount + vatAmount;
+    final String finalAmountStr = finalAmount > 0
+        ? '${finalAmount.toStringAsFixed(finalAmount.truncateToDouble() == finalAmount ? 0 : 2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')} AED'
+        : '';
+    final String vatAmountStr = vatAmount > 0
+        ? '${vatAmount.toStringAsFixed(vatAmount.truncateToDouble() == vatAmount ? 0 : 2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')} AED'
+        : '';
+
     final String itemType = plan.itemType.toLowerCase().trim();
     Color iconColor;
     IconData iconData;
@@ -1197,70 +1263,213 @@ class _ListingPlansViewState extends State<ListingPlansView> {
                 color: const Color(0xFFE9D5FF).withValues(alpha: 0.7),
               ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      'Listing Price'.trData(context),
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF7E22CE),
-                        letterSpacing: 0.3,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Listing Price'.trData(context),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF7E22CE),
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 6,
+                          children: [
+                            Text(
+                              plan.price.trData(context),
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF1E1B4B),
+                                letterSpacing: -0.4,
+                              ),
+                            ),
+                            if (plan.price.isNotEmpty &&
+                                plan.price.toLowerCase() != 'free' &&
+                                plan.price != '0 AED')
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF5E227A).withValues(alpha: 0.10),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: const Color(0xFF5E227A).withValues(alpha: 0.25),
+                                    width: 0.9,
+                                  ),
+                                ),
+                                child: Text(
+                                  '+ VAT'.trData(context),
+                                  style: const TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF5E227A),
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      plan.price.trData(context),
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF1E1B4B),
-                        letterSpacing: -0.4,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFE9D5FF)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF5E227A).withValues(alpha: 0.05),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.bolt_rounded,
+                            size: 14,
+                            color: Color(0xFFD97706),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Instant Activation'.trData(context),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF4C1D95),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFFE9D5FF)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF5E227A).withValues(alpha: 0.05),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
+                if (isPaidPlan && finalAmountStr.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 11,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFECFDF5), Color(0xFFD1FAE5)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.bolt_rounded,
-                        size: 14,
-                        color: Color(0xFFD97706),
+                      borderRadius: BorderRadius.circular(9),
+                      border: Border.all(
+                        color: const Color(0xFFA7F3D0),
+                        width: 1.2,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Instant Activation'.trData(context),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF4C1D95),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(2.5),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF10B981),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.check,
+                                size: 11,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 7),
+                            Expanded(
+                              child: Wrap(
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                spacing: 5,
+                                runSpacing: 3,
+                                children: [
+                                  Text(
+                                    'Final Price: '.trData(context),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF065F46),
+                                    ),
+                                  ),
+                                  Text(
+                                    finalAmountStr.trData(context),
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w900,
+                                      color: Color(0xFF047857),
+                                      letterSpacing: -0.3,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 1.5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.85),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      '(incl. 5% VAT)'.trData(context),
+                                      style: const TextStyle(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF047857),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                        if (vatAmountStr.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 25),
+                            child: Text(
+                              '${plan.price.trData(context)} + 5% VAT (${vatAmountStr.trData(context)}) = ${finalAmountStr.trData(context)}',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF065F46).withValues(alpha: 0.85),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -1400,7 +1609,9 @@ class _ListingPlansViewState extends State<ListingPlansView> {
                 ),
                 icon: const Icon(Icons.arrow_forward_rounded, size: 16),
                 label: Text(
-                  plan.buttonText.trData(context),
+                  isPaidPlan && finalAmountStr.isNotEmpty
+                      ? '${plan.buttonText.trData(context)} • ${finalAmountStr.trData(context)}'
+                      : plan.buttonText.trData(context),
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,

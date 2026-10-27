@@ -220,7 +220,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get artistRegistration => 'Artist Registration';
 
   @override
-  String get eventsCompetition => 'Events Competition';
+  String get eventsCompetition => 'Events Competitions';
 
   @override
   String get galleriesArtCenter => 'Galleries & Art Centers';
@@ -421,7 +421,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'And when people, ideas and talents come together, artists have the power to make the impossible possible.';
 
   @override
-  String get eventsCompetitionTitle => 'Events Competition';
+  String get eventsCompetitionTitle => 'Events Competitions';
 
   @override
   String get eventsCompetitionSubtitle =>

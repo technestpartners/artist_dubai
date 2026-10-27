@@ -2263,6 +2263,8 @@ class _SettingsViewState extends State<SettingsView> {
                                               '30-Day Listing',
                                           'planAmount': price,
                                           'amount': price,
+                                          'hasVat': true,
+                                          'vatRate': 0.05,
                                           'features': features,
                                         },
                                       )
@@ -2619,34 +2621,66 @@ class _SettingsViewState extends State<SettingsView> {
                           ),
                           child: SingleChildScrollView(
                             child: Column(
-                              children:
-                                  planTiles.map((pt) {
-                                    final title = pt['title']?.toString() ?? 'Plan';
-                                    final price = pt['price']?.toString() ?? '';
-                                    final messages = pt['messages']?.toString() ?? '';
-                                    final badge = pt['badge']?.toString() ?? '';
-                                    final isCurrent =
-                                        _chatPlan.toLowerCase() ==
-                                        title.toLowerCase();
-
-                                    return Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom: 10.0,
+                              children: [
+                                for (final pt in planTiles)
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                      bottom: 10.0,
+                                    ),
+                                    child: _buildPlanOptionTile(
+                                      title: pt['title']?.toString() ?? 'Plan',
+                                      price: pt['price']?.toString() ?? '',
+                                      messages: pt['messages']?.toString() ?? '',
+                                      badge: pt['badge']?.toString() ?? '',
+                                      isCurrent:
+                                          _chatPlan.toLowerCase() ==
+                                          (pt['title']?.toString() ?? '').toLowerCase(),
+                                      onSelect:
+                                          () => _handleSelectDynamicPlan(
+                                            pt,
+                                            bottomSheetContext,
+                                          ),
+                                    ),
+                                  ),
+                                // VAT Explanatory Notice
+                                Container(
+                                  margin: const EdgeInsets.only(top: 4, bottom: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF5E227A).withValues(alpha: 0.06),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: const Color(0xFF5E227A).withValues(alpha: 0.15),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Icon(
+                                        Icons.receipt_long_rounded,
+                                        size: 15,
+                                        color: Color(0xFF5E227A),
                                       ),
-                                      child: _buildPlanOptionTile(
-                                        title: title,
-                                        price: price,
-                                        messages: messages,
-                                        badge: badge,
-                                        isCurrent: isCurrent,
-                                        onSelect:
-                                            () => _handleSelectDynamicPlan(
-                                              pt,
-                                              bottomSheetContext,
-                                            ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          'The displayed prices are exclusive of VAT. The final amount, including VAT, will be shown at checkout when paying by debit or Visa card (e.g. 1,039.50, 2,100, 3,150, or 5,250 AED, depending on the selected plan).'
+                                              .trData(context),
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            color: Color(0xFF475569),
+                                            height: 1.35,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
                                       ),
-                                    );
-                                  }).toList(),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         );
@@ -2744,6 +2778,8 @@ class _SettingsViewState extends State<SettingsView> {
             'planPeriod': planData['period'] ?? 'Monthly Plan (30 Days)',
             'planAmount': planData['amount'] ?? planData['price'] ?? 'AED 99',
             'amount': planData['amount'] ?? planData['price'] ?? 'AED 99',
+            'hasVat': true,
+            'vatRate': 0.05,
             'features': featuresList,
           },
         )
@@ -2846,14 +2882,76 @@ class _SettingsViewState extends State<SettingsView> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  price,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E1E1E),
-                  ),
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 4,
+                  children: [
+                    Text(
+                      price,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E1E1E),
+                      ),
+                    ),
+                    if (price.isNotEmpty &&
+                        price.toLowerCase() != 'free' &&
+                        price != '0 AED') ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 1.5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF5E227A).withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: const Color(0xFF5E227A).withValues(alpha: 0.25),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Text(
+                          '+ VAT'.trData(context),
+                          style: const TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF5E227A),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
+                if (price.isNotEmpty &&
+                    price.toLowerCase() != 'free' &&
+                    price != '0 AED') ...[
+                  Builder(
+                    builder: (context) {
+                      double baseAmount = 0.0;
+                      try {
+                        final cleaned = price.replaceAll(RegExp(r'[^0-9.]'), '');
+                        baseAmount = double.tryParse(cleaned) ?? 0.0;
+                      } catch (_) {}
+                      final double vatAmount = baseAmount * 0.05;
+                      final double finalAmount = baseAmount + vatAmount;
+                      final String finalAmountStr = finalAmount > 0
+                          ? '${finalAmount.toStringAsFixed(finalAmount.truncateToDouble() == finalAmount ? 0 : 2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')} AED'
+                          : '';
+                      if (finalAmountStr.isEmpty) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          '${'Final: '.trData(context)}${finalAmountStr.trData(context)} ${'(incl. 5% VAT)'.trData(context)}',
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF059669),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
                 if (isCurrent)
                   Text(
                     'Current'.trData(context),

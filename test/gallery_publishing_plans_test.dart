@@ -94,7 +94,7 @@ void main() {
     expect(find.textContaining('Free Forever'), findsOneWidget);
     expect(find.textContaining('Free Photo Uploads'), findsOneWidget);
 
-    // Verify the 3 plans
+    // Verify the 3 plans and + VAT indicators
     expect(find.text('3 Months'), findsOneWidget);
     expect(find.text('AED 2,000'), findsWidgets);
 
@@ -104,10 +104,25 @@ void main() {
     expect(find.text('12 Months'), findsOneWidget);
     expect(find.text('AED 5,000'), findsWidgets);
 
-    // Verify interactive selection
+    expect(find.text('+ VAT'), findsWidgets);
+
+    // Verify VAT explanatory notice
+    expect(
+      find.textContaining('The displayed prices are exclusive of VAT'),
+      findsOneWidget,
+    );
+
+    // Verify interactive selection & dynamic checkout totals with VAT
     await tester.tap(find.text('3 Months'));
     await tester.pumpAndSettle();
+    expect(find.textContaining('2,100 AED'), findsWidgets);
 
-    expect(find.textContaining('AED 2,000'), findsWidgets);
+    await tester.tap(find.text('6 Months'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('3,150 AED'), findsWidgets);
+
+    await tester.tap(find.text('12 Months'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('5,250 AED'), findsWidgets);
   });
 }

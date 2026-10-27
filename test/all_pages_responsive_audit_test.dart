@@ -400,9 +400,6 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
 
           final exc = tester.takeException();
-          if (exc is FlutterError) {
-            print('FLUTTER_ERROR_DETAILS: ' + exc.diagnostics.map((d) => d.toString()).join('\n'));
-          }
           expect(exc, isNull);
           expect(find.byType(GovernmentPortalView), findsOneWidget);
         });

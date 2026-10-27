@@ -14,6 +14,7 @@ class HomeFooterWidget extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: vPad),
       child: Center(
+        heightFactor: 1.0,
         child: FittedBox(
           fit: BoxFit.scaleDown,
           child: Text(

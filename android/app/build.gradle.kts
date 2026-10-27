@@ -51,7 +51,7 @@ tasks.matching { it.name == "assembleRelease" }.configureEach {
         val flutterApkDir = file("${project.rootDir}/../build/app/outputs/flutter-apk")
         if (sourceApk.exists()) {
             val appName = "Artist Dubai"
-            val version = flutter.versionName ?: "3.2.5"
+            val version = flutter.versionName ?: "3.2.6"
             sourceApk.copyTo(File(flutterApkDir, "$appName.apk"), overwrite = true)
             sourceApk.copyTo(File(flutterApkDir, "Artist_Dubai.apk"), overwrite = true)
             sourceApk.copyTo(File(flutterApkDir, "ArtistDubai-v$version.apk"), overwrite = true)
