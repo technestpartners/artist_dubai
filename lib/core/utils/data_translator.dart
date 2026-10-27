@@ -675,6 +675,12 @@ class DataTranslator {
     'exclusive benefits:': 'مزايا حصرية:',
     'enjoy your first 3 months free.': 'استمتع بأول ٣ أشهر مجاناً.',
     'enjoy your first 3 months free': 'استمتع بأول ٣ أشهر مجاناً',
+    'first 3 months free': 'أول ٣ أشهر مجانًا',
+    'enjoy premium visibility at no cost.': 'استمتع بظهور مميز دون أي تكلفة.',
+    'free forever': 'مجانًا للأبد',
+    'access calendars, maps, and event features.': 'الوصول إلى التقويمات والخرائط وميزات الفعاليات.',
+    'free photo uploads': 'رفع صور مجاني',
+    'share your event photos and showcase your gallery.': 'شارك صور فعالياتك واستعرض مساحتك الفنية.',
     'feature your gallery on curated maps and event calendars, with professional event photography.':
         'ميّز معرضك على الخرائط المختارة وتقويمات الفعاليات مع تصوير احترافي للفعاليات.',
     'feature your gallery on curated maps and event calendars, with professional event photography':

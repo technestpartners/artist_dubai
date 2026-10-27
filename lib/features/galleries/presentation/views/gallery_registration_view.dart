@@ -1277,49 +1277,56 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 9,
+                          horizontal: 14,
+                          vertical: 12,
                         ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: Colors.white.withValues(alpha: 0.35),
                             width: 1,
                           ),
                         ),
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(
-                              Icons.card_giftcard_rounded,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text.rich(
-                                TextSpan(
-                                  children: [
-                                    TextSpan(
-                                      text: 'Exclusive Benefits:'.trData(context),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                    const TextSpan(text: ' '),
-                                    TextSpan(
-                                      text: 'Enjoy your first 3 months free.'.trData(context),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.card_giftcard_rounded,
+                                  color: Colors.white,
+                                  size: 18,
                                 ),
-                              ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'EXCLUSIVE BENEFITS'.trData(context),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 12.5,
+                                    letterSpacing: 0.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            _buildExclusiveBenefitItem(
+                              number: '1',
+                              title: 'First 3 Months Free'.trData(context),
+                              description: 'Enjoy premium visibility at no cost.'.trData(context),
+                            ),
+                            const SizedBox(height: 6),
+                            _buildExclusiveBenefitItem(
+                              number: '2',
+                              title: 'Free Forever'.trData(context),
+                              description: 'Access calendars, maps, and event features.'.trData(context),
+                            ),
+                            const SizedBox(height: 6),
+                            _buildExclusiveBenefitItem(
+                              number: '3',
+                              title: 'Free Photo Uploads'.trData(context),
+                              description: 'Share your event photos and showcase your gallery.'.trData(context),
                             ),
                           ],
                         ),
@@ -1467,6 +1474,64 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
           const SizedBox(height: 24),
 
           const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExclusiveBenefitItem({
+    required String number,
+    required String title,
+    required String description,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.5),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 17,
+            height: 17,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.22),
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              number,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: '$title – ',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                  TextSpan(
+                    text: description,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.90),
+                      fontWeight: FontWeight.w400,
+                      fontSize: 11.5,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );

@@ -89,8 +89,10 @@ void main() {
     expect(find.textContaining('Boost your visibility and secure your place'), findsOneWidget);
 
     // Verify Exclusive Benefits Banner
-    expect(find.textContaining('Exclusive Benefits:'), findsOneWidget);
-    expect(find.textContaining('Enjoy your first 3 months free.'), findsOneWidget);
+    expect(find.textContaining('EXCLUSIVE BENEFITS'), findsOneWidget);
+    expect(find.textContaining('First 3 Months Free'), findsOneWidget);
+    expect(find.textContaining('Free Forever'), findsOneWidget);
+    expect(find.textContaining('Free Photo Uploads'), findsOneWidget);
 
     // Verify the 3 plans
     expect(find.text('3 Months'), findsOneWidget);
