@@ -10,7 +10,6 @@ import '../../domain/models/government_entity.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
 import '../../../../core/utils/data_translator.dart';
 import '../../../../core/utils/share_helper.dart';
-import 'package:artist_dubai/features/home/presentation/widgets/home_footer_widget.dart';
 
 class GovernmentPortalView extends StatefulWidget {
   const GovernmentPortalView({super.key});
@@ -352,9 +351,7 @@ class _GovernmentPortalViewState extends State<GovernmentPortalView> {
                     ...entities.map(
                       (entity) => _buildEntityCard(context, entity),
                     ),
-                  const SizedBox(height: 16),
-                  const HomeFooterWidget(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),

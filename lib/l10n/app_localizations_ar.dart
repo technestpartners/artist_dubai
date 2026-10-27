@@ -426,11 +426,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noCompetitionsAvailable => 'لا توجد مسابقات متاحة بعد';
 
   @override
-  String get eventsPhotosTitle => 'صور الفعاليات';
+  String get eventsPhotosTitle => 'عِش اللحظات من جديد.';
 
   @override
   String get eventsPhotosSubtitle =>
-      'تغطية فوتوغرافية عالية الدقة للمعارض الفنية والحفلات الرسمية الكبرى';
+      'استكشف معارض الصور لمجموعة متنوعة من الفعاليات والمعارض. لم تتمكن من الحضور؟ لا توجد مشكلة! اكتشف أبرز اللحظات، واستمتع بالصور، وعش الأجواء الفريدة لكل فعالية أينما كنت.';
 
   @override
   String get noPhotosAvailable => 'لا توجد صور فعاليات متاحة بعد';
@@ -711,11 +711,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get creating => 'جارٍ الإنشاء...';
 
   @override
-  String get artVenue => 'المكان الفني';
+  String get artVenue => 'سجّل مساحتك الفنية';
 
   @override
   String get artVenueSubtitle =>
-      'سجّل مساحتك الفنية أو معرضك للإدراج في التطبيق';
+      'انضم إلى منصة مجتمعنا الفني الاحترافي واعرض مساحتك الفنية للعالم. سجّل اليوم لتأمين مكانك في المجتمع الفني الرقمي والتواصل مع الفنانين والمعارض وعشاق الفن في جميع أنحاء العالم.';
 
   @override
   String get galleryCenterName => 'اسم المعرض / المركز الفني';

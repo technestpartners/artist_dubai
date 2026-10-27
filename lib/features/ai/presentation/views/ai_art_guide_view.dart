@@ -642,6 +642,9 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
 
               // 4. Bottom Prompt Input
               _buildInputArea(rh, isArabic),
+
+              // 5. Bottom Footer
+              const HomeFooterWidget(),
             ],
           ),
         ),
@@ -1217,8 +1220,6 @@ class _AiArtGuideViewState extends State<AiArtGuideView> {
                 );
               }),
               const SizedBox(height: 20),
-              const HomeFooterWidget(),
-              const SizedBox(height: 16),
             ],
           ),
         ),

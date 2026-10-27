@@ -16,7 +16,6 @@ import '../../domain/models/artist_model.dart';
 import 'artist_detail_view.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
 import '../../../../core/utils/data_translator.dart';
-import 'package:artist_dubai/features/home/presentation/widgets/home_footer_widget.dart';
 
 class ArtistsView extends StatefulWidget {
   const ArtistsView({super.key});
@@ -529,8 +528,7 @@ class _ArtistsViewState extends State<ArtistsView> {
                       const SizedBox(height: 18),
                     ],
 
-                    const HomeFooterWidget(),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),

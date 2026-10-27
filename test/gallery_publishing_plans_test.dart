@@ -75,7 +75,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final plansHeader = find.textContaining('Paid Gallery Publishing');
+    final plansHeader = find.textContaining('Art Venue Listing');
     await tester.scrollUntilVisible(
       plansHeader,
       400,
@@ -84,9 +84,9 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify Title & Subhead
-    expect(find.textContaining('Paid Gallery Publishing'), findsOneWidget);
+    expect(find.textContaining('Art Venue Listing'), findsOneWidget);
     expect(find.textContaining('Choose Your Plan'), findsOneWidget);
-    expect(find.textContaining('curated maps and event calendars'), findsOneWidget);
+    expect(find.textContaining('Boost your visibility and secure your place'), findsOneWidget);
 
     // Verify Exclusive Benefits Banner
     expect(find.textContaining('Exclusive Benefits:'), findsOneWidget);

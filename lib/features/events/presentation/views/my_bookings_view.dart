@@ -6,10 +6,10 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/live_sync_service.dart';
 import '../../../../core/services/storage_service.dart';
+import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../../core/utils/data_translator.dart';
 import '../../../../core/utils/responsive_helper.dart';
-import 'package:artist_dubai/features/home/presentation/widgets/home_footer_widget.dart';
 
 class MyBookingsView extends StatefulWidget {
   const MyBookingsView({super.key});
@@ -693,8 +693,6 @@ class _MyBookingsViewState extends State<MyBookingsView> {
                         },
                       ),
                     const SizedBox(height: 24),
-                    const HomeFooterWidget(),
-                    const SizedBox(height: 16),
                   ],
                 ),
               ),
@@ -702,6 +700,7 @@ class _MyBookingsViewState extends State<MyBookingsView> {
           ),
         ),
       ),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
     );
   }
 }

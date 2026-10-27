@@ -357,7 +357,7 @@ void main() {
       expect(find.text('AED 149'), findsOneWidget);
       expect(find.text('Art Centre Listing'), findsOneWidget);
       expect(find.text('AED 299'), findsOneWidget);
-      expect(find.text('Hosted by Nizar Al Fahem'), findsOneWidget);
+      expect(find.text('Hosted by Nizar Fahem'), findsOneWidget);
     });
   });
 

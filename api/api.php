@@ -766,7 +766,7 @@ class DatabaseManager {
                 $this->pdo->exec("
                     INSERT INTO publishing_pricing (item_type, item_name, description, weekly_price, monthly_price, three_month_price, six_month_price, yearly_price, three_month_badge, six_month_badge, yearly_badge, currency, is_active) VALUES
                     ('event', 'Paid Event Publishing', 'Feature your event on curated maps and event calendars, with professional event photography.', 'AED 150', 'AED 500', 'AED 2,000', 'AED 3,000', 'AED 5,000', 'Special Offer', 'Save 25%', 'Best Value', 'AED', 1),
-                    ('gallery', 'Paid Gallery Publishing', 'Feature your gallery on curated maps and event calendars, with professional event photography.', 'AED 250', 'AED 800', 'AED 2,000', 'AED 3,000', 'AED 5,000', 'Special Offer', 'Save 25%', 'Best Value', 'AED', 1),
+                    ('gallery', 'Art Venue Listing', 'Boost your visibility and secure your place in our professional art community. Choose your plan and connect with the art world!', 'AED 250', 'AED 800', 'AED 2,000', 'AED 3,000', 'AED 5,000', 'Special Offer', 'Save 25%', 'Best Value', 'AED', 1),
                     ('artist', 'Artist Verification & Listing', 'Get verified badge, priority placement in artist directory, and direct commissioning channel.', 'AED 100', 'AED 350', 'AED 1,000', 'AED 1,800', 'AED 3,000', 'Special Offer', 'Save 14%', 'Featured', 'AED', 1);
                 ");
             }
@@ -776,9 +776,9 @@ class DatabaseManager {
             if ($planCount === 0) {
                 $this->pdo->exec("
                     INSERT INTO listing_plans (item_type, title, category, badge, price, duration, duration_days, description, features_json, button_text, is_active, sort_order) VALUES
-                    ('gallery', '3 Months', 'Art Galleries', 'Special Offer', 'AED 2,000', '3 Months', 90, 'Feature your gallery on curated maps and event calendars, with professional event photography.', '[\"Curated maps showcase\",\"Event calendars feature\",\"Professional event photography\",\"Enjoy your first 3 months free\"]', 'Register Gallery', 1, 1),
-                    ('gallery', '6 Months', 'Art Galleries', 'Save 25%', 'AED 3,000', '6 Months', 180, 'Feature your gallery on curated maps and event calendars, with professional event photography.', '[\"Curated maps showcase\",\"Event calendars feature\",\"Professional event photography\",\"Enjoy your first 3 months free\"]', 'Register Gallery', 1, 2),
-                    ('gallery', '12 Months', 'Art Galleries', 'Best Value', 'AED 5,000', '12 Months', 365, 'Feature your gallery on curated maps and event calendars, with professional event photography.', '[\"Curated maps showcase\",\"Event calendars feature\",\"Professional event photography\",\"Enjoy your first 3 months free\"]', 'Register Gallery', 1, 3),
+                    ('gallery', '3 Months', 'Art Galleries', 'Special Offer', 'AED 2,000', '3 Months', 90, 'Boost your visibility and secure your place in our professional art community. Choose your plan and connect with the art world!', '[\"Curated maps showcase\",\"Event calendars feature\",\"Professional event photography\",\"Enjoy your first 3 months free\"]', 'Register Gallery', 1, 1),
+                    ('gallery', '6 Months', 'Art Galleries', 'Save 25%', 'AED 3,000', '6 Months', 180, 'Boost your visibility and secure your place in our professional art community. Choose your plan and connect with the art world!', '[\"Curated maps showcase\",\"Event calendars feature\",\"Professional event photography\",\"Enjoy your first 3 months free\"]', 'Register Gallery', 1, 2),
+                    ('gallery', '12 Months', 'Art Galleries', 'Best Value', 'AED 5,000', '12 Months', 365, 'Boost your visibility and secure your place in our professional art community. Choose your plan and connect with the art world!', '[\"Curated maps showcase\",\"Event calendars feature\",\"Professional event photography\",\"Enjoy your first 3 months free\"]', 'Register Gallery', 1, 3),
                     ('event', '3 Months', 'Art Events', 'Special Offer', 'AED 2,000', '3 Months', 90, 'Feature your event on curated maps and event calendars, with professional event photography.', '[\"Curated maps showcase\",\"Event calendars feature\",\"Professional event photography\",\"Enjoy your first 3 months free\"]', 'Publish Event', 1, 4),
                     ('event', '6 Months', 'Art Events', 'Save 25%', 'AED 3,000', '6 Months', 180, 'Feature your event on curated maps and event calendars, with professional event photography.', '[\"Curated maps showcase\",\"Event calendars feature\",\"Professional event photography\",\"Enjoy your first 3 months free\"]', 'Publish Event', 1, 5),
                     ('event', '12 Months', 'Art Events', 'Best Value', 'AED 5,000', '12 Months', 365, 'Feature your event on curated maps and event calendars, with professional event photography.', '[\"Curated maps showcase\",\"Event calendars feature\",\"Professional event photography\",\"Enjoy your first 3 months free\"]', 'Publish Event', 1, 6),
@@ -4589,7 +4589,7 @@ class PublishingPricingController {
                 (id, item_type, item_name, description, weekly_price, monthly_price, three_month_price, six_month_price, yearly_price, three_month_badge, six_month_badge, yearly_badge, currency, is_active)
                 VALUES 
                 (1, 'event', 'Paid Event Publishing', 'Feature your event on curated maps and event calendars, with professional event photography.', 'AED 150', 'AED 500', 'AED 2,000', 'AED 3,000', 'AED 5,000', 'Special Offer', 'Save 25%', 'Best Value', 'AED', 1),
-                (2, 'gallery', 'Paid Gallery Publishing', 'Feature your gallery on curated maps and event calendars, with professional event photography.', 'AED 250', 'AED 800', 'AED 2,000', 'AED 3,000', 'AED 5,000', 'Special Offer', 'Save 25%', 'Best Value', 'AED', 1),
+                (2, 'gallery', 'Art Venue Listing', 'Boost your visibility and secure your place in our professional art community. Choose your plan and connect with the art world!', 'AED 250', 'AED 800', 'AED 2,000', 'AED 3,000', 'AED 5,000', 'Special Offer', 'Save 25%', 'Best Value', 'AED', 1),
                 (3, 'artist', 'Artist Verification & Listing', 'Get verified badge, priority placement in artist directory, and direct commissioning channel.', 'AED 100', 'AED 350', 'AED 1,000', 'AED 1,800', 'AED 3,000', 'Special Offer', 'Save 14%', 'Featured', 'AED', 1)
                 ON DUPLICATE KEY UPDATE 
                     item_name = VALUES(item_name),
@@ -4754,7 +4754,7 @@ class ListingPlansController {
                     'price' => 'AED 2,000',
                     'duration' => '3 Months',
                     'duration_days' => 90,
-                    'description' => 'Feature your gallery on curated maps and event calendars, with professional event photography.',
+                    'description' => 'Boost your visibility and secure your place in our professional art community. Choose your plan and connect with the art world!',
                     'features_json' => json_encode([
                         'Curated maps showcase',
                         'Event calendars feature',
@@ -4772,7 +4772,7 @@ class ListingPlansController {
                     'price' => 'AED 3,000',
                     'duration' => '6 Months',
                     'duration_days' => 180,
-                    'description' => 'Feature your gallery on curated maps and event calendars, with professional event photography.',
+                    'description' => 'Boost your visibility and secure your place in our professional art community. Choose your plan and connect with the art world!',
                     'features_json' => json_encode([
                         'Curated maps showcase',
                         'Event calendars feature',
@@ -4790,7 +4790,7 @@ class ListingPlansController {
                     'price' => 'AED 5,000',
                     'duration' => '12 Months',
                     'duration_days' => 365,
-                    'description' => 'Feature your gallery on curated maps and event calendars, with professional event photography.',
+                    'description' => 'Boost your visibility and secure your place in our professional art community. Choose your plan and connect with the art world!',
                     'features_json' => json_encode([
                         'Curated maps showcase',
                         'Event calendars feature',
@@ -5665,7 +5665,7 @@ class MenuPermissionsController {
                     ['key' => 'government', 'title' => 'GOVERNMENT', 'subtitle' => null, 'route_name' => '/government', 'image_path' => 'assets/images/government-CWANBIsX.jpg', 'is_enabled' => 1],
                     ['key' => 'artist_registration', 'title' => 'ARTIST REGISTRATION', 'subtitle' => 'REGISTRATION', 'route_name' => '/artist-registration', 'image_path' => 'assets/images/artist-registration-DqgORA9-.jpg', 'is_enabled' => 1],
                     ['key' => 'events_competition', 'title' => 'EVENTS COMPETITION', 'subtitle' => 'COMPETITION', 'route_name' => '/events', 'image_path' => 'assets/images/events-competition-DvLzKG_2.jpg', 'is_enabled' => 1],
-                    ['key' => 'galleries_art_center', 'title' => 'GALLERIES ART CENTER', 'subtitle' => 'ART CENTER', 'route_name' => '/galleries', 'image_path' => 'assets/images/galleries-DjK8LuXg.jpg', 'is_enabled' => 1],
+                    ['key' => 'galleries_art_center', 'title' => 'GALLERIES ART CENTERS', 'subtitle' => 'ART CENTERS', 'route_name' => '/galleries', 'image_path' => 'assets/images/galleries-DjK8LuXg.jpg', 'is_enabled' => 1],
                     ['key' => 'events_photos', 'title' => 'EVENTS PHOTOS', 'subtitle' => 'PHOTOS', 'route_name' => '/events-photos', 'image_path' => 'assets/images/events-photos-CckY-T_x.jpg', 'is_enabled' => 1],
                     ['key' => 'gallery_registration', 'title' => 'GALLERIES | ART CENTERS REGISTRATION', 'subtitle' => 'REGISTRATION', 'route_name' => '/gallery-registration', 'image_path' => 'assets/images/gallery-registration-DU8u0zfk.jpg', 'is_enabled' => 1],
                     ['key' => 'login_portal', 'title' => 'LOGIN', 'subtitle' => 'PORTAL', 'route_name' => '/login', 'image_path' => 'assets/images/login-portal.png', 'is_enabled' => 1],

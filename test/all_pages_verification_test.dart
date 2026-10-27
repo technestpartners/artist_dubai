@@ -281,7 +281,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(EventPhotosView), findsOneWidget);
-      expect(find.text('Events Photos'), findsOneWidget);
+      expect(find.text('RELIVE THE MOMENTS.'), findsOneWidget);
     });
 
     testWidgets('16. GalleriesView renders art centers directory', (
@@ -295,7 +295,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(GalleriesView), findsOneWidget);
-      expect(find.text('Galleries & Art Center'), findsOneWidget);
+      expect(find.text('Galleries & Art Centers'), findsOneWidget);
     });
 
     testWidgets(

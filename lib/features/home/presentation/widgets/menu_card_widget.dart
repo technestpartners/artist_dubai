@@ -16,36 +16,50 @@ class MenuCardWidget extends StatelessWidget {
         final cardHeight = constraints.maxHeight;
         final cardWidth = constraints.maxWidth;
 
-        // Widen clamp maximums on tablet / desktop
+        final hasSubtitle = item.subtitle != null;
+
+        // Widen clamp maximums on tablet / desktop / mobile
         final maxIconSize =
             rh.isDesktop
-                ? 96.0
+                ? 130.0
                 : rh.isTablet
-                ? 84.0
-                : 66.0;
+                ? 110.0
+                : 80.0;
+        final maxSingleTitleFont =
+            rh.isDesktop
+                ? 22.0
+                : rh.isTablet
+                ? 19.5
+                : 17.5;
         final maxTitleFont =
             rh.isDesktop
-                ? 18.0
+                ? 19.0
                 : rh.isTablet
-                ? 16.5
-                : 15.0;
+                ? 17.5
+                : 15.5;
         final maxSubFont =
             rh.isDesktop
-                ? 14.0
+                ? 15.0
                 : rh.isTablet
-                ? 13.0
-                : 12.0;
+                ? 13.5
+                : 12.5;
 
-        final minIcon = rh.isWide ? 44.0 : 26.0;
-        final minTitle = rh.isWide ? 12.0 : 9.0;
-        final minSub = rh.isWide ? 10.0 : 7.5;
+        final minIcon = rh.isWide ? 50.0 : 36.0;
+        final minTitle = rh.isWide ? 12.0 : 9.5;
+        final minSub = rh.isWide ? 10.5 : 8.0;
 
-        final iconSize = (cardHeight * 0.36).clamp(minIcon, maxIconSize);
+        // Visually balanced icon size (~50% of card height instead of crowded 60%)
+        final iconSize = (cardHeight * 0.50).clamp(minIcon, maxIconSize);
+
+        // Larger, more professional typography fitting neatly in card
         final titleFontSize =
-            item.isLongTitle
-                ? (cardHeight * 0.095).clamp(minTitle, maxTitleFont - 2)
-                : (cardHeight * 0.112).clamp(minTitle, maxTitleFont);
-        final subtitleFontSize = (cardHeight * 0.082).clamp(minSub, maxSubFont);
+            !hasSubtitle
+                ? (cardHeight * 0.155).clamp(minTitle + 2, maxSingleTitleFont)
+                : item.isLongTitle
+                ? (cardHeight * 0.118).clamp(minTitle, maxTitleFont - 1.5)
+                : (cardHeight * 0.134).clamp(minTitle, maxTitleFont);
+
+        final subtitleFontSize = (cardHeight * 0.100).clamp(minSub, maxSubFont);
         final cornerRadius = (cardWidth * 0.12).clamp(10.0, 24.0);
 
         return Material(
@@ -70,15 +84,15 @@ class MenuCardWidget extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 6.0,
-                  vertical: 2.5,
+                  vertical: 2.0,
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // 1. Flexible Image — shrinks when space is tight
+                    // 1. Flexible Image — visually balanced
                     Flexible(
-                      flex: 3,
+                      flex: 11,
                       child: ConstrainedBox(
                         constraints: BoxConstraints(
                           maxWidth: iconSize,
@@ -92,18 +106,18 @@ class MenuCardWidget extends StatelessWidget {
                               return Icon(
                                 Icons.image,
                                 color: Colors.white,
-                                size: (iconSize * 0.55).clamp(18.0, 42.0),
+                                size: (iconSize * 0.55).clamp(20.0, 56.0),
                               );
                             },
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
 
-                    // 2. Flexible Text Container
+                    // 2. Flexible Text Container — larger and more prominent
                     Flexible(
-                      flex: 2,
+                      flex: 9,
                       child: Builder(
                         builder: (context) {
                           final localizedTitle = item.getLocalizedTitle(
@@ -127,14 +141,15 @@ class MenuCardWidget extends StatelessWidget {
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: titleFontSize,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 0.2,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.35,
                                       height: 1.1,
                                     ),
                                   ),
                                 ),
                               ),
-                              if (localizedSubtitle != null)
+                              if (localizedSubtitle != null) ...[
+                                const SizedBox(height: 1),
                                 Flexible(
                                   child: FittedBox(
                                     fit: BoxFit.scaleDown,
@@ -143,15 +158,16 @@ class MenuCardWidget extends StatelessWidget {
                                       textAlign: TextAlign.center,
                                       maxLines: 1,
                                       style: TextStyle(
-                                        color: const Color(0xFFD6C8F2),
+                                        color: const Color(0xFFE2D6F5),
                                         fontSize: subtitleFontSize,
-                                        fontWeight: FontWeight.w500,
-                                        letterSpacing: 0.2,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.25,
                                         height: 1.05,
                                       ),
                                     ),
                                   ),
                                 ),
+                              ],
                             ],
                           );
                         },

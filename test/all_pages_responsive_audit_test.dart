@@ -356,7 +356,7 @@ void main() {
           expect(find.byType(EventPhotosView), findsOneWidget);
         });
 
-        testWidgets('16. Galleries Art Center Directory ($screenName)', (
+        testWidgets('16. Galleries Art Centers Directory ($screenName)', (
           tester,
         ) async {
           tester.view.physicalSize = screenSize;

@@ -2534,18 +2534,6 @@ class _ArtistChatViewState extends State<ArtistChatView> {
                       else
                         _buildSendTab(),
 
-                      const SizedBox(height: 36),
-
-                      Center(
-                        child: Text(
-                          'Hosted by Nizar Al Fahem'.trData(context),
-                          style: const TextStyle(
-                            color: Color(0xFFD4BEE4),
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
                       const SizedBox(height: 24),
                     ],
                   ),

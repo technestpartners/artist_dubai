@@ -371,19 +371,6 @@ class _ListingPlansViewState extends State<ListingPlansView> {
                             const SizedBox(height: 18),
                           ],
 
-                        const SizedBox(height: 20),
-
-                        // Footer "Hosted by Nizar Al Fahem"
-                        Center(
-                          child: Text(
-                            'Hosted by Nizar Al Fahem'.trData(context),
-                            style: const TextStyle(
-                              color: Color(0xFFD4BEE4),
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
                         const SizedBox(height: 24),
                       ],
                     ),

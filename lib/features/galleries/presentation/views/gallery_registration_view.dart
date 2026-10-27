@@ -604,9 +604,11 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                       Expanded(
                         child: Text(
                           l10n.artVenue,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: rh.isCompact ? 17 : 20,
+                            fontSize: rh.isCompact ? 15 : 17,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -697,13 +699,14 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
               letterSpacing: 0.5,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             l10n.artVenueSubtitle,
             style: const TextStyle(
               fontSize: 13.5,
               color: Colors.white70,
               fontWeight: FontWeight.w400,
+              height: 1.45,
             ),
           ),
           const SizedBox(height: 20),
@@ -1220,7 +1223,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                             ),
                           ),
                           Text(
-                            'Paid Gallery Publishing • Choose Your Plan'.trData(
+                            'Art Venue Listing'.trData(
                               context,
                             ),
                             style: const TextStyle(
@@ -1241,7 +1244,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                               border: Border.all(color: Colors.white24),
                             ),
                             child: Text(
-                              'Curated Showcase'.trData(context),
+                              'Choose Your Plan'.trData(context),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 9.0,
@@ -1254,12 +1257,15 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                       const SizedBox(height: 8),
                       Text(
                         _galleryPricing?.description != null &&
-                                _galleryPricing!.description!.trim().isNotEmpty
+                                _galleryPricing!.description!.trim().isNotEmpty &&
+                                !_galleryPricing!.description!
+                                    .toLowerCase()
+                                    .contains('feature your gallery on curated maps')
                             ? DataTranslator.tr(
                               context,
                               _galleryPricing!.description!.trim(),
                             )
-                            : 'Feature your gallery on curated maps and event calendars, with professional event photography.'
+                            : 'Boost your visibility and secure your place in our professional art community. Choose your plan and connect with the art world!'
                                 .trData(context),
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.88),
@@ -1460,18 +1466,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
           ),
           const SizedBox(height: 24),
 
-          // 3. Footer Attribution
-          Center(
-            child: Text(
-              'Hosted by Nizar Al Fahem'.trData(context),
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 13.5,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -1573,17 +1568,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
         ),
         const SizedBox(height: 36),
 
-        // 3. Footer
-        Center(
-          child: Text(
-            'Hosted by Nizar Al Fahem'.trData(context),
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 13.5,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
+        const SizedBox(height: 24),
       ],
     );
   }

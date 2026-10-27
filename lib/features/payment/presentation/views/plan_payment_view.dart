@@ -923,10 +923,6 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                     _buildPayButton(),
                     const SizedBox(height: 14),
 
-                    // Security & Guarantee Badges
-                    _buildTrustFooter(),
-                    const SizedBox(height: 16),
-                    const HomeFooterWidget(),
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -934,6 +930,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
             ),
           ),
         ),
+      ),
+      bottomNavigationBar: const SafeArea(
+        top: false,
+        child: HomeFooterWidget(),
       ),
     );
   }
@@ -1585,41 +1585,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     );
   }
 
-  Widget _buildTrustFooter() {
-    return Wrap(
-      alignment: WrapAlignment.center,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 6,
-      runSpacing: 4,
-      children: [
-        const Icon(Icons.shield_outlined, size: 14, color: Color(0xFF16A34A)),
-        Text(
-          'Guaranteed Safe & Secure Checkout'.trData(context),
-          style: const TextStyle(
-            fontSize: 11.5,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF64748B),
-          ),
-        ),
-        Container(
-          width: 3,
-          height: 3,
-          decoration: const BoxDecoration(
-            color: Color(0xFFCBD5E1),
-            shape: BoxShape.circle,
-          ),
-        ),
-        Text(
-          '256-Bit SSL'.trData(context),
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF16A34A),
-          ),
-        ),
-      ],
-    );
-  }
+
 }
 
 /// Custom formatter for card number spacing with brand-aware digit limits

@@ -473,7 +473,7 @@ abstract class AppLocalizations {
   /// No description provided for @hostedBy.
   ///
   /// In en, this message translates to:
-  /// **'Hosted by Nizar Al Fahem'**
+  /// **'Hosted by Nizar Fahem'**
   String get hostedBy;
 
   /// No description provided for @aboutUs.
@@ -509,7 +509,7 @@ abstract class AppLocalizations {
   /// No description provided for @galleriesArtCenter.
   ///
   /// In en, this message translates to:
-  /// **'Galleries & Art Center'**
+  /// **'Galleries & Art Centers'**
   String get galleriesArtCenter;
 
   /// No description provided for @eventsPhotos.
@@ -893,13 +893,13 @@ abstract class AppLocalizations {
   /// No description provided for @eventsPhotosTitle.
   ///
   /// In en, this message translates to:
-  /// **'Events Photos'**
+  /// **'RELIVE THE MOMENTS.'**
   String get eventsPhotosTitle;
 
   /// No description provided for @eventsPhotosSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'High-resolution photo coverage from art exhibitions and galas'**
+  /// **'Explore photo galleries from a variety of events and exhibitions. Couldn\'t attend? No problem! Discover the highlights, enjoy the photos, and experience the unique atmosphere of each event from wherever you are.'**
   String get eventsPhotosSubtitle;
 
   /// No description provided for @noPhotosAvailable.
@@ -1439,13 +1439,13 @@ abstract class AppLocalizations {
   /// No description provided for @artVenue.
   ///
   /// In en, this message translates to:
-  /// **'ART VENUE'**
+  /// **'REGISTER YOUR ART VENUE'**
   String get artVenue;
 
   /// No description provided for @artVenueSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Register your art venue or gallery to be listed in the app'**
+  /// **'Join our professional art community platform and showcase your venue to the world. Register today to secure your place in the digital art community and connect with artists, galleries, and art lovers worldwide.'**
   String get artVenueSubtitle;
 
   /// No description provided for @galleryCenterName.

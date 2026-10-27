@@ -135,8 +135,8 @@ class MenuPermissionModel {
       ),
       MenuPermissionModel(
         key: 'galleries_art_center',
-        title: 'GALLERIES ART CENTER',
-        subtitle: 'ART CENTER',
+        title: 'GALLERIES ART CENTERS',
+        subtitle: 'ART CENTERS',
         routeName: '/galleries',
         imagePath: 'assets/images/galleries-DjK8LuXg.jpg',
         isEnabled: true,

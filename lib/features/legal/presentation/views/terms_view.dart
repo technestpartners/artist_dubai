@@ -4,7 +4,6 @@ import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/widgets/app_back_button.dart';
 import '../../../../core/widgets/app_bottom_nav_bar.dart';
 import '../../../../core/widgets/app_top_bar.dart';
-import 'package:artist_dubai/features/home/presentation/widgets/home_footer_widget.dart';
 
 class TermsView extends StatelessWidget {
   const TermsView({super.key});
@@ -102,9 +101,7 @@ class TermsView extends StatelessWidget {
                   _buildBulletPoint(l10n.termsBullet2),
                   _buildBulletPoint(l10n.termsBullet3),
                   _buildBulletPoint(l10n.termsBullet4),
-                  const SizedBox(height: 16),
-                  const HomeFooterWidget(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),

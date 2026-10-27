@@ -16,7 +16,6 @@ import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_top_bar.dart';
 import '../../../chat/data/chat_service.dart';
 import '../../../chat/domain/models/listing_plan_model.dart';
-import 'package:artist_dubai/features/home/presentation/widgets/home_footer_widget.dart';
 
 class SettingsView extends StatefulWidget {
   const SettingsView({super.key});
@@ -1814,9 +1813,7 @@ class _SettingsViewState extends State<SettingsView> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        const HomeFooterWidget(),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 24),
                       ],
                     ),
                   ),

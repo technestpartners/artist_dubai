@@ -660,6 +660,12 @@ class DataTranslator {
     'paid gallery publishing • choose your plan': 'نشر المعارض المدفوع • اختر خطتك',
     'paid gallery publishing • choose plan': 'نشر المعارض المدفوع • اختر خطتك',
     'paid gallery publishing': 'نشر المعارض المدفوع',
+    'art venue listing • choose your plan': 'إدراج المساحة الفنية • اختر خطتك',
+    'art venue listing': 'إدراج المساحة الفنية',
+    'boost your visibility and secure your place in our professional art community. choose your plan and connect with the art world!':
+        'عزز ظهورك وأمّن مكانك في مجتمعنا الفني الاحترافي. اختر خطتك وتواصل مع عالم الفن!',
+    'boost your visibility and secure your place in our professional art community. choose your plan and connect with the art world':
+        'عزز ظهورك وأمّن مكانك في مجتمعنا الفني الاحترافي. اختر خطتك وتواصل مع عالم الفن!',
     'paid event publishing • choose your plan': 'نشر الفعاليات المدفوع • اختر خطتك',
     'paid event publishing • choose plan': 'نشر الفعاليات المدفوع • اختر خطتك',
     'paid event publishing': 'نشر الفعاليات المدفوع',
@@ -767,8 +773,17 @@ class DataTranslator {
     'artist registration': 'تسجيل فنان',
     'events competition': 'الفعاليات والمسابقات',
     'galleries art center': 'المعارض والمراكز الفنية',
+    'galleries art centers': 'المعارض والمراكز الفنية',
+    'galleries & art centers': 'المعارض والمراكز الفنية',
     'events photos': 'صور الفعاليات',
+    'relive the moments.': 'عِش اللحظات من جديد.',
+    'relive the moments': 'عِش اللحظات من جديد',
+    'explore photo galleries from a variety of events and exhibitions. couldn\'t attend? no problem! discover the highlights, enjoy the photos, and experience the unique atmosphere of each event from wherever you are.':
+        'استكشف معارض الصور لمجموعة متنوعة من الفعاليات والمعارض. لم تتمكن من الحضور؟ لا توجد مشكلة! اكتشف أبرز اللحظات، واستمتع بالصور، وعش الأجواء الفريدة لكل فعالية أينما كنت.',
     'art venue registration': 'تسجيل المعارض والمراكز الفنية',
+    'register your art venue': 'سجّل مساحتك الفنية',
+    'join our professional art community platform and showcase your venue to the world. register today to secure your place in the digital art community and connect with artists, galleries, and art lovers worldwide.':
+        'انضم إلى منصة مجتمعنا الفني الاحترافي واعرض مساحتك الفنية للعالم. سجّل اليوم لتأمين مكانك في المجتمع الفني الرقمي والتواصل مع الفنانين والمعارض وعشاق الفن في جميع أنحاء العالم.',
     'galleries | art centers registration': 'تسجيل المعارض والمراكز الفنية',
     'galleries & art centers registration': 'تسجيل المعارض والمراكز الفنية',
     'art venue': 'معرض فني',
@@ -1518,7 +1533,8 @@ class DataTranslator {
     if (_arToEn == null) {
       final map = <String, String>{
         // Explicit Arabic to English lookups for event titles and variations
-        'برعاية نزار الفاهم': 'Hosted by Nizar Al Fahem',
+        'برعاية نزار الفاهم': 'Hosted by Nizar Fahem',
+        'المعارض والمراكز الفنية': 'Galleries & Art Centers',
         'تسجيل المعارض والمراكز الفنية': 'Galleries & Art Centers Registration',
         'معرض اختبار واجهة برمجة التطبيق المباشر 8831':
             'Live API Test Exhibition 8831',

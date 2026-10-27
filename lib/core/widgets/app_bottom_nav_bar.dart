@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/routes/route_names.dart';
+import '../../features/home/presentation/widgets/home_footer_widget.dart';
 import '../di/injection_container.dart';
 import '../services/live_sync_service.dart';
 import '../services/storage_service.dart';
@@ -151,85 +152,91 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
 
     return SafeArea(
       top: false,
-      child: Container(
-        height: rh.isShortScreen ? 72 : 90,
-        padding: EdgeInsets.only(
-          left: rh.isCompact ? 8.0 : rh.horizontalPadding,
-          right: rh.isCompact ? 8.0 : rh.horizontalPadding,
-          bottom: rh.isShortScreen ? 6.0 : 20.0,
-          top: 4.0,
-        ),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: rh.bottomNavMaxWidth),
-            child: Container(
-              height: rh.isShortScreen ? 54 : 64,
-              padding: EdgeInsets.symmetric(
-                horizontal: rh.isCompact ? 8 : 16,
-                vertical: rh.isShortScreen ? 3 : 6,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(32),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.12),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: EdgeInsets.only(
+              left: rh.isCompact ? 8.0 : rh.horizontalPadding,
+              right: rh.isCompact ? 8.0 : rh.horizontalPadding,
+              top: 4.0,
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: rh.bottomNavMaxWidth),
+                child: Container(
+                  height: rh.isShortScreen ? 48 : 56,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: rh.isCompact ? 8 : 16,
+                    vertical: rh.isShortScreen ? 2 : 4,
                   ),
-                  BoxShadow(
-                    color: const Color(0xFF6B1C9B).withValues(alpha: 0.08),
-                    blurRadius: 20,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-                border: Border.all(
-                  color: const Color(0xFFE2E8F0),
-                  width: 1.0,
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  _buildNavItem(
-                    context: context,
-                    index: 0,
-                    selectedIcon: Icons.home_rounded,
-                    unselectedIcon: Icons.home_outlined,
-                    label: l10n.home,
-                    onTap: () => _onTabSelected(context, 0),
-                  ),
-                  _buildNavItem(
-                    context: context,
-                    index: 1,
-                    selectedIcon: Icons.people_rounded,
-                    unselectedIcon: Icons.people_outline_rounded,
-                    label: l10n.artists,
-                    onTap: () => _onTabSelected(context, 1),
-                  ),
-                  _buildNavItem(
-                    context: context,
-                    index: 2,
-                    selectedIcon: Icons.calendar_month_rounded,
-                    unselectedIcon: Icons.calendar_today_outlined,
-                    label: l10n.events,
-                    onTap: () => _onTabSelected(context, 2),
-                  ),
-                  if (!loggedIn)
-                    _buildNavItem(
-                      context: context,
-                      index: 3,
-                      selectedIcon: Icons.login_rounded,
-                      unselectedIcon: Icons.login,
-                      label: l10n.signIn,
-                      onTap: () => _onTabSelected(context, 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(32),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.12),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                      BoxShadow(
+                        color: const Color(0xFF6B1C9B).withValues(alpha: 0.08),
+                        blurRadius: 20,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                    border: Border.all(
+                      color: const Color(0xFFE2E8F0),
+                      width: 1.0,
                     ),
-                ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      _buildNavItem(
+                        context: context,
+                        index: 0,
+                        selectedIcon: Icons.home_rounded,
+                        unselectedIcon: Icons.home_outlined,
+                        label: l10n.home,
+                        onTap: () => _onTabSelected(context, 0),
+                      ),
+                      _buildNavItem(
+                        context: context,
+                        index: 1,
+                        selectedIcon: Icons.people_rounded,
+                        unselectedIcon: Icons.people_outline_rounded,
+                        label: l10n.artists,
+                        onTap: () => _onTabSelected(context, 1),
+                      ),
+                      _buildNavItem(
+                        context: context,
+                        index: 2,
+                        selectedIcon: Icons.calendar_month_rounded,
+                        unselectedIcon: Icons.calendar_today_outlined,
+                        label: l10n.events,
+                        onTap: () => _onTabSelected(context, 2),
+                      ),
+                      if (!loggedIn)
+                        _buildNavItem(
+                          context: context,
+                          index: 3,
+                          selectedIcon: Icons.login_rounded,
+                          unselectedIcon: Icons.login,
+                          label: l10n.signIn,
+                          onTap: () => _onTabSelected(context, 3),
+                        ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
-        ),
+          const SizedBox(height: 2),
+          const HomeFooterWidget(),
+          SizedBox(height: rh.isShortScreen ? 2 : 4),
+        ],
       ),
     );
   }

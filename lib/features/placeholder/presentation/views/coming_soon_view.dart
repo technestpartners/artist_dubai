@@ -3,6 +3,7 @@ import 'package:artist_dubai/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/route_names.dart';
 import '../../../../core/utils/responsive_helper.dart';
+import '../../../home/presentation/widgets/home_footer_widget.dart';
 
 class ComingSoonView extends StatelessWidget {
   final String? featureName;
@@ -22,6 +23,10 @@ class ComingSoonView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFF5D1F8E),
+      bottomNavigationBar: const SafeArea(
+        top: false,
+        child: HomeFooterWidget(),
+      ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -162,22 +167,6 @@ class ComingSoonView extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.2,
                     ),
-                  ),
-                ),
-              ),
-            ),
-            const Spacer(flex: 4),
-
-            // Bottom Footer
-            Padding(
-              padding: const EdgeInsets.only(bottom: 20.0),
-              child: Center(
-                child: Text(
-                  l10n.hostedBy,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),

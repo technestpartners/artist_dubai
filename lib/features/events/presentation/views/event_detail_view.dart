@@ -447,13 +447,15 @@ class _EventDetailViewState extends State<EventDetailView> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const HomeFooterWidget(),
-                  const SizedBox(height: 16),
                 ],
               ),
             ),
           ),
         ),
+      ),
+      bottomNavigationBar: const SafeArea(
+        top: false,
+        child: HomeFooterWidget(),
       ),
     );
   }

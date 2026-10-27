@@ -93,7 +93,7 @@ class MenuCardItem {
     ),
     MenuCardItem(
       title: 'GALLERIES',
-      subtitle: 'ART CENTER',
+      subtitle: 'ART CENTERS',
       imagePath: 'assets/images/galleries-DjK8LuXg.jpg',
       routeName: '/galleries',
     ),

@@ -53,7 +53,7 @@ class DashboardItem {
     ),
     DashboardItem(
       title: 'GALLERIES',
-      subtitle: 'ART CENTER',
+      subtitle: 'ART CENTERS',
       iconPath: 'assets/icons/dashboard/galleries.png',
       imagePath: 'assets/images/galleries-DjK8LuXg.jpg',
       route: '/galleries',

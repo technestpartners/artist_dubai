@@ -205,7 +205,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get communityPlatform => 'Community Platform';
 
   @override
-  String get hostedBy => 'Hosted by Nizar Al Fahem';
+  String get hostedBy => 'Hosted by Nizar Fahem';
 
   @override
   String get aboutUs => 'About Us';
@@ -223,7 +223,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventsCompetition => 'Events Competition';
 
   @override
-  String get galleriesArtCenter => 'Galleries & Art Center';
+  String get galleriesArtCenter => 'Galleries & Art Centers';
 
   @override
   String get eventsPhotos => 'Events Photos';
@@ -431,11 +431,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noCompetitionsAvailable => 'No competitions available yet';
 
   @override
-  String get eventsPhotosTitle => 'Events Photos';
+  String get eventsPhotosTitle => 'RELIVE THE MOMENTS.';
 
   @override
   String get eventsPhotosSubtitle =>
-      'High-resolution photo coverage from art exhibitions and galas';
+      'Explore photo galleries from a variety of events and exhibitions. Couldn\'t attend? No problem! Discover the highlights, enjoy the photos, and experience the unique atmosphere of each event from wherever you are.';
 
   @override
   String get noPhotosAvailable => 'No event photos available yet';
@@ -717,11 +717,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get creating => 'Creating...';
 
   @override
-  String get artVenue => 'ART VENUE';
+  String get artVenue => 'REGISTER YOUR ART VENUE';
 
   @override
   String get artVenueSubtitle =>
-      'Register your art venue or gallery to be listed in the app';
+      'Join our professional art community platform and showcase your venue to the world. Register today to secure your place in the digital art community and connect with artists, galleries, and art lovers worldwide.';
 
   @override
   String get galleryCenterName => 'Gallery / center name';

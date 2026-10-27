@@ -8,6 +8,7 @@ import '../../../../core/services/storage_service.dart';
 import '../../../../core/utils/data_translator.dart';
 import '../../domain/models/onboarding_item.dart';
 import '../widgets/onboarding_slide_widget.dart';
+import '../../../home/presentation/widgets/home_footer_widget.dart';
 
 class OnboardingView extends StatefulWidget {
   const OnboardingView({super.key});
@@ -81,6 +82,11 @@ class _OnboardingViewState extends State<OnboardingView> {
     final isFirstPage = _currentIndex == 0;
 
     return Scaffold(
+      backgroundColor: const Color(0xFF4D249E),
+      bottomNavigationBar: const SafeArea(
+        top: false,
+        child: HomeFooterWidget(),
+      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(

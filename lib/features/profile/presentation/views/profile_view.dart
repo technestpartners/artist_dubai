@@ -13,7 +13,6 @@ import '../../../../core/utils/share_helper.dart';
 import '../../../../core/utils/responsive_helper.dart';
 import '../../../../core/utils/data_translator.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
-import 'package:artist_dubai/features/home/presentation/widgets/home_footer_widget.dart';
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -1613,9 +1612,7 @@ class _ProfileViewState extends State<ProfileView> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        const HomeFooterWidget(),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 24),
                       ],
                     ),
                   ),

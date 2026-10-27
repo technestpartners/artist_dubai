@@ -2516,8 +2516,6 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
-                          const HomeFooterWidget(),
                           const SizedBox(height: 24),
                         ],
                       ),
@@ -2530,7 +2528,9 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
         ),
       ),
       bottomNavigationBar:
-          widget.fromAdmin ? null : const AppBottomNavBar(currentIndex: 1),
+          widget.fromAdmin
+              ? const SafeArea(top: false, child: HomeFooterWidget())
+              : const AppBottomNavBar(currentIndex: 1),
     );
   }
 

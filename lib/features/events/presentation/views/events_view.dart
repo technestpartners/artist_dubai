@@ -18,7 +18,6 @@ import '../../../artists/domain/models/artist_model.dart';
 import '../../../../core/utils/data_translator.dart';
 import '../../../../core/utils/share_helper.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
-import 'package:artist_dubai/features/home/presentation/widgets/home_footer_widget.dart';
 
 class EventsView extends StatefulWidget {
   final int initialTabIndex;
@@ -587,9 +586,7 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
                     else
                       _buildWhatsOnSections(filteredEvents),
 
-                    const SizedBox(height: 16),
-                    const HomeFooterWidget(),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),

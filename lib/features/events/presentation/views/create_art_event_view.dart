@@ -2266,9 +2266,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 20),
-                          const HomeFooterWidget(),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 24),
                         ],
                       ),
                     ),
@@ -2282,7 +2280,7 @@ class _CreateArtEventViewState extends State<CreateArtEventView> {
       bottomNavigationBar:
           (!widget.fromAdmin && !widget.isCalendar && widget.showBottomBar)
               ? const AppBottomNavBar(currentIndex: 2)
-              : null,
+              : const SafeArea(top: false, child: HomeFooterWidget()),
     );
   }
 

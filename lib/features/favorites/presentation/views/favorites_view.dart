@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:artist_dubai/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
@@ -17,7 +17,6 @@ import '../../../artists/domain/models/artist_model.dart';
 import '../../../events/domain/models/art_event_model.dart';
 import '../../../../core/utils/data_translator.dart';
 import '../../../../core/utils/share_helper.dart';
-import '../../../home/presentation/widgets/home_footer_widget.dart';
 
 class FavoritesView extends StatefulWidget {
   const FavoritesView({super.key});
@@ -350,11 +349,7 @@ class _FavoritesViewState extends State<FavoritesView>
                           ),
                 ),
 
-                // Footer Attribution
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8.0),
-                  child: HomeFooterWidget(),
-                ),
+                const SizedBox(height: 16),
               ],
             ),
           ),

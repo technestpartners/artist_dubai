@@ -509,17 +509,7 @@ class _GalleriesViewState extends State<GalleriesView> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 36),
-                        Center(
-                          child: Text(
-                            'Hosted by Nizar Al Fahem'.trData(context),
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
+                        const SizedBox(height: 24),
                       ] else if (_getFilteredGalleries().isEmpty) ...[
                         Container(
                           width: double.infinity,
@@ -837,17 +827,6 @@ class _GalleriesViewState extends State<GalleriesView> {
                                   ),
                             );
                           },
-                        ),
-                        const SizedBox(height: 24),
-                        Center(
-                          child: Text(
-                            l10n.hostedBy,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
                         ),
                       ],
                     ],
