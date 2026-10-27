@@ -21,45 +21,45 @@ class MenuCardWidget extends StatelessWidget {
         // Widen clamp maximums on tablet / desktop / mobile
         final maxIconSize =
             rh.isDesktop
-                ? 130.0
+                ? 120.0
                 : rh.isTablet
-                ? 110.0
-                : 80.0;
+                ? 95.0
+                : 72.0;
         final maxSingleTitleFont =
             rh.isDesktop
-                ? 22.0
+                ? 24.0
                 : rh.isTablet
-                ? 19.5
-                : 17.5;
+                ? 21.0
+                : 18.5;
         final maxTitleFont =
             rh.isDesktop
-                ? 19.0
+                ? 20.0
                 : rh.isTablet
-                ? 17.5
-                : 15.5;
+                ? 18.5
+                : 16.5;
         final maxSubFont =
             rh.isDesktop
-                ? 15.0
+                ? 16.0
                 : rh.isTablet
-                ? 13.5
-                : 12.5;
+                ? 14.5
+                : 13.5;
 
-        final minIcon = rh.isWide ? 50.0 : 36.0;
-        final minTitle = rh.isWide ? 12.0 : 9.5;
-        final minSub = rh.isWide ? 10.5 : 8.0;
+        final minIcon = rh.isWide ? 48.0 : 34.0;
+        final minTitle = rh.isWide ? 13.0 : 10.0;
+        final minSub = rh.isWide ? 11.0 : 8.5;
 
-        // Visually balanced icon size (~50% of card height instead of crowded 60%)
-        final iconSize = (cardHeight * 0.50).clamp(minIcon, maxIconSize);
+        // Visually balanced icon size (~45% of card height for harmonious proportions)
+        final iconSize = (cardHeight * 0.45).clamp(minIcon, maxIconSize);
 
-        // Larger, more professional typography fitting neatly in card
+        // Larger, more prominent professional typography
         final titleFontSize =
             !hasSubtitle
-                ? (cardHeight * 0.155).clamp(minTitle + 2, maxSingleTitleFont)
+                ? (cardHeight * 0.165).clamp(minTitle + 3, maxSingleTitleFont)
                 : item.isLongTitle
-                ? (cardHeight * 0.118).clamp(minTitle, maxTitleFont - 1.5)
-                : (cardHeight * 0.134).clamp(minTitle, maxTitleFont);
+                ? (cardHeight * 0.125).clamp(minTitle, maxTitleFont - 1.5)
+                : (cardHeight * 0.145).clamp(minTitle + 1, maxTitleFont);
 
-        final subtitleFontSize = (cardHeight * 0.100).clamp(minSub, maxSubFont);
+        final subtitleFontSize = (cardHeight * 0.112).clamp(minSub, maxSubFont);
         final cornerRadius = (cardWidth * 0.12).clamp(10.0, 24.0);
 
         return Material(
@@ -83,7 +83,7 @@ class MenuCardWidget extends StatelessWidget {
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 6.0,
+                  horizontal: 5.0,
                   vertical: 2.0,
                 ),
                 child: Column(
@@ -92,7 +92,7 @@ class MenuCardWidget extends StatelessWidget {
                   children: [
                     // 1. Flexible Image — visually balanced
                     Flexible(
-                      flex: 11,
+                      flex: 10,
                       child: ConstrainedBox(
                         constraints: BoxConstraints(
                           maxWidth: iconSize,
@@ -117,7 +117,7 @@ class MenuCardWidget extends StatelessWidget {
 
                     // 2. Flexible Text Container — larger and more prominent
                     Flexible(
-                      flex: 9,
+                      flex: 11,
                       child: Builder(
                         builder: (context) {
                           final localizedTitle = item.getLocalizedTitle(
@@ -142,14 +142,14 @@ class MenuCardWidget extends StatelessWidget {
                                       color: Colors.white,
                                       fontSize: titleFontSize,
                                       fontWeight: FontWeight.w800,
-                                      letterSpacing: 0.35,
-                                      height: 1.1,
+                                      letterSpacing: 0.5,
+                                      height: 1.12,
                                     ),
                                   ),
                                 ),
                               ),
                               if (localizedSubtitle != null) ...[
-                                const SizedBox(height: 1),
+                                const SizedBox(height: 1.5),
                                 Flexible(
                                   child: FittedBox(
                                     fit: BoxFit.scaleDown,
@@ -158,11 +158,11 @@ class MenuCardWidget extends StatelessWidget {
                                       textAlign: TextAlign.center,
                                       maxLines: 1,
                                       style: TextStyle(
-                                        color: const Color(0xFFE2D6F5),
+                                        color: const Color(0xFFE6DCF8),
                                         fontSize: subtitleFontSize,
                                         fontWeight: FontWeight.w600,
-                                        letterSpacing: 0.25,
-                                        height: 1.05,
+                                        letterSpacing: 0.35,
+                                        height: 1.08,
                                       ),
                                     ),
                                   ),
