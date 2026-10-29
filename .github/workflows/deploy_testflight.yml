@@ -1,4 +1,4 @@
-name: Deploy to TestFlight (iOS 3.2.5(5))
+name: Deploy to TestFlight (iOS 3.2.6(7))
 
 on:
   push:
@@ -9,17 +9,17 @@ on:
   workflow_dispatch:
     inputs:
       version_name:
-        description: 'App Version Name (e.g., 3.2.5)'
+        description: 'App Version Name (e.g., 3.2.6)'
         required: false
-        default: '3.2.5'
+        default: '3.2.6'
       build_number:
-        description: 'App Build Number (e.g., 5)'
+        description: 'App Build Number (e.g., 7)'
         required: false
-        default: '5'
+        default: '7'
       changelog:
         description: 'TestFlight What to Test / Changelog'
         required: false
-        default: 'Version 3.2.5 (Build 5) - Resolve iOS post-splash plugin registration and background sync execution stability.'
+        default: 'Version 3.2.6 (Build 7) - Venue management updates, fixed venue deletion, edit venue bottom bar, category synchronization and reliable state updates.'
       skip_waiting:
         description: 'Skip waiting for TestFlight build processing in CI'
         type: boolean
@@ -73,8 +73,8 @@ jobs:
             BUILD_NUM=$(grep 'version:' pubspec.yaml | head -n 1 | sed 's/version: //' | cut -d '+' -f 2 | tr -d ' ' | tr -d '\r')
           fi
 
-          if [ -z "$VERSION" ]; then VERSION="3.2.5"; fi
-          if [ -z "$BUILD_NUM" ]; then BUILD_NUM="5"; fi
+          if [ -z "$VERSION" ]; then VERSION="3.2.6"; fi
+          if [ -z "$BUILD_NUM" ]; then BUILD_NUM="7"; fi
 
           echo "VERSION_NAME=$VERSION" >> $GITHUB_OUTPUT
           echo "BUILD_NUMBER=$BUILD_NUM" >> $GITHUB_OUTPUT
