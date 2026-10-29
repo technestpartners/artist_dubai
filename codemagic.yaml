@@ -75,39 +75,23 @@ workflows:
             --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
             --create
           keychain add-certificates
-
-          # Configure profile specifier, Xcode 16 paths, and ExportOptions
-          python3 scripts/setup_ios_signing.py
-
-          # Apply profiles to Xcode project explicitly targeting Runner.xcodeproj
           xcode-project use-profiles --project ios/Runner.xcodeproj
 
-          echo "=== Provisioning Profiles (MobileDevice) ==="
-          ls -la "$HOME/Library/MobileDevice/Provisioning Profiles/" 2>/dev/null || true
-          echo "=== Provisioning Profiles (Xcode 16 UserData) ==="
-          ls -la "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/" 2>/dev/null || true
-          echo "=== Signing Identities ==="
+          echo "=== Provisioning Profiles Installed ==="
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null || true
+          echo "=== Code Signing Identities ==="
           security find-identity -v -p codesigning
-          echo "=== Export Options Plist ==="
-          cat /Users/builder/export_options.plist 2>/dev/null || cat ios/ExportOptions.plist 2>/dev/null || true
-          echo "=== Release.xcconfig ==="
-          cat ios/Flutter/Release.xcconfig || true
-          echo "=== project.pbxproj Signing Section ==="
-          grep -C 3 "PROVISIONING_PROFILE" ios/Runner.xcodeproj/project.pbxproj || true
-      - name: Build Flutter iOS IPA
+      - name: Flutter build iOS (no codesign)
+        script: |
+          flutter build ios --release --no-codesign --build-name=3.2.5 --build-number=7
+      - name: Build & Package Release IPA
         script: |
           set -e
-          EXPORT_PLIST="/Users/builder/export_options.plist"
-          if [ ! -f "$EXPORT_PLIST" ]; then
-            EXPORT_PLIST="ios/ExportOptions.plist"
-          fi
-          echo "Using Export Options Plist: $EXPORT_PLIST"
-          flutter build ipa \
-            --release \
-            --build-name=3.2.5 \
-            --build-number=7 \
-            --export-options-plist="$EXPORT_PLIST"
-          echo "=== IPA Built ==="
+          xcode-project build-ipa \
+            --workspace ios/Runner.xcworkspace \
+            --scheme Runner
+
+          echo "=== Verifying Generated IPA ==="
           ls -la build/ios/ipa/*.ipa
     artifacts:
       - build/ios/ipa/*.ipa
