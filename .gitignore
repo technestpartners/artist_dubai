@@ -62,6 +62,9 @@ AuthKey_*
 .env.*
 secrets.*
 credentials.json
+*.jks
+*.keystore
+**/key.properties
 export_options.plist
 ExportOptions.plist
 .schema_provisioned
