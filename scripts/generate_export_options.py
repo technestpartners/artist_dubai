@@ -12,12 +12,24 @@ def main():
     search_dirs = [
         os.path.join(home, "Library", "MobileDevice", "Provisioning Profiles"),
         os.path.join(home, "Library", "Developer", "Xcode", "UserData", "Provisioning Profiles"),
+        os.path.join(home, "Library", "Developer", "Xcode", "UserData"),
+        os.path.join(home, "Library", "MobileDevice"),
     ]
 
     profiles = []
     for d in search_dirs:
         if os.path.isdir(d):
             profiles.extend(glob.glob(os.path.join(d, "*.mobileprovision")))
+
+    # Fallback recursive search if direct directories didn't match
+    if not profiles:
+        print("[INFO] Searching recursively in Library for .mobileprovision files...")
+        lib_dir = os.path.join(home, "Library")
+        if os.path.isdir(lib_dir):
+            for root, _, files in os.walk(lib_dir):
+                for f in files:
+                    if f.endswith(".mobileprovision"):
+                        profiles.append(os.path.join(root, f))
 
     if not profiles:
         print("[ERROR] No .mobileprovision files found in MobileDevice or Xcode UserData directories!")
@@ -44,7 +56,7 @@ def main():
                 app_id = entitlements.get("application-identifier", "")
                 is_adhoc = entitlements.get("get-task-allow", False)
 
-                print(f"[FOUND PROFILE] Name: '{name}' | UUID: {uuid} | AppID: {app_id} | AdHoc/Dev: {is_adhoc}")
+                print(f"[FOUND PROFILE] Path: {p} | Name: '{name}' | UUID: {uuid} | AppID: {app_id} | AdHoc/Dev: {is_adhoc}")
 
                 # Prefer App Store distribution profiles (get-task-allow is False for App Store)
                 if bundle_id in app_id and not is_adhoc:
