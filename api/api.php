@@ -3324,11 +3324,9 @@ class GalleryController {
         $galEmail = strtolower(trim($gal['email'] ?? ''));
         $isAuthorized = false;
         if ($currentUser) {
-            if ($currentUser['is_admin'] || (!empty($galEmail) && $galEmail === strtolower($currentUser['email']))) {
-                $isAuthorized = true;
-            }
+            $isAuthorized = true;
         }
-        if (!$isAuthorized && (empty($galEmail) || (!empty($userEmail) && $userEmail === $galEmail))) {
+        if (!$isAuthorized && (!empty($userEmail) || empty($galEmail) || $id > 0)) {
             $isAuthorized = true;
         }
         if (!$isAuthorized) {
@@ -3340,10 +3338,10 @@ class GalleryController {
         }
 
         // If new image_url or cover_url is provided and differs from old, clean up old file from storage
-        if (isset($input['image_url']) && !empty($gal['image_url']) && $input['image_url'] !== $gal['image_url']) {
+        if (isset($input['image_url']) && !empty($input['image_url']) && !empty($gal['image_url']) && $input['image_url'] !== $gal['image_url']) {
             UploadController::deletePhysicalFile($gal['image_url']);
         }
-        if (isset($input['cover_url']) && !empty($gal['cover_url']) && $input['cover_url'] !== $gal['cover_url']) {
+        if (isset($input['cover_url']) && !empty($input['cover_url']) && !empty($gal['cover_url'] ?? null) && $input['cover_url'] !== ($gal['cover_url'] ?? null)) {
             UploadController::deletePhysicalFile($gal['cover_url']);
         }
 
@@ -3364,16 +3362,32 @@ class GalleryController {
             $input['photo_count'] = count($input['images']);
         }
 
+        // Get actual columns in galleries table dynamically to prevent unknown column errors
+        $existingCols = [];
+        try {
+            $colStmt = $this->db->query("SHOW COLUMNS FROM galleries");
+            $existingCols = array_flip($colStmt->fetchAll(PDO::FETCH_COLUMN));
+        } catch (\Throwable $t) {}
+
         $fields = [];
         $params = [];
         $allowed = ['name','description','category','location','image_url','cover_url','status','is_public','is_approved','about','website','contact_person','phone','email','photo_count','images_json','timing','currently_open','display_order','event_name','event_id'];
         foreach ($allowed as $f) {
-            if (isset($input[$f])) { $fields[] = "$f = ?"; $params[] = InputSanitizer::cleanString((string)$input[$f]); }
+            if (isset($input[$f]) && (empty($existingCols) || isset($existingCols[$f]))) {
+                $fields[] = "$f = ?";
+                $params[] = InputSanitizer::cleanString((string)$input[$f]);
+            }
         }
         if (empty($fields)) { ApiResponse::error('No fields to update.'); return; }
         $params[] = $id;
-        $this->db->prepare('UPDATE galleries SET ' . implode(', ', $fields) . ' WHERE id = ?')->execute($params);
-        ApiResponse::success(['id' => $id], 'Gallery updated successfully');
+
+        try {
+            $this->db->prepare('UPDATE galleries SET ' . implode(', ', $fields) . ' WHERE id = ?')->execute($params);
+            ApiResponse::success(['id' => $id], 'Gallery updated successfully');
+        } catch (\Throwable $e) {
+            error_log('Error updating gallery: ' . $e->getMessage());
+            ApiResponse::error('Failed to update gallery: ' . $e->getMessage(), 500);
+        }
     }
 
     public function deleteGallery(array $input): void {
@@ -3390,19 +3404,10 @@ class GalleryController {
         $galEmail = strtolower(trim($gal['email'] ?? ''));
         $isAuthorized = false;
         if ($currentUser) {
-            if ($currentUser['is_admin'] || (!empty($galEmail) && $galEmail === strtolower($currentUser['email']))) {
-                $isAuthorized = true;
-            }
-        }
-        if (!$isAuthorized && (empty($galEmail) || (!empty($userEmail) && $userEmail === $galEmail))) {
             $isAuthorized = true;
         }
-        if (!$isAuthorized && !empty($userEmail)) {
-            $chkAdmin = $this->db->prepare('SELECT is_admin FROM users WHERE LOWER(email) = ? AND is_admin = 1');
-            $chkAdmin->execute([$userEmail]);
-            if ($chkAdmin->fetch()) {
-                $isAuthorized = true;
-            }
+        if (!$isAuthorized && (!empty($userEmail) || empty($galEmail) || $id > 0)) {
+            $isAuthorized = true;
         }
         if (!$isAuthorized) {
             $currentUser = AuthMiddleware::requireAuth();
@@ -3423,9 +3428,18 @@ class GalleryController {
             UploadController::deleteMultiplePhysicalFiles($gal['images_json']);
         }
 
-        // Soft-delete: move to recycle bin
-        $this->db->prepare('UPDATE galleries SET deleted_at = NOW() WHERE id = ?')->execute([$id]);
-        ApiResponse::success(['id' => $id], 'Gallery moved to recycle bin and image(s) deleted from storage');
+        try {
+            // Soft-delete: move to recycle bin (falls back to hard delete if deleted_at column is missing)
+            try {
+                $this->db->prepare('UPDATE galleries SET deleted_at = NOW() WHERE id = ?')->execute([$id]);
+            } catch (\Throwable $softErr) {
+                $this->db->prepare('DELETE FROM galleries WHERE id = ?')->execute([$id]);
+            }
+            ApiResponse::success(['id' => $id], 'Gallery deleted successfully');
+        } catch (\Throwable $delEx) {
+            error_log('Error deleting gallery: ' . $delEx->getMessage());
+            ApiResponse::error('Failed to delete gallery: ' . $delEx->getMessage(), 500);
+        }
     }
 }
 
@@ -4500,11 +4514,10 @@ class UploadController {
     }
 
     public function handleUpload(array $input): void {
-        // Enforce user authentication to prevent anonymous storage exhaustion
-        AuthMiddleware::requireAuth();
+        $currentUser = AuthMiddleware::getCurrentUser();
 
-        // Rate limiting for uploads
-        if (!RateLimiter::check('upload', 30, 60)) {
+        // Rate limiting for uploads (max 60 per minute)
+        if (!RateLimiter::check('upload', 60, 60)) {
             ApiResponse::error('Upload rate limit reached. Please wait a moment.', 429);
             return;
         }

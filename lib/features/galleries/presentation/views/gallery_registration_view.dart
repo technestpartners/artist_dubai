@@ -40,6 +40,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
   final _aboutController = TextEditingController();
 
   String? _uploadedImageUrl;
+  Uint8List? _localPhotoBytes;
   bool _isUploadingImage = false;
 
   bool _hasValidated = false;
@@ -237,11 +238,11 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
       final picked = await picker.pickImage(source: source, imageQuality: 85);
       if (picked != null) {
         if (!mounted) return;
+        final bytes = await picked.readAsBytes();
         setState(() {
+          _localPhotoBytes = bytes;
           _isUploadingImage = true;
         });
-
-        final bytes = await picked.readAsBytes();
         final nameParts = picked.name.split('.');
         final ext = nameParts.length > 1 ? nameParts.last : 'jpg';
         final url = await sl<ApiService>().uploadImageBytes(bytes, ext: ext);
@@ -1155,17 +1156,25 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                             ),
                           ],
                         ),
-                      ] else if (_uploadedImageUrl != null &&
-                          _uploadedImageUrl!.isNotEmpty) ...[
+                      ] else if (_localPhotoBytes != null ||
+                          (_uploadedImageUrl != null &&
+                              _uploadedImageUrl!.isNotEmpty)) ...[
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: Stack(
                             children: [
-                              Image.network(
-                                _uploadedImageUrl!,
-                                height: 160,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
+                              _localPhotoBytes != null
+                                  ? Image.memory(
+                                      _localPhotoBytes!,
+                                      height: 160,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Image.network(
+                                      _uploadedImageUrl!,
+                                      height: 160,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
                                 errorBuilder:
                                     (_, __, ___) => Container(
                                       height: 120,
@@ -1185,6 +1194,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                                 child: InkWell(
                                   onTap:
                                       () => setState(() {
+                                        _localPhotoBytes = null;
                                         _uploadedImageUrl = null;
                                       }),
                                   child: Container(

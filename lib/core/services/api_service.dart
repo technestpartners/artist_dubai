@@ -2897,8 +2897,9 @@ class ApiService {
     String? userEmail,
   }) async {
     try {
-      final authEmail =
-          userEmail ?? sl<StorageService>().getString('user_email');
+      final passedEmail = (userEmail ?? '').trim();
+      final storedEmail = (sl<StorageService>().getString('user_email') ?? '').trim();
+      final authEmail = passedEmail.isNotEmpty ? passedEmail : (storedEmail.isNotEmpty ? storedEmail : null);
       final res = await _client.post(
         '${ApiEndpoints.galleries}&action=update',
         data: {

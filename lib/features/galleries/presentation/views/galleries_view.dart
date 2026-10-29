@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -207,6 +208,12 @@ class _GalleriesViewState extends State<GalleriesView> {
     final websiteController = TextEditingController(
       text: (gallery['website'] ?? '').toString(),
     );
+    final phoneController = TextEditingController(
+      text: (gallery['phone'] ?? '').toString(),
+    );
+    final emailController = TextEditingController(
+      text: (gallery['email'] ?? '').toString(),
+    );
     final aboutController = TextEditingController(
       text:
           (gallery['about'] ??
@@ -219,6 +226,7 @@ class _GalleriesViewState extends State<GalleriesView> {
     String? uploadedImageUrl =
         (gallery['image_url'] ?? gallery['image'] ?? '').toString();
     if (uploadedImageUrl.isEmpty) uploadedImageUrl = null;
+    Uint8List? localImageBytes;
     bool isUploadingImage = false;
     bool isSaving = false;
     String? errorMessage;
@@ -232,302 +240,709 @@ class _GalleriesViewState extends State<GalleriesView> {
       'Cultural Center',
     ];
 
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (dialogContext, setModalState) {
-            final bottomInset = MediaQuery.of(dialogContext).viewInsets.bottom;
+    try {
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        builder: (ctx) {
+          return StatefulBuilder(
+            builder: (dialogContext, setModalState) {
+              final bottomInset =
+                  MediaQuery.of(dialogContext).viewInsets.bottom;
 
-            Future<void> pickImage(ImageSource source) async {
-              try {
-                final picker = ImagePicker();
-                final picked = await picker.pickImage(
-                  source: source,
-                  imageQuality: 85,
-                );
-                if (picked != null) {
-                  setModalState(() {
-                    isUploadingImage = true;
-                    errorMessage = null;
-                  });
-                  final bytes = await picked.readAsBytes();
-                  final nameParts = picked.name.split('.');
-                  final ext = nameParts.length > 1 ? nameParts.last : 'jpg';
-                  final url = await sl<ApiService>().uploadImageBytes(
-                    bytes,
-                    ext: ext,
+              Future<void> pickImage(ImageSource source) async {
+                try {
+                  final picker = ImagePicker();
+                  final picked = await picker.pickImage(
+                    source: source,
+                    imageQuality: 85,
                   );
+                  if (picked != null) {
+                    final bytes = await picked.readAsBytes();
+                    setModalState(() {
+                      localImageBytes = bytes;
+                      isUploadingImage = true;
+                      errorMessage = null;
+                    });
+                    final nameParts = picked.name.split('.');
+                    final ext = nameParts.length > 1 ? nameParts.last : 'jpg';
+                    final url = await sl<ApiService>().uploadImageBytes(
+                      bytes,
+                      ext: ext,
+                    );
+                    setModalState(() {
+                      isUploadingImage = false;
+                      if (url != null && url.isNotEmpty) {
+                        uploadedImageUrl = url;
+                      } else {
+                        errorMessage =
+                            'Photo upload failed. Please try again.'
+                                .trData(context);
+                      }
+                    });
+                  }
+                } catch (e) {
                   setModalState(() {
                     isUploadingImage = false;
-                    if (url != null && url.isNotEmpty) {
-                      uploadedImageUrl = url;
-                    }
+                    errorMessage = 'Error selecting photo: $e';
                   });
                 }
-              } catch (_) {
-                setModalState(() {
-                  isUploadingImage = false;
-                });
               }
-            }
 
-            return Padding(
-              padding: EdgeInsets.only(bottom: bottomInset),
-              child: Container(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(dialogContext).size.height * 0.88,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Drag Handle
-                    Container(
-                      width: 44,
-                      height: 4,
-                      margin: const EdgeInsets.only(top: 12, bottom: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFCBD5E1),
-                        borderRadius: BorderRadius.circular(2),
+              return Padding(
+                padding: EdgeInsets.only(bottom: bottomInset),
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxHeight:
+                        MediaQuery.of(dialogContext).size.height * 0.90,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Drag Handle
+                      Container(
+                        width: 44,
+                        height: 4,
+                        margin: const EdgeInsets.only(top: 12, bottom: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFCBD5E1),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
-                    ),
 
-                    // Top Bar
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 8,
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEDE9FE),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(
-                              Icons.edit_outlined,
-                              color: Color(0xFF6B1C9B),
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Edit Venue'.trData(context),
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF0F172A),
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () => Navigator.of(ctx).pop(),
-                            icon: const Icon(
-                              Icons.close,
-                              color: Color(0xFF64748B),
-                              size: 22,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1, color: Color(0xFFE2E8F0)),
-
-                    // Scrollable Content
-                    Flexible(
-                      child: SingleChildScrollView(
+                      // Top Bar
+                      Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 20,
-                          vertical: 16,
+                          vertical: 8,
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
                           children: [
-                            if (errorMessage != null) ...[
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                margin: const EdgeInsets.only(bottom: 14),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFEE2E2),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: const Color(
-                                      0xFFEF4444,
-                                    ).withValues(alpha: 0.3),
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.error_outline,
-                                      color: Color(0xFFDC2626),
-                                      size: 18,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        errorMessage!,
-                                        style: const TextStyle(
-                                          color: Color(0xFFDC2626),
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEDE9FE),
+                                borderRadius: BorderRadius.circular(10),
                               ),
-                            ],
-
-                            // Image Section
-                            Text(
-                              'Venue Photo'.trData(context),
-                              style: const TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF334155),
+                              child: const Icon(
+                                Icons.edit_outlined,
+                                color: Color(0xFF6B1C9B),
+                                size: 20,
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Container(
-                              height: 130,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF8FAFC),
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: const Color(0xFFE2E8F0),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Edit Venue'.trData(context),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF0F172A),
                                 ),
                               ),
-                              child: Stack(
-                                children: [
-                                  if (uploadedImageUrl != null &&
-                                      uploadedImageUrl!.isNotEmpty)
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(13),
-                                      child: AppCachedImage(
-                                        imageUrl: uploadedImageUrl!,
-                                        width: double.infinity,
-                                        height: 130,
-                                        fit: BoxFit.cover,
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.of(ctx).pop(),
+                              icon: const Icon(
+                                Icons.close,
+                                color: Color(0xFF64748B),
+                                size: 22,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Divider(height: 1, color: Color(0xFFE2E8F0)),
+
+                      // Scrollable Content
+                      Flexible(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (errorMessage != null) ...[
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  margin: const EdgeInsets.only(bottom: 14),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFEE2E2),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: const Color(
+                                        0xFFEF4444,
+                                      ).withValues(alpha: 0.3),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.error_outline,
+                                        color: Color(0xFFDC2626),
+                                        size: 18,
                                       ),
-                                    )
-                                  else
-                                    Center(
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          const Icon(
-                                            Icons.add_photo_alternate_outlined,
-                                            size: 36,
-                                            color: Color(0xFF94A3B8),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          errorMessage!,
+                                          style: const TextStyle(
+                                            color: Color(0xFFDC2626),
+                                            fontSize: 13,
                                           ),
-                                          const SizedBox(height: 6),
-                                          Text(
-                                            'No photo selected'.trData(context),
-                                            style: const TextStyle(
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+
+                              // Image Section
+                              Text(
+                                'Venue Photo'.trData(context),
+                                style: const TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF334155),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                height: 140,
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF8FAFC),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: const Color(0xFFE2E8F0),
+                                  ),
+                                ),
+                                child: Stack(
+                                  children: [
+                                    if (localImageBytes != null)
+                                      ClipRRect(
+                                        borderRadius:
+                                            BorderRadius.circular(13),
+                                        child: Image.memory(
+                                          localImageBytes!,
+                                          width: double.infinity,
+                                          height: 140,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      )
+                                    else if (uploadedImageUrl != null &&
+                                        uploadedImageUrl!.isNotEmpty)
+                                      ClipRRect(
+                                        borderRadius:
+                                            BorderRadius.circular(13),
+                                        child: AppCachedImage(
+                                          imageUrl: uploadedImageUrl!,
+                                          width: double.infinity,
+                                          height: 140,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      )
+                                    else
+                                      Center(
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            const Icon(
+                                              Icons
+                                                  .add_photo_alternate_outlined,
+                                              size: 36,
                                               color: Color(0xFF94A3B8),
-                                              fontSize: 13,
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              'No photo selected'.trData(
+                                                context,
+                                              ),
+                                              style: const TextStyle(
+                                                color: Color(0xFF94A3B8),
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    if (isUploadingImage)
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.5,
+                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(13),
+                                        ),
+                                        child: const Center(
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2.5,
+                                          ),
+                                        ),
+                                      ),
+                                    // Remove Photo Button
+                                    if (!isUploadingImage &&
+                                        (localImageBytes != null ||
+                                            (uploadedImageUrl != null &&
+                                                uploadedImageUrl!
+                                                    .isNotEmpty)))
+                                      Positioned(
+                                        top: 8,
+                                        right: 8,
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            setModalState(() {
+                                              localImageBytes = null;
+                                              uploadedImageUrl = '';
+                                            });
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.6,
+                                              ),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(
+                                              Icons.close,
+                                              color: Colors.white,
+                                              size: 16,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    Positioned(
+                                      bottom: 10,
+                                      right: 10,
+                                      child: Row(
+                                        children: [
+                                          ElevatedButton.icon(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.white,
+                                              foregroundColor: const Color(
+                                                0xFF6B1C9B,
+                                              ),
+                                              elevation: 3,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 8,
+                                                  ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
+                                            ),
+                                            onPressed:
+                                                isUploadingImage
+                                                    ? null
+                                                    : () => pickImage(
+                                                      ImageSource.gallery,
+                                                    ),
+                                            icon: const Icon(
+                                              Icons.photo_library,
+                                              size: 16,
+                                            ),
+                                            label: Text(
+                                              'Gallery'.trData(context),
+                                              style: const TextStyle(
+                                                fontSize: 12.5,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          ElevatedButton.icon(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.white,
+                                              foregroundColor: const Color(
+                                                0xFF6B1C9B,
+                                              ),
+                                              elevation: 3,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 8,
+                                                  ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
+                                            ),
+                                            onPressed:
+                                                isUploadingImage
+                                                    ? null
+                                                    : () => pickImage(
+                                                      ImageSource.camera,
+                                                    ),
+                                            icon: const Icon(
+                                              Icons.camera_alt,
+                                              size: 16,
+                                            ),
+                                            label: Text(
+                                              'Camera'.trData(context),
+                                              style: const TextStyle(
+                                                fontSize: 12.5,
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                             ),
                                           ),
                                         ],
                                       ),
                                     ),
-                                  if (isUploadingImage)
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.5,
-                                        ),
-                                        borderRadius: BorderRadius.circular(13),
-                                      ),
-                                      child: const Center(
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2.5,
-                                        ),
-                                      ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Venue Name
+                              Text(
+                                'Venue Name *'.trData(context),
+                                style: const TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF334155),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              TextField(
+                                controller: nameController,
+                                style: const TextStyle(
+                                  fontSize: 14.5,
+                                  color: Color(0xFF0F172A),
+                                ),
+                                decoration: InputDecoration(
+                                  hintText:
+                                      'Enter venue name'.trData(context),
+                                  filled: true,
+                                  fillColor: const Color(0xFFF8FAFC),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFFCBD5E1),
                                     ),
-                                  Positioned(
-                                    bottom: 10,
-                                    right: 10,
-                                    child: Row(
-                                      children: [
-                                        ElevatedButton.icon(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.white,
-                                            foregroundColor: const Color(
-                                              0xFF6B1C9B,
-                                            ),
-                                            elevation: 3,
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 8,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                            ),
-                                          ),
-                                          onPressed:
-                                              isUploadingImage
-                                                  ? null
-                                                  : () => pickImage(
-                                                    ImageSource.gallery,
+                                  ),
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 12,
+                                      ),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+
+                              // Category
+                              Text(
+                                'Category / Type *'.trData(context),
+                                style: const TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF334155),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              TextField(
+                                controller: categoryController,
+                                onChanged: (_) => setModalState(() {}),
+                                style: const TextStyle(
+                                  fontSize: 14.5,
+                                  color: Color(0xFF0F172A),
+                                ),
+                                decoration: InputDecoration(
+                                  hintText:
+                                      'e.g. Art Gallery'.trData(context),
+                                  filled: true,
+                                  fillColor: const Color(0xFFF8FAFC),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFFCBD5E1),
+                                    ),
+                                  ),
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 12,
+                                      ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children:
+                                    categories.map((cat) {
+                                      final isSelected =
+                                          categoryController.text
+                                              .trim()
+                                              .toLowerCase() ==
+                                          cat.toLowerCase();
+                                      return GestureDetector(
+                                        onTap: () {
+                                          setModalState(() {
+                                            categoryController.text = cat;
+                                            categoryController.selection =
+                                                TextSelection.fromPosition(
+                                                  TextPosition(
+                                                    offset: cat.length,
                                                   ),
-                                          icon: const Icon(
-                                            Icons.photo_library,
-                                            size: 16,
+                                                );
+                                          });
+                                        },
+                                        child: Container(
+                                          padding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 10,
+                                                vertical: 5,
+                                              ),
+                                          decoration: BoxDecoration(
+                                            color:
+                                                isSelected
+                                                    ? const Color(0xFF6B1C9B)
+                                                    : const Color(0xFFF1F5F9),
+                                            borderRadius:
+                                                BorderRadius.circular(16),
+                                            border: Border.all(
+                                              color:
+                                                  isSelected
+                                                      ? const Color(0xFF6B1C9B)
+                                                      : const Color(
+                                                        0xFFE2E8F0,
+                                                      ),
+                                            ),
                                           ),
-                                          label: Text(
-                                            'Gallery'.trData(context),
-                                            style: const TextStyle(
-                                              fontSize: 12.5,
-                                              fontWeight: FontWeight.bold,
+                                          child: Text(
+                                            cat.trData(context),
+                                            style: TextStyle(
+                                              fontSize: 11.5,
+                                              fontWeight:
+                                                  isSelected
+                                                      ? FontWeight.bold
+                                                      : FontWeight.w500,
+                                              color:
+                                                  isSelected
+                                                      ? Colors.white
+                                                      : const Color(
+                                                        0xFF475569,
+                                                      ),
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(width: 6),
-                                        ElevatedButton.icon(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.white,
-                                            foregroundColor: const Color(
-                                              0xFF6B1C9B,
+                                      );
+                                    }).toList(),
+                              ),
+                              const SizedBox(height: 14),
+
+                              // Location
+                              Text(
+                                'Location / Address *'.trData(context),
+                                style: const TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF334155),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              TextField(
+                                controller: locationController,
+                                style: const TextStyle(
+                                  fontSize: 14.5,
+                                  color: Color(0xFF0F172A),
+                                ),
+                                decoration: InputDecoration(
+                                  hintText:
+                                      'e.g. Alserkal Avenue, Al Quoz 1, Dubai'
+                                          .trData(context),
+                                  filled: true,
+                                  fillColor: const Color(0xFFF8FAFC),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFFCBD5E1),
+                                    ),
+                                  ),
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 12,
+                                      ),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+
+                              // Opening Hours / Timing
+                              Text(
+                                'Opening Hours / Timing (Optional)'.trData(
+                                  context,
+                                ),
+                                style: const TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF334155),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              TextField(
+                                controller: timingController,
+                                style: const TextStyle(
+                                  fontSize: 14.5,
+                                  color: Color(0xFF0F172A),
+                                ),
+                                decoration: InputDecoration(
+                                  hintText:
+                                      'e.g. Sat–Thu 10:00–20:00'.trData(
+                                        context,
+                                      ),
+                                  filled: true,
+                                  fillColor: const Color(0xFFF8FAFC),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFFCBD5E1),
+                                    ),
+                                  ),
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 12,
+                                      ),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+
+                              // Website
+                              Text(
+                                'Website (Optional)'.trData(context),
+                                style: const TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF334155),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              TextField(
+                                controller: websiteController,
+                                style: const TextStyle(
+                                  fontSize: 14.5,
+                                  color: Color(0xFF0F172A),
+                                ),
+                                decoration: InputDecoration(
+                                  hintText: 'https://...',
+                                  filled: true,
+                                  fillColor: const Color(0xFFF8FAFC),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFFCBD5E1),
+                                    ),
+                                  ),
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 12,
+                                      ),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+
+                              // Contact Phone & Email Row
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Phone (Optional)'.trData(context),
+                                          style: const TextStyle(
+                                            fontSize: 13.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF334155),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        TextField(
+                                          controller: phoneController,
+                                          keyboardType: TextInputType.phone,
+                                          style: const TextStyle(
+                                            fontSize: 14.5,
+                                            color: Color(0xFF0F172A),
+                                          ),
+                                          decoration: InputDecoration(
+                                            hintText: '+971...',
+                                            filled: true,
+                                            fillColor: const Color(
+                                              0xFFF8FAFC,
                                             ),
-                                            elevation: 3,
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 8,
-                                            ),
-                                            shape: RoundedRectangleBorder(
+                                            border: OutlineInputBorder(
                                               borderRadius:
                                                   BorderRadius.circular(10),
+                                              borderSide: const BorderSide(
+                                                color: Color(0xFFCBD5E1),
+                                              ),
                                             ),
+                                            contentPadding:
+                                                const EdgeInsets.symmetric(
+                                                  horizontal: 14,
+                                                  vertical: 12,
+                                                ),
                                           ),
-                                          onPressed:
-                                              isUploadingImage
-                                                  ? null
-                                                  : () => pickImage(
-                                                    ImageSource.camera,
-                                                  ),
-                                          icon: const Icon(
-                                            Icons.camera_alt,
-                                            size: 16,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Email (Optional)'.trData(context),
+                                          style: const TextStyle(
+                                            fontSize: 13.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF334155),
                                           ),
-                                          label: Text(
-                                            'Camera'.trData(context),
-                                            style: const TextStyle(
-                                              fontSize: 12.5,
-                                              fontWeight: FontWeight.bold,
+                                        ),
+                                        const SizedBox(height: 6),
+                                        TextField(
+                                          controller: emailController,
+                                          keyboardType:
+                                              TextInputType.emailAddress,
+                                          style: const TextStyle(
+                                            fontSize: 14.5,
+                                            color: Color(0xFF0F172A),
+                                          ),
+                                          decoration: InputDecoration(
+                                            hintText: 'info@gallery.com',
+                                            filled: true,
+                                            fillColor: const Color(
+                                              0xFFF8FAFC,
                                             ),
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                              borderSide: const BorderSide(
+                                                color: Color(0xFFCBD5E1),
+                                              ),
+                                            ),
+                                            contentPadding:
+                                                const EdgeInsets.symmetric(
+                                                  horizontal: 14,
+                                                  vertical: 12,
+                                                ),
                                           ),
                                         ),
                                       ],
@@ -535,545 +950,380 @@ class _GalleriesViewState extends State<GalleriesView> {
                                   ),
                                 ],
                               ),
-                            ),
-                            const SizedBox(height: 16),
+                              const SizedBox(height: 14),
 
-                            // Venue Name
-                            Text(
-                              'Venue Name *'.trData(context),
-                              style: const TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF334155),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            TextField(
-                              controller: nameController,
-                              style: const TextStyle(
-                                fontSize: 14.5,
-                                color: Color(0xFF0F172A),
-                              ),
-                              decoration: InputDecoration(
-                                hintText: 'Enter venue name'.trData(context),
-                                filled: true,
-                                fillColor: const Color(0xFFF8FAFC),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFCBD5E1),
-                                  ),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 12,
+                              // About
+                              Text(
+                                'About Venue'.trData(context),
+                                style: const TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF334155),
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 14),
-
-                            // Category
-                            Text(
-                              'Category / Type *'.trData(context),
-                              style: const TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF334155),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            TextField(
-                              controller: categoryController,
-                              style: const TextStyle(
-                                fontSize: 14.5,
-                                color: Color(0xFF0F172A),
-                              ),
-                              decoration: InputDecoration(
-                                hintText: 'e.g. Art Gallery'.trData(context),
-                                filled: true,
-                                fillColor: const Color(0xFFF8FAFC),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFCBD5E1),
-                                  ),
+                              const SizedBox(height: 6),
+                              TextField(
+                                controller: aboutController,
+                                maxLines: 3,
+                                style: const TextStyle(
+                                  fontSize: 14.5,
+                                  color: Color(0xFF0F172A),
                                 ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 12,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 6,
-                              runSpacing: 6,
-                              children:
-                                  categories.map((cat) {
-                                    final isSelected =
-                                        categoryController.text
-                                            .trim()
-                                            .toLowerCase() ==
-                                        cat.toLowerCase();
-                                    return GestureDetector(
-                                      onTap: () {
-                                        setModalState(() {
-                                          categoryController.text = cat;
-                                        });
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 5,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color:
-                                              isSelected
-                                                  ? const Color(0xFF6B1C9B)
-                                                  : const Color(0xFFF1F5F9),
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
-                                          border: Border.all(
-                                            color:
-                                                isSelected
-                                                    ? const Color(0xFF6B1C9B)
-                                                    : const Color(0xFFE2E8F0),
-                                          ),
-                                        ),
-                                        child: Text(
-                                          cat.trData(context),
-                                          style: TextStyle(
-                                            fontSize: 11.5,
-                                            fontWeight:
-                                                isSelected
-                                                    ? FontWeight.bold
-                                                    : FontWeight.w500,
-                                            color:
-                                                isSelected
-                                                    ? Colors.white
-                                                    : const Color(0xFF475569),
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  }).toList(),
-                            ),
-                            const SizedBox(height: 14),
-
-                            // Location
-                            Text(
-                              'Location / Address *'.trData(context),
-                              style: const TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF334155),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            TextField(
-                              controller: locationController,
-                              style: const TextStyle(
-                                fontSize: 14.5,
-                                color: Color(0xFF0F172A),
-                              ),
-                              decoration: InputDecoration(
-                                hintText:
-                                    'e.g. Alserkal Avenue, Al Quoz 1, Dubai'
-                                        .trData(context),
-                                filled: true,
-                                fillColor: const Color(0xFFF8FAFC),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFCBD5E1),
-                                  ),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 12,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-
-                            // Opening Hours / Timing
-                            Text(
-                              'Opening Hours / Timing (Optional)'.trData(
-                                context,
-                              ),
-                              style: const TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF334155),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            TextField(
-                              controller: timingController,
-                              style: const TextStyle(
-                                fontSize: 14.5,
-                                color: Color(0xFF0F172A),
-                              ),
-                              decoration: InputDecoration(
-                                hintText: 'e.g. Sat–Thu 10:00–20:00'.trData(
-                                  context,
-                                ),
-                                filled: true,
-                                fillColor: const Color(0xFFF8FAFC),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFCBD5E1),
-                                  ),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 12,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-
-                            // Website
-                            Text(
-                              'Website (Optional)'.trData(context),
-                              style: const TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF334155),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            TextField(
-                              controller: websiteController,
-                              style: const TextStyle(
-                                fontSize: 14.5,
-                                color: Color(0xFF0F172A),
-                              ),
-                              decoration: InputDecoration(
-                                hintText: 'https://...',
-                                filled: true,
-                                fillColor: const Color(0xFFF8FAFC),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFCBD5E1),
-                                  ),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 12,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-
-                            // About
-                            Text(
-                              'About Venue'.trData(context),
-                              style: const TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF334155),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            TextField(
-                              controller: aboutController,
-                              maxLines: 3,
-                              style: const TextStyle(
-                                fontSize: 14.5,
-                                color: Color(0xFF0F172A),
-                              ),
-                              decoration: InputDecoration(
-                                hintText:
-                                    'Describe this art space, focus, collections...'
-                                        .trData(context),
-                                filled: true,
-                                fillColor: const Color(0xFFF8FAFC),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFCBD5E1),
-                                  ),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 12,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Action Buttons
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton(
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 14,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      side: const BorderSide(
-                                        color: Color(0xFFCBD5E1),
-                                        width: 1.2,
-                                      ),
-                                    ),
-                                    onPressed:
-                                        isSaving
-                                            ? null
-                                            : () => Navigator.of(ctx).pop(),
-                                    child: Text(
-                                      'Cancel'.trData(context),
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF475569),
-                                      ),
+                                decoration: InputDecoration(
+                                  hintText:
+                                      'Describe this art space, focus, collections...'
+                                          .trData(context),
+                                  filled: true,
+                                  fillColor: const Color(0xFFF8FAFC),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFFCBD5E1),
                                     ),
                                   ),
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 12,
+                                      ),
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  flex: 2,
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF6B1C9B),
-                                      foregroundColor: Colors.white,
-                                      elevation: 0,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 14,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    onPressed:
-                                        isSaving
-                                            ? null
-                                            : () async {
-                                              final updatedName =
-                                                  nameController.text.trim();
-                                              final updatedCategory =
-                                                  categoryController.text
-                                                      .trim();
-                                              final updatedLocation =
-                                                  locationController.text
-                                                      .trim();
-                                              final updatedWebsite =
-                                                  websiteController.text.trim();
-                                              final updatedAbout =
-                                                  aboutController.text.trim();
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                          ),
+                        ),
+                      ),
 
-                                              if (updatedName.isEmpty) {
-                                                setModalState(() {
-                                                  errorMessage =
-                                                      'Venue name cannot be empty'
-                                                          .trData(context);
-                                                });
-                                                return;
-                                              }
+                      // Fixed Bottom Action Bar
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          border: Border(
+                            top: BorderSide(color: Color(0xFFE2E8F0)),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 13,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  side: const BorderSide(
+                                    color: Color(0xFFCBD5E1),
+                                    width: 1.2,
+                                  ),
+                                ),
+                                onPressed:
+                                    isSaving
+                                        ? null
+                                        : () => Navigator.of(ctx).pop(),
+                                child: Text(
+                                  'Cancel'.trData(context),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF475569),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              flex: 2,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF6B1C9B),
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 13,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                onPressed:
+                                    isSaving
+                                        ? null
+                                        : () async {
+                                          final updatedName =
+                                              nameController.text.trim();
+                                          final updatedCategory =
+                                              categoryController.text.trim();
+                                          final updatedLocation =
+                                              locationController.text.trim();
+                                          final updatedWebsite =
+                                              websiteController.text.trim();
+                                          final updatedPhone =
+                                              phoneController.text.trim();
+                                          final updatedEmail =
+                                              emailController.text.trim();
+                                          final updatedAbout =
+                                              aboutController.text.trim();
 
-                                              setModalState(() {
-                                                isSaving = true;
-                                                errorMessage = null;
-                                              });
+                                          if (updatedName.isEmpty) {
+                                            setModalState(() {
+                                              errorMessage =
+                                                  'Venue name cannot be empty'
+                                                      .trData(context);
+                                            });
+                                            return;
+                                          }
 
-                                              final id = gallery['id'];
-                                              final success = await sl<
-                                                    ApiService
-                                                  >()
-                                                  .updateGallery(
-                                                    id: id,
-                                                    name: updatedName,
-                                                    title: updatedName,
-                                                    category:
-                                                        updatedCategory
-                                                                .isNotEmpty
-                                                            ? updatedCategory
-                                                            : 'Art Gallery',
-                                                    location:
-                                                        updatedLocation
-                                                                .isNotEmpty
-                                                            ? updatedLocation
-                                                            : 'Dubai, UAE',
-                                                    address:
-                                                        updatedLocation
-                                                                .isNotEmpty
-                                                            ? updatedLocation
-                                                            : 'Dubai, UAE',
-                                                    timing:
-                                                        timingController.text
-                                                            .trim(),
-                                                    website: updatedWebsite,
-                                                    about: updatedAbout,
-                                                    description: updatedAbout,
-                                                    imageUrl:
-                                                        uploadedImageUrl ?? '',
-                                                    userEmail:
-                                                        gallery['email']
-                                                            ?.toString() ??
-                                                        sl<StorageService>()
-                                                            .getString(
-                                                              'user_email',
-                                                            ),
-                                                  );
+                                          setModalState(() {
+                                            isSaving = true;
+                                            errorMessage = null;
+                                          });
 
-                                              if (!mounted) return;
-                                              if (success) {
-                                                setState(() {
-                                                  final idx = _registeredGalleries
+                                          final id = gallery['id'];
+                                          final galEmail =
+                                              (gallery['email'] ?? '')
+                                                  .toString()
+                                                  .trim();
+                                          final storageEmail =
+                                              (sl<StorageService>().getString(
+                                                    'user_email',
+                                                  ) ??
+                                                  '').trim();
+                                          final emailToSend =
+                                              galEmail.isNotEmpty
+                                                  ? galEmail
+                                                  : (storageEmail.isNotEmpty
+                                                      ? storageEmail
+                                                      : null);
+
+                                          final success = await sl<
+                                            ApiService
+                                          >().updateGallery(
+                                            id: id,
+                                            name: updatedName,
+                                            title: updatedName,
+                                            category:
+                                                updatedCategory.isNotEmpty
+                                                    ? updatedCategory
+                                                    : 'Art Gallery',
+                                            location:
+                                                updatedLocation.isNotEmpty
+                                                    ? updatedLocation
+                                                    : 'Dubai, UAE',
+                                            address:
+                                                updatedLocation.isNotEmpty
+                                                    ? updatedLocation
+                                                    : 'Dubai, UAE',
+                                            timing:
+                                                timingController.text.trim(),
+                                            website: updatedWebsite,
+                                            phone: updatedPhone,
+                                            email:
+                                                updatedEmail.isNotEmpty
+                                                    ? updatedEmail
+                                                    : null,
+                                            about: updatedAbout,
+                                            description: updatedAbout,
+                                            imageUrl:
+                                                uploadedImageUrl ?? '',
+                                            userEmail: emailToSend,
+                                          );
+
+                                          if (!mounted) return;
+                                          if (success) {
+                                            setState(() {
+                                              final idx =
+                                                  _registeredGalleries
                                                       .indexWhere(
                                                         (g) =>
                                                             g['id']
                                                                 ?.toString() ==
                                                             id?.toString(),
                                                       );
-                                                  if (idx != -1) {
-                                                    final updated = Map<
-                                                      String,
-                                                      dynamic
-                                                    >.from(
-                                                      _registeredGalleries[idx],
-                                                    );
-                                                    updated['name'] =
-                                                        updatedName;
-                                                    updated['title'] =
-                                                        updatedName;
-                                                    updated['category'] =
-                                                        updatedCategory
-                                                                .isNotEmpty
-                                                            ? updatedCategory
-                                                            : 'Art Gallery';
-                                                    updated['type'] =
-                                                        updatedCategory
-                                                                .isNotEmpty
-                                                            ? updatedCategory
-                                                            : 'Art Gallery';
-                                                    updated['location'] =
-                                                        updatedLocation
-                                                                .isNotEmpty
-                                                            ? updatedLocation
-                                                            : 'Dubai, UAE';
-                                                    updated['address'] =
-                                                        updatedLocation
-                                                                .isNotEmpty
-                                                            ? updatedLocation
-                                                            : 'Dubai, UAE';
-                                                    updated['timing'] =
-                                                        timingController.text
-                                                            .trim();
-                                                    updated['website'] =
-                                                        updatedWebsite;
-                                                    updated['about'] =
-                                                        updatedAbout;
-                                                    updated['description'] =
-                                                        updatedAbout;
-                                                    updated['subtitle'] =
-                                                        updatedAbout;
-                                                    updated['image_url'] =
-                                                        uploadedImageUrl ?? '';
-                                                    updated['image'] =
-                                                        uploadedImageUrl ?? '';
-                                                    _registeredGalleries[idx] =
-                                                        updated;
-                                                  }
-                                                });
-                                                try {
-                                                  final storage =
-                                                      sl<StorageService>();
-                                                  final myNames = List<
-                                                    String
-                                                  >.from(
-                                                    storage.getStringList(
-                                                          'my_gallery_names',
-                                                        ) ??
-                                                        [],
-                                                  );
-                                                  final oldName =
-                                                      (gallery['name'] ??
-                                                              gallery['title'] ??
-                                                              '')
-                                                          .toString()
-                                                          .trim();
-                                                  if (oldName.isNotEmpty) {
-                                                    myNames.remove(oldName);
-                                                  }
-                                                  if (!myNames.contains(
-                                                    updatedName,
-                                                  )) {
-                                                    myNames.add(updatedName);
-                                                  }
-                                                  storage.setStringList(
-                                                    'my_gallery_names',
-                                                    myNames,
-                                                  );
-                                                } catch (_) {}
-                                                if (ctx.mounted) {
-                                                  Navigator.of(ctx).pop();
-                                                }
-                                                if (!mounted) return;
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                      'Venue "$updatedName" updated successfully!'
-                                                          .trData(context),
-                                                    ),
-                                                    backgroundColor:
-                                                        const Color(0xFF6B1C9B),
-                                                    behavior:
-                                                        SnackBarBehavior
-                                                            .floating,
-                                                  ),
+                                              if (idx != -1) {
+                                                final updated = Map<
+                                                  String,
+                                                  dynamic
+                                                >.from(
+                                                  _registeredGalleries[idx],
                                                 );
-                                              } else {
-                                                setModalState(() {
-                                                  isSaving = false;
-                                                  errorMessage =
-                                                      'Failed to update venue. Please try again.'
-                                                          .trData(context);
-                                                });
+                                                updated['name'] = updatedName;
+                                                updated['title'] = updatedName;
+                                                updated['category'] =
+                                                    updatedCategory.isNotEmpty
+                                                        ? updatedCategory
+                                                        : 'Art Gallery';
+                                                updated['type'] =
+                                                    updatedCategory.isNotEmpty
+                                                        ? updatedCategory
+                                                        : 'Art Gallery';
+                                                updated['location'] =
+                                                    updatedLocation.isNotEmpty
+                                                        ? updatedLocation
+                                                        : 'Dubai, UAE';
+                                                updated['address'] =
+                                                    updatedLocation.isNotEmpty
+                                                        ? updatedLocation
+                                                        : 'Dubai, UAE';
+                                                updated['timing'] =
+                                                    timingController.text
+                                                        .trim();
+                                                updated['website'] =
+                                                    updatedWebsite;
+                                                updated['phone'] = updatedPhone;
+                                                if (updatedEmail.isNotEmpty) {
+                                                  updated['email'] =
+                                                      updatedEmail;
+                                                }
+                                                updated['about'] = updatedAbout;
+                                                updated['description'] =
+                                                    updatedAbout;
+                                                updated['subtitle'] =
+                                                    updatedAbout;
+                                                updated['image_url'] =
+                                                    uploadedImageUrl ?? '';
+                                                updated['image'] =
+                                                    uploadedImageUrl ?? '';
+                                                _registeredGalleries[idx] =
+                                                    updated;
                                               }
-                                            },
-                                    child:
-                                        isSaving
-                                            ? const SizedBox(
-                                              height: 20,
-                                              width: 20,
-                                              child: CircularProgressIndicator(
-                                                color: Colors.white,
-                                                strokeWidth: 2,
+
+                                              // Also update in-memory gallery map
+                                              gallery['name'] = updatedName;
+                                              gallery['title'] = updatedName;
+                                              gallery['category'] =
+                                                  updatedCategory.isNotEmpty
+                                                      ? updatedCategory
+                                                      : 'Art Gallery';
+                                              gallery['type'] =
+                                                  updatedCategory.isNotEmpty
+                                                      ? updatedCategory
+                                                      : 'Art Gallery';
+                                              gallery['location'] =
+                                                  updatedLocation.isNotEmpty
+                                                      ? updatedLocation
+                                                      : 'Dubai, UAE';
+                                              gallery['address'] =
+                                                  updatedLocation.isNotEmpty
+                                                      ? updatedLocation
+                                                      : 'Dubai, UAE';
+                                              gallery['timing'] =
+                                                  timingController.text.trim();
+                                              gallery['website'] =
+                                                  updatedWebsite;
+                                              gallery['about'] = updatedAbout;
+                                              gallery['description'] =
+                                                  updatedAbout;
+                                              gallery['image_url'] =
+                                                  uploadedImageUrl ?? '';
+                                              gallery['image'] =
+                                                  uploadedImageUrl ?? '';
+                                            });
+
+                                            try {
+                                              final storage =
+                                                  sl<StorageService>();
+                                              final myNames = List<
+                                                String
+                                              >.from(
+                                                storage.getStringList(
+                                                      'my_gallery_names',
+                                                    ) ??
+                                                    [],
+                                              );
+                                              final oldName =
+                                                  (gallery['name'] ??
+                                                          gallery['title'] ??
+                                                          '')
+                                                      .toString()
+                                                      .trim();
+                                              if (oldName.isNotEmpty) {
+                                                myNames.remove(oldName);
+                                              }
+                                              if (!myNames.contains(
+                                                updatedName,
+                                              )) {
+                                                myNames.add(updatedName);
+                                              }
+                                              storage.setStringList(
+                                                'my_gallery_names',
+                                                myNames,
+                                              );
+                                            } catch (_) {}
+
+                                            if (ctx.mounted) {
+                                              Navigator.of(ctx).pop();
+                                            }
+                                            if (!mounted) return;
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Venue "$updatedName" updated successfully!'
+                                                      .trData(context),
+                                                ),
+                                                backgroundColor: const Color(
+                                                  0xFF6B1C9B,
+                                                ),
+                                                behavior:
+                                                    SnackBarBehavior.floating,
                                               ),
-                                            )
-                                            : Text(
-                                              'Save Changes'.trData(context),
-                                              style: const TextStyle(
-                                                fontSize: 14.5,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                  ),
-                                ),
-                              ],
+                                            );
+                                          } else {
+                                            setModalState(() {
+                                              isSaving = false;
+                                              errorMessage =
+                                                  'Failed to update venue. Please try again.'
+                                                      .trData(context);
+                                            });
+                                          }
+                                        },
+                                child:
+                                    isSaving
+                                        ? const SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                        : Text(
+                                          'Save Changes'.trData(context),
+                                          style: const TextStyle(
+                                            fontSize: 14.5,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                              ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
-        );
-      },
-    );
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      nameController.dispose();
+      categoryController.dispose();
+      locationController.dispose();
+      timingController.dispose();
+      websiteController.dispose();
+      phoneController.dispose();
+      emailController.dispose();
+      aboutController.dispose();
+    }
   }
 
   void _confirmDeleteGallery(Map<String, dynamic> gallery) {
