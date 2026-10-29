@@ -57,6 +57,16 @@ def main():
 
     print(f"[INFO] Found Provisioning Profile: '{profile_name}' (UUID: {profile_uuid})")
 
+    # Export environment for subsequent shell steps
+    for env_dest in ["/tmp/profile_env.sh", os.path.join(home, "profile_env.sh")]:
+        try:
+            with open(env_dest, "w", encoding="utf-8") as f:
+                f.write(f'export PROFILE_NAME="{profile_name}"\n')
+                f.write(f'export PROFILE_UUID="{profile_uuid}"\n')
+            print(f"[INFO] Written profile environment variables to {env_dest}")
+        except Exception as e:
+            print(f"[WARNING] Could not write to {env_dest}: {e}")
+
     # 1. Update ios/Flutter/Release.xcconfig
     xcconfig_path = os.path.join("ios", "Flutter", "Release.xcconfig")
     if os.path.exists(xcconfig_path):
