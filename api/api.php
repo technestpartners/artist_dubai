@@ -624,6 +624,7 @@ class DatabaseManager {
             // Soft-delete (Recycle Bin) migrations
             "ALTER TABLE artists ADD COLUMN deleted_at DATETIME NULL DEFAULT NULL",
             "ALTER TABLE events ADD COLUMN deleted_at DATETIME NULL DEFAULT NULL",
+            "ALTER TABLE galleries ADD COLUMN cover_url VARCHAR(500) NULL DEFAULT NULL AFTER image_url",
             "ALTER TABLE galleries ADD COLUMN deleted_at DATETIME NULL DEFAULT NULL",
             "ALTER TABLE government_entities ADD COLUMN deleted_at DATETIME NULL DEFAULT NULL",
             "ALTER TABLE categories ADD COLUMN deleted_at DATETIME NULL DEFAULT NULL",
@@ -3315,7 +3316,7 @@ class GalleryController {
         $id = (int)($input['id'] ?? $input['gallery_id'] ?? $_GET['id'] ?? 0);
         if ($id <= 0) { ApiResponse::error('Gallery ID is required.'); return; }
 
-        $stmt = $this->db->prepare('SELECT id, email, image_url, cover_url FROM galleries WHERE id = ?');
+        $stmt = $this->db->prepare('SELECT id, email, image_url FROM galleries WHERE id = ?');
         $stmt->execute([$id]);
         $gal = $stmt->fetch();
         if (!$gal) { ApiResponse::error('Gallery not found', 404); return; }
@@ -3381,7 +3382,7 @@ class GalleryController {
         $id = (int)($input['id'] ?? $input['gallery_id'] ?? $_GET['id'] ?? 0);
         if ($id <= 0) { ApiResponse::error('Gallery ID is required.'); return; }
 
-        $stmt = $this->db->prepare('SELECT id, email, image_url, cover_url, images_json FROM galleries WHERE id = ?');
+        $stmt = $this->db->prepare('SELECT id, email, image_url, images_json FROM galleries WHERE id = ?');
         $stmt->execute([$id]);
         $gal = $stmt->fetch();
         if (!$gal) { ApiResponse::error('Gallery not found', 404); return; }
@@ -3395,6 +3396,13 @@ class GalleryController {
         }
         if (!$isAuthorized && (empty($galEmail) || (!empty($userEmail) && $userEmail === $galEmail))) {
             $isAuthorized = true;
+        }
+        if (!$isAuthorized && !empty($userEmail)) {
+            $chkAdmin = $this->db->prepare('SELECT is_admin FROM users WHERE LOWER(email) = ? AND is_admin = 1');
+            $chkAdmin->execute([$userEmail]);
+            if ($chkAdmin->fetch()) {
+                $isAuthorized = true;
+            }
         }
         if (!$isAuthorized) {
             $currentUser = AuthMiddleware::requireAuth();
@@ -7269,7 +7277,7 @@ class RecycleBinController {
                 $this->db->prepare('DELETE FROM bookings WHERE event_id = ?')->execute([$id]);
                 $this->db->prepare('DELETE FROM favorites WHERE item_type = "event" AND item_id = ?')->execute([(string)$id]);
             } elseif ($type === 'galleries') {
-                $stmtG = $this->db->prepare('SELECT image_url, cover_url, images_json FROM galleries WHERE id = ?');
+                $stmtG = $this->db->prepare('SELECT image_url, images_json FROM galleries WHERE id = ?');
                 $stmtG->execute([$id]);
                 if ($row = $stmtG->fetch()) {
                     UploadController::deletePhysicalFile($row['image_url'] ?? null);
@@ -7325,7 +7333,7 @@ class RecycleBinController {
                         $this->db->prepare('DELETE FROM favorites WHERE item_type = "event" AND item_id = ?')->execute([(string)$r['id']]);
                     }
                 } elseif ($table === 'galleries') {
-                    $rows = $this->db->query("SELECT id, image_url, cover_url, images_json FROM galleries WHERE deleted_at IS NOT NULL")->fetchAll();
+                    $rows = $this->db->query("SELECT id, image_url, images_json FROM galleries WHERE deleted_at IS NOT NULL")->fetchAll();
                     foreach ($rows as $r) {
                         UploadController::deletePhysicalFile($r['image_url'] ?? null);
                         UploadController::deletePhysicalFile($r['cover_url'] ?? null);

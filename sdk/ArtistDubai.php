@@ -502,8 +502,10 @@ class GalleryService extends BaseService {
         return $res->isSuccess();
     }
 
-    public function delete(int $id): bool {
-        $res = $this->client->post($this->resource, ['id' => $id], ['action' => 'delete']);
+    public function delete(int $id, ?string $userEmail = null): bool {
+        $body = ['id' => $id];
+        if ($userEmail !== null) $body['user_email'] = $userEmail;
+        $res = $this->client->post($this->resource, $body, ['action' => 'delete']);
         return $res->isSuccess();
     }
 }

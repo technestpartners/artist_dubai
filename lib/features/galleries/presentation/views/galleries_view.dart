@@ -1166,11 +1166,12 @@ class _GalleriesViewState extends State<GalleriesView> {
                 ),
                 onPressed: () async {
                   Navigator.pop(ctx);
+                  final galEmail = (gallery['email'] ?? '').toString().trim();
+                  final storageEmail = (sl<StorageService>().getString('user_email') ?? '').trim();
+                  final emailToSend = galEmail.isNotEmpty ? galEmail : (storageEmail.isNotEmpty ? storageEmail : null);
                   final success = await sl<ApiService>().deleteGallery(
                     id,
-                    userEmail:
-                        gallery['email']?.toString() ??
-                        sl<StorageService>().getString('user_email'),
+                    userEmail: emailToSend,
                   );
                   if (!mounted) return;
                   if (success) {
