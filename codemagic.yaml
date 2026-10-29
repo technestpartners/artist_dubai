@@ -55,6 +55,16 @@ workflows:
         script: |
           flutter packages pub get
           flutter build ios --config-only --build-name=3.2.5 --build-number=7
+      - name: Install CocoaPods
+        script: |
+          export LANG=en_US.UTF-8
+          export LC_ALL=en_US.UTF-8
+          cd ios && pod install --repo-update
+      - name: Set iOS project version
+        script: |
+          cd ios
+          xcrun agvtool new-version -all 7
+          xcrun agvtool new-marketing-version 3.2.5
       - name: Set up code signing
         script: |
           keychain initialize
@@ -63,23 +73,14 @@ workflows:
             --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
             --create
           keychain add-certificates
-          xcode-project use-profiles
+          xcode-project use-profiles --archive-method=app-store
           echo "=== Provisioning Profiles ==="
           ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || true
           echo "=== Signing Identities ==="
           security find-identity -v -p codesigning
-      - name: Install CocoaPods
-        script: |
-          export LANG=en_US.UTF-8
-          export LC_ALL=en_US.UTF-8
-          cd ios && pod install --repo-update
       - name: Build Flutter iOS IPA
         script: |
           set -e
-          cd ios
-          xcrun agvtool new-version -all 7
-          xcrun agvtool new-marketing-version 3.2.5
-          cd ..
           EXPORT_PLIST="/Users/builder/export_options.plist"
           if [ ! -f "$EXPORT_PLIST" ]; then
             EXPORT_PLIST="ios/ExportOptions.plist"
