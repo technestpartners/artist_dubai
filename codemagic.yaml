@@ -80,9 +80,6 @@ workflows:
           # Configure profile specifier, sync for Xcode 16, and export env
           python3 scripts/setup_ios_signing.py
 
-          # Configure Xcode project code signing settings and export options
-          xcode-project use-profiles --export-options-plist=/Users/builder/export_options.plist
-
           echo "=== Provisioning Profiles Installed ==="
           ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null || true
           echo "=== Provisioning Profiles (Xcode 16 UserData) ==="
@@ -96,7 +93,7 @@ workflows:
         script: |
           set -e
           EXPORT_PLIST="/Users/builder/export_options.plist"
-          if [ ! -f "$EXPORT_PLIST" ]; then
+          if [ ! -f "$EXPORT_PLIST" ] || grep -q "<string>ad-hoc</string>" "$EXPORT_PLIST"; then
             EXPORT_PLIST="ios/ExportOptions.plist"
           fi
           echo "=== Exporting IPA using $EXPORT_PLIST ==="

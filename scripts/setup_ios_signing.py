@@ -17,19 +17,24 @@ def main():
     os.makedirs(legacy_dir, exist_ok=True)
     os.makedirs(xcode16_dir, exist_ok=True)
 
-    # Sync profiles between legacy and Xcode 16 directories
-    for src, dst in [(legacy_dir, xcode16_dir), (xcode16_dir, legacy_dir)]:
-        for f in glob.glob(os.path.join(src, "*.mobileprovision")):
-            target = os.path.join(dst, os.path.basename(f))
-            if not os.path.exists(target):
-                shutil.copy2(f, target)
+    # Find all downloaded provisioning profiles across the entire HOME directory
+    all_profiles = set()
+    for root, dirs, files in os.walk(home):
+        for f in files:
+            if f.endswith(".mobileprovision"):
+                all_profiles.add(os.path.join(root, f))
 
-    # Find all downloaded provisioning profiles
-    profiles = glob.glob(os.path.join(legacy_dir, "*.mobileprovision")) + \
-               glob.glob(os.path.join(xcode16_dir, "*.mobileprovision"))
+    # Copy all found profiles to BOTH legacy_dir and xcode16_dir
+    for p in all_profiles:
+        for target_dir in [legacy_dir, xcode16_dir]:
+            dest = os.path.join(target_dir, os.path.basename(p))
+            if not os.path.exists(dest) or os.path.getsize(dest) != os.path.getsize(p):
+                shutil.copy2(p, dest)
+                print(f"[INFO] Synced profile {os.path.basename(p)} -> {target_dir}")
 
+    profiles = list(all_profiles)
     if not profiles:
-        print("[WARNING] No .mobileprovision files found in MobileDevice or Xcode 16 UserData!")
+        print("[WARNING] No .mobileprovision files found anywhere under $HOME!")
         return
 
     # Pick the newest profile
