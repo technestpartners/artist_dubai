@@ -48,11 +48,17 @@ ServerSignature Off
     Header unset X-Powered-By
 </IfModule>
 
-# Safe static image caching (Strictly raster/web formats, SVG excluded to eliminate stored XSS)
+# Safe static image caching & cross-origin access (Strictly raster/web formats, SVG excluded to eliminate stored XSS)
 <FilesMatch "\.(jpg|jpeg|png|gif|webp|ico)$">
     <IfModule mod_headers.c>
+        Header set Access-Control-Allow-Origin "*"
+        Header set Access-Control-Allow-Methods "GET, OPTIONS"
+        Header set Access-Control-Allow-Headers "*"
+        Header set Cross-Origin-Resource-Policy "cross-origin"
+        Header set Timing-Allow-Origin "*"
         Header set X-Content-Type-Options "nosniff"
         Header set Cache-Control "public, max-age=604800, immutable"
+        Header unset Content-Security-Policy
     </IfModule>
 </FilesMatch>
 

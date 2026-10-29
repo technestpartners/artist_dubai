@@ -26,9 +26,13 @@ class GalleryRegistrationView extends StatefulWidget {
 
 class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
   final _formKey = GlobalKey<FormState>();
+  final _scrollController = ScrollController();
+  final _nameKey = GlobalKey();
+  final _emailKey = GlobalKey();
   final _nameController = TextEditingController();
   final _typeController = TextEditingController();
   final _addressController = TextEditingController();
+  final _timingController = TextEditingController();
   final _websiteController = TextEditingController();
   final _contactPersonController = TextEditingController();
   final _emailController = TextEditingController();
@@ -47,14 +51,17 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
   String _selectedPublishingPlan = '';
   PublishingPricingModel? _galleryPricing;
   StreamSubscription<List<PublishingPricingModel>>? _pricingSub;
-  List<ListingPlanItem> _galleryListingPlans = (sl<ApiService>().cachedListingPlans ?? [])
-      .where((p) =>
-          p.isActive &&
-          (p.itemType.toLowerCase() == 'gallery' ||
-              (p.itemType.toLowerCase() != 'art_centre' &&
-                  p.itemType.toLowerCase() != 'event' &&
-                  p.category.toLowerCase().contains('gallery'))))
-      .toList();
+  List<ListingPlanItem> _galleryListingPlans =
+      (sl<ApiService>().cachedListingPlans ?? [])
+          .where(
+            (p) =>
+                p.isActive &&
+                (p.itemType.toLowerCase() == 'gallery' ||
+                    (p.itemType.toLowerCase() != 'art_centre' &&
+                        p.itemType.toLowerCase() != 'event' &&
+                        p.category.toLowerCase().contains('gallery'))),
+          )
+          .toList();
   StreamSubscription<List<ListingPlanItem>>? _listingPlansSub;
 
   static const Color _screenBg = Color(0xFF651B8A);
@@ -66,7 +73,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
     if (_galleryListingPlans.isNotEmpty) {
       _selectedPublishingPlan =
           _galleryListingPlans.first.id?.toString() ??
-              _galleryListingPlans.first.title;
+          _galleryListingPlans.first.title;
     }
     _loadPublishingPricing();
     _loadGalleryListingPlans();
@@ -77,7 +84,8 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
         pricingList,
       ) {
         if (!mounted || pricingList.isEmpty) return;
-        final galPricing = pricingList.where((p) => p.itemType == 'gallery').firstOrNull;
+        final galPricing =
+            pricingList.where((p) => p.itemType == 'gallery').firstOrNull;
         if (galPricing != null) {
           setState(() {
             _galleryPricing = galPricing;
@@ -87,25 +95,32 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
     } catch (_) {}
 
     try {
-      _listingPlansSub = sl<LiveSyncService>().listingPlansStream.listen((plans) {
+      _listingPlansSub = sl<LiveSyncService>().listingPlansStream.listen((
+        plans,
+      ) {
         if (!mounted) return;
-        final galPlans = plans
-            .where((p) =>
-                p.isActive &&
-                (p.itemType.toLowerCase() == 'gallery' ||
-                    (p.itemType.toLowerCase() != 'art_centre' &&
-                        p.itemType.toLowerCase() != 'event' &&
-                        p.category.toLowerCase().contains('gallery'))))
-            .toList();
+        final galPlans =
+            plans
+                .where(
+                  (p) =>
+                      p.isActive &&
+                      (p.itemType.toLowerCase() == 'gallery' ||
+                          (p.itemType.toLowerCase() != 'art_centre' &&
+                              p.itemType.toLowerCase() != 'event' &&
+                              p.category.toLowerCase().contains('gallery'))),
+                )
+                .toList();
         setState(() {
           _galleryListingPlans = galPlans;
           if (_galleryListingPlans.isNotEmpty &&
-              !_galleryListingPlans.any((p) =>
-                  p.id?.toString() == _selectedPublishingPlan ||
-                  p.title == _selectedPublishingPlan)) {
+              !_galleryListingPlans.any(
+                (p) =>
+                    p.id?.toString() == _selectedPublishingPlan ||
+                    p.title == _selectedPublishingPlan,
+              )) {
             _selectedPublishingPlan =
                 _galleryListingPlans.first.id?.toString() ??
-                    _galleryListingPlans.first.title;
+                _galleryListingPlans.first.title;
           }
         });
       });
@@ -148,23 +163,28 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
     try {
       final plans = await sl<ApiService>().getListingPlans();
       if (!mounted) return;
-      final galPlans = plans
-          .where((p) =>
-              p.isActive &&
-              (p.itemType.toLowerCase() == 'gallery' ||
-                  (p.itemType.toLowerCase() != 'art_centre' &&
-                      p.itemType.toLowerCase() != 'event' &&
-                      p.category.toLowerCase().contains('gallery'))))
-          .toList();
+      final galPlans =
+          plans
+              .where(
+                (p) =>
+                    p.isActive &&
+                    (p.itemType.toLowerCase() == 'gallery' ||
+                        (p.itemType.toLowerCase() != 'art_centre' &&
+                            p.itemType.toLowerCase() != 'event' &&
+                            p.category.toLowerCase().contains('gallery'))),
+              )
+              .toList();
       setState(() {
         _galleryListingPlans = galPlans;
         if (_galleryListingPlans.isNotEmpty &&
-            !_galleryListingPlans.any((p) =>
-                p.id?.toString() == _selectedPublishingPlan ||
-                p.title == _selectedPublishingPlan)) {
+            !_galleryListingPlans.any(
+              (p) =>
+                  p.id?.toString() == _selectedPublishingPlan ||
+                  p.title == _selectedPublishingPlan,
+            )) {
           _selectedPublishingPlan =
               _galleryListingPlans.first.id?.toString() ??
-                  _galleryListingPlans.first.title;
+              _galleryListingPlans.first.title;
         }
       });
     } catch (_) {}
@@ -199,11 +219,13 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
     _nameController.dispose();
     _typeController.dispose();
     _addressController.dispose();
+    _timingController.dispose();
     _websiteController.dispose();
     _contactPersonController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _aboutController.dispose();
+    _scrollController.dispose();
     _pricingSub?.cancel();
     _listingPlansSub?.cancel();
     super.dispose();
@@ -427,9 +449,110 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
     );
   }
 
+  void _scrollToFirstError() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_nameController.text.trim().isEmpty) {
+        final ctx = _nameKey.currentContext;
+        if (ctx != null) {
+          Scrollable.ensureVisible(
+            ctx,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOutCubic,
+            alignment: 0.1,
+          );
+          return;
+        }
+      }
+      final emailVal = _emailController.text.trim();
+      if (emailVal.isEmpty || !emailVal.contains('@')) {
+        final ctx = _emailKey.currentContext;
+        if (ctx != null) {
+          Scrollable.ensureVisible(
+            ctx,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOutCubic,
+            alignment: 0.1,
+          );
+          return;
+        }
+      }
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOutCubic,
+        );
+      }
+    });
+  }
+
   void _submitForm() async {
     setState(() => _hasValidated = true);
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      _scrollToFirstError();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(
+                Icons.error_outline_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Please complete the required venue details highlighted in red.'
+                      .trData(context),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
+    if (_activeGalleryPlan == null &&
+        _galleryListingPlans.isNotEmpty &&
+        _selectedPublishingPlan.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(
+                Icons.info_outline_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Please select a venue listing plan to proceed.'.trData(
+                    context,
+                  ),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
 
     String publishingAmount = 'Free';
     String resolvedPlanName = 'Standard Gallery Registration';
@@ -445,7 +568,8 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
     }
 
     final hasActiveGalleryPlan = _activeGalleryPlan != null;
-    final isPaidPlan = _galleryListingPlans.isNotEmpty &&
+    final isPaidPlan =
+        _galleryListingPlans.isNotEmpty &&
         publishingAmount.toLowerCase() != 'free' &&
         publishingAmount != '0 AED';
 
@@ -463,6 +587,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
             _addressController.text.trim().isNotEmpty
                 ? _addressController.text.trim()
                 : 'Dubai, UAE',
+        'timing': _timingController.text.trim(),
         'website': _websiteController.text.trim(),
         'contact_person': _contactPersonController.text.trim(),
         'email': _emailController.text.trim(),
@@ -474,7 +599,8 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 ? (_activeGalleryPlan!['plan_name'] ?? resolvedPlanName)
                 : resolvedPlanName,
         'payment_status': 'paid',
-        'payment_method': hasActiveGalleryPlan ? 'active_plan' : 'standard_registration',
+        'payment_method':
+            hasActiveGalleryPlan ? 'active_plan' : 'standard_registration',
       };
 
       final success = await sl<ApiService>().registerGallery(payload);
@@ -525,6 +651,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
               _addressController.text.trim().isNotEmpty
                   ? _addressController.text.trim()
                   : 'Dubai, UAE',
+          'timing': _timingController.text.trim(),
           'website': _websiteController.text.trim(),
           'contact_person': _contactPersonController.text.trim(),
           'email': _emailController.text.trim(),
@@ -545,18 +672,27 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide.none,
+        borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.0),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide.none,
+        borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.0),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFF5E227A), width: 1.8),
+        borderSide: const BorderSide(color: Color(0xFF5E227A), width: 2.0),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFEF4444), width: 2.0),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFDC2626), width: 2.2),
       ),
       errorStyle: const TextStyle(
-        color: Colors.white,
+        color: Color(0xFFFFD1D1),
+        fontSize: 12,
         fontWeight: FontWeight.bold,
       ),
     );
@@ -660,6 +796,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
             // Scrollable Content
             Expanded(
               child: SingleChildScrollView(
+                controller: _scrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(
@@ -671,7 +808,10 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                   child: Center(
                     child: ConstrainedBox(
                       constraints: BoxConstraints(maxWidth: rh.contentMaxWidth),
-                      child: _isSubmitted ? _buildSubmittedView() : _buildFormView(),
+                      child:
+                          _isSubmitted
+                              ? _buildSubmittedView()
+                              : _buildFormView(),
                     ),
                   ),
                 ),
@@ -738,6 +878,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
+                  key: _nameKey,
                   controller: _nameController,
                   style: const TextStyle(
                     color: Colors.black,
@@ -805,6 +946,35 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 ),
                 const SizedBox(height: 14),
 
+                // Field 3b: Opening hours / Timing (Optional)
+                Text(
+                  Localizations.localeOf(context).languageCode == 'ar'
+                      ? 'ساعات العمل / التوقيت (اختياري)'
+                      : 'Opening hours / Timing (Optional)',
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _timingController,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  decoration: _whiteInputDecoration(
+                    hintText:
+                        Localizations.localeOf(context).languageCode == 'ar'
+                            ? 'مثال: السبت–الخميس 10:00 ص – 8:00 م'
+                            : 'e.g. Sat–Thu 10:00 AM – 8:00 PM',
+                  ),
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 14),
+
                 // Field 4: Website
                 Text(
                   l10n.website,
@@ -861,6 +1031,7 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
+                  key: _emailKey,
                   controller: _emailController,
                   style: const TextStyle(
                     color: Colors.black,
@@ -1172,351 +1343,243 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                 if (_activeGalleryPlan == null) ...[
                   Container(
                     width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.white.withValues(alpha: 0.14),
-                        Colors.white.withValues(alpha: 0.07),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.22),
-                      width: 1.2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.12),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF6B1C9B), Color(0xFF551478)],
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF6B1C9B).withValues(alpha: 0.35),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.stars_rounded,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                          ),
-                          Text(
-                            'Art Venue Listing'.trData(
-                              context,
-                            ),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13.0,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.1,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2.5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.white24),
-                            ),
-                            child: Text(
-                              'Choose Your Plan'.trData(context),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 9.0,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white.withValues(alpha: 0.14),
+                          Colors.white.withValues(alpha: 0.07),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _galleryPricing?.description != null &&
-                                _galleryPricing!.description!.trim().isNotEmpty &&
-                                !_galleryPricing!.description!
-                                    .toLowerCase()
-                                    .contains('feature your gallery on curated maps')
-                            ? DataTranslator.tr(
-                              context,
-                              _galleryPricing!.description!.trim(),
-                            )
-                            : 'Boost your visibility and secure your place in our professional art community. Choose your plan and connect with the art world!'
-                                .trData(context),
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.88),
-                          fontSize: 12,
-                          height: 1.4,
-                        ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.22),
+                        width: 1.2,
                       ),
-                      const SizedBox(height: 12),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.12),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
                         ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.35),
-                            width: 1,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                          runSpacing: 6,
                           children: [
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.card_giftcard_rounded,
-                                  color: Colors.white,
-                                  size: 18,
+                            Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFF6B1C9B),
+                                    Color(0xFF551478),
+                                  ],
                                 ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'EXCLUSIVE BENEFITS'.trData(context),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 12.5,
-                                      letterSpacing: 0.4,
-                                    ),
+                                borderRadius: BorderRadius.circular(8),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(
+                                      0xFF6B1C9B,
+                                    ).withValues(alpha: 0.35),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
                                   ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.stars_rounded,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                            Text(
+                              'Art Venue Listing'.trData(context),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13.0,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.1,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2.5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.white24),
+                              ),
+                              child: Text(
+                                'Choose Your Plan'.trData(context),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9.0,
+                                  fontWeight: FontWeight.w700,
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            _buildExclusiveBenefitItem(
-                              number: '1',
-                              title: 'First 3 Months Free'.trData(context),
-                              description: 'Enjoy premium visibility at no cost.'.trData(context),
-                            ),
-                            const SizedBox(height: 6),
-                            _buildExclusiveBenefitItem(
-                              number: '2',
-                              title: 'Free Forever'.trData(context),
-                              description: 'Access calendars, maps, and event features.'.trData(context),
-                            ),
-                            const SizedBox(height: 6),
-                            _buildExclusiveBenefitItem(
-                              number: '3',
-                              title: 'Free Photo Uploads'.trData(context),
-                              description: 'Share your event photos and showcase your gallery.'.trData(context),
+                              ),
                             ),
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 14),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          if (_galleryListingPlans.isEmpty) {
-                            return Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 14,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF8FAFC),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: const Color(0xFFE2E8F0),
-                                ),
-                              ),
-                              child: Row(
+                        const SizedBox(height: 8),
+                        Text(
+                          _galleryPricing?.description != null &&
+                                  _galleryPricing!.description!
+                                      .trim()
+                                      .isNotEmpty &&
+                                  !_galleryPricing!.description!
+                                      .toLowerCase()
+                                      .contains(
+                                        'feature your gallery on curated maps',
+                                      )
+                              ? DataTranslator.tr(
+                                context,
+                                _galleryPricing!.description!.trim(),
+                              )
+                              : 'Boost your visibility and secure your place in our professional art community. Choose your plan and connect with the art world!'
+                                  .trData(context),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.88),
+                            fontSize: 12,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.35),
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
                                 children: [
                                   const Icon(
-                                    Icons.info_outline_rounded,
-                                    color: Color(0xFF0284C7),
-                                    size: 20,
+                                    Icons.card_giftcard_rounded,
+                                    color: Colors.white,
+                                    size: 18,
                                   ),
-                                  const SizedBox(width: 10),
+                                  const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      'No paid gallery plans currently configured by administrator. Standard registration applies.'
-                                          .trData(context),
+                                      'EXCLUSIVE BENEFITS'.trData(context),
                                       style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w800,
                                         fontSize: 12.5,
-                                        fontWeight: FontWeight.w500,
-                                        color: Color(0xFF475569),
+                                        letterSpacing: 0.4,
                                       ),
                                     ),
                                   ),
                                 ],
                               ),
-                            );
-                          }
-
-                          final cards = _galleryListingPlans.map((plan) {
-                            final planId =
-                                plan.id?.toString() ?? plan.title;
-                            final subtitle = (plan.features.isNotEmpty &&
-                                    plan.features.first.trim().isNotEmpty)
-                                ? plan.features.first.trim()
-                                : (plan.description.trim().isNotEmpty
-                                    ? plan.description.trim()
-                                    : (plan.duration.isNotEmpty
-                                        ? plan.duration
-                                        : 'Gallery Showcase'));
-                            final rawTitle = plan.title.trData(context);
-                            final cardTitle = (plan.duration.contains('3 Month') || plan.duration.contains('90') || rawTitle.contains('3 Month'))
-                                ? '3 Months'.trData(context)
-                                : ((plan.duration.contains('6 Month') || plan.duration.contains('180') || rawTitle.contains('6 Month'))
-                                    ? '6 Months'.trData(context)
-                                    : ((plan.duration.contains('12 Month') || plan.duration.contains('365') || plan.duration.contains('1 Year') || rawTitle.contains('12 Month'))
-                                        ? '12 Months'.trData(context)
-                                        : rawTitle));
-                            final periodStr = (cardTitle == '3 Months' || cardTitle == '6 Months' || cardTitle == '12 Months')
-                                ? ''
-                                : (plan.duration.isNotEmpty ? ' · ${plan.duration}' : '');
-                            return _buildGalleryPricingCard(
-                              id: planId,
-                              title: cardTitle,
-                              price: plan.price,
-                              period: periodStr,
-                              subtitle: subtitle,
-                              tag:
-                                  plan.badge.isNotEmpty ? plan.badge : null,
-                            );
-                          }).toList();
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              for (int i = 0; i < cards.length; i++) ...[
-                                if (i > 0) const SizedBox(height: 10),
-                                cards[i],
-                              ],
-                              // VAT Explanatory Notice
-                              Container(
-                                margin: const EdgeInsets.only(top: 12),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 13,
-                                  vertical: 11,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.28),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(3.5),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.20),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.receipt_long_rounded,
-                                        size: 14,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 9),
-                                    Expanded(
-                                      child: Text(
-                                        'The displayed prices are exclusive of VAT. The final amount, including VAT, will be shown at checkout when paying by debit or Visa card: 2,100, 3,150, or 5,250, depending on the selected plan.'
-                                            .trData(context),
-                                        style: TextStyle(
-                                          fontSize: 11.5,
-                                          color: Colors.white.withValues(alpha: 0.95),
-                                          height: 1.4,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                              const SizedBox(height: 10),
+                              _buildExclusiveBenefitItem(
+                                number: '1',
+                                title: 'First 3 Months Free'.trData(context),
+                                description:
+                                    'Enjoy premium visibility at no cost.'
+                                        .trData(context),
+                              ),
+                              const SizedBox(height: 6),
+                              _buildExclusiveBenefitItem(
+                                number: '2',
+                                title: 'Free Forever'.trData(context),
+                                description:
+                                    'Access calendars, maps, and event features.'
+                                        .trData(context),
+                              ),
+                              const SizedBox(height: 6),
+                              _buildExclusiveBenefitItem(
+                                number: '3',
+                                title: 'Free Photo Uploads'.trData(context),
+                                description:
+                                    'Share your event photos and showcase your gallery.'
+                                        .trData(context),
                               ),
                             ],
-                          );
-                        },
-                      ),
-                    ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        _buildPlansSection(),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-              ],
-              _buildPaymentNoticeCard(),
+                  const SizedBox(height: 16),
+                ],
+                _buildPaymentNoticeCard(),
                 const SizedBox(height: 18),
 
                 // Field 9: Submit registration button
                 SizedBox(
                   width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton.icon(
+                  height: 52,
+                  child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: const Color(0xFF5E227A),
-                      elevation: 4,
+                      elevation: 3,
                       shadowColor: Colors.black.withValues(alpha: 0.25),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                     ),
                     onPressed: _isSubmitting ? null : _submitForm,
-                    icon: _isSubmitting
-                        ? const SizedBox.shrink()
-                        : const Icon(
-                            Icons.add_business_rounded,
-                            size: 18,
-                            color: Color(0xFF5E227A),
-                          ),
-                    label: _isSubmitting
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              color: Color(0xFF5E227A),
-                              strokeWidth: 2.2,
+                    child:
+                        _isSubmitting
+                            ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF5E227A),
+                                strokeWidth: 2.2,
+                              ),
+                            )
+                            : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.add_business_rounded,
+                                  size: 20,
+                                  color: Color(0xFF5E227A),
+                                ),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    l10n.registerVenue,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 15.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF5E227A),
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          )
-                        : Text(
-                            _activeGalleryPlan != null
-                                ? 'Register Venue (Covered by Active Plan)'
-                                    .trData(context)
-                                : l10n.registerVenue,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF5E227A),
-                              letterSpacing: 0.3,
-                            ),
-                          ),
                   ),
                 ),
               ],
@@ -1689,6 +1752,138 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
     );
   }
 
+  Widget _buildPlansSection() {
+    if (_galleryListingPlans.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.info_outline_rounded,
+              color: Color(0xFF0284C7),
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'No paid gallery plans currently configured by administrator. Standard registration applies.'
+                    .trData(context),
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF475569),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final cards =
+        _galleryListingPlans.map((plan) {
+          final planId = plan.id?.toString() ?? plan.title;
+          final subtitle =
+              (plan.features.isNotEmpty &&
+                      plan.features.first.trim().isNotEmpty)
+                  ? plan.features.first.trim()
+                  : (plan.description.trim().isNotEmpty
+                      ? plan.description.trim()
+                      : (plan.duration.isNotEmpty
+                          ? plan.duration
+                          : 'Gallery Showcase'));
+          final rawTitle = plan.title.trData(context);
+          final cardTitle =
+              (plan.duration.contains('3 Month') ||
+                      plan.duration.contains('90') ||
+                      rawTitle.contains('3 Month'))
+                  ? '3 Months'.trData(context)
+                  : ((plan.duration.contains('6 Month') ||
+                          plan.duration.contains('180') ||
+                          rawTitle.contains('6 Month'))
+                      ? '6 Months'.trData(context)
+                      : ((plan.duration.contains('12 Month') ||
+                              plan.duration.contains('365') ||
+                              plan.duration.contains('1 Year') ||
+                              rawTitle.contains('12 Month'))
+                          ? '12 Months'.trData(context)
+                          : rawTitle));
+          final periodStr =
+              (cardTitle == '3 Months' ||
+                      cardTitle == '6 Months' ||
+                      cardTitle == '12 Months')
+                  ? ''
+                  : (plan.duration.isNotEmpty ? ' · ${plan.duration}' : '');
+          return _buildGalleryPricingCard(
+            id: planId,
+            title: cardTitle,
+            price: plan.price,
+            period: periodStr,
+            subtitle: subtitle,
+            tag: plan.badge.isNotEmpty ? plan.badge : null,
+          );
+        }).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (int i = 0; i < cards.length; i++) ...[
+          if (i > 0) const SizedBox(height: 10),
+          cards[i],
+        ],
+        // VAT Explanatory Notice
+        Container(
+          margin: const EdgeInsets.only(top: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.28),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(3.5),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.20),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.receipt_long_rounded,
+                  size: 14,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  'The displayed prices are exclusive of VAT. The final amount, including VAT, will be shown at checkout when paying by debit or Visa card: 2,100, 3,150, or 5,250, depending on the selected plan.'
+                      .trData(context),
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: Colors.white.withValues(alpha: 0.95),
+                    height: 1.4,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildGalleryPricingCard({
     required String id,
     required String title,
@@ -1697,369 +1892,357 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
     required String subtitle,
     String? tag,
   }) {
-    final isSelected = _selectedPublishingPlan == id ||
-        _selectedPublishingPlan.toLowerCase() == title.toLowerCase() ||
-        ((_selectedPublishingPlan.contains('12') || _selectedPublishingPlan.toLowerCase().contains('year')) &&
-            (title.contains('12') || id.contains('12') || id == 'yearly')) ||
-        (_selectedPublishingPlan.contains('6') &&
-            (title.contains('6') || id.contains('6') || id == 'six_month')) ||
-        (!_selectedPublishingPlan.contains('12') &&
-            _selectedPublishingPlan.contains('3') &&
-            (title.contains('3') || id.contains('3') || id == 'three_month'));
+    final String cleanSelected = _selectedPublishingPlan.trim().toLowerCase();
+    final String cleanId = id.trim().toLowerCase();
+    final String cleanTitle = title.trim().toLowerCase();
+
+    final bool isSelected =
+        cleanSelected == cleanId ||
+        cleanSelected == cleanTitle ||
+        _selectedPublishingPlan == id ||
+        ((cleanSelected.contains('12') || cleanSelected.contains('year')) &&
+            (cleanTitle.contains('12') || cleanTitle.contains('year'))) ||
+        (cleanSelected.contains('6') && cleanTitle.contains('6')) ||
+        (!cleanSelected.contains('12') &&
+            cleanSelected.contains('3') &&
+            cleanTitle.contains('3'));
+
+    final radioCheck = Container(
+      width: 22,
+      height: 22,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient:
+            isSelected
+                ? const LinearGradient(
+                  colors: [Color(0xFF6B1C9B), Color(0xFF9333EA)],
+                )
+                : null,
+        border:
+            isSelected
+                ? null
+                : Border.all(
+                  color: Colors.white.withValues(alpha: 0.40),
+                  width: 1.8,
+                ),
+        boxShadow:
+            isSelected
+                ? [
+                  BoxShadow(
+                    color: const Color(0xFF9333EA).withValues(alpha: 0.40),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+                : null,
+      ),
+      child:
+          isSelected
+              ? const Icon(Icons.check_rounded, size: 15, color: Colors.white)
+              : null,
+    );
+
+    final tagBadge =
+        (tag != null && tag.isNotEmpty)
+            ? Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                gradient:
+                    isSelected
+                        ? const LinearGradient(
+                          colors: [Color(0xFF6B1C9B), Color(0xFF9333EA)],
+                        )
+                        : LinearGradient(
+                          colors: [
+                            Colors.white.withValues(alpha: 0.22),
+                            Colors.white.withValues(alpha: 0.12),
+                          ],
+                        ),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow:
+                    isSelected
+                        ? [
+                          BoxShadow(
+                            color: const Color(
+                              0xFF9333EA,
+                            ).withValues(alpha: 0.35),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                        : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.star_rounded,
+                    size: 11,
+                    color: isSelected ? Colors.white : const Color(0xFFE9D5FF),
+                  ),
+                  const SizedBox(width: 3),
+                  Flexible(
+                    child: Text(
+                      tag.trData(context),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        color:
+                            isSelected ? Colors.white : const Color(0xFFE9D5FF),
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+            : null;
+
+    double baseAmount = 0.0;
+    try {
+      final cleaned = price.replaceAll(RegExp(r'[^0-9.]'), '');
+      baseAmount = double.tryParse(cleaned) ?? 0.0;
+    } catch (_) {}
+    final double vatAmount = baseAmount * 0.05;
+    final double finalAmount = baseAmount + vatAmount;
+    final String finalAmountStr =
+        finalAmount > 0
+            ? '${finalAmount.toStringAsFixed(finalAmount.truncateToDouble() == finalAmount ? 0 : 2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')} AED'
+            : '';
+
+    final priceWidget = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 6,
+          runSpacing: 4,
+          children: [
+            Text(
+              price.trData(context),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: isSelected ? const Color(0xFF5E227A) : Colors.white,
+                letterSpacing: -0.4,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color:
+                    isSelected
+                        ? const Color(0xFF5E227A).withValues(alpha: 0.10)
+                        : Colors.white.withValues(alpha: 0.20),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color:
+                      isSelected
+                          ? const Color(0xFF5E227A).withValues(alpha: 0.25)
+                          : Colors.white.withValues(alpha: 0.35),
+                  width: 0.9,
+                ),
+              ),
+              child: Text(
+                '+ VAT'.trData(context),
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  color: isSelected ? const Color(0xFF5E227A) : Colors.white,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ),
+            if (period.isNotEmpty) ...[
+              Text(
+                period.trData(context),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? const Color(0xFF64748B) : Colors.white70,
+                ),
+              ),
+            ],
+          ],
+        ),
+        if (finalAmountStr.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color:
+                  isSelected
+                      ? const Color(0xFFECFDF5)
+                      : Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color:
+                    isSelected
+                        ? const Color(0xFFA7F3D0)
+                        : Colors.white.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color:
+                        isSelected
+                            ? const Color(0xFF10B981)
+                            : Colors.white.withValues(alpha: 0.35),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check, size: 10, color: Colors.white),
+                ),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    '${'Final Price: '.trData(context)}${finalAmountStr.trData(context)} ${'(incl. 5% VAT)'.trData(context)}',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w800,
+                      color:
+                          isSelected ? const Color(0xFF047857) : Colors.white,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
+          if (_selectedPublishingPlan == id) return;
           setState(() {
             _selectedPublishingPlan = id;
           });
         },
         borderRadius: BorderRadius.circular(16),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
+        child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: isSelected
-                ? Colors.white
-                : Colors.white.withValues(alpha: 0.08),
+            color:
+                isSelected
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isSelected
-                  ? const Color(0xFF9333EA)
-                  : Colors.white.withValues(alpha: 0.20),
-              width: isSelected ? 2.0 : 1.0,
+              color:
+                  isSelected
+                      ? const Color(0xFF9333EA)
+                      : Colors.white.withValues(alpha: 0.20),
+              width: 2.0, // Fixed 2.0px width prevents 1px layout oscillation
             ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: const Color(0xFF5E227A).withValues(alpha: 0.18),
-                      blurRadius: 18,
-                      offset: const Offset(0, 5),
-                    ),
-                    BoxShadow(
-                      color: const Color(0xFF9333EA).withValues(alpha: 0.15),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          child: LayoutBuilder(
-            builder: (context, cardConstraints) {
-              final radioCheck = AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: isSelected
-                      ? const LinearGradient(
-                          colors: [Color(0xFF6B1C9B), Color(0xFF9333EA)],
-                        )
-                      : null,
-                  border: isSelected
-                      ? null
-                      : Border.all(
-                          color: Colors.white.withValues(alpha: 0.40),
-                          width: 1.8,
-                        ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: const Color(0xFF9333EA)
-                                .withValues(alpha: 0.40),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: isSelected
-                    ? const Icon(
-                        Icons.check_rounded,
-                        size: 15,
-                        color: Colors.white,
-                      )
+            boxShadow:
+                isSelected
+                    ? [
+                      BoxShadow(
+                        color: const Color(0xFF5E227A).withValues(alpha: 0.18),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
                     : null,
-              );
-
-              final tagBadge = (tag != null && tag.isNotEmpty)
-                  ? Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: isSelected
-                            ? const LinearGradient(
-                                colors: [
-                                  Color(0xFF6B1C9B),
-                                  Color(0xFF9333EA),
-                                ],
-                              )
-                            : LinearGradient(
-                                colors: [
-                                  Colors.white.withValues(alpha: 0.22),
-                                  Colors.white.withValues(alpha: 0.12),
-                                ],
-                              ),
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: isSelected
-                            ? [
-                                BoxShadow(
-                                  color: const Color(0xFF9333EA)
-                                      .withValues(alpha: 0.35),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.star_rounded,
-                            size: 11,
-                            color: isSelected
-                                ? Colors.white
-                                : const Color(0xFFE9D5FF),
-                          ),
-                          const SizedBox(width: 3),
-                          Flexible(
-                            child: Text(
-                              tag.trData(context),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w800,
-                                color: isSelected
-                                    ? Colors.white
-                                    : const Color(0xFFE9D5FF),
-                                letterSpacing: 0.2,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : null;
-
-              double baseAmount = 0.0;
-              try {
-                final cleaned = price.replaceAll(RegExp(r'[^0-9.]'), '');
-                baseAmount = double.tryParse(cleaned) ?? 0.0;
-              } catch (_) {}
-              final double vatAmount = baseAmount * 0.05;
-              final double finalAmount = baseAmount + vatAmount;
-              final String finalAmountStr = finalAmount > 0
-                  ? '${finalAmount.toStringAsFixed(finalAmount.truncateToDouble() == finalAmount ? 0 : 2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')} AED'
-                  : '';
-
-              final priceWidget = Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Top Row: Title + TagBadge on left, RadioCheck on right
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 6,
-                    runSpacing: 4,
-                    children: [
-                      Text(
-                        price.trData(context),
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          color: isSelected
-                              ? const Color(0xFF5E227A)
-                              : Colors.white,
-                          letterSpacing: -0.4,
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? const Color(0xFF5E227A).withValues(alpha: 0.10)
-                              : Colors.white.withValues(alpha: 0.20),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: isSelected
-                                ? const Color(0xFF5E227A).withValues(alpha: 0.25)
-                                : Colors.white.withValues(alpha: 0.35),
-                            width: 0.9,
-                          ),
-                        ),
-                        child: Text(
-                          '+ VAT'.trData(context),
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            color: isSelected
-                                ? const Color(0xFF5E227A)
-                                : Colors.white,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                      ),
-                      if (period.isNotEmpty) ...[
+                  Expanded(
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
                         Text(
-                          period.trData(context),
+                          title.trData(context),
                           style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: isSelected
-                                ? const Color(0xFF64748B)
-                                : Colors.white70,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  if (finalAmountStr.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(0xFFECFDF5)
-                            : Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: isSelected
-                              ? const Color(0xFFA7F3D0)
-                              : Colors.white.withValues(alpha: 0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? const Color(0xFF10B981)
-                                  : Colors.white.withValues(alpha: 0.35),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.check,
-                              size: 10,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                          Expanded(
-                            child: Text(
-                              '${'Final Price: '.trData(context)}${finalAmountStr.trData(context)} ${'(incl. 5% VAT)'.trData(context)}',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w800,
-                                color: isSelected
-                                    ? const Color(0xFF047857)
-                                    : Colors.white,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
-              );
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Top Row: Title + TagBadge on left, RadioCheck on right
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Wrap(
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: [
-                            Text(
-                              title.trData(context),
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
-                                color: isSelected
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            color:
+                                isSelected
                                     ? const Color(0xFF1E1B4B)
                                     : Colors.white,
-                                letterSpacing: -0.3,
-                              ),
-                            ),
-                            if (tagBadge != null) tagBadge,
-                          ],
+                            letterSpacing: -0.3,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      radioCheck,
-                    ],
+                        if (tagBadge != null) tagBadge,
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 7),
-                  priceWidget,
-                  const SizedBox(height: 10),
+                  const SizedBox(width: 8),
+                  radioCheck,
+                ],
+              ),
+              const SizedBox(height: 7),
+              priceWidget,
+              const SizedBox(height: 10),
 
-                  // Subtle Divider
-                  Container(
-                    height: 1,
-                    width: double.infinity,
-                    color: isSelected
+              // Subtle Divider
+              Container(
+                height: 1,
+                width: double.infinity,
+                color:
+                    isSelected
                         ? const Color(0xFFF1E8FB)
                         : Colors.white.withValues(alpha: 0.12),
-                  ),
-                  const SizedBox(height: 9),
+              ),
+              const SizedBox(height: 9),
 
-                  // Subtitle / Key Benefit Row
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(2.5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF10B981).withValues(
-                            alpha: isSelected ? 0.15 : 0.25,
-                          ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.check_rounded,
-                          size: 11,
-                          color: Color(0xFF059669),
-                        ),
-                      ),
-                      const SizedBox(width: 7),
-                      Expanded(
-                        child: Text(
-                          subtitle.trData(context),
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: isSelected
+              // Subtitle / Key Benefit Row
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(2.5),
+                    decoration: BoxDecoration(
+                      color: const Color(
+                        0xFF10B981,
+                      ).withValues(alpha: isSelected ? 0.15 : 0.25),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check_rounded,
+                      size: 11,
+                      color: Color(0xFF059669),
+                    ),
+                  ),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: Text(
+                      subtitle.trData(context),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color:
+                            isSelected
                                 ? const Color(0xFF475569)
                                 : Colors.white.withValues(alpha: 0.90),
-                            height: 1.3,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        height: 1.3,
                       ),
-                    ],
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
-              );
-            },
+              ),
+            ],
           ),
         ),
       ),
@@ -2071,11 +2254,15 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
       final planName =
           _activeGalleryPlan!['plan_name']?.toString() ?? 'Gallery Plan';
       final rawDays = _activeGalleryPlan!['days_left'];
-      final int? daysNum = rawDays != null ? int.tryParse(rawDays.toString()) : null;
-      final durLabel = _activeGalleryPlan!['duration_label']?.toString() ??
+      final int? daysNum =
+          rawDays != null ? int.tryParse(rawDays.toString()) : null;
+      final durLabel =
+          _activeGalleryPlan!['duration_label']?.toString() ??
           _activeGalleryPlan!['duration']?.toString() ??
           (daysNum != null && daysNum > 0
-              ? (daysNum >= 330 ? '$daysNum days (~1 year) remaining' : '$daysNum days remaining')
+              ? (daysNum >= 330
+                  ? '$daysNum days (~1 year) remaining'
+                  : '$daysNum days remaining')
               : '1 Year (365 Days)');
       return Container(
         width: double.infinity,
@@ -2124,22 +2311,34 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
     if (_galleryListingPlans.isNotEmpty) {
       final matching = _galleryListingPlans.firstWhere(
         (p) => p.id?.toString() == _selectedPublishingPlan,
-        orElse: () => _galleryListingPlans.firstWhere(
-          (p) => p.title.toLowerCase() == _selectedPublishingPlan.toLowerCase(),
-          orElse: () => _galleryListingPlans.firstWhere(
-            (p) =>
-                ((_selectedPublishingPlan.contains('12') || _selectedPublishingPlan.toLowerCase().contains('year')) &&
-                    (p.title.contains('12') || p.title.toLowerCase().contains('year'))) ||
-                (_selectedPublishingPlan.contains('6') && p.title.contains('6')) ||
-                (!_selectedPublishingPlan.contains('12') && _selectedPublishingPlan.contains('3') && p.title.contains('3')),
-            orElse: () => _galleryListingPlans.first,
-          ),
-        ),
+        orElse:
+            () => _galleryListingPlans.firstWhere(
+              (p) =>
+                  p.title.toLowerCase() ==
+                  _selectedPublishingPlan.toLowerCase(),
+              orElse:
+                  () => _galleryListingPlans.firstWhere(
+                    (p) =>
+                        ((_selectedPublishingPlan.contains('12') ||
+                                _selectedPublishingPlan.toLowerCase().contains(
+                                  'year',
+                                )) &&
+                            (p.title.contains('12') ||
+                                p.title.toLowerCase().contains('year'))) ||
+                        (_selectedPublishingPlan.contains('6') &&
+                            p.title.contains('6')) ||
+                        (!_selectedPublishingPlan.contains('12') &&
+                            _selectedPublishingPlan.contains('3') &&
+                            p.title.contains('3')),
+                    orElse: () => _galleryListingPlans.first,
+                  ),
+            ),
       );
       planAmount = matching.price;
       resolvedPlanName = matching.title;
     } else {
-      planAmount = _galleryPricing?.getPriceForPlan(_selectedPublishingPlan) ?? '';
+      planAmount =
+          _galleryPricing?.getPriceForPlan(_selectedPublishingPlan) ?? '';
       resolvedPlanName = 'Gallery Showcase';
     }
 
@@ -2150,9 +2349,10 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
     } catch (_) {}
     final double vatAmount = baseAmount * 0.05;
     final double finalAmount = baseAmount + vatAmount;
-    final String finalAmountStr = finalAmount > 0
-        ? '${finalAmount.toStringAsFixed(finalAmount.truncateToDouble() == finalAmount ? 0 : 2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')} AED'
-        : planAmount;
+    final String finalAmountStr =
+        finalAmount > 0
+            ? '${finalAmount.toStringAsFixed(finalAmount.truncateToDouble() == finalAmount ? 0 : 2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')} AED'
+            : planAmount;
 
     return Material(
       color: Colors.transparent,
@@ -2286,7 +2486,9 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            'Powered by Stripe • Tap to proceed'.trData(context),
+                            'Powered by Stripe • Tap to proceed'.trData(
+                              context,
+                            ),
                             style: TextStyle(
                               fontSize: 10.5,
                               fontWeight: FontWeight.w600,
@@ -2328,15 +2530,32 @@ class _GalleryRegistrationViewState extends State<GalleryRegistrationView> {
 
     setState(() => _hasValidated = true);
     if (!_formKey.currentState!.validate()) {
+      _scrollToFirstError();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Please complete the required venue details above to proceed to Stripe checkout.'
-                .trData(context),
+          content: Row(
+            children: [
+              const Icon(
+                Icons.error_outline_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Please complete the required venue details highlighted in red to proceed to Stripe checkout.'
+                      .trData(context),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
           ),
-          backgroundColor: const Color(0xFF635BFF),
+          backgroundColor: const Color(0xFFDC2626),
           behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 3),
+          duration: const Duration(seconds: 4),
         ),
       );
       return;

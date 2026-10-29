@@ -54,7 +54,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   List<ExperienceLevelModel> _experienceLevels = [];
   List<LocationModel> _locations = [];
   List<PublishingPricingModel> _publishingPricing = [];
-  PaymentSettingsModel _paymentSettings = PaymentSettingsModel.defaultSettings();
+  PaymentSettingsModel _paymentSettings =
+      PaymentSettingsModel.defaultSettings();
   List<ListingPlanItem> _listingPlans = [];
   // 0=Events, 1=Galleries, 2=Artists, 3=Chat, 4=Art Centres
   int _listingPlanTypeTab = 0;
@@ -69,26 +70,40 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   // About Us Page Management Controllers
   final TextEditingController _aboutTitleEnCtrl = TextEditingController();
   final TextEditingController _aboutTitleArCtrl = TextEditingController();
-  final TextEditingController _aboutWhatMeansTitleEnCtrl = TextEditingController();
-  final TextEditingController _aboutWhatMeansTitleArCtrl = TextEditingController();
-  final TextEditingController _aboutWhatMeansBodyEnCtrl = TextEditingController();
-  final TextEditingController _aboutWhatMeansBodyArCtrl = TextEditingController();
+  final TextEditingController _aboutWhatMeansTitleEnCtrl =
+      TextEditingController();
+  final TextEditingController _aboutWhatMeansTitleArCtrl =
+      TextEditingController();
+  final TextEditingController _aboutWhatMeansBodyEnCtrl =
+      TextEditingController();
+  final TextEditingController _aboutWhatMeansBodyArCtrl =
+      TextEditingController();
   final TextEditingController _aboutQuoteTextEnCtrl = TextEditingController();
   final TextEditingController _aboutQuoteTextArCtrl = TextEditingController();
   final TextEditingController _aboutConnectBodyEnCtrl = TextEditingController();
   final TextEditingController _aboutConnectBodyArCtrl = TextEditingController();
-  final TextEditingController _aboutOpportunitiesBodyEnCtrl = TextEditingController();
-  final TextEditingController _aboutOpportunitiesBodyArCtrl = TextEditingController();
+  final TextEditingController _aboutOpportunitiesBodyEnCtrl =
+      TextEditingController();
+  final TextEditingController _aboutOpportunitiesBodyArCtrl =
+      TextEditingController();
   final TextEditingController _aboutFusionBodyEnCtrl = TextEditingController();
   final TextEditingController _aboutFusionBodyArCtrl = TextEditingController();
-  final TextEditingController _aboutDubaiVisionBodyEnCtrl = TextEditingController();
-  final TextEditingController _aboutDubaiVisionBodyArCtrl = TextEditingController();
-  final TextEditingController _aboutOurVisionBodyEnCtrl = TextEditingController();
-  final TextEditingController _aboutOurVisionBodyArCtrl = TextEditingController();
-  final TextEditingController _aboutClosingBordersEnCtrl = TextEditingController();
-  final TextEditingController _aboutClosingBordersArCtrl = TextEditingController();
-  final TextEditingController _aboutClosingImpossibleEnCtrl = TextEditingController();
-  final TextEditingController _aboutClosingImpossibleArCtrl = TextEditingController();
+  final TextEditingController _aboutDubaiVisionBodyEnCtrl =
+      TextEditingController();
+  final TextEditingController _aboutDubaiVisionBodyArCtrl =
+      TextEditingController();
+  final TextEditingController _aboutOurVisionBodyEnCtrl =
+      TextEditingController();
+  final TextEditingController _aboutOurVisionBodyArCtrl =
+      TextEditingController();
+  final TextEditingController _aboutClosingBordersEnCtrl =
+      TextEditingController();
+  final TextEditingController _aboutClosingBordersArCtrl =
+      TextEditingController();
+  final TextEditingController _aboutClosingImpossibleEnCtrl =
+      TextEditingController();
+  final TextEditingController _aboutClosingImpossibleArCtrl =
+      TextEditingController();
   bool _isLoadingAboutUs = false;
   bool _isSavingAboutUs = false;
   int _aboutLanguageSubTab = 0; // 0 = English, 1 = Arabic
@@ -572,14 +587,16 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       text: index != null ? '${index + 1}' : '0',
     );
     final openTimeCtrl = TextEditingController(
-      text: existing?.openHour != null
-          ? '${existing!.openHour.toString().padLeft(2, '0')}:${(existing.openMinute ?? 0).toString().padLeft(2, '0')}'
-          : '08:00',
+      text:
+          existing?.openHour != null
+              ? '${existing!.openHour.toString().padLeft(2, '0')}:${(existing.openMinute ?? 0).toString().padLeft(2, '0')}'
+              : '08:00',
     );
     final closeTimeCtrl = TextEditingController(
-      text: existing?.closeHour != null
-          ? '${existing!.closeHour.toString().padLeft(2, '0')}:${(existing.closeMinute ?? 0).toString().padLeft(2, '0')}'
-          : '18:00',
+      text:
+          existing?.closeHour != null
+              ? '${existing!.closeHour.toString().padLeft(2, '0')}:${(existing.closeMinute ?? 0).toString().padLeft(2, '0')}'
+              : '18:00',
     );
     final seasonalNoticeCtrl = TextEditingController(
       text: existing?.seasonalNotice ?? '',
@@ -690,7 +707,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       _buildFormField(
                         label: 'Google Maps Reviews URL',
                         controller: reviewsUrlCtrl,
-                        hint: 'https://www.google.com/maps/search/?api=1&query=...',
+                        hint:
+                            'https://www.google.com/maps/search/?api=1&query=...',
                         suffixIcon: Icons.rate_review_outlined,
                       ),
                       const SizedBox(height: 12),
@@ -771,7 +789,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                               onTap: () async {
                                 final parts = openTimeCtrl.text.split(':');
                                 final h = int.tryParse(parts.first.trim()) ?? 8;
-                                final m = parts.length > 1 ? (int.tryParse(parts[1].trim()) ?? 0) : 0;
+                                final m =
+                                    parts.length > 1
+                                        ? (int.tryParse(parts[1].trim()) ?? 0)
+                                        : 0;
                                 final picked = await showTimePicker(
                                   context: ctx,
                                   initialTime: TimeOfDay(hour: h, minute: m),
@@ -794,8 +815,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                               suffixIcon: Icons.alarm_off,
                               onTap: () async {
                                 final parts = closeTimeCtrl.text.split(':');
-                                final h = int.tryParse(parts.first.trim()) ?? 18;
-                                final m = parts.length > 1 ? (int.tryParse(parts[1].trim()) ?? 0) : 0;
+                                final h =
+                                    int.tryParse(parts.first.trim()) ?? 18;
+                                final m =
+                                    parts.length > 1
+                                        ? (int.tryParse(parts[1].trim()) ?? 0)
+                                        : 0;
                                 final picked = await showTimePicker(
                                   context: ctx,
                                   initialTime: TimeOfDay(hour: h, minute: m),
@@ -826,72 +851,82 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       Wrap(
                         spacing: 6,
                         runSpacing: 6,
-                        children: dayLabels.entries.map((entry) {
-                          final dayNum = entry.key;
-                          final dayName = entry.value;
-                          final isClosed = selectedClosedDays.contains(dayNum);
-                          return InkWell(
-                            onTap: () {
-                              setModalState(() {
-                                if (isClosed) {
-                                  selectedClosedDays.remove(dayNum);
-                                } else {
-                                  selectedClosedDays.add(dayNum);
-                                }
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(8),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 150),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isClosed
-                                    ? const Color(0xFFFEE2E2)
-                                    : const Color(0xFFE8F8F0),
-                                border: Border.all(
-                                  color: isClosed
-                                      ? const Color(0xFFEF4444)
-                                      : const Color(0xFF10B981),
-                                  width: 1.2,
-                                ),
+                        children:
+                            dayLabels.entries.map((entry) {
+                              final dayNum = entry.key;
+                              final dayName = entry.value;
+                              final isClosed = selectedClosedDays.contains(
+                                dayNum,
+                              );
+                              return InkWell(
+                                onTap: () {
+                                  setModalState(() {
+                                    if (isClosed) {
+                                      selectedClosedDays.remove(dayNum);
+                                    } else {
+                                      selectedClosedDays.add(dayNum);
+                                    }
+                                  });
+                                },
                                 borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    isClosed ? Icons.close : Icons.check,
-                                    size: 13,
-                                    color: isClosed
-                                        ? const Color(0xFFDC2626)
-                                        : const Color(0xFF059669),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 150),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
                                   ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    dayName,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: isClosed
-                                        ? const Color(0xFFDC2626)
-                                        : const Color(0xFF059669),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        isClosed
+                                            ? const Color(0xFFFEE2E2)
+                                            : const Color(0xFFE8F8F0),
+                                    border: Border.all(
+                                      color:
+                                          isClosed
+                                              ? const Color(0xFFEF4444)
+                                              : const Color(0xFF10B981),
+                                      width: 1.2,
                                     ),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }).toList(),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        isClosed ? Icons.close : Icons.check,
+                                        size: 13,
+                                        color:
+                                            isClosed
+                                                ? const Color(0xFFDC2626)
+                                                : const Color(0xFF059669),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        dayName,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color:
+                                              isClosed
+                                                  ? const Color(0xFFDC2626)
+                                                  : const Color(0xFF059669),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
                       ),
                       const SizedBox(height: 6),
                       Row(
                         children: [
                           TextButton.icon(
                             icon: const Icon(Icons.weekend_outlined, size: 14),
-                            label: const Text('Gov Weekend (Sat/Sun)', style: TextStyle(fontSize: 11)),
+                            label: const Text(
+                              'Gov Weekend (Sat/Sun)',
+                              style: TextStyle(fontSize: 11),
+                            ),
                             style: TextButton.styleFrom(
                               foregroundColor: const Color(0xFF6A2777),
                               padding: EdgeInsets.zero,
@@ -907,7 +942,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                           const Spacer(),
                           TextButton.icon(
                             icon: const Icon(Icons.all_inclusive, size: 14),
-                            label: const Text('Open 7 Days', style: TextStyle(fontSize: 11)),
+                            label: const Text(
+                              'Open 7 Days',
+                              style: TextStyle(fontSize: 11),
+                            ),
                             style: TextButton.styleFrom(
                               foregroundColor: const Color(0xFF059669),
                               padding: EdgeInsets.zero,
@@ -926,7 +964,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       _buildFormField(
                         label: 'Seasonal Notice (Optional closure notice)',
                         controller: seasonalNoticeCtrl,
-                        hint: 'Closed · Opens Mar 2026 (Leave blank for normal schedule)',
+                        hint:
+                            'Closed · Opens Mar 2026 (Leave blank for normal schedule)',
                       ),
                       const SizedBox(height: 12),
 
@@ -1003,7 +1042,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                           if (openTimeCtrl.text.contains(':')) {
                             final parts = openTimeCtrl.text.split(':');
                             parsedOpenH = int.tryParse(parts[0].trim()) ?? 8;
-                            parsedOpenM = parts.length > 1 ? (int.tryParse(parts[1].trim()) ?? 0) : 0;
+                            parsedOpenM =
+                                parts.length > 1
+                                    ? (int.tryParse(parts[1].trim()) ?? 0)
+                                    : 0;
                           }
 
                           int parsedCloseH = 18;
@@ -1011,14 +1053,24 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                           if (closeTimeCtrl.text.contains(':')) {
                             final parts = closeTimeCtrl.text.split(':');
                             parsedCloseH = int.tryParse(parts[0].trim()) ?? 18;
-                            parsedCloseM = parts.length > 1 ? (int.tryParse(parts[1].trim()) ?? 0) : 0;
+                            parsedCloseM =
+                                parts.length > 1
+                                    ? (int.tryParse(parts[1].trim()) ?? 0)
+                                    : 0;
                           }
 
-                          final seasonalVal = seasonalNoticeCtrl.text.trim().isEmpty ? null : seasonalNoticeCtrl.text.trim();
-                          final directionsVal = directionsCtrl.text.trim().isNotEmpty
-                              ? directionsCtrl.text.trim()
-                              : 'https://www.google.com/maps/search/?api=1&query=${name.replaceAll(' ', '+')}+Dubai';
-                          final reviewsUrlVal = reviewsUrlCtrl.text.trim().isNotEmpty ? reviewsUrlCtrl.text.trim() : directionsVal;
+                          final seasonalVal =
+                              seasonalNoticeCtrl.text.trim().isEmpty
+                                  ? null
+                                  : seasonalNoticeCtrl.text.trim();
+                          final directionsVal =
+                              directionsCtrl.text.trim().isNotEmpty
+                                  ? directionsCtrl.text.trim()
+                                  : 'https://www.google.com/maps/search/?api=1&query=${name.replaceAll(' ', '+')}+Dubai';
+                          final reviewsUrlVal =
+                              reviewsUrlCtrl.text.trim().isNotEmpty
+                                  ? reviewsUrlCtrl.text.trim()
+                                  : directionsVal;
 
                           final payload = {
                             if (existing?.id != null) 'id': existing!.id,
@@ -1229,6 +1281,13 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       _buildFormField(
                         label: 'Address',
                         controller: addressCtrl,
+                      ),
+                      const SizedBox(height: 12),
+
+                      _buildFormField(
+                        label: 'Opening Hours / Timing',
+                        controller: hoursCtrl,
+                        hint: 'e.g. Sat–Thu 10:00–20:00',
                       ),
                       const SizedBox(height: 12),
 
@@ -2553,8 +2612,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               children:
                   tabs
                       .map(
-                        (t) =>
-                            Expanded(child: _buildWideTabButton(t.$1, t.$2, t.$3)),
+                        (t) => Expanded(
+                          child: _buildWideTabButton(t.$1, t.$2, t.$3),
+                        ),
                       )
                       .toList(),
             ),
@@ -4202,14 +4262,16 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: entity.isCurrentlyOpen
-                      ? const Color(0xFFE8F8F0)
-                      : const Color(0xFFFEE2E2),
+                  color:
+                      entity.isCurrentlyOpen
+                          ? const Color(0xFFE8F8F0)
+                          : const Color(0xFFFEE2E2),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: entity.isCurrentlyOpen
-                        ? const Color(0xFF10B981)
-                        : const Color(0xFFEF4444),
+                    color:
+                        entity.isCurrentlyOpen
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFFEF4444),
                     width: 0.8,
                   ),
                 ),
@@ -4221,9 +4283,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                           ? Icons.access_time_filled
                           : Icons.access_time,
                       size: 11,
-                      color: entity.isCurrentlyOpen
-                          ? const Color(0xFF059669)
-                          : const Color(0xFFDC2626),
+                      color:
+                          entity.isCurrentlyOpen
+                              ? const Color(0xFF059669)
+                              : const Color(0xFFDC2626),
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -4231,9 +4294,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: entity.isCurrentlyOpen
-                            ? const Color(0xFF059669)
-                            : const Color(0xFFDC2626),
+                        color:
+                            entity.isCurrentlyOpen
+                                ? const Color(0xFF059669)
+                                : const Color(0xFFDC2626),
                       ),
                     ),
                   ],
@@ -4419,8 +4483,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   runSpacing: 4,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    if (paymentReference != null &&
-                        paymentReference.isNotEmpty)
+                    if (paymentReference != null && paymentReference.isNotEmpty)
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 6,
@@ -4463,8 +4526,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         decoration: BoxDecoration(
                           color:
                               paymentStatus.toLowerCase() == 'paid' ||
-                                      paymentStatus.toLowerCase() ==
-                                          'approved'
+                                      paymentStatus.toLowerCase() == 'approved'
                                   ? const Color(0xFFECFDF5)
                                   : const Color(0xFFFEF3C7),
                           borderRadius: BorderRadius.circular(4),
@@ -4498,51 +4560,52 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             ],
           );
 
-          final badgeWidget = customStatusToggle ??
+          final badgeWidget =
+              customStatusToggle ??
               (badgeText != null
                   ? MouseRegion(
-                      cursor:
-                          onToggleStatus != null
-                              ? SystemMouseCursors.click
-                              : SystemMouseCursors.basic,
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: onToggleStatus,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: badgeBg,
-                            borderRadius: BorderRadius.circular(12),
-                            border: badgeBorder,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (onToggleStatus != null &&
-                                  (isPurpleBadge || isGreenBadge)) ...[
-                                const Icon(
-                                  Icons.check,
-                                  size: 11,
-                                  color: Colors.white,
-                                ),
-                                const SizedBox(width: 3),
-                              ],
-                              Text(
-                                badgeText,
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: badgeFg,
-                                ),
+                    cursor:
+                        onToggleStatus != null
+                            ? SystemMouseCursors.click
+                            : SystemMouseCursors.basic,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: onToggleStatus,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: badgeBg,
+                          borderRadius: BorderRadius.circular(12),
+                          border: badgeBorder,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (onToggleStatus != null &&
+                                (isPurpleBadge || isGreenBadge)) ...[
+                              const Icon(
+                                Icons.check,
+                                size: 11,
+                                color: Colors.white,
                               ),
+                              const SizedBox(width: 3),
                             ],
-                          ),
+                            Text(
+                              badgeText,
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                                color: badgeFg,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    )
+                    ),
+                  )
                   : null);
 
           final actionsList = <Widget>[
@@ -4551,7 +4614,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF6A2777),
                   side: const BorderSide(color: Color(0xFF6A2777), width: 1.2),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   minimumSize: const Size(60, 28),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(6),
@@ -4672,10 +4738,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 badgeWidget,
                 const SizedBox(width: 8),
               ],
-              for (final action in actionsList.where((w) => w != actionsList.first || onViewReceipt == null)) ...[
-                action,
-                const SizedBox(width: 6),
-              ],
+              for (final action in actionsList.where(
+                (w) => w != actionsList.first || onViewReceipt == null,
+              )) ...[action, const SizedBox(width: 6)],
             ],
           );
         },
@@ -5073,7 +5138,11 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                icon: const Icon(Icons.edit_rounded, size: 14, color: Colors.white),
+                icon: const Icon(
+                  Icons.edit_rounded,
+                  size: 14,
+                  color: Colors.white,
+                ),
                 label: Text(
                   'Edit Bank & IBAN'.trData(context),
                   style: const TextStyle(
@@ -5114,12 +5183,15 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       ),
                       onPressed: () async {
                         final messenger = ScaffoldMessenger.of(context);
-                        final success = await sl<ApiService>().seedDefaultCategories();
+                        final success =
+                            await sl<ApiService>().seedDefaultCategories();
                         if (success) {
                           _loadAllData();
                           messenger.showSnackBar(
                             const SnackBar(
-                              content: Text('All 50 art categories restored successfully!'),
+                              content: Text(
+                                'All 50 art categories restored successfully!',
+                              ),
                             ),
                           );
                         }
@@ -5171,22 +5243,38 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF6A2777),
                   side: const BorderSide(color: Color(0xFF6A2777), width: 1.2),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
                 icon: const Icon(Icons.refresh, size: 14),
-                label: Text('Refresh'.trData(context),
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+                label: Text(
+                  'Refresh'.trData(context),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
                 onPressed: () async {
-                  final plans = await sl<ApiService>().getListingPlans(forceRefresh: true);
+                  final plans = await sl<ApiService>().getListingPlans(
+                    forceRefresh: true,
+                  );
                   if (mounted) {
                     setState(() => _listingPlans = plans);
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text('Listing plans refreshed'.trData(context)),
-                      backgroundColor: const Color(0xFF6A2777),
-                      behavior: SnackBarBehavior.floating,
-                      duration: const Duration(seconds: 2),
-                    ));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Listing plans refreshed'.trData(context),
+                        ),
+                        backgroundColor: const Color(0xFF6A2777),
+                        behavior: SnackBarBehavior.floating,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
                   }
                 },
               ),
@@ -5254,8 +5342,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   maxLines: 1,
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight:
-                        isSelected ? FontWeight.w800 : FontWeight.w600,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                     color:
                         isSelected
                             ? const Color(0xFF6A2777)
@@ -5281,7 +5368,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           color: isSelected ? const Color(0xFF6A2777) : const Color(0xFFF1F5F9),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? const Color(0xFF6A2777) : const Color(0xFFE2E8F0),
+            color:
+                isSelected ? const Color(0xFF6A2777) : const Color(0xFFE2E8F0),
           ),
         ),
         child: Text(
@@ -5297,20 +5385,23 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   }
 
   Widget _buildCategoriesMasterList() {
-    final filteredCategories = _categories.where((cat) {
-      if (_categoryTypeFilter != 'all') {
-        if (cat.type.toLowerCase() != _categoryTypeFilter.toLowerCase()) {
-          return false;
-        }
-      }
-      if (_categorySearchQuery.trim().isNotEmpty) {
-        final q = _categorySearchQuery.trim().toLowerCase();
-        final matchesName = cat.name.toLowerCase().contains(q) || cat.name.trData(context).toLowerCase().contains(q);
-        final matchesDesc = cat.description.toLowerCase().contains(q);
-        return matchesName || matchesDesc;
-      }
-      return true;
-    }).toList();
+    final filteredCategories =
+        _categories.where((cat) {
+          if (_categoryTypeFilter != 'all') {
+            if (cat.type.toLowerCase() != _categoryTypeFilter.toLowerCase()) {
+              return false;
+            }
+          }
+          if (_categorySearchQuery.trim().isNotEmpty) {
+            final q = _categorySearchQuery.trim().toLowerCase();
+            final matchesName =
+                cat.name.toLowerCase().contains(q) ||
+                cat.name.trData(context).toLowerCase().contains(q);
+            final matchesDesc = cat.description.toLowerCase().contains(q);
+            return matchesName || matchesDesc;
+          }
+          return true;
+        }).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -5327,16 +5418,28 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             onChanged: (val) => setState(() => _categorySearchQuery = val),
             decoration: InputDecoration(
               hintText: 'Search categories by name...'.trData(context),
-              hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
-              prefixIcon: const Icon(Icons.search, size: 18, color: Color(0xFF64748B)),
-              suffixIcon: _categorySearchQuery.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear, size: 16),
-                      onPressed: () => setState(() => _categorySearchQuery = ''),
-                    )
-                  : null,
+              hintStyle: const TextStyle(
+                fontSize: 13,
+                color: Color(0xFF94A3B8),
+              ),
+              prefixIcon: const Icon(
+                Icons.search,
+                size: 18,
+                color: Color(0xFF64748B),
+              ),
+              suffixIcon:
+                  _categorySearchQuery.isNotEmpty
+                      ? IconButton(
+                        icon: const Icon(Icons.clear, size: 16),
+                        onPressed:
+                            () => setState(() => _categorySearchQuery = ''),
+                      )
+                      : null,
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
             ),
           ),
         ),
@@ -5346,13 +5449,25 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              _buildCategoryTypeFilterChip('all', 'All (${_categories.length})'),
+              _buildCategoryTypeFilterChip(
+                'all',
+                'All (${_categories.length})',
+              ),
               const SizedBox(width: 6),
-              _buildCategoryTypeFilterChip('artist', 'Artists (${_categories.where((c) => c.type == 'artist').length})'),
+              _buildCategoryTypeFilterChip(
+                'artist',
+                'Artists (${_categories.where((c) => c.type == 'artist').length})',
+              ),
               const SizedBox(width: 6),
-              _buildCategoryTypeFilterChip('event', 'Events (${_categories.where((c) => c.type == 'event').length})'),
+              _buildCategoryTypeFilterChip(
+                'event',
+                'Events (${_categories.where((c) => c.type == 'event').length})',
+              ),
               const SizedBox(width: 6),
-              _buildCategoryTypeFilterChip('general', 'General (${_categories.where((c) => c.type == 'general' || c.type.isEmpty).length})'),
+              _buildCategoryTypeFilterChip(
+                'general',
+                'General (${_categories.where((c) => c.type == 'general' || c.type.isEmpty).length})',
+              ),
             ],
           ),
         ),
@@ -5376,209 +5491,213 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (context, index) {
               final cat = filteredCategories[index];
-        return Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Emoji Badge
-                  Container(
-                    width: 40,
-                    height: 40,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3E8FF),
-                      borderRadius: BorderRadius.circular(10),
+              return Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
                     ),
-                    child: Text(
-                      cat.emoji.isNotEmpty ? cat.emoji : '🎨',
-                      style: const TextStyle(fontSize: 20),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-
-                  // Category Name & Type Badge
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          cat.name.trData(context),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ),
-                        const SizedBox(height: 3),
+                        // Emoji Badge
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
+                          width: 40,
+                          height: 40,
+                          alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE2E8F0),
-                            borderRadius: BorderRadius.circular(5),
+                            color: const Color(0xFFF3E8FF),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
-                            cat.type.trData(context).toUpperCase(),
-                            style: const TextStyle(
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF475569),
-                              letterSpacing: 0.3,
-                            ),
+                            cat.emoji.isNotEmpty ? cat.emoji : '🎨',
+                            style: const TextStyle(fontSize: 20),
                           ),
+                        ),
+                        const SizedBox(width: 10),
+
+                        // Category Name & Type Badge
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                cat.name.trData(context),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF0F172A),
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE2E8F0),
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                                child: Text(
+                                  cat.type.trData(context).toUpperCase(),
+                                  style: const TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF475569),
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+
+                        // Actions
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(
+                                Icons.edit_outlined,
+                                size: 18,
+                                color: Color(0xFF64748B),
+                              ),
+                              tooltip: 'Edit Category',
+                              padding: const EdgeInsets.all(6),
+                              constraints: const BoxConstraints(
+                                minWidth: 32,
+                                minHeight: 32,
+                              ),
+                              onPressed:
+                                  () => _showCategoryDialog(existing: cat),
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                size: 18,
+                                color: Color(0xFFEF4444),
+                              ),
+                              tooltip: 'Delete Category',
+                              padding: const EdgeInsets.all(6),
+                              constraints: const BoxConstraints(
+                                minWidth: 32,
+                                minHeight: 32,
+                              ),
+                              onPressed: () {
+                                final messenger = ScaffoldMessenger.of(context);
+                                _confirmDelete(
+                                  title: 'Delete Category',
+                                  message:
+                                      'Are you sure you want to delete category "${cat.name}"? This action cannot be undone.',
+                                  onConfirm: () async {
+                                    final success = await sl<ApiService>()
+                                        .deleteCategory(
+                                          id: cat.id,
+                                          name: cat.name,
+                                        );
+                                    if (success) {
+                                      setState(() {
+                                        _categories.removeWhere(
+                                          (c) =>
+                                              c.name == cat.name ||
+                                              (cat.id > 0 && c.id == cat.id),
+                                        );
+                                      });
+                                      messenger.showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Deleted "${cat.name}" category',
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                );
+                              },
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 6),
-
-                  // Actions
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(
-                          Icons.edit_outlined,
-                          size: 18,
+                    if (cat.description.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        cat.description.trData(context),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
                           color: Color(0xFF64748B),
                         ),
-                        tooltip: 'Edit Category',
-                        padding: const EdgeInsets.all(6),
-                        constraints: const BoxConstraints(
-                          minWidth: 32,
-                          minHeight: 32,
-                        ),
-                        onPressed: () => _showCategoryDialog(existing: cat),
-                      ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.delete_outline,
-                          size: 18,
-                          color: Color(0xFFEF4444),
-                        ),
-                        tooltip: 'Delete Category',
-                        padding: const EdgeInsets.all(6),
-                        constraints: const BoxConstraints(
-                          minWidth: 32,
-                          minHeight: 32,
-                        ),
-                        onPressed: () {
-                          final messenger = ScaffoldMessenger.of(context);
-                          _confirmDelete(
-                            title: 'Delete Category',
-                            message:
-                                'Are you sure you want to delete category "${cat.name}"? This action cannot be undone.',
-                            onConfirm: () async {
-                              final success = await sl<ApiService>().deleteCategory(
-                                id: cat.id,
-                                name: cat.name,
-                              );
-                              if (success) {
-                                setState(() {
-                                  _categories.removeWhere(
-                                    (c) =>
-                                        c.name == cat.name ||
-                                        (cat.id > 0 && c.id == cat.id),
-                                  );
-                                });
-                                messenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text('Deleted "${cat.name}" category'),
-                                  ),
-                                );
-                              }
-                            },
-                          );
-                        },
                       ),
                     ],
-                  ),
-                ],
-              ),
-              if (cat.description.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(
-                  cat.description.trData(context),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF64748B),
-                  ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.person_outline,
+                              size: 13,
+                              color: Colors.purple.shade400,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              '${cat.artistCount} artists'.trData(context),
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: Colors.purple.shade700,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.event_outlined,
+                              size: 13,
+                              color: Colors.indigo.shade400,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              '${cat.eventCount} events'.trData(context),
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: Colors.indigo.shade700,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 12,
-                runSpacing: 4,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.person_outline,
-                        size: 13,
-                        color: Colors.purple.shade400,
-                      ),
-                      const SizedBox(width: 3),
-                      Text(
-                        '${cat.artistCount} artists'.trData(context),
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: Colors.purple.shade700,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.event_outlined,
-                        size: 13,
-                        color: Colors.indigo.shade400,
-                      ),
-                      const SizedBox(width: 3),
-                      Text(
-                        '${cat.eventCount} events'.trData(context),
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: Colors.indigo.shade700,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
+              );
+            },
           ),
-        );
-      },
-    ),
       ],
     );
   }
@@ -5696,7 +5815,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       minWidth: 32,
                       minHeight: 32,
                     ),
-                    onPressed: () => _showExperienceLevelDialog(existing: level),
+                    onPressed:
+                        () => _showExperienceLevelDialog(existing: level),
                   ),
                   IconButton(
                     icon: const Icon(
@@ -5714,7 +5834,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       final messenger = ScaffoldMessenger.of(context);
                       _confirmDelete(
                         title: 'Delete Experience Level'.trData(context),
-                        message: 'Are you sure you want to delete "${level.name}"?',
+                        message:
+                            'Are you sure you want to delete "${level.name}"?',
                         onConfirm: () async {
                           final success = await sl<ApiService>()
                               .deleteExperienceLevel(id: level.id);
@@ -5725,7 +5846,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                               );
                             });
                             messenger.showSnackBar(
-                              SnackBar(content: Text('Deleted "${level.name}"')),
+                              SnackBar(
+                                content: Text('Deleted "${level.name}"'),
+                              ),
                             );
                           }
                         },
@@ -5749,12 +5872,53 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     String selectedType = existing?.type ?? 'general';
 
     final presetEmojis = [
-      '🎨', '📷', '🗿', '✏️', '💻', '🤖', '🏛️', '🎭',
-      '💃', '🎵', '🎬', '📹', '📚', '📜', '🖋️', '📐',
-      '👗', '🛋️', '📦', '🧶', '🧵', '🏺', '🖨️', '🖌️',
-      '🏙️', '🧱', '🩰', '💡', '🧠', '🔀', '📑', '🎮',
-      '🥽', '🎞️', '🗯️', '✍️', '💍', '🪟', '🪵', '⚙️',
-      '🎎', '🎼', '🎤', '🧪', '🏞️', '🌿', '👑',
+      '🎨',
+      '📷',
+      '🗿',
+      '✏️',
+      '💻',
+      '🤖',
+      '🏛️',
+      '🎭',
+      '💃',
+      '🎵',
+      '🎬',
+      '📹',
+      '📚',
+      '📜',
+      '🖋️',
+      '📐',
+      '👗',
+      '🛋️',
+      '📦',
+      '🧶',
+      '🧵',
+      '🏺',
+      '🖨️',
+      '🖌️',
+      '🏙️',
+      '🧱',
+      '🩰',
+      '💡',
+      '🧠',
+      '🔀',
+      '📑',
+      '🎮',
+      '🥽',
+      '🎞️',
+      '🗯️',
+      '✍️',
+      '💍',
+      '🪟',
+      '🪵',
+      '⚙️',
+      '🎎',
+      '🎼',
+      '🎤',
+      '🧪',
+      '🏞️',
+      '🌿',
+      '👑',
     ];
 
     showDialog(
@@ -6531,14 +6695,16 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: isActive
-                                ? const Color(0xFFECFDF5)
-                                : const Color(0xFFFEF2F2),
+                            color:
+                                isActive
+                                    ? const Color(0xFFECFDF5)
+                                    : const Color(0xFFFEF2F2),
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                              color: isActive
-                                  ? const Color(0xFF10B981)
-                                  : const Color(0xFFEF4444),
+                              color:
+                                  isActive
+                                      ? const Color(0xFF10B981)
+                                      : const Color(0xFFEF4444),
                               width: 1,
                             ),
                           ),
@@ -6550,20 +6716,24 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                 height: 6,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: isActive
-                                      ? const Color(0xFF10B981)
-                                      : const Color(0xFFEF4444),
+                                  color:
+                                      isActive
+                                          ? const Color(0xFF10B981)
+                                          : const Color(0xFFEF4444),
                                 ),
                               ),
                               const SizedBox(width: 5),
                               Text(
-                                (isActive ? 'Active' : 'Disabled').trData(context),
+                                (isActive ? 'Active' : 'Disabled').trData(
+                                  context,
+                                ),
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
-                                  color: isActive
-                                      ? const Color(0xFF059669)
-                                      : const Color(0xFFDC2626),
+                                  color:
+                                      isActive
+                                          ? const Color(0xFF059669)
+                                          : const Color(0xFFDC2626),
                                 ),
                               ),
                             ],
@@ -6681,17 +6851,18 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             width: 160,
                             height: 160,
                             fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => Container(
-                              width: 160,
-                              height: 160,
-                              color: const Color(0xFFF1F5F9),
-                              alignment: Alignment.center,
-                              child: const Icon(
-                                Icons.broken_image_outlined,
-                                color: Color(0xFF94A3B8),
-                                size: 36,
-                              ),
-                            ),
+                            errorBuilder:
+                                (_, __, ___) => Container(
+                                  width: 160,
+                                  height: 160,
+                                  color: const Color(0xFFF1F5F9),
+                                  alignment: Alignment.center,
+                                  child: const Icon(
+                                    Icons.broken_image_outlined,
+                                    color: Color(0xFF94A3B8),
+                                    size: 36,
+                                  ),
+                                ),
                           ),
                         ),
                       )
@@ -6714,8 +6885,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       ),
                     const SizedBox(height: 10),
                     Text(
-                      'Scan to pay directly via UAE mobile banking'
-                          .trData(context),
+                      'Scan to pay directly via UAE mobile banking'.trData(
+                        context,
+                      ),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 11,
@@ -6745,11 +6917,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               } else {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    ...col1,
-                    const SizedBox(height: 16),
-                    col2,
-                  ],
+                  children: [...col1, const SizedBox(height: 16), col2],
                 );
               }
             },
@@ -6770,9 +6938,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: highlight
-            ? const Color(0xFFF3E8FF).withValues(alpha: 0.35)
-            : const Color(0xFFF8FAFC),
+        color:
+            highlight
+                ? const Color(0xFFF3E8FF).withValues(alpha: 0.35)
+                : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: highlight ? const Color(0xFFD8B4FE) : const Color(0xFFE2E8F0),
@@ -6784,7 +6953,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           Icon(
             icon,
             size: 20,
-            color: highlight ? const Color(0xFF6A2777) : const Color(0xFF64748B),
+            color:
+                highlight ? const Color(0xFF6A2777) : const Color(0xFF64748B),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -6820,10 +6990,14 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               tooltip: 'Copy'.trData(context),
               color: const Color(0xFF6A2777),
               onPressed: () {
-                Clipboard.setData(ClipboardData(text: value.replaceAll(' ', '')));
+                Clipboard.setData(
+                  ClipboardData(text: value.replaceAll(' ', '')),
+                );
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('$title ${'copied to clipboard!'.trData(context)}'),
+                    content: Text(
+                      '$title ${'copied to clipboard!'.trData(context)}',
+                    ),
                     backgroundColor: const Color(0xFF6A2777),
                     behavior: SnackBarBehavior.floating,
                     duration: const Duration(seconds: 2),
@@ -6839,217 +7013,250 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
 
   void _showEditPaymentSettingsDialog() {
     final bankCtrl = TextEditingController(text: _paymentSettings.bankName);
-    final accountCtrl = TextEditingController(text: _paymentSettings.accountName);
-    final ibanCtrl = TextEditingController(text: _paymentSettings.accountNumber);
-    final instructionsCtrl = TextEditingController(text: _paymentSettings.instructions);
+    final accountCtrl = TextEditingController(
+      text: _paymentSettings.accountName,
+    );
+    final ibanCtrl = TextEditingController(
+      text: _paymentSettings.accountNumber,
+    );
+    final instructionsCtrl = TextEditingController(
+      text: _paymentSettings.instructions,
+    );
     final qrCtrl = TextEditingController(text: _paymentSettings.qrCodeUrl);
     bool active = _paymentSettings.isActive;
     bool isSaving = false;
 
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setModalState) {
-          return Dialog(
-            backgroundColor: Colors.white,
-            surfaceTintColor: Colors.transparent,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 520),
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      builder:
+          (ctx) => StatefulBuilder(
+            builder: (context, setModalState) {
+              return Dialog(
+                backgroundColor: Colors.white,
+                surfaceTintColor: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 520),
+                  padding: const EdgeInsets.all(22),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF3E8FF),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.account_balance_rounded,
-                                color: Color(0xFF6A2777),
-                                size: 20,
-                              ),
+                            Row(
+                              children: [
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF3E8FF),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
+                                    Icons.account_balance_rounded,
+                                    color: Color(0xFF6A2777),
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Edit Payment Settings'.trData(context),
+                                  style: const TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF0F172A),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Edit Payment Settings'.trData(context),
-                              style: const TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF0F172A),
-                              ),
+                            IconButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              icon: const Icon(Icons.close, size: 20),
+                              color: const Color(0xFF64748B),
                             ),
                           ],
                         ),
-                        IconButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          icon: const Icon(Icons.close, size: 20),
-                          color: const Color(0xFF64748B),
+                        const SizedBox(height: 18),
+                        _buildDialogTextField(
+                          controller: bankCtrl,
+                          hint: 'Bank Name (e.g. Wio Bank)',
+                          icon: Icons.business_rounded,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    _buildDialogTextField(
-                      controller: bankCtrl,
-                      hint: 'Bank Name (e.g. Wio Bank)',
-                      icon: Icons.business_rounded,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDialogTextField(
-                      controller: accountCtrl,
-                      hint: 'Account Title / Beneficiary (e.g. Nizar Fahem)',
-                      icon: Icons.person_rounded,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDialogTextField(
-                      controller: ibanCtrl,
-                      hint: 'Account IBAN (e.g. AE180860000006695992002)',
-                      icon: Icons.credit_card_rounded,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDialogTextField(
-                      controller: instructionsCtrl,
-                      hint: 'Instructions for user when transferring',
-                      icon: Icons.notes_rounded,
-                      maxLines: 3,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDialogTextField(
-                      controller: qrCtrl,
-                      hint: 'QR Code Image URL (optional)',
-                      icon: Icons.qr_code_rounded,
-                    ),
-                    const SizedBox(height: 12),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        'Enable Bank Transfer'.trData(context),
-                        style: const TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1E293B),
+                        const SizedBox(height: 12),
+                        _buildDialogTextField(
+                          controller: accountCtrl,
+                          hint:
+                              'Account Title / Beneficiary (e.g. Nizar Fahem)',
+                          icon: Icons.person_rounded,
                         ),
-                      ),
-                      subtitle: Text(
-                        'Show this bank and IBAN to clients for direct transfers'.trData(context),
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          color: Color(0xFF64748B),
+                        const SizedBox(height: 12),
+                        _buildDialogTextField(
+                          controller: ibanCtrl,
+                          hint: 'Account IBAN (e.g. AE180860000006695992002)',
+                          icon: Icons.credit_card_rounded,
                         ),
-                      ),
-                      value: active,
-                      activeThumbColor: const Color(0xFF6A2777),
-                      onChanged: (val) => setModalState(() => active = val),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: Text('Cancel'.trData(context)),
+                        const SizedBox(height: 12),
+                        _buildDialogTextField(
+                          controller: instructionsCtrl,
+                          hint: 'Instructions for user when transferring',
+                          icon: Icons.notes_rounded,
+                          maxLines: 3,
                         ),
-                        const SizedBox(width: 8),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF6A2777),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 18,
-                              vertical: 10,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                        const SizedBox(height: 12),
+                        _buildDialogTextField(
+                          controller: qrCtrl,
+                          hint: 'QR Code Image URL (optional)',
+                          icon: Icons.qr_code_rounded,
+                        ),
+                        const SizedBox(height: 12),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            'Enable Bank Transfer'.trData(context),
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1E293B),
                             ),
                           ),
-                          onPressed: isSaving
-                              ? null
-                              : () async {
-                                  final bank = bankCtrl.text.trim();
-                                  final account = accountCtrl.text.trim();
-                                  final iban = ibanCtrl.text.trim();
-                                  final instructions = instructionsCtrl.text.trim();
-                                  String qr = qrCtrl.text.trim();
-                                  if (qr.isEmpty && iban.isNotEmpty) {
-                                    final cleanIban = iban.replaceAll(' ', '');
-                                    final encodedName = Uri.encodeComponent(account);
-                                    qr = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=iban%3A$cleanIban%26name%3D$encodedName';
-                                  }
+                          subtitle: Text(
+                            'Show this bank and IBAN to clients for direct transfers'
+                                .trData(context),
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                          value: active,
+                          activeThumbColor: const Color(0xFF6A2777),
+                          onChanged: (val) => setModalState(() => active = val),
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: Text('Cancel'.trData(context)),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF6A2777),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 10,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              onPressed:
+                                  isSaving
+                                      ? null
+                                      : () async {
+                                        final bank = bankCtrl.text.trim();
+                                        final account = accountCtrl.text.trim();
+                                        final iban = ibanCtrl.text.trim();
+                                        final instructions =
+                                            instructionsCtrl.text.trim();
+                                        String qr = qrCtrl.text.trim();
+                                        if (qr.isEmpty && iban.isNotEmpty) {
+                                          final cleanIban = iban.replaceAll(
+                                            ' ',
+                                            '',
+                                          );
+                                          final encodedName =
+                                              Uri.encodeComponent(account);
+                                          qr =
+                                              'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=iban%3A$cleanIban%26name%3D$encodedName';
+                                        }
 
-                                  setModalState(() => isSaving = true);
-                                  final messenger = ScaffoldMessenger.of(context);
-                                  final successMsg = 'Bank details & IBAN updated successfully!'.trData(context);
-                                  final failMsg = 'Failed to update payment settings.'.trData(context);
-                                  Navigator.pop(ctx);
+                                        setModalState(() => isSaving = true);
+                                        final messenger = ScaffoldMessenger.of(
+                                          context,
+                                        );
+                                        final successMsg =
+                                            'Bank details & IBAN updated successfully!'
+                                                .trData(context);
+                                        final failMsg =
+                                            'Failed to update payment settings.'
+                                                .trData(context);
+                                        Navigator.pop(ctx);
 
-                                  final success = await sl<ApiService>().updatePaymentSettings(
-                                    bankName: bank,
-                                    accountName: account,
-                                    accountNumber: iban,
-                                    instructions: instructions,
-                                    qrCodeUrl: qr,
-                                    isActive: active,
-                                  );
+                                        final success = await sl<ApiService>()
+                                            .updatePaymentSettings(
+                                              bankName: bank,
+                                              accountName: account,
+                                              accountNumber: iban,
+                                              instructions: instructions,
+                                              qrCodeUrl: qr,
+                                              isActive: active,
+                                            );
 
-                                  if (!mounted) return;
-                                  if (success) {
-                                    final updated = await sl<ApiService>().getPaymentSettings(forceRefresh: true);
-                                    if (mounted) {
-                                      setState(() => _paymentSettings = updated);
-                                      messenger.showSnackBar(
-                                        SnackBar(
-                                          content: Text(successMsg),
-                                          backgroundColor: const Color(0xFF059669),
-                                          behavior: SnackBarBehavior.floating,
+                                        if (!mounted) return;
+                                        if (success) {
+                                          final updated = await sl<ApiService>()
+                                              .getPaymentSettings(
+                                                forceRefresh: true,
+                                              );
+                                          if (mounted) {
+                                            setState(
+                                              () => _paymentSettings = updated,
+                                            );
+                                            messenger.showSnackBar(
+                                              SnackBar(
+                                                content: Text(successMsg),
+                                                backgroundColor: const Color(
+                                                  0xFF059669,
+                                                ),
+                                                behavior:
+                                                    SnackBarBehavior.floating,
+                                              ),
+                                            );
+                                          }
+                                        } else {
+                                          messenger.showSnackBar(
+                                            SnackBar(
+                                              content: Text(failMsg),
+                                              backgroundColor: Colors.redAccent,
+                                              behavior:
+                                                  SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                        }
+                                      },
+                              child:
+                                  isSaving
+                                      ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
                                         ),
-                                      );
-                                    }
-                                  } else {
-                                    messenger.showSnackBar(
-                                      SnackBar(
-                                        content: Text(failMsg),
-                                        backgroundColor: Colors.redAccent,
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
-                                  }
-                                },
-                          child: isSaving
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Text('Save Changes'.trData(context)),
+                                      )
+                                      : Text('Save Changes'.trData(context)),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          );
-        },
-      ),
+              );
+            },
+          ),
     );
   }
 
@@ -7310,12 +7517,42 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   }
 
   static const List<Map<String, dynamic>> _planTypeTabs = [
-    {'type': 'all',        'label': 'All Plans',   'colorHex': 0xFF5E227A, 'icon': Icons.layers_outlined},
-    {'type': 'event',      'label': 'Events',      'colorHex': 0xFF6A2777, 'icon': Icons.event_available_rounded},
-    {'type': 'gallery',    'label': 'Galleries',   'colorHex': 0xFF0284C7, 'icon': Icons.museum_outlined},
-    {'type': 'artist',     'label': 'Artists',     'colorHex': 0xFF7C3AED, 'icon': Icons.palette_outlined},
-    {'type': 'chat',       'label': 'Chat',        'colorHex': 0xFF059669, 'icon': Icons.forum_rounded},
-    {'type': 'art_centre', 'label': 'Art Centres', 'colorHex': 0xFFD97706, 'icon': Icons.account_balance_outlined},
+    {
+      'type': 'all',
+      'label': 'All Plans',
+      'colorHex': 0xFF5E227A,
+      'icon': Icons.layers_outlined,
+    },
+    {
+      'type': 'event',
+      'label': 'Events',
+      'colorHex': 0xFF6A2777,
+      'icon': Icons.event_available_rounded,
+    },
+    {
+      'type': 'gallery',
+      'label': 'Galleries',
+      'colorHex': 0xFF0284C7,
+      'icon': Icons.museum_outlined,
+    },
+    {
+      'type': 'artist',
+      'label': 'Artists',
+      'colorHex': 0xFF7C3AED,
+      'icon': Icons.palette_outlined,
+    },
+    {
+      'type': 'chat',
+      'label': 'Chat',
+      'colorHex': 0xFF059669,
+      'icon': Icons.forum_rounded,
+    },
+    {
+      'type': 'art_centre',
+      'label': 'Art Centres',
+      'colorHex': 0xFFD97706,
+      'icon': Icons.account_balance_outlined,
+    },
   ];
 
   bool _planMatchesTypeTab(ListingPlanItem p, String tabType) {
@@ -7327,20 +7564,34 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
 
   Widget _buildListingPlansMasterList() {
     final currentTabType = _planTypeTabs[_listingPlanTypeTab]['type'] as String;
-    final currentColor = Color(_planTypeTabs[_listingPlanTypeTab]['colorHex'] as int);
+    final currentColor = Color(
+      _planTypeTabs[_listingPlanTypeTab]['colorHex'] as int,
+    );
     final currentLabel = _planTypeTabs[_listingPlanTypeTab]['label'] as String;
 
-    final filteredPlans = _listingPlans
-        .where((p) => _planMatchesTypeTab(p, currentTabType))
-        .toList()
-      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    final filteredPlans =
+        _listingPlans
+            .where((p) => _planMatchesTypeTab(p, currentTabType))
+            .toList()
+          ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
     // Duration buckets
-    final shortPlans     = filteredPlans.where((p) => p.durationDays <= 45).toList();
-    final threeMonthPlans = filteredPlans.where((p) => p.durationDays > 45 && p.durationDays < 150).toList();
-    final sixMonthPlans   = filteredPlans.where((p) => p.durationDays >= 150 && p.durationDays < 300).toList();
-    final twelveMonthPlans = filteredPlans.where((p) => p.durationDays >= 300 && p.durationDays < 1000).toList();
-    final permanentPlans  = filteredPlans.where((p) => p.durationDays >= 1000).toList();
+    final shortPlans =
+        filteredPlans.where((p) => p.durationDays <= 45).toList();
+    final threeMonthPlans =
+        filteredPlans
+            .where((p) => p.durationDays > 45 && p.durationDays < 150)
+            .toList();
+    final sixMonthPlans =
+        filteredPlans
+            .where((p) => p.durationDays >= 150 && p.durationDays < 300)
+            .toList();
+    final twelveMonthPlans =
+        filteredPlans
+            .where((p) => p.durationDays >= 300 && p.durationDays < 1000)
+            .toList();
+    final permanentPlans =
+        filteredPlans.where((p) => p.durationDays >= 1000).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -7357,7 +7608,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               final tabColor = Color(tab['colorHex'] as int);
               final tabIcon = tab['icon'] as IconData;
               final isSelected = _listingPlanTypeTab == i;
-              final count = _listingPlans.where((p) => _planMatchesTypeTab(p, tabType)).length;
+              final count =
+                  _listingPlans
+                      .where((p) => _planMatchesTypeTab(p, tabType))
+                      .length;
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: InkWell(
@@ -7365,7 +7619,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   borderRadius: BorderRadius.circular(10),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: isSelected ? tabColor : Colors.white,
                       borderRadius: BorderRadius.circular(10),
@@ -7373,37 +7630,61 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         color: isSelected ? tabColor : const Color(0xFFCBD5E1),
                         width: 1.5,
                       ),
-                      boxShadow: isSelected
-                          ? [BoxShadow(color: tabColor.withValues(alpha: 0.25), blurRadius: 8, offset: const Offset(0, 3))]
-                          : null,
+                      boxShadow:
+                          isSelected
+                              ? [
+                                BoxShadow(
+                                  color: tabColor.withValues(alpha: 0.25),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ]
+                              : null,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(tabIcon, size: 14,
-                            color: isSelected ? Colors.white : tabColor),
+                        Icon(
+                          tabIcon,
+                          size: 14,
+                          color: isSelected ? Colors.white : tabColor,
+                        ),
                         const SizedBox(width: 6),
-                        Text(tabLabel,
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color: isSelected ? Colors.white : const Color(0xFF475569),
-                            )),
+                        Text(
+                          tabLabel,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color:
+                                isSelected
+                                    ? Colors.white
+                                    : const Color(0xFF475569),
+                          ),
+                        ),
                         const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 1.5,
+                          ),
                           decoration: BoxDecoration(
-                            color: isSelected
-                                ? Colors.white.withValues(alpha: 0.25)
-                                : const Color(0xFFF1F5F9),
+                            color:
+                                isSelected
+                                    ? Colors.white.withValues(alpha: 0.25)
+                                    : const Color(0xFFF1F5F9),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Text('$count',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: isSelected ? Colors.white : const Color(0xFF64748B),
-                              )),
+                          child: Text(
+                            '$count',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color:
+                                  isSelected
+                                      ? Colors.white
+                                      : const Color(0xFF64748B),
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -7429,13 +7710,21 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('$currentLabel Plans',
-                        style: const TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF0F172A))),
+                    Text(
+                      '$currentLabel Plans',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
                     const SizedBox(height: 2),
                     Text(
                       '${filteredPlans.length} plan${filteredPlans.length == 1 ? '' : 's'} configured · Create 3-month, 6-month or 12-month plans',
-                      style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        color: Color(0xFF64748B),
+                      ),
                     ),
                   ],
                 ),
@@ -7446,13 +7735,25 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   backgroundColor: currentColor,
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 9,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
                 icon: const Icon(Icons.add, size: 14, color: Colors.white),
-                label: Text('New Plan',
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Colors.white)),
-                onPressed: () => _showEditListingPlanDialog(null, currentTabType),
+                label: Text(
+                  'New Plan',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    color: Colors.white,
+                  ),
+                ),
+                onPressed:
+                    () => _showEditListingPlanDialog(null, currentTabType),
               ),
             ],
           ),
@@ -7470,35 +7771,73 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             ),
             child: Column(
               children: [
-                Icon(Icons.workspace_premium_outlined, size: 44, color: Colors.grey.shade400),
+                Icon(
+                  Icons.workspace_premium_outlined,
+                  size: 44,
+                  color: Colors.grey.shade400,
+                ),
                 const SizedBox(height: 12),
-                Text('No $currentLabel plans yet',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
+                Text(
+                  'No $currentLabel plans yet',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
                 const SizedBox(height: 6),
-                Text('Tap "New Plan" above to create a 3-month, 6-month or 12-month plan for $currentLabel.',
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade500), textAlign: TextAlign.center),
+                Text(
+                  'Tap "New Plan" above to create a 3-month, 6-month or 12-month plan for $currentLabel.',
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                  textAlign: TextAlign.center,
+                ),
               ],
             ),
           )
         else ...[
           if (shortPlans.isNotEmpty) ...[
-            _buildPlanDurationSection('Monthly / Short-Term Plans', Icons.calendar_today_rounded, currentColor, shortPlans),
+            _buildPlanDurationSection(
+              'Monthly / Short-Term Plans',
+              Icons.calendar_today_rounded,
+              currentColor,
+              shortPlans,
+            ),
             const SizedBox(height: 10),
           ],
           if (threeMonthPlans.isNotEmpty) ...[
-            _buildPlanDurationSection('3-Month Plans (90 Days)', Icons.date_range_rounded, currentColor, threeMonthPlans),
+            _buildPlanDurationSection(
+              '3-Month Plans (90 Days)',
+              Icons.date_range_rounded,
+              currentColor,
+              threeMonthPlans,
+            ),
             const SizedBox(height: 10),
           ],
           if (sixMonthPlans.isNotEmpty) ...[
-            _buildPlanDurationSection('6-Month Plans (180 Days)', Icons.event_note_rounded, currentColor, sixMonthPlans),
+            _buildPlanDurationSection(
+              '6-Month Plans (180 Days)',
+              Icons.event_note_rounded,
+              currentColor,
+              sixMonthPlans,
+            ),
             const SizedBox(height: 10),
           ],
           if (twelveMonthPlans.isNotEmpty) ...[
-            _buildPlanDurationSection('12-Month Plans (1 Year)', Icons.calendar_month_rounded, currentColor, twelveMonthPlans),
+            _buildPlanDurationSection(
+              '12-Month Plans (1 Year)',
+              Icons.calendar_month_rounded,
+              currentColor,
+              twelveMonthPlans,
+            ),
             const SizedBox(height: 10),
           ],
           if (permanentPlans.isNotEmpty) ...[
-            _buildPlanDurationSection('Permanent / Lifetime Plans', Icons.all_inclusive_rounded, currentColor, permanentPlans),
+            _buildPlanDurationSection(
+              'Permanent / Lifetime Plans',
+              Icons.all_inclusive_rounded,
+              currentColor,
+              permanentPlans,
+            ),
           ],
         ],
       ],
@@ -7506,7 +7845,11 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   }
 
   Widget _buildPlanDurationSection(
-      String title, IconData icon, Color color, List<ListingPlanItem> plans) {
+    String title,
+    IconData icon,
+    Color color,
+    List<ListingPlanItem> plans,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -7522,18 +7865,29 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             children: [
               Icon(icon, size: 14, color: color),
               const SizedBox(width: 8),
-              Text(title,
-                  style: const TextStyle(
-                      fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF334155))),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF334155),
+                ),
+              ),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(6)),
-                child: Text('${plans.length} plan${plans.length == 1 ? '' : 's'}',
-                    style: TextStyle(
-                        fontSize: 10, fontWeight: FontWeight.w700, color: color)),
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  '${plans.length} plan${plans.length == 1 ? '' : 's'}',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                ),
               ),
             ],
           ),
@@ -7557,35 +7911,57 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         plan.itemType.toLowerCase() == 'center';
 
     final Color cardBorderColor =
-        isEvent ? const Color(0xFFE9D5FF)
-        : (isGallery ? const Color(0xFFBAE6FD)
-        : (isChat ? const Color(0xFFA7F3D0)
-        : (isArtist ? const Color(0xFFDDD6FE)
-        : const Color(0xFFFDE68A))));
+        isEvent
+            ? const Color(0xFFE9D5FF)
+            : (isGallery
+                ? const Color(0xFFBAE6FD)
+                : (isChat
+                    ? const Color(0xFFA7F3D0)
+                    : (isArtist
+                        ? const Color(0xFFDDD6FE)
+                        : const Color(0xFFFDE68A))));
     final Color iconBgColor =
-        isEvent ? const Color(0xFFF3E8FF)
-        : (isGallery ? const Color(0xFFE0F2FE)
-        : (isChat ? const Color(0xFFECFDF5)
-        : (isArtist ? const Color(0xFFEDE9FE)
-        : const Color(0xFFFEF3C7))));
+        isEvent
+            ? const Color(0xFFF3E8FF)
+            : (isGallery
+                ? const Color(0xFFE0F2FE)
+                : (isChat
+                    ? const Color(0xFFECFDF5)
+                    : (isArtist
+                        ? const Color(0xFFEDE9FE)
+                        : const Color(0xFFFEF3C7))));
     final Color iconColor =
-        isEvent ? const Color(0xFF6A2777)
-        : (isGallery ? const Color(0xFF0284C7)
-        : (isChat ? const Color(0xFF059669)
-        : (isArtist ? const Color(0xFF7C3AED)
-        : const Color(0xFFD97706))));
+        isEvent
+            ? const Color(0xFF6A2777)
+            : (isGallery
+                ? const Color(0xFF0284C7)
+                : (isChat
+                    ? const Color(0xFF059669)
+                    : (isArtist
+                        ? const Color(0xFF7C3AED)
+                        : const Color(0xFFD97706))));
     final IconData planIcon =
-        isEvent ? Icons.event_available_rounded
-        : (isGallery ? Icons.museum_outlined
-        : (isChat ? Icons.chat_bubble_outline_rounded
-        : (isArtist ? Icons.palette_outlined
-        : Icons.account_balance_outlined)));
+        isEvent
+            ? Icons.event_available_rounded
+            : (isGallery
+                ? Icons.museum_outlined
+                : (isChat
+                    ? Icons.chat_bubble_outline_rounded
+                    : (isArtist
+                        ? Icons.palette_outlined
+                        : Icons.account_balance_outlined)));
     final String typeLabel =
-        isEvent ? 'Event Plan'
-        : (isGallery ? 'Gallery Plan'
-        : (isChat ? 'Chat Plan'
-        : (isArtist ? 'Artist Plan'
-        : (isArtCentre ? 'Art Centre' : plan.itemType.toUpperCase()))));
+        isEvent
+            ? 'Event Plan'
+            : (isGallery
+                ? 'Gallery Plan'
+                : (isChat
+                    ? 'Chat Plan'
+                    : (isArtist
+                        ? 'Artist Plan'
+                        : (isArtCentre
+                            ? 'Art Centre'
+                            : plan.itemType.toUpperCase()))));
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -7595,9 +7971,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         border: Border.all(color: cardBorderColor, width: 1.5),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4)),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -7611,7 +7988,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                    color: iconBgColor, borderRadius: BorderRadius.circular(10)),
+                  color: iconBgColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 child: Icon(planIcon, color: iconColor, size: 24),
               ),
               const SizedBox(width: 14),
@@ -7622,26 +8001,35 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     Row(
                       children: [
                         Expanded(
-                          child: Text(plan.title,
-                              style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF0F172A),
-                                  height: 1.25)),
+                          child: Text(
+                            plan.title,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0F172A),
+                              height: 1.25,
+                            ),
+                          ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: iconBgColor,
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(color: cardBorderColor),
                           ),
-                          child: Text(typeLabel,
-                              style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  color: iconColor,
-                                  letterSpacing: 0.2)),
+                          child: Text(
+                            typeLabel,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: iconColor,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -7651,22 +8039,30 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       runSpacing: 4,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Text(plan.category,
-                            style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF6A2777))),
+                        Text(
+                          plan.category,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF6A2777),
+                          ),
+                        ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: plan.isActive
-                                ? const Color(0xFFECFDF5)
-                                : const Color(0xFFF1F5F9),
+                            color:
+                                plan.isActive
+                                    ? const Color(0xFFECFDF5)
+                                    : const Color(0xFFF1F5F9),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: plan.isActive
-                                  ? const Color(0xFFA7F3D0)
-                                  : const Color(0xFFCBD5E1),
+                              color:
+                                  plan.isActive
+                                      ? const Color(0xFFA7F3D0)
+                                      : const Color(0xFFCBD5E1),
                             ),
                           ),
                           child: Row(
@@ -7677,9 +8073,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                     ? Icons.check_circle_rounded
                                     : Icons.visibility_off_outlined,
                                 size: 11,
-                                color: plan.isActive
-                                    ? const Color(0xFF059669)
-                                    : const Color(0xFF64748B),
+                                color:
+                                    plan.isActive
+                                        ? const Color(0xFF059669)
+                                        : const Color(0xFF64748B),
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -7687,9 +8084,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
-                                  color: plan.isActive
-                                      ? const Color(0xFF059669)
-                                      : const Color(0xFF64748B),
+                                  color:
+                                      plan.isActive
+                                          ? const Color(0xFF059669)
+                                          : const Color(0xFF64748B),
                                 ),
                               ),
                             ],
@@ -7697,35 +8095,53 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         ),
                         if (plan.badge.isNotEmpty)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 1.5,
+                            ),
                             decoration: BoxDecoration(
-                                color: const Color(0xFFF1EBF7),
-                                borderRadius: BorderRadius.circular(8)),
-                            child: Text(plan.badge,
-                                style: const TextStyle(
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF5E227A))),
+                              color: const Color(0xFFF1EBF7),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              plan.badge,
+                              style: const TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF5E227A),
+                              ),
+                            ),
                           ),
                         if (plan.duration.isNotEmpty)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 1.5,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFEFF6FF),
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: const Color(0xFFBFDBFE)),
+                              border: Border.all(
+                                color: const Color(0xFFBFDBFE),
+                              ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.timer_outlined,
-                                    size: 11, color: Color(0xFF1D4ED8)),
+                                const Icon(
+                                  Icons.timer_outlined,
+                                  size: 11,
+                                  color: Color(0xFF1D4ED8),
+                                ),
                                 const SizedBox(width: 3),
-                                Text(plan.duration,
-                                    style: const TextStyle(
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF1D4ED8))),
+                                Text(
+                                  plan.duration,
+                                  style: const TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF1D4ED8),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -7733,11 +8149,14 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     ),
                     if (plan.description.isNotEmpty) ...[
                       const SizedBox(height: 6),
-                      Text(plan.description,
-                          style: const TextStyle(
-                              fontSize: 12.5,
-                              color: Color(0xFF64748B),
-                              height: 1.35)),
+                      Text(
+                        plan.description,
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          color: Color(0xFF64748B),
+                          height: 1.35,
+                        ),
+                      ),
                     ],
                   ],
                 ),
@@ -7758,7 +8177,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                   children: [
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 9,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF8FAFC),
                         borderRadius: BorderRadius.circular(10),
@@ -7767,27 +8189,39 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Listing Price'.trData(context),
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF64748B))),
-                          Text(plan.price,
-                              style: const TextStyle(
-                                  fontSize: 19,
-                                  fontWeight: FontWeight.w900,
-                                  color: Color(0xFF1E293B))),
+                          Text(
+                            'Listing Price'.trData(context),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                          Text(
+                            plan.price,
+                            style: const TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF1E293B),
+                            ),
+                          ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Text('Included Features:'.trData(context),
-                        style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF475569))),
+                    Text(
+                      'Included Features:'.trData(context),
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF475569),
+                      ),
+                    ),
                     const SizedBox(height: 6),
-                    for (final feat in (plan.features.isNotEmpty ? plan.features : plan.effectiveFeatures))
+                    for (final feat
+                        in (plan.features.isNotEmpty
+                            ? plan.features
+                            : plan.effectiveFeatures))
                       Padding(
                         padding: const EdgeInsets.only(bottom: 5),
                         child: Row(
@@ -7795,17 +8229,23 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                           children: [
                             const Padding(
                               padding: EdgeInsets.only(top: 2),
-                              child: Icon(Icons.check_circle_rounded,
-                                  size: 14, color: Color(0xFF6A2777)),
+                              child: Icon(
+                                Icons.check_circle_rounded,
+                                size: 14,
+                                color: Color(0xFF6A2777),
+                              ),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: Text(feat,
-                                  style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: Color(0xFF334155),
-                                      height: 1.3)),
+                              child: Text(
+                                feat,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF334155),
+                                  height: 1.3,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -7817,7 +8257,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(10),
@@ -7826,17 +8269,23 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Listing Price'.trData(context),
-                            style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF64748B))),
+                        Text(
+                          'Listing Price'.trData(context),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
                         const SizedBox(height: 2),
-                        Text(plan.price,
-                            style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF1E293B))),
+                        Text(
+                          plan.price,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF1E293B),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -7845,13 +8294,19 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Included Features:'.trData(context),
-                            style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF475569))),
+                        Text(
+                          'Included Features:'.trData(context),
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF475569),
+                          ),
+                        ),
                         const SizedBox(height: 6),
-                        for (final feat in (plan.features.isNotEmpty ? plan.features : plan.effectiveFeatures))
+                        for (final feat
+                            in (plan.features.isNotEmpty
+                                ? plan.features
+                                : plan.effectiveFeatures))
                           Padding(
                             padding: const EdgeInsets.only(bottom: 5),
                             child: Row(
@@ -7859,17 +8314,23 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                               children: [
                                 const Padding(
                                   padding: EdgeInsets.only(top: 2),
-                                  child: Icon(Icons.check_circle_rounded,
-                                      size: 14, color: Color(0xFF6A2777)),
+                                  child: Icon(
+                                    Icons.check_circle_rounded,
+                                    size: 14,
+                                    color: Color(0xFF6A2777),
+                                  ),
                                 ),
                                 const SizedBox(width: 6),
                                 Expanded(
-                                  child: Text(feat,
-                                      style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                          color: Color(0xFF334155),
-                                          height: 1.3)),
+                                  child: Text(
+                                    feat,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xFF334155),
+                                      height: 1.3,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -7893,13 +8354,17 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(6)),
-                child: Text('Type: ${plan.itemType}',
-                    style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF64748B))),
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'Type: ${plan.itemType}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
               ),
               Wrap(
                 spacing: 6,
@@ -7908,26 +8373,37 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 children: [
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: plan.isActive
-                          ? Colors.redAccent
-                          : const Color(0xFF059669),
+                      foregroundColor:
+                          plan.isActive
+                              ? Colors.redAccent
+                              : const Color(0xFF059669),
                       side: BorderSide(
-                        color: plan.isActive
-                            ? Colors.redAccent.withValues(alpha: 0.5)
-                            : const Color(0xFFA7F3D0),
+                        color:
+                            plan.isActive
+                                ? Colors.redAccent.withValues(alpha: 0.5)
+                                : const Color(0xFFA7F3D0),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 7,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                     icon: Icon(
-                        plan.isActive
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                        size: 14),
+                      plan.isActive
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      size: 14,
+                    ),
                     label: Text(
-                        plan.isActive ? 'Hide' : 'Activate',
-                        style: const TextStyle(
-                            fontSize: 11.5, fontWeight: FontWeight.w600)),
+                      plan.isActive ? 'Hide' : 'Activate',
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     onPressed: () async {
                       final updated = plan.copyWith(isActive: !plan.isActive);
                       await sl<ApiService>().updateListingPlan(
@@ -7938,14 +8414,19 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                         badge: updated.badge,
                         price: updated.price,
                         description: updated.description,
-                        features: updated.features.isNotEmpty ? updated.features : updated.effectiveFeatures,
+                        features:
+                            updated.features.isNotEmpty
+                                ? updated.features
+                                : updated.effectiveFeatures,
                         buttonText: updated.buttonText,
                         isActive: updated.isActive,
                         sortOrder: updated.sortOrder,
                         duration: updated.duration,
                         durationDays: updated.durationDays,
                       );
-                      final fresh = await sl<ApiService>().getListingPlans(forceRefresh: true);
+                      final fresh = await sl<ApiService>().getListingPlans(
+                        forceRefresh: true,
+                      );
                       if (mounted) setState(() => _listingPlans = fresh);
                     },
                   ),
@@ -7954,20 +8435,37 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       backgroundColor: const Color(0xFF6A2777),
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 7,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
-                    icon: const Icon(Icons.edit_note_rounded, size: 16, color: Colors.white),
-                    label: Text('Edit Plan'.trData(context),
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white)),
+                    icon: const Icon(
+                      Icons.edit_note_rounded,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                    label: Text(
+                      'Edit Plan'.trData(context),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                        color: Colors.white,
+                      ),
+                    ),
                     onPressed: () => _showEditListingPlanDialog(plan),
                   ),
                   if (plan.id != null)
                     IconButton(
                       tooltip: 'Delete Plan',
-                      icon: const Icon(Icons.delete_outline_rounded,
-                          size: 17, color: Colors.redAccent),
+                      icon: const Icon(
+                        Icons.delete_outline_rounded,
+                        size: 17,
+                        color: Colors.redAccent,
+                      ),
                       style: IconButton.styleFrom(
                         backgroundColor: const Color(0xFFFEF2F2),
                         padding: const EdgeInsets.all(7),
@@ -7986,7 +8484,6 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       ),
     );
   }
-
 
   void _confirmDeleteListingPlan(ListingPlanItem plan) {
     if (plan.id == null) return;
@@ -8915,10 +9412,16 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     );
   }
 
-  void _showEditListingPlanDialog([ListingPlanItem? plan, String? defaultItemType]) {
+  void _showEditListingPlanDialog([
+    ListingPlanItem? plan,
+    String? defaultItemType,
+  ]) {
     final isEditing = plan != null;
-    String selectedItemType = plan?.itemType ??
-        (defaultItemType == null || defaultItemType == 'all' ? 'event' : defaultItemType);
+    String selectedItemType =
+        plan?.itemType ??
+        (defaultItemType == null || defaultItemType == 'all'
+            ? 'event'
+            : defaultItemType);
     final titleCtrl = TextEditingController(text: plan?.title ?? '');
     final initialCat =
         plan?.category ??
@@ -8939,13 +9442,15 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       plan?.price ?? (selectedItemType == 'artist' ? 'Free' : 'AED 199'),
     );
     final priceCtrl = TextEditingController(text: initialPrice);
-    if (selectedItemType == 'artist' && priceCtrl.text.toLowerCase() != 'free') {
+    if (selectedItemType == 'artist' &&
+        priceCtrl.text.toLowerCase() != 'free') {
       priceCtrl.text = 'Free';
       if (badgeCtrl.text == 'One-time') badgeCtrl.text = 'Free';
     }
     final descCtrl = TextEditingController(text: plan?.description ?? '');
     final durationCtrl = TextEditingController(
-      text: plan?.duration ??
+      text:
+          plan?.duration ??
           (selectedItemType == 'gallery' || selectedItemType == 'art_centre'
               ? '1 Year (365 Days)'
               : (selectedItemType == 'artist'
@@ -8957,10 +9462,13 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             ? (plan.features.isNotEmpty
                 ? plan.features.join('\n')
                 : plan.effectiveFeatures.join('\n'))
-            : ListingPlanItem.defaultFeaturesForItemType(selectedItemType).join('\n');
+            : ListingPlanItem.defaultFeaturesForItemType(
+              selectedItemType,
+            ).join('\n');
     final featuresCtrl = TextEditingController(text: initialFeatures);
     final buttonTextCtrl = TextEditingController(
-      text: plan?.buttonText ??
+      text:
+          plan?.buttonText ??
           (selectedItemType == 'artist'
               ? 'Create Free Profile'
               : 'Pay from My Listings'),
@@ -9022,17 +9530,21 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       'Permanent / Lifetime',
     ];
 
-    bool isCustomPrice = plan != null &&
+    bool isCustomPrice =
+        plan != null &&
         initialPrice.isNotEmpty &&
         !pricePresets.contains(initialPrice) &&
         initialPrice.toLowerCase() != 'free';
-    bool isCustomBadge = plan != null &&
+    bool isCustomBadge =
+        plan != null &&
         badgeCtrl.text.trim().isNotEmpty &&
         !badgePresets.contains(badgeCtrl.text.trim());
-    bool isCustomBtn = plan != null &&
+    bool isCustomBtn =
+        plan != null &&
         buttonTextCtrl.text.trim().isNotEmpty &&
         !buttonPresets.contains(buttonTextCtrl.text.trim());
-    bool isCustomDuration = plan != null &&
+    bool isCustomDuration =
+        plan != null &&
         durationCtrl.text.trim().isNotEmpty &&
         !durationPresets.contains(durationCtrl.text.trim());
 
@@ -9166,11 +9678,16 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       builder:
           (ctx) => StatefulBuilder(
             builder: (context, setModalState) {
-              final connectedCategories = _getConnectedCategories(selectedItemType);
-              final categoryOptions = <String>{
-                ...connectedCategories,
-                ..._categories.map((c) => c.name.trim()).where((n) => n.isNotEmpty),
-              }.toList();
+              final connectedCategories = _getConnectedCategories(
+                selectedItemType,
+              );
+              final categoryOptions =
+                  <String>{
+                    ...connectedCategories,
+                    ..._categories
+                        .map((c) => c.name.trim())
+                        .where((n) => n.isNotEmpty),
+                  }.toList();
 
               const standardFeaturesCatalog = [
                 'Verified Artist Badge on profile',
@@ -9194,13 +9711,15 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               final seenFeatures = <String>{};
               for (final raw in featuresCtrl.text.split('\n')) {
                 final trimmed = raw.trim();
-                if (trimmed.isNotEmpty && seenFeatures.add(trimmed.toLowerCase())) {
+                if (trimmed.isNotEmpty &&
+                    seenFeatures.add(trimmed.toLowerCase())) {
                   activeLines.add(trimmed);
                 }
               }
-              final customFeatures = activeLines
-                  .where((l) => !standardFeaturesCatalog.contains(l))
-                  .toList();
+              final customFeatures =
+                  activeLines
+                      .where((l) => !standardFeaturesCatalog.contains(l))
+                      .toList();
 
               final currentCat = categoryCtrl.text.trim();
               if (currentCat.isEmpty) {
@@ -9208,38 +9727,44 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               }
 
               final currentPrice = priceCtrl.text.trim();
-              final String selectedPriceValue = selectedItemType == 'artist'
-                  ? 'Free'
-                  : (isCustomPrice
-                      ? '__custom__'
-                      : (pricePresets.contains(currentPrice)
-                          ? currentPrice
-                          : '__custom__'));
+              final String selectedPriceValue =
+                  selectedItemType == 'artist'
+                      ? 'Free'
+                      : (isCustomPrice
+                          ? '__custom__'
+                          : (pricePresets.contains(currentPrice)
+                              ? currentPrice
+                              : '__custom__'));
 
               final currentBadge = badgeCtrl.text.trim();
-              final String selectedBadgeValue = isCustomBadge
-                  ? '__custom__'
-                  : (currentBadge.isEmpty
-                      ? 'None (No Badge)'
-                      : (badgePresets.contains(currentBadge)
-                          ? currentBadge
-                          : '__custom__'));
+              final String selectedBadgeValue =
+                  isCustomBadge
+                      ? '__custom__'
+                      : (currentBadge.isEmpty
+                          ? 'None (No Badge)'
+                          : (badgePresets.contains(currentBadge)
+                              ? currentBadge
+                              : '__custom__'));
 
               final currentBtn = buttonTextCtrl.text.trim();
-              final String selectedBtnValue = isCustomBtn
-                  ? '__custom__'
-                  : (buttonPresets.contains(currentBtn)
-                      ? currentBtn
-                      : (currentBtn.isEmpty
-                          ? (selectedItemType == 'artist' ? 'Create Free Profile' : 'Pay from My Listings')
-                          : '__custom__'));
+              final String selectedBtnValue =
+                  isCustomBtn
+                      ? '__custom__'
+                      : (buttonPresets.contains(currentBtn)
+                          ? currentBtn
+                          : (currentBtn.isEmpty
+                              ? (selectedItemType == 'artist'
+                                  ? 'Create Free Profile'
+                                  : 'Pay from My Listings')
+                              : '__custom__'));
 
               final currentDur = durationCtrl.text.trim();
-              final String selectedDurationValue = isCustomDuration
-                  ? '__custom__'
-                  : (durationPresets.contains(currentDur)
-                      ? currentDur
-                      : '__custom__');
+              final String selectedDurationValue =
+                  isCustomDuration
+                      ? '__custom__'
+                      : (durationPresets.contains(currentDur)
+                          ? currentDur
+                          : '__custom__');
 
               return Dialog(
                 backgroundColor: Colors.white,
@@ -9388,10 +9913,24 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                           featuresCtrl.text = t['features']!;
                                           buttonTextCtrl.text =
                                               t['buttonText']!;
-                                          isCustomPrice = !pricePresets.contains(t['price']!);
-                                          isCustomBadge = t['badge']!.isNotEmpty && !badgePresets.contains(t['badge']!);
-                                          isCustomBtn = !buttonPresets.contains(t['buttonText']!);
-                                          isCustomDuration = t['duration'] != null && !durationPresets.contains(t['duration']!);
+                                          isCustomPrice =
+                                              !pricePresets.contains(
+                                                t['price']!,
+                                              );
+                                          isCustomBadge =
+                                              t['badge']!.isNotEmpty &&
+                                              !badgePresets.contains(
+                                                t['badge']!,
+                                              );
+                                          isCustomBtn =
+                                              !buttonPresets.contains(
+                                                t['buttonText']!,
+                                              );
+                                          isCustomDuration =
+                                              t['duration'] != null &&
+                                              !durationPresets.contains(
+                                                t['duration']!,
+                                              );
                                         });
                                       },
                                       borderRadius: BorderRadius.circular(8),
@@ -9792,7 +10331,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                           ),
                                         IconButton(
                                           icon: const Icon(
-                                            Icons.arrow_drop_down_circle_outlined,
+                                            Icons
+                                                .arrow_drop_down_circle_outlined,
                                             size: 18,
                                           ),
                                           color: const Color(0xFF6A2777),
@@ -9971,7 +10511,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                         badgeCtrl.text = '';
                                       } else if (val == '__custom__') {
                                         isCustomBadge = true;
-                                        if (badgePresets.contains(badgeCtrl.text.trim())) {
+                                        if (badgePresets.contains(
+                                          badgeCtrl.text.trim(),
+                                        )) {
                                           badgeCtrl.clear();
                                         }
                                       } else {
@@ -9988,7 +10530,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                   const SizedBox(height: 6),
                                   _buildDialogTextField(
                                     controller: badgeCtrl,
-                                    hint: 'Type custom badge name (e.g. VIP Member)...',
+                                    hint:
+                                        'Type custom badge name (e.g. VIP Member)...',
                                     icon: Icons.bookmark_border_rounded,
                                     autofocus: true,
                                   ),
@@ -10091,7 +10634,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                       setModalState(() {
                                         if (val == '__custom__') {
                                           isCustomPrice = true;
-                                          if (pricePresets.contains(priceCtrl.text.trim())) {
+                                          if (pricePresets.contains(
+                                            priceCtrl.text.trim(),
+                                          )) {
                                             priceCtrl.clear();
                                           }
                                         } else {
@@ -10171,109 +10716,128 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                           scrollDirection: Axis.horizontal,
                           physics: const BouncingScrollPhysics(),
                           child: Row(
-                            children: [
-                              {
-                                'label': '1 Month (30d)',
-                                'val': '30 Days',
-                                'badge': 'Standard',
-                                'titleSuffix': '(1 Month)',
-                              },
-                              {
-                                'label': '3 Months (90d)',
-                                'val': '90 Days (3 Months)',
-                                'badge': 'Special Offer',
-                                'titleSuffix': '(3 Months)',
-                              },
-                              {
-                                'label': '6 Months (180d)',
-                                'val': '180 Days (6 Months)',
-                                'badge': 'Save 25%',
-                                'titleSuffix': '(6 Months)',
-                              },
-                              {
-                                'label': '12 Months (1 Year)',
-                                'val': '1 Year (365 Days)',
-                                'badge': 'Best Value',
-                                'titleSuffix': '(12 Months)',
-                              },
-                              if (selectedItemType == 'artist')
-                                {
-                                  'label': 'Permanent Free',
-                                  'val': 'Permanent Free Profile',
-                                  'badge': 'Free',
-                                  'titleSuffix': '',
-                                },
-                            ].map((preset) {
-                              final isSel = durationCtrl.text.trim().toLowerCase() ==
-                                      preset['val']!.toLowerCase() ||
-                                  (preset['val'] == '90 Days (3 Months)' &&
-                                      durationCtrl.text.contains('90')) ||
-                                  (preset['val'] == '180 Days (6 Months)' &&
-                                      durationCtrl.text.contains('180')) ||
-                                  (preset['val'] == '1 Year (365 Days)' &&
-                                      (durationCtrl.text.contains('365') ||
-                                          durationCtrl.text.contains('1 Year')));
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 6),
-                                child: InkWell(
-                                  onTap: () {
-                                    setModalState(() {
-                                      durationCtrl.text = preset['val']!;
-                                      isCustomDuration = false;
-                                      badgeCtrl.text = preset['badge']!;
-                                      isCustomBadge = !badgePresets.contains(preset['badge']!);
-                                      if (titleCtrl.text.isEmpty ||
-                                          titleCtrl.text.contains('(')) {
-                                        final base = selectedItemType == 'event'
-                                            ? 'Event Showcase'
-                                            : (selectedItemType == 'gallery'
-                                                ? 'Gallery Showcase'
-                                                : (selectedItemType == 'chat'
-                                                    ? 'Pro Artist Chat'
-                                                    : (selectedItemType == 'art_centre'
-                                                        ? 'Art Centre Partner'
-                                                        : 'Artist Portfolio')));
-                                        final suffix = preset['titleSuffix']!;
-                                        titleCtrl.text = suffix.isNotEmpty
-                                            ? '$base $suffix'
-                                            : base;
-                                      }
-                                    });
+                            children:
+                                [
+                                  {
+                                    'label': '1 Month (30d)',
+                                    'val': '30 Days',
+                                    'badge': 'Standard',
+                                    'titleSuffix': '(1 Month)',
                                   },
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isSel
-                                          ? const Color(0xFF6A2777)
-                                          : const Color(0xFFF8FAFC),
+                                  {
+                                    'label': '3 Months (90d)',
+                                    'val': '90 Days (3 Months)',
+                                    'badge': 'Special Offer',
+                                    'titleSuffix': '(3 Months)',
+                                  },
+                                  {
+                                    'label': '6 Months (180d)',
+                                    'val': '180 Days (6 Months)',
+                                    'badge': 'Save 25%',
+                                    'titleSuffix': '(6 Months)',
+                                  },
+                                  {
+                                    'label': '12 Months (1 Year)',
+                                    'val': '1 Year (365 Days)',
+                                    'badge': 'Best Value',
+                                    'titleSuffix': '(12 Months)',
+                                  },
+                                  if (selectedItemType == 'artist')
+                                    {
+                                      'label': 'Permanent Free',
+                                      'val': 'Permanent Free Profile',
+                                      'badge': 'Free',
+                                      'titleSuffix': '',
+                                    },
+                                ].map((preset) {
+                                  final isSel =
+                                      durationCtrl.text.trim().toLowerCase() ==
+                                          preset['val']!.toLowerCase() ||
+                                      (preset['val'] == '90 Days (3 Months)' &&
+                                          durationCtrl.text.contains('90')) ||
+                                      (preset['val'] == '180 Days (6 Months)' &&
+                                          durationCtrl.text.contains('180')) ||
+                                      (preset['val'] == '1 Year (365 Days)' &&
+                                          (durationCtrl.text.contains('365') ||
+                                              durationCtrl.text.contains(
+                                                '1 Year',
+                                              )));
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 6),
+                                    child: InkWell(
+                                      onTap: () {
+                                        setModalState(() {
+                                          durationCtrl.text = preset['val']!;
+                                          isCustomDuration = false;
+                                          badgeCtrl.text = preset['badge']!;
+                                          isCustomBadge =
+                                              !badgePresets.contains(
+                                                preset['badge']!,
+                                              );
+                                          if (titleCtrl.text.isEmpty ||
+                                              titleCtrl.text.contains('(')) {
+                                            final base =
+                                                selectedItemType == 'event'
+                                                    ? 'Event Showcase'
+                                                    : (selectedItemType ==
+                                                            'gallery'
+                                                        ? 'Gallery Showcase'
+                                                        : (selectedItemType ==
+                                                                'chat'
+                                                            ? 'Pro Artist Chat'
+                                                            : (selectedItemType ==
+                                                                    'art_centre'
+                                                                ? 'Art Centre Partner'
+                                                                : 'Artist Portfolio')));
+                                            final suffix =
+                                                preset['titleSuffix']!;
+                                            titleCtrl.text =
+                                                suffix.isNotEmpty
+                                                    ? '$base $suffix'
+                                                    : base;
+                                          }
+                                        });
+                                      },
                                       borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: isSel
-                                            ? const Color(0xFF6A2777)
-                                            : const Color(0xFFCBD5E1),
-                                        width: isSel ? 1.4 : 1.0,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color:
+                                              isSel
+                                                  ? const Color(0xFF6A2777)
+                                                  : const Color(0xFFF8FAFC),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          border: Border.all(
+                                            color:
+                                                isSel
+                                                    ? const Color(0xFF6A2777)
+                                                    : const Color(0xFFCBD5E1),
+                                            width: isSel ? 1.4 : 1.0,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          preset['label']!,
+                                          style: TextStyle(
+                                            fontSize: 11.5,
+                                            fontWeight:
+                                                isSel
+                                                    ? FontWeight.w700
+                                                    : FontWeight.w600,
+                                            color:
+                                                isSel
+                                                    ? Colors.white
+                                                    : const Color(0xFF334155),
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                    child: Text(
-                                      preset['label']!,
-                                      style: TextStyle(
-                                        fontSize: 11.5,
-                                        fontWeight: isSel
-                                            ? FontWeight.w700
-                                            : FontWeight.w600,
-                                        color: isSel
-                                            ? Colors.white
-                                            : const Color(0xFF334155),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
+                                  );
+                                }).toList(),
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -10338,7 +10902,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             setModalState(() {
                               if (val == '__custom__') {
                                 isCustomDuration = true;
-                                if (durationPresets.contains(durationCtrl.text.trim())) {
+                                if (durationPresets.contains(
+                                  durationCtrl.text.trim(),
+                                )) {
                                   durationCtrl.clear();
                                 }
                               } else {
@@ -10409,7 +10975,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             InkWell(
                               onTap: () {
                                 setModalState(() {
-                                  showRawFeaturesEditor = !showRawFeaturesEditor;
+                                  showRawFeaturesEditor =
+                                      !showRawFeaturesEditor;
                                 });
                               },
                               child: Row(
@@ -10484,93 +11051,97 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                     shrinkWrap: true,
                                     physics: const BouncingScrollPhysics(),
                                     itemCount: standardFeaturesCatalog.length,
-                                      itemBuilder: (context, idx) {
-                                        final feat = standardFeaturesCatalog[idx];
-                                        final isChecked = activeLines.contains(feat);
-                                        return InkWell(
-                                          onTap: () {
-                                            final lines = List<String>.from(activeLines);
-                                            if (isChecked) {
-                                              lines.remove(feat);
-                                            } else {
-                                              lines.add(feat);
-                                            }
-                                            featuresCtrl.text = lines.join('\n');
-                                            setModalState(() {});
-                                          },
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 10,
-                                              vertical: 3.5,
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                SizedBox(
-                                                  width: 20,
-                                                  height: 20,
-                                                  child: Checkbox(
-                                                    value: isChecked,
-                                                    activeColor: const Color(
-                                                      0xFF6A2777,
-                                                    ),
-                                                    materialTapTargetSize:
-                                                        MaterialTapTargetSize
-                                                            .shrinkWrap,
-                                                    shape:
-                                                        RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(4),
-                                                        ),
-                                                    onChanged: (val) {
-                                                      final lines =
-                                                          List<String>.from(
-                                                            activeLines,
-                                                          );
-                                                      if (val == true) {
-                                                        if (!lines.contains(
-                                                          feat,
-                                                        )) {
-                                                          lines.add(feat);
-                                                        }
-                                                      } else {
-                                                        lines.remove(feat);
-                                                      }
-                                                      featuresCtrl.text = lines
-                                                          .join('\n');
-                                                      setModalState(() {});
-                                                    },
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Expanded(
-                                                  child: Text(
-                                                    feat,
-                                                    style: TextStyle(
-                                                      fontSize: 12,
-                                                      fontWeight:
-                                                          isChecked
-                                                              ? FontWeight.w700
-                                                              : FontWeight.w500,
-                                                      color:
-                                                          isChecked
-                                                              ? const Color(
-                                                                0xFF0F172A,
-                                                              )
-                                                              : const Color(
-                                                                0xFF475569,
-                                                              ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
+                                    itemBuilder: (context, idx) {
+                                      final feat = standardFeaturesCatalog[idx];
+                                      final isChecked = activeLines.contains(
+                                        feat,
+                                      );
+                                      return InkWell(
+                                        onTap: () {
+                                          final lines = List<String>.from(
+                                            activeLines,
+                                          );
+                                          if (isChecked) {
+                                            lines.remove(feat);
+                                          } else {
+                                            lines.add(feat);
+                                          }
+                                          featuresCtrl.text = lines.join('\n');
+                                          setModalState(() {});
+                                        },
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 3.5,
                                           ),
-                                        );
-                                      },
-                                    ),
+                                          child: Row(
+                                            children: [
+                                              SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child: Checkbox(
+                                                  value: isChecked,
+                                                  activeColor: const Color(
+                                                    0xFF6A2777,
+                                                  ),
+                                                  materialTapTargetSize:
+                                                      MaterialTapTargetSize
+                                                          .shrinkWrap,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          4,
+                                                        ),
+                                                  ),
+                                                  onChanged: (val) {
+                                                    final lines =
+                                                        List<String>.from(
+                                                          activeLines,
+                                                        );
+                                                    if (val == true) {
+                                                      if (!lines.contains(
+                                                        feat,
+                                                      )) {
+                                                        lines.add(feat);
+                                                      }
+                                                    } else {
+                                                      lines.remove(feat);
+                                                    }
+                                                    featuresCtrl.text = lines
+                                                        .join('\n');
+                                                    setModalState(() {});
+                                                  },
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  feat,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight:
+                                                        isChecked
+                                                            ? FontWeight.w700
+                                                            : FontWeight.w500,
+                                                    color:
+                                                        isChecked
+                                                            ? const Color(
+                                                              0xFF0F172A,
+                                                            )
+                                                            : const Color(
+                                                              0xFF475569,
+                                                            ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
                                   ),
-                                  if (customFeatures.isNotEmpty) ...[
+                                ),
+                                if (customFeatures.isNotEmpty) ...[
                                   const Divider(
                                     height: 1,
                                     color: Color(0xFFE2E8F0),
@@ -10623,10 +11194,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                               final lines = List<String>.from(
                                                 activeLines,
                                               )..removeWhere(
-                                                   (l) =>
-                                                       l.toLowerCase() ==
-                                                       cFeat.toLowerCase(),
-                                                 );
+                                                (l) =>
+                                                    l.toLowerCase() ==
+                                                    cFeat.toLowerCase(),
+                                              );
                                               featuresCtrl.text = lines.join(
                                                 '\n',
                                               );
@@ -10686,7 +11257,11 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                               final lines = List<String>.from(
                                                 activeLines,
                                               );
-                                              if (!lines.any((l) => l.toLowerCase() == trimmed.toLowerCase())) {
+                                              if (!lines.any(
+                                                (l) =>
+                                                    l.toLowerCase() ==
+                                                    trimmed.toLowerCase(),
+                                              )) {
                                                 lines.add(trimmed);
                                               }
                                               featuresCtrl.text = lines.join(
@@ -10713,8 +11288,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                           tapTargetSize:
                                               MaterialTapTargetSize.shrinkWrap,
                                           shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(6),
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
                                           ),
                                           elevation: 0,
                                         ),
@@ -10731,12 +11307,17 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                         ),
                                         onPressed: () {
                                           final trimmed =
-                                              customFeatureInputCtrl.text.trim();
+                                              customFeatureInputCtrl.text
+                                                  .trim();
                                           if (trimmed.isNotEmpty) {
                                             final lines = List<String>.from(
                                               activeLines,
                                             );
-                                            if (!lines.any((l) => l.toLowerCase() == trimmed.toLowerCase())) {
+                                            if (!lines.any(
+                                              (l) =>
+                                                  l.toLowerCase() ==
+                                                  trimmed.toLowerCase(),
+                                            )) {
                                               lines.add(trimmed);
                                             }
                                             featuresCtrl.text = lines.join(
@@ -10816,10 +11397,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                           ),
                           items: [
                             ...buttonPresets.map(
-                              (b) => DropdownMenuItem(
-                                value: b,
-                                child: Text(b),
-                              ),
+                              (b) => DropdownMenuItem(value: b, child: Text(b)),
                             ),
                             const DropdownMenuItem(
                               value: '__custom__',
@@ -10847,7 +11425,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             setModalState(() {
                               if (val == '__custom__') {
                                 isCustomBtn = true;
-                                if (buttonPresets.contains(buttonTextCtrl.text.trim())) {
+                                if (buttonPresets.contains(
+                                  buttonTextCtrl.text.trim(),
+                                )) {
                                   buttonTextCtrl.clear();
                                 }
                               } else {
@@ -11100,13 +11680,16 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                 final title = titleCtrl.text.trim();
                                 final category = categoryCtrl.text.trim();
                                 final rawPrice = priceCtrl.text.trim();
-                                final price = selectedItemType == 'artist'
-                                    ? 'Free'
-                                    : (rawPrice.isEmpty
-                                        ? ''
-                                        : (rawPrice.toLowerCase() == 'free'
-                                            ? 'Free'
-                                            : ListingPlanItem.normalizePrice(rawPrice)));
+                                final price =
+                                    selectedItemType == 'artist'
+                                        ? 'Free'
+                                        : (rawPrice.isEmpty
+                                            ? ''
+                                            : (rawPrice.toLowerCase() == 'free'
+                                                ? 'Free'
+                                                : ListingPlanItem.normalizePrice(
+                                                  rawPrice,
+                                                )));
                                 final itemType = selectedItemType.trim();
 
                                 if (title.isEmpty ||
@@ -11126,7 +11709,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
 
                                 final lines = <String>[];
                                 final seenLines = <String>{};
-                                for (final raw in featuresCtrl.text.split('\n')) {
+                                for (final raw in featuresCtrl.text.split(
+                                  '\n',
+                                )) {
                                   final trimmed = raw.trim();
                                   if (trimmed.isNotEmpty &&
                                       seenLines.add(trimmed.toLowerCase())) {
@@ -11137,22 +11722,31 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                                 final messenger = ScaffoldMessenger.of(context);
                                 Navigator.pop(ctx);
 
-                                final durStr = durationCtrl.text.trim().isNotEmpty
-                                    ? durationCtrl.text.trim()
-                                    : (itemType == 'gallery' || itemType == 'art_centre'
-                                        ? '1 Year (365 Days)'
-                                        : (itemType == 'artist' ? 'Permanent Free Profile' : '30 Days'));
+                                final durStr =
+                                    durationCtrl.text.trim().isNotEmpty
+                                        ? durationCtrl.text.trim()
+                                        : (itemType == 'gallery' ||
+                                                itemType == 'art_centre'
+                                            ? '1 Year (365 Days)'
+                                            : (itemType == 'artist'
+                                                ? 'Permanent Free Profile'
+                                                : '30 Days'));
                                 int durDays = 30;
                                 final dLower = durStr.toLowerCase();
-                                if (dLower.contains('year') || dLower.contains('365')) {
+                                if (dLower.contains('year') ||
+                                    dLower.contains('365')) {
                                   durDays = 365;
-                                } else if (dLower.contains('180') || dLower.contains('6 month')) {
+                                } else if (dLower.contains('180') ||
+                                    dLower.contains('6 month')) {
                                   durDays = 180;
-                                } else if (dLower.contains('90') || dLower.contains('3 month') || dLower.contains('quarter')) {
+                                } else if (dLower.contains('90') ||
+                                    dLower.contains('3 month') ||
+                                    dLower.contains('quarter')) {
                                   durDays = 90;
                                 } else if (dLower.contains('60')) {
                                   durDays = 60;
-                                } else if (dLower.contains('permanent') || dLower.contains('lifetime')) {
+                                } else if (dLower.contains('permanent') ||
+                                    dLower.contains('lifetime')) {
                                   durDays = 3650;
                                 } else {
                                   final m = RegExp(r'(\d+)').firstMatch(durStr);
@@ -11250,10 +11844,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               : null,
       filled: true,
       fillColor: const Color(0xFFF8FAFC),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 10,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
@@ -11329,22 +11920,24 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     VoidCallback onUpdate,
   ) {
     final cleanText = text.replaceFirst('+ ', '').trim();
-    final currentLines = controller.text
-        .split('\n')
-        .map((l) => l.trim())
-        .where((l) => l.isNotEmpty)
-        .toList();
+    final currentLines =
+        controller.text
+            .split('\n')
+            .map((l) => l.trim())
+            .where((l) => l.isNotEmpty)
+            .toList();
     final isSelected = currentLines.any(
       (l) => l.toLowerCase() == cleanText.toLowerCase(),
     );
 
     return InkWell(
       onTap: () {
-        final lines = controller.text
-            .split('\n')
-            .map((l) => l.trim())
-            .where((l) => l.isNotEmpty)
-            .toList();
+        final lines =
+            controller.text
+                .split('\n')
+                .map((l) => l.trim())
+                .where((l) => l.isNotEmpty)
+                .toList();
         if (isSelected) {
           lines.removeWhere((l) => l.toLowerCase() == cleanText.toLowerCase());
         } else {
@@ -11357,8 +11950,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color:
-              isSelected ? const Color(0xFFFAF5FF) : const Color(0xFFF1F5F9),
+          color: isSelected ? const Color(0xFFFAF5FF) : const Color(0xFFF1F5F9),
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
             color:
@@ -12017,8 +12609,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               _users
                   .where(
                     (u) =>
-                        u['role'] == 'user' &&
-                        u['has_artist_profile'] != true,
+                        u['role'] == 'user' && u['has_artist_profile'] != true,
                   )
                   .length,
             ),
@@ -12846,7 +13437,11 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       final pt = planType.toLowerCase().trim();
       if (pt.contains('event')) return 'event';
       if (pt.contains('gallery')) return 'gallery';
-      if (pt.contains('art center') || pt.contains('art centre') || pt.contains('center')) return 'art_centre';
+      if (pt.contains('art center') ||
+          pt.contains('art centre') ||
+          pt.contains('center')) {
+        return 'art_centre';
+      }
       if (pt.contains('chat') || pt.contains('messaging')) return 'chat';
       if (pt.contains('membership') || pt.contains('artist')) return 'artist';
       return 'all';
@@ -12855,27 +13450,52 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     IconData resolveIconForType(String typeKey) {
       final tk = typeKey.toLowerCase().trim();
       if (tk.contains('event')) return Icons.event_available_rounded;
-      if (tk.contains('artist') || tk.contains('membership')) return Icons.palette_outlined;
+      if (tk.contains('artist') || tk.contains('membership')) {
+        return Icons.palette_outlined;
+      }
       if (tk.contains('gallery')) return Icons.museum_outlined;
-      if (tk.contains('art center') || tk.contains('art centre') || tk.contains('center') || tk.contains('art_centre')) return Icons.account_balance_outlined;
-      if (tk.contains('chat') || tk.contains('messaging')) return Icons.chat_bubble_outline_rounded;
+      if (tk.contains('art center') ||
+          tk.contains('art centre') ||
+          tk.contains('center') ||
+          tk.contains('art_centre')) {
+        return Icons.account_balance_outlined;
+      }
+      if (tk.contains('chat') || tk.contains('messaging')) {
+        return Icons.chat_bubble_outline_rounded;
+      }
       return Icons.stars_rounded;
     }
 
     int countForFilter(String key) {
       if (key == 'all') return allListingPlans.length;
       if (key == 'art_centre') {
-        return allListingPlans.where((p) => p.itemType.toLowerCase() == 'art_centre' || p.itemType.toLowerCase() == 'center').length;
+        return allListingPlans
+            .where(
+              (p) =>
+                  p.itemType.toLowerCase() == 'art_centre' ||
+                  p.itemType.toLowerCase() == 'center',
+            )
+            .length;
       }
-      return allListingPlans.where((p) => p.itemType.toLowerCase() == key).length;
+      return allListingPlans
+          .where((p) => p.itemType.toLowerCase() == key)
+          .length;
     }
 
     List<ListingPlanItem> getFilteredPlans(String filterKey) {
       if (filterKey == 'all') return allListingPlans;
       if (filterKey == 'art_centre') {
-        return allListingPlans.where((p) => p.itemType.toLowerCase() == 'art_centre' || p.itemType.toLowerCase() == 'center').toList();
+        return allListingPlans
+            .where(
+              (p) =>
+                  p.itemType.toLowerCase() == 'art_centre' ||
+                  p.itemType.toLowerCase() == 'center',
+            )
+            .toList();
       }
-      return allListingPlans.where((p) => p.itemType.toLowerCase() == filterKey).toList();
+      return allListingPlans
+          .where((p) => p.itemType.toLowerCase() == filterKey)
+          .toList();
     }
 
     // 2. Check if user already purchased a plan
@@ -12895,41 +13515,63 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     String selectedTemplate = 'custom';
     String selectedPlanType = 'Event Publishing';
 
-    if (latestPurchased != null && (latestPurchased['plan_name']?.toString().isNotEmpty ?? false)) {
+    if (latestPurchased != null &&
+        (latestPurchased['plan_name']?.toString().isNotEmpty ?? false)) {
       selectedTemplate = 'user_purchased';
-      final pType = (latestPurchased['plan_type'] ?? 'Event Publishing').toString();
+      final pType =
+          (latestPurchased['plan_type'] ?? 'Event Publishing').toString();
       selectedPlanType = pType;
       final fKey = resolveFilterKeyFromPlanType(pType);
       if (fKey != 'all') selectedCategoryFilter = fKey;
     } else {
-      final matching = allListingPlans.where((p) => p.title.toLowerCase().trim() == currentPlan.toLowerCase().trim()).toList();
+      final matching =
+          allListingPlans
+              .where(
+                (p) =>
+                    p.title.toLowerCase().trim() ==
+                    currentPlan.toLowerCase().trim(),
+              )
+              .toList();
       if (matching.isNotEmpty) {
         selectedTemplate = matching.first.title;
         selectedPlanType = resolvePlanTypeFromItem(matching.first);
-        final itemKey = matching.first.itemType.toLowerCase() == 'center' ? 'art_centre' : matching.first.itemType.toLowerCase();
+        final itemKey =
+            matching.first.itemType.toLowerCase() == 'center'
+                ? 'art_centre'
+                : matching.first.itemType.toLowerCase();
         selectedCategoryFilter = itemKey;
       }
     }
 
-    final initialPrice = latestPurchased != null
-        ? (latestPurchased['price']?.toString() ?? 'Free')
-        : (allListingPlans.any((p) => p.title == selectedTemplate)
-            ? allListingPlans.firstWhere((p) => p.title == selectedTemplate).price
-            : (currentPlan.contains('Basic') ? 'Free' : (currentPlan.contains('Pro') ? 'AED 99' : 'AED 199')));
+    final initialPrice =
+        latestPurchased != null
+            ? (latestPurchased['price']?.toString() ?? 'Free')
+            : (allListingPlans.any((p) => p.title == selectedTemplate)
+                ? allListingPlans
+                    .firstWhere((p) => p.title == selectedTemplate)
+                    .price
+                : (currentPlan.contains('Basic')
+                    ? 'Free'
+                    : (currentPlan.contains('Pro') ? 'AED 99' : 'AED 199')));
 
     final planController = TextEditingController(
-      text: latestPurchased != null
-          ? (latestPurchased['plan_name']?.toString() ?? currentPlan)
-          : (selectedTemplate != 'custom' ? selectedTemplate : currentPlan),
+      text:
+          latestPurchased != null
+              ? (latestPurchased['plan_name']?.toString() ?? currentPlan)
+              : (selectedTemplate != 'custom' ? selectedTemplate : currentPlan),
     );
     final priceController = TextEditingController(text: initialPrice);
 
     // Expiration date (defaults to +30 days or existing due date)
-    final existingDue = latestPurchased != null
-        ? (latestPurchased['due_date'] ?? latestPurchased['expires_at'])?.toString()
-        : null;
+    final existingDue =
+        latestPurchased != null
+            ? (latestPurchased['due_date'] ?? latestPurchased['expires_at'])
+                ?.toString()
+            : null;
     String initialDueStr = '';
-    if (existingDue != null && existingDue.isNotEmpty && existingDue.length >= 10) {
+    if (existingDue != null &&
+        existingDue.isNotEmpty &&
+        existingDue.length >= 10) {
       initialDueStr = existingDue.substring(0, 10);
     } else {
       final defaultDue = DateTime.now().add(const Duration(days: 30));
@@ -12937,851 +13579,1161 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           '${defaultDue.year}-${defaultDue.month.toString().padLeft(2, '0')}-${defaultDue.day.toString().padLeft(2, '0')}';
     }
     final dueDateController = TextEditingController(text: initialDueStr);
-    String selectedStatus = latestPurchased != null ? (latestPurchased['status']?.toString() ?? 'Active') : 'Active';
+    String selectedStatus =
+        latestPurchased != null
+            ? (latestPurchased['status']?.toString() ?? 'Active')
+            : 'Active';
 
     final categoryFilterTabs = [
       {'key': 'all', 'label': 'All Plans', 'icon': Icons.apps_rounded},
-      {'key': 'event', 'label': 'Events', 'icon': Icons.event_available_rounded},
+      {
+        'key': 'event',
+        'label': 'Events',
+        'icon': Icons.event_available_rounded,
+      },
       {'key': 'artist', 'label': 'Artists', 'icon': Icons.palette_outlined},
       {'key': 'gallery', 'label': 'Galleries', 'icon': Icons.museum_outlined},
-      {'key': 'chat', 'label': 'Chat & Messaging', 'icon': Icons.chat_bubble_outline_rounded},
-      {'key': 'art_centre', 'label': 'Art Centres', 'icon': Icons.account_balance_outlined},
+      {
+        'key': 'chat',
+        'label': 'Chat & Messaging',
+        'icon': Icons.chat_bubble_outline_rounded,
+      },
+      {
+        'key': 'art_centre',
+        'label': 'Art Centres',
+        'icon': Icons.account_balance_outlined,
+      },
     ];
 
     await showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          final currentFilteredPlans = getFilteredPlans(selectedCategoryFilter);
-          final hasSelectedInCurrent = currentFilteredPlans.any((p) => p.title == selectedTemplate);
+      builder:
+          (ctx) => StatefulBuilder(
+            builder: (context, setDialogState) {
+              final currentFilteredPlans = getFilteredPlans(
+                selectedCategoryFilter,
+              );
+              final hasSelectedInCurrent = currentFilteredPlans.any(
+                (p) => p.title == selectedTemplate,
+              );
 
-          return Dialog(
-            backgroundColor: Colors.white,
-            surfaceTintColor: Colors.transparent,
-            insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 540, maxHeight: 820),
-              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Header: Icon, User Details, Close Button
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              return Dialog(
+                backgroundColor: Colors.white,
+                surfaceTintColor: Colors.transparent,
+                insetPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 24,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Container(
+                  constraints: const BoxConstraints(
+                    maxWidth: 540,
+                    maxHeight: 820,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 22,
+                    vertical: 20,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF6A2777), Color(0xFF8B2C9E)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF6A2777).withValues(alpha: 0.25),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.card_membership_rounded,
-                            color: Colors.white,
-                            size: 22,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Assign Plan to User'.trData(context),
-                                style: const TextStyle(
-                                  fontSize: 17.5,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF0F172A),
-                                  letterSpacing: -0.3,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      userName,
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: Color(0xFF6A2777),
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  if (email.isNotEmpty) ...[
-                                    const SizedBox(width: 6),
-                                    Flexible(
-                                      child: Text(
-                                        '($email)',
-                                        style: const TextStyle(
-                                          fontSize: 11.5,
-                                          color: Color(0xFF64748B),
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
+                        // Header: Icon, User Details, Close Button
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFF6A2777),
+                                    Color(0xFF8B2C9E),
                                   ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(
+                                      0xFF6A2777,
+                                    ).withValues(alpha: 0.25),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
                                 ],
                               ),
-                              const SizedBox(height: 5),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF1F5F9),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                                ),
-                                child: Text(
-                                  'Current: $currentPlan',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF475569),
-                                  ),
-                                ),
+                              child: const Icon(
+                                Icons.card_membership_rounded,
+                                color: Colors.white,
+                                size: 22,
                               ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 22, color: Color(0xFF64748B)),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          onPressed: () => Navigator.pop(ctx),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    const Divider(height: 1, color: Color(0xFFE2E8F0)),
-                    const SizedBox(height: 14),
-
-                    // User Purchased Plan Banner with Auto-Fill Action
-                    if (latestPurchased != null) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-                        margin: const EdgeInsets.only(bottom: 14),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF0FDF4),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFF86EFAC)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.shopping_bag_outlined, size: 17, color: Color(0xFF16A34A)),
-                            const SizedBox(width: 8),
+                            ),
+                            const SizedBox(width: 14),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'User Purchased Plan'.trData(context),
+                                    'Assign Plan to User'.trData(context),
                                     style: const TextStyle(
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFF15803D),
+                                      fontSize: 17.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF0F172A),
+                                      letterSpacing: -0.3,
                                     ),
                                   ),
-                                  Text(
-                                    '${latestPurchased['plan_name']} · ${latestPurchased['price'] ?? 'Active'}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFF0F172A),
+                                  const SizedBox(height: 2),
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          userName,
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF6A2777),
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      if (email.isNotEmpty) ...[
+                                        const SizedBox(width: 6),
+                                        Flexible(
+                                          child: Text(
+                                            '($email)',
+                                            style: const TextStyle(
+                                              fontSize: 11.5,
+                                              color: Color(0xFF64748B),
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  const SizedBox(height: 5),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2.5,
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF1F5F9),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: const Color(0xFFE2E8F0),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Current: $currentPlan',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF475569),
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
-                            TextButton(
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                backgroundColor: const Color(0xFF16A34A),
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.close_rounded,
+                                size: 22,
+                                color: Color(0xFF64748B),
                               ),
-                              onPressed: () {
-                                setDialogState(() {
-                                  final pName = (latestPurchased?['plan_name'] ?? currentPlan).toString();
-                                  final pPrice = (latestPurchased?['price'] ?? 'Free').toString();
-                                  final pDue = (latestPurchased?['due_date'] ?? latestPurchased?['expires_at'] ?? '').toString();
-                                  final pType = (latestPurchased?['plan_type'] ?? 'Event Publishing').toString();
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () => Navigator.pop(ctx),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                        const SizedBox(height: 14),
 
-                                  planController.text = pName;
-                                  priceController.text = pPrice;
-                                  if (pDue.isNotEmpty && pDue.length >= 10) {
-                                    dueDateController.text = pDue.substring(0, 10);
-                                  }
-                                  selectedPlanType = pType;
-                                  selectedCategoryFilter = resolveFilterKeyFromPlanType(pType);
-                                  selectedStatus = 'Active';
-                                  selectedTemplate = 'user_purchased';
-                                });
-                              },
-                              child: Text(
-                                'Auto-Fill'.trData(context),
-                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                        // User Purchased Plan Banner with Auto-Fill Action
+                        if (latestPurchased != null) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 9,
+                            ),
+                            margin: const EdgeInsets.only(bottom: 14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF0FDF4),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: const Color(0xFF86EFAC),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.shopping_bag_outlined,
+                                  size: 17,
+                                  color: Color(0xFF16A34A),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'User Purchased Plan'.trData(context),
+                                        style: const TextStyle(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFF15803D),
+                                        ),
+                                      ),
+                                      Text(
+                                        '${latestPurchased['plan_name']} · ${latestPurchased['price'] ?? 'Active'}',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFF0F172A),
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                TextButton(
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    backgroundColor: const Color(0xFF16A34A),
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    setDialogState(() {
+                                      final pName =
+                                          (latestPurchased?['plan_name'] ??
+                                                  currentPlan)
+                                              .toString();
+                                      final pPrice =
+                                          (latestPurchased?['price'] ?? 'Free')
+                                              .toString();
+                                      final pDue =
+                                          (latestPurchased?['due_date'] ??
+                                                  latestPurchased?['expires_at'] ??
+                                                  '')
+                                              .toString();
+                                      final pType =
+                                          (latestPurchased?['plan_type'] ??
+                                                  'Event Publishing')
+                                              .toString();
+
+                                      planController.text = pName;
+                                      priceController.text = pPrice;
+                                      if (pDue.isNotEmpty &&
+                                          pDue.length >= 10) {
+                                        dueDateController.text = pDue.substring(
+                                          0,
+                                          10,
+                                        );
+                                      }
+                                      selectedPlanType = pType;
+                                      selectedCategoryFilter =
+                                          resolveFilterKeyFromPlanType(pType);
+                                      selectedStatus = 'Active';
+                                      selectedTemplate = 'user_purchased';
+                                    });
+                                  },
+                                  child: Text(
+                                    'Auto-Fill'.trData(context),
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+
+                        // Category Filter Selector Chips (Connected with Admin Listing Plans)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildFormLabel('Filter Category'.trData(context)),
+                            Text(
+                              '${currentFilteredPlans.length} plans available'
+                                  .trData(context),
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF64748B),
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 6),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          child: Row(
+                            children:
+                                categoryFilterTabs.map((cat) {
+                                  final key = cat['key'] as String;
+                                  final label = cat['label'] as String;
+                                  final icon = cat['icon'] as IconData;
+                                  final count = countForFilter(key);
+                                  final isSelected =
+                                      selectedCategoryFilter == key;
 
-                    // Category Filter Selector Chips (Connected with Admin Listing Plans)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildFormLabel('Filter Category'.trData(context)),
-                        Text(
-                          '${currentFilteredPlans.length} plans available'.trData(context),
-                          style: const TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF64748B),
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 6),
+                                    child: InkWell(
+                                      onTap: () {
+                                        setDialogState(() {
+                                          selectedCategoryFilter = key;
+                                          final filtered = getFilteredPlans(
+                                            key,
+                                          );
+                                          if (filtered.isNotEmpty &&
+                                              selectedTemplate !=
+                                                  'user_purchased') {
+                                            final first = filtered.first;
+                                            selectedTemplate = first.title;
+                                            planController.text = first.title;
+                                            priceController.text = first.price;
+                                            selectedPlanType =
+                                                resolvePlanTypeFromItem(first);
+                                          }
+                                        });
+                                      },
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: AnimatedContainer(
+                                        duration: const Duration(
+                                          milliseconds: 180,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 5,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color:
+                                              isSelected
+                                                  ? const Color(0xFF6A2777)
+                                                  : const Color(0xFFF8FAFC),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          border: Border.all(
+                                            color:
+                                                isSelected
+                                                    ? const Color(0xFF6A2777)
+                                                    : const Color(0xFFCBD5E1),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              icon,
+                                              size: 13,
+                                              color:
+                                                  isSelected
+                                                      ? Colors.white
+                                                      : const Color(0xFF6A2777),
+                                            ),
+                                            const SizedBox(width: 5),
+                                            Text(
+                                              '$label ($count)',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight:
+                                                    isSelected
+                                                        ? FontWeight.w700
+                                                        : FontWeight.w600,
+                                                color:
+                                                    isSelected
+                                                        ? Colors.white
+                                                        : const Color(
+                                                          0xFF334155,
+                                                        ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      child: Row(
-                        children: categoryFilterTabs.map((cat) {
-                          final key = cat['key'] as String;
-                          final label = cat['label'] as String;
-                          final icon = cat['icon'] as IconData;
-                          final count = countForFilter(key);
-                          final isSelected = selectedCategoryFilter == key;
+                        const SizedBox(height: 12),
 
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 6),
-                            child: InkWell(
-                              onTap: () {
-                                setDialogState(() {
-                                  selectedCategoryFilter = key;
-                                  final filtered = getFilteredPlans(key);
-                                  if (filtered.isNotEmpty && selectedTemplate != 'user_purchased') {
-                                    final first = filtered.first;
-                                    selectedTemplate = first.title;
-                                    planController.text = first.title;
-                                    priceController.text = first.price;
-                                    selectedPlanType = resolvePlanTypeFromItem(first);
-                                  }
-                                });
-                              },
-                              borderRadius: BorderRadius.circular(8),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 180),
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: isSelected ? const Color(0xFF6A2777) : const Color(0xFFF8FAFC),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: isSelected ? const Color(0xFF6A2777) : const Color(0xFFCBD5E1),
-                                  ),
-                                ),
+                        // 1. Auto Plan Selector Dropdown (Populated directly from Admin Created Plans)
+                        _buildFormLabel(
+                          'Auto-Select From Created Plans'.trData(context),
+                        ),
+                        const SizedBox(height: 6),
+                        DropdownButtonFormField<String>(
+                          key: ValueKey(
+                            '$selectedCategoryFilter-$selectedTemplate',
+                          ),
+                          initialValue:
+                              (selectedTemplate == 'user_purchased' ||
+                                      selectedTemplate == 'custom' ||
+                                      hasSelectedInCurrent)
+                                  ? selectedTemplate
+                                  : (currentFilteredPlans.isNotEmpty
+                                      ? currentFilteredPlans.first.title
+                                      : 'custom'),
+                          isExpanded: true,
+                          dropdownColor: Colors.white,
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF0F172A),
+                          ),
+                          items: [
+                            if (latestPurchased != null)
+                              DropdownMenuItem(
+                                value: 'user_purchased',
                                 child: Row(
-                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.star_rounded,
+                                      size: 16,
+                                      color: Color(0xFF16A34A),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'User Purchased: ${latestPurchased['plan_name']} · ${latestPurchased['price'] ?? 'Active'}',
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Color(0xFF16A34A),
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ...currentFilteredPlans.map(
+                              (p) => DropdownMenuItem(
+                                value: p.title,
+                                child: Row(
                                   children: [
                                     Icon(
-                                      icon,
-                                      size: 13,
-                                      color: isSelected ? Colors.white : const Color(0xFF6A2777),
+                                      resolveIconForType(p.itemType),
+                                      size: 16,
+                                      color: const Color(0xFF6A2777),
                                     ),
-                                    const SizedBox(width: 5),
-                                    Text(
-                                      '$label ($count)',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                                        color: isSelected ? Colors.white : const Color(0xFF334155),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        '${p.title} — ${p.price} (${p.badge.isNotEmpty ? p.badge : p.category})',
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Color(0xFF0F172A),
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
                             ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // 1. Auto Plan Selector Dropdown (Populated directly from Admin Created Plans)
-                    _buildFormLabel('Auto-Select From Created Plans'.trData(context)),
-                    const SizedBox(height: 6),
-                    DropdownButtonFormField<String>(
-                      key: ValueKey('$selectedCategoryFilter-$selectedTemplate'),
-                      initialValue: (selectedTemplate == 'user_purchased' ||
-                              selectedTemplate == 'custom' ||
-                              hasSelectedInCurrent)
-                          ? selectedTemplate
-                          : (currentFilteredPlans.isNotEmpty ? currentFilteredPlans.first.title : 'custom'),
-                      isExpanded: true,
-                      dropdownColor: Colors.white,
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF0F172A),
-                      ),
-                      items: [
-                        if (latestPurchased != null)
-                          DropdownMenuItem(
-                            value: 'user_purchased',
-                            child: Row(
-                              children: [
-                                const Icon(Icons.star_rounded, size: 16, color: Color(0xFF16A34A)),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'User Purchased: ${latestPurchased['plan_name']} · ${latestPurchased['price'] ?? 'Active'}',
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Color(0xFF16A34A),
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                            const DropdownMenuItem(
+                              value: 'custom',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.edit_note_rounded,
+                                    size: 16,
+                                    color: Color(0xFF64748B),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ...currentFilteredPlans.map(
-                          (p) => DropdownMenuItem(
-                            value: p.title,
-                            child: Row(
-                              children: [
-                                Icon(
-                                  resolveIconForType(p.itemType),
-                                  size: 16,
-                                  color: const Color(0xFF6A2777),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    '${p.title} — ${p.price} (${p.badge.isNotEmpty ? p.badge : p.category})',
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Color(0xFF0F172A),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Custom / Manual Entry',
+                                    style: TextStyle(
+                                      color: Color(0xFF64748B),
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const DropdownMenuItem(
-                          value: 'custom',
-                          child: Row(
-                            children: [
-                              Icon(Icons.edit_note_rounded, size: 16, color: Color(0xFF64748B)),
-                              SizedBox(width: 8),
-                              Text(
-                                'Custom / Manual Entry',
-                                style: TextStyle(
-                                  color: Color(0xFF64748B),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                      onChanged: (val) {
-                        if (val == null) return;
-                        setDialogState(() {
-                          selectedTemplate = val;
-                          if (val == 'user_purchased' && latestPurchased != null) {
-                            planController.text = (latestPurchased['plan_name'] ?? currentPlan).toString();
-                            priceController.text = (latestPurchased['price'] ?? 'Free').toString();
-                            final pDue = (latestPurchased['due_date'] ?? latestPurchased['expires_at'] ?? '').toString();
-                            if (pDue.isNotEmpty && pDue.length >= 10) {
-                              dueDateController.text = pDue.substring(0, 10);
-                            }
-                            final pType = (latestPurchased['plan_type'] ?? 'Event Publishing').toString();
-                            selectedPlanType = pType;
-                            selectedCategoryFilter = resolveFilterKeyFromPlanType(pType);
-                            selectedStatus = 'Active';
-                          } else if (val != 'custom') {
-                            final found = allListingPlans.firstWhere(
-                              (p) => p.title == val,
-                              orElse: () => allListingPlans.first,
-                            );
-                            planController.text = found.title;
-                            priceController.text = found.price;
-                            selectedPlanType = resolvePlanTypeFromItem(found);
-                            final itemKey = found.itemType.toLowerCase() == 'center' ? 'art_centre' : found.itemType.toLowerCase();
-                            selectedCategoryFilter = itemKey;
-                            final nextDue = DateTime.now().add(const Duration(days: 30));
-                            dueDateController.text =
-                                '${nextDue.year}-${nextDue.month.toString().padLeft(2, '0')}-${nextDue.day.toString().padLeft(2, '0')}';
-                            selectedStatus = 'Active';
-                          }
-                        });
-                      },
-                      decoration: _dialogInputDecoration(icon: Icons.auto_awesome_rounded),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // 2. Plan Name / Tier Textfield
-                    _buildFormLabel('Plan Name / Tier *'.trData(context)),
-                    const SizedBox(height: 6),
-                    _buildDialogTextField(
-                      controller: planController,
-                      hint: 'e.g. Event Listing, Pro Artist, Gallery Listing, Chat Pro',
-                      icon: Icons.card_membership_rounded,
-                    ),
-                    const SizedBox(height: 14),
-
-                    // 3. Price Textfield & Quick Preset Chips
-                    _buildFormLabel('Price *'.trData(context)),
-                    const SizedBox(height: 6),
-                    _buildDialogTextField(
-                      controller: priceController,
-                      hint: 'e.g. Free, AED 49, AED 99, AED 149, AED 199, AED 299',
-                      icon: Icons.payments_outlined,
-                    ),
-                    const SizedBox(height: 6),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      child: Row(
-                        children: [
-                          'Free',
-                          'AED 49',
-                          'AED 99',
-                          'AED 149',
-                          'AED 199',
-                          'AED 299',
-                          'AED 500',
-                        ].map((p) {
-                          final isSelected = priceController.text.trim().toLowerCase() == p.toLowerCase();
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 6),
-                            child: InkWell(
-                              onTap: () {
-                                setDialogState(() {
-                                  priceController.text = p;
-                                });
-                              },
-                              borderRadius: BorderRadius.circular(6),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-                                decoration: BoxDecoration(
-                                  color: isSelected ? const Color(0xFF6A2777) : const Color(0xFFF1F5F9),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                    color: isSelected ? const Color(0xFF6A2777) : const Color(0xFFCBD5E1),
-                                  ),
-                                ),
-                                child: Text(
-                                  p,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                                    color: isSelected ? Colors.white : const Color(0xFF475569),
-                                  ),
-                                ),
+                                ],
                               ),
                             ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // 4. Due / Expiration Date with Picker & Quick Preset Buttons
-                    _buildFormLabel('Due / Expiration Date (YYYY-MM-DD) *'.trData(context)),
-                    const SizedBox(height: 6),
-                    InkWell(
-                      onTap: () async {
-                        final currentText = dueDateController.text.trim();
-                        DateTime initDate = DateTime.now().add(const Duration(days: 30));
-                        if (currentText.length >= 10) {
-                          final parsed = DateTime.tryParse(currentText);
-                          if (parsed != null) initDate = parsed;
-                        }
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: initDate,
-                          firstDate: DateTime.now().subtract(const Duration(days: 365)),
-                          lastDate: DateTime.now().add(const Duration(days: 3650)),
-                        );
-                        if (picked != null) {
-                          setDialogState(() {
-                            dueDateController.text =
-                                '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
-                          });
-                        }
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: IgnorePointer(
-                        child: TextField(
-                          controller: dueDateController,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF0F172A),
-                          ),
-                          decoration: _dialogInputDecoration(
-                            icon: Icons.calendar_month_rounded,
-                            hint: 'YYYY-MM-DD',
-                          ).copyWith(
-                            suffixIcon: const Icon(
-                              Icons.event_available_rounded,
-                              size: 19,
-                              color: Color(0xFF6A2777),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      child: Row(
-                        children: [
-                          _buildDurationQuickChip(
-                            '+30 Days',
-                            30,
-                            dueDateController,
-                            () => setDialogState(() {}),
-                          ),
-                          const SizedBox(width: 6),
-                          _buildDurationQuickChip(
-                            '+60 Days',
-                            60,
-                            dueDateController,
-                            () => setDialogState(() {}),
-                          ),
-                          const SizedBox(width: 6),
-                          _buildDurationQuickChip(
-                            '+90 Days',
-                            90,
-                            dueDateController,
-                            () => setDialogState(() {}),
-                          ),
-                          const SizedBox(width: 6),
-                          _buildDurationQuickChip(
-                            '+6 Months',
-                            180,
-                            dueDateController,
-                            () => setDialogState(() {}),
-                          ),
-                          const SizedBox(width: 6),
-                          _buildDurationQuickChip(
-                            '+1 Year',
-                            365,
-                            dueDateController,
-                            () => setDialogState(() {}),
-                          ),
-                          const SizedBox(width: 6),
-                          _buildDurationQuickChip(
-                            'Lifetime (5 Yrs)',
-                            1825,
-                            dueDateController,
-                            () => setDialogState(() {}),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // 5. Plan Type Dropdown (Fully connected with Admin Plan Types)
-                    _buildFormLabel('Plan Type *'.trData(context)),
-                    const SizedBox(height: 6),
-                    DropdownButtonFormField<String>(
-                      key: ValueKey(selectedPlanType),
-                      initialValue: selectedPlanType,
-                      isExpanded: true,
-                      dropdownColor: Colors.white,
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF0F172A),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'Event Publishing',
-                          child: Row(
-                            children: [
-                              Icon(Icons.event_available_rounded, size: 16, color: Color(0xFF6A2777)),
-                              SizedBox(width: 8),
-                              Text('Event Listing / Publishing', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
-                            ],
-                          ),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Membership Plan',
-                          child: Row(
-                            children: [
-                              Icon(Icons.palette_outlined, size: 16, color: Color(0xFF6A2777)),
-                              SizedBox(width: 8),
-                              Text('Artist Portfolio / Membership', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
-                            ],
-                          ),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Gallery Publishing',
-                          child: Row(
-                            children: [
-                              Icon(Icons.museum_outlined, size: 16, color: Color(0xFF6A2777)),
-                              SizedBox(width: 8),
-                              Text('Gallery Showcase / Listing', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
-                            ],
-                          ),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Art Center Showcase',
-                          child: Row(
-                            children: [
-                              Icon(Icons.account_balance_outlined, size: 16, color: Color(0xFF6A2777)),
-                              SizedBox(width: 8),
-                              Text('Art Center Showcase', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
-                            ],
-                          ),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Chat & Messaging',
-                          child: Row(
-                            children: [
-                              Icon(Icons.chat_bubble_outline_rounded, size: 16, color: Color(0xFF6A2777)),
-                              SizedBox(width: 8),
-                              Text('Chat & Messaging Pro', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
-                            ],
-                          ),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Custom Subscription',
-                          child: Row(
-                            children: [
-                              Icon(Icons.stars_rounded, size: 16, color: Color(0xFF6A2777)),
-                              SizedBox(width: 8),
-                              Text('Custom Subscription', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
-                            ],
-                          ),
-                        ),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) {
-                          setDialogState(() {
-                            selectedPlanType = val;
-                            final newFilter = resolveFilterKeyFromPlanType(val);
-                            if (newFilter != 'all') {
-                              selectedCategoryFilter = newFilter;
-                              final filtered = getFilteredPlans(newFilter);
-                              if (filtered.isNotEmpty && selectedTemplate != 'user_purchased') {
-                                final first = filtered.first;
-                                selectedTemplate = first.title;
-                                planController.text = first.title;
-                                priceController.text = first.price;
+                          ],
+                          onChanged: (val) {
+                            if (val == null) return;
+                            setDialogState(() {
+                              selectedTemplate = val;
+                              if (val == 'user_purchased' &&
+                                  latestPurchased != null) {
+                                planController.text =
+                                    (latestPurchased['plan_name'] ??
+                                            currentPlan)
+                                        .toString();
+                                priceController.text =
+                                    (latestPurchased['price'] ?? 'Free')
+                                        .toString();
+                                final pDue =
+                                    (latestPurchased['due_date'] ??
+                                            latestPurchased['expires_at'] ??
+                                            '')
+                                        .toString();
+                                if (pDue.isNotEmpty && pDue.length >= 10) {
+                                  dueDateController.text = pDue.substring(
+                                    0,
+                                    10,
+                                  );
+                                }
+                                final pType =
+                                    (latestPurchased['plan_type'] ??
+                                            'Event Publishing')
+                                        .toString();
+                                selectedPlanType = pType;
+                                selectedCategoryFilter =
+                                    resolveFilterKeyFromPlanType(pType);
+                                selectedStatus = 'Active';
+                              } else if (val != 'custom') {
+                                final found = allListingPlans.firstWhere(
+                                  (p) => p.title == val,
+                                  orElse: () => allListingPlans.first,
+                                );
+                                planController.text = found.title;
+                                priceController.text = found.price;
+                                selectedPlanType = resolvePlanTypeFromItem(
+                                  found,
+                                );
+                                final itemKey =
+                                    found.itemType.toLowerCase() == 'center'
+                                        ? 'art_centre'
+                                        : found.itemType.toLowerCase();
+                                selectedCategoryFilter = itemKey;
+                                final nextDue = DateTime.now().add(
+                                  const Duration(days: 30),
+                                );
+                                dueDateController.text =
+                                    '${nextDue.year}-${nextDue.month.toString().padLeft(2, '0')}-${nextDue.day.toString().padLeft(2, '0')}';
+                                selectedStatus = 'Active';
                               }
-                            }
-                          });
-                        }
-                      },
-                      decoration: _dialogInputDecoration(icon: Icons.category_outlined),
-                    ),
-                    const SizedBox(height: 14),
+                            });
+                          },
+                          decoration: _dialogInputDecoration(
+                            icon: Icons.auto_awesome_rounded,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
 
-                    // 6. Status Dropdown
-                    _buildFormLabel('Subscription Status *'.trData(context)),
-                    const SizedBox(height: 6),
-                    DropdownButtonFormField<String>(
-                      initialValue: selectedStatus,
-                      isExpanded: true,
-                      dropdownColor: Colors.white,
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF0F172A),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'Active',
+                        // 2. Plan Name / Tier Textfield
+                        _buildFormLabel('Plan Name / Tier *'.trData(context)),
+                        const SizedBox(height: 6),
+                        _buildDialogTextField(
+                          controller: planController,
+                          hint:
+                              'e.g. Event Listing, Pro Artist, Gallery Listing, Chat Pro',
+                          icon: Icons.card_membership_rounded,
+                        ),
+                        const SizedBox(height: 14),
+
+                        // 3. Price Textfield & Quick Preset Chips
+                        _buildFormLabel('Price *'.trData(context)),
+                        const SizedBox(height: 6),
+                        _buildDialogTextField(
+                          controller: priceController,
+                          hint:
+                              'e.g. Free, AED 49, AED 99, AED 149, AED 199, AED 299',
+                          icon: Icons.payments_outlined,
+                        ),
+                        const SizedBox(height: 6),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
                           child: Row(
-                            children: [
-                              Icon(Icons.check_circle_rounded, size: 16, color: Color(0xFF16A34A)),
-                              SizedBox(width: 8),
-                              Text(
-                                'Active (Full Access)',
-                                style: TextStyle(color: Color(0xFF15803D), fontWeight: FontWeight.w700),
-                              ),
-                            ],
-                          ),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Pending',
-                          child: Row(
-                            children: [
-                              Icon(Icons.pending_actions_rounded, size: 16, color: Color(0xFFD97706)),
-                              SizedBox(width: 8),
-                              Text(
-                                'Pending (Awaiting Confirmation)',
-                                style: TextStyle(color: Color(0xFFB45309), fontWeight: FontWeight.w700),
-                              ),
-                            ],
-                          ),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Expired',
-                          child: Row(
-                            children: [
-                              Icon(Icons.cancel_rounded, size: 16, color: Color(0xFFDC2626)),
-                              SizedBox(width: 8),
-                              Text(
-                                'Expired (Access Suspended)',
-                                style: TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.w700),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) {
-                          setDialogState(() => selectedStatus = val);
-                        }
-                      },
-                      decoration: _dialogInputDecoration(
-                        icon: selectedStatus == 'Active'
-                            ? Icons.check_circle_rounded
-                            : (selectedStatus == 'Pending'
-                                ? Icons.pending_actions_rounded
-                                : Icons.cancel_rounded),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const Divider(height: 1, color: Color(0xFFE2E8F0)),
-                    const SizedBox(height: 16),
-
-                    // Actions: Cancel & Save Plan
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF64748B),
-                              side: const BorderSide(color: Color(0xFFCBD5E1)),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                            onPressed: () => Navigator.pop(ctx),
-                            child: Text(
-                              'Cancel'.trData(context),
-                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          flex: 2,
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF6A2777),
-                              foregroundColor: Colors.white,
-                              elevation: 1,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                            icon: const Icon(Icons.check_circle_rounded, size: 18, color: Colors.white),
-                            label: Text(
-                              'Save Plan'.trData(context),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
-                                color: Colors.white,
-                              ),
-                            ),
-                            onPressed: () async {
-                              final pName = planController.text.trim();
-                              final pPrice = priceController.text.trim();
-                              final pDue = dueDateController.text.trim();
-                              final messenger = ScaffoldMessenger.of(context);
-                              final successMsg = 'Plan updated successfully for $userName'.trData(context);
-                              final failMsg = 'Failed to update user plan. Please check connection.'.trData(context);
-                              Navigator.pop(ctx);
-
-                              final success = await sl<ApiService>().assignUserPlan(
-                                userId: userId,
-                                email: email,
-                                planName: pName.isNotEmpty ? pName : 'Basic (Free)',
-                                planType: selectedPlanType,
-                                price: pPrice.isNotEmpty ? pPrice : 'Free',
-                                dueDate: pDue,
-                                status: selectedStatus,
-                              );
-
-                              if (success) {
-                                await _refreshUsers();
-                                if (mounted) {
-                                  messenger.showSnackBar(
-                                    SnackBar(
-                                      content: Text(successMsg),
-                                      backgroundColor: const Color(0xFF16A34A),
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
+                            children:
+                                [
+                                  'Free',
+                                  'AED 49',
+                                  'AED 99',
+                                  'AED 149',
+                                  'AED 199',
+                                  'AED 299',
+                                  'AED 500',
+                                ].map((p) {
+                                  final isSelected =
+                                      priceController.text
+                                          .trim()
+                                          .toLowerCase() ==
+                                      p.toLowerCase();
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 6),
+                                    child: InkWell(
+                                      onTap: () {
+                                        setDialogState(() {
+                                          priceController.text = p;
+                                        });
+                                      },
+                                      borderRadius: BorderRadius.circular(6),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3.5,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color:
+                                              isSelected
+                                                  ? const Color(0xFF6A2777)
+                                                  : const Color(0xFFF1F5F9),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                          border: Border.all(
+                                            color:
+                                                isSelected
+                                                    ? const Color(0xFF6A2777)
+                                                    : const Color(0xFFCBD5E1),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          p,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight:
+                                                isSelected
+                                                    ? FontWeight.w700
+                                                    : FontWeight.w600,
+                                            color:
+                                                isSelected
+                                                    ? Colors.white
+                                                    : const Color(0xFF475569),
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   );
-                                }
-                              } else if (mounted) {
-                                messenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text(failMsg),
-                                    backgroundColor: Colors.redAccent,
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
+                                }).toList(),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+
+                        // 4. Due / Expiration Date with Picker & Quick Preset Buttons
+                        _buildFormLabel(
+                          'Due / Expiration Date (YYYY-MM-DD) *'.trData(
+                            context,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        InkWell(
+                          onTap: () async {
+                            final currentText = dueDateController.text.trim();
+                            DateTime initDate = DateTime.now().add(
+                              const Duration(days: 30),
+                            );
+                            if (currentText.length >= 10) {
+                              final parsed = DateTime.tryParse(currentText);
+                              if (parsed != null) initDate = parsed;
+                            }
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: initDate,
+                              firstDate: DateTime.now().subtract(
+                                const Duration(days: 365),
+                              ),
+                              lastDate: DateTime.now().add(
+                                const Duration(days: 3650),
+                              ),
+                            );
+                            if (picked != null) {
+                              setDialogState(() {
+                                dueDateController.text =
+                                    '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+                              });
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: IgnorePointer(
+                            child: TextField(
+                              controller: dueDateController,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF0F172A),
+                              ),
+                              decoration: _dialogInputDecoration(
+                                icon: Icons.calendar_month_rounded,
+                                hint: 'YYYY-MM-DD',
+                              ).copyWith(
+                                suffixIcon: const Icon(
+                                  Icons.event_available_rounded,
+                                  size: 19,
+                                  color: Color(0xFF6A2777),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          child: Row(
+                            children: [
+                              _buildDurationQuickChip(
+                                '+30 Days',
+                                30,
+                                dueDateController,
+                                () => setDialogState(() {}),
+                              ),
+                              const SizedBox(width: 6),
+                              _buildDurationQuickChip(
+                                '+60 Days',
+                                60,
+                                dueDateController,
+                                () => setDialogState(() {}),
+                              ),
+                              const SizedBox(width: 6),
+                              _buildDurationQuickChip(
+                                '+90 Days',
+                                90,
+                                dueDateController,
+                                () => setDialogState(() {}),
+                              ),
+                              const SizedBox(width: 6),
+                              _buildDurationQuickChip(
+                                '+6 Months',
+                                180,
+                                dueDateController,
+                                () => setDialogState(() {}),
+                              ),
+                              const SizedBox(width: 6),
+                              _buildDurationQuickChip(
+                                '+1 Year',
+                                365,
+                                dueDateController,
+                                () => setDialogState(() {}),
+                              ),
+                              const SizedBox(width: 6),
+                              _buildDurationQuickChip(
+                                'Lifetime (5 Yrs)',
+                                1825,
+                                dueDateController,
+                                () => setDialogState(() {}),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+
+                        // 5. Plan Type Dropdown (Fully connected with Admin Plan Types)
+                        _buildFormLabel('Plan Type *'.trData(context)),
+                        const SizedBox(height: 6),
+                        DropdownButtonFormField<String>(
+                          key: ValueKey(selectedPlanType),
+                          initialValue: selectedPlanType,
+                          isExpanded: true,
+                          dropdownColor: Colors.white,
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF0F172A),
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'Event Publishing',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.event_available_rounded,
+                                    size: 16,
+                                    color: Color(0xFF6A2777),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Event Listing / Publishing',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF0F172A),
                                     ),
                                   ),
+                                ],
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 'Membership Plan',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.palette_outlined,
+                                    size: 16,
+                                    color: Color(0xFF6A2777),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Artist Portfolio / Membership',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 'Gallery Publishing',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.museum_outlined,
+                                    size: 16,
+                                    color: Color(0xFF6A2777),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Gallery Showcase / Listing',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 'Art Center Showcase',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.account_balance_outlined,
+                                    size: 16,
+                                    color: Color(0xFF6A2777),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Art Center Showcase',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 'Chat & Messaging',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.chat_bubble_outline_rounded,
+                                    size: 16,
+                                    color: Color(0xFF6A2777),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Chat & Messaging Pro',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 'Custom Subscription',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.stars_rounded,
+                                    size: 16,
+                                    color: Color(0xFF6A2777),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Custom Subscription',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) {
+                              setDialogState(() {
+                                selectedPlanType = val;
+                                final newFilter = resolveFilterKeyFromPlanType(
+                                  val,
                                 );
-                              }
-                            },
+                                if (newFilter != 'all') {
+                                  selectedCategoryFilter = newFilter;
+                                  final filtered = getFilteredPlans(newFilter);
+                                  if (filtered.isNotEmpty &&
+                                      selectedTemplate != 'user_purchased') {
+                                    final first = filtered.first;
+                                    selectedTemplate = first.title;
+                                    planController.text = first.title;
+                                    priceController.text = first.price;
+                                  }
+                                }
+                              });
+                            }
+                          },
+                          decoration: _dialogInputDecoration(
+                            icon: Icons.category_outlined,
                           ),
+                        ),
+                        const SizedBox(height: 14),
+
+                        // 6. Status Dropdown
+                        _buildFormLabel(
+                          'Subscription Status *'.trData(context),
+                        ),
+                        const SizedBox(height: 6),
+                        DropdownButtonFormField<String>(
+                          initialValue: selectedStatus,
+                          isExpanded: true,
+                          dropdownColor: Colors.white,
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF0F172A),
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'Active',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.check_circle_rounded,
+                                    size: 16,
+                                    color: Color(0xFF16A34A),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Active (Full Access)',
+                                    style: TextStyle(
+                                      color: Color(0xFF15803D),
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 'Pending',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.pending_actions_rounded,
+                                    size: 16,
+                                    color: Color(0xFFD97706),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Pending (Awaiting Confirmation)',
+                                    style: TextStyle(
+                                      color: Color(0xFFB45309),
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 'Expired',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.cancel_rounded,
+                                    size: 16,
+                                    color: Color(0xFFDC2626),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Expired (Access Suspended)',
+                                    style: TextStyle(
+                                      color: Color(0xFFDC2626),
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) {
+                              setDialogState(() => selectedStatus = val);
+                            }
+                          },
+                          decoration: _dialogInputDecoration(
+                            icon:
+                                selectedStatus == 'Active'
+                                    ? Icons.check_circle_rounded
+                                    : (selectedStatus == 'Pending'
+                                        ? Icons.pending_actions_rounded
+                                        : Icons.cancel_rounded),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                        const SizedBox(height: 16),
+
+                        // Actions: Cancel & Save Plan
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFF64748B),
+                                  side: const BorderSide(
+                                    color: Color(0xFFCBD5E1),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                onPressed: () => Navigator.pop(ctx),
+                                child: Text(
+                                  'Cancel'.trData(context),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              flex: 2,
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF6A2777),
+                                  foregroundColor: Colors.white,
+                                  elevation: 1,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                icon: const Icon(
+                                  Icons.check_circle_rounded,
+                                  size: 18,
+                                  color: Colors.white,
+                                ),
+                                label: Text(
+                                  'Save Plan'.trData(context),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                onPressed: () async {
+                                  final pName = planController.text.trim();
+                                  final pPrice = priceController.text.trim();
+                                  final pDue = dueDateController.text.trim();
+                                  final messenger = ScaffoldMessenger.of(
+                                    context,
+                                  );
+                                  final successMsg =
+                                      'Plan updated successfully for $userName'
+                                          .trData(context);
+                                  final failMsg =
+                                      'Failed to update user plan. Please check connection.'
+                                          .trData(context);
+                                  Navigator.pop(ctx);
+
+                                  final success = await sl<ApiService>()
+                                      .assignUserPlan(
+                                        userId: userId,
+                                        email: email,
+                                        planName:
+                                            pName.isNotEmpty
+                                                ? pName
+                                                : 'Basic (Free)',
+                                        planType: selectedPlanType,
+                                        price:
+                                            pPrice.isNotEmpty ? pPrice : 'Free',
+                                        dueDate: pDue,
+                                        status: selectedStatus,
+                                      );
+
+                                  if (success) {
+                                    await _refreshUsers();
+                                    if (mounted) {
+                                      messenger.showSnackBar(
+                                        SnackBar(
+                                          content: Text(successMsg),
+                                          backgroundColor: const Color(
+                                            0xFF16A34A,
+                                          ),
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  } else if (mounted) {
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(failMsg),
+                                        backgroundColor: Colors.redAccent,
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          );
-        },
-      ),
+              );
+            },
+          ),
     );
   }
-
 
   Widget _buildDurationQuickChip(
     String label,
@@ -13803,8 +14755,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color:
-              isSelected ? const Color(0xFF6A2777) : const Color(0xFFF1F5F9),
+          color: isSelected ? const Color(0xFF6A2777) : const Color(0xFFF1F5F9),
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
             color:
@@ -13824,7 +14775,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     );
   }
 
-    Future<void> _confirmDeleteUser(Map<String, dynamic> user) async {
+  Future<void> _confirmDeleteUser(Map<String, dynamic> user) async {
     final int userId = int.tryParse(user['id'].toString()) ?? 0;
     final String email = (user['email'] ?? '').toString();
     final String userName = (user['full_name'] ?? 'User').toString();
@@ -13931,54 +14882,74 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   // --- 10. About Us Page Content Management Tab ---
   // ---------------------------------------------------------------------------
   List<({TextEditingController en, TextEditingController ar, String fieldName})>
-      get _aboutUsFieldPairs => [
-        (en: _aboutTitleEnCtrl, ar: _aboutTitleArCtrl, fieldName: 'Main Page Title'),
-        (
-          en: _aboutWhatMeansTitleEnCtrl,
-          ar: _aboutWhatMeansTitleArCtrl,
-          fieldName: 'Section 1 Title',
-        ),
-        (
-          en: _aboutWhatMeansBodyEnCtrl,
-          ar: _aboutWhatMeansBodyArCtrl,
-          fieldName: 'Section 1 Body',
-        ),
-        (en: _aboutQuoteTextEnCtrl, ar: _aboutQuoteTextArCtrl, fieldName: 'Featured Quote'),
-        (en: _aboutConnectBodyEnCtrl, ar: _aboutConnectBodyArCtrl, fieldName: 'Connect Body'),
-        (
-          en: _aboutOpportunitiesBodyEnCtrl,
-          ar: _aboutOpportunitiesBodyArCtrl,
-          fieldName: 'Opportunities Body',
-        ),
-        (en: _aboutFusionBodyEnCtrl, ar: _aboutFusionBodyArCtrl, fieldName: 'Fusion Body'),
-        (
-          en: _aboutDubaiVisionBodyEnCtrl,
-          ar: _aboutDubaiVisionBodyArCtrl,
-          fieldName: 'Dubai Vision Body',
-        ),
-        (
-          en: _aboutOurVisionBodyEnCtrl,
-          ar: _aboutOurVisionBodyArCtrl,
-          fieldName: 'Our Vision Body',
-        ),
-        (
-          en: _aboutClosingBordersEnCtrl,
-          ar: _aboutClosingBordersArCtrl,
-          fieldName: 'Closing Borders',
-        ),
-        (
-          en: _aboutClosingImpossibleEnCtrl,
-          ar: _aboutClosingImpossibleArCtrl,
-          fieldName: 'Closing Impossible',
-        ),
-      ];
+  get _aboutUsFieldPairs => [
+    (
+      en: _aboutTitleEnCtrl,
+      ar: _aboutTitleArCtrl,
+      fieldName: 'Main Page Title',
+    ),
+    (
+      en: _aboutWhatMeansTitleEnCtrl,
+      ar: _aboutWhatMeansTitleArCtrl,
+      fieldName: 'Section 1 Title',
+    ),
+    (
+      en: _aboutWhatMeansBodyEnCtrl,
+      ar: _aboutWhatMeansBodyArCtrl,
+      fieldName: 'Section 1 Body',
+    ),
+    (
+      en: _aboutQuoteTextEnCtrl,
+      ar: _aboutQuoteTextArCtrl,
+      fieldName: 'Featured Quote',
+    ),
+    (
+      en: _aboutConnectBodyEnCtrl,
+      ar: _aboutConnectBodyArCtrl,
+      fieldName: 'Connect Body',
+    ),
+    (
+      en: _aboutOpportunitiesBodyEnCtrl,
+      ar: _aboutOpportunitiesBodyArCtrl,
+      fieldName: 'Opportunities Body',
+    ),
+    (
+      en: _aboutFusionBodyEnCtrl,
+      ar: _aboutFusionBodyArCtrl,
+      fieldName: 'Fusion Body',
+    ),
+    (
+      en: _aboutDubaiVisionBodyEnCtrl,
+      ar: _aboutDubaiVisionBodyArCtrl,
+      fieldName: 'Dubai Vision Body',
+    ),
+    (
+      en: _aboutOurVisionBodyEnCtrl,
+      ar: _aboutOurVisionBodyArCtrl,
+      fieldName: 'Our Vision Body',
+    ),
+    (
+      en: _aboutClosingBordersEnCtrl,
+      ar: _aboutClosingBordersArCtrl,
+      fieldName: 'Closing Borders',
+    ),
+    (
+      en: _aboutClosingImpossibleEnCtrl,
+      ar: _aboutClosingImpossibleArCtrl,
+      fieldName: 'Closing Impossible',
+    ),
+  ];
 
   void _initAboutUsAutoSync() {
     for (final pair in _aboutUsFieldPairs) {
       _lastSyncedValues[pair.en] = pair.en.text;
       _lastSyncedValues[pair.ar] = pair.ar.text;
-      pair.en.addListener(() => _handleAboutFieldChanged(pair.en, pair.ar, toArabic: true));
-      pair.ar.addListener(() => _handleAboutFieldChanged(pair.ar, pair.en, toArabic: false));
+      pair.en.addListener(
+        () => _handleAboutFieldChanged(pair.en, pair.ar, toArabic: true),
+      );
+      pair.ar.addListener(
+        () => _handleAboutFieldChanged(pair.ar, pair.en, toArabic: false),
+      );
     }
   }
 
@@ -13998,40 +14969,43 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     if (currentText == _lastSyncedValues[source]?.trim()) return;
 
     _aboutSyncDebounceTimer?.cancel();
-    _aboutSyncDebounceTimer = Timer(const Duration(milliseconds: 600), () async {
-      if (!mounted || !_aboutAutoSyncEnabled || _isAutoSyncingAboutUs) return;
-      final textToTranslate = source.text;
-      if (textToTranslate.trim().isEmpty) {
-        _isAutoSyncingAboutUs = true;
-        target.text = '';
-        _lastSyncedValues[source] = '';
-        _lastSyncedValues[target] = '';
-        _isAutoSyncingAboutUs = false;
-        return;
-      }
-
-      setState(() => _syncingFieldsCount++);
-      try {
-        final translated = await DataTranslator.translateAsync(
-          textToTranslate,
-          toArabic: toArabic,
-        );
-        if (mounted && source.text == textToTranslate) {
+    _aboutSyncDebounceTimer = Timer(
+      const Duration(milliseconds: 600),
+      () async {
+        if (!mounted || !_aboutAutoSyncEnabled || _isAutoSyncingAboutUs) return;
+        final textToTranslate = source.text;
+        if (textToTranslate.trim().isEmpty) {
           _isAutoSyncingAboutUs = true;
-          target.text = translated;
-          _lastSyncedValues[source] = textToTranslate;
-          _lastSyncedValues[target] = translated;
+          target.text = '';
+          _lastSyncedValues[source] = '';
+          _lastSyncedValues[target] = '';
           _isAutoSyncingAboutUs = false;
+          return;
         }
-      } catch (_) {
-      } finally {
-        if (mounted) {
-          setState(() {
-            if (_syncingFieldsCount > 0) _syncingFieldsCount--;
-          });
+
+        setState(() => _syncingFieldsCount++);
+        try {
+          final translated = await DataTranslator.translateAsync(
+            textToTranslate,
+            toArabic: toArabic,
+          );
+          if (mounted && source.text == textToTranslate) {
+            _isAutoSyncingAboutUs = true;
+            target.text = translated;
+            _lastSyncedValues[source] = textToTranslate;
+            _lastSyncedValues[target] = translated;
+            _isAutoSyncingAboutUs = false;
+          }
+        } catch (_) {
+        } finally {
+          if (mounted) {
+            setState(() {
+              if (_syncingFieldsCount > 0) _syncingFieldsCount--;
+            });
+          }
         }
-      }
-    });
+      },
+    );
   }
 
   Future<void> _syncAllAboutFields({
@@ -14070,14 +15044,19 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       if (mounted) {
         setState(() => _isSyncingAllAboutFields = false);
         if (showToast) {
-          final msg = fromEnglish
-              ? 'Synced $translatedCount fields to Arabic successfully'
-              : 'تمت مزامنة $translatedCount حقلاً إلى الإنجليزية بنجاح';
+          final msg =
+              fromEnglish
+                  ? 'Synced $translatedCount fields to Arabic successfully'
+                  : 'تمت مزامنة $translatedCount حقلاً إلى الإنجليزية بنجاح';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Row(
                 children: [
-                  const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(child: Text(msg.trData(context))),
                 ],
@@ -14099,7 +15078,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       if (mounted) {
         _populateAboutUsFields(data);
       }
-    } catch (_) {} finally {
+    } catch (_) {
+    } finally {
       if (mounted) {
         setState(() => _isLoadingAboutUs = false);
       }
@@ -14112,7 +15092,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     _aboutTitleEnCtrl.text = data['title']?.toString() ?? 'ABOUT US';
     _aboutTitleArCtrl.text = data['title_ar']?.toString() ?? 'من نحن';
     _aboutWhatMeansTitleEnCtrl.text =
-        data['what_means_title']?.toString() ?? 'What does it mean to be an artist?';
+        data['what_means_title']?.toString() ??
+        'What does it mean to be an artist?';
     _aboutWhatMeansTitleArCtrl.text =
         data['what_means_title_ar']?.toString() ?? 'ماذا يعني أن تكون فناناً؟';
     _aboutWhatMeansBodyEnCtrl.text =
@@ -14225,8 +15206,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Failed to update About Us page. Check admin connection.'
-                  .trData(context),
+              'Failed to update About Us page. Check admin connection.'.trData(
+                context,
+              ),
             ),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
@@ -14358,9 +15340,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           isArabic ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: isArabic
-              ? MainAxisAlignment.end
-              : MainAxisAlignment.spaceBetween,
+          mainAxisAlignment:
+              isArabic ? MainAxisAlignment.end : MainAxisAlignment.spaceBetween,
           children: [
             if (!isArabic)
               Expanded(
@@ -14381,14 +15362,16 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: isArabic
-                      ? const Color(0xFFFAF5FF)
-                      : const Color(0xFFFEF3C7),
+                  color:
+                      isArabic
+                          ? const Color(0xFFFAF5FF)
+                          : const Color(0xFFFEF3C7),
                   borderRadius: BorderRadius.circular(4),
                   border: Border.all(
-                    color: isArabic
-                        ? const Color(0xFFE9D5FF)
-                        : const Color(0xFFFDE68A),
+                    color:
+                        isArabic
+                            ? const Color(0xFFE9D5FF)
+                            : const Color(0xFFFDE68A),
                     width: 0.8,
                   ),
                 ),
@@ -14398,9 +15381,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     Icon(
                       Icons.sync_rounded,
                       size: 11,
-                      color: isArabic
-                          ? const Color(0xFF6A2777)
-                          : const Color(0xFFB45309),
+                      color:
+                          isArabic
+                              ? const Color(0xFF6A2777)
+                              : const Color(0xFFB45309),
                     ),
                     const SizedBox(width: 3),
                     Text(
@@ -14408,9 +15392,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
-                        color: isArabic
-                            ? const Color(0xFF6A2777)
-                            : const Color(0xFFB45309),
+                        color:
+                            isArabic
+                                ? const Color(0xFF6A2777)
+                                : const Color(0xFFB45309),
                       ),
                     ),
                   ],
@@ -14443,10 +15428,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           ),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(
-              fontSize: 13,
-              color: Color(0xFF94A3B8),
-            ),
+            hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
             filled: true,
             fillColor:
                 isArabic ? const Color(0xFFFFFBEB) : const Color(0xFFF8FAFC),
@@ -14619,16 +15601,17 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 children: [
                   ElevatedButton.icon(
                     onPressed: _isSavingAboutUs ? null : _saveAboutUsData,
-                    icon: _isSavingAboutUs
-                        ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Color(0xFF6A2777),
-                          ),
-                        )
-                        : const Icon(Icons.save_rounded, size: 16),
+                    icon:
+                        _isSavingAboutUs
+                            ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Color(0xFF6A2777),
+                              ),
+                            )
+                            : const Icon(Icons.save_rounded, size: 16),
                     label: Text(
                       _isSavingAboutUs
                           ? 'Saving...'.trData(context)
@@ -14713,14 +15696,16 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: _aboutAutoSyncEnabled
-                ? const Color(0xFFFAF5FF)
-                : const Color(0xFFF8FAFC),
+            color:
+                _aboutAutoSyncEnabled
+                    ? const Color(0xFFFAF5FF)
+                    : const Color(0xFFF8FAFC),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: _aboutAutoSyncEnabled
-                  ? const Color(0xFFE9D5FF)
-                  : const Color(0xFFE2E8F0),
+              color:
+                  _aboutAutoSyncEnabled
+                      ? const Color(0xFFE9D5FF)
+                      : const Color(0xFFE2E8F0),
             ),
           ),
           child: Row(
@@ -14728,17 +15713,19 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               Container(
                 padding: const EdgeInsets.all(7),
                 decoration: BoxDecoration(
-                  color: _aboutAutoSyncEnabled
-                      ? const Color(0xFF6A2777).withValues(alpha: 0.12)
-                      : const Color(0xFF94A3B8).withValues(alpha: 0.15),
+                  color:
+                      _aboutAutoSyncEnabled
+                          ? const Color(0xFF6A2777).withValues(alpha: 0.12)
+                          : const Color(0xFF94A3B8).withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.sync_alt_rounded,
                   size: 18,
-                  color: _aboutAutoSyncEnabled
-                      ? const Color(0xFF6A2777)
-                      : const Color(0xFF64748B),
+                  color:
+                      _aboutAutoSyncEnabled
+                          ? const Color(0xFF6A2777)
+                          : const Color(0xFF64748B),
                 ),
               ),
               const SizedBox(width: 10),
@@ -14756,7 +15743,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             color: Color(0xFF1E293B),
                           ),
                         ),
-                        if (_isSyncingAllAboutFields || _syncingFieldsCount > 0) ...[
+                        if (_isSyncingAllAboutFields ||
+                            _syncingFieldsCount > 0) ...[
                           const SizedBox(width: 8),
                           const SizedBox(
                             width: 12,
@@ -14792,9 +15780,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               ),
               if (_aboutAutoSyncEnabled)
                 TextButton.icon(
-                  onPressed: _isSyncingAllAboutFields
-                      ? null
-                      : () => _syncAllAboutFields(
+                  onPressed:
+                      _isSyncingAllAboutFields
+                          ? null
+                          : () => _syncAllAboutFields(
                             fromEnglish: _aboutLanguageSubTab == 0,
                             showToast: true,
                           ),
@@ -14858,15 +15847,16 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     decoration: BoxDecoration(
                       color: !isArabic ? Colors.white : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
-                      boxShadow: !isArabic
-                          ? const [
-                            BoxShadow(
-                              color: Color(0x10000000),
-                              blurRadius: 4,
-                              offset: Offset(0, 1),
-                            ),
-                          ]
-                          : null,
+                      boxShadow:
+                          !isArabic
+                              ? const [
+                                BoxShadow(
+                                  color: Color(0x10000000),
+                                  blurRadius: 4,
+                                  offset: Offset(0, 1),
+                                ),
+                              ]
+                              : null,
                     ),
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
@@ -14879,12 +15869,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             'English (EN)'.trData(context),
                             style: TextStyle(
                               fontSize: 13,
-                              fontWeight: !isArabic
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                              color: !isArabic
-                                  ? const Color(0xFF6A2777)
-                                  : const Color(0xFF64748B),
+                              fontWeight:
+                                  !isArabic ? FontWeight.w700 : FontWeight.w500,
+                              color:
+                                  !isArabic
+                                      ? const Color(0xFF6A2777)
+                                      : const Color(0xFF64748B),
                             ),
                           ),
                         ],
@@ -14911,15 +15901,16 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                     decoration: BoxDecoration(
                       color: isArabic ? Colors.white : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
-                      boxShadow: isArabic
-                          ? const [
-                            BoxShadow(
-                              color: Color(0x10000000),
-                              blurRadius: 4,
-                              offset: Offset(0, 1),
-                            ),
-                          ]
-                          : null,
+                      boxShadow:
+                          isArabic
+                              ? const [
+                                BoxShadow(
+                                  color: Color(0x10000000),
+                                  blurRadius: 4,
+                                  offset: Offset(0, 1),
+                                ),
+                              ]
+                              : null,
                     ),
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
@@ -14932,12 +15923,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                             'العربية (AR)'.trData(context),
                             style: TextStyle(
                               fontSize: 13,
-                              fontWeight: isArabic
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                              color: isArabic
-                                  ? const Color(0xFF6A2777)
-                                  : const Color(0xFF64748B),
+                              fontWeight:
+                                  isArabic ? FontWeight.w700 : FontWeight.w500,
+                              color:
+                                  isArabic
+                                      ? const Color(0xFF6A2777)
+                                      : const Color(0xFF64748B),
                             ),
                           ),
                         ],
@@ -14957,7 +15948,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           icon: Icons.title_rounded,
           children: [
             _buildAboutTextField(
-              label: isArabic ? 'عنوان الصفحة الرئيسي (بالعربية)' : 'Main Page Title (English)',
+              label:
+                  isArabic
+                      ? 'عنوان الصفحة الرئيسي (بالعربية)'
+                      : 'Main Page Title (English)',
               controller: isArabic ? _aboutTitleArCtrl : _aboutTitleEnCtrl,
               hint: isArabic ? 'من نحن' : 'ABOUT US',
               isArabic: isArabic,
@@ -14990,7 +15984,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                       ? _aboutWhatMeansBodyArCtrl
                       : _aboutWhatMeansBodyEnCtrl,
               maxLines: 4,
-              hint: isArabic ? 'نص التاريخ والمعنى...' : 'Historical meaning and creative expression...',
+              hint:
+                  isArabic
+                      ? 'نص التاريخ والمعنى...'
+                      : 'Historical meaning and creative expression...',
               isArabic: isArabic,
             ),
           ],
@@ -15021,22 +16018,34 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           icon: Icons.handshake_outlined,
           children: [
             _buildAboutTextField(
-              label: isArabic ? 'هدف المنصة والتواصل' : 'Connect & Collaborate Body Text',
+              label:
+                  isArabic
+                      ? 'هدف المنصة والتواصل'
+                      : 'Connect & Collaborate Body Text',
               controller:
                   isArabic ? _aboutConnectBodyArCtrl : _aboutConnectBodyEnCtrl,
               maxLines: 4,
-              hint: isArabic ? 'تم إنشاء منصتنا لربط الفنانين...' : 'Our platform was created to connect artists...',
+              hint:
+                  isArabic
+                      ? 'تم إنشاء منصتنا لربط الفنانين...'
+                      : 'Our platform was created to connect artists...',
               isArabic: isArabic,
             ),
             const SizedBox(height: 12),
             _buildAboutTextField(
-              label: isArabic ? 'الفرص والاستكشاف' : 'Exploration & Opportunities Body Text',
+              label:
+                  isArabic
+                      ? 'الفرص والاستكشاف'
+                      : 'Exploration & Opportunities Body Text',
               controller:
                   isArabic
                       ? _aboutOpportunitiesBodyArCtrl
                       : _aboutOpportunitiesBodyEnCtrl,
               maxLines: 4,
-              hint: isArabic ? 'يمكن للفنانين استكشاف أشكال مختلفة...' : 'Artists can explore different forms of art...',
+              hint:
+                  isArabic
+                      ? 'يمكن للفنانين استكشاف أشكال مختلفة...'
+                      : 'Artists can explore different forms of art...',
               isArabic: isArabic,
             ),
           ],
@@ -15048,22 +16057,34 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
           icon: Icons.location_city_rounded,
           children: [
             _buildAboutTextField(
-              label: isArabic ? 'تلاقي الثقافات وتوليد الفن' : 'Fusion of Perspectives Body Text',
+              label:
+                  isArabic
+                      ? 'تلاقي الثقافات وتوليد الفن'
+                      : 'Fusion of Perspectives Body Text',
               controller:
                   isArabic ? _aboutFusionBodyArCtrl : _aboutFusionBodyEnCtrl,
               maxLines: 3,
-              hint: isArabic ? 'لأنه عندما يلتقي فنانون وثقافات...' : 'Because when different artists come together...',
+              hint:
+                  isArabic
+                      ? 'لأنه عندما يلتقي فنانون وثقافات...'
+                      : 'Because when different artists come together...',
               isArabic: isArabic,
             ),
             const SizedBox(height: 12),
             _buildAboutTextField(
-              label: isArabic ? 'رؤية دبي والبيئة متعددة الثقافات' : 'Dubai Vision & Cultural Context',
+              label:
+                  isArabic
+                      ? 'رؤية دبي والبيئة متعددة الثقافات'
+                      : 'Dubai Vision & Cultural Context',
               controller:
                   isArabic
                       ? _aboutDubaiVisionBodyArCtrl
                       : _aboutDubaiVisionBodyEnCtrl,
               maxLines: 4,
-              hint: isArabic ? 'دبي هي المكان الأمثل لتحقيق هذه الرؤية...' : 'Dubai is a unique place for this vision...',
+              hint:
+                  isArabic
+                      ? 'دبي هي المكان الأمثل لتحقيق هذه الرؤية...'
+                      : 'Dubai is a unique place for this vision...',
               isArabic: isArabic,
             ),
           ],
@@ -15077,30 +16098,45 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             _buildAboutTextField(
               label: isArabic ? 'رؤيتنا المستقبلية' : 'Our Vision Body Text',
               controller:
-                  isArabic ? _aboutOurVisionBodyArCtrl : _aboutOurVisionBodyEnCtrl,
+                  isArabic
+                      ? _aboutOurVisionBodyArCtrl
+                      : _aboutOurVisionBodyEnCtrl,
               maxLines: 3,
-              hint: isArabic ? 'رؤيتنا تتجاوز مجرد إنشاء منصة...' : 'Our vision is more than simply creating a platform...',
+              hint:
+                  isArabic
+                      ? 'رؤيتنا تتجاوز مجرد إنشاء منصة...'
+                      : 'Our vision is more than simply creating a platform...',
               isArabic: isArabic,
             ),
             const SizedBox(height: 12),
             _buildAboutTextField(
-              label: isArabic ? 'شعار النهاية (الفن بلا حدود)' : 'Closing Tagline',
+              label:
+                  isArabic ? 'شعار النهاية (الفن بلا حدود)' : 'Closing Tagline',
               controller:
                   isArabic
                       ? _aboutClosingBordersArCtrl
                       : _aboutClosingBordersEnCtrl,
-              hint: isArabic ? 'لأن الفن لا يعرف حدوداً.' : 'Because art has no borders.',
+              hint:
+                  isArabic
+                      ? 'لأن الفن لا يعرف حدوداً.'
+                      : 'Because art has no borders.',
               isArabic: isArabic,
             ),
             const SizedBox(height: 12),
             _buildAboutTextField(
-              label: isArabic ? 'الخاتمة: صنع المستحيل' : 'Closing Impossible Statement',
+              label:
+                  isArabic
+                      ? 'الخاتمة: صنع المستحيل'
+                      : 'Closing Impossible Statement',
               controller:
                   isArabic
                       ? _aboutClosingImpossibleArCtrl
                       : _aboutClosingImpossibleEnCtrl,
               maxLines: 3,
-              hint: isArabic ? 'وعندما تجتمع العقول والأفكار والمواهب...' : 'And when people, ideas and talents come together...',
+              hint:
+                  isArabic
+                      ? 'وعندما تجتمع العقول والأفكار والمواهب...'
+                      : 'And when people, ideas and talents come together...',
               isArabic: isArabic,
             ),
           ],
@@ -15138,16 +16174,17 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               const SizedBox(width: 12),
               ElevatedButton.icon(
                 onPressed: _isSavingAboutUs ? null : _saveAboutUsData,
-                icon: _isSavingAboutUs
-                    ? const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                    : const Icon(Icons.check_circle_rounded, size: 16),
+                icon:
+                    _isSavingAboutUs
+                        ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                        : const Icon(Icons.check_circle_rounded, size: 16),
                 label: Text(
                   _isSavingAboutUs
                       ? 'Saving...'.trData(context)

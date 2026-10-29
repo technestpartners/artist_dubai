@@ -63,6 +63,7 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
 
   List<Map<String, dynamic>> _photoGalleries = [];
   String? _avatarUrlOverride;
+  Uint8List? _avatarBytesOverride;
   bool _isUploadingPhoto = false;
 
   bool _isMyProfile(ArtistModel? artist) {
@@ -92,6 +93,25 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
     return false;
   }
 
+  Future<void> _refreshArtistProfile(String artistId) async {
+    if (artistId.isEmpty || artistId == '0') return;
+    try {
+      final updated = await sl<ApiService>().getArtistDetails(artistId, forceRefresh: true);
+      if (mounted) {
+        setState(() {
+          _fetchedArtist = updated;
+          if (updated.avatarUrl.isNotEmpty && _avatarBytesOverride == null) {
+            _avatarUrlOverride = updated.avatarUrl;
+          }
+          _likesCount = updated.likesCount;
+          _followersCount = updated.followersCount;
+          _worksCount = updated.worksCount;
+        });
+        _loadAllData();
+      }
+    } catch (_) {}
+  }
+
   Future<void> _updateProfilePhoto() async {
     try {
       final picker = ImagePicker();
@@ -100,9 +120,15 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         imageQuality: 85,
       );
       if (image == null) return;
-      setState(() => _isUploadingPhoto = true);
 
       final bytes = await image.readAsBytes();
+
+      // Immediately show the selected image locally for instant feedback
+      setState(() {
+        _avatarBytesOverride = bytes;
+        _isUploadingPhoto = true;
+      });
+
       final nameParts = image.name.split('.');
       final ext = nameParts.length > 1 ? nameParts.last : 'jpg';
       final url = await sl<ApiService>().uploadImageBytes(
@@ -110,7 +136,8 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
         ext: ext.isNotEmpty ? ext : 'jpg',
       );
       if (url != null && url.isNotEmpty) {
-        final artistId = widget.artist?.id;
+        final currentArtist = _effectiveArtist;
+        final artistId = currentArtist?.id ?? widget.artistId;
         if (artistId != null && artistId.isNotEmpty && artistId != '0') {
           await sl<ApiService>().updateArtist({
             'id': artistId,
@@ -124,6 +151,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
           setState(() {
             _avatarUrlOverride = url;
             _isUploadingPhoto = false;
+            if (currentArtist != null) {
+              _fetchedArtist = currentArtist.copyWith(avatarUrl: url);
+            }
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -135,11 +165,25 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
           );
         }
       } else {
-        if (mounted) setState(() => _isUploadingPhoto = false);
+        if (mounted) {
+          setState(() {
+            _avatarBytesOverride = null;
+            _isUploadingPhoto = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to upload image. Please try again.'.trData(context)),
+              backgroundColor: const Color(0xFFDC2626),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isUploadingPhoto = false);
+        setState(() {
+          _avatarBytesOverride = null;
+          _isUploadingPhoto = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error updating photo: $e'.trData(context)),
@@ -207,9 +251,10 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
     }
 
     _artistLiveSub = sl<LiveSyncService>().artistsStream.listen((artists) {
-      if (mounted && widget.artist != null) {
+      final currentId = widget.artist?.id ?? _fetchedArtist?.id ?? widget.artistId;
+      if (mounted && currentId != null && currentId.isNotEmpty) {
         final match =
-            artists.where((a) => a.id == widget.artist!.id).firstOrNull;
+            artists.where((a) => a.id == currentId).firstOrNull;
         if (match != null) {
           setState(() {
             _likesCount = match.likesCount;
@@ -224,6 +269,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
             if (_isFollowing && _followersCount == 0) _followersCount = 1;
             if (match.worksCount > 0 || _artworksList.isEmpty) {
               _worksCount = match.worksCount;
+            }
+            if (match.avatarUrl.isNotEmpty && _avatarBytesOverride == null) {
+              _avatarUrlOverride = match.avatarUrl;
             }
           });
         }
@@ -2147,18 +2195,27 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                         Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            onTap: () {
-                              Navigator.push(
+                            onTap: () async {
+                              await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder:
                                       (context) => CreateArtistProfileView(
                                         isEditing: true,
-                                        artist: currentArtist,
+                                        artist: currentArtist.copyWith(
+                                          avatarUrl:
+                                              (_avatarUrlOverride != null &&
+                                                      _avatarUrlOverride!.isNotEmpty)
+                                                  ? _avatarUrlOverride
+                                                  : currentArtist.avatarUrl,
+                                        ),
                                         artistId: currentArtist.id,
                                       ),
                                 ),
                               );
+                              if (mounted) {
+                                await _refreshArtistProfile(currentArtist.id);
+                              }
                             },
                             borderRadius: BorderRadius.circular(8),
                             child: Container(
@@ -2278,8 +2335,14 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                       width: 84,
                                       height: 84,
                                       color: const Color(0xFFF3E8FF),
-                                      child:
-                                          (_avatarUrlOverride ??
+                                      child: _avatarBytesOverride != null
+                                          ? Image.memory(
+                                              _avatarBytesOverride!,
+                                              width: 84,
+                                              height: 84,
+                                              fit: BoxFit.cover,
+                                            )
+                                          : (_avatarUrlOverride ??
                                                       currentArtist.avatarUrl)
                                                   .isNotEmpty
                                               ? AppCachedImage(
@@ -2498,8 +2561,8 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                               borderRadius: BorderRadius.circular(8),
                                             ),
                                           ),
-                                          onPressed: () {
-                                            Navigator.push(
+                                          onPressed: () async {
+                                            await Navigator.push(
                                               context,
                                               MaterialPageRoute(
                                                 builder:
@@ -2521,6 +2584,9 @@ class _ArtistDetailViewState extends State<ArtistDetailView> {
                                                     ),
                                               ),
                                             );
+                                            if (mounted) {
+                                              await _refreshArtistProfile(currentArtist.id);
+                                            }
                                           },
                                           icon: const Icon(
                                             Icons.edit_outlined,

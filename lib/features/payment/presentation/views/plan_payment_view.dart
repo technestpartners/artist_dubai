@@ -47,8 +47,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
   bool _isSubmitting = false;
   String _detectedBrand = 'CARD';
 
-  late String
-  _itemType; // 'event' or 'gallery' or 'artist' or 'art_centre'
+  late String _itemType; // 'event' or 'gallery' or 'artist' or 'art_centre'
   late String _title;
   late String _subtitle;
   late String _planId;
@@ -87,25 +86,28 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
 
   String get _displayAedString {
     final amt = _baseAedAmount;
-    final formatted = (amt.truncateToDouble() == amt)
-        ? amt.toStringAsFixed(0)
-        : amt.toStringAsFixed(2);
+    final formatted =
+        (amt.truncateToDouble() == amt)
+            ? amt.toStringAsFixed(0)
+            : amt.toStringAsFixed(2);
     return 'AED $formatted';
   }
 
   String get _vatAedString {
     final amt = _vatAmount;
-    final formatted = (amt.truncateToDouble() == amt)
-        ? amt.toStringAsFixed(0)
-        : amt.toStringAsFixed(2);
+    final formatted =
+        (amt.truncateToDouble() == amt)
+            ? amt.toStringAsFixed(0)
+            : amt.toStringAsFixed(2);
     return 'AED $formatted';
   }
 
   String get _totalAedString {
     final amt = _totalAedAmount;
-    final formatted = (amt.truncateToDouble() == amt)
-        ? amt.toStringAsFixed(0)
-        : amt.toStringAsFixed(2);
+    final formatted =
+        (amt.truncateToDouble() == amt)
+            ? amt.toStringAsFixed(0)
+            : amt.toStringAsFixed(2);
     return 'AED $formatted';
   }
 
@@ -185,7 +187,9 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Test card filled (4242 4242 4242 4242)'.trData(context)),
+          content: Text(
+            'Test card filled (4242 4242 4242 4242)'.trData(context),
+          ),
           backgroundColor: const Color(0xFF6A2777),
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
@@ -228,8 +232,9 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     if (status == 'success' && sessionId != null && sessionId.isNotEmpty) {
       if (_isSubmitting) return;
       setState(() => _isSubmitting = true);
-      final checkResult =
-          await StripePaymentService().verifyCheckoutSession(sessionId);
+      final checkResult = await StripePaymentService().verifyCheckoutSession(
+        sessionId,
+      );
       if (checkResult.isPaid || StripeConfig.enableTestMode) {
         final ref = checkResult.paymentIntentId ?? sessionId;
         final saved = await _submitListingWithPaymentRef(
@@ -289,16 +294,18 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     final cleaned = _planAmount.replaceAll(RegExp(r'[^0-9.]'), '');
     _baseAedAmount = double.tryParse(cleaned) ?? 0.0;
 
-    _hasVat = widget.args['hasVat'] == true ||
+    _hasVat =
+        widget.args['hasVat'] == true ||
         _itemType == 'gallery' ||
         _itemType == 'event' ||
         _baseAedAmount == 2000 ||
         _baseAedAmount == 3000 ||
         _baseAedAmount == 5000 ||
         (_baseAedAmount > 0 && widget.args['hasVat'] != false);
-    _vatRate = (widget.args['vatRate'] is num)
-        ? (widget.args['vatRate'] as num).toDouble()
-        : 0.05;
+    _vatRate =
+        (widget.args['vatRate'] is num)
+            ? (widget.args['vatRate'] as num).toDouble()
+            : 0.05;
 
     if (_isPlanPurchase) {
       _title = _planName;
@@ -330,13 +337,15 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
         final email = _emailController.text.trim();
         final userEmail = email.isNotEmpty ? email : 'user@artistdubai.com';
         try {
-          final durationVal = widget.args['duration']?.toString() ??
+          final durationVal =
+              widget.args['duration']?.toString() ??
               widget.args['planPeriod']?.toString() ??
               '30 Days';
           final durationDaysVal = int.tryParse(
-              widget.args['durationDays']?.toString() ??
-                  widget.args['duration_days']?.toString() ??
-                  '');
+            widget.args['durationDays']?.toString() ??
+                widget.args['duration_days']?.toString() ??
+                '',
+          );
           await sl<ApiService>().recordPlanPurchase(
             email: userEmail,
             planName: _planName,
@@ -360,7 +369,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           await storage.setString('active_plan_$itemKey', _planName);
           await storage.setString('active_plan_id_$itemKey', _planId);
           await storage.setString('last_payment_ref', ccRef);
-          await storage.setString('last_payment_date', DateTime.now().toIso8601String());
+          await storage.setString(
+            'last_payment_date',
+            DateTime.now().toIso8601String(),
+          );
           await storage.setString('last_payment_amount', _planAmount);
           if (itemKey == 'chat' ||
               _planName.toLowerCase().contains('chat') ||
@@ -368,20 +380,24 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
             await storage.setString('chat_plan', _planName);
             await storage.setString('chat_plan_name', _planName);
             await storage.setString('active_plan_chat', _planName);
-            final allowance = widget.args['maxAllowance']?.toString() ??
+            final allowance =
+                widget.args['maxAllowance']?.toString() ??
                 (_planName.toLowerCase().contains('pro') ? '50' : '9999');
             await storage.setString('chat_allowance_max', allowance);
           }
-          if (itemKey == 'gallery' || _planName.toLowerCase().contains('gall')) {
+          if (itemKey == 'gallery' ||
+              _planName.toLowerCase().contains('gall')) {
             await storage.setString('active_plan_gallery', _planName);
           }
           if (itemKey == 'event' || _planName.toLowerCase().contains('event')) {
             await storage.setString('active_plan_event', _planName);
           }
-          if (itemKey == 'artist' || _planName.toLowerCase().contains('artist')) {
+          if (itemKey == 'artist' ||
+              _planName.toLowerCase().contains('artist')) {
             await storage.setString('active_plan_artist', _planName);
           }
-          if (itemKey == 'art_centre' || _planName.toLowerCase().contains('centre')) {
+          if (itemKey == 'art_centre' ||
+              _planName.toLowerCase().contains('centre')) {
             await storage.setString('active_plan_art_centre', _planName);
           }
           sl<LiveSyncService>().notifyAuthChanged(true);
@@ -395,6 +411,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           'type': _formData['type'] ?? '',
           'address': _formData['address'] ?? '',
           'location': _formData['location'] ?? _subtitle,
+          'timing': _formData['timing'] ?? '',
           'website': _formData['website'] ?? '',
           'contact_person': _formData['contact_person'] ?? '',
           'email': _emailController.text.trim(),
@@ -507,6 +524,9 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     if (_isSubmitting) return;
 
     if (!_formKey.currentState!.validate()) {
+      _showErrorSnackBar(
+        'Please complete all required payment details highlighted in red.',
+      );
       return;
     }
 
@@ -521,8 +541,13 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
       return;
     }
 
-    if (!StripePaymentService.validateCvc(_cvcController.text, brand: _detectedBrand)) {
-      _showErrorSnackBar('Please enter a valid 3 or 4 digit security code (CVC).');
+    if (!StripePaymentService.validateCvc(
+      _cvcController.text,
+      brand: _detectedBrand,
+    )) {
+      _showErrorSnackBar(
+        'Please enter a valid 3 or 4 digit security code (CVC).',
+      );
       return;
     }
 
@@ -533,9 +558,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
         cardNumber: cardRaw,
         expiryDate: _expiryController.text.trim(),
         cvc: _cvcController.text.trim(),
-        cardHolderName: _cardHolderController.text.trim().isNotEmpty
-            ? _cardHolderController.text.trim()
-            : 'Artist Dubai Customer',
+        cardHolderName:
+            _cardHolderController.text.trim().isNotEmpty
+                ? _cardHolderController.text.trim()
+                : 'Artist Dubai Customer',
         amount: _totalAedAmount,
         currency: 'aed',
         itemTitle: '$_title ($_planName)',
@@ -555,10 +581,13 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
       if (!mounted) return;
 
       if (result.isSuccess) {
-        final ref = result.transactionId ?? 'pi_${DateTime.now().millisecondsSinceEpoch}';
+        final ref =
+            result.transactionId ??
+            'pi_${DateTime.now().millisecondsSinceEpoch}';
         await _submitListingWithPaymentRef(
           ref,
-          paymentMethod: 'Stripe Card (${result.cardBrand} •••• ${result.last4})',
+          paymentMethod:
+              'Stripe Card (${result.cardBrand} •••• ${result.last4})',
         );
 
         if (!mounted) return;
@@ -567,7 +596,8 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
       } else {
         setState(() => _isSubmitting = false);
         _showErrorSnackBar(
-          result.errorMessage ?? 'Payment was declined by Stripe. Please try another card.',
+          result.errorMessage ??
+              'Payment was declined by Stripe. Please try another card.',
         );
       }
     } catch (e) {
@@ -583,13 +613,15 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     setState(() => _isSubmitting = true);
 
     try {
-      final durationVal = widget.args['duration']?.toString() ??
+      final durationVal =
+          widget.args['duration']?.toString() ??
           widget.args['planPeriod']?.toString() ??
           '30 Days';
       final durationDaysVal = int.tryParse(
-          widget.args['durationDays']?.toString() ??
-              widget.args['duration_days']?.toString() ??
-              '');
+        widget.args['durationDays']?.toString() ??
+            widget.args['duration_days']?.toString() ??
+            '',
+      );
       final sessionResult = await StripePaymentService().createCheckoutSession(
         amount: _totalAedAmount,
         currency: 'AED',
@@ -606,7 +638,8 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
         if (!mounted) return;
         setState(() => _isSubmitting = false);
         _showErrorSnackBar(
-          sessionResult.errorMessage ?? 'Unable to connect to Stripe Express Checkout.',
+          sessionResult.errorMessage ??
+              'Unable to connect to Stripe Express Checkout.',
         );
         return;
       }
@@ -642,14 +675,20 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     Timer? pollTimer;
     bool hasHandledSuccess = false;
 
-    Future<void> onConfirmed(BuildContext sheetCtx, StripeSessionStatusResult status) async {
+    Future<void> onConfirmed(
+      BuildContext sheetCtx,
+      StripeSessionStatusResult status,
+    ) async {
       if (hasHandledSuccess) return;
       hasHandledSuccess = true;
       pollTimer?.cancel();
       if (sheetCtx.mounted) Navigator.pop(sheetCtx);
 
       final ref = status.paymentIntentId ?? sessionId;
-      final saved = await _submitListingWithPaymentRef(ref, paymentMethod: 'Stripe Express');
+      final saved = await _submitListingWithPaymentRef(
+        ref,
+        paymentMethod: 'Stripe Express',
+      );
       if (!mounted) return;
       if (saved) {
         _showSuccessDialog(ccRef: ref);
@@ -661,92 +700,112 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
       isDismissible: false,
       enableDrag: false,
       backgroundColor: Colors.transparent,
-      builder: (sheetCtx) => StatefulBuilder(
-        builder: (modalCtx, setModalState) {
-          if (pollTimer == null && sessionId.isNotEmpty) {
-            pollTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
-              if (hasHandledSuccess || !mounted) {
-                timer.cancel();
-                return;
+      builder:
+          (sheetCtx) => StatefulBuilder(
+            builder: (modalCtx, setModalState) {
+              if (pollTimer == null && sessionId.isNotEmpty) {
+                pollTimer = Timer.periodic(const Duration(seconds: 3), (
+                  timer,
+                ) async {
+                  if (hasHandledSuccess || !mounted) {
+                    timer.cancel();
+                    return;
+                  }
+                  final status = await StripePaymentService()
+                      .verifyCheckoutSession(sessionId);
+                  if (status.isPaid) {
+                    timer.cancel();
+                    if (mounted && sheetCtx.mounted) {
+                      await onConfirmed(sheetCtx, status);
+                    }
+                  }
+                });
               }
-              final status = await StripePaymentService().verifyCheckoutSession(sessionId);
-              if (status.isPaid) {
-                timer.cancel();
-                if (mounted && sheetCtx.mounted) {
-                  await onConfirmed(sheetCtx, status);
-                }
-              }
-            });
-          }
 
-          return Container(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE2E8F0),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+              return Container(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
-                const SizedBox(height: 18),
-                Text(
-                  'Completing Express Payment'.trData(context),
-                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Finish payment on Stripe with Apple Pay or Link. Real-time verification is active.'
-                      .trData(context),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
-                ),
-                const SizedBox(height: 18),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF16A34A),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE2E8F0),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                    onPressed: isVerifying
-                        ? null
-                        : () async {
-                            setModalState(() => isVerifying = true);
-                            final status =
-                                await StripePaymentService().verifyCheckoutSession(sessionId);
-                            if (status.isPaid || StripeConfig.enableTestMode) {
-                              if (sheetCtx.mounted) await onConfirmed(sheetCtx, status);
-                            } else {
-                              setModalState(() => isVerifying = false);
-                              _showErrorSnackBar('Payment not completed yet. Please finish on Stripe.');
-                            }
-                          },
-                    child: Text('✓ I Have Completed Payment'.trData(context)),
-                  ),
+                    const SizedBox(height: 18),
+                    Text(
+                      'Completing Express Payment'.trData(context),
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Finish payment on Stripe with Apple Pay or Link. Real-time verification is active.'
+                          .trData(context),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF16A34A),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed:
+                            isVerifying
+                                ? null
+                                : () async {
+                                  setModalState(() => isVerifying = true);
+                                  final status = await StripePaymentService()
+                                      .verifyCheckoutSession(sessionId);
+                                  if (status.isPaid ||
+                                      StripeConfig.enableTestMode) {
+                                    if (sheetCtx.mounted) {
+                                      await onConfirmed(sheetCtx, status);
+                                    }
+                                  } else {
+                                    setModalState(() => isVerifying = false);
+                                    _showErrorSnackBar(
+                                      'Payment not completed yet. Please finish on Stripe.',
+                                    );
+                                  }
+                                },
+                        child: Text(
+                          '✓ I Have Completed Payment'.trData(context),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () {
+                        pollTimer?.cancel();
+                        if (sheetCtx.mounted) Navigator.pop(sheetCtx);
+                      },
+                      child: Text('Return to Card Checkout'.trData(context)),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                TextButton(
-                  onPressed: () {
-                    pollTimer?.cancel();
-                    if (sheetCtx.mounted) Navigator.pop(sheetCtx);
-                  },
-                  child: Text('Return to Card Checkout'.trData(context)),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+              );
+            },
+          ),
     ).whenComplete(() => pollTimer?.cancel());
   }
 
@@ -754,119 +813,146 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: const Color(0xFFDCFCE7),
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFF86EFAC), width: 2),
-              ),
-              child: const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 36),
+      builder:
+          (ctx) => AlertDialog(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
             ),
-            const SizedBox(height: 18),
-            Text(
-              (_isPlanPurchase
-                      ? 'Plan Purchased & Activated!'
-                      : (_itemType == 'gallery'
-                          ? 'Gallery Registered & Paid!'
-                          : 'Event Published & Paid!'))
-                  .trData(context),
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF0F172A),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              (_isPlanPurchase
-                      ? 'Your subscription to $_planName is now active! All features have been enabled.'
-                      : (_itemType == 'gallery'
-                          ? 'Your payment of $_planAmount was successful! Your gallery registration has been approved.'
-                          : 'Your payment of $_planAmount was successful! Your event listing is now published.'))
-                  .trData(context),
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 13, height: 1.45, color: Color(0xFF475569)),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${'Plan'.trData(context)}: ${_planName.trData(context)} ($_planAmount)',
-                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+            contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDCFCE7),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFF86EFAC),
+                      width: 2,
+                    ),
                   ),
-                  if (ccRef != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      '${'Transaction Ref'.trData(context)}: $ccRef',
-                      style: const TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF16A34A),
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    color: Color(0xFF16A34A),
+                    size: 36,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  (_isPlanPurchase
+                          ? 'Plan Purchased & Activated!'
+                          : (_itemType == 'gallery'
+                              ? 'Gallery Registered & Paid!'
+                              : 'Event Published & Paid!'))
+                      .trData(context),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  (_isPlanPurchase
+                          ? 'Your subscription to $_planName is now active! All features have been enabled.'
+                          : (_itemType == 'gallery'
+                              ? 'Your payment of $_planAmount was successful! Your gallery registration has been approved.'
+                              : 'Your payment of $_planAmount was successful! Your event listing is now published.'))
+                      .trData(context),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    height: 1.45,
+                    color: Color(0xFF475569),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${'Plan'.trData(context)}: ${_planName.trData(context)} ($_planAmount)',
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (ccRef != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          '${'Transaction Ref'.trData(context)}: $ccRef',
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF16A34A),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6A2777),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6A2777),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      if (_isPlanPurchase) {
+                        final type = _itemType.toLowerCase().trim();
+                        if (type == 'event') {
+                          context.go(RouteNames.createArtEvent);
+                        } else if (type == 'gallery') {
+                          context.go(RouteNames.galleryRegistration);
+                        } else {
+                          context.go(RouteNames.listingPlans);
+                        }
+                      } else if (_itemType == 'gallery') {
+                        context.go(RouteNames.galleries);
+                      } else {
+                        context.go(RouteNames.myEvents);
+                      }
+                    },
+                    child: Text(
+                      (_isPlanPurchase
+                              ? 'Continue with Active Plan'
+                              : (_itemType == 'gallery'
+                                  ? 'Back to Galleries'
+                                  : 'View My Events'))
+                          .trData(context),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
                 ),
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  if (_isPlanPurchase) {
-                    final type = _itemType.toLowerCase().trim();
-                    if (type == 'event') {
-                      context.go(RouteNames.createArtEvent);
-                    } else if (type == 'gallery') {
-                      context.go(RouteNames.galleryRegistration);
-                    } else {
-                      context.go(RouteNames.listingPlans);
-                    }
-                  } else if (_itemType == 'gallery') {
-                    context.go(RouteNames.galleries);
-                  } else {
-                    context.go(RouteNames.myEvents);
-                  }
-                },
-                child: Text(
-                  (_isPlanPurchase
-                          ? 'Continue with Active Plan'
-                          : (_itemType == 'gallery' ? 'Back to Galleries' : 'View My Events'))
-                      .trData(context),
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -925,7 +1011,9 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           ),
           child: Center(
             child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: rh.contentMaxWidth.clamp(320.0, 520.0)),
+              constraints: BoxConstraints(
+                maxWidth: rh.contentMaxWidth.clamp(320.0, 520.0),
+              ),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -942,7 +1030,6 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                       _buildVatBreakdownCard(),
                     ],
                     const SizedBox(height: 18),
-
 
                     // Express Checkout Buttons (Apple Pay & Link)
                     _buildExpressCheckoutButtons(),
@@ -991,7 +1078,11 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                 color: const Color(0xFFF3E8FF),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.storefront_rounded, size: 18, color: Color(0xFF6A2777)),
+              child: const Icon(
+                Icons.storefront_rounded,
+                size: 18,
+                color: Color(0xFF6A2777),
+              ),
             ),
             const SizedBox(width: 8),
             const Text(
@@ -1012,7 +1103,11 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.view_in_ar_rounded, size: 11, color: Colors.white),
+                  const Icon(
+                    Icons.view_in_ar_rounded,
+                    size: 11,
+                    color: Colors.white,
+                  ),
                   const SizedBox(width: 3),
                   Text(
                     StripeConfig.enableTestMode ? 'Sandbox' : 'Official',
@@ -1100,7 +1195,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                     ),
                     const SizedBox(width: 5),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 1,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFEDE9FE),
                         borderRadius: BorderRadius.circular(4),
@@ -1233,7 +1331,6 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     );
   }
 
-
   Widget _buildExpressCheckoutButtons() {
     return Row(
       children: [
@@ -1246,7 +1343,9 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                 backgroundColor: const Color(0xFF000000),
                 foregroundColor: Colors.white,
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
               onPressed: _isSubmitting ? null : _handleExpressCheckout,
               child: Row(
@@ -1273,13 +1372,19 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                 backgroundColor: const Color(0xFF00D66F),
                 foregroundColor: Colors.white,
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
               onPressed: _isSubmitting ? null : _handleExpressCheckout,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: const [
-                  Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Colors.white),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 13,
+                    color: Colors.white,
+                  ),
                   SizedBox(width: 4),
                   Text(
                     'link',
@@ -1350,7 +1455,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
               decoration: InputDecoration(
                 hintText: 'Enter your email'.trData(context),
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 12,
+                ),
               ),
               validator: (v) {
                 if (v == null || v.trim().isEmpty || !v.contains('@')) {
@@ -1371,7 +1479,11 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
       children: [
         Row(
           children: [
-            const Icon(Icons.payment_rounded, size: 18, color: Color(0xFF6A2777)),
+            const Icon(
+              Icons.payment_rounded,
+              size: 18,
+              color: Color(0xFF6A2777),
+            ),
             const SizedBox(width: 8),
             Text(
               'Payment method'.trData(context),
@@ -1397,7 +1509,11 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
               // Card Tab Header
               Row(
                 children: [
-                  const Icon(Icons.credit_card_rounded, size: 18, color: Color(0xFF0F172A)),
+                  const Icon(
+                    Icons.credit_card_rounded,
+                    size: 18,
+                    color: Color(0xFF0F172A),
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'Card'.trData(context),
@@ -1429,7 +1545,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                     onTap: _fillTestCard,
                     borderRadius: BorderRadius.circular(6),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF3E8FF),
                         borderRadius: BorderRadius.circular(6),
@@ -1438,7 +1557,11 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.flash_on_rounded, size: 12, color: Color(0xFF6A2777)),
+                          const Icon(
+                            Icons.flash_on_rounded,
+                            size: 12,
+                            color: Color(0xFF6A2777),
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             '⚡ Fill Test Card'.trData(context),
@@ -1468,9 +1591,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                       controller: _cardNumberController,
                       focusNode: _cardFocusNode,
                       keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        _CardNumberInputFormatter(),
-                      ],
+                      inputFormatters: [_CardNumberInputFormatter()],
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -1500,7 +1621,11 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                         return null;
                       },
                     ),
-                    const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+                    const Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: Color(0xFFE2E8F0),
+                    ),
                     // MM/YY and CVC Row
                     Row(
                       children: [
@@ -1509,9 +1634,7 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                             controller: _expiryController,
                             focusNode: _expiryFocusNode,
                             keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              _CardExpiryInputFormatter(),
-                            ],
+                            inputFormatters: [_CardExpiryInputFormatter()],
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
@@ -1527,7 +1650,9 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                               ),
                             ),
                             validator: (v) {
-                              if (v == null || v.trim().isEmpty) return 'Expiry required'.trData(context);
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Expiry required'.trData(context);
+                              }
                               return null;
                             },
                           ),
@@ -1567,7 +1692,9 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                               ),
                             ),
                             validator: (v) {
-                              if (v == null || v.trim().isEmpty) return 'CVC required'.trData(context);
+                              if (v == null || v.trim().isEmpty) {
+                                return 'CVC required'.trData(context);
+                              }
                               return null;
                             },
                           ),
@@ -1603,7 +1730,10 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                   hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
                   filled: true,
                   fillColor: const Color(0xFFF8FAFC),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
@@ -1614,11 +1744,35 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFF6A2777), width: 1.5),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF6A2777),
+                      width: 1.5,
+                    ),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFEF4444),
+                      width: 1.5,
+                    ),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFDC2626),
+                      width: 2.0,
+                    ),
+                  ),
+                  errorStyle: const TextStyle(
+                    color: Color(0xFFEF4444),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'Enter cardholder name'.trData(context);
+                  if (v == null || v.trim().isEmpty) {
+                    return 'Enter cardholder name'.trData(context);
+                  }
                   return null;
                 },
               ),
@@ -1639,7 +1793,11 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
         ),
         child: const Text(
           'VISA',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 10.5),
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+            fontSize: 10.5,
+          ),
         ),
       );
     } else if (_detectedBrand == 'MASTERCARD') {
@@ -1651,7 +1809,11 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
         ),
         child: const Text(
           'MC',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 10.5),
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+            fontSize: 10.5,
+          ),
         ),
       );
     } else if (_detectedBrand == 'AMEX') {
@@ -1663,7 +1825,11 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
         ),
         child: const Text(
           'AMEX',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 10.5),
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+            fontSize: 10.5,
+          ),
         ),
       );
     }
@@ -1678,7 +1844,11 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           ),
           child: const Text(
             'VISA',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 8),
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: 8,
+            ),
           ),
         ),
         const SizedBox(width: 4),
@@ -1690,7 +1860,11 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
           ),
           child: const Text(
             'MC',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 8),
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: 8,
+            ),
           ),
         ),
       ],
@@ -1709,46 +1883,55 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
               foregroundColor: Colors.white,
               elevation: 2,
               shadowColor: const Color(0xFF6A2777).withValues(alpha: 0.35),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             onPressed: _isSubmitting ? null : _handleDirectCardPayment,
-            child: _isSubmitting
-                ? Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Processing Payment...'.trData(context),
-                        style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
-                      ),
-                    ],
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.lock_rounded, size: 18),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          _hasVat
-                              ? '${'Pay'.trData(context)} $_totalAedString ${'(incl. VAT)'.trData(context)}'
-                              : '${'Pay'.trData(context)} $_displayAedString',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.2,
+            child:
+                _isSubmitting
+                    ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Processing Payment...'.trData(context),
+                          style: const TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    )
+                    : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.lock_rounded, size: 18),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            _hasVat
+                                ? '${'Pay'.trData(context)} $_totalAedString ${'(incl. VAT)'.trData(context)}'
+                                : '${'Pay'.trData(context)} $_displayAedString',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
           ),
         ),
         const SizedBox(height: 10),
@@ -1759,7 +1942,9 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFF475569),
               side: const BorderSide(color: Color(0xFFCBD5E1)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             onPressed: () {
               if (context.canPop()) {
@@ -1781,8 +1966,6 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
       ],
     );
   }
-
-
 }
 
 /// Custom formatter for card number spacing with brand-aware digit limits
@@ -1968,4 +2151,3 @@ class CardExpiryInputFormatter extends TextInputFormatter {
 }
 
 typedef _CardExpiryInputFormatter = CardExpiryInputFormatter;
-

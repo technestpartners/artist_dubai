@@ -103,6 +103,29 @@ class DataTranslator {
     'all': 'الكل',
     'all categories': 'جميع الفئات',
 
+    // Events Header & Guide
+    'what’s on in dubai?': 'ماذا يحدث في دبي؟',
+    'what\'s on in dubai?': 'ماذا يحدث في دبي؟',
+    'what’s on in dubai': 'ماذا يحدث في دبي؟',
+    'what\'s on in dubai': 'ماذا يحدث في دبي؟',
+    'your guide to the latest events, exhibitions, concerts, festivals, workshops and grand openings.':
+        'دليلك لأحدث الفعاليات، المعارض، الحفلات الموسيقية، المهرجانات، ورش العمل والافتتاحات الكبرى.',
+    'your guide to the latest events, exhibitions, concerts, festivals, workshops and grand openings':
+        'دليلك لأحدث الفعاليات، المعارض، الحفلات الموسيقية، المهرجانات، ورش العمل والافتتاحات الكبرى.',
+    'discover what’s happening.': 'اكتشف ما يحدث الآن.',
+    'discover what\'s happening.': 'اكتشف ما يحدث الآن.',
+    'discover what’s happening': 'اكتشف ما يحدث الآن.',
+    'discover what\'s happening': 'اكتشف ما يحدث الآن.',
+    'register venue': 'تسجيل المساحة الفنية',
+    'register art venue': 'تسجيل المساحة الفنية',
+    'register venue (0 aed)': 'تسجيل المساحة الفنية (0 درهم)',
+    'opening hours / timing': 'ساعات العمل / التوقيت',
+    'opening hours / timing (optional)': 'ساعات العمل / التوقيت (اختياري)',
+    'opening hours': 'ساعات العمل',
+    'timing': 'التوقيت',
+    'sat–thu 10:00–20:00': 'السبت–الخميس 10:00–20:00',
+    'sat–thu 10:00 am – 8:00 pm': 'السبت–الخميس 10:00 ص – 8:00 م',
+
     // AI / Global Art Guide
     'ai art guide': 'مرشد الفن الذكي',
     'artist dubai guide': 'دليل فنان دبي الذكي',
@@ -657,7 +680,8 @@ class DataTranslator {
     '365 days showcase': 'عرض لمدة ٣٦٥ يوماً',
     'gallery showcase': 'عرض المعرض الفني',
     'artist event publishing': 'نشر فعاليات الفنانين',
-    'paid gallery publishing • choose your plan': 'نشر المعارض المدفوع • اختر خطتك',
+    'paid gallery publishing • choose your plan':
+        'نشر المعارض المدفوع • اختر خطتك',
     'paid gallery publishing • choose plan': 'نشر المعارض المدفوع • اختر خطتك',
     'paid gallery publishing': 'نشر المعارض المدفوع',
     'art venue listing • choose your plan': 'إدراج المساحة الفنية • اختر خطتك',
@@ -666,7 +690,8 @@ class DataTranslator {
         'عزز ظهورك وأمّن مكانك في مجتمعنا الفني الاحترافي. اختر خطتك وتواصل مع عالم الفن!',
     'boost your visibility and secure your place in our professional art community. choose your plan and connect with the art world':
         'عزز ظهورك وأمّن مكانك في مجتمعنا الفني الاحترافي. اختر خطتك وتواصل مع عالم الفن!',
-    'paid event publishing • choose your plan': 'نشر الفعاليات المدفوع • اختر خطتك',
+    'paid event publishing • choose your plan':
+        'نشر الفعاليات المدفوع • اختر خطتك',
     'paid event publishing • choose plan': 'نشر الفعاليات المدفوع • اختر خطتك',
     'paid event publishing': 'نشر الفعاليات المدفوع',
     'choose your plan': 'اختر خطتك',
@@ -678,9 +703,11 @@ class DataTranslator {
     'first 3 months free': 'أول ٣ أشهر مجانًا',
     'enjoy premium visibility at no cost.': 'استمتع بظهور مميز دون أي تكلفة.',
     'free forever': 'مجانًا للأبد',
-    'access calendars, maps, and event features.': 'الوصول إلى التقويمات والخرائط وميزات الفعاليات.',
+    'access calendars, maps, and event features.':
+        'الوصول إلى التقويمات والخرائط وميزات الفعاليات.',
     'free photo uploads': 'رفع صور مجاني',
-    'share your event photos and showcase your gallery.': 'شارك صور فعالياتك واستعرض مساحتك الفنية.',
+    'share your event photos and showcase your gallery.':
+        'شارك صور فعالياتك واستعرض مساحتك الفنية.',
     'feature your gallery on curated maps and event calendars, with professional event photography.':
         'ميّز معرضك على الخرائط المختارة وتقويمات الفعاليات مع تصوير احترافي للفعاليات.',
     'feature your gallery on curated maps and event calendars, with professional event photography':
@@ -740,9 +767,11 @@ class DataTranslator {
         'شكراً لك. سيقوم فريقنا بمراجعة معرضك أو مركزك الفني والتواصل معك عبر البريد الإلكتروني.',
     'back to home': 'العودة إلى الرئيسية',
     'registration': 'التسجيل',
-// Validation & Form Error Messages
-    'phone number must be at least 7 digits': 'يجب أن يتكون رقم الهاتف من 7 أرقام على الأقل',
-    'phone number cannot exceed 15 digits': 'لا يمكن أن يتجاوز رقم الهاتف 15 رقماً',
+    // Validation & Form Error Messages
+    'phone number must be at least 7 digits':
+        'يجب أن يتكون رقم الهاتف من 7 أرقام على الأقل',
+    'phone number cannot exceed 15 digits':
+        'لا يمكن أن يتجاوز رقم الهاتف 15 رقماً',
     'please enter a valid email address': 'يرجى إدخال عنوان بريد إلكتروني صحيح',
     'enter card number': 'أدخل رقم البطاقة',
     'expiry required': 'تاريخ الانتهاء مطلوب',
@@ -777,6 +806,7 @@ class DataTranslator {
     'artists': 'الفنانون',
     'government': 'الجهات الحكومية',
     'artist registration': 'تسجيل فنان',
+    'edit artist': 'تعديل الفنان',
     'events competition': 'الفعاليات والمسابقات',
     'events competitions': 'الفعاليات والمسابقات',
     'competitions': 'المسابقات',
@@ -872,9 +902,12 @@ class DataTranslator {
     'search galleries & art centers': 'البحث في المعارض والمراكز الفنية',
     'search government entities': 'البحث في الجهات الحكومية',
     'clear search': 'مسح البحث',
-    'no event photos found matching your search.': 'لم يتم العثور على صور فعاليات تطابق بحثك.',
-    'no galleries or art centers found matching your search.': 'لم يتم العثور على معارض أو مراكز فنية تطابق بحثك.',
-    'no government entities found matching your search.': 'لم يتم العثور على جهات حكومية تطابق بحثك.',
+    'no event photos found matching your search.':
+        'لم يتم العثور على صور فعاليات تطابق بحثك.',
+    'no galleries or art centers found matching your search.':
+        'لم يتم العثور على معارض أو مراكز فنية تطابق بحثك.',
+    'no government entities found matching your search.':
+        'لم يتم العثور على جهات حكومية تطابق بحثك.',
     'today': 'اليوم',
     'this week': 'هذا الأسبوع',
     'custom dates': 'تواريخ مخصصة',
@@ -1119,7 +1152,8 @@ class DataTranslator {
     'bank transfer & iban settings': 'إعدادات التحويل البنكي والآيبان',
     'edit bank & iban': 'تعديل بيانات البنك والآيبان',
     'edit payment settings': 'تعديل إعدادات الدفع',
-    'bank details & iban updated successfully!': 'تم تحديث بيانات البنك والآيبان بنجاح!',
+    'bank details & iban updated successfully!':
+        'تم تحديث بيانات البنك والآيبان بنجاح!',
     'artist dubai cultural services llc': 'خدمات فنان دبي الثقافية ش.ذ.م.م',
     'please scan the qr code with your mobile banking or payment app, or transfer directly via iban. once paid, enter your transaction reference number and upload the receipt screenshot.':
         'يرجى مسح رمز QR باستخدام تطبيقك المصرفي أو تطبيق الدفع، أو التحويل مباشرة عبر الآيبان. بمجرد الدفع، أدخل الرقم المرجعي للمعاملة وارفع لقطة شاشة للإيصال.',
@@ -1414,7 +1448,7 @@ class DataTranslator {
     'account deletion requests are processed manually for security reasons. after clicking "delete account", you\'ll be signed out and our team will process your request within 7 business days. you\'ll receive a confirmation email once the deletion is complete.':
         'تتم معالجة طلبات حذف الحساب يدويًا لأسباب أمنية. بعد النقر على "حذف الحساب"، سيتم تسجيل خروجك وسيقوم فريقنا بمعالجة طلبك في غضون 7 أيام عمل. ستتلقى رسالة تأكيد بالبريد الإلكتروني بمجرد اكتمال الحذف.',
 
-// Listing Plans, Subscriptions & Membership Passes
+    // Listing Plans, Subscriptions & Membership Passes
     'official publishing & showcase passes': 'تصاريح النشر والعرض الرسمية',
     'no plans found for this category': 'لا توجد باقات متاحة لهذا القسم',
     'select another tab or view all plans to see available options.':
@@ -1860,8 +1894,11 @@ class DataTranslator {
         final count = trimmed.replaceAll(RegExp(r'[^0-9]'), '');
         return '$count صورة';
       }
-// Dynamic count, days remaining & entries patterns
-      final daysRemainingMatch = RegExp(r'^(\d+)\s+days remaining\s*(?:\(~1 year\))?$', caseSensitive: false).firstMatch(lower);
+      // Dynamic count, days remaining & entries patterns
+      final daysRemainingMatch = RegExp(
+        r'^(\d+)\s+days remaining\s*(?:\(~1 year\))?$',
+        caseSensitive: false,
+      ).firstMatch(lower);
       if (daysRemainingMatch != null) {
         final days = daysRemainingMatch.group(1);
         if (lower.contains('~1 year')) {
@@ -1869,24 +1906,36 @@ class DataTranslator {
         }
         return 'متبقي $days يوماً';
       }
-      final daysMonthsMatch = RegExp(r'^(\d+)\s+days remaining\s*\(~(\d+)\s*mos\)$', caseSensitive: false).firstMatch(lower);
+      final daysMonthsMatch = RegExp(
+        r'^(\d+)\s+days remaining\s*\(~(\d+)\s*mos\)$',
+        caseSensitive: false,
+      ).firstMatch(lower);
       if (daysMonthsMatch != null) {
         final days = daysMonthsMatch.group(1);
         final mos = daysMonthsMatch.group(2);
         return 'متبقي $days يوماً (~$mos أشهر)';
       }
-      final planDaysMatch = RegExp(r'^(\d+)\s+days remaining on this plan$', caseSensitive: false).firstMatch(lower);
+      final planDaysMatch = RegExp(
+        r'^(\d+)\s+days remaining on this plan$',
+        caseSensitive: false,
+      ).firstMatch(lower);
       if (planDaysMatch != null) {
         final days = planDaysMatch.group(1);
         return 'متبقي $days يوماً في هذه الباقة';
       }
-      final entriesMatch = RegExp(r'^(\d+)\s*/\s*(\d+)\s+entries$', caseSensitive: false).firstMatch(lower);
+      final entriesMatch = RegExp(
+        r'^(\d+)\s*/\s*(\d+)\s+entries$',
+        caseSensitive: false,
+      ).firstMatch(lower);
       if (entriesMatch != null) {
         final cur = entriesMatch.group(1);
         final max = entriesMatch.group(2);
         return '$cur / $max مشاركة';
       }
-      final fullMatch = RegExp(r'^(\d+)%\s+full$', caseSensitive: false).firstMatch(lower);
+      final fullMatch = RegExp(
+        r'^(\d+)%\s+full$',
+        caseSensitive: false,
+      ).firstMatch(lower);
       if (fullMatch != null) {
         final pct = fullMatch.group(1);
         return '$pct% مكتمل';

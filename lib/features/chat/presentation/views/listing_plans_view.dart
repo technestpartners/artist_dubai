@@ -1249,8 +1249,8 @@ class _ListingPlansViewState extends State<ListingPlansView> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
+              horizontal: 12,
+              vertical: 11,
             ),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
@@ -1270,66 +1270,70 @@ class _ListingPlansViewState extends State<ListingPlansView> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Listing Price'.trData(context),
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF7E22CE),
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Wrap(
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          spacing: 6,
-                          children: [
-                            Text(
-                              plan.price.trData(context),
-                              style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF1E1B4B),
-                                letterSpacing: -0.4,
-                              ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Listing Price'.trData(context),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF7E22CE),
+                              letterSpacing: 0.3,
                             ),
-                            if (plan.price.isNotEmpty &&
-                                plan.price.toLowerCase() != 'free' &&
-                                plan.price != '0 AED')
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF5E227A).withValues(alpha: 0.10),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                    color: const Color(0xFF5E227A).withValues(alpha: 0.25),
-                                    width: 0.9,
-                                  ),
-                                ),
-                                child: Text(
-                                  '+ VAT'.trData(context),
-                                  style: const TextStyle(
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w800,
-                                    color: Color(0xFF5E227A),
-                                    letterSpacing: 0.2,
-                                  ),
+                          ),
+                          const SizedBox(height: 2),
+                          Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: [
+                              Text(
+                                plan.price.trData(context),
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFF1E1B4B),
+                                  letterSpacing: -0.4,
                                 ),
                               ),
-                          ],
-                        ),
-                      ],
+                              if (plan.price.isNotEmpty &&
+                                  plan.price.toLowerCase() != 'free' &&
+                                  plan.price != '0 AED')
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF5E227A).withValues(alpha: 0.10),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: const Color(0xFF5E227A).withValues(alpha: 0.25),
+                                      width: 0.9,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '+ VAT'.trData(context),
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF5E227A),
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
+                        horizontal: 8,
+                        vertical: 4,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -1348,14 +1352,14 @@ class _ListingPlansViewState extends State<ListingPlansView> {
                         children: [
                           const Icon(
                             Icons.bolt_rounded,
-                            size: 14,
+                            size: 13,
                             color: Color(0xFFD97706),
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 3),
                           Text(
                             'Instant Activation'.trData(context),
                             style: const TextStyle(
-                              fontSize: 11,
+                              fontSize: 10.5,
                               fontWeight: FontWeight.w700,
                               color: Color(0xFF4C1D95),
                             ),

@@ -52,6 +52,32 @@ class AppCachedImage extends StatelessWidget {
     return trimmed;
   }
 
+  /// Generates an alternative streaming or static URL if the primary format fails.
+  /// Converts `uploads/{file}` to `api.php?resource=upload&file={file}`,
+  /// and `api.php?resource=upload&file={file}` to `uploads/{file}`.
+  static String? getAlternativeUrl(String? url) {
+    if (url == null || url.trim().isEmpty) return null;
+    final trimmed = url.trim();
+
+    final uploadsMatch = RegExp(r'uploads/([^/?#]+)').firstMatch(trimmed);
+    if (uploadsMatch != null) {
+      final filename = uploadsMatch.group(1);
+      if (filename != null && filename.isNotEmpty) {
+        return '${ApiEndpoints.baseUrl}api.php?resource=upload&file=$filename';
+      }
+    }
+
+    final apiMatch = RegExp(r'[?&]file=([^&#]+)').firstMatch(trimmed);
+    if (apiMatch != null && (trimmed.contains('resource=upload') || trimmed.contains('resource=uploads'))) {
+      final filename = apiMatch.group(1);
+      if (filename != null && filename.isNotEmpty) {
+        return '${ApiEndpoints.baseUrl}uploads/$filename';
+      }
+    }
+
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final cleanUrl = normalizeImageUrl(imageUrl);
@@ -85,6 +111,32 @@ class AppCachedImage extends StatelessWidget {
           return placeholder ?? _buildPlaceholder();
         },
         errorBuilder: (context, error, stackTrace) {
+          final altUrl = getAlternativeUrl(cleanUrl);
+          if (altUrl != null && altUrl != cleanUrl) {
+            return Image.network(
+              altUrl,
+              width: width,
+              height: height,
+              fit: fit,
+              loadingBuilder: (ctx, ch, prog) =>
+                  prog == null ? ch : (placeholder ?? _buildPlaceholder()),
+              errorBuilder: (ctx, err, st) {
+                final raw = imageUrl.trim();
+                if (raw.isNotEmpty && raw != cleanUrl && raw != altUrl) {
+                  return Image.network(
+                    raw,
+                    width: width,
+                    height: height,
+                    fit: fit,
+                    loadingBuilder: (c, h, p) =>
+                        p == null ? h : (placeholder ?? _buildPlaceholder()),
+                    errorBuilder: (c, e, s) => errorWidget ?? _buildFallback(),
+                  );
+                }
+                return errorWidget ?? _buildFallback();
+              },
+            );
+          }
           final raw = imageUrl.trim();
           if (raw.isNotEmpty && raw != cleanUrl) {
             return Image.network(
@@ -110,6 +162,32 @@ class AppCachedImage extends StatelessWidget {
         fadeInDuration: const Duration(milliseconds: 200),
         placeholder: (context, url) => placeholder ?? _buildPlaceholder(),
         errorWidget: (context, url, error) {
+          final altUrl = getAlternativeUrl(cleanUrl);
+          if (altUrl != null && altUrl != cleanUrl) {
+            return CachedNetworkImage(
+              imageUrl: altUrl,
+              width: width,
+              height: height,
+              fit: fit,
+              fadeInDuration: const Duration(milliseconds: 150),
+              placeholder: (ctx, u) => placeholder ?? _buildPlaceholder(),
+              errorWidget: (ctx, u, err) {
+                final raw = imageUrl.trim();
+                if (raw.isNotEmpty && raw != cleanUrl && raw != altUrl) {
+                  return CachedNetworkImage(
+                    imageUrl: raw,
+                    width: width,
+                    height: height,
+                    fit: fit,
+                    fadeInDuration: const Duration(milliseconds: 150),
+                    placeholder: (c, u1) => placeholder ?? _buildPlaceholder(),
+                    errorWidget: (c, u1, e) => errorWidget ?? _buildFallback(),
+                  );
+                }
+                return errorWidget ?? _buildFallback();
+              },
+            );
+          }
           final raw = imageUrl.trim();
           if (raw.isNotEmpty && raw != cleanUrl) {
             return CachedNetworkImage(

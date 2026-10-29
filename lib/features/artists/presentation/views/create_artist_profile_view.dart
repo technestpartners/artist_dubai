@@ -86,6 +86,14 @@ class ProfileArtworkItem {
   }
 }
 
+const List<String> kDefaultExperienceLevels = [
+  'Emerging Artist (1-3 years)',
+  'Mid-Career Artist (4-8 years)',
+  'Established Master (9+ years)',
+  'Professional (5+ years)',
+  'Self-Taught / Independent',
+];
+
 class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
   final _formKey = GlobalKey<FormState>();
 
@@ -113,8 +121,93 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
   bool _isEditMode = false;
   String? _editingArtistId;
   String? _existingAvatarUrl;
+  Map<String, dynamic>? _initialFormSnapshot;
 
   static const int kMaxArtworks = 6;
+
+  Map<String, dynamic> _captureFormSnapshot() {
+    return {
+      'name': _fullNameController.text.trim(),
+      'email': _emailController.text.trim(),
+      'phone': _phoneController.text.trim(),
+      'countryCode': _selectedCountryCode,
+      'bio': _bioController.text.trim(),
+      'website': _websiteController.text.trim(),
+      'instagram': _instagramController.text.trim(),
+      'facebook': _facebookController.text.trim(),
+      'twitter': _twitterController.text.trim(),
+      'linkedin': _linkedinController.text.trim(),
+      'tiktok': _tiktokController.text.trim(),
+      'youtube': _youtubeController.text.trim(),
+      'category': _selectedCategory ?? '',
+      'experience': _selectedExperienceLevel ?? '',
+      'location': _selectedLocation ?? '',
+      'hasNewPhoto': _profilePhotoFile != null || _profilePhotoBytes != null,
+      'avatarUrl': _existingAvatarUrl ?? '',
+      'artworks': _portfolioArtworks.map((a) => {
+        'id': a.existingId ?? '',
+        'hasFile': a.file != null,
+        'url': a.existingImageUrl ?? '',
+        'title': a.titleController.text.trim(),
+        'medium': a.mediumController.text.trim(),
+        'price': a.priceController.text.trim(),
+        'dimensions': a.dimensionsController.text.trim(),
+        'year': a.yearController.text.trim(),
+        'isFeatured': a.isFeatured,
+      }).toList(),
+    };
+  }
+
+  bool get _hasFormChanged {
+    if (!_isEditMode) return true;
+    if (_initialFormSnapshot == null) return false;
+
+    // Profile photo changes
+    if (_profilePhotoFile != null || _profilePhotoBytes != null) return true;
+    if ((_existingAvatarUrl ?? '') != (_initialFormSnapshot!['avatarUrl'] ?? '')) {
+      return true;
+    }
+
+    // Contact and bio info
+    if (_fullNameController.text.trim() != _initialFormSnapshot!['name']) return true;
+    if (_emailController.text.trim() != _initialFormSnapshot!['email']) return true;
+    if (_phoneController.text.trim() != _initialFormSnapshot!['phone']) return true;
+    if (_selectedCountryCode != _initialFormSnapshot!['countryCode']) return true;
+    if (_bioController.text.trim() != _initialFormSnapshot!['bio']) return true;
+
+    // Social & Web links
+    if (_websiteController.text.trim() != _initialFormSnapshot!['website']) return true;
+    if (_instagramController.text.trim() != _initialFormSnapshot!['instagram']) return true;
+    if (_facebookController.text.trim() != _initialFormSnapshot!['facebook']) return true;
+    if (_twitterController.text.trim() != _initialFormSnapshot!['twitter']) return true;
+    if (_linkedinController.text.trim() != _initialFormSnapshot!['linkedin']) return true;
+    if (_tiktokController.text.trim() != _initialFormSnapshot!['tiktok']) return true;
+    if (_youtubeController.text.trim() != _initialFormSnapshot!['youtube']) return true;
+
+    // Categories and attributes
+    if ((_selectedCategory ?? '') != _initialFormSnapshot!['category']) return true;
+    if ((_selectedExperienceLevel ?? '') != _initialFormSnapshot!['experience']) return true;
+    if ((_selectedLocation ?? '') != _initialFormSnapshot!['location']) return true;
+
+    // Artworks list
+    final initialArts = _initialFormSnapshot!['artworks'] as List<dynamic>? ?? [];
+    if (_portfolioArtworks.length != initialArts.length) return true;
+
+    for (int i = 0; i < _portfolioArtworks.length; i++) {
+      final a = _portfolioArtworks[i];
+      if (a.file != null) return true;
+      final initialArt = initialArts[i] as Map<String, dynamic>;
+      if ((a.existingId ?? '') != (initialArt['id'] ?? '')) return true;
+      if (a.titleController.text.trim() != (initialArt['title'] ?? '')) return true;
+      if (a.mediumController.text.trim() != (initialArt['medium'] ?? '')) return true;
+      if (a.priceController.text.trim() != (initialArt['price'] ?? '')) return true;
+      if (a.dimensionsController.text.trim() != (initialArt['dimensions'] ?? '')) return true;
+      if (a.yearController.text.trim() != (initialArt['year'] ?? '')) return true;
+      if (a.isFeatured != (initialArt['isFeatured'] ?? false)) return true;
+    }
+
+    return false;
+  }
 
   bool get _isAllCriteriaMet {
     final hasName = _fullNameController.text.trim().isNotEmpty;
@@ -125,8 +218,32 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     return hasName && hasEmail && hasLocation && hasTerms;
   }
 
+  bool get _canSubmit {
+    if (_isSubmitting) return false;
+    if (_isEditMode) {
+      return _hasFormChanged && _isAllCriteriaMet;
+    }
+    return _isAllCriteriaMet;
+  }
+
   void _onFormCriteriaChanged() {
     if (mounted) setState(() {});
+  }
+
+  void _attachArtworkListeners(ProfileArtworkItem item) {
+    item.titleController.addListener(_onFormCriteriaChanged);
+    item.priceController.addListener(_onFormCriteriaChanged);
+    item.mediumController.addListener(_onFormCriteriaChanged);
+    item.dimensionsController.addListener(_onFormCriteriaChanged);
+    item.yearController.addListener(_onFormCriteriaChanged);
+  }
+
+  void _detachArtworkListeners(ProfileArtworkItem item) {
+    item.titleController.removeListener(_onFormCriteriaChanged);
+    item.priceController.removeListener(_onFormCriteriaChanged);
+    item.mediumController.removeListener(_onFormCriteriaChanged);
+    item.dimensionsController.removeListener(_onFormCriteriaChanged);
+    item.yearController.removeListener(_onFormCriteriaChanged);
   }
 
   final ImagePicker _picker = ImagePicker();
@@ -269,13 +386,13 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
         final imagesToAdd = images.take(remainingSlots).toList();
         setState(() {
           for (final img in imagesToAdd) {
-            _portfolioArtworks.add(
-              ProfileArtworkItem(
-                file: img,
-                initialTitle: '',
-                initialMedium: _selectedCategory ?? 'Mixed Media',
-              ),
+            final item = ProfileArtworkItem(
+              file: img,
+              initialTitle: '',
+              initialMedium: _selectedCategory ?? 'Mixed Media',
             );
+            _attachArtworkListeners(item);
+            _portfolioArtworks.add(item);
           }
         });
         if (images.length > remainingSlots && mounted) {
@@ -319,13 +436,13 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
       );
       if (image != null) {
         setState(() {
-          _portfolioArtworks.add(
-            ProfileArtworkItem(
-              file: image,
-              initialTitle: '',
-              initialMedium: _selectedCategory ?? 'Mixed Media',
-            ),
+          final item = ProfileArtworkItem(
+            file: image,
+            initialTitle: '',
+            initialMedium: _selectedCategory ?? 'Mixed Media',
           );
+          _attachArtworkListeners(item);
+          _portfolioArtworks.add(item);
         });
       }
     } catch (e) {
@@ -344,6 +461,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
   void _removeImage(int index) {
     setState(() {
       final item = _portfolioArtworks[index];
+      _detachArtworkListeners(item);
       if (item.existingId != null && item.existingId!.isNotEmpty) {
         _deletedArtworkIds.add(item.existingId!);
       }
@@ -357,11 +475,23 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
       .where((n) => n.trim().isNotEmpty)
       .toList();
 
-  List<String> _experienceLevels = (sl<ApiService>().cachedExperienceLevels ?? [])
-      .map((e) => e.name)
-      .where((n) => n.trim().isNotEmpty)
-      .toSet()
-      .toList();
+  static String _formatExpLevel(ExperienceLevelModel e) {
+    final n = e.name.trim();
+    final r = e.yearsRange.trim();
+    if (r.isNotEmpty && !n.contains(r) && !n.contains('(')) {
+      return '$n ($r)';
+    }
+    return n;
+  }
+
+  List<String> _experienceLevels = () {
+    final cached = (sl<ApiService>().cachedExperienceLevels ?? [])
+        .map(_formatExpLevel)
+        .where((n) => n.isNotEmpty)
+        .toSet()
+        .toList();
+    return cached.isNotEmpty ? cached : List<String>.from(kDefaultExperienceLevels);
+  }();
 
   List<String> _locations = (sl<ApiService>().cachedLocations ?? [])
       .map((l) => l.name)
@@ -445,6 +575,15 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     _tiktokController = TextEditingController();
     _youtubeController = TextEditingController();
 
+    _phoneController.addListener(_onFormCriteriaChanged);
+    _websiteController.addListener(_onFormCriteriaChanged);
+    _instagramController.addListener(_onFormCriteriaChanged);
+    _facebookController.addListener(_onFormCriteriaChanged);
+    _twitterController.addListener(_onFormCriteriaChanged);
+    _linkedinController.addListener(_onFormCriteriaChanged);
+    _tiktokController.addListener(_onFormCriteriaChanged);
+    _youtubeController.addListener(_onFormCriteriaChanged);
+
     if (widget.artist != null) {
       _selectedCategory = widget.artist!.category;
       _selectedLocation = widget.artist!.location;
@@ -452,6 +591,10 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
         _selectedExperienceLevel = widget.artist!.experienceLevel;
       }
       _agreedToTerms = true;
+    }
+
+    if (_isEditMode) {
+      _initialFormSnapshot = _captureFormSnapshot();
     }
 
     _loadDynamicData();
@@ -538,6 +681,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
       _agreedToTerms = true;
     });
 
+    _initialFormSnapshot = _captureFormSnapshot();
     _loadArtworksForArtist(artist.id, artist.name);
   }
 
@@ -558,24 +702,29 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
             if (imgUrl.isNotEmpty &&
                 !_portfolioArtworks.any((p) => p.existingId == artId)) {
               if (_portfolioArtworks.length >= kMaxArtworks) break;
-              _portfolioArtworks.add(
-                ProfileArtworkItem(
-                  existingImageUrl: imgUrl,
-                  existingId: artId,
-                  initialTitle: (art['title'] ?? '').toString(),
-                  initialMedium: (art['medium'] ?? '').toString(),
-                  initialPrice: (art['price'] ?? '').toString(),
-                  initialDimensions: (art['dimensions'] ?? '').toString(),
-                  isFeatured:
-                      art['is_featured'] == 1 ||
-                      art['is_featured'] == true ||
-                      art['is_featured']?.toString() == '1' ||
-                      art['is_featured']?.toString() == 'true',
-                ),
+              final item = ProfileArtworkItem(
+                existingImageUrl: imgUrl,
+                existingId: artId,
+                initialTitle: (art['title'] ?? '').toString(),
+                initialMedium: (art['medium'] ?? '').toString(),
+                initialPrice: (art['price'] ?? '').toString(),
+                initialDimensions: (art['dimensions'] ?? '').toString(),
+                isFeatured:
+                    art['is_featured'] == 1 ||
+                    art['is_featured'] == true ||
+                    art['is_featured']?.toString() == '1' ||
+                    art['is_featured']?.toString() == 'true',
               );
+              _attachArtworkListeners(item);
+              _portfolioArtworks.add(item);
             }
           }
+          if (_isEditMode) {
+            _initialFormSnapshot = _captureFormSnapshot();
+          }
         });
+      } else if (mounted && _isEditMode) {
+        _initialFormSnapshot = _captureFormSnapshot();
       }
     } catch (_) {}
   }
@@ -659,7 +808,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     try {
       final results = await Future.wait([
         sl<ApiService>().getCategories(type: 'artist'),
-        sl<ApiService>().getExperienceLevels(),
+        sl<ApiService>().getExperienceLevels(forceRefresh: true),
         sl<ApiService>().getLocations(),
       ]);
       final catInfos = results[0] as List<CategoryInfo>;
@@ -671,7 +820,13 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
             _categories = catInfos.map((c) => c.name).toList();
           }
           if (expLevels.isNotEmpty) {
-            _experienceLevels = expLevels.map((e) => e.name).toSet().toList();
+            _experienceLevels = expLevels
+                .map(_formatExpLevel)
+                .where((n) => n.isNotEmpty)
+                .toSet()
+                .toList();
+          } else if (_experienceLevels.isEmpty) {
+            _experienceLevels = List<String>.from(kDefaultExperienceLevels);
           }
           if (locModels.isNotEmpty) {
             _locations = locModels.map((l) => l.name).toList();
@@ -693,9 +848,16 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
       }
     });
     _expSub = liveSync.experienceLevelsStream.listen((list) {
-      if (mounted && list.isNotEmpty) {
+      if (mounted) {
         setState(() {
-          _experienceLevels = list.map((e) => e.name).toSet().toList();
+          final mapped = list
+              .map(_formatExpLevel)
+              .where((n) => n.isNotEmpty)
+              .toSet()
+              .toList();
+          _experienceLevels = mapped.isNotEmpty
+              ? mapped
+              : List<String>.from(kDefaultExperienceLevels);
         });
       }
     });
@@ -717,9 +879,18 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     _catSub?.cancel();
     _expSub?.cancel();
     _locSub?.cancel();
+
     _fullNameController.removeListener(_onFormCriteriaChanged);
     _emailController.removeListener(_onFormCriteriaChanged);
+    _phoneController.removeListener(_onFormCriteriaChanged);
     _bioController.removeListener(_onFormCriteriaChanged);
+    _websiteController.removeListener(_onFormCriteriaChanged);
+    _instagramController.removeListener(_onFormCriteriaChanged);
+    _facebookController.removeListener(_onFormCriteriaChanged);
+    _twitterController.removeListener(_onFormCriteriaChanged);
+    _linkedinController.removeListener(_onFormCriteriaChanged);
+    _tiktokController.removeListener(_onFormCriteriaChanged);
+    _youtubeController.removeListener(_onFormCriteriaChanged);
 
     _fullNameController.dispose();
     _emailController.dispose();
@@ -735,20 +906,36 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     _youtubeController.dispose();
 
     for (final art in _portfolioArtworks) {
+      _detachArtworkListeners(art);
       art.dispose();
     }
-    _catSub?.cancel();
-    _expSub?.cancel();
     super.dispose();
   }
 
   void _submitProfile() async {
+    if (_isSubmitting) return;
+    if (_isEditMode && !_hasFormChanged) return;
+    final formValid = _formKey.currentState?.validate() ?? false;
     final name = _fullNameController.text.trim();
-    if (name.isEmpty) {
-      UiHelpers.showErrorDialog(
-        context,
-        title: 'Required Details Missing',
-        message: 'Please enter your full name or stage name.',
+    if (name.isEmpty || !formValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Please fill in all required artist details highlighted in red.'.trData(context),
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+        ),
       );
       return;
     }
@@ -1569,6 +1756,12 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                           _buildTextField(
                             controller: _fullNameController,
                             hintText: l10n.fullNameLabel,
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Please enter your full name or stage name.'.trData(context);
+                              }
+                              return null;
+                            },
                           ),
                           const SizedBox(height: 14),
                           _buildLabel('${l10n.emailLabel} *'),
@@ -1576,6 +1769,15 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                             controller: _emailController,
                             hintText: 'your@email.com',
                             keyboardType: TextInputType.emailAddress,
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Please enter your email address.'.trData(context);
+                              }
+                              if (!v.contains('@')) {
+                                return 'Please enter a valid email address.'.trData(context);
+                              }
+                              return null;
+                            },
                           ),
                           const SizedBox(height: 14),
                           _buildLabel(l10n.phoneNumberOptional),
@@ -1596,14 +1798,11 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                           const SizedBox(height: 14),
                           _buildLabel(l10n.experienceLevel),
                           _buildDropdownField(
-                            value:
-                                _experienceLevels.contains(
-                                      _selectedExperienceLevel,
-                                    )
-                                    ? _selectedExperienceLevel
-                                    : null,
+                            value: _selectedExperienceLevel,
                             hintText: l10n.selectExperienceLevel,
-                            items: _experienceLevels,
+                            items: _experienceLevels.isNotEmpty
+                                ? _experienceLevels
+                                : kDefaultExperienceLevels,
                             onChanged: (val) {
                               setState(() {
                                 _selectedExperienceLevel = val;
@@ -2447,10 +2646,11 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                       backgroundColor: Colors.white,
                                       foregroundColor: const Color(0xFF6B1C9B),
                                       disabledBackgroundColor:
-                                          Colors.white.withValues(alpha: 0.8),
+                                          Colors.white.withValues(alpha: 0.45),
                                       disabledForegroundColor:
-                                          const Color(0xFF6B1C9B),
-                                      elevation: 3,
+                                          const Color(0xFF6B1C9B)
+                                              .withValues(alpha: 0.4),
+                                      elevation: _canSubmit ? 3 : 0,
                                       shadowColor: Colors.black38,
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 8,
@@ -2460,7 +2660,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                       ),
                                     ),
                                     onPressed:
-                                        _isSubmitting ? null : _submitProfile,
+                                        _canSubmit ? _submitProfile : null,
                                     child:
                                         _isSubmitting
                                             ? Row(
@@ -2504,10 +2704,19 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
                                                     ? l10n.updateProfile
                                                     : l10n.createProfile,
                                                 maxLines: 1,
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontSize: 14.5,
                                                   fontWeight: FontWeight.bold,
-                                                  color: Color(0xFF6B1C9B),
+                                                  color:
+                                                      _canSubmit
+                                                          ? const Color(
+                                                            0xFF6B1C9B,
+                                                          )
+                                                          : const Color(
+                                                            0xFF6B1C9B,
+                                                          ).withValues(
+                                                            alpha: 0.4,
+                                                          ),
                                                 ),
                                               ),
                                             ),
@@ -2570,14 +2779,20 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
   Widget _buildTextField({
     required TextEditingController controller,
     required String hintText,
+    Key? fieldKey,
+    FocusNode? focusNode,
     TextInputType? keyboardType,
+    FormFieldValidator<String>? validator,
     int maxLines = 1,
     int? maxLength,
     bool showCounter = false,
   }) {
     return TextFormField(
+      key: fieldKey,
       controller: controller,
+      focusNode: focusNode,
       keyboardType: keyboardType,
+      validator: validator,
       maxLines: maxLines,
       maxLength: maxLength,
       onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
@@ -2616,6 +2831,19 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: Color(0xFF5E227A), width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.8),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFFDC2626), width: 2.0),
+        ),
+        errorStyle: const TextStyle(
+          color: Color(0xFFFFD1D1),
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
@@ -3403,8 +3631,17 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
     required List<String> items,
     required ValueChanged<String?> onChanged,
   }) {
+    final effectiveItems = (items.isNotEmpty ? items : kDefaultExperienceLevels).toList();
+    if (value != null && value.trim().isNotEmpty && !effectiveItems.contains(value.trim())) {
+      effectiveItems.insert(0, value.trim());
+    }
+    final effectiveValue = (value != null && effectiveItems.contains(value.trim()))
+        ? value.trim()
+        : null;
+
     return DropdownButtonFormField<String>(
-      initialValue: value,
+      key: ValueKey(effectiveValue),
+      initialValue: effectiveValue,
       isExpanded: true,
       dropdownColor: Colors.white,
       borderRadius: BorderRadius.circular(12),
@@ -3445,7 +3682,7 @@ class _CreateArtistProfileViewState extends State<CreateArtistProfileView> {
         ),
       ),
       items:
-          items.map((item) {
+          effectiveItems.map((item) {
             return DropdownMenuItem<String>(
               value: item,
               child: Text(

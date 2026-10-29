@@ -40,6 +40,9 @@ class _ArtistsViewState extends State<ArtistsView> {
   String _categoryFilterQuery = '';
   final Set<String> _favoritedArtistIds = {};
   final Set<String> _followedArtistIds = {};
+  bool _hasArtistProfile = false;
+  String? _myArtistId;
+  ArtistModel? _myArtistProfile;
   StreamSubscription<List<ArtistModel>>? _artistsSub;
   StreamSubscription<Map<String, dynamic>>? _favSub;
   StreamSubscription<List<CategoryInfo>>? _catSub;
@@ -139,6 +142,7 @@ class _ArtistsViewState extends State<ArtistsView> {
       _isLoading = false;
     }
     _fetchData();
+    _checkMyArtistProfile();
 
     _artistsSub = sl<LiveSyncService>().artistsStream.listen((artists) {
       if (mounted) {
@@ -146,6 +150,7 @@ class _ArtistsViewState extends State<ArtistsView> {
           _allArtists = artists;
           _isLoading = false;
         });
+        _checkMyArtistProfile();
       }
     });
 
@@ -166,6 +171,7 @@ class _ArtistsViewState extends State<ArtistsView> {
     _authSub = sl<LiveSyncService>().authStream.listen((isLoggedIn) {
       if (mounted) {
         setState(() {});
+        _checkMyArtistProfile();
         _fetchData(silent: true);
       }
     });
@@ -214,6 +220,7 @@ class _ArtistsViewState extends State<ArtistsView> {
           _allArtists = artists;
           _isLoading = false;
         });
+        _checkMyArtistProfile();
       }
     } catch (_) {
       if (mounted) {
@@ -274,6 +281,60 @@ class _ArtistsViewState extends State<ArtistsView> {
           }
         })
         .catchError((_) {});
+  }
+
+  void _checkMyArtistProfile() async {
+    try {
+      final storage = sl<StorageService>();
+      final isLoggedIn = storage.getBool('is_logged_in') ?? false;
+      final email = (storage.getString('user_email') ?? '').trim().toLowerCase();
+      final cachedHas = storage.getBool('has_artist_profile') ?? false;
+      final cachedId = storage.getString('artist_profile_id');
+
+      if (!isLoggedIn || email.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _hasArtistProfile = false;
+            _myArtistId = null;
+            _myArtistProfile = null;
+          });
+        }
+        return;
+      }
+
+      // Fast check from local cached artist ID or matching in loaded _allArtists
+      ArtistModel? match;
+      if (_allArtists.isNotEmpty) {
+        match = _allArtists.where((a) {
+          if (cachedId != null && cachedId.isNotEmpty && a.id == cachedId) {
+            return true;
+          }
+          final aEmail = a.email.trim().toLowerCase();
+          return aEmail.isNotEmpty && aEmail == email;
+        }).firstOrNull;
+      }
+
+      final hasProfile = match != null || (cachedHas && cachedId != null && cachedId.isNotEmpty);
+      final artistId = match?.id ?? cachedId;
+
+      if (mounted) {
+        setState(() {
+          _hasArtistProfile = hasProfile;
+          _myArtistId = artistId;
+          _myArtistProfile = match;
+        });
+      }
+
+      // Background verify and refresh with API
+      final artist = await sl<ApiService>().getMyArtistProfile();
+      if (mounted) {
+        setState(() {
+          _hasArtistProfile = artist != null;
+          _myArtistId = artist?.id ?? artistId;
+          _myArtistProfile = artist ?? match;
+        });
+      }
+    } catch (_) {}
   }
 
   void _openArtistDetail(ArtistModel artist) async {
@@ -388,6 +449,138 @@ class _ArtistsViewState extends State<ArtistsView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // 0. Top Navigation & Action Bar
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: () {
+                            if (context.canPop()) {
+                              context.pop();
+                            } else {
+                              context.go(RouteNames.home);
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 7,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.25),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  context.canPop()
+                                      ? Icons.arrow_back
+                                      : Icons.home_outlined,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  context.canPop() ? l10n.back : l10n.home,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: SizedBox(
+                            height: 38,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: const Color(0xFF6B1C9B),
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                              onPressed: () async {
+                                if (_hasArtistProfile) {
+                                  String? artistId = _myArtistId;
+                                  ArtistModel? myArtist = _myArtistProfile;
+                                  if (artistId == null || artistId.isEmpty) {
+                                    try {
+                                      artistId = sl<StorageService>()
+                                          .getString('artist_profile_id');
+                                    } catch (_) {}
+                                  }
+                                  await context.push(
+                                    RouteNames.artistRegistration,
+                                    extra: {
+                                      'isEditing': true,
+                                      'artist': myArtist,
+                                      'artistId': artistId,
+                                    },
+                                  );
+                                  if (mounted) {
+                                    _checkMyArtistProfile();
+                                    _fetchData(silent: true);
+                                  }
+                                } else {
+                                  await context.push(
+                                    RouteNames.artistRegistration,
+                                  );
+                                  if (mounted) {
+                                    _checkMyArtistProfile();
+                                    _fetchData(silent: true);
+                                  }
+                                }
+                              },
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    _hasArtistProfile
+                                        ? Icons.edit_outlined
+                                        : Icons.add,
+                                    size: 16,
+                                    color: const Color(0xFF6B1C9B),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      _hasArtistProfile
+                                          ? 'Edit Artist'.trData(context)
+                                          : l10n.artistRegistration,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF6B1C9B),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
                     // 1. Featured Artists Header
                     Center(
                       child: Column(
@@ -471,15 +664,34 @@ class _ArtistsViewState extends State<ArtistsView> {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
-                                onPressed: () {
+                                onPressed: () async {
                                   if (_isLoggedIn) {
-                                    context.push(RouteNames.artistRegistration);
+                                    if (_hasArtistProfile) {
+                                      await context.push(
+                                        RouteNames.artistRegistration,
+                                        extra: {
+                                          'isEditing': true,
+                                          'artist': _myArtistProfile,
+                                          'artistId': _myArtistId,
+                                        },
+                                      );
+                                    } else {
+                                      await context.push(
+                                        RouteNames.artistRegistration,
+                                      );
+                                    }
+                                    if (mounted) {
+                                      _checkMyArtistProfile();
+                                      _fetchData(silent: true);
+                                    }
                                   } else {
                                     context.push(RouteNames.login);
                                   }
                                 },
                                 child: Text(
-                                  l10n.createArtistProfile,
+                                  _hasArtistProfile
+                                      ? 'Edit Artist'.trData(context)
+                                      : l10n.createArtistProfile,
                                   style: const TextStyle(
                                     fontSize: 14.5,
                                     fontWeight: FontWeight.bold,

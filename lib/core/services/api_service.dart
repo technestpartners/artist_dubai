@@ -95,6 +95,7 @@ class ApiService {
     _cachedCategories = value;
     if (value != null) _cacheTimestamps['categories'] = DateTime.now();
   }
+
   List<ArtistModel>? get cachedArtists => _cachedArtists;
   // ignore: unnecessary_getters_setters
   List<ArtEventModel>? get cachedEvents => _cachedEvents;
@@ -103,7 +104,8 @@ class ApiService {
   List<Map<String, dynamic>>? get cachedGalleries => _cachedGalleries;
   // ignore: unnecessary_getters_setters
   List<GovernmentEntity>? get cachedGovEntities => _cachedGovEntities;
-  set cachedGovEntities(List<GovernmentEntity>? value) => _cachedGovEntities = value;
+  set cachedGovEntities(List<GovernmentEntity>? value) =>
+      _cachedGovEntities = value;
   List<ListingPlanItem>? get cachedListingPlans => _cachedListingPlans;
   List<String>? get cachedEventCategories => _cachedEventCategories;
   List<LocationModel>? get cachedLocations => _cachedLocations;
@@ -772,6 +774,7 @@ class ApiService {
     String? eventName,
     String? eventId,
     String? imageUrl,
+    String? timing,
     List<String>? images,
   }) async {
     try {
@@ -789,6 +792,7 @@ class ApiService {
           if (eventName != null) 'event_name': eventName,
           if (eventId != null) 'event_id': eventId,
           'image_url': imageUrl,
+          if (timing != null) 'timing': timing,
           'images': images,
           'photo_count':
               images != null && images.isNotEmpty ? images.length : 1,
@@ -946,6 +950,44 @@ class ApiService {
       if (_isSuccess(res)) {
         _cachedGalleries = null; // Invalidate cache
         try {
+          final storage = sl<StorageService>();
+          final returnData = res['data'];
+          if (returnData is Map<String, dynamic>) {
+            final gid =
+                returnData['id']?.toString() ??
+                returnData['gallery_id']?.toString();
+            if (gid != null && gid.isNotEmpty) {
+              final myIds = List<String>.from(
+                storage.getStringList('my_gallery_ids') ?? [],
+              );
+              if (!myIds.contains(gid)) {
+                myIds.add(gid);
+                await storage.setStringList('my_gallery_ids', myIds);
+              }
+            }
+          }
+          final name = data['name']?.toString() ?? data['title']?.toString();
+          if (name != null && name.trim().isNotEmpty) {
+            final myNames = List<String>.from(
+              storage.getStringList('my_gallery_names') ?? [],
+            );
+            if (!myNames.contains(name.trim())) {
+              myNames.add(name.trim());
+              await storage.setStringList('my_gallery_names', myNames);
+            }
+          }
+          final email = data['email']?.toString();
+          if (email != null && email.trim().isNotEmpty) {
+            final myEmails = List<String>.from(
+              storage.getStringList('my_gallery_emails') ?? [],
+            );
+            if (!myEmails.contains(email.trim().toLowerCase())) {
+              myEmails.add(email.trim().toLowerCase());
+              await storage.setStringList('my_gallery_emails', myEmails);
+            }
+          }
+        } catch (_) {}
+        try {
           sl<LiveSyncService>().notifyGalleriesChanged();
         } catch (_) {}
         return true;
@@ -1088,9 +1130,7 @@ class ApiService {
   }
 
   // 12. About Us Platform Content (Instant Cache-First)
-  Future<Map<String, dynamic>> getAboutData({
-    bool forceRefresh = false,
-  }) async {
+  Future<Map<String, dynamic>> getAboutData({bool forceRefresh = false}) async {
     if (!forceRefresh && _cachedAbout != null && _cachedAbout!.isNotEmpty) {
       return _cachedAbout!;
     }
@@ -1108,10 +1148,7 @@ class ApiService {
 
   Future<bool> updateAboutData(Map<String, dynamic> data) async {
     try {
-      final res = await _client.post(
-        ApiEndpoints.aboutUs,
-        data: data,
-      );
+      final res = await _client.post(ApiEndpoints.aboutUs, data: data);
       if (_isSuccess(res)) {
         if (res['data'] != null && res['data'] is Map) {
           _cachedAbout = Map<String, dynamic>.from(res['data'] as Map);
@@ -1873,7 +1910,9 @@ class ApiService {
     try {
       final raw = await _client.get(ApiEndpoints.listingPlans);
       final res = _unwrap(raw);
-      if (_isSuccess(res) && res is Map<String, dynamic> && res['data'] is List) {
+      if (_isSuccess(res) &&
+          res is Map<String, dynamic> &&
+          res['data'] is List) {
         final list = res['data'] as List<dynamic>;
         _cachedListingPlans =
             list
@@ -2047,7 +2086,8 @@ class ApiService {
             (p['days_left'] != null && (p['days_left'] as num) <= 0);
         if (status == 'active' && !isExpired) {
           if (target == 'chat') {
-            final isChat = (pType == 'chat' || pType == 'messaging') &&
+            final isChat =
+                (pType == 'chat' || pType == 'messaging') &&
                 !pName.contains('gallery') &&
                 !pName.contains('event') &&
                 !pName.contains('centre') &&
@@ -2068,7 +2108,8 @@ class ApiService {
     // Storage fallback for immediate offline access or instant activation after checkout
     try {
       final storage = sl<StorageService>();
-      final localPlan = storage.getString('active_plan_$target') ??
+      final localPlan =
+          storage.getString('active_plan_$target') ??
           (target == 'chat'
               ? (storage.getString('chat_plan') ??
                   storage.getString('chat_plan_name'))
@@ -2793,10 +2834,7 @@ class ApiService {
       final email = userEmail ?? sl<StorageService>().getString('user_email');
       final res = await _client.post(
         '${ApiEndpoints.events}&action=delete',
-        data: {
-          'id': id,
-          if (email != null && email.isNotEmpty) 'email': email,
-        },
+        data: {'id': id, if (email != null && email.isNotEmpty) 'email': email},
       );
       if (_isSuccess(res)) {
         _cachedEvents = null;
@@ -2810,14 +2848,26 @@ class ApiService {
   }
 
   // 27. Delete Gallery (MySQL Backend)
-  Future<bool> deleteGallery(dynamic id) async {
+  Future<bool> deleteGallery(dynamic id, {String? userEmail}) async {
     try {
+      final email = userEmail ?? sl<StorageService>().getString('user_email');
       final res = await _client.post(
         '${ApiEndpoints.galleries}&action=delete',
-        data: {'id': id},
+        data: {
+          'id': id,
+          if (email != null && email.isNotEmpty) 'user_email': email,
+        },
       );
       if (_isSuccess(res)) {
         _cachedGalleries = null;
+        try {
+          final storage = sl<StorageService>();
+          final myIds = List<String>.from(
+            storage.getStringList('my_gallery_ids') ?? [],
+          );
+          myIds.remove(id.toString());
+          await storage.setStringList('my_gallery_ids', myIds);
+        } catch (_) {}
         try {
           sl<LiveSyncService>().notifyGalleriesChanged();
         } catch (_) {}
@@ -2831,25 +2881,64 @@ class ApiService {
   Future<bool> updateGallery({
     required dynamic id,
     String? title,
+    String? name,
     String? description,
+    String? about,
+    String? category,
+    String? location,
+    String? address,
+    String? timing,
+    String? website,
+    String? contactPerson,
+    String? phone,
+    String? email,
     String? imageUrl,
     List<String>? images,
+    String? userEmail,
   }) async {
     try {
+      final authEmail =
+          userEmail ?? sl<StorageService>().getString('user_email');
       final res = await _client.post(
         '${ApiEndpoints.galleries}&action=update',
         data: {
           'id': id,
-          if (title != null) 'name': title,
           if (title != null) 'title': title,
+          if (name != null || title != null) 'name': name ?? title,
           if (description != null) 'description': description,
+          if (about != null || description != null)
+            'about': about ?? description,
+          if (category != null) 'category': category,
+          if (location != null || address != null)
+            'location': location ?? address,
+          if (address != null) 'address': address,
+          if (timing != null) 'timing': timing,
+          if (website != null) 'website': website,
+          if (contactPerson != null) 'contact_person': contactPerson,
+          if (phone != null) 'phone': phone,
+          if (email != null) 'email': email,
           if (imageUrl != null) 'image_url': imageUrl,
           if (images != null) 'images': images,
           if (images != null) 'photo_count': images.length,
+          if (authEmail != null && authEmail.isNotEmpty)
+            'user_email': authEmail,
         },
       );
       if (_isSuccess(res)) {
         _cachedGalleries = null;
+        try {
+          final storage = sl<StorageService>();
+          final finalName = (name ?? title)?.trim();
+          if (finalName != null && finalName.isNotEmpty) {
+            final myNames = List<String>.from(
+              storage.getStringList('my_gallery_names') ?? [],
+            );
+            if (!myNames.contains(finalName)) {
+              myNames.add(finalName);
+              await storage.setStringList('my_gallery_names', myNames);
+            }
+          }
+        } catch (_) {}
         try {
           sl<LiveSyncService>().notifyGalleriesChanged();
         } catch (_) {}
@@ -3015,12 +3104,7 @@ class ApiService {
       'version': '6.3.0',
       'database': 'MySQL',
       'status': 'connected',
-      'counts': {
-        'artists': 5,
-        'events': 4,
-        'galleries': 5,
-        'categories': 10,
-      },
+      'counts': {'artists': 5, 'events': 4, 'galleries': 5, 'categories': 10},
     };
     return _cachedAbout;
   }

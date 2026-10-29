@@ -606,48 +606,6 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
     final canGoBack = Navigator.canPop(context);
     final rh = ResponsiveHelper.of(context);
 
-    final titleWidget = Row(
-      children: [
-        if (canGoBack)
-          InkWell(
-            borderRadius: BorderRadius.circular(20),
-            onTap: () => Navigator.pop(context),
-            child: const Padding(
-              padding: EdgeInsetsDirectional.only(
-                end: 12.0,
-                top: 4.0,
-                bottom: 4.0,
-              ),
-              child: Icon(Icons.arrow_back, color: Colors.white, size: 22),
-            ),
-          ),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "What's On".trData(context),
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  letterSpacing: -0.3,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                l10n.eventsSubtitle,
-                style: const TextStyle(
-                  fontSize: 13.5,
-                  color: Color(0xFFE2D6F5),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-
     final actionButton = SizedBox(
       height: 38,
       child: ElevatedButton(
@@ -691,23 +649,97 @@ class _EventsViewState extends State<EventsView> with WidgetsBindingObserver {
       ),
     );
 
-    if (rh.width < 340) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          titleWidget,
-          const SizedBox(height: 10),
-          actionButton,
-        ],
-      );
-    }
-
-    return Row(
+    final topBar = Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Expanded(child: titleWidget),
+        InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            if (canGoBack) {
+              Navigator.pop(context);
+            } else {
+              context.go(RouteNames.home);
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 7,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.25),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  canGoBack ? Icons.arrow_back : Icons.home_outlined,
+                  size: 16,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  canGoBack ? l10n.back : l10n.home,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
         const SizedBox(width: 8),
         actionButton,
+      ],
+    );
+
+    final textContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "WHAT’S ON IN DUBAI?".trData(context),
+          style: TextStyle(
+            fontSize: rh.isUltraCompact ? 20 : 23,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+            letterSpacing: -0.3,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          "Your guide to the latest events, exhibitions, concerts, festivals, workshops and grand openings."
+              .trData(context),
+          style: TextStyle(
+            fontSize: rh.isUltraCompact ? 12.5 : 13.5,
+            color: const Color(0xFFE2D6F5),
+            height: 1.35,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          "Discover What’s Happening.".trData(context),
+          style: TextStyle(
+            fontSize: rh.isUltraCompact ? 12.5 : 13.5,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+      ],
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        topBar,
+        const SizedBox(height: 12),
+        textContent,
       ],
     );
   }
