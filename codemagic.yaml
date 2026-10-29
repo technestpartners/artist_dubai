@@ -11,15 +11,6 @@ workflows:
       cocoapods: default
       vars:
         BUNDLE_ID: "com.imbu.Dubai-Artists"
-        APP_STORE_CONNECT_ISSUER_ID: "cc1a0e8b-556e-4a6b-a0b0-7758e822bdd4"
-        APP_STORE_CONNECT_KEY_IDENTIFIER: "XUJ4SVP57R"
-        APP_STORE_CONNECT_PRIVATE_KEY: |
-          -----BEGIN PRIVATE KEY-----
-          MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgP2dFZCqWljzoQeDu
-          8+ie0XZyIg32kGFqHocs+mJENaSgCgYIKoZIzj0DAQehRANCAASOr7NFWpVq5/nC
-          pRHfSZaS6X6xtVwXDnTQlMWVDw/56jyM6TRa3ZGq16R0CXhWFWJjJrlgrG0dckpb
-          Ip369qR3
-          -----END PRIVATE KEY-----
         CERTIFICATE_PRIVATE_KEY: |
           -----BEGIN RSA PRIVATE KEY-----
           MIIEpAIBAAKCAQEAzyxfedVDR7IXSg8RM6gEngXbJ28ls+NMubItcG+20fx8NlRm
@@ -72,10 +63,6 @@ workflows:
       - name: Set up code signing
         script: |
           set -e
-          mkdir -p ~/.private_keys
-          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > ~/.private_keys/AuthKey_${APP_STORE_CONNECT_KEY_IDENTIFIER}.p8
-          chmod 600 ~/.private_keys/AuthKey_${APP_STORE_CONNECT_KEY_IDENTIFIER}.p8
-
           keychain initialize
 
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
