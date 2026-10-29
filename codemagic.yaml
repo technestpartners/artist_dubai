@@ -55,78 +55,42 @@ workflows:
         script: |
           flutter packages pub get
           flutter build ios --config-only --build-name=3.2.5 --build-number=7
+      - name: Set up code signing
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
+          echo "=== Provisioning Profiles ==="
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || true
+          echo "=== Signing Identities ==="
+          security find-identity -v -p codesigning
       - name: Install CocoaPods
         script: |
           export LANG=en_US.UTF-8
           export LC_ALL=en_US.UTF-8
           cd ios && pod install --repo-update
-      - name: Set up code signing
-        script: |
-          set -e
-          keychain initialize
-
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
-            --create \
-            --verbose
-
-          keychain add-certificates
-
-          # Sync profiles to Xcode 16 UserData location as well
-          mkdir -p "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
-          cp -f "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/" 2>/dev/null || true
-
-          # Generate manual ExportOptions.plist containing the downloaded profile
-          python3 scripts/generate_export_options.py
-
-          echo "=== Provisioning Profiles Installed ==="
-          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || true
-          echo "=== Provisioning Profiles (Xcode 16 UserData) ==="
-          ls -la "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/" || true
-          echo "=== Signing Identities in Keychain ==="
-          security find-identity -v -p codesigning
-      - name: Flutter build iOS (no codesign)
-        script: |
-          flutter build ios --release --no-codesign --build-name=3.2.5 --build-number=7
-      - name: Build & Package Release IPA
+      - name: Build Flutter iOS IPA
         script: |
           set -e
           cd ios
           xcrun agvtool new-version -all 7
           xcrun agvtool new-marketing-version 3.2.5
           cd ..
-
-          echo "=== Archiving Runner (Signing deferred to export) ==="
-          xcodebuild -workspace ios/Runner.xcworkspace \
-            -scheme Runner \
-            -configuration Release \
-            -archivePath build/ios/Runner.xcarchive \
-            archive \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            COMPILER_INDEX_STORE_ENABLE=NO
-
-          echo "=== Generating ExportOptions.plist ==="
-          python3 scripts/generate_export_options.py
-
           EXPORT_PLIST="/Users/builder/export_options.plist"
           if [ ! -f "$EXPORT_PLIST" ]; then
             EXPORT_PLIST="ios/ExportOptions.plist"
           fi
           echo "Using Export Options Plist: $EXPORT_PLIST"
-          cat "$EXPORT_PLIST"
-
-          echo "=== Exporting and Signing IPA ==="
-          mkdir -p build/ios/ipa
-
-          xcodebuild -exportArchive \
-            -archivePath build/ios/Runner.xcarchive \
-            -exportPath build/ios/ipa \
-            -exportOptionsPlist "$EXPORT_PLIST"
-
-          echo "=== Verifying Generated IPA ==="
+          flutter build ipa \
+            --release \
+            --build-name=3.2.5 \
+            --build-number=7 \
+            --export-options-plist="$EXPORT_PLIST"
+          echo "=== IPA Built ==="
           ls -la build/ios/ipa/*.ipa
     artifacts:
       - build/ios/ipa/*.ipa
