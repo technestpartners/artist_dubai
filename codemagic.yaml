@@ -11,6 +11,8 @@ workflows:
       cocoapods: default
       vars:
         BUNDLE_ID: "com.imbu.Dubai-Artists"
+        XCODE_WORKSPACE: "ios/Runner.xcworkspace"
+        XCODE_SCHEME: "Runner"
         CERTIFICATE_PRIVATE_KEY: |
           -----BEGIN RSA PRIVATE KEY-----
           MIIEpAIBAAKCAQEAzyxfedVDR7IXSg8RM6gEngXbJ28ls+NMubItcG+20fx8NlRm
@@ -73,11 +75,61 @@ workflows:
             --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
             --create
           keychain add-certificates
-          xcode-project use-profiles --archive-method=app-store
+
+          # Find downloaded profile and extract details
+          PROVISIONING_PROFILE=$(ls -t ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision 2>/dev/null | head -n 1)
+          if [ -n "$PROVISIONING_PROFILE" ]; then
+            PROFILE_NAME=$(security cms -D -i "$PROVISIONING_PROFILE" | plutil -extract Name raw -o - 2>/dev/null || echo "")
+            PROFILE_UUID=$(security cms -D -i "$PROVISIONING_PROFILE" | plutil -extract UUID raw -o - 2>/dev/null || echo "")
+            echo "Found Provisioning Profile: '$PROFILE_NAME' (UUID: $PROFILE_UUID)"
+
+            # Inject into Release.xcconfig for Runner target archive
+            if [ -n "$PROFILE_NAME" ]; then
+              echo "PROVISIONING_PROFILE_SPECIFIER = $PROFILE_NAME" >> ios/Flutter/Release.xcconfig
+            fi
+          fi
+
+          # Apply profiles to Xcode project explicitly targeting Runner.xcodeproj
+          xcode-project use-profiles --project ios/Runner.xcodeproj
+
+          # Ensure ExportOptions.plist contains explicit manual profile mapping
+          if [ -n "$PROFILE_NAME" ]; then
+            cat <<EOF > /Users/builder/export_options.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>app-store</string>
+    <key>teamID</key>
+    <string>VDL4YWPJJ2</string>
+    <key>signingStyle</key>
+    <string>manual</string>
+    <key>uploadBitcode</key>
+    <false/>
+    <key>uploadSymbols</key>
+    <true/>
+    <key>manageAppVersionAndBuildNumber</key>
+    <false/>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>$BUNDLE_ID</key>
+        <string>$PROFILE_NAME</string>
+    </dict>
+</dict>
+</plist>
+EOF
+            cp /Users/builder/export_options.plist ios/ExportOptions.plist
+          fi
+
           echo "=== Provisioning Profiles ==="
           ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || true
           echo "=== Signing Identities ==="
           security find-identity -v -p codesigning
+          echo "=== Export Options Plist ==="
+          cat /Users/builder/export_options.plist || true
+          echo "=== Release.xcconfig ==="
+          cat ios/Flutter/Release.xcconfig || true
       - name: Build Flutter iOS IPA
         script: |
           set -e
