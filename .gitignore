@@ -70,3 +70,4 @@ ExportOptions.plist
 .schema_provisioned
 **/.*schema_provisioned
 scratch/
+*.aab

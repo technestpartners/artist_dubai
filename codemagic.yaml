@@ -11,8 +11,6 @@ workflows:
       cocoapods: default
       vars:
         BUNDLE_ID: "com.imbu.Dubai-Artists"
-        XCODE_WORKSPACE: "ios/Runner.xcworkspace"
-        XCODE_SCHEME: "Runner"
         CERTIFICATE_PRIVATE_KEY: |
           -----BEGIN RSA PRIVATE KEY-----
           MIIEpAIBAAKCAQEAzyxfedVDR7IXSg8RM6gEngXbJ28ls+NMubItcG+20fx8NlRm
@@ -50,23 +48,13 @@ workflows:
           include: true
           source: true
       tag_patterns:
-        - pattern: '*'
+        - pattern: 'v*'
           include: true
     scripts:
       - name: Get Flutter packages
         script: |
           flutter packages pub get
           flutter build ios --config-only --build-name=3.2.5 --build-number=7
-      - name: Install CocoaPods
-        script: |
-          export LANG=en_US.UTF-8
-          export LC_ALL=en_US.UTF-8
-          cd ios && pod install --repo-update
-      - name: Set iOS project version
-        script: |
-          cd ios
-          xcrun agvtool new-version -all 7
-          xcrun agvtool new-marketing-version 3.2.5
       - name: Set up code signing
         script: |
           keychain initialize
@@ -75,37 +63,34 @@ workflows:
             --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
             --create
           keychain add-certificates
-          xcode-project use-profiles --project ios/Runner.xcodeproj
-
-          # Configure profile specifier, sync for Xcode 16, and export env
-          python3 scripts/setup_ios_signing.py
-
-          echo "=== Provisioning Profiles Installed ==="
-          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null || true
-          echo "=== Provisioning Profiles (Xcode 16 UserData) ==="
-          ls -la "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/" 2>/dev/null || true
-          echo "=== Code Signing Identities ==="
+          xcode-project use-profiles
+          echo "=== Provisioning Profiles ==="
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || true
+          echo "=== Signing Identities ==="
           security find-identity -v -p codesigning
-      - name: Flutter build iOS (no codesign)
+      - name: Install CocoaPods
         script: |
-          flutter build ios --release --no-codesign --build-name=3.2.5 --build-number=7
-      - name: Build & Package Release IPA
+          export LANG=en_US.UTF-8
+          export LC_ALL=en_US.UTF-8
+          cd ios && pod install --repo-update
+      - name: Build Flutter iOS IPA
         script: |
           set -e
+          cd ios
+          xcrun agvtool new-version -all 7
+          xcrun agvtool new-marketing-version 3.2.5
+          cd ..
           EXPORT_PLIST="/Users/builder/export_options.plist"
-          if [ ! -f "$EXPORT_PLIST" ] || grep -q "<string>ad-hoc</string>" "$EXPORT_PLIST"; then
+          if [ ! -f "$EXPORT_PLIST" ]; then
             EXPORT_PLIST="ios/ExportOptions.plist"
           fi
-          echo "=== Exporting IPA using $EXPORT_PLIST ==="
-          cat "$EXPORT_PLIST"
-
-          xcode-project build-ipa \
-            --workspace "${CM_BUILD_DIR:-.}/ios/Runner.xcworkspace" \
-            --scheme "Runner" \
-            --config "Release" \
-            --export-options-plist "$EXPORT_PLIST"
-
-          echo "=== Verifying Generated IPA ==="
+          echo "Using Export Options Plist: $EXPORT_PLIST"
+          flutter build ipa \
+            --release \
+            --build-name=3.2.5 \
+            --build-number=7 \
+            --export-options-plist="$EXPORT_PLIST"
+          echo "=== IPA Built ==="
           ls -la build/ios/ipa/*.ipa
     artifacts:
       - build/ios/ipa/*.ipa
