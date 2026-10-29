@@ -80,6 +80,9 @@ workflows:
           # Configure profile specifier, sync for Xcode 16, and export env
           python3 scripts/setup_ios_signing.py
 
+          # Configure Xcode project code signing settings and export options
+          xcode-project use-profiles --export-options-plist=/Users/builder/export_options.plist
+
           echo "=== Provisioning Profiles Installed ==="
           ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null || true
           echo "=== Provisioning Profiles (Xcode 16 UserData) ==="
@@ -92,27 +95,6 @@ workflows:
       - name: Build & Package Release IPA
         script: |
           set -e
-          if [ -f /tmp/profile_env.sh ]; then
-            source /tmp/profile_env.sh
-          elif [ -f "$HOME/profile_env.sh" ]; then
-            source "$HOME/profile_env.sh"
-          fi
-
-          echo "=== Building Archive with Profile: '$PROFILE_NAME' ==="
-          rm -rf build/ios/xcarchive build/ios/ipa
-          mkdir -p build/ios/xcarchive build/ios/ipa
-
-          xcodebuild -workspace ios/Runner.xcworkspace \
-            -scheme Runner \
-            -configuration Release \
-            -archivePath build/ios/xcarchive/Runner.xcarchive \
-            archive \
-            CODE_SIGN_STYLE=Manual \
-            DEVELOPMENT_TEAM=VDL4YWPJJ2 \
-            "CODE_SIGN_IDENTITY=Apple Distribution" \
-            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
-            COMPILER_INDEX_STORE_ENABLE=NO
-
           EXPORT_PLIST="/Users/builder/export_options.plist"
           if [ ! -f "$EXPORT_PLIST" ]; then
             EXPORT_PLIST="ios/ExportOptions.plist"
@@ -120,10 +102,11 @@ workflows:
           echo "=== Exporting IPA using $EXPORT_PLIST ==="
           cat "$EXPORT_PLIST"
 
-          xcodebuild -exportArchive \
-            -archivePath build/ios/xcarchive/Runner.xcarchive \
-            -exportPath build/ios/ipa \
-            -exportOptionsPlist "$EXPORT_PLIST"
+          xcode-project build-ipa \
+            --workspace "${CM_BUILD_DIR:-.}/ios/Runner.xcworkspace" \
+            --scheme "Runner" \
+            --config "Release" \
+            --export-options-plist "$EXPORT_PLIST"
 
           echo "=== Verifying Generated IPA ==="
           ls -la build/ios/ipa/*.ipa

@@ -4,6 +4,7 @@ import sys
 import glob
 import shutil
 import plistlib
+import re
 
 def main():
     bundle_id = os.environ.get("BUNDLE_ID", "com.imbu.Dubai-Artists")
@@ -87,16 +88,22 @@ def main():
         with open(pbxproj_path, "r", encoding="utf-8") as f:
             content = f.read()
         target_token = "97C147071CF9000F007C117D /* Release */"
-        if target_token in content and f'PROVISIONING_PROFILE_SPECIFIER = "{profile_name}";' not in content:
-            parts = content.split(target_token, 1)
-            # Remove any older specifier in the Release target
-            sub = parts[1]
-            anchor = f"DEVELOPMENT_TEAM = {team_id};"
-            if anchor in sub:
-                sub = sub.replace(anchor, f"{anchor}\n\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = \"{profile_name}\";", 1)
+        if target_token in content:
+            before, target_block = content.split(target_token, 1)
+            end_settings = target_block.find("};")
+            if end_settings != -1:
+                settings = target_block[:end_settings]
+                rest = target_block[end_settings:]
+                settings = re.sub(r'PROVISIONING_PROFILE_SPECIFIER\s*=\s*[^;]+;\n?', '', settings)
+                settings = re.sub(r'PROVISIONING_PROFILE\s*=\s*[^;]+;\n?', '', settings)
+                dev_team = f"DEVELOPMENT_TEAM = {team_id};"
+                if dev_team in settings:
+                    settings = settings.replace(dev_team, f"{dev_team}\n\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = \"{profile_name}\";", 1)
+                else:
+                    settings += f"\n\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = \"{profile_name}\";\n"
                 with open(pbxproj_path, "w", encoding="utf-8") as f:
-                    f.write(parts[0] + target_token + sub)
-                print(f"[INFO] Injected PROVISIONING_PROFILE_SPECIFIER directly into project.pbxproj Release target")
+                    f.write(before + target_token + settings + rest)
+                print(f"[INFO] Injected PROVISIONING_PROFILE_SPECIFIER = '{profile_name}' into project.pbxproj Release target")
 
     # 3. Generate /Users/builder/export_options.plist and ios/ExportOptions.plist
     export_dict = {
