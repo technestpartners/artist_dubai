@@ -94,31 +94,7 @@ workflows:
 
           # Ensure ExportOptions.plist contains explicit manual profile mapping
           if [ -n "$PROFILE_NAME" ]; then
-            cat <<EOF > /Users/builder/export_options.plist
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>method</key>
-    <string>app-store</string>
-    <key>teamID</key>
-    <string>VDL4YWPJJ2</string>
-    <key>signingStyle</key>
-    <string>manual</string>
-    <key>uploadBitcode</key>
-    <false/>
-    <key>uploadSymbols</key>
-    <true/>
-    <key>manageAppVersionAndBuildNumber</key>
-    <false/>
-    <key>provisioningProfiles</key>
-    <dict>
-        <key>$BUNDLE_ID</key>
-        <string>$PROFILE_NAME</string>
-    </dict>
-</dict>
-</plist>
-EOF
+            python3 -c "import plistlib; data = {'method': 'app-store', 'teamID': 'VDL4YWPJJ2', 'signingStyle': 'manual', 'uploadBitcode': False, 'uploadSymbols': True, 'manageAppVersionAndBuildNumber': False, 'provisioningProfiles': {'$BUNDLE_ID': '$PROFILE_NAME'}}; open('/Users/builder/export_options.plist', 'wb').write(plistlib.dumps(data))"
             cp /Users/builder/export_options.plist ios/ExportOptions.plist
           fi
 
