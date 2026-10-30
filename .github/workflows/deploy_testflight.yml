@@ -1,4 +1,4 @@
-name: Deploy to TestFlight (iOS 3.2.5(7))
+name: Deploy to TestFlight (iOS 3.2.6(1))
 
 on:
   push:
@@ -9,17 +9,17 @@ on:
   workflow_dispatch:
     inputs:
       version_name:
-        description: 'App Version Name (e.g., 3.2.5)'
+        description: 'App Version Name (e.g., 3.2.6)'
         required: false
-        default: '3.2.5'
+        default: '3.2.6'
       build_number:
-        description: 'App Build Number (e.g., 7)'
+        description: 'App Build Number (e.g., 1)'
         required: false
-        default: '7'
+        default: '1'
       changelog:
         description: 'TestFlight What to Test / Changelog'
         required: false
-        default: 'Version 3.2.5 (Build 7) - Venue management updates, fixed venue deletion, edit venue bottom bar, category synchronization and reliable state updates.'
+        default: 'Version 3.2.6 (Build 1) - Complete admin active/inactive and open/closed toggles with real-time sync, database schema persistence and responsive UI badges.'
       skip_waiting:
         description: 'Skip waiting for TestFlight build processing in CI'
         type: boolean
@@ -73,8 +73,8 @@ jobs:
             BUILD_NUM=$(grep 'version:' pubspec.yaml | head -n 1 | sed 's/version: //' | cut -d '+' -f 2 | tr -d ' ' | tr -d '\r')
           fi
 
-          if [ -z "$VERSION" ]; then VERSION="3.2.5"; fi
-          if [ -z "$BUILD_NUM" ]; then BUILD_NUM="7"; fi
+          if [ -z "$VERSION" ]; then VERSION="3.2.6"; fi
+          if [ -z "$BUILD_NUM" ]; then BUILD_NUM="1"; fi
 
           echo "VERSION_NAME=$VERSION" >> $GITHUB_OUTPUT
           echo "BUILD_NUMBER=$BUILD_NUM" >> $GITHUB_OUTPUT
@@ -142,7 +142,7 @@ jobs:
           bundle exec fastlane beta \
             skip_waiting:${{ github.event.inputs.skip_waiting || 'true' }} \
             distribute_external:${{ github.event.inputs.distribute_external || 'false' }} \
-            changelog:"${{ github.event.inputs.changelog || 'Version 3.2.5(1) - Performance optimizations and stability updates.' }}"
+            changelog:"${{ github.event.inputs.changelog || 'Version 3.2.6(1) - Complete admin active/inactive and open/closed toggles with real-time sync, database schema persistence and responsive UI badges.' }}"
 
       - name: Upload IPA Artifact to GitHub
         if: always()
