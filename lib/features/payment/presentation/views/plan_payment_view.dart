@@ -174,29 +174,25 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     });
   }
 
-  /// Only available in debug builds — never shown in release mode.
   void _fillTestCard() {
-    assert(() {
-      setState(() {
-        _cardNumberController.text = '4242 4242 4242 4242';
-        _expiryController.text = '12 / 28';
-        _cvcController.text = '123';
-        if (_cardHolderController.text.trim().isEmpty) {
-          _cardHolderController.text = 'Test User';
-        }
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Test card filled (4242 4242 4242 4242)'.trData(context),
-          ),
-          backgroundColor: const Color(0xFF6A2777),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
+    setState(() {
+      _cardNumberController.text = '4242 4242 4242 4242';
+      _expiryController.text = '12 / 28';
+      _cvcController.text = '123';
+      if (_cardHolderController.text.trim().isEmpty) {
+        _cardHolderController.text = 'Allen';
+      }
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Test card filled (4242 4242 4242 4242)'.trData(context),
         ),
-      );
-      return true;
-    }());
+        backgroundColor: const Color(0xFF6A2777),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override

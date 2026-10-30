@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -19,8 +18,8 @@ class StripeConfig {
   /// Falls back to this value only if the backend config endpoint is unreachable.
   static String publishableKey = AppConfig.stripePublishableKey;
 
-  /// Stripe Secret Key (Optional; loaded via environment in secure build pipelines)
-  static String secretKey = const String.fromEnvironment('STRIPE_SECRET_KEY');
+  /// Stripe Secret Key (Defaults to configured AppConfig test key, overridable via --dart-define)
+  static String secretKey = AppConfig.stripeSecretKey;
 
   /// Default currency for the Artist Dubai platform (UAE Dirham)
   static String defaultCurrency = AppConfig.defaultCurrency;
@@ -273,8 +272,7 @@ class StripePaymentService {
           receiveTimeout: const Duration(seconds: 20),
         ),
       );
-      final basicAuth =
-          'Basic ${base64Encode(utf8.encode('${StripeConfig.secretKey}:'))}';
+      final authHeader = 'Bearer ${StripeConfig.secretKey}';
 
       final postData = <String, String>{
         'amount': amountFils.toString(),
@@ -293,7 +291,7 @@ class StripePaymentService {
         data: postData,
         options: Options(
           contentType: Headers.formUrlEncodedContentType,
-          headers: {'Authorization': basicAuth},
+          headers: {'Authorization': authHeader},
           validateStatus: (_) => true,
         ),
       );
@@ -322,8 +320,7 @@ class StripePaymentService {
           receiveTimeout: const Duration(seconds: 25),
         ),
       );
-      final basicAuth =
-          'Basic ${base64Encode(utf8.encode('${StripeConfig.secretKey}:'))}';
+      final authHeader = 'Bearer ${StripeConfig.secretKey}';
 
       final tokenMap = {
         'visa': 'tok_visa',
@@ -351,7 +348,7 @@ class StripePaymentService {
         data: pmPostData,
         options: Options(
           contentType: Headers.formUrlEncodedContentType,
-          headers: {'Authorization': basicAuth},
+          headers: {'Authorization': authHeader},
           validateStatus: (_) => true,
         ),
       );
@@ -373,7 +370,7 @@ class StripePaymentService {
         },
         options: Options(
           contentType: Headers.formUrlEncodedContentType,
-          headers: {'Authorization': basicAuth},
+          headers: {'Authorization': authHeader},
           validateStatus: (_) => true,
         ),
       );
@@ -480,8 +477,7 @@ class StripePaymentService {
           receiveTimeout: const Duration(seconds: 20),
         ),
       );
-      final basicAuth =
-          'Basic ${base64Encode(utf8.encode('${StripeConfig.secretKey}:'))}';
+      final authHeader = 'Bearer ${StripeConfig.secretKey}';
 
       final postData = <String, String>{
         'payment_method_types[0]': 'card',
@@ -517,7 +513,7 @@ class StripePaymentService {
         data: postData,
         options: Options(
           contentType: Headers.formUrlEncodedContentType,
-          headers: {'Authorization': basicAuth},
+          headers: {'Authorization': authHeader},
           validateStatus: (_) => true,
         ),
       );
@@ -583,12 +579,11 @@ class StripePaymentService {
     // 2. Direct Stripe API query
     try {
       final dio = Dio();
-      final basicAuth =
-          'Basic ${base64Encode(utf8.encode('${StripeConfig.secretKey}:'))}';
+      final authHeader = 'Bearer ${StripeConfig.secretKey}';
       final response = await dio.get(
         'https://api.stripe.com/v1/checkout/sessions/$sessionId',
         options: Options(
-          headers: {'Authorization': basicAuth},
+          headers: {'Authorization': authHeader},
           validateStatus: (_) => true,
         ),
       );
