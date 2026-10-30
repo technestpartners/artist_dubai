@@ -174,27 +174,6 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
     });
   }
 
-  void _fillTestCard() {
-    setState(() {
-      _cardNumberController.text = '4242 4242 4242 4242';
-      _expiryController.text = '12 / 28';
-      _cvcController.text = '123';
-      if (_cardHolderController.text.trim().isEmpty) {
-        _cardHolderController.text = 'Allen';
-      }
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Test card filled (4242 4242 4242 4242)'.trData(context),
-        ),
-        backgroundColor: const Color(0xFF6A2777),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
   @override
   void dispose() {
     _emailController.dispose();
@@ -1523,55 +1502,14 @@ class _PlanPaymentViewState extends State<PlanPaymentView> {
               ),
               const SizedBox(height: 14),
 
-              // Card Information Header with Test Card Quick-Fill Chip
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Card information'.trData(context),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF64748B),
-                      ),
-                    ),
-                  ),
-                  InkWell(
-                    onTap: _fillTestCard,
-                    borderRadius: BorderRadius.circular(6),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF3E8FF),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: const Color(0xFFD8B4FE)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.flash_on_rounded,
-                            size: 12,
-                            color: Color(0xFF6A2777),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '⚡ Fill Test Card'.trData(context),
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF6A2777),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+              // Card Information Header
+              Text(
+                'Card information'.trData(context),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF64748B),
+                ),
               ),
               const SizedBox(height: 6),
               Container(
