@@ -2958,6 +2958,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       _artists[index] = updated;
     });
 
+    try {
+      sl<LiveSyncService>().notifyArtistsChanged(_artists);
+    } catch (_) {}
+
     await sl<ApiService>().updateArtist({
       'id': int.tryParse(artist.id) ?? artist.id,
       'status': newStatus,
@@ -3832,12 +3836,12 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     Map<String, dynamic> center,
     int index,
   ) async {
+    final rawOpen = center['currently_open'];
     final isCurrentlyOpen =
-        center['currently_open'] == 1 || center['currently_open'] == true;
+        rawOpen == 1 || rawOpen == true || rawOpen == '1' || rawOpen == null;
     final isPending = _isItemPending(center);
     final newOpen = isPending ? 1 : (isCurrentlyOpen ? 0 : 1);
-    final newStatus =
-        isPending ? 'approved' : (newOpen == 1 ? 'approved' : 'inactive');
+    final newStatus = 'approved';
 
     final updated = Map<String, dynamic>.from(center);
     updated['currently_open'] = newOpen;

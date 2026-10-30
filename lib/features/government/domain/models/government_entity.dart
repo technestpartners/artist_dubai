@@ -190,6 +190,10 @@ class GovernmentEntity {
 
   /// Returns dynamic open state based on seasonal notice, operating schedule, or defaultIsOpen
   bool get isCurrentlyOpen {
+    if (!defaultIsOpen) {
+      return false;
+    }
+
     if (seasonalNotice != null && seasonalNotice!.trim().isNotEmpty) {
       return false;
     }
@@ -214,6 +218,10 @@ class GovernmentEntity {
 
   /// Returns exact formatted live timing text dynamically calculated from map schedule
   String get liveTimingText {
+    if (!defaultIsOpen) {
+      return defaultTiming.isNotEmpty ? defaultTiming : 'Closed';
+    }
+
     if (seasonalNotice != null && seasonalNotice!.trim().isNotEmpty) {
       return seasonalNotice!;
     }

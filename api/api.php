@@ -382,6 +382,8 @@ class DatabaseManager {
                 timing VARCHAR(255) NULL,
                 website VARCHAR(500) NULL,
                 image_url VARCHAR(500) NULL,
+                currently_open TINYINT(1) DEFAULT 1,
+                display_order INT DEFAULT 0,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -625,6 +627,8 @@ class DatabaseManager {
             "ALTER TABLE artists ADD COLUMN deleted_at DATETIME NULL DEFAULT NULL",
             "ALTER TABLE events ADD COLUMN deleted_at DATETIME NULL DEFAULT NULL",
             "ALTER TABLE galleries ADD COLUMN cover_url VARCHAR(500) NULL DEFAULT NULL AFTER image_url",
+            "ALTER TABLE galleries ADD COLUMN currently_open TINYINT(1) DEFAULT 1",
+            "ALTER TABLE galleries ADD COLUMN display_order INT DEFAULT 0",
             "ALTER TABLE galleries ADD COLUMN deleted_at DATETIME NULL DEFAULT NULL",
             "ALTER TABLE government_entities ADD COLUMN deleted_at DATETIME NULL DEFAULT NULL",
             "ALTER TABLE categories ADD COLUMN deleted_at DATETIME NULL DEFAULT NULL",
@@ -3163,6 +3167,8 @@ class GalleryController {
                 $g['image'] = !empty($g['image_url']) ? $g['image_url'] : '';
                 $g['count'] = ($g['photo_count'] ?? 1) . ' photos';
                 if (!empty($g['images_json'])) { $g['images'] = json_decode($g['images_json'], true); }
+                $g['currently_open'] = isset($g['currently_open']) ? (int)$g['currently_open'] : 1;
+                $g['is_open'] = $g['currently_open'] === 1;
             }
             ApiResponse::success($galleries, 'Event galleries retrieved successfully');
             return;
@@ -3180,6 +3186,8 @@ class GalleryController {
                 $g['image'] = !empty($g['image_url']) ? $g['image_url'] : '';
                 $g['count'] = ($g['photo_count'] ?? 1) . ' photos';
                 if (!empty($g['images_json'])) { $g['images'] = json_decode($g['images_json'], true); }
+                $g['currently_open'] = isset($g['currently_open']) ? (int)$g['currently_open'] : 1;
+                $g['is_open'] = $g['currently_open'] === 1;
             }
             ApiResponse::success($galleries, 'Artist galleries retrieved successfully');
             return;
@@ -3223,6 +3231,8 @@ class GalleryController {
             $g['image'] = !empty($g['image_url']) ? $g['image_url'] : '';
             $g['count'] = ($g['photo_count'] ?? 1) . ' photos';
             if (!empty($g['images_json'])) { $g['images'] = json_decode($g['images_json'], true); }
+            $g['currently_open'] = isset($g['currently_open']) ? (int)$g['currently_open'] : 1;
+            $g['is_open'] = $g['currently_open'] === 1;
         }
 
         $pagination = [
@@ -3263,14 +3273,15 @@ class GalleryController {
         }
         $isPublic = isset($input['is_public']) ? (int)$input['is_public'] : ($status === 'approved' ? 1 : 0);
         $isApproved = isset($input['is_approved']) ? (int)$input['is_approved'] : ($status === 'approved' ? 1 : 0);
+        $currentlyOpen = isset($input['currently_open']) ? (int)$input['currently_open'] : 1;
 
         if (empty($name)) {
             ApiResponse::error('Gallery / center name is required.');
             return;
         }
 
-        $stmt = $this->db->prepare('INSERT INTO galleries (name, category, location, timing, website, contact_person, email, phone, about, image_url, artist_id, artist_name, description, photo_count, images_json, status, is_public, is_approved, event_name, event_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        $stmt->execute([$name, $category, $location, $timing, $website, $contactPerson, $email, $phone, $about, $imageUrl, $artistId, $artistName, $description, $photoCount, $imagesJson, $status, $isPublic, $isApproved, $eventName, $eventId]);
+        $stmt = $this->db->prepare('INSERT INTO galleries (name, category, location, timing, website, contact_person, email, phone, about, image_url, artist_id, artist_name, description, photo_count, images_json, status, is_public, is_approved, event_name, event_id, currently_open) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$name, $category, $location, $timing, $website, $contactPerson, $email, $phone, $about, $imageUrl, $artistId, $artistName, $description, $photoCount, $imagesJson, $status, $isPublic, $isApproved, $eventName, $eventId, $currentlyOpen]);
 
         $newId = (int)$this->db->lastInsertId();
 
@@ -3300,7 +3311,9 @@ class GalleryController {
             'event_id' => $eventId,
             'status' => $status,
             'is_public' => $isPublic,
-            'is_approved' => $isApproved
+            'is_approved' => $isApproved,
+            'currently_open' => $currentlyOpen,
+            'is_open' => $currentlyOpen === 1
         ], 'Gallery registered successfully', 201);
 
         // Auto-notify admin and registrant about gallery registration

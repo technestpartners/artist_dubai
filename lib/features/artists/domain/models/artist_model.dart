@@ -192,7 +192,7 @@ class ArtistModel {
     final rawBio = json['bio'] as String? ?? '';
     final rawExp =
         (exp != null && exp.isNotEmpty) ? exp : 'Professional (5+ years)';
-    final rawStatus = json['status'] as String? ?? 'active';
+    final rawStatus = json['status']?.toString();
     final isAr = DataTranslator.isAppArabic;
 
     return ArtistModel(
@@ -213,13 +213,25 @@ class ArtistModel {
       phone: json['phone'] as String? ?? '',
       website: json['website'] as String? ?? '',
       instagram: json['instagram'] as String? ?? '',
-      status: DataTranslator.translate(rawStatus, isArabic: isAr),
-      isActive:
-          json['is_active'] == 1 ||
-          json['is_active'] == true ||
-          json['is_active'] == '1' ||
-          json['status'] == 'active' ||
-          json['status'] == null,
+      status: DataTranslator.translate(rawStatus ?? 'active', isArabic: isAr),
+      isActive: () {
+        final rawSt = (rawStatus ?? '').trim().toLowerCase();
+        final rawAct = json['is_active'];
+        final isExplicitlyInactive =
+            rawAct == 0 ||
+            rawAct == false ||
+            rawAct == '0' ||
+            rawSt == 'inactive' ||
+            rawSt == 'suspended' ||
+            rawSt == 'deleted' ||
+            rawSt == 'pending';
+        if (isExplicitlyInactive) return false;
+        return rawAct == 1 ||
+            rawAct == true ||
+            rawAct == '1' ||
+            rawSt == 'active' ||
+            rawSt.isEmpty;
+      }(),
       createdAt: json['created_at']?.toString() ?? '',
     );
   }

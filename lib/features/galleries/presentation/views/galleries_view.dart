@@ -2133,31 +2133,83 @@ class _GalleriesViewState extends State<GalleriesView> {
                                                 ),
                                               ),
                                               const SizedBox(width: 8),
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 14,
-                                                      vertical: 5,
+                                              Builder(
+                                                builder: (context) {
+                                                  final rawOpen =
+                                                      gallery['currently_open'] ??
+                                                      gallery['is_open'] ??
+                                                      gallery['default_is_open'];
+                                                  final isOpen =
+                                                      (rawOpen == null ||
+                                                          rawOpen == 1 ||
+                                                          rawOpen == '1' ||
+                                                          rawOpen == true) &&
+                                                      (gallery['status']
+                                                              ?.toString()
+                                                              .toLowerCase() !=
+                                                          'closed');
+                                                  final isAr =
+                                                      Localizations.localeOf(
+                                                        context,
+                                                      ).languageCode ==
+                                                      'ar';
+                                                  final openBadgeText =
+                                                      isOpen
+                                                          ? (isAr
+                                                              ? 'مفتوح'
+                                                              : 'Open')
+                                                          : (isAr
+                                                              ? 'مغلق'
+                                                              : 'Closed');
+
+                                                  return Container(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 14,
+                                                          vertical: 5,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color:
+                                                          isOpen
+                                                              ? Colors.white
+                                                                  .withValues(
+                                                                    alpha:
+                                                                        0.18,
+                                                                  )
+                                                              : const Color(
+                                                                0x33EF4444,
+                                                              ),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            16,
+                                                          ),
+                                                      border:
+                                                          isOpen
+                                                              ? null
+                                                              : Border.all(
+                                                                color:
+                                                                    const Color(
+                                                                      0x66EF4444,
+                                                                    ),
+                                                                width: 0.8,
+                                                              ),
                                                     ),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white
-                                                      .withValues(alpha: 0.18),
-                                                  borderRadius:
-                                                      BorderRadius.circular(16),
-                                                ),
-                                                child: Text(
-                                                  Localizations.localeOf(
-                                                            context,
-                                                          ).languageCode ==
-                                                          'ar'
-                                                      ? 'مفتوح'
-                                                      : 'Open',
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 12.5,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                ),
+                                                    child: Text(
+                                                      openBadgeText,
+                                                      style: TextStyle(
+                                                        color:
+                                                            isOpen
+                                                                ? Colors.white
+                                                                : const Color(
+                                                                  0xFFFCA5A5,
+                                                                ),
+                                                        fontSize: 12.5,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
                                               ),
                                             ],
                                           ),
