@@ -54,6 +54,8 @@ dependencies:
 dependency_overrides:
   workmanager_apple:
     path: packages/workmanager_apple
+  workmanager_android:
+    path: packages/workmanager_android
 
 dev_dependencies:
   flutter_test:
